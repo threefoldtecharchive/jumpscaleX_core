@@ -482,7 +482,7 @@ class GitFactory(j.baseclasses.object):
 
         return branch
 
-    def parseUrl(self, url):
+    def giturl_parse(self, url):
         """
         @return (repository_host, repository_type, repository_account, repository_name, repository_url,branch,gitpath, relpath,repository_port)
 
@@ -493,54 +493,7 @@ class GitFactory(j.baseclasses.object):
         - https://github.com/threefoldtech/jumpscale_/jumpscaleX/tree/master/lib/Jumpscale/tools/docsite/macros
 
         """
-        url = url.strip()
-        repository_host, repository_type, repository_account, repository_name, repository_url, port = self.rewriteGitRepoUrl(
-            url
-        )
-        url_end = ""
-        if "tree" in repository_url:
-            # means is a directory
-            repository_url, url_end = repository_url.split("tree")
-        elif "blob" in repository_url:
-            # means is a directory
-            repository_url, url_end = repository_url.split("blob")
-        if url_end != "":
-            url_end = url_end.strip("/")
-            if url_end.find("/") == -1:
-                path = ""
-                branch = url_end
-                if branch.endswith(".git"):
-                    branch = branch[:-4]
-            else:
-                branch, path = url_end.split("/", 1)
-                if path.endswith(".git"):
-                    path = path[:-4]
-        else:
-            path = ""
-            branch = ""
-
-        a, b, c, d, dest, e, port = self.getGitRepoArgs(url)
-
-        if "tree" in dest:
-            # means is a directory
-            gitpath, ee = dest.split("tree")
-        elif "blob" in dest:
-            # means is a directory
-            gitpath, ee = dest.split("blob")
-        else:
-            gitpath = dest
-
-        return (
-            repository_host,
-            repository_type,
-            repository_account,
-            repository_name,
-            repository_url,
-            branch,
-            gitpath,
-            path,
-            port,
-        )
+        return j.core.tools.code_giturl_parse(url)
 
     def getContentInfoFromURL(self, url, pull=False):
         """
@@ -559,7 +512,7 @@ class GitFactory(j.baseclasses.object):
 
         """
         url = url.strip()
-        repository_host, repository_type, repository_account, repository_name, repository_url, branch, gitpath, relpath, port = j.clients.git.parseUrl(
+        repository_host, repository_type, repository_account, repository_name, repository_url, branch, gitpath, relpath, port = j.clients.git.giturl_parse(
             url
         )
         rpath = j.sal.fs.joinPaths(gitpath, relpath)
@@ -587,7 +540,7 @@ class GitFactory(j.baseclasses.object):
         if not j.sal.fs.exists(urlOrPath, followlinks=True):
             repository_url, gitpath, relativepath = self.getContentInfoFromURL(urlOrPath)
         else:
-            repository_host, repository_type, repository_account, repository_name, repository_url, branch, gitpath, relativepath = j.clients.git.parseUrl(
+            repository_host, repository_type, repository_account, repository_name, repository_url, branch, gitpath, relativepath = j.clients.git.giturl_parse(
                 urlOrPath
             )
             # to make sure we pull the info

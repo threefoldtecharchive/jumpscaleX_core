@@ -3,11 +3,44 @@ import copy
 import getpass
 
 GITREPOS = {}
-GITREPOS["core"] = ["https://github.com/threefoldtech/jumpscaleX_core", "master"]
-GITREPOS["builders"] = ["https://github.com/threefoldtech/jumpscaleX_builders", "master"]
-GITREPOS["libs_extra"] = ["https://github.com/threefoldtech/jumpscaleX_libs_extra", "master"]
-GITREPOS["libs"] = ["https://github.com/threefoldtech/jumpscaleX_libs", "master"]
-GITREPOS["threebot"] = ["https://github.com/threefoldtech/jumpscaleX_threebot", "master"]
+GITREPOS["installer"] = ["https://github.com/threefoldtech/jumpscaleX_core/installer", "master", "{DIR_BASE}/installer"]
+GITREPOS["core"] = [
+    "https://github.com/threefoldtech/jumpscaleX_core/JumpscaleCore",
+    "master",
+    "{DIR_BASE}/lib/jumpscale/JumpscaleCore",
+]
+GITREPOS["builders"] = [
+    "https://github.com/threefoldtech/jumpscaleX_builders/JumpscaleBuilders",
+    "master",
+    "{DIR_BASE}/lib/jumpscale/JumpscaleBuilders",
+]
+GITREPOS["builders"] = [
+    "https://github.com/threefoldtech/jumpscaleX_builders/JumpscaleBuildersExtra",
+    "master",
+    "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersExtra",
+]
+
+GITREPOS["libs_extra"] = [
+    "https://github.com/threefoldtech/jumpscaleX_libs_extra/JumpscaleLibsExtra",
+    "master",
+    "{DIR_BASE}/lib/jumpscale/JumpscaleLibsExtra",
+]
+GITREPOS["libs"] = [
+    "https://github.com/threefoldtech/jumpscaleX_libs/JumpscaleLibs",
+    "master",
+    "{DIR_BASE}/lib/jumpscale/JumpscaleLibs",
+]
+GITREPOS["threebot"] = [
+    "https://github.com/threefoldtech/jumpscaleX_threebot/ThreeBotPackages",
+    "master",
+    "{DIR_BASE}/lib/jumpscale/threebot_packages",
+]
+
+GITREPOS["tutorials"] = [
+    "https://github.com/threefoldtech/jumpscaleX_libs/tutorials",
+    "master",
+    "{DIR_BASE}/lib/jumpscale/tutorials",
+]
 
 import socket
 import grp
@@ -2155,7 +2188,68 @@ class Tools:
         return rc > 0
 
     @staticmethod
-    def code_github_get(repo, account="threefoldtech", branch=None, pull=True, reset=False):
+    def code_giturl_parse(self, url):
+        """
+        @return (repository_host, repository_type, repository_account, repository_name, repository_url,branch,gitpath, relpath,repository_port)
+
+        example Input
+        - https://github.com/threefoldtech/jumpscale_/NOS/blob/master/specs/NOS_1.0.0.md
+        - https://github.com/threefoldtech/jumpscale_/jumpscaleX/blob/8.1.2/lib/Jumpscale/tools/docsite/macros/dot.py
+        - https://github.com/threefoldtech/jumpscale_/jumpscaleX/tree/8.2.0/lib/Jumpscale/tools/docsite/macros
+        - https://github.com/threefoldtech/jumpscale_/jumpscaleX/tree/master/lib/Jumpscale/tools/docsite/macros
+
+        """
+        url = url.strip()
+        repository_host, repository_type, repository_account, repository_name, repository_url, port = self.rewriteGitRepoUrl(
+            url
+        )
+        url_end = ""
+        if "tree" in repository_url:
+            # means is a directory
+            repository_url, url_end = repository_url.split("tree")
+        elif "blob" in repository_url:
+            # means is a directory
+            repository_url, url_end = repository_url.split("blob")
+        if url_end != "":
+            url_end = url_end.strip("/")
+            if url_end.find("/") == -1:
+                path = ""
+                branch = url_end
+                if branch.endswith(".git"):
+                    branch = branch[:-4]
+            else:
+                branch, path = url_end.split("/", 1)
+                if path.endswith(".git"):
+                    path = path[:-4]
+        else:
+            path = ""
+            branch = ""
+
+        a, b, c, d, dest, e, port = self.getGitRepoArgs(url)
+
+        if "tree" in dest:
+            # means is a directory
+            gitpath, ee = dest.split("tree")
+        elif "blob" in dest:
+            # means is a directory
+            gitpath, ee = dest.split("blob")
+        else:
+            gitpath = dest
+
+        return (
+            repository_host,
+            repository_type,
+            repository_account,
+            repository_name,
+            repository_url,
+            branch,
+            gitpath,
+            path,
+            port,
+        )
+
+    @staticmethod
+    def code_github_get(repo, account="threefoldtech", branch="development,master", pull=True, reset=False):
         """
 
         :param repo:
@@ -2184,9 +2278,7 @@ class Tools:
         args["URL"] = repo_url
         args["NAME"] = repo
 
-        if branch is None:
-            branch = "development_jumpscale"
-        elif isinstance(branch, str):
+        if isinstance(branch, str):
             if "," in branch:
                 branch = [branch.strip() for branch in branch.split(",")]
         elif isinstance(branch, (set, list)):
@@ -2218,7 +2310,8 @@ class Tools:
                 Tools.execute(C, args=args, showout=False)
                 C = """
                 cd {ACCOUNT_DIR}
-                git clone  --depth 1 {URL} -b {BRANCH}
+                # git clone  --depth 1 {URL} -b {BRANCH}
+                git clone {URL} -b {BRANCH}
                 cd {NAME}
                 """
                 rc, _, _ = Tools.execute(C, args=args, die=False, showout=False)
@@ -3506,13 +3599,6 @@ class UbuntuInstaller:
 
 
 class JumpscaleInstaller:
-    def __init__(self, branch=None):
-        if not branch:
-            branch = DEFAULTBRANCH
-        self.account = "threefoldtech"
-        self.branch = branch
-        self._jumpscale_repos = [("jumpscaleX", "Jumpscale"), ("digitalmeX", "DigitalMe")]
-
     def install(self, sandboxed=False, force=False, gitpull=False):
 
         MyEnv.check_platform()
@@ -3602,7 +3688,8 @@ class JumpscaleInstaller:
         :return:
         """
 
-        for item, alias in self._jumpscale_repos:
+        for NAME, d in GITREPOS.items():
+            GITURL, BRANCH, DEST = d
             script = """
             set -e
             mkdir -p {DIR_BASE}/lib/jumpscale
@@ -3611,17 +3698,13 @@ class JumpscaleInstaller:
             rm -f {ALIAS}
             ln -s {LOC}/{ALIAS} {ALIAS}
             """
-            exists, _, _, _, loc = Tools._code_location_get(repo=item, account=self.account)
+            exists, _, _, _, LOC = Tools._code_location_get(url=GITURL)
             if not exists:
                 raise Tools.exceptions.Base("did not find:%s" % loc)
 
-            # destpath = "/sandbox/lib/jumpscale/{ALIAS}"
-            # if os.path.exists(destpath):
-            #     continue
-
             args = {"NAME": item, "LOC": loc, "ALIAS": alias}
-            Tools.log(Tools.text_replace("link {LOC}/{ALIAS} to {ALIAS}", args=args))
-            Tools.execute(script, args=args)
+            Tools.log(Tools.text_replace("link {LOC}/{ALIAS} to {ALIAS}", args=locals()))
+            Tools.execute(script, args=locals())
 
     def cmds_link(self):
         _, _, _, _, loc = Tools._code_location_get(repo="jumpscaleX", account=self.account)
