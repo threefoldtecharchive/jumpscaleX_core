@@ -5,7 +5,7 @@ import os
 import re
 from pathlib import Path
 
-LOCATIONS_ERROR = ["j.errorhandler", "j.core", "j.application", "j.exceptions", "j.logger", "j.application", "j.dirs"]
+LOCATIONS_IGNORE = ["j.errorhandler", "j.core", "j.application", "j.exceptions", "j.logger", "j.dirs", "j.baseclasses"]
 
 
 def _check_jlocation(location, classname=""):
@@ -14,12 +14,10 @@ def _check_jlocation(location, classname=""):
     :param location:
     :return:
     """
-    if classname == "JSBaseClassConfig" or not location.startswith("j."):
-        return False
     location = location.lower()
-    for item in LOCATIONS_ERROR:
+    for item in LOCATIONS_IGNORE:
         if location.startswith(item):
-            return False
+            raise RuntimeError("found illegal location:%s" % item)
     return True
 
 
@@ -43,13 +41,19 @@ class LineChange:
 
 class JSModule:
     def __init__(self, md, path, jumpscale_repo_name, js_lib_path):
-        name = os.path.basename(path)
-        name = name[:-3]
-        self.jsgroup = None
+        # name = os.path.dirname(path)
+        # name = name[:-3]
+        # name2 = path.split(jumpscale_repo_name)[-1]  # get to part after Jumpscale dir
+        # name3 = "/".join(name2.split("/")[:-1]).strip("/")  # remove name of file
+        # name4 = name3.replace("/", "__")
+        # self.name_full = name4.replace(".", "__")  # becomes the relative path of the dir starting from Jumpscale
+        # if self.name_full.strip() == "":
+        #     self.name_full = name2.lower().strip("/")[:-3]
+        # e.g. clients__gedis
+
         self._j = md._j
         self.md = md
         self.path = path
-        self.name = name
         self.jumpscale_repo_name = jumpscale_repo_name
         self.lines_changed = {}
         self.classes = {}
@@ -92,16 +96,24 @@ class JSModule:
         return ""
 
     @property
-    def jsgroup_name(self):
-        if self.location != "":
-            splitted = self.location.split(".")
-            if len(splitted) > 3:
-                return splitted[1:-1]
-            return splitted[1:2]
-        return ""
+    def location_group(self):
+        """
+        __ joined name of location without last and j. at start
+        :return:
+        """
+        if "." in self.location:
+            r = ".".join(self.location.split(".")[:-1])
+            assert r.replace(".", "").strip() != ""
+            return r
+        else:
+            raise RuntimeError("group needs to have 1: . inside (%s)" % self.location)
 
     @property
     def jname(self):
+        """
+        is the name of the module (last part of j.... location)
+        :return:
+        """
         if self.location != "":
             splitted = self.location.split(".")
             return splitted[-1]
@@ -135,7 +147,7 @@ class JSModule:
             if line.find("__jslocation__") != -1:
                 if classobj is None:
                     raise j.exceptions.Base("Could not find class in '%s' while loading jumpscale lib." % line)
-                if line.find("=") != -1 and line.find("IGNORELOCATION") == -1:
+                if line.find("=") != -1 and line.find("IGNORELOCATION") == -1 and line.find("self.") == -1:
                     location = line.split("=", 1)[1].replace('"', "").replace("'", "").strip()
                     if _check_jlocation(location):
                         if classobj.location != "":
@@ -185,7 +197,7 @@ class JSModule:
         return out
 
     def __repr__(self):
-        out = "## Module: %s\n\n" % (self.name)
+        out = "## Module: %s\n\n" % (self.location)
         out += "- path: %s\n" % (self.path)
         out += "- importlocation: %s\n\n" % (self.importlocation)
         return out

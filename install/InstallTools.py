@@ -5,56 +5,72 @@ import getpass
 GITREPOS = {}
 
 GITREPOS["builders_extra"] = [
-    "https://github.com/threefoldtech/jumpscaleX_builders/JumpscaleBuildersExtra",
+    "https://github.com/threefoldtech/jumpscaleX_builders",
     "master",
+    "JumpscaleBuildersExtra",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersExtra",
 ]
 
 
-GITREPOS["installer"] = ["https://github.com/threefoldtech/jumpscaleX_core/installer", "master", "{DIR_BASE}/installer"]
-GITREPOS["core"] = [
-    "https://github.com/threefoldtech/jumpscaleX_core/JumpscaleCore",
+GITREPOS["installer"] = [
+    "https://github.com/threefoldtech/jumpscaleX_core",
     "master",
-    "{DIR_BASE}/lib/jumpscale/JumpscaleCore",
+    "install",  # directory in the git repo
+    "{DIR_BASE}/installer",
 ]
-GITREPOS["home"] = ["https://github.com/threefoldtech/home", "master", "{DIR_BASE}/lib/jumpscale/home"]
-GITREPOS["builders"] = [
-    "https://github.com/threefoldtech/jumpscaleX_builders/JumpscaleBuilders",
+GITREPOS["core"] = [
+    "https://github.com/threefoldtech/jumpscaleX_core",
     "master",
+    "JumpscaleCore",
+    "{DIR_BASE}/lib/jumpscale/Jumpscale",
+]
+GITREPOS["home"] = ["https://github.com/threefoldtech/home", "master", "", "{DIR_BASE}/lib/jumpscale/home"]
+
+GITREPOS["builders"] = [
+    "https://github.com/threefoldtech/jumpscaleX_builders",
+    "master",
+    "JumpscaleBuilders",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuilders",
 ]
+
 GITREPOS["builders_community"] = [
-    "https://github.com/threefoldtech/jumpscaleX_builders/JumpscaleBuildersCommunity",
+    "https://github.com/threefoldtech/jumpscaleX_builders",
     "master",
+    "JumpscaleBuildersCommunity",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersCommunity",
 ]
 
 
 GITREPOS["libs_extra"] = [
-    "https://github.com/threefoldtech/jumpscaleX_libs_extra/JumpscaleLibsExtra",
+    "https://github.com/threefoldtech/jumpscaleX_libs_extra",
     "master",
+    "JumpscaleLibsExtra",
     "{DIR_BASE}/lib/jumpscale/JumpscaleLibsExtra",
 ]
 GITREPOS["libs"] = [
-    "https://github.com/threefoldtech/jumpscaleX_libs/JumpscaleLibs",
+    "https://github.com/threefoldtech/jumpscaleX_libs",
     "master",
+    "JumpscaleLibs",
     "{DIR_BASE}/lib/jumpscale/JumpscaleLibs",
 ]
 GITREPOS["threebot"] = [
-    "https://github.com/threefoldtech/jumpscaleX_threebot/ThreeBotPackages",
+    "https://github.com/threefoldtech/jumpscaleX_threebot",
     "master",
+    "ThreeBotPackages",
     "{DIR_BASE}/lib/jumpscale/threebot_packages",
 ]
 
 GITREPOS["tutorials"] = [
-    "https://github.com/threefoldtech/jumpscaleX_libs/tutorials",
+    "https://github.com/threefoldtech/jumpscaleX_libs",
     "master",
+    "tutorials",
     "{DIR_BASE}/lib/jumpscale/tutorials",
 ]
 
 GITREPOS["kosmos"] = [
-    "https://github.com/threefoldtech/jumpscaleX_threebot/kosmos",
+    "https://github.com/threefoldtech/jumpscaleX_threebot",
     "master",
+    "kosmos",
     "{DIR_BASE}/lib/jumpscale/kosmos",
 ]
 
@@ -981,8 +997,8 @@ class Tools:
         else:
             fname = frame_.f_code.co_filename.split("/")[-1]
             defname = frame_.f_code.co_name
-            linenr = frame_.f_code.co_firstlineno
-            # linenr = frame_.f_lineno  #DON'T KNOW WHICH ONE IS BETTER?
+            # linenr = frame_.f_code.co_firstlineno  #this is the line nr of the def
+            linenr = frame_.f_lineno
             logdict["traceback"] = []
 
         if exception:
@@ -2265,6 +2281,8 @@ class Tools:
             )
 
         protocol, repository_host, repository_account, repository_name = match.groups()
+        assert repository_name.strip() != ""
+        assert repository_account.strip() != ""
 
         if protocol.startswith("git") and ssh is False:
             protocol = "https://"
@@ -2395,6 +2413,15 @@ class Tools:
         - https://github.com/threefoldtech/jumpscale_/jumpscaleX/tree/8.2.0/lib/Jumpscale/tools/docsite/macros
         - https://github.com/threefoldtech/jumpscale_/jumpscaleX/tree/master/lib/Jumpscale/tools/docsite/macros
 
+        :return
+        - repository_account e,g, threefoldtech
+        - repository_name is the name e.g. jumpscale_ in this case
+        - repository_type e.g. github
+        - repository_url the full url to the repo but rewritten
+        - gitpath the path to the location on the filesystem for after checkout with the part inside the git repo
+        - relpath: path inside the git repo
+
+
         """
         url = url.strip()
         repository_host, repository_type, repository_account, repository_name, repository_url, port = Tools.code_git_rewrite_url(
@@ -2415,6 +2442,7 @@ class Tools:
                 if branch.endswith(".git"):
                     branch = branch[:-4]
             else:
+                raise RuntimeError()  # can never get here. why is it here?
                 branch, path = url_end.split("/", 1)
                 if path.endswith(".git"):
                     path = path[:-4]
@@ -2446,7 +2474,7 @@ class Tools:
         )
 
     @staticmethod
-    def code_github_get(url, branch=None, pull=True, reset=False):
+    def code_github_get(url, rpath=None, branch=None, pull=True, reset=False):
         """
 
         :param repo:
@@ -2456,14 +2484,17 @@ class Tools:
         :param reset:
         :return:
         """
-        (host, type, account, repo, url, branch2, gitpath, path, port) = Tools.code_giturl_parse(url=url)
+        (host, type, account, repo, url2, branch2, gitpath, path, port) = Tools.code_giturl_parse(url=url)
+        if rpath:
+            path = rpath
+        assert "/" not in repo
 
         if not branch:
             if not branch2:
                 branch = "development,master"
             else:
                 branch = branch2
-        Tools.log("get code:%s:%s (%s)" % (repo, account, branch))
+        Tools.log("get code:%s:%s (%s)" % (url, path, branch))
         if MyEnv.config["SSH_AGENT"] and MyEnv.interactive:
             url = "git@github.com:%s/%s.git"
         else:
@@ -2595,6 +2626,8 @@ class Tools:
 
         else:
             Tools.log("get code [zip]: %s" % repo)
+            Tools.shell()
+            w
             download = False
             if download == False and (not exists or (not dontpull and pull)):
 
@@ -3380,10 +3413,10 @@ class BaseInstaller:
             script = """
             set -e
             cd {DIR_BASE}
-            rsync -rav {DIR_BASE}/code/github/threefoldtech/digitalmeX/sandbox/cfg/ {DIR_BASE}/cfg/
-            rsync -rav {DIR_BASE}/code/github/threefoldtech/digitalmeX/sandbox/bin/ {DIR_BASE}/bin/
-            #rsync -rav {DIR_BASE}/code/github/threefoldtech/digitalmeX/sandbox/openresty/ {DIR_BASE}/openresty/
-            rsync -rav {DIR_BASE}/code/github/threefoldtech/digitalmeX/sandbox/env.sh {DIR_BASE}/env.sh
+            rsync -rav {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/sandbox/cfg/ {DIR_BASE}/cfg/
+            rsync -rav {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/sandbox/bin/ {DIR_BASE}/bin/
+            #rsync -rav {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/sandbox/openresty/ {DIR_BASE}/openresty/
+            rsync -rav {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/sandbox/env.sh {DIR_BASE}/env.sh
             mkdir -p root
             mkdir -p var
 
@@ -3872,7 +3905,8 @@ class JumpscaleInstaller:
     def repos_get(self, pull=False):
 
         for NAME, d in GITREPOS.items():
-            GITURL, BRANCH, DEST = d
+            GITURL, BRANCH, RPATH, DEST = d
+            dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull)
             try:
                 dest = Tools.code_github_get(url=GITURL, branch=BRANCH, pull=pull)
             except Exception:
@@ -3885,7 +3919,7 @@ class JumpscaleInstaller:
                     # TODO: *1
                     Tools.shell()
                     w
-                    Tools.code_github_get(url=GITURL, branch=BRANCH, pull=pull, dest=DEST)
+                    Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, dest=DEST)
                 else:
                     raise Tools.exceptions.Base("\n### Please authenticate your key and try again\n")
 
@@ -3895,28 +3929,29 @@ class JumpscaleInstaller:
         :return:
         """
 
-        Tools.shell()
-
         for NAME, d in GITREPOS.items():
-            GITURL, BRANCH, DEST = d
+            GITURL, BRANCH, PATH, DEST = d
+
             script = """
             set -e
-            mkdir -p {DIR_BASE}/lib/jumpscale
-            cd {DIR_BASE}/lib/jumpscale
-            rm -f {NAME}
-            rm -f {ALIAS}
-            ln -s {LOC}/{ALIAS} {ALIAS}
+            rm -f {DEST}
+            mkdir -p {DESTPARENT}
+            ln -s {GITPATH}/{PATH} {DEST}
             """
-            exists, _, _, _, LOC = Tools._code_location_get(url=GITURL)
-            if not exists:
-                raise Tools.exceptions.Base("did not find:%s" % loc)
+            (host, type, account, repo, url2, branch2, GITPATH, RPATH, port) = Tools.code_giturl_parse(url=GITURL)
+            srcpath = "%s/%s" % (GITPATH, PATH)
+            if not Tools.exists(srcpath):
+                raise Tools.exceptions.Base("did not find:%s" % srcpath)
 
-            args = {"NAME": item, "LOC": loc, "ALIAS": alias}
-            Tools.log(Tools.text_replace("link {LOC}/{ALIAS} to {ALIAS}", args=locals()))
+            DESTPARENT = os.path.dirname(DEST.rstrip())
+
+            script = Tools.text_replace(script, args=locals())
+            script = Tools.text_replace(script, args=locals())  # NEED TO DO THIS 2x
+            Tools.log(Tools.text_replace("link {GITPATH}/{PATH} {DEST}", args=locals()), data=script)
             Tools.execute(script, args=locals())
 
     def cmds_link(self):
-        _, _, _, _, loc = Tools._code_location_get(repo="jumpscaleX", account=self.account)
+        _, _, _, _, loc = Tools._code_location_get(repo="jumpscaleX_core", account="threefoldtech")
         for src in os.listdir("%s/cmds" % loc):
             src2 = os.path.join(loc, "cmds", src)
             dest = "%s/bin/%s" % (MyEnv.config["DIR_BASE"], src)
@@ -3924,9 +3959,6 @@ class JumpscaleInstaller:
                 Tools.link(src2, dest, chmod=770)
         Tools.link("%s/install/jsx.py" % loc, "{DIR_BASE}/bin/jsx", chmod=770)
         Tools.execute("cd /sandbox;source env.sh;js_init generate", interactive=False)
-
-    def web(self):
-        Tools.shell()
 
 
 class DockerFactory:

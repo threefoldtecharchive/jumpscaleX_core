@@ -1,7 +1,7 @@
 import subprocess
 import pytest
 
-from Jumpscale.sal.tls.TLS import TLS
+from JumpscaleLibs.sal.tls.TLS import TLS
 from Jumpscale import j
 
 SUBJECTS = {"C": "AE", "L": "Dubai", "O": "GreenITGlobe", "OU": "0-complexity", "ST": "Dubai", "CN": "test.com"}

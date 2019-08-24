@@ -21,9 +21,9 @@
 # from importlib import import_module
 
 import gevent
-from Jumpscale.clients.stor_zdb.ZDBClientBase import ZDBClientBase
-from Jumpscale.clients.stor_rdb.RDBClient import RDBClient
-from Jumpscale.clients.stor_sqlite.DBSQLite import DBSQLite
+from JumpscaleLibs.clients.stor_zdb.ZDBClientBase import ZDBClientBase
+from JumpscaleLibs.clients.stor_rdb.RDBClient import RDBClient
+from JumpscaleLibs.clients.stor_sqlite.DBSQLite import DBSQLite
 from gevent import queue
 from .BCDBModel import BCDBModel
 from .BCDBMeta import BCDBMeta

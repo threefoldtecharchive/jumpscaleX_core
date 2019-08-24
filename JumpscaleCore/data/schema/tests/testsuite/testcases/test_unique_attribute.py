@@ -18,7 +18,7 @@
 # LICENSE END
 
 
-from Jumpscale.data.schema.tests.testsuite.testcases.base_test import BaseTest
+from JumpscaleLibs.data.schema.tests.testsuite.testcases.base_test import BaseTest
 from Jumpscale import j
 import random
 

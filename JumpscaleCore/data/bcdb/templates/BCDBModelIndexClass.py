@@ -20,7 +20,7 @@
 
 from Jumpscale import j
 
-from Jumpscale.data.bcdb.BCDBModelIndex import BCDBModelIndex
+from JumpscaleLibs.data.bcdb.BCDBModelIndex import BCDBModelIndex
 
 class {{BASENAME}}(BCDBModelIndex):
 

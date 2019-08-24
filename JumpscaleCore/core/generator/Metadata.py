@@ -6,25 +6,68 @@ import os
 class Metadata:
     def __init__(self, j):
         self._j = j
-        self.jsmodules = {}
-        self.jsgroups = {}
-        self.jsgroup_names = []
+        self.jsmodules = self._j.baseclasses.dict()
+        self.jsgroups = None
+        self.location_groups = []
 
-    def jsmodule_get(self, path, jumpscale_repo_name, js_lib_path):
+    def jsmodule_get(
+        self, path, jumpscale_repo_name, js_lib_path, methods_find=True, action_method=None, action_args={}
+    ):
         """
         is file = module
         :param name:
         :return:
         """
-        if not path in self.jsmodules:
-            self.jsmodules[path] = JSModule(
-                self, path=path, jumpscale_repo_name=jumpscale_repo_name, js_lib_path=js_lib_path
-            )
-        return self.jsmodules[path]
+        m = JSModule(self, path=path, jumpscale_repo_name=jumpscale_repo_name, js_lib_path=js_lib_path)
+        action_args = m.process(methods_find=methods_find, action_method=action_method, action_args=action_args)
+        if m.location.strip() == "":
+            return
+        if m.location in self.jsmodules:
+            raise RuntimeError("cannot add:%s, location is duplicate '%s'" % (path, m.location))
+        self.jsmodules[m.location] = m
+        return self.jsmodules[m.location]
+
+    def jsmodules_get_level(self, level=0):
+        res = []
+        for module in self.jsmodules.values():
+            if module.location.count(".") == level:
+                res.append(module)
+        return res
 
     @property
-    def jsmodules_list(self):
-        return [item[1] for item in self.jsmodules.items()]
+    def jsmodules_sorted(self):
+        """
+        sorst the modules based on nr of . in location
+        :return:
+        """
+        res = []
+        for i in range(10):
+            r = self.jsmodules_get_level(i)
+            if len(r):
+                for module in r:
+                    res.append(module)
+        return res
+
+    def jsgroups_get_level(self, level=0):
+        res = []
+        for group in self.jsgroups.values():
+            if group.location.count(".") == level:
+                res.append(group)
+        return res
+
+    @property
+    def jsgroups_sorted(self):
+        """
+        sorts the groups based on nr of . in location
+        :return:
+        """
+        res = []
+        for i in range(10):
+            r = self.jsgroups_get_level(i)
+            if len(r):
+                for group in r:
+                    res.append(group)
+        return res
 
     @property
     def line_changes(self):
@@ -49,39 +92,23 @@ class Metadata:
                     res.append(js_lib_path)
         return res
 
-    def jsgroup_get(self, name):
-        if not name in self.jsgroups:
-            self.jsgroups[name] = JSGroup(self, name)
-        return self.jsgroups[name]
+    # def jsgroup_get(self, name):
+    #     if not name in self.jsgroups:
+    #         self.jsgroups[name] = JSGroup(self, name)
+    #     return self.jsgroups[name]
 
     def groups_load(self, reset=False):
         """
         :return: ["j.clients",
         """
-        if reset or self.jsgroup_names == []:
+        if reset or not self.jsgroups:
+            self.jsgroups = self._j.baseclasses.dict()
             for key, jsmodule in self.jsmodules.items():
-                if jsmodule.jsgroup_name != "":
-                    for i in range(len(jsmodule.jsgroup_name)):
-                        # add parents
-                        parent = jsmodule.jsgroup_name[i]
-                        if parent not in self.jsgroup_names:
-                            gr = JSGroup(self, name=jsmodule.jsgroup_name[i])
-                            if not i:
-                                self.jsgroup_names.append(jsmodule.jsgroup_name[i])
-                            self.jsgroups[jsmodule.jsgroup_name[i]] = gr
-                        else:
-                            gr = self.jsgroups[jsmodule.jsgroup_name[i]]
-
-                        # populate children
-                        if i:
-                            for x in range(len(jsmodule.jsgroup_name)):
-                                # if "hamada" in jsmodule.jsgroup_name:
-                                #     import ipdb
-
-                                #     ipdb.set_trace()
-                                child = JSGroup(self, name=jsmodule.jsgroup_name[x])
-                                gr.child_groups.append(child)
-                        gr.jsmodules.append(jsmodule)
+                location_group = jsmodule.location_group
+                if location_group not in self.location_groups:
+                    # means we need to create a new group
+                    self.jsgroups[location_group] = JSGroup(self, location_group)
+        return self.jsgroups
 
     @property
     def markdown(self):

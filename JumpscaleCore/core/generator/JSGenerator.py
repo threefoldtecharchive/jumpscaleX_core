@@ -80,16 +80,17 @@ class JSGenerator:
                         path = os.path.join(dirName, item)
                         self._log("process", path)
                         if self._check_process_file(path):
-                            # self._log("process_ok")
-                            jsmodule = self.md.jsmodule_get(
-                                path=path, jumpscale_repo_name=jumpscale_repo_name, js_lib_path=js_lib_path
-                            )
-                            action_args = jsmodule.process(
-                                methods_find=methods_find, action_method=action_method, action_args=action_args
+                            # self._log("process_ok:")
+                            self.md.jsmodule_get(
+                                path=path,
+                                jumpscale_repo_name=jumpscale_repo_name,
+                                js_lib_path=js_lib_path,
+                                methods_find=methods_find,
+                                action_method=action_method,
+                                action_args=action_args,
                             )
 
         self.md.groups_load()  # make sure we find all groups
-
         self._render()
         self.report()
 
@@ -133,8 +134,8 @@ class JSGenerator:
         write reports to /tmp/jumpscale/code_report.md
         :return:
         """
-        if self._generated == False:
-            self.generate()
+        # if self._generated == False:
+        #     self.generate()
         for name, jsgroup in self.md.jsgroups.items():
             path = "%s/jumpscale/code_report_%s.md" % (self._j.dirs.TMPDIR, jsgroup.name)
             file = open(path, "w")

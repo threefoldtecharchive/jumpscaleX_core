@@ -1,5 +1,5 @@
 from Jumpscale import j
-from Jumpscale.sal.hostfile.HostFile import HostFile
+from JumpscaleLibs.sal.hostfile.HostFile import HostFile
 
 
 TEST_HOSTSFILE = "/tmp/hosts"

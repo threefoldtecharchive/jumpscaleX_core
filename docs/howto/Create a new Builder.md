@@ -27,7 +27,7 @@ and now the builder will be accessible from `j.builders.blockchain.ethereum`
  ```python
 from Jumpscale import j
 
-class BuilderEthereum(j.builders.system._BaseClass):
+class BuilderEthereum(j.baseclasses.builder):
     NAME = "geth"
 ``` 
 

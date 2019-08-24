@@ -1,5 +1,5 @@
 from Jumpscale import j
-from Jumpscale.data.types.TypeBaseClasses import TypeBaseObjFactory
+from JumpscaleLibs.data.types.TypeBaseClasses import TypeBaseObjFactory
 
 
 class JSXObjectTypeFactory(TypeBaseObjFactory):

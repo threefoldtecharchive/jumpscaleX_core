@@ -129,6 +129,17 @@ class BaseClasses:
         return TestTools
 
     @property
+    def builder(self):
+        """
+        baseclass to create a builder
+
+        :return:
+        """
+        from .BuilderBaseClass import BuilderBaseClass
+
+        return BuilderBaseClass
+
+    @property
     def factory(self):
         """
         factory class is combination of jsxobject+testtools+factory class

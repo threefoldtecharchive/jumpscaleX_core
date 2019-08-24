@@ -83,7 +83,7 @@ class Capnp(j.baseclasses.object):
 
             import capnp
             #there is model.capnp in $libdir/Jumpscale/tools/issuemanager
-            from Jumpscale.tools.issuemanager import model as ModelCapnp
+            from JumpscaleLibs.tools.issuemanager import model as ModelCapnp
 
             mydb=j.data.kvs.getMemoryStore(name="mymemdb")
 

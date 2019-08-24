@@ -1,6 +1,6 @@
 import subprocess
 from Jumpscale import j
-from Jumpscale.sal.ssl.SSLFactory import SSLFactory
+from JumpscaleLibs.sal.ssl.SSLFactory import SSLFactory
 
 SSLFactory = SSLFactory()
 

@@ -239,9 +239,7 @@ j.core.exceptions = j.exceptions
 
 # THIS SHOULD BE THE END OF OUR CORE, EVERYTHING AFTER THIS SHOULD BE LOADED DYNAMICALLY
 
-j.core.application._lib_generation_path = j.core.tools.text_replace(
-    "{DIR_BASE}/lib/jumpscale/Jumpscale/jumpscale_generated.py"
-)
+j.core.application._lib_generation_path = j.core.tools.text_replace("{DIR_BASE}/lib/jumpscale/jumpscale_generated.py")
 
 if "JSRELOAD" in os.environ and os.path.exists(j.core.application._lib_generation_path):
     print("RELOAD JUMPSCALE LIBS")
@@ -262,6 +260,9 @@ ipath = j.core.tools.text_replace("{DIR_BASE}/lib/jumpscale/Jumpscale")
 if ipath not in sys.path:
     sys.path.append(ipath)
 
+ipath = j.core.tools.text_replace("{DIR_BASE}/lib/jumpscale")
+if ipath not in sys.path:
+    sys.path.append(ipath)
 
 import jumpscale_generated
 
@@ -273,7 +274,6 @@ if generated and len(j.core.application.errors_init) > 0:
 
 # profileStop(pr)
 
-# j.shell()
 
 # import time
 # time.sleep(1000)

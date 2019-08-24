@@ -55,7 +55,7 @@ def main(self):
         o.username = "nothing here_%s" % i
         o.save()
     
-    from Jumpscale.data.bcdb.connectors.webdav.BCDBResourceProvider import BCDBResourceProvider
+    from JumpscaleLibs.data.bcdb.connectors.webdav.BCDBResourceProvider import BCDBResourceProvider
     rack = j.servers.rack.get()
     rack.webdav_server_add(webdavprovider=BCDBResourceProvider())
     rack.start()

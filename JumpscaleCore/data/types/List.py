@@ -1,7 +1,7 @@
 """Definition of several collection types (list, dict, set,...)"""
 
 from Jumpscale import j
-from Jumpscale.data.types.PrimitiveTypes import TypeBaseObjFactory, TypeBaseObjClass
+from JumpscaleLibs.data.types.PrimitiveTypes import TypeBaseObjFactory, TypeBaseObjClass
 
 
 from collections.abc import MutableSequence
