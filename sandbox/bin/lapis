@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# LUA_INIT='package.path="/Users/despiegk/.luarocks/share/lua/5.1/?.lua;/Users/despiegk/.luarocks/share/lua/5.1/?/init.lua;"..package.path;package.cpath="/Users/despiegk/.luarocks/lib/lua/5.1/?.so;"..package.cpath;local k,l,_=pcall(require,"luarocks.loader") _=k and l.add_context("lapis","1.7.0-1")' exec 
+
+lua $PBASE/bin/_lapis.lua "$@"

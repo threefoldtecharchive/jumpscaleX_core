@@ -3,22 +3,32 @@ import copy
 import getpass
 
 GITREPOS = {}
+
+GITREPOS["builders_extra"] = [
+    "https://github.com/threefoldtech/jumpscaleX_builders/JumpscaleBuildersExtra",
+    "master",
+    "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersExtra",
+]
+
+
 GITREPOS["installer"] = ["https://github.com/threefoldtech/jumpscaleX_core/installer", "master", "{DIR_BASE}/installer"]
 GITREPOS["core"] = [
     "https://github.com/threefoldtech/jumpscaleX_core/JumpscaleCore",
     "master",
     "{DIR_BASE}/lib/jumpscale/JumpscaleCore",
 ]
+GITREPOS["home"] = ["https://github.com/threefoldtech/home", "master", "{DIR_BASE}/lib/jumpscale/home"]
 GITREPOS["builders"] = [
     "https://github.com/threefoldtech/jumpscaleX_builders/JumpscaleBuilders",
     "master",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuilders",
 ]
-GITREPOS["builders"] = [
-    "https://github.com/threefoldtech/jumpscaleX_builders/JumpscaleBuildersExtra",
+GITREPOS["builders_community"] = [
+    "https://github.com/threefoldtech/jumpscaleX_builders/JumpscaleBuildersCommunity",
     "master",
-    "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersExtra",
+    "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersCommunity",
 ]
+
 
 GITREPOS["libs_extra"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs_extra/JumpscaleLibsExtra",
@@ -40,6 +50,12 @@ GITREPOS["tutorials"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs/tutorials",
     "master",
     "{DIR_BASE}/lib/jumpscale/tutorials",
+]
+
+GITREPOS["kosmos"] = [
+    "https://github.com/threefoldtech/jumpscaleX_threebot/kosmos",
+    "master",
+    "{DIR_BASE}/lib/jumpscale/kosmos",
 ]
 
 import socket
@@ -603,7 +619,7 @@ class BaseJSException(Exception):
     try:
         dosomething_which_gives_error(data=data)
     except Exception as e:
-        raise j.exceptions.Value("incredible error",cat="firebrigade.ghent",data=data,exception=e)
+        raise Tools.exceptions.Value("incredible error",cat="firebrigade.ghent",data=data,exception=e)
 
     :param: message a meaningful message
     :level: see above
@@ -2188,7 +2204,188 @@ class Tools:
         return rc > 0
 
     @staticmethod
-    def code_giturl_parse(self, url):
+    def code_git_rewrite_url(url="", login=None, passwd=None, ssh="auto"):
+        """
+        Rewrite the url of a git repo with login and passwd if specified
+
+        Args:
+            url (str): the HTTP URL of the Git repository. ex: 'https://github.com/despiegk/odoo'
+            login (str): authentication login name
+            passwd (str): authentication login password
+            ssh = if True will build ssh url, if "auto" or "first" will check if there is ssh-agent available & keys are loaded,
+                if yes will use ssh (True)
+                if no will use http (False)
+
+        Returns:
+            (repository_host, repository_type, repository_account, repository_name, repository_url, port)
+        """
+
+        url = url.strip()
+        if ssh == "auto" or ssh == "first":
+            try:
+                ssh = MyEnv.available
+            except:
+                ssh = False
+        elif ssh or ssh is False:
+            pass
+        else:
+            raise Tools.exceptions.Base("ssh needs to be auto, first or True or False: here:'%s'" % ssh)
+
+        if url.startswith("ssh://"):
+            url = url.replace("ssh://", "")
+
+        port = None
+        if ssh:
+            login = "ssh"
+            try:
+                port = int(url.split(":")[1].split("/")[0])
+                url = url.replace(":%s/" % (port), ":")
+            except BaseException:
+                pass
+
+        url_pattern_ssh = re.compile("^(git@)(.*?):(.*?)/(.*?)/?$")
+        sshmatch = url_pattern_ssh.match(url)
+        url_pattern_ssh2 = re.compile("^(git@)(.*?)/(.*?)/(.*?)/?$")
+        sshmatch2 = url_pattern_ssh2.match(url)
+        url_pattern_http = re.compile("^(https?://)(.*?)/(.*?)/(.*?)/?$")
+        httpmatch = url_pattern_http.match(url)
+        if sshmatch:
+            match = sshmatch
+            url_ssh = True
+        elif sshmatch2:
+            match = sshmatch2
+            url_ssh = True
+        elif httpmatch:
+            match = httpmatch
+            url_ssh = False
+        else:
+            raise Tools.exceptions.Base(
+                "Url is invalid. Must be in the form of 'http(s)://hostname/account/repo' or 'git@hostname:account/repo'\nnow:\n%s"
+                % url
+            )
+
+        protocol, repository_host, repository_account, repository_name = match.groups()
+
+        if protocol.startswith("git") and ssh is False:
+            protocol = "https://"
+
+        if not repository_name.endswith(".git"):
+            repository_name += ".git"
+
+        if (login == "ssh" or url_ssh) and ssh:
+            if port is None:
+                repository_url = "ssh://git@%(host)s/%(account)s/%(name)s" % {
+                    "host": repository_host,
+                    "account": repository_account,
+                    "name": repository_name,
+                }
+            else:
+                repository_url = "ssh://git@%(host)s:%(port)s/%(account)s/%(name)s" % {
+                    "host": repository_host,
+                    "port": port,
+                    "account": repository_account,
+                    "name": repository_name,
+                }
+            protocol = "ssh"
+
+        elif login and login != "guest":
+            repository_url = "%(protocol)s%(login)s:%(password)s@%(host)s/%(account)s/%(repo)s" % {
+                "protocol": protocol,
+                "login": login,
+                "password": passwd,
+                "host": repository_host,
+                "account": repository_account,
+                "repo": repository_name,
+            }
+
+        else:
+            repository_url = "%(protocol)s%(host)s/%(account)s/%(repo)s" % {
+                "protocol": protocol,
+                "host": repository_host,
+                "account": repository_account,
+                "repo": repository_name,
+            }
+        if repository_name.endswith(".git"):
+            repository_name = repository_name[:-4]
+
+        return protocol, repository_host, repository_account, repository_name, repository_url, port
+
+    @staticmethod
+    def code_gitrepo_args(url="", dest=None, login=None, passwd=None, reset=False, ssh="auto"):
+        """
+        Extracts and returns data useful in cloning a Git repository.
+
+        Args:
+            url (str): the HTTP/GIT URL of the Git repository to clone from. eg: 'https://github.com/odoo/odoo.git'
+            dest (str): the local filesystem path to clone to
+            login (str): authentication login name (only for http)
+            passwd (str): authentication login password (only for http)
+            reset (boolean): if True, any cached clone of the Git repository will be removed
+            branch (str): branch to be used
+            ssh if auto will check if ssh-agent loaded, if True will be forced to use ssh for git
+
+        # Process for finding authentication credentials (NOT IMPLEMENTED YET)
+
+        - first check there is an ssh-agent and there is a key attached to it, if yes then no login & passwd will be used & method will always be git
+        - if not ssh-agent found
+            - then we will check if url is github & ENV argument GITHUBUSER & GITHUBPASSWD is set
+                - if env arguments set, we will use those & ignore login/passwd arguments
+            - we will check if login/passwd specified in URL, if yes willl use those (so they get priority on login/passwd arguments)
+            - we will see if login/passwd specified as arguments, if yes will use those
+        - if we don't know login or passwd yet then
+            - login/passwd will be fetched from local git repo directory (if it exists and reset==False)
+        - if at this point still no login/passwd then we will try to build url with anonymous
+
+
+        Returns:
+            (repository_host, repository_type, repository_account, repository_name, dest, repository_url)
+
+            - repository_type http or git
+
+        Remark:
+            url can be empty, then the git params will be fetched out of the git configuration at that path
+        """
+        url = url.strip()
+        if url == "":
+            if dest is None:
+                raise Tools.exceptions.Base("dest cannot be None (url is also '')")
+            if not Tools.exists(dest):
+                raise Tools.exceptions.Base(
+                    "Could not find git repo path:%s, url was not specified so git destination needs to be specified."
+                    % (dest)
+                )
+
+        if login is None and url.find("github.com/") != -1:
+            # can see if there if login & passwd in OS env
+            # if yes fill it in
+            if "GITHUBUSER" in os.environ:
+                login = os.environ["GITHUBUSER"]
+            if "GITHUBPASSWD" in os.environ:
+                passwd = os.environ["GITHUBPASSWD"]
+
+        protocol, repository_host, repository_account, repository_name, repository_url, port = Tools.code_git_rewrite_url(
+            url=url, login=login, passwd=passwd, ssh=ssh
+        )
+
+        repository_type = repository_host.split(".")[0] if "." in repository_host else repository_host
+
+        codeDir = MyEnv.config["DIR_CODE"]
+
+        if not dest:
+            dest = "%(codedir)s/%(type)s/%(account)s/%(repo_name)s" % {
+                "codedir": codeDir,
+                "type": repository_type.lower(),
+                "account": repository_account.lower(),
+                "repo_name": repository_name,
+            }
+
+        if reset:
+            Tools.delete(dest)
+
+        return repository_host, repository_type, repository_account, repository_name, dest, repository_url, port
+
+    @staticmethod
+    def code_giturl_parse(url):
         """
         @return (repository_host, repository_type, repository_account, repository_name, repository_url,branch,gitpath, relpath,repository_port)
 
@@ -2200,8 +2397,8 @@ class Tools:
 
         """
         url = url.strip()
-        repository_host, repository_type, repository_account, repository_name, repository_url, port = self.rewriteGitRepoUrl(
-            url
+        repository_host, repository_type, repository_account, repository_name, repository_url, port = Tools.code_git_rewrite_url(
+            url=url
         )
         url_end = ""
         if "tree" in repository_url:
@@ -2225,7 +2422,7 @@ class Tools:
             path = ""
             branch = ""
 
-        a, b, c, d, dest, e, port = self.getGitRepoArgs(url)
+        a, b, c, d, dest, e, port = Tools.code_gitrepo_args(url)
 
         if "tree" in dest:
             # means is a directory
@@ -2249,16 +2446,23 @@ class Tools:
         )
 
     @staticmethod
-    def code_github_get(repo, account="threefoldtech", branch="development,master", pull=True, reset=False):
+    def code_github_get(url, branch=None, pull=True, reset=False):
         """
 
         :param repo:
         :param account:
-        :param branch: is list of branches
+        :param branch: is list of branches, default "development,master"
         :param pull:
         :param reset:
         :return:
         """
+        (host, type, account, repo, url, branch2, gitpath, path, port) = Tools.code_giturl_parse(url=url)
+
+        if not branch:
+            if not branch2:
+                branch = "development,master"
+            else:
+                branch = branch2
         Tools.log("get code:%s:%s (%s)" % (repo, account, branch))
         if MyEnv.config["SSH_AGENT"] and MyEnv.interactive:
             url = "git@github.com:%s/%s.git"
@@ -2342,7 +2546,7 @@ class Tools:
                                 args["MESSAGE"] = input("\nprovide commit message: ")
                                 assert args["MESSAGE"].strip() != ""
                         else:
-                            raise j.exceptions.Input("found changes, do not want to commit")
+                            raise Tools.exceptions.Input("found changes, do not want to commit")
                         C = """
                         set -x
                         cd {REPO_DIR}
@@ -2386,10 +2590,8 @@ class Tools:
 
                 return True
 
-            if checkoutbranch(args, branch):
-                return
-
-            raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
+            if not checkoutbranch(args, branch):
+                raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
 
         else:
             Tools.log("get code [zip]: %s" % repo)
@@ -2436,6 +2638,8 @@ class Tools:
 
             if not exists and download == False:
                 raise Tools.exceptions.Base("Could not download some code")
+
+        return gitpath
 
     @staticmethod
     def config_load(path="", if_not_exist_create=False, executor=None, content=""):
@@ -2544,8 +2748,6 @@ class MyEnv_:
         self.interactive = False
 
         self.appname = "installer"
-
-        self.DEFAULTBRANCH = DEFAULTBRANCH
 
         self.FORMAT_TIME = "%a %d %H:%M:%S"
 
@@ -3669,16 +3871,21 @@ class JumpscaleInstaller:
 
     def repos_get(self, pull=False):
 
-        for sourceName, _ in self._jumpscale_repos:
+        for NAME, d in GITREPOS.items():
+            GITURL, BRANCH, DEST = d
             try:
-                Tools.code_github_get(repo=sourceName, account=self.account, branch=self.branch, pull=pull)
+                dest = Tools.code_github_get(url=GITURL, branch=BRANCH, pull=pull)
             except Exception:
                 activate_http = Tools.ask_yes_no(
                     "\n### SSH cloning Failed, your key isn't on github or you're missing permission, Do you want to clone via http?\n"
                 )
                 if activate_http:
                     MyEnv.interactive = False
-                    Tools.code_github_get(repo=sourceName, account=self.account, branch=self.branch, pull=pull)
+                    r = Tools.code_git_rewrite_url(url=URL, ssh=False)
+                    # TODO: *1
+                    Tools.shell()
+                    w
+                    Tools.code_github_get(url=GITURL, branch=BRANCH, pull=pull, dest=DEST)
                 else:
                     raise Tools.exceptions.Base("\n### Please authenticate your key and try again\n")
 
@@ -3687,6 +3894,8 @@ class JumpscaleInstaller:
         link the jumpscale repo's to right location in sandbox
         :return:
         """
+
+        Tools.shell()
 
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, DEST = d
@@ -3741,7 +3950,7 @@ class DockerFactory:
         if not DockerFactory.__init:
             rc, out, _ = Tools.execute("cat /proc/1/cgroup", die=False, showout=False)
             if rc == 0 and out.find("/docker/") != -1:
-                raise j.exceptions.Operations(
+                raise Tools.exceptions.Operations(
                     "Cannot continue, trying to use docker tools while we are already in a docker"
                 )
 
@@ -3752,7 +3961,7 @@ class DockerFactory:
                 MyEnv._cmd_installed["docker"] = shutil.which("docker")
 
             if not Tools.cmd_installed("docker"):
-                raise j.exceptions.Operations("Could not find Docker installed")
+                raise Tools.exceptions.Operations("Could not find Docker installed")
 
     @staticmethod
     def container_get(name, portrange=1, image="despiegk/3bot"):
@@ -4033,7 +4242,7 @@ class DockerContainer:
             if self.name not in DockerFactory.containers_running():
                 Tools.execute("docker start %s" % self.name)
                 if not self.name in DockerFactory.containers_running():
-                    raise j.exceptions.Operations("could not start container:%s" % self.name)
+                    raise Tools.exceptions.Operations("could not start container:%s" % self.name)
                 self.dexec("rm -f /root/.BASEINSTALL_OK")
 
         installed = False
@@ -4086,7 +4295,7 @@ class DockerContainer:
 
     def start(self):
         if not self.name in DockerFactory.containers_names():
-            raise j.exceptions.Operations("ERROR: cannot find docker with name:%s, cannot start" % self.name)
+            raise Tools.exceptions.Operations("ERROR: cannot find docker with name:%s, cannot start" % self.name)
         if not self.name in DockerFactory.containers_running():
             Tools.execute("docker start %s" % self.name, showout=False)
         assert self.name in DockerFactory.containers_running()
@@ -4145,10 +4354,10 @@ class DockerContainer:
             path = "%s/exports/%s.tar" % (self._path, version)
 
         if not Tools.exists(path):
-            raise j.exceptions.Operations("could not find import file:%s" % path)
+            raise Tools.exceptions.Operations("could not find import file:%s" % path)
 
         if not path.endswith(".tar"):
-            raise j.exceptions.Operations("export file needs to end with .tar")
+            raise Tools.exceptions.Operations("export file needs to end with .tar")
 
         self.stop()
         DockerFactory.image_remove(imagename)
@@ -4186,7 +4395,7 @@ class DockerContainer:
                 version = 1
             path = "%s/exports/%s.tar" % (self._path, version)
         elif not path.endswith(".tar"):
-            raise j.exceptions.Operations("export file needs to end with .tar")
+            raise Tools.exceptions.Operations("export file needs to end with .tar")
         if Tools.exists(path) and overwrite and not skip_if_exists:
             Tools.delete(path)
         if not Tools.exists(path):
@@ -4356,7 +4565,7 @@ class SSHAgent:
                         return None
                 name = key_names[0]
             elif len(key_names) == 0:
-                raise j.exceptions.Operations(
+                raise Tools.exceptions.Operations(
                     "Cannot find a possible ssh-key, please load your possible keys in your ssh-agent or have in your homedir/.ssh"
                 )
             else:
@@ -4378,7 +4587,7 @@ class SSHAgent:
             if not Tools.exists(hdir):
                 msg = "cannot find home dir:%s" % hdir
                 msg += "\n### Please get a ssh key or generate one using ssh-keygen\n"
-                raise j.exceptions.Operations(msg)
+                raise Tools.exceptions.Operations(msg)
             choices = []
             for item in os.listdir(hdir):
                 item2 = item.lower()
@@ -4450,13 +4659,13 @@ class SSHAgent:
             rc, out, err = Tools.execute(C, showout=True, die=False)
             if rc > 0:
                 Tools.delete("/tmp/ap-cat.sh")
-                raise j.exceptions.Operations("Could not load sshkey with passphrase (%s)" % path)
+                raise Tools.exceptions.Operations("Could not load sshkey with passphrase (%s)" % path)
         else:
             # load without passphrase
             cmd = "ssh-add -t %s %s " % (duration, path)
             rc, out, err = Tools.execute(cmd, showout=True, die=False)
             if rc > 0:
-                raise j.exceptions.Operations("Could not load sshkey without passphrase (%s)" % path)
+                raise Tools.exceptions.Operations("Could not load sshkey without passphrase (%s)" % path)
 
         self.reset()
 
@@ -4562,7 +4771,7 @@ class SSHAgent:
             if item.endswith(keyname):
                 return item
         if die:
-            raise j.exceptions.Base(
+            raise Tools.exceptions.Base(
                 "Did not find key with name:%s, check its loaded in ssh-agent with ssh-add -l" % keyname
             )
 

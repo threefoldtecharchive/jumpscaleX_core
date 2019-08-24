@@ -1,0 +1,3 @@
+#!/bin/sh
+
+lua $PBASE/bin/_moon.lua "$@"

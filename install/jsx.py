@@ -12,24 +12,20 @@ import os
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
-DEFAULT_BRANCH = "development_jumpscale"
+DEFAULT_BRANCH = "master"
 
 
 def load_install_tools(branch=None):
     # get current install.py directory
-    path = "/sandbox/code/github/threefoldtech/jumpscaleX/install/InstallTools.py"
+    path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py"
+    if not branch:
+        branch = DEFAULT_BRANCH
     if not os.path.exists(path):
         rootdir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(rootdir, "InstallTools.py")
 
         if not os.path.exists(path) or path.find("/code/") == -1:
-            url = (
-                "https://raw.githubusercontent.com/threefoldtech/jumpscaleX/%s/install/InstallTools.py" % DEFAULT_BRANCH
-            )
-
-            if branch:
-                url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX/%s/install/InstallTools.py" % branch
-                print("Downloading Install Tools from branch %s" % branch)
+            url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py" % branch
 
             with urlopen(url) as resp:
                 if resp.status != 200:
@@ -308,7 +304,7 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
     if not branch:
         branch = DEFAULT_BRANCH
 
-    installer = IT.JumpscaleInstaller(branch=branch)
+    installer = IT.JumpscaleInstaller()
     installer.install(sandboxed=False, force=force, gitpull=pull)
     if threebot:
         IT.Tools.execute("source %s/env.sh;kosmos 'j.servers.threebot.install()'" % SANDBOX, showout=True)

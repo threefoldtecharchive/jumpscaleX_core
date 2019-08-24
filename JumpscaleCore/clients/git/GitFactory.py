@@ -43,100 +43,9 @@ class GitFactory(j.baseclasses.object):
         Returns:
             (repository_host, repository_type, repository_account, repository_name, repository_url, port)
         """
+        return j.core.tools.code_git_rewrite_url(url=url, login=login, passwd=passwd, ssh=ssh)
 
-        url = url.strip()
-        if ssh == "auto" or ssh == "first":
-            try:
-                ssh = j.clients.sshagent.available
-            except:
-                ssh = False
-        elif ssh or ssh is False:
-            pass
-        else:
-            raise j.exceptions.Base("ssh needs to be auto, first or True or False: here:'%s'" % ssh)
-
-        if url.startswith("ssh://"):
-            url = url.replace("ssh://", "")
-
-        port = None
-        if ssh:
-            login = "ssh"
-            try:
-                port = int(url.split(":")[1].split("/")[0])
-                url = url.replace(":%s/" % (port), ":")
-            except BaseException:
-                pass
-
-        url_pattern_ssh = re.compile("^(git@)(.*?):(.*?)/(.*?)/?$")
-        sshmatch = url_pattern_ssh.match(url)
-        url_pattern_ssh2 = re.compile("^(git@)(.*?)/(.*?)/(.*?)/?$")
-        sshmatch2 = url_pattern_ssh2.match(url)
-        url_pattern_http = re.compile("^(https?://)(.*?)/(.*?)/(.*?)/?$")
-        httpmatch = url_pattern_http.match(url)
-        if sshmatch:
-            match = sshmatch
-            url_ssh = True
-        elif sshmatch2:
-            match = sshmatch2
-            url_ssh = True
-        elif httpmatch:
-            match = httpmatch
-            url_ssh = False
-        else:
-            raise j.exceptions.Base(
-                "Url is invalid. Must be in the form of 'http(s)://hostname/account/repo' or 'git@hostname:account/repo'\nnow:\n%s"
-                % url
-            )
-
-        protocol, repository_host, repository_account, repository_name = match.groups()
-
-        if protocol.startswith("git") and ssh is False:
-            protocol = "https://"
-
-        if not repository_name.endswith(".git"):
-            repository_name += ".git"
-
-        if (login == "ssh" or url_ssh) and ssh:
-            if port is None:
-                repository_url = "ssh://git@%(host)s/%(account)s/%(name)s" % {
-                    "host": repository_host,
-                    "account": repository_account,
-                    "name": repository_name,
-                }
-            else:
-                repository_url = "ssh://git@%(host)s:%(port)s/%(account)s/%(name)s" % {
-                    "host": repository_host,
-                    "port": port,
-                    "account": repository_account,
-                    "name": repository_name,
-                }
-            protocol = "ssh"
-
-        elif login and login != "guest":
-            repository_url = "%(protocol)s%(login)s:%(password)s@%(host)s/%(account)s/%(repo)s" % {
-                "protocol": protocol,
-                "login": login,
-                "password": passwd,
-                "host": repository_host,
-                "account": repository_account,
-                "repo": repository_name,
-            }
-
-        else:
-            repository_url = "%(protocol)s%(host)s/%(account)s/%(repo)s" % {
-                "protocol": protocol,
-                "host": repository_host,
-                "account": repository_account,
-                "repo": repository_name,
-            }
-        if repository_name.endswith(".git"):
-            repository_name = repository_name[:-4]
-
-        return protocol, repository_host, repository_account, repository_name, repository_url, port
-
-    def getGitRepoArgs(
-        self, url="", dest=None, login=None, passwd=None, reset=False, ssh="auto", codeDir=None, executor=None
-    ):
+    def getGitRepoArgs(self, url="", dest=None, login=None, passwd=None, reset=False, ssh="auto"):
         """
         Extracts and returns data useful in cloning a Git repository.
 
@@ -170,52 +79,7 @@ class GitFactory(j.baseclasses.object):
         Remark:
             url can be empty, then the git params will be fetched out of the git configuration at that path
         """
-        url = url.strip()
-        if url == "":
-            if dest is None:
-                raise j.exceptions.Base("dest cannot be None (url is also '')")
-            if not j.sal.exists(dest):
-                raise j.exceptions.Base(
-                    "Could not find git repo path:%s, url was not specified so git destination needs to be specified."
-                    % (dest)
-                )
-
-        if login is None and url.find("github.com/") != -1:
-            # can see if there if login & passwd in OS env
-            # if yes fill it in
-            if "GITHUBUSER" in os.environ:
-                login = os.environ["GITHUBUSER"]
-            if "GITHUBPASSWD" in os.environ:
-                passwd = os.environ["GITHUBPASSWD"]
-
-        protocol, repository_host, repository_account, repository_name, repository_url, port = self.rewriteGitRepoUrl(
-            url=url, login=login, passwd=passwd, ssh=ssh
-        )
-
-        repository_type = repository_host.split(".")[0] if "." in repository_host else repository_host
-
-        if not dest:
-            if codeDir is None:
-                if executor is None:
-                    codeDir = j.dirs.CODEDIR
-                else:
-                    codeDir = executor.prefab.core.dir_paths["CODEDIR"]
-            dest = "%(codedir)s/%(type)s/%(account)s/%(repo_name)s" % {
-                "codedir": codeDir,
-                "type": repository_type.lower(),
-                "account": repository_account.lower(),
-                "repo_name": repository_name,
-            }
-
-        if reset:
-            if executor is not None:
-                executor.prefab.core.dir_remove(dest)
-            else:
-                j.sal.fs.remove(dest)
-
-        # self.createDir(dest)
-
-        return repository_host, repository_type, repository_account, repository_name, dest, repository_url, port
+        return j.core.tools.code_gitrepo_args(url=url, dest=dest, login=login, passwd=passwd, reset=reset, ssh=ssh)
 
     def getCurrentBranch(self, path, executor=None):
         cmd = "cd %s; git rev-parse --abbrev-ref HEAD" % path

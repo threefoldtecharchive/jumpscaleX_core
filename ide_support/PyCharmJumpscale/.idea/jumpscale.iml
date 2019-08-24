@@ -4,6 +4,12 @@
     <content url="file://$MODULE_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders">
       <sourceFolder url="file://$MODULE_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders" isTestSource="false" />
     </content>
+    <content url="file://$MODULE_DIR$/../../../jumpscaleX_builders/JumpscaleBuildersCommunity">
+      <sourceFolder url="file://$MODULE_DIR$/../../../jumpscaleX_builders/JumpscaleBuildersCommunity" isTestSource="false" />
+    </content>
+    <content url="file://$MODULE_DIR$/../../../jumpscaleX_builders/JumpscaleBuildersExtra">
+      <sourceFolder url="file://$MODULE_DIR$/../../../jumpscaleX_builders/JumpscaleBuildersExtra" isTestSource="false" />
+    </content>
     <content url="file://$MODULE_DIR$/../../JumpscaleCore">
       <sourceFolder url="file://$MODULE_DIR$/../../JumpscaleCore" isTestSource="false" />
     </content>
@@ -24,6 +30,9 @@
     </content>
     <content url="file://$MODULE_DIR$/../../../jumpscaleX_threebot/ThreeBotPackages">
       <sourceFolder url="file://$MODULE_DIR$/../../../jumpscaleX_threebot/ThreeBotPackages" isTestSource="false" />
+    </content>
+    <content url="file://$MODULE_DIR$/../../../jumpscaleX_threebot/kosmos">
+      <sourceFolder url="file://$MODULE_DIR$/../../../jumpscaleX_threebot/kosmos" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
