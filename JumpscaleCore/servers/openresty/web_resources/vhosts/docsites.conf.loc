@@ -1,0 +1,3 @@
+location /docsites/ {
+    alias /sandbox/var/docsites/;
+}

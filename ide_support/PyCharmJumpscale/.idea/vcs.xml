@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/../../../jumpscaleX_builders" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../.." vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../../jumpscaleX_libs" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../../jumpscaleX_libs_extra" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../../jumpscaleX_threebot" vcs="Git" />
+  </component>
+</project>

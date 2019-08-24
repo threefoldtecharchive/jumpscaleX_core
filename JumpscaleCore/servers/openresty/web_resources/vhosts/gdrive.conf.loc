@@ -1,0 +1,9 @@
+location /gdrive_static/ {
+    alias /sandbox/var/gdrive/static/;
+}
+
+location /gdrive {
+    content_by_lua_block {
+        require("lapis").serve("applications.gdrive");
+    }
+}

@@ -1,0 +1,69 @@
+@url = jumpscale.startupcmd.1
+name* = ""
+cmd_start = ""
+cmd_stop = ""
+
+interpreter = "bash,jumpscale,direct,python" (E)  #direct means we will not put in bash script
+executor = "tmux,corex,foreground,background" (E)
+
+debug = False (b)
+path = ""
+env = (dict)
+
+daemon = true (b)
+hardkill = false (b)
+corex_client_name = "default" (S)
+
+runtime = (O) !jumpscale.startupcmd.runtime.1
+monitor = (O) !jumpscale.startupcmd.monitor.1
+healthcheckers = (LO) !jumpscale.startupcmd.health.1
+logs = (O) !jumpscale.startupcmd.log.1
+
+#runtime
+@url = jumpscale.startupcmd.runtime.1
+pid = 0
+state = "init,running,error,stopped,stopping,down,notfound" (E)
+time_start = (T)
+time_refresh = (T)
+time_stop = (T)
+error = "" (S)
+corex_id = (S)
+ipaddr = "localhost"  #if we can monitor remotely for tcp & http tests, if not will specify localhost
+
+#log
+@url = jumpscale.startupcmd.log.1
+time = (T)
+stdout = ""
+stderr = ""
+error = ""
+hid = 0 (I)
+
+#uptime checkers
+@url = jumpscale.startupcmd.monitor.1
+ports = (LI)
+socketpaths = (LS)            #socket paths to check on
+process_strings = (ls)
+process_strings_regex = (ls)
+maxnrprocesses = 0            #max nr of processes which make up this instance  (based on process string, ports or socketpaths)
+minnrprocesses = 0            #min nr of processes which need to be found  (based on process string, ports or socketpaths)
+http = (ls)                   # e.g. http://{ipaddr}:999/check -> OK    (after -> is expected response, if empty all response with 200 is ok)
+jsx_script = ""
+lua_script = ""
+conclusive = True             #means if you do all of these tests and non is in error then app is up
+period_check = 0              #period in which this needs to be checked e.g. check every 5 sec
+time_check = (T)
+timeout = 0
+
+#health checkers
+@url = jumpscale.startupcmd.health.1
+name = ""                  #name of the health checker
+hid = 0                    #unique id for health check
+maxmem = 0
+minmem = 0
+http = (ls)                # e.g. http://{ipaddr}:999/check -> OK    (after -> is expected response, if empty all response with 200 is ok)
+jsx_script = ""
+lua_script = ""
+period_check = 0           #period in which this needs to be checked e.g. check every 5 sec
+period_watchdog = 0        #if in this period not at least once there was this health ok check then error
+time_check = (T)
+time_watchdog_ok = (T)

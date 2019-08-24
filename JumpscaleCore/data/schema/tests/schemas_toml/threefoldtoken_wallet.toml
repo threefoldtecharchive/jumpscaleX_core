@@ -1,0 +1,8 @@
+@url = threefoldtoken.wallet
+@importance = true
+@systemprop = 1
+jwt = "" (S)                # JWT Token
+addr* = ""                   # Address
+ipaddr = (ipaddr)           # IP Address
+email = "" (S)              # Email address
+username = "" (S)           # User name

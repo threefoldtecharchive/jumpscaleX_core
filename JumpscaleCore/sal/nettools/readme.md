@@ -1,0 +1,3 @@
+
+this sal is for using the network stack e.g. ping, ...
+not for configuring

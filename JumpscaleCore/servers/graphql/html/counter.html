@@ -1,0 +1,97 @@
+<html>
+            <head>
+                <style>
+                    body {
+                      font-family: sans-serif;
+                      margin: 0;
+                      background: #f0f0f0;
+                    }
+                    #app {
+                      padding: 24px;
+                      max-width: 400px;
+                      margin: auto;
+                    }
+                    h1 {
+                      text-align: center;
+                      font-weight: normal;
+                    }
+                    article {
+                      background: white;
+                      margin-bottom: 12px;
+                      padding: 12px;
+                      border-radius: 2px;
+                    }
+                    .loading {
+                      text-align: center;
+                      color: #777;
+                    }
+                    .title {
+                      text-transform: uppercase;
+                    }
+                    .author {
+                      color: #777;
+                    }
+                </style>
+            </head>
+        <body>
+        <!-- App -->
+            <div id="app">
+              <h1>Blog</h1>
+              <div>
+                <div v-if="loading" class="loading">Loading...</div>
+                <div class="title" v-bind:counter="0">{{counter}}</div>
+              </div>
+            </div>
+        <script src="https://unpkg.com/vue/dist/vue.js"></script>
+        <script src="https://unpkg.com/apollo-client-browser@1.9.0"></script>
+        <script src="https://unpkg.com/vue-apollo@2.1.0-beta.19"></script>
+        <script src="//unpkg.com/subscriptions-transport-ws@0.7.0/browser/client.js"></script>
+    <script src="//unpkg.com/graphiql-subscriptions-fetcher@0.0.2/browser/client.js"></script>
+
+        <script>
+                    console.clear()
+            const networkInterface = Apollo.lib.createNetworkInterface({
+                uri: 'http://{ip_address}:7777/graphql' // Your GraphQL endpoint
+            });
+
+            var wsClient = new window.SubscriptionsTransportWs.SubscriptionClient(
+            'ws://{ip_address}:7778/subscriptions', {
+                reconnect: true
+            });
+
+            const networkInterfaceWithSubscriptions = new window.SubscriptionsTransportWs.addGraphQLSubscriptions(
+                networkInterface,
+                wsClient
+            );
+            const apolloClient = new Apollo.lib.ApolloClient({
+              networkInterface: networkInterfaceWithSubscriptions
+            })
+
+            const apolloProvider = new VueApollo.ApolloProvider({
+              defaultClient: apolloClient,
+            })
+            // New VueJS instance
+            const app = new Vue({
+              // CSS selector of the root DOM element
+              el: '#app',
+              data: {
+                counter: 0,
+                loading: 0,
+              },
+
+            })
+
+            apolloClient.subscribe({
+              query: Apollo.gql`
+                subscription onNewItem {
+                    countSeconds
+                }`,
+              variables: {}
+            }).subscribe({
+              next (data) {
+                app.counter = data;
+              }
+            });
+        </script>
+        </body>
+        </html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title><%= name %></title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, shrink-to-fit=no">
+    <meta name="description" content="">
+    <link rel="stylesheet" href="/static/weblibs/bootstrap3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/weblibs/reveal/css/reveal.css">
+    <link rel="stylesheet" href="/static/weblibs/docsify/vue.css">
+    <link rel="stylesheet" href="/static/weblibs/docsify/theme-simple.css">
+    <link rel="stylesheet" href="/static/weblibs/vue/vuep.css">
+    <link rel="stylesheet" href="/static/weblibs/team/css/team.css">
+    <!-- gallery css -->
+    <link href="/static/weblibs/gallery/simplelightbox.min.css" rel="stylesheet">
+    <style>
+
+		:root {
+			/* Reduce the font size */
+			/* --base-font-size: 14px; */
+
+			/* Change the theme color hue (0-360) */
+			/* --theme-hue: 325; */
+
+			/* Add sidebar navigation bullets */
+			/* --sidebar-nav-link-before-content-l1: '😀'; */
+			/* --sidebar-nav-link-before-content-l2: '💩'; */
+		}
+    .markdown-section{max-width:1024px;}
+
+    </style>
+
+</head>
+
+<body>
+<div id="app_<%= name %>"></div>
+<!-- galleryscript -->
+<script src="/static/weblibs/jquery/jquery.min.js"></script>
+<script src="/static/weblibs/gallery/simple-lightbox.min.js"></script>
+<script>
+            const SERVER = '<%= url %>/ws';
+            const NAME = '<%= name %>';
+            const METADATA = <%- metadata %>;
+</script>
+<script src="/static/weblibs/mermaid/mermaid.min.js"></script>
+<script src="/static/weblibs/docsify/docsify.min.js"></script>
+<script src="/static/weblibs/docsify/prism-bash.min.js"></script>
+<script src="/static/weblibs/docsify/prism-python.min.js"></script>
+<script src="/static/weblibs/docsify/echarts.min.js"></script>
+<script src="/static/weblibs/docsify/index.min.js"></script>
+<script src="/static/weblibs/docsify/docsify-plantuml.min.js"></script>
+<script src="/static/weblibs/disqus/disqus.min.js"></script>
+<script src="/static/weblibs/docsify/docsify-themeable.js"></script>
+<script src="/static/weblibs/reveal/js/reveal.js"></script>
+<script src="/static/weblibs/bootstrap3/js/bootstrap.min.js"></script>
+<script src="/static/weblibs/team/js/team.js"></script>
+<script src="/static/weblibs/team/js/team-docsify.js"></script>
+<script src="/static/weblibs/gedis/gedis_client.js"></script>
+<script src="/static/weblibs/sonic/sonic_client.js"></script>
+<script src="/static/wiki/js/docsify_config.js"></script>
+<script>
+docsifyConfig("<%- name %>", METADATA.repo);
+</script>
+<script src="/static/weblibs/docsify/search.js"></script>
+</body>
+
+</html>

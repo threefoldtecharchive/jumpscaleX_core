@@ -1,0 +1,9 @@
+[[item]]
+path = "readme.md"
+text = "to be indexed text"
+
+[[item]]
+path = "parties/yesterday.md"
+text = "to be indexed text 2"
+
+

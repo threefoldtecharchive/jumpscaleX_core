@@ -1,0 +1,69 @@
+#! /usr/bin/env python3
+import os
+import sys
+import click
+
+
+@click.group()
+def cli():
+    pass
+
+
+try:
+    from Jumpscale import j
+except:
+    for item in [
+        "{DIR_HOME}/code/github/threefoldtech/jumpscaleX/Jumpscale",
+        "/sandbox/code/github/threefoldtech/jumpscaleX/Jumpscale",
+    ]:
+        item = item.replace("$HOME", os.environ["HOME"])
+        if os.path.exists(item) and item not in sys.path:
+            sys.path.append(item)
+    from Jumpscale import j
+
+
+get_help = "find issues with code and potentially even fix."
+
+
+# @click.command()
+# @click.option('--path', '-p', help='path to scane', default=None)
+# def scan(path=None):
+#     """
+#     find files which can be fixed
+#     and print
+#     """
+#     j.tools.fixer.find_changes(path=path)
+
+
+# @click.option('--path', '-p', help='path to scan', default=None)
+
+
+@click.command()
+def fix(path=None):
+    """
+    fix broken files, best to do a scan first so you know what will be changed.
+    """
+    # j.tools.fixer.write_changes(path=path)
+    generate()
+
+
+@click.command()
+def generate():
+    """
+    generate the loader file, important to do when new modules added
+    """
+    j.sal.fs.remove("/sandbox/var/codegen")
+    j.sal.fs.remove("/sandbox/var/cmds")
+    from Jumpscale.core.generator.JSGenerator import JSGenerator
+
+    g = JSGenerator(j)
+    g.generate(methods_find=True)
+    g.report()
+
+
+# cli.add_command(scan)
+cli.add_command(fix)
+cli.add_command(generate)
+
+if __name__ == "__main__":
+    cli()

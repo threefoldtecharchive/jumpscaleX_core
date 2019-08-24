@@ -1,0 +1,50 @@
+
+
+
+
+#FILE & FILE METADATA OBJECTS
+
+
+@url = jumpscale.bcdb.fs.dir.2
+nid = 0  #namespace id
+name = "" (S)
+files = (LI)
+dirs = (LI)
+links = (LO) !jumpscale.bcdb.fs.link.2
+#posixattr = (O) !jumpscale.bcdb.meta.posixattr.2
+epoch = (T)
+
+@url = jumpscale.bcdb.fs.file.2
+name = "" (S)
+dir_id = (I)
+description*** = "" (S)
+content*** = "" (S)                                                             #optional e.g. for a markdown document
+content_type = "text/plain" (S)
+size_bytes = 0 (I)
+tags*** = (LS)
+#posixattr = (O) !jumpscale.bcdb.fs.posixattr.2
+blocks = (LI)                                                                   #is link to the blocks which are the content
+type = (S) #"doc,markdown,spreadsheet,web,code,text,presentation,image,video"
+extension = ""#e.g. xls
+epoch = (T)
+
+@url = jumpscale.bcdb.fs.link.2
+@sub = true
+name* = "" (S)
+destination = (I)
+destination_bot_id = 0 (I)
+#posixattr = (O) !jumpscale.bcdb.meta.posixattr.2
+epoch = (T)
+
+
+
+#max 1 MB
+@url = jumpscale.bcdb.fs.block.2
+md5* = ""
+size = (I)
+content = (BIN)
+epoch = (T)
+
+@url = jumpscale.bcdb.fs.posixattr.2
+attrs = (LS)
+#TODO: need posix attributes modeled here

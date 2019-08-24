@@ -1,0 +1,75 @@
+#! /usr/bin/env python3
+from Jumpscale import j
+
+j.tools.bash.get().profile.locale_check()
+import click
+
+
+@click.group()
+def cli():
+    pass
+
+
+@click.command()
+def list():
+    """
+    """
+    j.tools.alerthandler.print()
+
+
+@click.command()
+def reset():
+    """
+    will erase the alerts in the DB
+    """
+    j.tools.alerthandler.reset()
+
+
+@click.command()
+def test():
+    """
+    a small test script
+    """
+    j.tools.alerthandler.test(delete=False)
+
+
+@click.command()
+@click.option("--cat", "-c", default="", help="filter on category")
+@click.option("--message", "-m", default="", help="filter on message")
+def find(cat="", message=""):
+    """
+    find specific alerts
+
+    e.g. js_alerts find -m 'division by zero'
+
+    e.g. js_alerts find -c HaltException
+
+
+    """
+    res = j.tools.alerthandler.find(cat=cat, message=message)
+    for i in res:
+        key, obj = i
+        j.core.errorhandler._trace_print(obj.trace)
+        print(obj.hr_get(exclude=["trace"]))
+
+
+@click.command()
+@click.option("--cat", "-c", default="", help="filter on category")
+@click.option("--message", "-m", default="", help="filter on message")
+def delete(cat="", message=""):
+    """
+    delete specific alerts
+    """
+    res = j.tools.alerthandler.find(cat=cat, message=message)
+    for (key, obj) in res:
+        j.tools.alerthandler.delete(key)
+
+
+cli.add_command(list)
+cli.add_command(reset)
+cli.add_command(test)
+cli.add_command(find)
+cli.add_command(delete)
+
+if __name__ == "__main__":
+    cli()

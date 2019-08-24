@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+
+from Jumpscale import *
+
+j.tools.bash.get().profile.locale_check()
+import os
+import click
+
+os.environ["LC_ALL"] = "en_US.UTF-8"
+
+
+@click.group()
+def cli():
+    pass
+
+
+@click.command()
+@click.option(
+    "--name", default="system", help="specify which bcdb you want to delete, if not specified will use system"
+)
+@click.option("--all", is_flag=True, help="delete all")
+def delete(name=None, all=False):
+    if not name and all is False:
+        name = "system"
+    j.application.interactive = True
+
+    def do(name):
+        if name.lower() == "system":
+            j.application.bcdb_system_destroy()
+        else:
+            bcdb = j.data.bcdb.get(name=name, reset=True)
+            bcdb.destroy()
+
+    if all:
+        if j.tools.console.askYesNo("Are you sure you want to destroy all BCDB's"):
+            j.data.bcdb.destroy_all()
+    else:
+        if j.tools.console.askYesNo("Are you sure you want to destroy:%s" % name):
+            do(name)
+
+
+# @click.command()
+# @click.option("--name", default=None, help="specify which bcdb you want to fix, if not specified will use all")
+# def check(name=None):
+#     """
+#     will check and if issues found in index it will rebuild the index
+#     :return:
+#     """
+#     j.application.check()
+#     if not name:
+#         j.shell()
+#     j.shell()
+
+
+@click.command()
+def check(name=None):
+    """
+    will check the starting point for bcdb
+    :return:
+    """
+    j.application.check()
+
+
+@click.command()
+@click.option("--name", default=None, help="specify which bcdb you want to rebuild, if not specified will use all")
+def rebuild(name=None):
+    """
+    will erase the indexes and rebuild it from the BCDB original data
+    :return:
+    """
+    if not name:
+        for bcdb in j.data.bcdb.instances:
+            bcdb.index_rebuild()
+    else:
+        bcdb = j.data.bcdb.get(name=name, reset=True)
+        bcdb.index_rebuild()
+
+
+if __name__ == "__main__":
+    cli.add_command(delete)
+    cli.add_command(check)
+    cli.add_command(rebuild)
+
+    cli()

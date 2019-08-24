@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+
+import os
+
+import click
+from Jumpscale import j
+
+
+@click.group()
+def cli():
+    pass
+
+
+def _split_hostport(hostport):
+    """
+    convert a listen addres of the form
+    host:port into a tuple (host, port)
+    host is a string, port is an int
+    """
+    i = hostport.index(":")
+    host = hostport[:i]
+    if not host:
+        host = "0.0.0.0"
+    port = hostport[i + 1 :]
+    return host, int(port)
+
+
+@cli.command()
+@click.option("--listen", help="listen address (default :5000)", default=":5000")
+@click.option("--zdb", help="0-db address (default localhost:9900)", default="localhost:9900")
+@click.option("--namespace", help="0-db namespace to use", default="notary")
+@click.option("--secret", help="namespace secret", default="")
+def gedis(listen, zdb, namespace, secret):
+    zdb_host, zdb_port = _split_hostport(zdb)
+    zdb_cl = j.clients.zdb.client_get(name=namespace, addr=zdb_host, port=zdb_port)
+    bcdb = j.data.bcdb.get(storclient=zdb_cl, name="notary_bcdb")
+    bcdb.models_add("/sandbox/code/github/threefoldtech/digitalmeX/packages/notary/models")
+    host, port = _split_hostport(listen)
+    server = j.servers.gedis.get(name="notary", host=host, port=port)
+    server.actor_add("/sandbox/code/github/threefoldtech/digitalmeX/packages/notary/actors/notary_actor.py")
+    print("start listening on %s" % listen)
+    server.start()
+
+
+@cli.command()
+@click.option("--port", help="lapis list port (default 8080)", default="8080")
+@click.option("--gedis", help="address of the gedis notary (default localhost:5000)", default="localhost:5000")
+def lapis(port, gedis):
+    gedis_host, gedis_port = _split_hostport(gedis)
+    cfg = _lapis_cfg_tmpl.format(port=port, gedis_host=gedis_host, gedis_port=gedis_port)
+    j.sal.fs.writeFile("/sandbox/code/github/threefoldtech/digitalmeX/packages/notary/config.lua", cfg)
+    os.chdir("/sandbox/code/github/threefoldtech/digitalmeX/packages/notary")
+    args = ["lapis", "server", "production"]
+    os.execv("/sandbox/bin/lapis", args)
+
+
+_lapis_cfg_tmpl = """
+local config = require("lapis.config")
+config("development", function()
+  port({port})
+  gedis_port({gedis_port})
+  gedis_host('{gedis_host}')
+  return
+end)
+return config("production", function()
+  port({port})
+  gedis_port({gedis_port})
+  gedis_host('{gedis_host}')
+  num_workers(4)
+  return code_cache("on")
+end)
+"""
+
+if __name__ == "__main__":
+    cli()

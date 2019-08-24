@@ -1,0 +1,208 @@
+#! /usr/bin/env python3
+from Jumpscale import j
+import pprint
+import click
+
+
+@click.group()
+def cli():
+    pass
+
+
+HELP = """
+
+# sync tool to sync local code directories to remote zos container
+
+## sync existing jumpscale dirs
+
+do
+
+```js_sync sync```
+
+will sync following code dirs
+
+```
+["{DIR_CODE}/github/threefoldtech/jumpscaleX", "{DIR_CODE}/github/threefoldtech/digitalmeX"]
+```
+
+## 1 specific directory
+
+can also sync one specific directory e.g.
+   
+```js_sync sync -p install/:/tmp/install/```
+
+## you can use the jumpscale dir variables
+
+
+e.g.  "{DIR_CODE}/github/threefoldtech/0-robot:{DIR_TEMP}/0-robot" 
+
+would sync code dir to tmpdir/0-robot
+ 
+
+the tool can deal with relative paths, the relative install subdir will be synced to /tmp/
+
+## reload
+
+if a new container was created, don't forget to call js_sync reload because caching is used inside js_sync
+
+"""
+
+import npyscreen
+import curses
+
+
+import npyscreen
+
+
+# class myTUI(npyscreen.ActionForm):
+#   def activate(self):
+#         self.edit()
+#         self.parentApp.setNextForm("Hal's")
+#   def create(self):
+#     self.hello = self.add(npyscreen.TitleFixedText, name="Say Hello, Hal", value="Hello, Dave")
+#
+#
+# myTUI()
+#
+# j.shell()
+
+
+@click.command()
+@click.option("--name", "-n", default="main", help="name of the sshclient, if empty  will be main")
+def sync(name="default", paths=None):
+    cl = j.clients.ssh.get(name=name)
+    s = j.tools.syncer.get(name="jssync_%s" % name, sshclient_name=cl.name)
+    s.sync()
+
+
+@click.command()
+@click.option("--name", "-n", default="main", help="name of the sshclient, if empty  will be main")
+@click.option("--addr", "-a", default="localhost", help="address of the node to connect to")
+@click.option("--port", "-p", default=22, help="ssh port")
+@click.option("--user", "-u", default="root", help="user")
+@click.option("--passwd", "-p", default=None, help="passwd, if usage of ssh key then empty")
+@click.option("--paths", "-p", default=None, help=HELP)
+@click.option("--interactive/--silent", default=True)
+def configure(name="default", addr="localhost", port=22, user="root", passwd=None, paths=None, interactive=True):
+    if interactive:
+
+        if paths is None:
+            paths = """
+                {DIR_CODE}/github/threefoldtech/jumpscaleX
+                {DIR_CODE}/github/threefoldtech/digitalmeX
+                """
+        paths = j.core.tools.text_replace(paths)
+
+        curses.initscr()
+        curses.can_change_color()
+        npyscreen.setTheme(npyscreen.Themes.ColorfulTheme)
+
+        class ConfigureApp(npyscreen.NPSApp):
+            def main(self):
+                self._form = npyscreen.Form(name="Configure Your Syncer")
+
+                self.name = self._form.add(npyscreen.TitleText, name="Name of the machine:", value=name)
+                self.addr = self._form.add(npyscreen.TitleText, name="IP Address:", value=addr)
+                self.port = self._form.add(npyscreen.TitleText, name="IP Port:", value=str(port))
+                self.user = self._form.add(npyscreen.TitleText, name="User:", value=user)
+                self.passwd = self._form.add(npyscreen.TitlePassword, name="Passwd:", value=passwd)
+                self._form.add(npyscreen.Textfield, "\n")
+                self._form.add(npyscreen.Textfield, name="Paths synced, can use : at end for different destination:\n")
+                self.paths = self._form.add(
+                    npyscreen.MultiLineEditableBoxed,
+                    max_height=20,
+                    name="Paths synced, can use : at end for different destination:",
+                    values=paths.split("\n"),
+                )
+
+                self._form.edit()
+
+            def process(self):
+                for key, item in self.__dict__.items():
+                    if not key.startswith("_"):
+                        self.__dict__[key] = self.__dict__[key].value
+                curses.endwin()
+
+        app = ConfigureApp()
+        app.run()
+        app.process()
+
+        cl = j.clients.ssh.get(name="jssync_%s" % app.name, addr=app.addr, port=app.port, passwd=app.passwd)
+        paths = app.paths
+        name = app.name
+
+    else:
+        cl = j.clients.ssh.get(name="jssync_%s" % name, addr=addr, port=port, passwd=passwd)
+
+    s = j.tools.syncer.get(name=name, sshclient_name=cl.name, paths=paths)
+
+
+@click.command()
+def list():
+    """
+    will list all ssh clients, can use for name=...
+    :return:
+    """
+    res = j.tools.syncer.find()
+    res_out = []
+    for item in res:
+        sshclient = j.clients.ssh.get(item.sshclient_name)
+        item_out = {}
+        item_out["name"] = item.name
+        item_out["paths"] = [item for item in item.paths]
+        item_out["addr"] = sshclient.addr
+        item_out["port"] = sshclient.port
+        res_out.append(item_out)
+
+    pprint.pprint(res_out)
+
+
+@click.command()
+def help():
+    print(HELP)
+
+
+@click.command()
+@click.option("--name", "-n", default="main", help="name of the sshclient, if empty  will be main")
+def ssh(name="default"):
+    cl = j.clients.ssh.get(name=name)
+    cmd = "ssh {login}@{addr} -p {port}".format(**cl.data._ddict)
+    j.sal.process.executeWithoutPipe(cmd)
+
+    # mosh --ssh="ssh -p 1025" root@10.102.90.219 -p 50025
+
+
+@click.command()
+@click.option("--name", "-n", default="main", help="name of the sshclient, if empty  will be main")
+def delete(name="default"):
+    """
+    delete the sshclient & sync client
+    :param name:
+    :return:
+    """
+    res = j.tools.syncer.find(name=name)
+    for item in res:
+        item.delete()
+
+
+@click.command()
+def reset():
+    """
+    will remove all known instances
+    :return:
+    """
+    res = j.tools.syncer.find()
+    for item in res:
+        item.delete()
+
+
+cli.add_command(sync)
+cli.add_command(configure)
+cli.add_command(help)
+cli.add_command(list)
+cli.add_command(ssh)
+cli.add_command(delete)
+cli.add_command(reset)
+
+if __name__ == "__main__":
+    cli()

@@ -1,0 +1,138 @@
+<html>
+
+<head>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      background: #f0f0f0;
+    }
+
+    #app {
+      padding: 24px;
+      max-width: 400px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      font-weight: normal;
+    }
+
+    article {
+      background: white;
+      margin-bottom: 12px;
+      padding: 12px;
+      border-radius: 2px;
+    }
+
+    .loading {
+      text-align: center;
+      color: #777;
+    }
+
+    .title {
+      text-transform: uppercase;
+    }
+
+    .author {
+      color: #777;
+    }
+  </style>
+
+
+</head>
+
+<style>
+  .container {
+    width: 200px;
+    clear: both;
+  }
+
+  .container input {
+    width: 100%;
+    clear: both;
+  }
+</style>
+
+<body>
+  <!-- App -->
+  <div id="app">
+    <h1>Blog</h1>
+    <!-- Add simple for to post data to save in bcdb -->
+    <div class="container">
+      <form method="POST">
+        <label>ID</label>
+        <input id="id" name="id" type="text" /><br />
+        <label>name</label>
+        <input id="name" name="name" type="text" /><br />
+        <label>Title</label>
+        <input id="title" name="title" type="text" /><br />
+        <label>Author</label>
+        <input id="author" name="author" type="text" /><br />
+        <br />
+        <input type="submit" value="go" id="submit">
+      </form>
+    </div>
+    <div>
+      <div v-if="loading" class="loading">Loading...</div>
+      <article v-for="post of posts">
+        <div class="title">{{ post.title }}</div>
+        <div class="author">By {{ post.author.name }}</div>
+      </article>
+    </div>
+
+  </div>
+  <script src="https://unpkg.com/vue/dist/vue.js"></script>
+  <script src="https://unpkg.com/apollo-client-browser@1.9.0"></script>
+  <script src="https://unpkg.com/vue-apollo@2.1.0-beta.19"></script>
+  <script>
+    console.clear()
+
+    const apolloClient = new Apollo.lib.ApolloClient({
+      networkInterface: Apollo.lib.createNetworkInterface({
+        // Edit: https://launchpad.graphql.com/nnnwvmq07
+        uri: 'http://{ip_address}:7777/graphql',
+        transportBatching: true,
+      }),
+      connectToDevTools: true,
+    })
+
+    const apolloProvider = new VueApollo.ApolloProvider({
+      defaultClient: apolloClient,
+    })
+
+    const POSTS_QUERY = Apollo.gql`
+            {
+              posts {
+                id
+                title
+                author {
+                  id
+                  name
+                }
+              }
+            }
+            `
+
+    // New VueJS instance
+    const app = new Vue({
+      // CSS selector of the root DOM element
+      el: '#app',
+      data: {
+        posts: [],
+        loading: 0,
+      },
+      // Apollo GraphQL
+      apolloProvider,
+      apollo: {
+        posts: {
+          query: POSTS_QUERY,
+          loadingKey: 'loading',
+        },
+      },
+    })
+  </script>
+</body>
+
+</html>
