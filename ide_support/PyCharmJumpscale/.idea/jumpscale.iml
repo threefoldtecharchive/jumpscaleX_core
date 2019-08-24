@@ -7,6 +7,9 @@
     <content url="file://$MODULE_DIR$/../../JumpscaleCore">
       <sourceFolder url="file://$MODULE_DIR$/../../JumpscaleCore" isTestSource="false" />
     </content>
+    <content url="file://$MODULE_DIR$/../../cmds">
+      <sourceFolder url="file://$MODULE_DIR$/../../cmds" isTestSource="false" />
+    </content>
     <content url="file://$MODULE_DIR$/../../docs">
       <sourceFolder url="file://$MODULE_DIR$/../../docs" isTestSource="false" />
     </content>
