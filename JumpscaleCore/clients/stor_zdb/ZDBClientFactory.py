@@ -62,7 +62,7 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
             # and if we instanciated a new zdb server the AUTH command will not be executed
             cl.auth()
         else:
-            cl = self.new(name=name, nsname=name, addr=addr, port=port, secret_=secret, mode=mode, admin=True)
+            cl = self.get(name=name, nsname=name, addr=addr, port=port, secret_=secret, mode=mode, admin=True)
         assert cl.admin == True
         assert self.exists(name=name)
         return cl
@@ -77,7 +77,7 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
         """
         if not namespace:
             namespace = name
-        cl = self.new(name=name, nsname=namespace, addr=addr, port=port, secret_=secret, mode=mode, admin=False)
+        cl = self.get(name=name, nsname=namespace, addr=addr, port=port, secret_=secret, mode=mode, admin=False)
         assert self.exists(name=name)
         return cl
 

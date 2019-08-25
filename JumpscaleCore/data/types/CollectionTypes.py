@@ -200,7 +200,10 @@ class Dictionary(TypeBaseClassUnserialized):
 
     def toString(self, v):
         v = self.clean(v)
-        return j.data.serializers.json.dumps(v, True, True)
+        if isinstance(v, j.baseclasses.dict):
+            return j.data.serializers.json.dumps(v._data, True, True)
+        else:
+            return j.data.serializers.json.dumps(v, True, True)
 
     def toJSON(self, v):
         return self.toString(v)

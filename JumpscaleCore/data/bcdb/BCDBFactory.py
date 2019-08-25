@@ -472,6 +472,7 @@ class BCDBFactory(j.baseclasses.object_config_collection_testtools):
         following will run all tests
 
         kosmos 'j.data.bcdb.test()'
+        kosmos 'j.data.bcdb.test("base")'
 
 
         """

@@ -10,108 +10,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7ee4f4bc-1051-4a9b-bc3e-d01d132960f5" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/clients/gedis/GedisClientFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/clients/gedis/GedisClientFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/clients/mail/EmailFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/clients/mail/EmailFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/clients/ovh/OVHFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/clients/ovh/OVHFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/clients/packetnet/PacketNetFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/clients/packetnet/PacketNetFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/clients/redis/RedisFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/clients/redis/RedisFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/clients/redisconfig/RedisConfigFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/clients/redisconfig/RedisConfigFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/clients/sonic/SonicFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/clients/sonic/SonicFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/clients/ssh/SSHClientFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/clients/ssh/SSHClientFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/clients/sshkey/SSHKeys.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/clients/sshkey/SSHKeys.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/clients/stor_rdb/RDBFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/clients/stor_rdb/RDBFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/clients/stor_sqlite/DBSQLiteFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/clients/stor_sqlite/DBSQLiteFactory.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/clients/stor_zdb/ZDBClientFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/clients/stor_zdb/ZDBClientFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/clients/threebot/ThreebotClientFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/clients/threebot/ThreebotClientFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/Attr.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/Attr.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/BaseClasses.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/BaseClasses.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSBase.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSBase.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSBaseConfigsConfigFactoryClass.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSConfigBCDBBase.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSConfigBCDBBase.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/BCDBFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/BCDBFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaFactory.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaProperty.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaProperty.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/data/types/CollectionTypes.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/data/types/CollectionTypes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/data/types/Types.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/data/types/Types.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/servers/dns/DNSResolver.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/servers/dns/DNSResolver.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/servers/dns/DNSServer.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/servers/dns/DNSServer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/servers/gedis/GedisFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/servers/gedis/GedisFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/servers/openresty/OpenRestyFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/servers/openresty/OpenRestyFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/servers/openresty/ReverseProxy.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/servers/openresty/ReverseProxy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/servers/openresty/Website.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/servers/openresty/Website.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/servers/openresty/Wiki.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/servers/openresty/Wiki.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/servers/sonic/SonicFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/servers/sonic/SonicFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/servers/startupcmd/StartupCMDFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/servers/startupcmd/StartupCMDFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/servers/threebot/ThreeBotServersFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/servers/threebot/ThreeBotServersFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/servers/threebot/ThreebotServer.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/servers/threebot/ThreebotServer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/servers/zdb/ZDBServers.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/servers/zdb/ZDBServers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/tools/syncer/SyncerFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/tools/syncer/SyncerFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/tools/threebot_package/ThreeBotPackageFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/tools/threebot_package/ThreeBotPackageFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/tools/wireguard/WGClient.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/tools/wireguard/WGClient.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/tools/wireguard/WGFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/tools/wireguard/WGFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../cmds/js_init" beforeDir="false" afterPath="$PROJECT_DIR$/../../cmds/js_init" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../docs/Internals/baseclasses/JSBaseConfigsFactoryClass.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../docs/Internals/baseclasses/JSBaseConfigsFactoryClass.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../docs/Internals/baseclasses/JSXConfigs.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../docs/Internals/baseclasses/JSXConfigs.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../docs/Internals/baseclasses/configsparent.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../docs/Internals/baseclasses/configsparent.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../docs/Internals/baseclasses/readme.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../docs/Internals/baseclasses/readme.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/coredns/CoreDNSFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/coredns/CoreDNSFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/coredns/alternative/CoreDnsFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/coredns/alternative/CoreDnsFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/corex/CoreXFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/corex/CoreXFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/digitalocean/DigitalOceanFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/digitalocean/DigitalOceanFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/etcd/EtcdFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/etcd/EtcdFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/freeflow/FreeFlowFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/freeflow/FreeFlowFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/gdrive/GDriveFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/gdrive/GDriveFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/gitea/GiteaFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/gitea/GiteaFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/github/GitHubFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/github/GitHubFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/grafana/GrafanaFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/grafana/GrafanaFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/graphite/GraphiteFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/graphite/GraphiteFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/graphql/GraphQLFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/graphql/GraphQLFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/influxdb/InfluxdbFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/influxdb/InfluxdbFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/intercom/IntercomFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/intercom/IntercomFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/ipmi/IpmiFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/ipmi/IpmiFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/itsyouonline/IYOFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/itsyouonline/IYOFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/logger/LoggerFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/logger/LoggerFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/mongodbclient/MongoEngineFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/mongodbclient/MongoEngineFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/mongodbclient/MongoFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/mongodbclient/MongoFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/mysql/MySQLFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/mysql/MySQLFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/nbh_vertex/NBHClientFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/nbh_vertex/NBHClientFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/oauth/OauthFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/oauth/OauthFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/odoo/OdooFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/odoo/OdooFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/peewee/PeeweeFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/peewee/PeeweeFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/postgresql/PostgresqlFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/postgresql/PostgresqlFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/sendgrid/SendgridFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/sendgrid/SendgridFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/sqlalchemy/SQLAlchemyFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/sqlalchemy/SQLAlchemyFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/syncthing/SyncthingFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/syncthing/SyncthingFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/telegram_bot/TelegramBotFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/telegram_bot/TelegramBotFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/tfchain/TFChainWalletFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/tfchain/TFChainWalletFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/threefold_directory/GridCapacityFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/threefold_directory/GridCapacityFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/trello/TrelloFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/trello/TrelloFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/virtualbox/VirtualboxFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/virtualbox/VirtualboxFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zero_boot/ZerobootFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zero_boot/ZerobootFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zero_hub/ZeroHubFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zero_hub/ZeroHubFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zero_hub_direct/HubDirectFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zero_hub_direct/HubDirectFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zero_os/ZeroOSClientFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zero_os/ZeroOSClientFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zero_stor/ZeroStorFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zero_stor/ZeroStorFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zerotier/ZerotierFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zerotier/ZerotierFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/data/dicteditor/DictEditor.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/data/dicteditor/DictEditor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/data/html/HTMLFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/data/html/HTMLFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/clients/blockchain/btc_alpha/BTCFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/clients/blockchain/btc_alpha/BTCFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/clients/kraken/KrakenFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/clients/kraken/KrakenFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/clients/portal/PortalClientFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/clients/portal/PortalClientFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/clients/racktivity/RacktivityFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/clients/racktivity/RacktivityFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/clients/rogerthat/RogerthatFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/clients/rogerthat/RogerthatFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/clients/traefik/TraefikFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/clients/traefik/TraefikFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/clients/webgateway/WebGatewayFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/clients/webgateway/WebGatewayFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/data/docs/DocsFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/data/docs/DocsFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/sal_zos/tfchain/TfChainFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/sal_zos/tfchain/TfChainFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/servers/email_forwarder/JSMailForwarder.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/servers/email_forwarder/JSMailForwarder.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/servers/odoo/OdooFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/servers/odoo/OdooFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/servers/radicale/RadicaleFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/servers/radicale/RadicaleFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/servers/raft/RaftServerFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/servers/raft/RaftServerFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/servers/sanic/SanicServer.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/servers/sanic/SanicServer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_threebot/kosmos/zos/ZOSContainer.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_threebot/kosmos/zos/ZOSContainer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_threebot/kosmos/zos/ZOSFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_threebot/kosmos/zos/ZOSFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../jumpscaleX_threebot/kosmos/zos/ZOSInstanceFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../jumpscaleX_threebot/kosmos/zos/ZOSInstanceFactory.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -127,91 +30,81 @@
   <component name="FileEditorManager">
     <leaf>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../cmds/js_init">
+        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/BCDBFactory.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="697">
-              <caret line="54" column="5" selection-start-line="54" selection-start-column="5" selection-end-line="54" selection-end-column="5" />
+            <state relative-caret-position="146">
+              <caret line="336" column="24" selection-start-line="336" selection-start-column="24" selection-end-line="336" selection-end-column="24" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/Attr.py">
+        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaProperty.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="927">
-              <caret line="67" selection-start-line="67" selection-end-line="67" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/BaseClasses.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="858">
-              <caret line="103" column="34" selection-start-line="103" selection-start-column="14" selection-end-line="103" selection-end-column="34" />
-              <folding>
-                <element signature="e#1103#1129#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSConfigBCDB.py">
-          <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSBase.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="920">
-              <caret line="749" column="68" selection-start-line="749" selection-start-column="68" selection-end-line="749" selection-end-column="68" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaFactory.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="194">
-              <caret line="14" column="1" selection-start-line="14" selection-start-column="1" selection-end-line="14" selection-end-column="1" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/schema/tests/11_dict.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="459">
-              <caret line="27" column="44" lean-forward="true" selection-start-line="27" selection-start-column="4" selection-end-line="27" selection-end-column="44" />
+            <state relative-caret-position="510">
+              <caret line="79" selection-start-line="75" selection-end-line="79" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/clients/stor_zdb/ZDBClientFactory.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="561">
+              <caret line="64" column="25" selection-start-line="64" selection-start-column="25" selection-end-line="64" selection-end-column="25" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/types/CollectionTypes.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="513">
-              <caret line="174" column="51" selection-start-line="174" selection-start-column="51" selection-end-line="174" selection-end-column="51" />
+            <state relative-caret-position="771">
+              <caret line="203" column="56" selection-start-line="203" selection-start-column="56" selection-end-line="203" selection-end-column="56" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSConfigsBCDB.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="340">
-              <caret line="20" selection-start-line="20" selection-end-line="20" />
-              <folding>
-                <element signature="e#1103#1126#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSConfigBCDBBase.py">
+        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/7_redis.py">
           <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/12_subschemas.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="510">
+              <caret line="30" column="4" selection-start-line="30" selection-start-column="4" selection-end-line="30" selection-end-column="48" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/10_export.py">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/9_unique_data.py">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/8_keys.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="442">
+              <caret line="26" column="4" selection-start-line="26" selection-start-column="4" selection-end-line="26" selection-end-column="42" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/1_base.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="901">
+              <caret line="53" lean-forward="true" selection-start-line="53" selection-end-line="53" />
+            </state>
+          </provider>
         </entry>
       </file>
     </leaf>
@@ -346,9 +239,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/../../JumpscaleCore/sal/netconfig/Netconfig.py" />
-        <option value="$PROJECT_DIR$/../../JumpscaleCore/servers/tmux/Tmux.py" />
-        <option value="$PROJECT_DIR$/../../JumpscaleCore/tools/imagelib/ImageLib.py" />
         <option value="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/sal/ubuntu/Ubuntu.py" />
         <option value="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/data/issuemanager/IssueManager.py" />
         <option value="$PROJECT_DIR$/../../JumpscaleCore/tools/dnstools/DNSTools.py" />
@@ -396,7 +286,10 @@
         <option value="$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaFactory.py" />
         <option value="$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/BaseClasses.py" />
         <option value="$PROJECT_DIR$/../../JumpscaleCore/data/schema/tests/11_dict.py" />
+        <option value="$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/BCDBFactory.py" />
         <option value="$PROJECT_DIR$/../../JumpscaleCore/data/types/CollectionTypes.py" />
+        <option value="$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaProperty.py" />
+        <option value="$PROJECT_DIR$/../../JumpscaleCore/clients/stor_zdb/ZDBClientFactory.py" />
       </list>
     </option>
   </component>
@@ -476,6 +369,36 @@
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
               <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
               <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="clients" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="clients" type="462c0819:PsiDirectoryNode" />
+              <item name="stor_zdb" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="clients" type="462c0819:PsiDirectoryNode" />
+              <item name="stor_zdb" type="462c0819:PsiDirectoryNode" />
+              <item name="ZDBClientFactory.py" type="8704e2dd:PyFileNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="clients" type="462c0819:PsiDirectoryNode" />
+              <item name="stor_zdb" type="462c0819:PsiDirectoryNode" />
+              <item name="ZDBClientFactory.py" type="8704e2dd:PyFileNode" />
+              <item name="ZDBClientFactory" type="dd8bbb05:PyElementNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
               <item name="core" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
@@ -484,6 +407,23 @@
               <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
               <item name="core" type="462c0819:PsiDirectoryNode" />
               <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="core" type="462c0819:PsiDirectoryNode" />
+              <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
+              <item name="Attr.py" type="8704e2dd:PyFileNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="core" type="462c0819:PsiDirectoryNode" />
+              <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
+              <item name="Attr.py" type="8704e2dd:PyFileNode" />
+              <item name="Attr" type="dd8bbb05:PyElementNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
@@ -506,7 +446,80 @@
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
               <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
               <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="core" type="462c0819:PsiDirectoryNode" />
+              <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
+              <item name="JSBase.py" type="8704e2dd:PyFileNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="core" type="462c0819:PsiDirectoryNode" />
+              <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
+              <item name="JSBase.py" type="8704e2dd:PyFileNode" />
+              <item name="JSBase" type="dd8bbb05:PyElementNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="core" type="462c0819:PsiDirectoryNode" />
+              <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
+              <item name="JSConfigBCDB.py" type="8704e2dd:PyFileNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="core" type="462c0819:PsiDirectoryNode" />
+              <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
+              <item name="JSConfigBCDBBase.py" type="8704e2dd:PyFileNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="core" type="462c0819:PsiDirectoryNode" />
+              <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
+              <item name="JSConfigsBCDB.py" type="8704e2dd:PyFileNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
               <item name="data" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="data" type="462c0819:PsiDirectoryNode" />
+              <item name="bcdb" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="data" type="462c0819:PsiDirectoryNode" />
+              <item name="bcdb" type="462c0819:PsiDirectoryNode" />
+              <item name="tests" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="data" type="462c0819:PsiDirectoryNode" />
+              <item name="bcdb" type="462c0819:PsiDirectoryNode" />
+              <item name="BCDBFactory.py" type="8704e2dd:PyFileNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="data" type="462c0819:PsiDirectoryNode" />
+              <item name="bcdb" type="462c0819:PsiDirectoryNode" />
+              <item name="BCDBFactory.py" type="8704e2dd:PyFileNode" />
+              <item name="BCDBFactory" type="dd8bbb05:PyElementNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
@@ -522,6 +535,15 @@
               <item name="data" type="462c0819:PsiDirectoryNode" />
               <item name="schema" type="462c0819:PsiDirectoryNode" />
               <item name="tests" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="data" type="462c0819:PsiDirectoryNode" />
+              <item name="schema" type="462c0819:PsiDirectoryNode" />
+              <item name="tests" type="462c0819:PsiDirectoryNode" />
+              <item name="11_dict.py" type="8704e2dd:PyFileNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
@@ -545,6 +567,23 @@
               <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
               <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
               <item name="data" type="462c0819:PsiDirectoryNode" />
+              <item name="schema" type="462c0819:PsiDirectoryNode" />
+              <item name="SchemaProperty.py" type="8704e2dd:PyFileNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="data" type="462c0819:PsiDirectoryNode" />
+              <item name="schema" type="462c0819:PsiDirectoryNode" />
+              <item name="SchemaProperty.py" type="8704e2dd:PyFileNode" />
+              <item name="SchemaProperty" type="dd8bbb05:PyElementNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="data" type="462c0819:PsiDirectoryNode" />
               <item name="types" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
@@ -554,6 +593,41 @@
               <item name="data" type="462c0819:PsiDirectoryNode" />
               <item name="types" type="462c0819:PsiDirectoryNode" />
               <item name="CollectionTypes.py" type="8704e2dd:PyFileNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
+              <item name="data" type="462c0819:PsiDirectoryNode" />
+              <item name="types" type="462c0819:PsiDirectoryNode" />
+              <item name="CollectionTypes.py" type="8704e2dd:PyFileNode" />
+              <item name="Dictionary" type="dd8bbb05:PyElementNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleLibs" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleLibs" type="462c0819:PsiDirectoryNode" />
+              <item name="clients" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleLibs" type="462c0819:PsiDirectoryNode" />
+              <item name="clients" type="462c0819:PsiDirectoryNode" />
+              <item name="coredns" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleLibs" type="462c0819:PsiDirectoryNode" />
+              <item name="clients" type="462c0819:PsiDirectoryNode" />
+              <item name="coredns" type="462c0819:PsiDirectoryNode" />
+              <item name="CoreDnsClient.py" type="8704e2dd:PyFileNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
@@ -953,81 +1027,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/sal/nettools/NetTools.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="119">
-          <caret line="12" column="6" selection-start-line="12" selection-start-column="6" selection-end-line="12" selection-end-column="6" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_builders/tests/builder/test_builder_base_class.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="34">
-          <caret line="2" column="23" selection-start-line="2" selection-start-column="23" selection-end-line="2" selection-end-column="23" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/sal/netconfig/Netconfig.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="221">
-          <caret line="13" column="4" selection-start-line="13" selection-start-column="4" selection-end-line="13" selection-end-column="4" />
-          <folding>
-            <element signature="e#0#23#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/BCDB.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="833">
-          <caret line="49" selection-start-line="49" selection-end-line="49" />
-          <folding>
-            <element signature="e#1142#1155#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/connectors/redis/RedisServer.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="459">
-          <caret line="27" column="77" selection-start-line="27" selection-start-column="77" selection-end-line="27" selection-end-column="77" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zero_stor/ZeroStorFactoryDeprecated.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="136">
-          <caret line="9" column="8" selection-start-line="9" selection-start-column="8" selection-end-line="9" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/BuilderBaseClass.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="305">
-          <caret line="18" column="28" lean-forward="true" selection-start-line="18" selection-start-column="28" selection-end-line="18" selection-end-column="28" />
-          <folding>
-            <element signature="e#0#23#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/hash/HashTool.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="289">
-          <caret line="17" selection-start-line="17" selection-end-line="17" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/tools/offliner/Rexplorer.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/sal/ubuntu/Ubuntu.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="139">
-          <caret line="9" column="13" selection-start-line="9" selection-start-column="13" selection-end-line="9" selection-end-column="13" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zero_stor/ZeroStorFactory.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="153">
@@ -1155,13 +1154,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/clients/stor_zdb/ZDBClientFactory.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="85">
-          <caret line="13" column="61" selection-start-line="13" selection-start-column="37" selection-end-line="13" selection-end-column="61" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../../install/InstallTools.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="311">
@@ -1223,13 +1215,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/1_base.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="374">
-          <caret line="53" lean-forward="true" selection-start-line="53" selection-end-line="53" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/servers/threebot/ThreebotServer.py">
       <provider selected="true" editor-type-id="text-editor">
         <state>
@@ -1269,20 +1254,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../cmds/js_init">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="697">
-          <caret line="54" column="5" selection-start-line="54" selection-start-column="5" selection-end-line="54" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/Attr.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="927">
-          <caret line="67" selection-start-line="67" selection-end-line="67" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuildersCommunity/apps/templates/userbot_startup.sh">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="119">
@@ -1309,13 +1280,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSBase.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="920">
-          <caret line="749" column="68" selection-start-line="749" selection-start-column="68" selection-end-line="749" selection-end-column="68" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSBaseConfigsConfigFactoryClass.py">
       <provider selected="true" editor-type-id="text-editor">
         <state>
@@ -1325,7 +1289,31 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/schema/tests/11_dict.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="459">
+          <caret line="27" column="44" lean-forward="true" selection-start-line="27" selection-start-column="4" selection-end-line="27" selection-end-column="44" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaFactory.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="194">
+          <caret line="14" column="1" selection-start-line="14" selection-start-column="1" selection-end-line="14" selection-end-column="1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSBase.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="920">
+          <caret line="749" column="68" selection-start-line="749" selection-start-column="68" selection-end-line="749" selection-end-column="68" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSConfigBCDB.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSConfigBCDBBase.py">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSConfigsBCDB.py">
@@ -1338,9 +1326,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSConfigBCDBBase.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
     <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/BaseClasses.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="858">
@@ -1351,24 +1336,94 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaFactory.py">
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/Attr.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="194">
-          <caret line="14" column="1" selection-start-line="14" selection-start-column="1" selection-end-line="14" selection-end-column="1" />
+        <state relative-caret-position="927">
+          <caret line="67" selection-start-line="67" selection-end-line="67" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/schema/tests/11_dict.py">
+    <entry file="file://$PROJECT_DIR$/../../cmds/js_init">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="697">
+          <caret line="54" column="5" selection-start-line="54" selection-start-column="5" selection-end-line="54" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/coredns/CoreDnsClient.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/3_async.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/2_meta_test.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="459">
-          <caret line="27" column="44" lean-forward="true" selection-start-line="27" selection-start-column="4" selection-end-line="27" selection-end-column="44" />
+          <caret line="27" column="47" lean-forward="true" selection-start-line="27" selection-start-column="47" selection-end-line="27" selection-end-column="47" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/7_redis.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/12_subschemas.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="510">
+          <caret line="30" column="4" selection-start-line="30" selection-start-column="4" selection-end-line="30" selection-end-column="48" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/10_export.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/9_unique_data.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/8_keys.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="442">
+          <caret line="26" column="4" selection-start-line="26" selection-start-column="4" selection-end-line="26" selection-end-column="42" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/1_base.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="901">
+          <caret line="53" lean-forward="true" selection-start-line="53" selection-end-line="53" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/types/CollectionTypes.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="513">
-          <caret line="174" column="51" selection-start-line="174" selection-start-column="51" selection-end-line="174" selection-end-column="51" />
+        <state relative-caret-position="771">
+          <caret line="203" column="56" selection-start-line="203" selection-start-column="56" selection-end-line="203" selection-end-column="56" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/BCDBFactory.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="146">
+          <caret line="336" column="24" selection-start-line="336" selection-start-column="24" selection-end-line="336" selection-end-column="24" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaProperty.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="510">
+          <caret line="79" selection-start-line="75" selection-end-line="79" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/clients/stor_zdb/ZDBClientFactory.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="561">
+          <caret line="64" column="25" selection-start-line="64" selection-start-column="25" selection-end-line="64" selection-end-column="25" />
         </state>
       </provider>
     </entry>

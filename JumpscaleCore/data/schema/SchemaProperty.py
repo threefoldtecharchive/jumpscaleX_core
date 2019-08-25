@@ -72,10 +72,11 @@ class SchemaProperty(j.baseclasses.object):
 
     @property
     def default_as_python_code(self):
-        try:
-            c = self.jumpscaletype.python_code_get(self.default)
-        except Exception as e:
-            raise j.exceptions.JSBUG("cannot get pythoncode from default", exception=e)
+        c = self.jumpscaletype.python_code_get(self.default)
+        # try:
+        #     c = self.jumpscaletype.python_code_get(self.default)
+        # except Exception as e:
+        #     raise j.exceptions.JSBUG("cannot get pythoncode from default", exception=e)
         return c
 
     @property
