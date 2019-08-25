@@ -11,7 +11,7 @@ class SonicFactory(JSConfigs):
     """
 
     __jslocation__ = "j.clients.sonic"
-    _CHILDCLASS = SonicClient
+    _CHILDFACTORY_CLASS = SonicClient
 
     def get_client_bcdb(self):
         """

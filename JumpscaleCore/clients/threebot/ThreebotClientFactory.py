@@ -7,7 +7,7 @@ JSConfigBase = j.baseclasses.factory
 
 class ThreebotClientFactory(j.baseclasses.factory):
     __jslocation__ = "j.clients.threebot"
-    _CHILDCLASS = ThreebotClient
+    _CHILDFACTORY_CLASS = ThreebotClient
 
     def _init(self, **kwargs):
         self._explorer = None

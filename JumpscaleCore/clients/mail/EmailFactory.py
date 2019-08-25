@@ -6,7 +6,7 @@ JSConfigs = j.baseclasses.factory
 
 class EmailFactory(JSConfigs):
     __jslocation__ = "j.clients.email"
-    _CHILDCLASS = EmailClient
+    _CHILDFACTORY_CLASS = EmailClient
 
     def test(self):
         """

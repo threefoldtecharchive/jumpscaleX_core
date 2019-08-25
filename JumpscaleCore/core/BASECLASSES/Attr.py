@@ -65,9 +65,6 @@ class Attr:
             except:
                 whereami = self._name
             msg = "could not find attribute:%s in %s (error was:%s)" % (name, whereami, e)
-            from pudb import set_trace
-
-            set_trace()
             raise j.exceptions.Base(msg)
 
         return r

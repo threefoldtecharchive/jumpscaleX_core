@@ -6,7 +6,7 @@ from .SSHKey import SSHKey
 class SSHKeys(j.baseclasses.factory):
 
     __jslocation__ = "j.clients.sshkey"
-    _CHILDCLASS = SSHKey
+    _CHILDFACTORY_CLASS = SSHKey
 
     def _init(self, **kwargs):
         self.SSHKey = SSHKey  # is the child class, can have more than 1
