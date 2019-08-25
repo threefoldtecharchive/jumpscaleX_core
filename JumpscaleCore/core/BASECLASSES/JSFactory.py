@@ -1,5 +1,5 @@
 from .JSBase import JSBase
-
+from Jumpscale import j
 from .Attr import Attr
 from .TestTools import TestTools
 from .JSConfigBCDB import JSConfigBCDB
