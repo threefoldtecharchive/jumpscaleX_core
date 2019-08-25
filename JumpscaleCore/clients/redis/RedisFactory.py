@@ -9,7 +9,7 @@ from core.InstallTools import Redis
 from core.InstallTools import RedisTools
 
 
-class RedisFactory(j.baseclasses.factory_testtools):
+class RedisFactory(j.baseclasses.object_config_collection_testtools):
 
     """
     """

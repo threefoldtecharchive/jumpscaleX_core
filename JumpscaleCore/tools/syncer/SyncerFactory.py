@@ -2,7 +2,7 @@ from Jumpscale import j
 from .Syncer import Syncer
 
 
-class SyncerFactory(j.baseclasses.factory):
+class SyncerFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.tools.syncer"
 
     _CHILDCLASS = Syncer

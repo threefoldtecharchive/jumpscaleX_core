@@ -25,7 +25,7 @@ from Jumpscale import j
 from .JSXObject import JSXObject
 
 
-class SchemaFactory(j.baseclasses.factory_testtools):
+class SchemaFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.data.schema"
 
     def _init(self, **kwargs):
@@ -255,6 +255,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         """
         it's run all tests
         kosmos 'j.data.schema.test()'
+        kosmos 'j.data.schema.test(name="base")'
 
         if want run specific test ( write the name of test ) e.g. j.data.schema.test(name="base")
         """

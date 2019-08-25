@@ -1,7 +1,7 @@
 from Jumpscale import j
 from .SonicClient import SonicClient
 
-JSConfigs = j.baseclasses.factory
+JSConfigs = j.baseclasses.object_config_collection
 
 
 class SonicFactory(JSConfigs):

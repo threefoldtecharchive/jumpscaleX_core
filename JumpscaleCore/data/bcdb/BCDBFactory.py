@@ -30,7 +30,7 @@ import copy
 import copy
 
 
-class BCDBFactory(j.baseclasses.factory_testtools):
+class BCDBFactory(j.baseclasses.object_config_collection_testtools):
 
     __jslocation__ = "j.data.bcdb"
 

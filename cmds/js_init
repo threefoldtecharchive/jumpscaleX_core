@@ -52,6 +52,7 @@ def generate():
     """
     generate the loader file, important to do when new modules added
     """
+    aj.sal.fs.remove("/sandbox/lib/jumpscale/jumpscale_generated.py")
     j.sal.fs.remove("/sandbox/var/codegen")
     j.sal.fs.remove("/sandbox/var/cmds")
     from Jumpscale.core.generator.JSGenerator import JSGenerator

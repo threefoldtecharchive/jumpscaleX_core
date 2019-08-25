@@ -37,6 +37,6 @@ class WGClient(JSConfigBase, WGBase):
     #     pass
 
 
-class WGClients(j.baseclasses.factory):
+class WGClients(j.baseclasses.object_config_collection):
     _CHILDCLASS = WGClient
     _name = "clients"

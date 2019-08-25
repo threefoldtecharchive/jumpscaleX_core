@@ -4,7 +4,7 @@ from .WGClient import WGClients
 from .WGServer import WGServerFactory
 
 
-class WGFactory(j.baseclasses.factory):
+class WGFactory(j.baseclasses.object_config_collection_testtools):
     """
     wireguard factory
 

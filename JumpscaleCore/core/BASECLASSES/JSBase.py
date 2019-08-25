@@ -746,8 +746,9 @@ class JSBase:
                             try:
                                 v = j.core.tools._data_serializer_safe(getattr(self, item)).rstrip()
                                 if "\n" in v:
-                                    v = j.core.tools.text_indent(content=v, nspaces=4)
-                                    out += " - %-20s :\n{GRAY}%s{%s}\n" % (item, v, color)
+                                    # v = j.core.tools.text_indent(content=v, nspaces=4)
+                                    v = "\n".join(v.split("\n")[:1])
+                                    out += " - %-20s : {GRAY}%s{%s}\n" % (item, v, color)
                                 else:
                                     out += " - %-20s : {GRAY}%s{%s}\n" % (item, v, color)
 

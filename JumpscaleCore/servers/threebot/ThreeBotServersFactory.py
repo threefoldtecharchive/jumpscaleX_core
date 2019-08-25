@@ -3,7 +3,7 @@ from Jumpscale import j
 from .OpenPublish import OpenPublish
 
 
-class ThreeBotServersFactory(j.baseclasses.factory, j.application.JSFactoryTools):
+class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     """
     Factory for 3bots
     """

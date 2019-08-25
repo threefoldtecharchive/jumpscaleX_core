@@ -24,7 +24,7 @@ from Jumpscale import j
 import time
 
 
-class StartupCMDFactory(j.baseclasses.factory):
+class StartupCMDFactory(j.baseclasses.object_config_collection_testtools):
 
     _CHILDCLASS = StartupCMD
     __jslocation__ = "j.servers.startupcmd"

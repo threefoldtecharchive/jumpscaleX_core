@@ -1,5 +1,5 @@
 
-# j.baseclasses.factory
+# j.baseclasses.object_config_collection
 
 Is the base class for a collection of config objects,
 allowing you to create instances of the `_CHILDCLASS` on the fly.
@@ -9,7 +9,7 @@ allowing you to create instances of the `_CHILDCLASS` on the fly.
 No params for init.
 
 ```python
-class SSHClientFactory(j.baseclasses.factory):
+class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
 
     __jslocation__ = "j.clients.ssh"
     _CHILDCLASS = SSHClientBase
@@ -173,7 +173,7 @@ For example:
 ```python
 from Jumpscale import j
 
-class CountryClass(j.baseclasses.factory):
+class CountryClass(j.baseclasses.object_config_collection):
     """
     some text explaining what the class does
     """

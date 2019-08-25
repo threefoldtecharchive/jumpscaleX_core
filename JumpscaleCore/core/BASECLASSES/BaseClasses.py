@@ -84,6 +84,29 @@ class BaseClasses:
         return JSConfigsBCDB
 
     @property
+    def object_config_collection_testtools(self):
+        """
+
+        :return:
+        configuration objects factory as used in kosmos
+        with data stored in bcdb
+        bcdb can be memory only, which means is not persisted
+
+        has new,list,get,save... methods
+
+        is e.g. cars containing a collection off car
+
+        this one also protects the attributes and has the TestTools added to it
+
+        :return:
+        """
+
+        class JSConfigsBCDBFactory(JSConfigsBCDB, TestTools):
+            pass
+
+        return JSConfigsBCDBFactory
+
+    @property
     def object_config_base(self):
         """
         the base class as used by object_config_bcdb and object_config_collection
@@ -189,75 +212,3 @@ class BaseClasses:
         & testtools added e.g. self.test()
         """
         return JSFactoryProtectedTesttools
-
-        # self.JSFactoryConfigsBaseClass = JSFactoryConfigsBaseClass  # for e.g. clients, factory for 1 type of children
-
-        # self.JSBaseConfigsClass = JSBaseConfigsClass  # multiple config children
-        # self.JSConfigsFactory = JSConfigsFactory
-
-        # self.JSBaseConfigsFactoryClass = JSBaseConfigsFactoryClass
-        # self.JSBaseFactoryClass = JSBaseFactoryClass
-        # self.JSConfigClass = JSConfig
-        # self._JSDictClass = JSDict
-        # self.ThreeBotPackageBase = ThreeBotPackageBase
-        # self.ThreeBotActorBase = ThreeBotActorBase
-        # self.JSBaseConfigsConfigFactoryClass = JSBaseConfigsConfigFactoryClass
-
-
-# ### the base ones
-# from .BASECLASSES.JSBase import JSBase
-# from .BASECLASSES.JSFactoryTools import JSFactoryTools
-#
-# ####
-#
-# from .BASECLASSES.JSConfig import JSConfig
-# from .BASECLASSES.JSConfigs import JSConfigs
-# from .BASECLASSES.JSConfigsFactory import JSConfigsFactory
-# from .BASECLASSES.ThreeBotActorBase import ThreeBotActorBase
-# from .BASECLASSES.JSDict import JSDict
-#
-# class JSGroup:
-#     pass
-#
-#
-# class JSFactoryConfigsBaseClass(JSFactoryTools, JSConfigs):
-#     """
-#     as used for j.... factory classes will has constructor for 1 type of Config children
-#
-#     class myclass(j.baseclasses.object_config_collection):
-#         def _init(self,**kwargs):
-#             ...
-#
-#     """
-#
-#     pass
-#
-#
-# class JSBaseConfigsClass(JSConfigs):
-#     """
-#     is not for a factory (doesn't have the test or __location__ inside
-#     has support for 1 type of children
-#     """
-#
-#     pass
-#
-#
-# class JSBaseConfigClass(JSConfig):
-#     """
-#     no children, only 1 data object
-#     """
-#
-#     pass
-#
-#
-# class JSBaseConfigsFactoryClass(JSFactoryTools, JSConfigsFactory):
-#     """
-#     no children, only 1 data object
-#     """
-#
-#     pass
-#
-#
-
-
-# self._JSGroup = JSGroup

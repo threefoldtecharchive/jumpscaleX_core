@@ -39,7 +39,7 @@ class Attr:
                 if name in self._model.schema.propertynames:
                     return self._data.__getattribute__(name)
 
-            if isinstance(self, j.application.JSConfigsClass):
+            if isinstance(self, j.baseclasses.object_config_base):
 
                 if (
                     name.startswith("_")
@@ -65,9 +65,6 @@ class Attr:
             except:
                 whereami = self._name
             msg = "could not find attribute:%s in %s (error was:%s)" % (name, whereami, e)
-            from pudb import set_trace
-
-            set_trace()
             raise j.exceptions.Base(msg)
 
         return r

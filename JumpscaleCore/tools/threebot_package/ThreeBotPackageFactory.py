@@ -3,7 +3,7 @@ from Jumpscale import j
 from .ThreeBotPackage import ThreeBotPackage
 
 
-class ThreeBotPackageFactory(j.baseclasses.factory):
+class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
     """
     deal with 3bot packages
 

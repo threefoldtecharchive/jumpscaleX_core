@@ -3,7 +3,7 @@ from Jumpscale import j
 from .DBSQLite import DBSQLite
 
 
-class DBSQLiteFactory(j.baseclasses.factory_testtools):
+class DBSQLiteFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.clients.sqlitedb"
 
     def client_get(self, namespace, fromcache=True):

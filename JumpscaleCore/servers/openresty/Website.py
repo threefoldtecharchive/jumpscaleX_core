@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-JSConfigs = j.baseclasses.factory
+JSConfigs = j.baseclasses.object_config_collection
 
 
 class Website(j.baseclasses.object_config):
@@ -63,6 +63,6 @@ class Website(j.baseclasses.object_config):
         j.sal.fs.writeFile("%s/servers/%s.conf" % (self._parent._parent._web_path, self.name), r)
 
 
-class Websites(j.baseclasses.factory):
+class Websites(j.baseclasses.object_config_collection):
 
     _CHILDCLASS = Website

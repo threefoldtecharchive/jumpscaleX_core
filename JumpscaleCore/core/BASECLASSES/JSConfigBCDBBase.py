@@ -68,10 +68,10 @@ class JSConfigBCDBBase(JSBase, Attr):
             if isinstance(self, j.baseclasses.object_config):
                 # needs to be from parent
                 if self._parent:
-                    assert isinstance(self._parent, j.application.JSConfigsClass)
+                    assert isinstance(self._parent, j.baseclasses.object_config_base)
                     self._model_ = self._parent._model
                     return self._model_
-            if isinstance(self, j.application.JSConfigsClass):
+            if isinstance(self, j.baseclasses.object_config_base):
                 if "_SCHEMATEXT" in self.__class__.__dict__:
                     s = self.__class__._SCHEMATEXT
                 else:
@@ -100,7 +100,7 @@ class JSConfigBCDBBase(JSBase, Attr):
 
     def __init_class_post(self):
 
-        if isinstance(j.baseclasses.object_config) and isinstance(j.baseclasses.factory):
+        if isinstance(j.baseclasses.object_config) and isinstance(j.baseclasses.object_config_collection):
             raise j.exceptions.Base("combination not allowed of config and configsclass")
 
     def _process_schematext(self, schematext):

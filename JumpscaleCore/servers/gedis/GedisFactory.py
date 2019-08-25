@@ -6,7 +6,7 @@ from .GedisServer import GedisServer
 from .GedisCmds import GedisCmds
 from .GedisChatBot import GedisChatBotFactory
 
-JSConfigFactory = j.baseclasses.factory
+JSConfigFactory = j.baseclasses.object_config_collection
 
 
 class GedisFactory(JSConfigFactory):

@@ -1,6 +1,6 @@
 from Jumpscale import j
 
-JSConfigs = j.baseclasses.factory
+JSConfigs = j.baseclasses.object_config_collection
 
 
 class ReverseProxy(j.baseclasses.object_config):
@@ -84,6 +84,6 @@ class ReverseProxy(j.baseclasses.object_config):
             j.sal.fs.writeFile("%s/servers/tcp_proxy/proxy_%s.conf" % (self._parent._parent._web_path, self.name), r)
 
 
-class ReverseProxies(j.baseclasses.factory):
+class ReverseProxies(j.baseclasses.object_config_collection):
 
     _CHILDCLASS = ReverseProxy

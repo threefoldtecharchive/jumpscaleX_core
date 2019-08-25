@@ -5,7 +5,7 @@ import os
 from .OpenRestyServer import OpenRestyServer
 
 
-class OpenRestyFactory(j.baseclasses.factory):
+class OpenRestyFactory(j.baseclasses.object_config_collection_testtools):
     """
     Factory for openresty
     """

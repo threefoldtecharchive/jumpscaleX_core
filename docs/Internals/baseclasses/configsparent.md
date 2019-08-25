@@ -20,7 +20,7 @@ class TFChainWallet(j.baseclasses.object_config):
     def network_type(self):
         return self._parent._parent.network_type
 
-class TFChainWalletFactory(j.baseclasses.factory):
+class TFChainWalletFactory(j.baseclasses.object_config_collection_testtools):
     # see configs.md to learn more about the JSBaseConfigsClass
     """
     Factory class to get a tfchain wallet object
@@ -40,7 +40,7 @@ class TFChainClient(j.application.JSBaseConfigParentClass):
 
     _CHILDCLASSES = [TFChainWalletFactory]
 
-class TFChainClientFactory(j.baseclasses.factory):
+class TFChainClientFactory(j.baseclasses.object_config_collection_testtools):
     """
     Factory class to get a tfchain client object
     """

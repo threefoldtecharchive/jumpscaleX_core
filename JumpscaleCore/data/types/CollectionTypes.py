@@ -156,7 +156,7 @@ class Dictionary(TypeBaseClassUnserialized):
 
     def check(self, value):
         """Check whether provided value is a dict"""
-        return isinstance(value, dict)
+        return isinstance(value, dict) or isinstance(value, j.baseclasses.dict)
 
     def fromString(self, s):
         """
@@ -171,7 +171,10 @@ class Dictionary(TypeBaseClassUnserialized):
 
     def toData(self, v):
         v = self.clean(v)
-        return j.data.serializers.msgpack.dumps(v)
+        if isinstance(v, j.baseclasses.dict):
+            return j.data.serializers.msgpack.dumps(v._data)
+        else:
+            return j.data.serializers.msgpack.dumps(v)
 
     def clean(self, v=""):
         """
@@ -185,7 +188,7 @@ class Dictionary(TypeBaseClassUnserialized):
             return self._default_get()
         if j.data.types.bytes.check(v):
             if v == b"":
-                v = j.basetypes.dict()
+                v = j.baseclasses.dict()
             else:
                 # print(v)
                 v = j.data.serializers.msgpack.loads(v)
