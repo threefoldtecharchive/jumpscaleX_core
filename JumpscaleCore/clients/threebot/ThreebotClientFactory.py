@@ -2,10 +2,10 @@ from Jumpscale import j
 import binascii
 from .ThreebotClient import ThreebotClient
 
-JSConfigBase = j.baseclasses.objects_config_bcdb
+JSConfigBase = j.baseclasses.factory
 
 
-class ThreebotClientFactory(j.baseclasses.objects_config_bcdb):
+class ThreebotClientFactory(j.baseclasses.factory):
     __jslocation__ = "j.clients.threebot"
     _CHILDCLASS = ThreebotClient
 

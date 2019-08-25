@@ -192,9 +192,9 @@ class ObjectInspector(j.baseclasses.object):
     and pickled ordereddict for codecompletion
     """
 
-    def __init__(self):
-        self.__jslocation__ = "j.tools.objectinspector"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.tools.objectinspector"
+
+    def _init(self):
         self.apiFileLocation = j.sal.fs.joinPaths(j.dirs.CFGDIR, "codecompletionapi", "api")
         # j.sal.fs.createDir(j.sal.fs.joinPaths(j.dirs.JSCFGDIR, "codecompletionapi"))
         self.classDocs = {}

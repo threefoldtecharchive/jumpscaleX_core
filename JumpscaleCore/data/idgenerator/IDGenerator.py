@@ -13,9 +13,9 @@ class IDGenerator(j.baseclasses.object):
     lives at j.data.idgenerator
     """
 
-    def __init__(self):
-        self.__jslocation__ = "j.data.idgenerator"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.data.idgenerator"
+
+    def _init(self):
         self._cryptogen = ""
 
     @property

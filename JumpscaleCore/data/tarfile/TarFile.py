@@ -13,10 +13,7 @@ class TarFileFactory(j.baseclasses.object):
     READ = "r"
     WRITE = "w"
     APPEND = "a"
-
-    def __init__(self):
-        self.__jslocation__ = "j.tools.tarfile"
-        JSBASE.__init__(self)
+    _jslocation__ = "j.tools.tarfile"
 
     def get(self, path, mode=READ):
         return TarFile(path, mode)

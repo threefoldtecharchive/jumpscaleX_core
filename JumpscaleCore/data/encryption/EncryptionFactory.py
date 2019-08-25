@@ -12,9 +12,9 @@ class EncryptionFactory(j.baseclasses.object):
     EncryptionFactory provides the means to sign, encrypt data using NACL
     """
 
-    def __init__(self):
-        self.__jslocation__ = "j.data.encryption"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.data.encryption"
+
+    def _init(self):
         self._mnemonic = None
 
     @property

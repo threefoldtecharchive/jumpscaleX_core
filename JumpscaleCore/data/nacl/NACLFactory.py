@@ -12,9 +12,9 @@ JSBASE = j.baseclasses.object
 
 
 class NACLFactory(j.baseclasses.object):
-    def __init__(self):
-        JSBASE.__init__(self)
-        self.__jslocation__ = "j.data.nacl"
+    __jslocation__ = "j.data.nacl"
+
+    def _init(self):
         self._default = None
 
         # check there is core redis

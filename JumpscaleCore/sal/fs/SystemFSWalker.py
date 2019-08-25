@@ -7,10 +7,8 @@ JSBASE = j.baseclasses.object
 
 
 class SystemFSWalker(j.baseclasses.object):
-    def __init__(self):
-        if not hasattr(self, "__jslocation__"):
-            self.__jslocation__ = "j.sal.fswalker"
-        JSBASE.__init__(self)
+
+    __jslocation__ = "j.sal.fswalker"
 
     @staticmethod
     def _checkDepth(path, depths, root=""):

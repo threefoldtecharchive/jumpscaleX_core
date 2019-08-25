@@ -6,10 +6,8 @@ JSBASE = j.baseclasses.object
 
 
 class ImageLib(j.baseclasses.object):
-    def __init__(self):
-        self.__jslocation__ = "j.tools.imagelib"
-        self.__imports__ = "Pillow"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.tools.imagelib"
+    __imports__ = "Pillow"
 
     #     self._initted=False
 

@@ -11,7 +11,7 @@ from .clients_impl import ZDBClientDirectModeAdmin, ZDBClientSeqModeAdmin, ZDBCl
 JSBASE = j.baseclasses.object
 
 
-class ZDBClientFactory(j.application.JSFactoryConfigsBaseClass):
+class ZDBClientFactory(j.baseclasses.object_config_collection):
     """
 
     different modes: seq,user,direct

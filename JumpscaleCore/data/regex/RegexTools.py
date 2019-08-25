@@ -69,10 +69,10 @@ class RegexMatch(j.baseclasses.object):
 
 class RegexTools(j.baseclasses.object):
     # TODO: doe some propper error handling with re, now obscure errors  (id:21)
+    __jslocation__ = "j.data.regex"
 
-    def __init__(self):
-        self.__jslocation__ = "j.data.regex"
-        JSBASE.__init__(self)
+    def _init(self):
+
         self.templates = Empty()
         self.templates.lines = RegexTemplates_FindLines()
 

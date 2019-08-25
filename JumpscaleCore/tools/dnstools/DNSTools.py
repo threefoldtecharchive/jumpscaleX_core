@@ -21,9 +21,10 @@ class DNSTools(j.baseclasses.object):
     pip3 install dnspython
     """
 
-    def __init__(self):
-        self.__jslocation__ = "j.tools.dnstools"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.tools.dnstools"
+    __import__ = "dnspython"
+
+    def _init(self):
         self._default = None
 
     def get(

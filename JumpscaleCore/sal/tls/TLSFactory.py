@@ -7,9 +7,7 @@ JSBASE = j.baseclasses.object
 class TLSFactory(JSBASE):
     """Factory class to deal with TLS, key and certificate generation"""
 
-    def __init__(self):
-        self.__jslocation__ = "j.sal.tls"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.sal.tls"
 
     def get(self, path=None):
         """Get an instance of the TLS class

@@ -8,10 +8,10 @@ JSBASE = j.baseclasses.object
 
 
 class HostFile(JSBASE):
-    def __init__(self):
-        self.__jslocation__ = "j.sal.hostsfile"
+    __jslocation__ = "j.sal.hostsfile"
+
+    def _init(self):
         self._host_filepath = "/etc/hosts"
-        JSBASE.__init__(self)
 
     def ip_remove(self, ip):
         """Update a hostfile, delete ip from hostsfile

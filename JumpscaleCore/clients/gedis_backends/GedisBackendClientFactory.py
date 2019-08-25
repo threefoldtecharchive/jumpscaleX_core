@@ -1,14 +1,15 @@
 from Jumpscale import j
 from .GunClient import GunClient
 
-JSConfigBase = j.application.JSFactoryConfigsBaseClass
+JSConfigBase = j.baseclasses.object_config_collection
 
 ALLOWED_TYPES = {"gun": GunClient}  # available clients, add to this if a new client is added
 
 
 class GedisBackendClientFactory(JSConfigBase):
+    __jslocation__ = "j.clients.gedis_backend"
+
     def __init__(self):
-        self.__jslocation__ = "j.clients.gedis_backend"
         JSConfigBase.__init__(self, GunClient)
 
     def get(self, instance="main", data=None, create=True, die=True, interactive=True, type="gun"):

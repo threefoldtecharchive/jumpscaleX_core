@@ -3,7 +3,7 @@ import os
 import gevent
 from .OpenPublish import OpenPublish
 
-JSConfigs = j.baseclasses.objects_config_bcdb
+JSConfigs = j.baseclasses.factory
 
 
 class BCDBs:

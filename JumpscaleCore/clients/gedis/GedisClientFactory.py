@@ -2,7 +2,7 @@ from Jumpscale import j
 
 from .GedisClient import GedisClient
 
-JSConfigBase = j.baseclasses.objects_config_bcdb
+JSConfigBase = j.baseclasses.factory
 
 
 class GedisClientCmds:
@@ -24,6 +24,6 @@ class GedisClientCmds:
     __repr__ = __str__
 
 
-class GedisClientFactory(j.baseclasses.objects_config_bcdb):
+class GedisClientFactory(j.baseclasses.factory):
     __jslocation__ = "j.clients.gedis"
     _CHILDCLASS = GedisClient

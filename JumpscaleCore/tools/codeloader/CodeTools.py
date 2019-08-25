@@ -28,9 +28,9 @@ class Struct(j.baseclasses.object):
 
 
 class CodeTools(j.baseclasses.object):
-    def __init__(self):
-        self.__jslocation__ = "j.tools.code"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.tools.code"
+
+    def _init(self):
         self._templateengine = None
         # self.executor = CodeExecutor()
         self._wordreplacer = None

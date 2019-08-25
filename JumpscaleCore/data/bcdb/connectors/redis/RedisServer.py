@@ -25,7 +25,7 @@ from gevent import time, signal
 import gevent
 from gevent.server import StreamServer
 from redis.exceptions import ConnectionError
-from DigitalMe.servers.gedis.protocol import RedisResponseWriter, RedisCommandParser
+from Jumpscale.servers.gedis.protocol import RedisResponseWriter, RedisCommandParser
 
 JSBASE = j.baseclasses.object
 

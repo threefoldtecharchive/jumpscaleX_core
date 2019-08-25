@@ -200,7 +200,7 @@ class BuilderBaseClass(JSBase):
             self.DIR_SANDBOX = "/tmp/package/{}".format(self.__class__.NAME)
 
         self._bash = None
-        BaseClass.__init__(self)
+        JSBase.__init__(self)
 
     def state_sandbox_set(self):
         """

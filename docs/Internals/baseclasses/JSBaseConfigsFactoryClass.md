@@ -19,7 +19,7 @@ class World(j.application.JSBaseConfigsFactoryClass):
     _CHILDCLASSES = [Cars,Ships]
 
 
-class Cars(j.baseclasses.objects_config_bcdb):
+class Cars(j.baseclasses.factory):
     """
     ...
     """
@@ -42,7 +42,7 @@ class Car(j.baseclasses.object_config):
 
 
 
-class Ships(j.baseclasses.objects_config_bcdb):
+class Ships(j.baseclasses.factory):
     """
     ...
     """

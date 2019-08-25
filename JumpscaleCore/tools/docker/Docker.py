@@ -12,10 +12,10 @@ JSBASE = j.baseclasses.object
 
 
 class Docker(j.baseclasses.object):
-    def __init__(self):
-        self.__jslocation__ = "j.sal.docker"
+    __jslocation__ = "j.sal.docker"
+
+    def _init(self):
         self.__imports__ = "docker"
-        JSBASE.__init__(self)
         self._basepath = "/storage/docker"
         self._prefix = ""
         self._containers = None

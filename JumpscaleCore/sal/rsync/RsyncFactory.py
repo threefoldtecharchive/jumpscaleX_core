@@ -9,9 +9,7 @@ class RsyncFactory(j.baseclasses.object):
     """
     """
 
-    def __init__(self):
-        self.__jslocation__ = "j.sal.rsync"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.sal.rsync"
 
     def getServer(self, root):
         return RsyncServer(root)

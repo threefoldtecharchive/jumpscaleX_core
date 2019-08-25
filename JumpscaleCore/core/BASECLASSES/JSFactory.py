@@ -8,9 +8,6 @@ from .JSConfigBCDB import JSConfigBCDB
 class JSFactory(JSBase):
     def _init_pre_factory(self, **kwargs):
 
-        # was from before
-        assert not hasattr(self.__class__, "_CHILDCLASS")
-
         # these are classes which will be created automatically when the factory class starts
         if hasattr(self.__class__, "_CHILDCLASSES"):
             for kl in self.__class__._CHILDCLASSES:
@@ -82,10 +79,11 @@ class JSFactory(JSBase):
         if self._object_config:
             self._object_config.save()
 
-    def _dataprops_names_get(self):
+    def _dataprops_names_get(self, filter=None):
         # means there is an object attached to it
         if self._object_config:
             self._object_config._dataprops_names_get()
+        return []
 
     def _children_names_get(self, filter=None):
         """

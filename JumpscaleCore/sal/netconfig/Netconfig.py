@@ -11,12 +11,12 @@ class Netconfig(j.baseclasses.object):
     Helps you to configure the network.
     """
 
-    def __init__(self):
-        self.__jslocation__ = "j.sal.netconfig"
+    __jslocation__ = "j.sal.netconfig"
+
+    def _init(self):
         self.root = j.tools.path.get("/")
         self._executor = j.tools.executorLocal
         self._interfaceChanged = False
-        JSBASE.__init__(self)
 
     def chroot(self, root):
         """

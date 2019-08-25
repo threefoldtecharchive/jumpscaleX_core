@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-JSConfigs = j.baseclasses.objects_config_bcdb
+JSConfigs = j.baseclasses.factory
 
 
 class Wiki(j.baseclasses.object_config):
@@ -98,6 +98,6 @@ class Wiki(j.baseclasses.object_config):
             self.write_config()
 
 
-class Wikis(j.baseclasses.objects_config_bcdb):
+class Wikis(j.baseclasses.factory):
 
     _CHILDCLASS = Wiki

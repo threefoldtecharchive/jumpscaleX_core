@@ -154,6 +154,6 @@ class DNSResolver(j.baseclasses.object_config):
                 obj.save()
 
 
-class DNSResolvers(j.baseclasses.objects_config_bcdb):
+class DNSResolvers(j.baseclasses.factory):
     _name = "resolvers"
     _CHILDCLASS = DNSResolver

@@ -5,10 +5,7 @@ JSBASE = j.baseclasses.object
 
 
 class PathFactory(j.baseclasses.object):
-    def __init__(self):
-        if not hasattr(self, "__jslocation__"):
-            self.__jslocation__ = "j.tools.path"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.tools.path"
 
     def get(self, startpath):
         """

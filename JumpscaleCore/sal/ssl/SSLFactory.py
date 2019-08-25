@@ -7,10 +7,8 @@ JSBASE = j.baseclasses.object
 
 
 class SSLFactory(JSBASE):
-    def __init__(self):
-        self.__jslocation__ = "j.sal.ssl"
-        self.__imports__ = "pyopenssl"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.sal.ssl"
+    __imports__ = "pyopenssl"
 
     def ca_cert_generate(self, cert_dir="", reset=False):
         """CA (Certificate Authority) generate

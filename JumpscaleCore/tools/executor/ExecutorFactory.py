@@ -9,10 +9,7 @@ JSBASE = j.baseclasses.object
 
 class ExecutorFactory(j.baseclasses.object):
     _executors = {}
-
-    def __init__(self):
-        self.__jslocation__ = "j.tools.executor"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.tools.executor"
 
     @property
     def local(self):

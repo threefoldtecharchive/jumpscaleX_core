@@ -224,7 +224,7 @@ class BaseClasses:
 #     """
 #     as used for j.... factory classes will has constructor for 1 type of Config children
 #
-#     class myclass(j.application.JSFactoryConfigsBaseClass):
+#     class myclass(j.baseclasses.object_config_collection):
 #         def _init(self,**kwargs):
 #             ...
 #

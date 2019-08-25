@@ -8,9 +8,7 @@ JSBASE = j.baseclasses.object
 
 
 class Time(j.baseclasses.object):
-    def __init__(self):
-        self.__jslocation__ = "j.tools.time"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.tools.time"
 
     @staticmethod
     def extend(date, months):

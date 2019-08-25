@@ -171,6 +171,6 @@ class DNSServer(DatagramServer, j.baseclasses.object_config):
         return True
 
 
-class DNSServers(j.baseclasses.objects_config_bcdb):
+class DNSServers(j.baseclasses.factory):
     _name = "servers"
     _CHILDCLASS = DNSServer

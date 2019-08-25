@@ -13,11 +13,7 @@ class ZipFileFactory(j.baseclasses.object):
     READ = "r"
     WRITE = "w"
     APPEND = "a"
-
-    def __init__(self):
-        if not hasattr(self, "__jslocation__"):
-            self.__jslocation__ = "j.tools.zipfile"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.tools.zipfile"
 
     def get(self, path, mode=READ):
         return ZipFile(path, mode)

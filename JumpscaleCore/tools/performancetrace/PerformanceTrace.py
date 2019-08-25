@@ -7,10 +7,7 @@ class PerformanceTraceFactory(j.baseclasses.object):
     """
     """
 
-    def __init__(self):
-        if not hasattr(self, "__jslocation__"):
-            self.__jslocation__ = "j.tools.performancetrace"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.tools.performancetrace"
 
     def profile(self, methodstatement, locals={}, globals={}):
         """

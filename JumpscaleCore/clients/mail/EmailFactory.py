@@ -1,7 +1,7 @@
 from .EmailClient import EmailClient
 from Jumpscale import j
 
-JSConfigs = j.baseclasses.objects_config_bcdb
+JSConfigs = j.baseclasses.factory
 
 
 class EmailFactory(JSConfigs):

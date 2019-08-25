@@ -8,10 +8,10 @@ JSBASE = j.baseclasses.object
 
 
 class IndexDB(j.baseclasses.object):
-    def __init__(self):
-        self.__jslocation__ = "j.data.indexfile"
+    __jslocation__ = "j.data.indexfile"
+
+    def _init(self):
         self.basepath = "%s/indexfile/" % (j.dirs.VARDIR)
-        JSBASE.__init__(self)
 
     def get(self, name, path=None, nrbytes=4):
         if path is None:

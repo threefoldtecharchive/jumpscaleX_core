@@ -14,9 +14,7 @@ JSBASE = j.baseclasses.object
 
 
 class InifileTool(j.baseclasses.object):
-    def __init__(self):
-        self.__jslocation__ = "j.data.inifile"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.data.inifile"
 
     @staticmethod
     def open(filename, createIfNonExisting=True):

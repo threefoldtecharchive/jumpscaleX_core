@@ -13,10 +13,8 @@ except:
 
 
 class HashTool(j.baseclasses.object):
-    def __init__(self):
-        self.__jslocation__ = "j.data.hash"
-        JSBASE.__init__(self)
-        self.__imports__ = "pyblake2"
+    __jslocation__ = "j.data.hash"
+    __imports__ = "pyblake2"
 
     def hashDir(self, rootpath):
         """

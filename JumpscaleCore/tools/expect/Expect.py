@@ -150,9 +150,7 @@ class Popen(subprocess.Popen, JSBASE):
 
 
 class ExpectTool(j.baseclasses.object):
-    def __init__(self):
-        self.__jslocation__ = "j.tools.expect"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.tools.expect"
 
     @staticmethod
     def new(cmd=None):

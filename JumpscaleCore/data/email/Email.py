@@ -8,9 +8,7 @@ JSBASE = j.baseclasses.object
 
 
 class EmailTool(j.baseclasses.object):
-    def __init__(self):
-        self.__jslocation__ = "j.tools.email"
-        JSBASE.__init__(self)
+    __jslocation__ = "j.tools.email"
 
     def _get_lastest_keys(self, n=100):
         """

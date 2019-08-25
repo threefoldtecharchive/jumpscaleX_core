@@ -4,7 +4,7 @@ from .SSHClientParamiko import SSHClientParamiko
 from .SSHClientBase import SSHClientBase
 
 
-class SSHClientFactory(j.baseclasses.objects_config_bcdb):
+class SSHClientFactory(j.baseclasses.factory):
 
     __jslocation__ = "j.clients.ssh"
     _CHILDCLASS = SSHClientBase

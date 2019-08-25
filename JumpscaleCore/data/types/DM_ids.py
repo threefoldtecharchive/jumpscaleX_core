@@ -1,7 +1,7 @@
 # TODO" NOT READY TO BE USED, see despiegk
 
 from Jumpscale import j
-from JumpscaleLibs.data.types.TypeBaseClasses import TypeBaseObjFactory, TypeBaseObjClass
+from Jumpscale.data.types.TypeBaseClasses import TypeBaseObjFactory, TypeBaseObjClass
 
 
 class DMBase(TypeBaseObjClass):

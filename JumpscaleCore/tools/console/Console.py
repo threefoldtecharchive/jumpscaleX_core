@@ -44,11 +44,9 @@ class Console(j.baseclasses.object):  #!!!CONSOLE!!!
     self.reformat=False #if True will make sure message fits nicely on screen
     """
 
-    #!!!CONSOLE!!!
+    __jslocation__ = "j.tools.console"
 
-    def __init__(self):
-        self.__jslocation__ = "j.tools.console"
-        JSBASE.__init__(self)
+    def _init(self):
         self.width = 230
         self.indent = 0  # current indentation of messages send to console
         self.stdout = None

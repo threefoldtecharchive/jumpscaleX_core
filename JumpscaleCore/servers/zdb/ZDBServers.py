@@ -1,7 +1,7 @@
 from Jumpscale import j
 from .ZDBServer import ZDBServer
 
-JSConfigs = j.baseclasses.objects_config_bcdb
+JSConfigs = j.baseclasses.factory
 
 
 class ZDBServers(JSConfigs):

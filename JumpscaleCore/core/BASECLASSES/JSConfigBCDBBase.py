@@ -100,7 +100,7 @@ class JSConfigBCDBBase(JSBase, Attr):
 
     def __init_class_post(self):
 
-        if isinstance(j.baseclasses.object_config) and isinstance(j.baseclasses.objects_config_bcdb):
+        if isinstance(j.baseclasses.object_config) and isinstance(j.baseclasses.factory):
             raise j.exceptions.Base("combination not allowed of config and configsclass")
 
     def _process_schematext(self, schematext):

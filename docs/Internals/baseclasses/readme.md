@@ -17,7 +17,7 @@ use this when you create children
 
 - [j.application.JSFactoryBaseClass](factorybaseclass.md)
 - [j.baseclasses.object_config](config.md)
-- [j.baseclasses.objects_config_bcdb](configs.md)
+- [j.baseclasses.factory](configs.md)
 
 
 ## properties available on all base classes
