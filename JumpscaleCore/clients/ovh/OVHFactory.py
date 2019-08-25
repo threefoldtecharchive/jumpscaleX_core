@@ -10,7 +10,7 @@ class OVHFactory(JSConfigBaseFactory):
     """
 
     __jslocation__ = "j.clients.ovh"
-    _CHILDCLASS = OVHClient
+    _CHILDFACTORY_CLASS = OVHClient
 
     def _init(self, **kwargs):
         self.__imports__ = "ovh"

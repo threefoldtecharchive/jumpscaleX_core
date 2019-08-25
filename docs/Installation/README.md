@@ -44,7 +44,7 @@ Before starting the installation make sure to go through the prerequisites. it d
 
 - ### InSystem Installation
     This will install jumpscale on your local system prefered ubuntu 18:04<br/>
-    **Note** This will need more prerequisites 
+    **Note** This will need more prerequisites
     - packages: `openssh-server locales curl vim git rsync unzip lsb python3 python3-pip`<br/>
         ```bash
         apt install -y openssh-server locales curl vim git rsync unzip lsb python3 python3-pip
@@ -77,7 +77,7 @@ Here we will install jumpscale using container-install option which will create 
     - 2- download the installation file, make it executable, then run it
         ```bash
         # download
-        curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX/development_jumpscale/install/jsx.py?$RANDOM > /tmp/jsx;
+        curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx;
         # change permission
         chmod +x /tmp/jsx;
         # install
@@ -91,7 +91,7 @@ Here we will install jumpscale using container-install option which will create 
     Note: default sshkey will be the "id_rsa" in `~/.ssh/id_rsa`  so make sure to have one.
         ```bash
         # download
-        curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX/development_jumpscale/install/jsx.py?$RANDOM > /tmp/jsx;
+        curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx;
         # change permission
         chmod +x /tmp/jsx;
         # configure with your secret - replace mysecret with yours`
@@ -110,11 +110,11 @@ Here we will install jumpscale using install option which willinstall jumpscale 
     - 2- download the installation file, make it executable, then run it
         ```bash
         # download
-        curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX/development_jumpscale/install/jsx.py?$RANDOM > /tmp/jsx;
+        curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx;
         # change permission
-        chmod +x /tmp/jsx; 
+        chmod +x /tmp/jsx;
         # install
-        /tmp/jsx install 
+        /tmp/jsx install
         ```
 
 - #### No Interactive InSystem
@@ -124,9 +124,9 @@ Here we will install jumpscale using install option which willinstall jumpscale 
     Note: default sshkey will be the "id_rsa" in `~/.ssh/id_rsa`  so make sure to have one.
         ```bash
         # download
-        curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX/development_jumpscale/install/jsx.py?$RANDOM > /tmp/jsx;
+        curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx;
         # change permission
-        chmod +x /tmp/jsx; 
+        chmod +x /tmp/jsx;
         # configure with your secret - replace mysecret with yours`
         /tmp/jsx configure -s --secret mysecret;
         # install
@@ -155,7 +155,7 @@ also there's some more intersting options to use
         ```bash
         #get more help of jsx command
         /tmp/jsx --help
-        ``` 
+        ```
 
 ## Advanced Installation
 it is easy to develop on the installer, will install from existing code on your system
@@ -172,8 +172,8 @@ git pull
 #link the installer from tmp to the source directory, makes it easy for the rest of this tutorial
 rm -f /tmp/jsx.py
 rm -f /tmp/InstallTools.py;
-ln -s /sandbox/code/github/threefoldtech/jumpscaleX/install/jsx.py /tmp/jsx;
-ln -s /sandbox/code/github/threefoldtech/jumpscaleX/install/InstallTools.py /tmp/InstallTools.py
+ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx;
+ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py /tmp/InstallTools.py
 ```
 
 ## after-installation
@@ -189,14 +189,14 @@ Once kosmos is launched you will see this line:
 ```bash
 JSX>
 ```
-Congrats ! You may now use this jsx shell to manipulate the Jumpscale X library 
+Congrats ! You may now use this jsx shell to manipulate the Jumpscale X library
 
 If jsx is missing from your `/tmp` folder:
 
 ```bash
 # get the jsx command
-curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX/development_installer/install/jsx.py?$RANDOM > /tmp/jsx ; \
-chmod +x /tmp/jsx; 
+curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx ; \
+chmod +x /tmp/jsx;
 # get your kosmos shell (inside your 3bot container)
 /tmp/jsx container-kosmos
 ```

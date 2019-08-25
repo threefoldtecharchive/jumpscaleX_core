@@ -7,7 +7,7 @@ JSConfigBaseFactory = j.baseclasses.object_config_collection
 class PacketNetFactory(JSConfigBaseFactory):
 
     __jslocation__ = "j.clients.packetnet"
-    _CHILDCLASS = PacketNet
+    _CHILDFACTORY_CLASS = PacketNet
 
     def _init(self, **kwargs):
         self.connections = {}
