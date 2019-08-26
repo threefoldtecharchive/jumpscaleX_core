@@ -28,10 +28,6 @@ Commands:
   kosmos
 ```
 
-## configure your JSX
-
-```bash
-```
 
 ## install
 
