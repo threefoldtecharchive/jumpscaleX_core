@@ -9,11 +9,8 @@
     <bookmark url="file://$PROJECT_DIR$/../../install/InstallTools.py" line="3909" mnemonic="2" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7ee4f4bc-1051-4a9b-bc3e-d01d132960f5" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/clients/stor_zdb/ZDBClientFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/clients/stor_zdb/ZDBClientFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/BCDBFactory.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/BCDBFactory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaProperty.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaProperty.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../JumpscaleCore/data/types/CollectionTypes.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../JumpscaleCore/data/types/CollectionTypes.py" afterDir="false" />
+    <list default="true" id="7ee4f4bc-1051-4a9b-bc3e-d01d132960f5" name="Default Changelist" comment="kosmos working again, but only the basics">
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -28,81 +25,108 @@
     </favorites_list>
   </component>
   <component name="FileEditorManager">
-    <leaf>
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/BCDBFactory.py">
+        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/servers/threebot/ThreeBotServersFactory.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="146">
-              <caret line="336" column="24" selection-start-line="336" selection-start-column="24" selection-end-line="336" selection-end-column="24" />
+            <state relative-caret-position="357">
+              <caret line="23" selection-start-line="23" selection-end-line="23" />
+              <folding>
+                <element signature="e#0#42#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaProperty.py">
+        <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders/web/BuilderOpenResty.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="510">
-              <caret line="79" selection-start-line="75" selection-end-line="79" />
+            <state relative-caret-position="170">
+              <caret line="13" column="11" selection-start-line="13" selection-start-column="11" selection-end-line="13" selection-end-column="11" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/BuilderBaseClass.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="6630">
+              <caret line="396" column="25" selection-start-line="396" selection-start-column="25" selection-end-line="396" selection-end-column="25" />
+              <folding>
+                <element signature="e#0#23#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/BaseClasses.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="2482">
+              <caret line="154" column="8" selection-start-line="154" selection-start-column="8" selection-end-line="154" selection-end-column="8" />
+              <folding>
+                <element signature="e#1103#1129#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders/tools/BuilderTools.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="12852">
+              <caret line="760" column="48" selection-start-line="760" selection-start-column="48" selection-end-line="760" selection-end-column="48" />
+              <folding>
+                <element signature="e#0#37#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/tools/bash/Bash.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="85">
+              <caret line="6" column="33" selection-start-line="6" selection-start-column="33" selection-end-line="6" selection-end-column="33" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../../cmds/js_init">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="884">
+              <caret line="54" column="4" selection-start-line="54" selection-start-column="4" selection-end-line="54" selection-end-column="4" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/clients/stor_zdb/ZDBClientFactory.py">
+        <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders/zos/BuilderCoreX.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="561">
-              <caret line="64" column="25" selection-start-line="64" selection-start-column="25" selection-end-line="64" selection-end-column="25" />
+            <state relative-caret-position="34">
+              <caret line="2" column="40" selection-start-line="2" selection-start-column="40" selection-end-line="2" selection-end-column="40" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/types/CollectionTypes.py">
+        <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders/system/BuilderSystemPackage.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="771">
-              <caret line="203" column="56" selection-start-line="203" selection-start-column="56" selection-end-line="203" selection-end-column="56" />
+            <state relative-caret-position="238">
+              <caret line="15" selection-start-line="15" selection-end-line="15" />
+              <folding>
+                <element signature="e#0#23#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/7_redis.py">
-          <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/12_subschemas.py">
+        <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders/system/BuilderDummy.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="510">
-              <caret line="30" column="4" selection-start-line="30" selection-start-column="4" selection-end-line="30" selection-end-column="48" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/10_export.py">
-          <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/9_unique_data.py">
-          <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/8_keys.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="442">
-              <caret line="26" column="4" selection-start-line="26" selection-start-column="4" selection-end-line="26" selection-end-column="42" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/tests/1_base.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="901">
-              <caret line="53" lean-forward="true" selection-start-line="53" selection-end-line="53" />
+            <state relative-caret-position="102">
+              <caret line="6" column="4" selection-start-line="6" selection-start-column="4" selection-end-line="6" selection-end-column="39" />
             </state>
           </provider>
         </entry>
@@ -111,10 +135,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>from Jumpscale.data</find>
-      <find>from Jumpscale.tools</find>
-      <find>from Jumpscale.sal_zos</find>
-      <find>from Jumpscale.sal</find>
       <find>from Jumpscale.clients</find>
       <find>from Jumpscale.core</find>
       <find>from Jumpscale.</find>
@@ -141,9 +161,12 @@
       <find>Factory(j.baseclasses.object_config_collection</find>
       <find>Factory(j.baseclasses.object_config_collection_factory</find>
       <find>j.basetypes.dict</find>
+      <find>builder_met</find>
+      <find>j.builders.system.builder_method</find>
+      <find>bash.pro</find>
+      <find>base</find>
     </findStrings>
     <replaceStrings>
-      <replace>.monitoring.</replace>
       <replace>.virtualization.</replace>
       <replace>.runtimes.</replace>
       <replace>group_name</replace>
@@ -173,6 +196,7 @@
       <replace>Factory(j.baseclasses.object_config_collection_factory</replace>
       <replace>Factory(j.baseclasses.object_config_collection_testtools</replace>
       <replace>j.baseclasses.dict</replace>
+      <replace>j.baseclasses.builder_method</replace>
     </replaceStrings>
     <dirStrings>
       <dir>$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuildersExtra/blockchain</dir>
@@ -202,9 +226,9 @@
       <dir>$PROJECT_DIR$/../../../jumpscaleX_builders</dir>
       <dir>$PROJECT_DIR$/../../JumpscaleCore/core/generator/templates</dir>
       <dir>$PROJECT_DIR$/../../JumpscaleCore/core/generator</dir>
-      <dir>$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders</dir>
       <dir>$PROJECT_DIR$/../../..</dir>
       <dir>$PROJECT_DIR$/../../JumpscaleCore</dir>
+      <dir>$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders</dir>
     </dirStrings>
   </component>
   <component name="Git.Settings">
@@ -215,7 +239,7 @@
     </option>
     <option name="PUSH_AUTO_UPDATE" value="true" />
     <option name="ROOT_SYNC" value="DONT_SYNC" />
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../../../jumpscaleX_builders" />
     <option name="PREVIEW_PUSH_PROTECTED_ONLY" value="true" />
   </component>
   <component name="GotoClassSymbolConfiguration">
@@ -239,9 +263,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/sal/ubuntu/Ubuntu.py" />
-        <option value="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/data/issuemanager/IssueManager.py" />
-        <option value="$PROJECT_DIR$/../../JumpscaleCore/tools/dnstools/DNSTools.py" />
         <option value="$PROJECT_DIR$/../../JumpscaleCore/tools/console/Console.py" />
         <option value="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/data/worksheets/Sheets.py" />
         <option value="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/data/treemanager/Treemanager.py" />
@@ -278,26 +299,27 @@
         <option value="$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zero_hub_direct/HubDirectFactory.py" />
         <option value="$PROJECT_DIR$/../../JumpscaleCore/servers/openresty/OpenRestyFactory.py" />
         <option value="$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders/db/BuilderRedis.py" />
-        <option value="$PROJECT_DIR$/../../JumpscaleCore/servers/threebot/ThreeBotServersFactory.py" />
-        <option value="$PROJECT_DIR$/../../cmds/js_init" />
         <option value="$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/Attr.py" />
         <option value="$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSBase.py" />
         <option value="$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/servers/sanic/SanicServer.py" />
         <option value="$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaFactory.py" />
-        <option value="$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/BaseClasses.py" />
         <option value="$PROJECT_DIR$/../../JumpscaleCore/data/schema/tests/11_dict.py" />
         <option value="$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/BCDBFactory.py" />
         <option value="$PROJECT_DIR$/../../JumpscaleCore/data/types/CollectionTypes.py" />
         <option value="$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaProperty.py" />
         <option value="$PROJECT_DIR$/../../JumpscaleCore/clients/stor_zdb/ZDBClientFactory.py" />
+        <option value="$PROJECT_DIR$/../../JumpscaleCore/servers/threebot/ThreeBotServersFactory.py" />
+        <option value="$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders/system/BuilderDummy.py" />
+        <option value="$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/BaseClasses.py" />
+        <option value="$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders/system/BuilderSystemPackage.py" />
+        <option value="$PROJECT_DIR$/../../JumpscaleCore/tools/bash/Bash.py" />
+        <option value="$PROJECT_DIR$/../../cmds/js_init" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" fullScreen="true">
-    <option name="x" value="685" />
-    <option name="y" value="23" />
     <option name="width" value="1680" />
-    <option name="height" value="1027" />
+    <option name="height" value="1050" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <ConfirmationsSetting value="2" id="Add" />
@@ -329,71 +351,103 @@
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
               <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="docs" type="462c0819:PsiDirectoryNode" />
+              <item name="JumpscaleBuilders" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
               <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="docs" type="462c0819:PsiDirectoryNode" />
-              <item name="packages" type="462c0819:PsiDirectoryNode" />
+              <item name="JumpscaleBuilders" type="462c0819:PsiDirectoryNode" />
+              <item name="system" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
               <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="install" type="462c0819:PsiDirectoryNode" />
+              <item name="JumpscaleBuilders" type="462c0819:PsiDirectoryNode" />
+              <item name="system" type="462c0819:PsiDirectoryNode" />
+              <item name="BuilderDummy.py" type="8704e2dd:PyFileNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
               <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleBuildersCommunity" type="462c0819:PsiDirectoryNode" />
+              <item name="JumpscaleBuilders" type="462c0819:PsiDirectoryNode" />
+              <item name="system" type="462c0819:PsiDirectoryNode" />
+              <item name="BuilderDummy.py" type="8704e2dd:PyFileNode" />
+              <item name="BuilderDummy" type="dd8bbb05:PyElementNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
               <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleBuildersCommunity" type="462c0819:PsiDirectoryNode" />
-              <item name="apps" type="462c0819:PsiDirectoryNode" />
+              <item name="JumpscaleBuilders" type="462c0819:PsiDirectoryNode" />
+              <item name="system" type="462c0819:PsiDirectoryNode" />
+              <item name="BuilderSystemPackage.py" type="8704e2dd:PyFileNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
               <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleBuildersCommunity" type="462c0819:PsiDirectoryNode" />
-              <item name="apps" type="462c0819:PsiDirectoryNode" />
-              <item name="templates" type="462c0819:PsiDirectoryNode" />
+              <item name="JumpscaleBuilders" type="462c0819:PsiDirectoryNode" />
+              <item name="system" type="462c0819:PsiDirectoryNode" />
+              <item name="BuilderSystemPackage.py" type="8704e2dd:PyFileNode" />
+              <item name="BuilderSystemPackage" type="dd8bbb05:PyElementNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleBuilders" type="462c0819:PsiDirectoryNode" />
+              <item name="tools" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleBuilders" type="462c0819:PsiDirectoryNode" />
+              <item name="tools" type="462c0819:PsiDirectoryNode" />
+              <item name="BuilderTools.py" type="8704e2dd:PyFileNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleBuilders" type="462c0819:PsiDirectoryNode" />
+              <item name="tools" type="462c0819:PsiDirectoryNode" />
+              <item name="BuilderTools.py" type="8704e2dd:PyFileNode" />
+              <item name="BuilderTools" type="dd8bbb05:PyElementNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleBuilders" type="462c0819:PsiDirectoryNode" />
+              <item name="web" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleBuilders" type="462c0819:PsiDirectoryNode" />
+              <item name="web" type="462c0819:PsiDirectoryNode" />
+              <item name="BuilderOpenResty.py" type="8704e2dd:PyFileNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleBuilders" type="462c0819:PsiDirectoryNode" />
+              <item name="web" type="462c0819:PsiDirectoryNode" />
+              <item name="BuilderOpenResty.py" type="8704e2dd:PyFileNode" />
+              <item name="BuilderOpenResty" type="dd8bbb05:PyElementNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleBuilders" type="462c0819:PsiDirectoryNode" />
+              <item name="zos" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
+              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="JumpscaleBuilders" type="462c0819:PsiDirectoryNode" />
+              <item name="zos" type="462c0819:PsiDirectoryNode" />
+              <item name="BuilderCoreX.py" type="8704e2dd:PyFileNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
               <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
               <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="clients" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="clients" type="462c0819:PsiDirectoryNode" />
-              <item name="stor_zdb" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="clients" type="462c0819:PsiDirectoryNode" />
-              <item name="stor_zdb" type="462c0819:PsiDirectoryNode" />
-              <item name="ZDBClientFactory.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="clients" type="462c0819:PsiDirectoryNode" />
-              <item name="stor_zdb" type="462c0819:PsiDirectoryNode" />
-              <item name="ZDBClientFactory.py" type="8704e2dd:PyFileNode" />
-              <item name="ZDBClientFactory" type="dd8bbb05:PyElementNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
@@ -407,23 +461,6 @@
               <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
               <item name="core" type="462c0819:PsiDirectoryNode" />
               <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="core" type="462c0819:PsiDirectoryNode" />
-              <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
-              <item name="Attr.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="core" type="462c0819:PsiDirectoryNode" />
-              <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
-              <item name="Attr.py" type="8704e2dd:PyFileNode" />
-              <item name="Attr" type="dd8bbb05:PyElementNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
@@ -448,221 +485,37 @@
               <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
               <item name="core" type="462c0819:PsiDirectoryNode" />
               <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
-              <item name="JSBase.py" type="8704e2dd:PyFileNode" />
+              <item name="BuilderBaseClass.py" type="8704e2dd:PyFileNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
               <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
               <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="core" type="462c0819:PsiDirectoryNode" />
-              <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
-              <item name="JSBase.py" type="8704e2dd:PyFileNode" />
-              <item name="JSBase" type="dd8bbb05:PyElementNode" />
+              <item name="tools" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
               <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
               <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="core" type="462c0819:PsiDirectoryNode" />
-              <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
-              <item name="JSConfigBCDB.py" type="8704e2dd:PyFileNode" />
+              <item name="tools" type="462c0819:PsiDirectoryNode" />
+              <item name="bash" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
               <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
               <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="core" type="462c0819:PsiDirectoryNode" />
-              <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
-              <item name="JSConfigBCDBBase.py" type="8704e2dd:PyFileNode" />
+              <item name="tools" type="462c0819:PsiDirectoryNode" />
+              <item name="bash" type="462c0819:PsiDirectoryNode" />
+              <item name="Bash.py" type="8704e2dd:PyFileNode" />
             </path>
             <path>
               <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
               <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
               <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="core" type="462c0819:PsiDirectoryNode" />
-              <item name="BASECLASSES" type="462c0819:PsiDirectoryNode" />
-              <item name="JSConfigsBCDB.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="data" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="data" type="462c0819:PsiDirectoryNode" />
-              <item name="bcdb" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="data" type="462c0819:PsiDirectoryNode" />
-              <item name="bcdb" type="462c0819:PsiDirectoryNode" />
-              <item name="tests" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="data" type="462c0819:PsiDirectoryNode" />
-              <item name="bcdb" type="462c0819:PsiDirectoryNode" />
-              <item name="BCDBFactory.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="data" type="462c0819:PsiDirectoryNode" />
-              <item name="bcdb" type="462c0819:PsiDirectoryNode" />
-              <item name="BCDBFactory.py" type="8704e2dd:PyFileNode" />
-              <item name="BCDBFactory" type="dd8bbb05:PyElementNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="data" type="462c0819:PsiDirectoryNode" />
-              <item name="schema" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="data" type="462c0819:PsiDirectoryNode" />
-              <item name="schema" type="462c0819:PsiDirectoryNode" />
-              <item name="tests" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="data" type="462c0819:PsiDirectoryNode" />
-              <item name="schema" type="462c0819:PsiDirectoryNode" />
-              <item name="tests" type="462c0819:PsiDirectoryNode" />
-              <item name="11_dict.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="data" type="462c0819:PsiDirectoryNode" />
-              <item name="schema" type="462c0819:PsiDirectoryNode" />
-              <item name="SchemaFactory.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="data" type="462c0819:PsiDirectoryNode" />
-              <item name="schema" type="462c0819:PsiDirectoryNode" />
-              <item name="SchemaFactory.py" type="8704e2dd:PyFileNode" />
-              <item name="SchemaFactory" type="dd8bbb05:PyElementNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="data" type="462c0819:PsiDirectoryNode" />
-              <item name="schema" type="462c0819:PsiDirectoryNode" />
-              <item name="SchemaProperty.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="data" type="462c0819:PsiDirectoryNode" />
-              <item name="schema" type="462c0819:PsiDirectoryNode" />
-              <item name="SchemaProperty.py" type="8704e2dd:PyFileNode" />
-              <item name="SchemaProperty" type="dd8bbb05:PyElementNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="data" type="462c0819:PsiDirectoryNode" />
-              <item name="types" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="data" type="462c0819:PsiDirectoryNode" />
-              <item name="types" type="462c0819:PsiDirectoryNode" />
-              <item name="CollectionTypes.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleCore" type="462c0819:PsiDirectoryNode" />
-              <item name="data" type="462c0819:PsiDirectoryNode" />
-              <item name="types" type="462c0819:PsiDirectoryNode" />
-              <item name="CollectionTypes.py" type="8704e2dd:PyFileNode" />
-              <item name="Dictionary" type="dd8bbb05:PyElementNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleLibs" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleLibs" type="462c0819:PsiDirectoryNode" />
-              <item name="clients" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleLibs" type="462c0819:PsiDirectoryNode" />
-              <item name="clients" type="462c0819:PsiDirectoryNode" />
-              <item name="coredns" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleLibs" type="462c0819:PsiDirectoryNode" />
-              <item name="clients" type="462c0819:PsiDirectoryNode" />
-              <item name="coredns" type="462c0819:PsiDirectoryNode" />
-              <item name="CoreDnsClient.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleLibsExtra" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleLibsExtra" type="462c0819:PsiDirectoryNode" />
-              <item name="servers" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleLibsExtra" type="462c0819:PsiDirectoryNode" />
-              <item name="servers" type="462c0819:PsiDirectoryNode" />
-              <item name="sanic" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleLibsExtra" type="462c0819:PsiDirectoryNode" />
-              <item name="servers" type="462c0819:PsiDirectoryNode" />
-              <item name="sanic" type="462c0819:PsiDirectoryNode" />
-              <item name="SanicServer.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="PyCharmJumpscale" type="b2602c69:ProjectViewProjectNode" />
-              <item name="jumpscale" type="47feb1d3:ProjectViewModuleNode" />
-              <item name="JumpscaleLibsExtra" type="462c0819:PsiDirectoryNode" />
-              <item name="servers" type="462c0819:PsiDirectoryNode" />
-              <item name="sanic" type="462c0819:PsiDirectoryNode" />
-              <item name="SanicServer.py" type="8704e2dd:PyFileNode" />
-              <item name="SanicServer" type="dd8bbb05:PyElementNode" />
+              <item name="tools" type="462c0819:PsiDirectoryNode" />
+              <item name="bash" type="462c0819:PsiDirectoryNode" />
+              <item name="Bash.py" type="8704e2dd:PyFileNode" />
+              <item name="Bash" type="dd8bbb05:PyElementNode" />
             </path>
           </expand>
           <select />
@@ -823,9 +676,8 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="1680" height="1050" extended-state="0" />
-    <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.23387583" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.23387583" />
       <window_info id="Structure" order="1" weight="0.25" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32761088" />
@@ -834,10 +686,10 @@
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Version Control" order="7" sideWeight="0.49940923" weight="0.32738096" />
+      <window_info active="true" anchor="bottom" id="Version Control" order="7" sideWeight="0.49668476" visible="true" weight="0.32738096" />
       <window_info anchor="bottom" id="Terminal" internal_type="SLIDING" order="8" type="SLIDING" weight="0.32904148" />
       <window_info anchor="bottom" id="Educational.CheckDetails" order="9" />
-      <window_info anchor="bottom" id="Event Log" order="10" sideWeight="0.5005908" side_tool="true" weight="0.32761088" />
+      <window_info anchor="bottom" id="Event Log" order="10" sideWeight="0.50331527" side_tool="true" visible="true" weight="0.32738096" />
       <window_info anchor="bottom" id="Python Console" order="11" sideWeight="0.49980307" weight="0.28373015" />
       <window_info anchor="bottom" id="LuaCheck" order="12" weight="0.3297568" />
       <window_info anchor="bottom" id="Inspection Results" order="13" weight="0.3297568" />
@@ -1027,69 +879,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_libs/JumpscaleLibs/clients/zero_stor/ZeroStorFactory.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="153">
-          <caret line="9" selection-start-line="9" selection-end-line="9" />
-          <folding>
-            <element signature="e#0#42#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/tools/storybot/StoryBotFactory.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="34">
-          <caret line="4" column="60" selection-start-line="4" selection-start-column="22" selection-end-line="4" selection-end-column="60" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/tools/storybot/StoryBot.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_libs_extra/JumpscaleLibsExtra/tools/storybot/Story.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <folding>
-            <element signature="e#0#65#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../docs/Installation/README.md">
-      <provider selected="true" editor-type-id="split-provider[text-editor;MarkdownPreviewEditor]">
-        <state split_layout="SPLIT">
-          <first_editor relative-caret-position="765">
-            <caret line="98" column="17" lean-forward="true" selection-start-line="98" selection-start-column="17" selection-end-line="98" selection-end-column="17" />
-          </first_editor>
-          <second_editor>
-            <markdownNavigatorState />
-          </second_editor>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../docs/Installation/generation.md">
-      <provider selected="true" editor-type-id="split-provider[text-editor;MarkdownPreviewEditor]">
-        <state split_layout="SPLIT">
-          <first_editor relative-caret-position="391">
-            <caret line="23" column="3" lean-forward="true" selection-start-line="23" selection-start-column="3" selection-end-line="23" selection-end-column="3" />
-          </first_editor>
-          <second_editor>
-            <markdownNavigatorState />
-          </second_editor>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../docs/Installation/get_started.md">
-      <provider selected="true" editor-type-id="split-provider[text-editor;MarkdownPreviewEditor]">
-        <state split_layout="SPLIT">
-          <first_editor />
-          <second_editor>
-            <markdownNavigatorState />
-          </second_editor>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../../docs/Installation/install_docker.md">
       <provider selected="true" editor-type-id="split-provider[text-editor;MarkdownPreviewEditor]">
         <state split_layout="SPLIT">
@@ -1224,16 +1013,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/servers/threebot/ThreeBotServersFactory.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="510">
-          <caret line="49" column="33" selection-start-line="49" selection-start-column="33" selection-end-line="49" selection-end-column="33" />
-          <folding>
-            <element signature="e#0#42#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/generator/JSGenerator.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="136">
@@ -1280,15 +1059,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSBaseConfigsConfigFactoryClass.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <folding>
-            <element signature="e#0#46#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/JSBaseConfigsConfigFactoryClass.py" />
     <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/schema/tests/11_dict.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="459">
@@ -1326,27 +1097,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/BaseClasses.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="858">
-          <caret line="103" column="34" selection-start-line="103" selection-start-column="14" selection-end-line="103" selection-end-column="34" />
-          <folding>
-            <element signature="e#1103#1129#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/Attr.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="927">
           <caret line="67" selection-start-line="67" selection-end-line="67" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../cmds/js_init">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="697">
-          <caret line="54" column="5" selection-start-line="54" selection-start-column="5" selection-end-line="54" selection-end-column="5" />
         </state>
       </provider>
     </entry>
@@ -1366,6 +1120,34 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="459">
           <caret line="27" column="47" lean-forward="true" selection-start-line="27" selection-start-column="47" selection-end-line="27" selection-end-column="47" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/clients/stor_zdb/ZDBClientFactory.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="153">
+          <caret line="40" column="31" lean-forward="true" selection-start-line="40" selection-start-column="31" selection-end-line="40" selection-end-column="31" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaProperty.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="510">
+          <caret line="79" selection-start-line="75" selection-end-line="79" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/BCDBFactory.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="146">
+          <caret line="336" column="24" selection-start-line="336" selection-start-column="24" selection-end-line="336" selection-end-column="24" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/types/CollectionTypes.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="771">
+          <caret line="203" column="56" selection-start-line="203" selection-start-column="56" selection-end-line="203" selection-end-column="56" />
         </state>
       </provider>
     </entry>
@@ -1399,31 +1181,88 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/types/CollectionTypes.py">
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/servers/threebot/ThreeBotServersFactory.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="771">
-          <caret line="203" column="56" selection-start-line="203" selection-start-column="56" selection-end-line="203" selection-end-column="56" />
+        <state relative-caret-position="357">
+          <caret line="23" selection-start-line="23" selection-end-line="23" />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/bcdb/BCDBFactory.py">
+    <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders/web/BuilderOpenResty.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="146">
-          <caret line="336" column="24" selection-start-line="336" selection-start-column="24" selection-end-line="336" selection-end-column="24" />
+        <state relative-caret-position="170">
+          <caret line="13" column="11" selection-start-line="13" selection-start-column="11" selection-end-line="13" selection-end-column="11" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/data/schema/SchemaProperty.py">
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/BuilderBaseClass.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="510">
-          <caret line="79" selection-start-line="75" selection-end-line="79" />
+        <state relative-caret-position="6630">
+          <caret line="396" column="25" selection-start-line="396" selection-start-column="25" selection-end-line="396" selection-end-column="25" />
+          <folding>
+            <element signature="e#0#23#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/clients/stor_zdb/ZDBClientFactory.py">
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/core/BASECLASSES/BaseClasses.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="561">
-          <caret line="64" column="25" selection-start-line="64" selection-start-column="25" selection-end-line="64" selection-end-column="25" />
+        <state relative-caret-position="2482">
+          <caret line="154" column="8" selection-start-line="154" selection-start-column="8" selection-end-line="154" selection-end-column="8" />
+          <folding>
+            <element signature="e#1103#1129#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders/tools/BuilderTools.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="12852">
+          <caret line="760" column="48" selection-start-line="760" selection-start-column="48" selection-end-line="760" selection-end-column="48" />
+          <folding>
+            <element signature="e#0#37#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../JumpscaleCore/tools/bash/Bash.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="85">
+          <caret line="6" column="33" selection-start-line="6" selection-start-column="33" selection-end-line="6" selection-end-column="33" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../cmds/js_init">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="884">
+          <caret line="54" column="4" selection-start-line="54" selection-start-column="4" selection-end-line="54" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders/system/BuilderSystemPackage.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="238">
+          <caret line="15" selection-start-line="15" selection-end-line="15" />
+          <folding>
+            <element signature="e#0#23#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders/system/BuilderDummy.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="102">
+          <caret line="6" column="4" selection-start-line="6" selection-start-column="4" selection-end-line="6" selection-end-column="39" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../../jumpscaleX_builders/JumpscaleBuilders/zos/BuilderCoreX.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="34">
+          <caret line="2" column="40" selection-start-line="2" selection-start-column="40" selection-end-line="2" selection-end-column="40" />
         </state>
       </provider>
     </entry>
