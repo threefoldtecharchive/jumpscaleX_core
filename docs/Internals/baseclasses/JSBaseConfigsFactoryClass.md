@@ -9,7 +9,7 @@ that is why it is not `_CHILDCLASS `here but `_CHILDCLASSES`.
 ```python
 from Jumpscale import j
 
-class World(j.application.JSBaseConfigsFactoryClass):
+class World(j.baseclasses.factory):
     """
     some text explaining what the class does
     """

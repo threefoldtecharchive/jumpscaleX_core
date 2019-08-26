@@ -11,7 +11,7 @@ JSBASE = j.baseclasses.object
 # OPEN_PUBLISH_REPO = "https://github.com/threefoldtech/OpenPublish"
 
 
-class OpenRestyServer(j.application.JSBaseConfigsConfigFactoryClass):
+class OpenRestyServer(j.baseclasses.factory):
     """
     Factory for openresty
     """

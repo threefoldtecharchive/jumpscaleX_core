@@ -9,7 +9,7 @@ from .WGClient import WGClients
 from .WGBase import WGBase
 
 
-class WGServerFactory(j.application.JSBaseConfigsConfigFactoryClass, WGBase):
+class WGServerFactory(j.baseclasses.factory, WGBase):
     _name = "server"
     _SCHEMATEXT = """
     @url = jumpscale.wireguard.server.1
@@ -22,7 +22,7 @@ class WGServerFactory(j.application.JSBaseConfigsConfigFactoryClass, WGBase):
 
     def __init__(self, **kwargs):
         WGBase.__init__(self)
-        j.application.JSBaseConfigsConfigFactoryClass.__init__(self, **kwargs)
+        j.baseclasses.factory.__init__(self, **kwargs)
 
     def _init(self, **kwargs):
         self._config_path = self.executor._replace("{DIR_CFG}/wg0.conf")
