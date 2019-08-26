@@ -360,7 +360,7 @@ class RedisTools:
                 Tools.execute("redis-cli -s %s shutdown" % RedisTools.unix_socket_path, die=False, showout=False)
                 Tools.execute("redis-cli shutdown", die=False, showout=False)
             elif MyEnv.platform_is_linux:
-                Tools.execute("apt install redis-server -y")
+                Tools.execute("apt-get install redis-server -y")
             else:
                 raise Tools.exceptions.Base("platform not supported for start redis")
 
@@ -3764,14 +3764,14 @@ class UbuntuInstaller:
         if MyEnv.state_get("ubuntu_docker_install"):
             return
         script = """
-        apt update
-        apt upgrade -y --force-yes
-        apt install sudo python3-pip  -y
+        apt-get update
+        apt-get upgrade -y --force-yes
+        apt-get install sudo python3-pip  -y
         pip3 install pudb
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
         add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
-        apt update
-        sudo apt install docker-ce -y
+        apt-get update
+        sudo apt-get install docker-ce -y
         """
         Tools.execute(script, interactive=True)
         MyEnv.state_set("ubuntu_docker_install")
@@ -4294,12 +4294,12 @@ class DockerContainer:
             self.dexec("rm -f /etc/service/sshd/down")
             if baseinstall:
                 print(" - Upgrade ubuntu")
-                self.dexec("apt update")
+                self.dexec("apt-get update")
                 self.dexec("DEBIAN_FRONTEND=noninteractive apt-get -y upgrade --force-yes")
                 print(" - Upgrade ubuntu ended")
-                self.dexec("apt install mc git -y")
+                self.dexec("apt-get install mc git -y")
 
-            Tools.execute("touch %s/.ssh/known_hosts" % MyEnv.config["DIR_HOME"])
+            Tools.execute("mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"]))
             Tools.execute(
                 'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"' % (MyEnv.config["DIR_HOME"], args["PORT"])
             )
@@ -4478,7 +4478,7 @@ class DockerContainer:
             )
         cmd += args_txt
         print(" - Installing jumpscaleX ")
-        self.sshexec("apt install python3-click -y")
+        self.sshexec("apt-get install python3-click -y")
         self.sshexec(cmd)
 
         cmd = """
