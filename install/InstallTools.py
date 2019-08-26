@@ -4299,7 +4299,6 @@ class DockerContainer:
                 print(" - Upgrade ubuntu ended")
                 self.dexec("apt install mc git -y")
 
-            Tools.execute("ssh-keyscan -H 3bot >> %s/.ssh/known_hosts" % MyEnv.config["DIR_HOME"])
             Tools.execute(
                 'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"' % (MyEnv.config["DIR_HOME"], args["PORT"])
             )
