@@ -1,16 +1,11 @@
-# Installation Instructions Jumpscale X
+# JumpscaleX Installation Instructions
 
 ## Index
 
-- [Container Installation](#container-installation)
-- [Insystem Installation](#insystem-installation)
-- [Advanced Installation](#advanced-installation)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
 - [After Installation](#after-installation)
 - [More Info](#more-info)
-
-## Container Installation
-
-This will create a docker-container for you and install jumpscale within it.
 
 ### Prerequisites
 
@@ -24,7 +19,7 @@ This will create a docker-container for you and install jumpscale within it.
 ```bash
 # for ubuntu 18.04
 apt update -y
-apt install -y curl python3 python3-pip
+apt install -y openssh-server locales curl git rsync unzip lsb python3
 ```
 
 ```bash
@@ -50,69 +45,28 @@ ssh-keygen
 ssh-add
 ```
 
-### Steps for installation
+### Installation
+
+#### Download the installer file, change its permission to make it executable
 
 ```bash
-# download the installer file
 curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx;
-# change permission to make it executable
 chmod +x /tmp/jsx;
-# install jumpscale in a container
-# If you need your installer to be silent, you should do add `-s` flag
+```
+
+#### To install in container
+
+```bash
 /tmp/jsx container-install
 ```
 
-## Insystem Installation
-
-This will install jumpscale on your local system.
-
-### Prerequisites
-
-#### Supported Operating Systems
-
-- Ubuntu 18.04
-- macOS 10.7 or newer
-
-#### Required Packages
+#### To install in your local system
 
 ```bash
-# for ubuntu 18:04
-apt update -y
-apt install -y openssh-server locales curl git rsync unzip lsb python3 python3-pip
-```
-
-```bash
-# for macOS 10.7 or newer
-brew install curl python3 git rsync
-```
-
-#### Required Python Packages
-
-```bash
-pip3 install click
-```
-
-#### ssh-agent
-
-ssh-agent loaded with a ssh-key, make sure to add your ssh-key to your github account's authenticated keys
-
-```bash
-eval `ssh-agent -s`
-ssh-keygen
-ssh-add
-```
-
-### Steps for installation
-
-```bash
-# download the installer file
-curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx;
-# change permission to make it executable
-chmod +x /tmp/jsx;
-# install jumpscale in a container
-# If you need your installer to be silent, you should do add `-s` flag
 /tmp/jsx install
 ```
+
+> For silent installation: Just add `-s` flag to your install command
 
 ## Advanced Installation
 
@@ -125,7 +79,6 @@ cd /sandbox/code/github/threefoldtech;
 # if you have a permission denied add sudo at the beginning of the command
 # then do a sudo chown -R $USER:$USER /sandbox
 git clone git@github.com:threefoldtech/jumpscaleX_core.git; cd jumpscaleX_core;
-git checkout master
 git pull
 
 # link the installer from tmp to the source directory, makes it easy for the rest of this tutorial
@@ -140,14 +93,15 @@ ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py
 ### How to use Jumpscale X
 
 To start JumpcaleX:
-If you have installed JSX in your system.
+
+#### If you have installed JSX in your system
 
 ```bash
 source /sandbox/env.sh;
 kosmos
 ```
 
-If you have installed JSX in container.
+#### If you have installed JSX in container
 
 The install script has built and started a docker container named `3bot` on your machine.
 
