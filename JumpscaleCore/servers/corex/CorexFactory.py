@@ -10,7 +10,7 @@ class CorexFactory(JSConfigs):
     """
 
     __jslocation__ = "j.servers.corex"
-    _CHILDCLASS = CorexServer
+    _CHILDFACTORY_CLASS = CorexServer
 
     def __init__(self):
         JSConfigs.__init__(self)

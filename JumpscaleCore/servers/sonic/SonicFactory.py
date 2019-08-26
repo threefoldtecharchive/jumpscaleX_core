@@ -10,7 +10,7 @@ class SonicFactory(JSConfigs):
     """
 
     __jslocation__ = "j.servers.sonic"
-    _CHILDCLASS = SonicServer
+    _CHILDFACTORY_CLASS = SonicServer
 
     def _init(self, **kwargs):
         self._default = None

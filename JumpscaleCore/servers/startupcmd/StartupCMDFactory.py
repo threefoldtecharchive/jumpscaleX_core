@@ -26,7 +26,7 @@ import time
 
 class StartupCMDFactory(j.baseclasses.object_config_collection_testtools):
 
-    _CHILDCLASS = StartupCMD
+    _CHILDFACTORY_CLASS = StartupCMD
     __jslocation__ = "j.servers.startupcmd"
 
     def _init(self, **kwargs):

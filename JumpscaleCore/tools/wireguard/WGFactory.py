@@ -13,7 +13,7 @@ class WGFactory(j.baseclasses.object_config_collection_testtools):
     """
 
     __jslocation__ = "j.tools.wireguard"
-    _CHILDCLASS = WGServerFactory
+    _CHILDFACTORY_CLASS = WGServerFactory
 
     def test(self):
         """

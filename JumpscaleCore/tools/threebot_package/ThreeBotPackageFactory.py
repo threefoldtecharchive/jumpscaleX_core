@@ -10,7 +10,7 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
     """
 
     __jslocation__ = "j.tools.threebotpackage"
-    _CHILDCLASS = ThreeBotPackage
+    _CHILDFACTORY_CLASS = ThreeBotPackage
 
     def test(self):
         """

@@ -14,7 +14,7 @@ class ReverseProxy(j.baseclasses.object_config):
         port_source = 80
         ipaddr_dest = "127.0.0.1"
         port_dest = 80
-        location = 
+        location =
         domain = ""
         proxy_type = 'http' # websocket, tcp, http
         """
@@ -25,7 +25,7 @@ class ReverseProxy(j.baseclasses.object_config):
             server {{obj.ipaddr_dest}}:{{obj.port_dest}};
         }
         {% endif %}
-    
+
         server {
             listen {{obj.port_source}} ssl;
             listen [::]:{{obj.port_source}} ssl;
@@ -38,16 +38,16 @@ class ReverseProxy(j.baseclasses.object_config):
             {% if obj.domain %}
             server_name ~^(www\.)?{{domain}}$;
             {% endif %}
-            
+
             location /{{obj.location}} {
               {% if obj.proxy_type == 'http'%}
               proxy_pass http://{{obj.ipaddr_dest}}:{{obj.port_dest}}/;
-                
+
               {% elif obj.proxy_type == 'websocket' %}
               proxy_pass http://websocket_backend;
               proxy_http_version 1.1;
               proxy_set_header Upgrade $http_upgrade;
-              proxy_set_header Connection "Upgrade";  
+              proxy_set_header Connection "Upgrade";
               {% endif %}
             }
         }
@@ -86,4 +86,4 @@ class ReverseProxy(j.baseclasses.object_config):
 
 class ReverseProxies(j.baseclasses.object_config_collection):
 
-    _CHILDCLASS = ReverseProxy
+    _CHILDFACTORY_CLASS = ReverseProxy

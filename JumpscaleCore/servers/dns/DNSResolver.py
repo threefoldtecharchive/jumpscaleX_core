@@ -8,11 +8,11 @@ class DNSResolver(j.baseclasses.object_config):
     name* = ""
     zone* = "" (S)
     domains = (LO) !jumpscale.resolver.domain.1
-    
+
     @url = jumpscale.resolver.domain.1
     name = "" (S)
     domains = (LO) !jumpscale.resolver.domain.record.1
-    
+
 
     @url = jumpscale.resolver.domain.record.1
     name = "" (S)
@@ -156,4 +156,4 @@ class DNSResolver(j.baseclasses.object_config):
 
 class DNSResolvers(j.baseclasses.object_config_collection):
     _name = "resolvers"
-    _CHILDCLASS = DNSResolver
+    _CHILDFACTORY_CLASS = DNSResolver

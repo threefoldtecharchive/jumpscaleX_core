@@ -100,4 +100,4 @@ class Wiki(j.baseclasses.object_config):
 
 class Wikis(j.baseclasses.object_config_collection):
 
-    _CHILDCLASS = Wiki
+    _CHILDFACTORY_CLASS = Wiki

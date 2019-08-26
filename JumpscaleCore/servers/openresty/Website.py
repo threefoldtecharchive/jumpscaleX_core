@@ -65,4 +65,4 @@ class Website(j.baseclasses.object_config):
 
 class Websites(j.baseclasses.object_config_collection):
 
-    _CHILDCLASS = Website
+    _CHILDFACTORY_CLASS = Website

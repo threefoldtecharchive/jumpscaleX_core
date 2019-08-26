@@ -75,7 +75,7 @@ class JSConfigBCDBBase(JSBase, Attr):
                 if "_SCHEMATEXT" in self.__class__.__dict__:
                     s = self.__class__._SCHEMATEXT
                 else:
-                    s = self.__class__._CHILDCLASS._SCHEMATEXT
+                    s = self.__class__._CHILDFACTORY_CLASS._SCHEMATEXT
 
             t = self._process_schematext(s)
             t2 = j.data.schema._schema_blocks_get(t)[0]

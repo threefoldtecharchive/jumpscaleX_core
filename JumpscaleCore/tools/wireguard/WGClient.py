@@ -12,10 +12,10 @@ from .WGBase import WGBase
 class WGClient(JSConfigBase, WGBase):
     _SCHEMATEXT = """
         @url = jumpscale.wireguard.client.1
-        name* = "main"        
+        name* = "main"
         sshclient_name = "" (S)  #if empty then local
         key_private_ = "" (S)
-        key_public = "" (S) 
+        key_public = "" (S)
         """
 
     def __init__(self, **kwargs):
@@ -38,5 +38,5 @@ class WGClient(JSConfigBase, WGBase):
 
 
 class WGClients(j.baseclasses.object_config_collection):
-    _CHILDCLASS = WGClient
+    _CHILDFACTORY_CLASS = WGClient
     _name = "clients"

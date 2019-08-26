@@ -11,7 +11,7 @@ class OpenRestyFactory(j.baseclasses.object_config_collection_testtools):
     """
 
     __jslocation__ = "j.servers.openresty"
-    _CHILDCLASS = OpenRestyServer
+    _CHILDFACTORY_CLASS = OpenRestyServer
 
     def _init(self, **kwargs):
         self._default = None

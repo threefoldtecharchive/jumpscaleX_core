@@ -28,7 +28,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         allow custom implementation of which child class to use
         :return:
         """
-        return self.__class__._CHILDCLASS
+        return self.__class__._CHILDFACTORY_CLASS
 
     def new(self, name, jsxobject=None, save=True, **kwargs):
         """

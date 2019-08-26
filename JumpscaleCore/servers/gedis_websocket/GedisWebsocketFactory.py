@@ -8,7 +8,7 @@ JSConfigClient = j.baseclasses.object_config_collection
 
 class GedisWebsocketFactory(JSConfigClient):
     __jslocation__ = "j.servers.gedis_websocket"
-    _CHILDCLASS = GedisWebsocketServer
+    _CHILDFACTORY_CLASS = GedisWebsocketServer
 
     def _init(self, **kwargs):
         self._default = None
