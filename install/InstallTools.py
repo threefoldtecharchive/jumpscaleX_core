@@ -13,13 +13,13 @@ GITREPOS["builders_extra"] = [
 
 
 GITREPOS["installer"] = [
-    "https://github.com/threefoldtech/jumpscaleX_core",
+    "https://github.com/threefoldtech/jumpscaleX_core//",
     "master",
     "install",  # directory in the git repo
     "{DIR_BASE}/installer",
 ]
 GITREPOS["core"] = [
-    "https://github.com/threefoldtech/jumpscaleX_core",
+    "https://github.com/threefoldtech/jumpscaleX_core//",
     "master",
     "JumpscaleCore",
     "{DIR_BASE}/lib/jumpscale/Jumpscale",
@@ -2409,9 +2409,9 @@ class Tools:
 
         example Input
         - https://github.com/threefoldtech/jumpscale_/NOS/blob/master/specs/NOS_1.0.0.md
-        - https://github.com/threefoldtech/jumpscale_/jumpscaleX_coreblob/8.1.2/lib/Jumpscale/tools/docsite/macros/dot.py
-        - https://github.com/threefoldtech/jumpscale_/jumpscaleX_coretree/8.2.0/lib/Jumpscale/tools/docsite/macros
-        - https://github.com/threefoldtech/jumpscale_/jumpscaleX_coretree/master/lib/Jumpscale/tools/docsite/macros
+        - https://github.com/threefoldtech/jumpscale_/jumpscaleX_core//blob/8.1.2/lib/Jumpscale/tools/docsite/macros/dot.py
+        - https://github.com/threefoldtech/jumpscale_/jumpscaleX_core//tree/8.2.0/lib/Jumpscale/tools/docsite/macros
+        - https://github.com/threefoldtech/jumpscale_/jumpscaleX_core//tree/master/lib/Jumpscale/tools/docsite/macros
 
         :return
         - repository_account e,g, threefoldtech
@@ -3169,7 +3169,7 @@ class MyEnv_:
         # defaults are now set, lets now configure the system
         if sshagent_use:
             # TODO: this is an error SSH_agent does not work because cannot identify which private key to use
-            # see also: https://github.com/threefoldtech/jumpscaleX_coreissues/561
+            # see also: https://github.com/threefoldtech/jumpscaleX_core//issues/561
             self.sshagent = SSHAgent()
             self.sshagent.key_default_name
         if secret is None:
@@ -3225,7 +3225,7 @@ class MyEnv_:
         :param die:
         :param stdout:
         :param level:
-        :return: logdict see github/threefoldtech/jumpscaleX_coredocs/Internals/logging_errorhandling/logdict.md
+        :return: logdict see github/threefoldtech/jumpscaleX_core//docs/Internals/logging_errorhandling/logdict.md
         """
         try:
             logdict = Tools.log(tb=tb, level=level, exception=exception_obj, stdout=stdout)
@@ -3254,7 +3254,7 @@ class MyEnv_:
         :param die: die if error
         :param stdout: if True send the error log to stdout
         :param level: 50 is error critical
-        :return: logdict see github/threefoldtech/jumpscaleX_coredocs/Internals/logging_errorhandling/logdict.md
+        :return: logdict see github/threefoldtech/jumpscaleX_core//docs/Internals/logging_errorhandling/logdict.md
 
         example
 
@@ -3415,10 +3415,10 @@ class BaseInstaller:
             script = """
             set -e
             cd {DIR_BASE}
-            rsync -rav {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/sandbox/cfg/ {DIR_BASE}/cfg/
-            rsync -rav {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/sandbox/bin/ {DIR_BASE}/bin/
-            #rsync -rav {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/sandbox/openresty/ {DIR_BASE}/openresty/
-            rsync -rav {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/sandbox/env.sh {DIR_BASE}/env.sh
+            rsync -rav {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core///sandbox/cfg/ {DIR_BASE}/cfg/
+            rsync -rav {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core///sandbox/bin/ {DIR_BASE}/bin/
+            #rsync -rav {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core///sandbox/openresty/ {DIR_BASE}/openresty/
+            rsync -rav {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core///sandbox/env.sh {DIR_BASE}/env.sh
             mkdir -p root
             mkdir -p var
 
@@ -3953,7 +3953,7 @@ class JumpscaleInstaller:
             Tools.execute(script, args=locals())
 
     def cmds_link(self):
-        _, _, _, _, loc = Tools._code_location_get(repo="jumpscaleX_core", account="threefoldtech")
+        _, _, _, _, loc = Tools._code_location_get(repo="jumpscaleX_core//", account="threefoldtech")
         for src in os.listdir("%s/cmds" % loc):
             src2 = os.path.join(loc, "cmds", src)
             dest = "%s/bin/%s" % (MyEnv.config["DIR_BASE"], src)
@@ -4460,11 +4460,11 @@ class DockerContainer:
         dirpath = os.path.dirname(inspect.getfile(Tools))
         if dirpath.startswith(MyEnv.config["DIR_CODE"]):
             cmd = (
-                "python3 /sandbox/code/github/threefoldtech/jumpscaleX_coreinstall/jsx.py configure --sshkey %s -s"
+                "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core//install/jsx.py configure --sshkey %s -s"
                 % MyEnv.sshagent.key_default_name
             )
             Tools.execute(cmd)
-            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_coreinstall/jsx.py install -s"
+            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core//install/jsx.py install -s"
         else:
             print("copy installer over from where I install from")
             for item in ["jsx", "InstallTools.py"]:

@@ -31,7 +31,7 @@ class AlertHandler(j.baseclasses.object):
 
     def log(self, error, tb_text=""):
         """
-        :param error: is python exception (can be from jumpscaleX_coreJumpscale/errorhandling/JSExceptions.py)
+        :param error: is python exception (can be from jumpscaleX_core//Jumpscale/errorhandling/JSExceptions.py)
         :return: jumpscale.alerthandler.alert object
         """
         e = self.schema_alert.new()

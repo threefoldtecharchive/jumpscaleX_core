@@ -78,7 +78,7 @@ class Syncer(j.baseclasses.object_config):
         if self.paths == []:
             for item in [
                 "jumpscaleX_builders",
-                "jumpscaleX_core",
+                "jumpscaleX_core//",
                 "jumpscaleX_libs",
                 "jumpscaleX_libs_extra",
                 "jumpscaleX_threebot",

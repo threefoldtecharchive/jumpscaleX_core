@@ -17,7 +17,7 @@ DEFAULT_BRANCH = "master"
 
 def load_install_tools(branch=None):
     # get current install.py directory
-    path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py"
+    path = "/sandbox/code/github/threefoldtech/jumpscaleX_core//install/InstallTools.py"
     if not branch:
         branch = DEFAULT_BRANCH
     if not os.path.exists(path):
@@ -25,7 +25,7 @@ def load_install_tools(branch=None):
         path = os.path.join(rootdir, "InstallTools.py")
 
         if not os.path.exists(path) or path.find("/code/") == -1:
-            url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py" % branch
+            url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core//%s/install/InstallTools.py" % branch
 
             with urlopen(url) as resp:
                 if resp.status != 200:
