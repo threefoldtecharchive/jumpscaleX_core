@@ -78,7 +78,7 @@ class Syncer(j.baseclasses.object_config):
         if self.paths == []:
             for item in [
                 "jumpscaleX_builders",
-                "jumpscaleX_core//",
+                "jumpscaleX_core/",
                 "jumpscaleX_libs",
                 "jumpscaleX_libs_extra",
                 "jumpscaleX_threebot",
@@ -139,7 +139,6 @@ class Syncer(j.baseclasses.object_config):
     def handler(self, event, action="copy"):
         self._log_debug("%s:%s" % (event, action))
         for key, sshclient in self.sshclients.items():
-
             if sshclient.executor.isContainer:
                 continue
             ftp = sshclient.sftp
@@ -183,7 +182,6 @@ class Syncer(j.baseclasses.object_config):
                             sshclient.file_copy(changedfile, dest)
                             self._log_info("OK")
                         except Exception as e:
-                            j.shell()
                             self._log_error("Couldn't sync file: %s:%s" % (changedfile, dest))
                             self._log_error("** ERROR IN COPY, WILL SYNC ALL")
                             self._log_error(str(e))

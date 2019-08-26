@@ -188,7 +188,7 @@ class builder_method(object):
 
 class BuilderBaseClass(JSBase):
     """
-    doc in /sandbox/code/github/threefoldtech/jumpscaleX_core//docs/Internals/builders/Builders.md
+    doc in /sandbox/code/github/threefoldtech/jumpscaleX_core/docs/Internals/builders/Builders.md
     """
 
     ALREADY_DONE_VALUE = "ALREADY DONE"
