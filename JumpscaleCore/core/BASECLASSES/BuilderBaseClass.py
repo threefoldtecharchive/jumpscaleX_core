@@ -197,7 +197,6 @@ class BuilderBaseClass(JSBase):
         self._bash = None
         self._name = self.__class__.__jslocation__.lower().split(".")[-1]
         JSBase.__init__(self)
-        import ipdb; ipdb.set_trace()
         self.DIR_BUILD = "/tmp/builders/{}".format(self._name)
         self.DIR_SANDBOX = "/tmp/package/{}".format(self._name)
 
