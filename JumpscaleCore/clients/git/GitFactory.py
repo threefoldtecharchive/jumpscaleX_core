@@ -150,7 +150,7 @@ class GitFactory(j.baseclasses.object):
                 )
             except Exception as e:
                 base, provider, account, repo, dest, url, port = self.getGitRepoArgs(
-                    url, dest, login, passwd, reset=reset, ssh=False, codeDir=codeDir, executor=executor
+                    url, dest, login, passwd, reset=reset, ssh=False
                 )
                 return self.pullGitRepo(
                     url,
@@ -170,7 +170,7 @@ class GitFactory(j.baseclasses.object):
             return
 
         base, provider, account, repo, dest, url, port = self.getGitRepoArgs(
-            url, dest, login, passwd, reset=reset, ssh=ssh, codeDir=codeDir, executor=executor
+            url, dest, login, passwd, reset=reset, ssh=ssh
         )
 
         # Add ssh host to the known_hosts file if not exists to skip
