@@ -2409,9 +2409,9 @@ class Tools:
 
         example Input
         - https://github.com/threefoldtech/jumpscale_/NOS/blob/master/specs/NOS_1.0.0.md
-        - https://github.com/threefoldtech/jumpscale_/jumpscaleX/blob/8.1.2/lib/Jumpscale/tools/docsite/macros/dot.py
-        - https://github.com/threefoldtech/jumpscale_/jumpscaleX/tree/8.2.0/lib/Jumpscale/tools/docsite/macros
-        - https://github.com/threefoldtech/jumpscale_/jumpscaleX/tree/master/lib/Jumpscale/tools/docsite/macros
+        - https://github.com/threefoldtech/jumpscale_/jumpscaleX_coreblob/8.1.2/lib/Jumpscale/tools/docsite/macros/dot.py
+        - https://github.com/threefoldtech/jumpscale_/jumpscaleX_coretree/8.2.0/lib/Jumpscale/tools/docsite/macros
+        - https://github.com/threefoldtech/jumpscale_/jumpscaleX_coretree/master/lib/Jumpscale/tools/docsite/macros
 
         :return
         - repository_account e,g, threefoldtech
@@ -2630,8 +2630,6 @@ class Tools:
 
         else:
             Tools.log("get code [zip]: %s" % repo)
-            Tools.shell()
-            w
             download = False
             if download == False and (not exists or (not dontpull and pull)):
 
@@ -3171,7 +3169,7 @@ class MyEnv_:
         # defaults are now set, lets now configure the system
         if sshagent_use:
             # TODO: this is an error SSH_agent does not work because cannot identify which private key to use
-            # see also: https://github.com/threefoldtech/jumpscaleX/issues/561
+            # see also: https://github.com/threefoldtech/jumpscaleX_coreissues/561
             self.sshagent = SSHAgent()
             self.sshagent.key_default_name
         if secret is None:
@@ -3227,7 +3225,7 @@ class MyEnv_:
         :param die:
         :param stdout:
         :param level:
-        :return: logdict see github/threefoldtech/jumpscaleX/docs/Internals/logging_errorhandling/logdict.md
+        :return: logdict see github/threefoldtech/jumpscaleX_coredocs/Internals/logging_errorhandling/logdict.md
         """
         try:
             logdict = Tools.log(tb=tb, level=level, exception=exception_obj, stdout=stdout)
@@ -3256,7 +3254,7 @@ class MyEnv_:
         :param die: die if error
         :param stdout: if True send the error log to stdout
         :param level: 50 is error critical
-        :return: logdict see github/threefoldtech/jumpscaleX/docs/Internals/logging_errorhandling/logdict.md
+        :return: logdict see github/threefoldtech/jumpscaleX_coredocs/Internals/logging_errorhandling/logdict.md
 
         example
 
@@ -3910,16 +3908,20 @@ class JumpscaleInstaller:
 
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
+            dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull)
             try:
-                Tools.code_github_get(url=GITURL, branch=BRANCH, pull=pull)
-            except:
+                dest = Tools.code_github_get(url=GITURL, branch=BRANCH, pull=pull)
+            except Exception:
                 activate_http = Tools.ask_yes_no(
                     "\n### SSH cloning Failed, your key isn't on github or you're missing permission, Do you want to clone via http?\n"
                 )
                 if activate_http:
                     MyEnv.interactive = False
-                    Tools.code_git_rewrite_url(url=GITURL, ssh=False)
-                    Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull)
+                    r = Tools.code_git_rewrite_url(url=URL, ssh=False)
+                    # TODO: *1
+                    Tools.shell()
+                    w
+                    Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, dest=DEST)
                 else:
                     raise Tools.exceptions.Base("\n### Please authenticate your key and try again\n")
 
@@ -4458,11 +4460,11 @@ class DockerContainer:
         dirpath = os.path.dirname(inspect.getfile(Tools))
         if dirpath.startswith(MyEnv.config["DIR_CODE"]):
             cmd = (
-                "python3 /sandbox/code/github/threefoldtech/jumpscaleX/install/jsx.py configure --sshkey %s -s"
+                "python3 /sandbox/code/github/threefoldtech/jumpscaleX_coreinstall/jsx.py configure --sshkey %s -s"
                 % MyEnv.sshagent.key_default_name
             )
             Tools.execute(cmd)
-            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX/install/jsx.py install -s"
+            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_coreinstall/jsx.py install -s"
         else:
             print("copy installer over from where I install from")
             for item in ["jsx", "InstallTools.py"]:
