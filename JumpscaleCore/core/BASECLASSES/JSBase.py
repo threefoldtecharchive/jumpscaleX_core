@@ -173,10 +173,7 @@ class JSBase:
 
     @property
     def _key(self):
-        if hasattr(self, "name"):
-            return self._name + "_" + self.name
-        else:
-            return self._name
+        return self._name
 
     def _init(self, **kwargs):
         pass
@@ -528,8 +525,6 @@ class JSBase:
         """
         if isinstance(item, str) or isinstance(item, int):
             name = str(item)
-        elif hasattr(item, "name"):
-            name = item.name
         else:
             name = item._objid
         return name
