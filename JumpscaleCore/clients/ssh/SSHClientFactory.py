@@ -7,8 +7,8 @@ from .SSHClientBase import SSHClientBase
 class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
 
     __jslocation__ = "j.clients.ssh"
-    _CHILDFACTORY_CLASS = SSHClientBase
-    _SCHEMATEXT = _CHILDFACTORY_CLASS._SCHEMATEXT
+    _CHILDCLASS = SSHClientBase
+    _SCHEMATEXT = _CHILDCLASS._SCHEMATEXT
 
     def _init(self):
         self._clients = {}

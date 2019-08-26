@@ -86,4 +86,4 @@ class ReverseProxy(j.baseclasses.object_config):
 
 class ReverseProxies(j.baseclasses.object_config_collection):
 
-    _CHILDFACTORY_CLASS = ReverseProxy
+    _CHILDCLASS = ReverseProxy

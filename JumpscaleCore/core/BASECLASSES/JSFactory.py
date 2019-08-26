@@ -24,7 +24,7 @@ class JSFactory(JSBase):
                 assert obj._parent
                 self._children[name] = obj
 
-        if hasattr(self.__class__, "_CHILDFACTORY_CLASS"):
+        if hasattr(self.__class__, "_CHILDCLASS"):
             # there is only a new function if there is a childclass factory
             self.new = self._new
 
@@ -44,7 +44,7 @@ class JSFactory(JSBase):
             assert isinstance(self._object_config, JSConfigBCDB)
 
     def _childclass_selector(self, **kwargs):
-        return self.__class__._CHILDFACTORY_CLASS
+        return self.__class__._CHILDCLASS
 
     def _obj_cache_reset(self):
         """
@@ -153,12 +153,12 @@ class JSFactory(JSBase):
         """
 
         :param name: of the child to get, if it doesn't need to exist then will try to create new
-        new one can only be created if self.__class__._CHILDFACTORY_CLASS has been set
+        new one can only be created if self.__class__._CHILDCLASS has been set
 
 
         """
         if not name in self._children:
-            if hasattr(self.__class__, "_CHILDFACTORY_CLASS") and needexist == False:
+            if hasattr(self.__class__, "_CHILDCLASS") and needexist == False:
                 self.new(name=name, save=save, **kwargs)
             else:
                 raise j.exceptions.Value("cannot get child with name:%s" % name)

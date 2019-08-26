@@ -10,7 +10,7 @@ class ZDBServers(JSConfigs):
     """
 
     __jslocation__ = "j.servers.zdb"
-    _CHILDFACTORY_CLASS = ZDBServer
+    _CHILDCLASS = ZDBServer
 
     def _init(self, **kwargs):
         self._default = None

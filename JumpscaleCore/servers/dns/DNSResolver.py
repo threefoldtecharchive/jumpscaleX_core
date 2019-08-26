@@ -156,4 +156,4 @@ class DNSResolver(j.baseclasses.object_config):
 
 class DNSResolvers(j.baseclasses.object_config_collection):
     _name = "resolvers"
-    _CHILDFACTORY_CLASS = DNSResolver
+    _CHILDCLASS = DNSResolver

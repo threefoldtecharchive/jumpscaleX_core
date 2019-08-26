@@ -5,7 +5,7 @@ from .Syncer import Syncer
 class SyncerFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.tools.syncer"
 
-    _CHILDFACTORY_CLASS = Syncer
+    _CHILDCLASS = Syncer
 
     def sync(self, monitor=False):
         """

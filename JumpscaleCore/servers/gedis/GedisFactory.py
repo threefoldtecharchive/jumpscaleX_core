@@ -11,7 +11,7 @@ JSConfigFactory = j.baseclasses.object_config_collection
 
 class GedisFactory(JSConfigFactory):
     __jslocation__ = "j.servers.gedis"
-    _CHILDFACTORY_CLASS = GedisServer
+    _CHILDCLASS = GedisServer
 
     def get_gevent_server(self, name="", **kwargs):
         """

@@ -19,7 +19,7 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
     """
 
     __jslocation__ = "j.clients.zdb"
-    _CHILDFACTORY_CLASS = None  # because we use _childclass_selector
+    _CHILDCLASS = None  # because we use _childclass_selector
     _SCHEMATEXT = """
     @url = jumpscale.zdb.client.1
     name* = "test" (S)

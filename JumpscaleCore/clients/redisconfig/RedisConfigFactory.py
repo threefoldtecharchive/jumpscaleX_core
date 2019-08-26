@@ -5,7 +5,7 @@ from .RedisConfig import RedisConfig
 
 class RedisConfigFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.clients.redis_config"
-    _CHILDFACTORY_CLASS = RedisConfig
+    _CHILDCLASS = RedisConfig
 
     def get_client(self, name, fromcache=True):
         """

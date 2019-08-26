@@ -4,7 +4,7 @@ from Jumpscale import j
 class LoggerFactory(j.baseclasses.object):
 
     __jslocation__ = "j.tools.logger"
-    # _CHILDFACTORY_CLASS = LoggerBase
+    # _CHILDCLASS = LoggerBase
     # _LoggerInstance = LoggerInstance
 
     @property

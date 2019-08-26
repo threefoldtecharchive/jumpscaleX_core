@@ -173,4 +173,4 @@ class DNSServer(DatagramServer, j.baseclasses.object_config):
 
 class DNSServers(j.baseclasses.object_config_collection):
     _name = "servers"
-    _CHILDFACTORY_CLASS = DNSServer
+    _CHILDCLASS = DNSServer
