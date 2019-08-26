@@ -68,7 +68,7 @@ chmod +x /tmp/jsx;
 
 > For silent installation: Just add `-s` flag to your install command
 
-## Advanced Installation
+#### Advanced Installation
 
 it is easy to develop on the installer, will install from existing code on your system
 
