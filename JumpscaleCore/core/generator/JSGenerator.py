@@ -91,6 +91,7 @@ class JSGenerator:
                             )
 
         self.md.groups_load()  # make sure we find all groups
+        # self._j.shell()
         self._render()
         self.report()
 

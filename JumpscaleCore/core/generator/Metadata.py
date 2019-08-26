@@ -45,7 +45,8 @@ class Metadata:
             r = self.jsmodules_get_level(i)
             if len(r):
                 for module in r:
-                    res.append(module)
+                    if module not in res:
+                        res.append(module)
         return res
 
     def jsgroups_get_level(self, level=0):
@@ -62,11 +63,17 @@ class Metadata:
         :return:
         """
         res = []
+        locations = []
         for i in range(10):
             r = self.jsgroups_get_level(i)
             if len(r):
                 for group in r:
-                    res.append(group)
+                    if group not in res:
+                        if group.location_parent not in locations and group.location_parent.find(".") != -1:
+                            # means the parent group does not exist yet
+                            res.append(JSGroup(self, group.location_parent.strip()))
+                        res.append(group)
+                        locations.append(group.location)
         return res
 
     @property
