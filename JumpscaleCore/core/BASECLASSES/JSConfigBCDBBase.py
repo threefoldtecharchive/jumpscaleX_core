@@ -67,15 +67,16 @@ class JSConfigBCDBBase(JSBase, Attr):
 
             if isinstance(self, j.baseclasses.object_config):
                 # needs to be from parent
-                if self._parent:
-                    assert isinstance(self._parent, j.baseclasses.object_config_base)
+                if self._parent and isinstance(self._parent, j.baseclasses.object_config_collection):
                     self._model_ = self._parent._model
                     return self._model_
             if isinstance(self, j.baseclasses.object_config_base):
                 if "_SCHEMATEXT" in self.__class__.__dict__:
                     s = self.__class__._SCHEMATEXT
-                else:
+                elif "_SCHEMATEXT" in self.__class__._CHILDCLASS.__dict__:
                     s = self.__class__._CHILDCLASS._SCHEMATEXT
+                else:
+                    raise j.exceptions.JSBUG("cannot find _SCHEMATEXT on childclass or class itself")
 
             t = self._process_schematext(s)
             t2 = j.data.schema._schema_blocks_get(t)[0]

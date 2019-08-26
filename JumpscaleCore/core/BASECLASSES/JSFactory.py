@@ -14,8 +14,8 @@ class JSFactory(JSBase):
                 # childclasses are the e.g. JSConfigs classes
 
                 if not kl._name:
-                    raise j.exceptions.JSBug("Cannot start childclass it has no _name")
-                    # name = j.core.text.strip_to_ascii_dense(str(kl)).split(".")[-1].lower()
+                    # raise j.exceptions.JSBUG("Cannot start childclass it has no _name")
+                    name = j.core.text.strip_to_ascii_dense(str(kl)).split(".")[-1].lower()
                 else:
                     name = kl._name
                 assert name

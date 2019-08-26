@@ -3,6 +3,13 @@ import os
 import sys
 import click
 
+import os
+
+try:
+    os.remove("/sandbox/lib/jumpscale/jumpscale_generated.py")
+except:
+    pass
+
 
 @click.group()
 def cli():

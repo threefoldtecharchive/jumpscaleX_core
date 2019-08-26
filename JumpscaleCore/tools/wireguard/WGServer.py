@@ -9,7 +9,7 @@ from .WGClient import WGClients
 from .WGBase import WGBase
 
 
-class WGServerFactory(j.baseclasses.factory, WGBase):
+class WGServerFactory(j.baseclasses.factory(isconfig_object=True), WGBase):
     _name = "server"
     _SCHEMATEXT = """
     @url = jumpscale.wireguard.server.1
