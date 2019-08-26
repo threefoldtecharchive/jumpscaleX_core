@@ -76,8 +76,14 @@ class Syncer(j.baseclasses.object_config):
 
         # self.paths = []
         if self.paths == []:
-            self.paths.append("{DIR_CODE}/github/threefoldtech/jumpscaleX")
-            self.paths.append("{DIR_CODE}/github/threefoldtech/digitalmeX")
+            for item in [
+                "jumpscaleX_builders",
+                "jumpscaleX_core",
+                "jumpscaleX_libs",
+                "jumpscaleX_libs_extra",
+                "jumpscaleX_threebot",
+            ]:
+                self.paths.append("{DIR_CODE}/github/threefoldtech/%s" % item)
             self.save()
 
     def _get_paths(self, executor=None):

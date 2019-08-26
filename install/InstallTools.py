@@ -2528,6 +2528,10 @@ class Tools:
 
         git_on_system = Tools.cmd_installed("git")
 
+        if exists and not foundgit and not pull:
+            """means code is already there, maybe synced?"""
+            return gitpath
+
         if git_on_system and MyEnv.config["USEGIT"] and ((exists and foundgit) or not exists):
             # there is ssh-key loaded
             # or there is a dir with .git inside and exists
