@@ -3,6 +3,9 @@ from .Profile import Profile
 
 
 class Bash(object):
+
+    __jslocation__ = "j.builders.system.bash"
+
     def __init__(self, path=None, profile_name=None, executor=None):
         """
         :param path: if None then will be '~' = Home dir

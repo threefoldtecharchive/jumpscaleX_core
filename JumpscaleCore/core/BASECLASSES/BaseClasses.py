@@ -212,3 +212,12 @@ class BaseClasses:
         & testtools added e.g. self.test()
         """
         return JSFactoryProtectedTesttools
+
+    @property
+    def builder_method(self):
+        """
+        decorator method for builder base class
+        """
+        from .BuilderBaseClass import builder_method
+
+        return builder_method
