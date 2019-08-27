@@ -1986,8 +1986,9 @@ class Tools:
                     Tools.log("executing interactively: %s" % command)
                 while retry:
                     res = Tools._execute_interactive(cmd=command, die=die, original_command=original_command)
-                    if not res[0]:
+                    if res[0] == 0:
                         break
+                    time.sleep(3)
                     retry -= 1
                     if MyEnv.debug or log:
                         Tools.log("retrying interactive execution: %s" % command)
