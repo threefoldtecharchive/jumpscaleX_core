@@ -1980,20 +1980,22 @@ class Tools:
             Tools.delete(path)
             return res
         else:
-
             if interactive:
                 if MyEnv.debug or log:
                     Tools.log("executing interactively: %s" % command)
                 while retry:
-                    res = Tools._execute_interactive(cmd=command, die=die, original_command=original_command)
-                    if res[0] == 0:
-                        break
-                    time.sleep(3)
-                    retry -= 1
-                    if MyEnv.debug or log:
-                        Tools.log("retrying interactive execution: %s" % command)
-
-                return res
+                    try:
+                        res = Tools._execute_interactive(cmd=command, die=die, original_command=original_command)
+                        if res[0] == 0:
+                            return res
+                    except:
+                        print("Error occured retrying again: %i" % retry)
+                        time.sleep(3)
+                        retry -= 1
+                        if MyEnv.debug or log:
+                            Tools.log("retrying interactive execution: %s" % command)
+                        continue
+                raise Tools.exceptions.Base("execution error")
             else:
                 if MyEnv.debug or log:
                     Tools.log("execute:%s" % command)
