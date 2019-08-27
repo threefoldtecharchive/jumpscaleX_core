@@ -271,6 +271,7 @@ class SSHClientBase(j.baseclasses.object_config):
         ignoredir=None,
         ignorefiles=None,
         keepsymlinks=True,
+        retry=4,
     ):
         """
 
@@ -319,6 +320,7 @@ class SSHClientBase(j.baseclasses.object_config):
             createdir=createdir,
             rsyncdelete=rsyncdelete,
             showout=True,
+            retry=retry,
         )
         self._cache.reset()
 

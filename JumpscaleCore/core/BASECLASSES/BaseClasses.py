@@ -162,7 +162,43 @@ class BaseClasses:
 
         return BuilderBaseClass
 
-    def factory(self, protected=True, testtools=True, isconfig_object=False):
+    @property
+    def factory(self):
+        """
+        factory class is combination of testtools+factory class
+
+        functions
+
+        - use _ChildClass(es) functionality to create children
+        - recursive delete & reset
+        - can have an own jsxobject attached to it
+
+        to have jsxobject attached:
+
+            attach the object or the factory class for the object (jsx object model)
+
+            def _init():
+                self._object_config=... if you manually fetch object
+
+            or specify the factory
+
+            def _init():
+                self._object_config_factory= ...
+
+            this one will be used to create an object with _object_config_factory.new(name=...)
+
+        :return:
+        """
+
+        return JSFactory
+
+        # class JSFactoryTestTools(JSFactory, TestTools):
+        #     pass
+        #
+        # return JSFactoryTestTools
+
+    @property
+    def factory_data(self):
         """
         factory class is combination of jsxobject+testtools+factory class
 
@@ -188,7 +224,11 @@ class BaseClasses:
 
         :return:
         """
-        return JSFactory
+
+        class JSFactoryTestToolsData(JSConfigBCDB, JSFactory):
+            pass
+
+        return JSFactoryTestToolsData
 
     @property
     def builder_method(self):

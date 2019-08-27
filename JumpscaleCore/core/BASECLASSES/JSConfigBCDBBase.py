@@ -48,11 +48,10 @@ class JSConfigBCDBBase(JSBase, Attr):
         always uses the system BCDB, unless if this one implements something else
         it will go to highest parent it can find
         """
-        if self._parent and hasattr(self._parent, "_bcdb_selector"):
-            # relevant in case the parent is JSConfigsFactory
+        if self._parent and self._parent._hasattr("_bcdb_selector"):
             return self._parent._bcdb_selector()
-        else:
-            return j.application.bcdb_system
+
+        return j.application.bcdb_system
 
     @property
     def _bcdb(self):
@@ -66,7 +65,7 @@ class JSConfigBCDBBase(JSBase, Attr):
             # self._log_debug("Get model for %s"%self.__class__._location)
 
             if isinstance(self, j.baseclasses.object_config):
-                # needs to be from parent
+                # can be from a parent
                 if self._parent and isinstance(self._parent, j.baseclasses.object_config_collection):
                     self._model_ = self._parent._model
                     return self._model_

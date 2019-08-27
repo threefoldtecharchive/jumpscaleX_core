@@ -161,6 +161,7 @@ class SystemFS(j.baseclasses.object):
         rsyncdelete=True,
         createdir=False,
         showout=False,
+        retry=5,
     ):
         """Recursively copy an entire directory tree rooted at src.
         The dst directory may already exist; if not,
@@ -287,7 +288,7 @@ class SystemFS(j.baseclasses.object):
             cmd += " '%s' '%s'" % (src, dst)
             cmd += " --verbose"
             j.core.tools.execute(
-                cmd, showout=showout, die=True, retry=4, errormsg="cannot rsync %s to %s" % (src, dstpath)
+                cmd, showout=showout, die=True, retry=retry, errormsg="cannot rsync %s to %s" % (src, dstpath)
             )
 
     @path_check(path={"required", "replace", "exists", "dir"})

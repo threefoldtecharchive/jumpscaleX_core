@@ -160,7 +160,6 @@ class Syncer(j.baseclasses.object_config):
                 self._log_info("directory changed")
                 return self.sync(monitor=False)  # no need to continue
             else:
-                self._log_info("file changed: %s" % changedfile)
                 if changedfile.find("/.git") != -1:
                     return
                 elif changedfile.find("/__pycache__/") != -1:
@@ -247,6 +246,7 @@ class Syncer(j.baseclasses.object_config):
                     rsyncdelete=self.rsyncdelete,
                     ignoredir=self.IGNOREDIR,
                     ignorefiles=None,
+                    retry=10,
                 )
 
         if monitor:

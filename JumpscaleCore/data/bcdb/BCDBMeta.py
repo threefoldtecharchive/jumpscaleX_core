@@ -147,7 +147,6 @@ class BCDBMeta(j.baseclasses.object):
             if schema._md5 in md5s:
                 if schema._md5 != md5s[-1]:
                     # means its not the latest one
-                    raise RuntimeError()
                     change = True
                     md5s.pop(md5s.index(schema._md5))
                     md5s.append(schema._md5)  # now at end of list again
@@ -158,7 +157,6 @@ class BCDBMeta(j.baseclasses.object):
                 d = [mid, False, md5s]
             else:
                 # is a new one, not in list yet
-                raise RuntimeError()
                 change = True
                 md5s.append(schema._md5)
                 d = [mid, False, md5s]

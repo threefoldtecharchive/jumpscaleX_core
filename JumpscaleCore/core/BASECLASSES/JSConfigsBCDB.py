@@ -138,11 +138,11 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         for key, item in self._children.items():
             match = True
             for key, val in kwargs.items():
-                if hasattr(item, key):
+                if self._hasattr(item, key):
                     if val != getattr(item, key):
                         match = False
                 else:
-                    raise j.exceptions.Value("could not find for prop:%s, did not exist in %s" % (key, self._key))
+                    match = False
             if match:
                 res.append(item)
 
@@ -188,6 +188,11 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             return []
         else:
             return self._model.find()
+
+    def save(self):
+        for item in self._children_get():
+            if self._hasattr(item, "save"):
+                item.save()
 
     def delete(self, name):
         self._model

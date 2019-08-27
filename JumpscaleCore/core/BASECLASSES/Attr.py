@@ -51,7 +51,7 @@ class Attr:
 
                 r = self._get(name=name, die=False)
                 if not r:
-                    raise j.exceptions.Base(
+                    raise j.exceptions.NotFound(
                         "try to get attribute: '%s', instance did not exist, was also not a method or property, was on '%s'"
                         % (name, self._key)
                     )
@@ -65,7 +65,7 @@ class Attr:
             except:
                 whereami = self._name
             msg = "could not find attribute:%s in %s (error was:%s)" % (name, whereami, e)
-            raise j.exceptions.Base(msg)
+            raise j.exceptions.NotFound(msg)
 
         return r
 

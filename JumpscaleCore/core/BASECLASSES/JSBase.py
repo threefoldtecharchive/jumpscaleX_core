@@ -56,10 +56,10 @@ class JSBase:
             kwargs.pop("parent")
         self._init_pre(**kwargs)
         self._init_pre2(**kwargs)
-        self._init_pre_factory(**kwargs)
         self.__init_class()
         self._obj_cache_reset()
         self._init(**kwargs)
+        self._init_factory(**kwargs)
         self._init_post(**kwargs)
         self._init_post_attr()
 
@@ -73,11 +73,30 @@ class JSBase:
 
     @property
     def _methods(self):
-        if not hasattr(self, "_methods_"):
+        if not self._hasattr(self, "_methods_"):
             props, methods = self._inspect()
             return methods
         else:
             return self._methods_
+
+    def _hasattr(self, *args):
+        """
+        the std hasattr does not work like we were expecting
+        will try other aproaches later
+        :param name:
+        :return:
+        """
+        if len(args) == 2:
+            obj, key = args
+        elif len(args) == 1:
+            obj = self
+            key = args[0]
+        else:
+            raise j.exceptions.JSBUG("can only have 1 or 2 arguments")
+        try:
+            return hasattr(obj, key)
+        except j.exceptions.NotFound:
+            return False
 
     def __init_class(self):
 
@@ -100,7 +119,7 @@ class JSBase:
                 parent = self._parent
                 while parent is not None:
                     if "__jslocation__" in parent.__dict__:
-                        # if hasattr(parent, "__jslocation__"):
+                        # if self._hasattr(parent, "__jslocation__"):
                         self.__class__._location = parent.__jslocation__
                         break
                     parent = parent._parent
@@ -192,7 +211,7 @@ class JSBase:
         """
         pass
 
-    def _init_pre_factory(self, **kwargs):
+    def _init_factory(self, **kwargs):
         """
         only used by factory class
         :return:
@@ -608,7 +627,7 @@ class JSBase:
 
         :return:
         """
-        if hasattr(self, "_children"):
+        if self._hasattr(self, "_children"):
             children = self._children.values()
             return self._filter(filter=filter, llist=children, nameonly=False)
         else:
@@ -669,7 +688,7 @@ class JSBase:
 
         """
         others = self._children_names_get(filter=filter)
-        if hasattr(self, "_parent"):
+        if self._hasattr(self, "_parent"):
             pname = self._parent_name_get()  # why do we need the parent name?
             if pname not in others:
                 others.append(pname)
