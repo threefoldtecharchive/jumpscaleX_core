@@ -544,6 +544,8 @@ class JSBase:
         """
         if isinstance(item, str) or isinstance(item, int):
             name = str(item)
+        elif self._hasattr(item, "name"):
+            name = item.name
         else:
             name = item._objid
         return name
