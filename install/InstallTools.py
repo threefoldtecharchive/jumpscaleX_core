@@ -1982,9 +1982,12 @@ class Tools:
         else:
 
             if interactive:
-                if retry:
-                    raise Tools.exceptions.JSBUG("cannot retry in interactive mode yet")
-                res = Tools._execute_interactive(cmd=command, die=die, original_command=original_command)
+                while retry:
+                    res = Tools._execute_interactive(cmd=command, die=die, original_command=original_command)
+                    if not res[0]:
+                        break
+                    retry -= 1
+
                 if MyEnv.debug or log:
                     Tools.log("execute interactive:%s" % command)
                 return res
