@@ -3640,6 +3640,7 @@ class BaseInstaller:
                 "cson>=0.7",
                 "ujson",
                 "Pillow>=4.1.1",
+                "bottle==0.12.17",
             ],
             # level 2: full install
             2: [
