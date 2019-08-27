@@ -286,8 +286,9 @@ class SystemFS(j.baseclasses.object):
                 self.createDir(self.getParent(dstpath))
             cmd += " '%s' '%s'" % (src, dst)
             cmd += " --verbose"
-            # print(cmd)
-            rc, out, err = j.sal.process.execute(cmd, showout=showout)
+            j.core.tools.execute(
+                cmd, showout=showout, die=True, retry=4, errormsg="cannot rsync %s to %s" % (src, dstpath)
+            )
 
     @path_check(path={"required", "replace", "exists", "dir"})
     def changeDir(self, path):

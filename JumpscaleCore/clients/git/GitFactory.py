@@ -9,14 +9,6 @@ class GitFactory(j.baseclasses.object):
 
     __jslocation__ = "j.clients.git"
 
-    def execute(self, *args, **kwargs):
-        executor = None
-        if "executor" in kwargs:
-            executor = kwargs.pop("executor")
-        if not executor:
-            executor = j.tools.executorLocal
-        return executor.execute(*args, **kwargs)
-
     def currentDirGitRepo(self):
         """starting from current path, check if repo, if yes return that one
 
@@ -83,7 +75,7 @@ class GitFactory(j.baseclasses.object):
 
     def getCurrentBranch(self, path, executor=None):
         cmd = "cd %s; git rev-parse --abbrev-ref HEAD" % path
-        rc, out, _ = self.execute(cmd, die=False, showout=False, executor=executor)
+        rc, out, _ = j.core.tools.execute(cmd, die=False, showout=False)
         if rc == 0:
             return out.strip()
 
@@ -119,12 +111,10 @@ class GitFactory(j.baseclasses.object):
             cmd = "cd %s;git fetch" % dest
             if depth is not None:
                 cmd += " --depth %s" % depth
-                self.execute(cmd, executor=executor)
             if branch is not None:
                 self._log_info("reset branch to:%s" % branch)
-                self.execute(
-                    "cd %s;git fetch; git reset --hard origin/%s" % (dest, branch), timeout=timeout, executor=executor
-                )
+                cmd += " git reset --hard origin/%s" % branch
+            j.core.tools.execute(cmd, timeout=timeout, retry=3, errormsg="cannot fetch %s" % url)
 
         if branch == "":
             branch = None
@@ -150,7 +140,7 @@ class GitFactory(j.baseclasses.object):
                 )
             except Exception as e:
                 base, provider, account, repo, dest, url, port = self.getGitRepoArgs(
-                    url, dest, login, passwd, reset=reset, ssh=False, codeDir=codeDir, executor=executor
+                    url, dest, login, passwd, reset=reset, ssh=False
                 )
                 return self.pullGitRepo(
                     url,
@@ -170,7 +160,7 @@ class GitFactory(j.baseclasses.object):
             return
 
         base, provider, account, repo, dest, url, port = self.getGitRepoArgs(
-            url, dest, login, passwd, reset=reset, ssh=ssh, codeDir=codeDir, executor=executor
+            url, dest, login, passwd, reset=reset, ssh=ssh
         )
 
         # Add ssh host to the known_hosts file if not exists to skip
@@ -178,7 +168,7 @@ class GitFactory(j.baseclasses.object):
         if ssh:
             cmd = "grep -q {host} ~/.ssh/known_hosts || ssh-keyscan  -p {port} {host} >> ~/.ssh/known_hosts"
             cmd = cmd.format(host=base, port=port or 22)
-            self.execute(cmd, timeout=timeout, executor=executor)
+            j.core.tools.execute(cmd, timeout=timeout)
 
         self._log_info("%s:pull:%s ->%s" % (executor, url, dest))
 
@@ -192,18 +182,13 @@ class GitFactory(j.baseclasses.object):
             # if we don't specify the branch, try to find the currently
             # checkedout branch
             currentBranch = self.getCurrentBranch(dest)
-            if currentBranch:
-                branchFound = currentBranch
-            else:  # if we can't retreive current branch, use master as default
-                branchFound = "master"
-                # raise j.exceptions.Base("Cannot retrieve branch:\n%s\n" % cmd)
-            if branch is not None and branch != branchFound and ignorelocalchanges is False:
+            if not currentBranch:
+                raise j.exceptions.Base("Cannot retrieve branch:\n%s\n" % cmd)
+            if branch is not None and branch.find(currentBranch) == -1 and ignorelocalchanges is False:
                 raise j.exceptions.Base(
                     "Cannot pull repo '%s', branch on filesystem is not same as branch asked for.\n"
                     "Branch asked for: %s\n"
-                    "Branch found: %s\n"
-                    "To choose other branch do e.g:"
-                    "export JUMPSCALEBRANCH='%s'\n" % (repo, branch, branchFound, branchFound)
+                    "Branch found: %s\n" % (repo, branch, currentBranch)
                 )
 
             if ignorelocalchanges:
@@ -212,7 +197,7 @@ class GitFactory(j.baseclasses.object):
             else:
 
                 if branch is None and tag is None:
-                    branch = branchFound
+                    branch = currentBranch
 
                 # pull
                 self._log_info(("git pull %s -> %s" % (url, dest)))
@@ -222,7 +207,7 @@ class GitFactory(j.baseclasses.object):
                 while rc > 0 and counter < 4:
                     cmd = "cd %s;git pull origin %s" % (dest, branch or tag)
                     self._log_debug(cmd)
-                    rc, out, err = self.execute(cmd, timeout=timeout, executor=executor, die=False)
+                    rc, out, err = j.core.tools.execute(cmd, timeout=timeout, die=False)
                     if rc > 0:
                         if "Please commit your changes" in err or "would be overwritten" in err:
                             if interactive:
@@ -232,16 +217,10 @@ class GitFactory(j.baseclasses.object):
                                 )
                                 if cmsg.lower().strip() == "-":
                                     ignorelocalchanges_do()
-                                    # cmd="cd %s; git checkout -- ."%dest
-                                    # self._log_debug(cmd)
-                                    # rc,out,err=self.execute(cmd, timeout=timeout, executor=executor,die=False)
-                                    # if rc>0:
-                                    #     print("ERROR: Could not discard changes in :%s, please do manual."%dest)
-                                    #     sys.exit(1)
                                 else:
                                     cmd = "cd %s;git add . -A; git commit -m '%s'" % (dest, cmsg)
                                     self._log_debug(cmd)
-                                    rc, out, err = self.execute(cmd, timeout=timeout, executor=executor, die=False)
+                                    rc, out, err = j.core.tools.execute(cmd, timeout=timeout, die=False)
                                     if rc > 0:
                                         raise j.exceptions.Operations(
                                             "ERROR: Could not add/commit changes in :%s, please do manual." % dest
@@ -258,15 +237,12 @@ class GitFactory(j.baseclasses.object):
 
                             if "Merge conflict" in out:
                                 raise j.exceptions.Operations("merge conflict:%s" % out)
-
-                            self._log_debug(
-                                "git pull rc>0, need to implement further, check what usecase is & build interactivity around"
-                            )
-
-                            raise j.exceptions.Base("could not push/pull: %s\n%s\n%s" % (url, out, err))
+                    counter += 1
+                if rc > 0:
+                    raise j.exceptions.Operations("could not pull: %s\n%s\n%s" % (url, out, err))
 
         else:
-            self._log_info(("git clone %s -> %s" % (url, dest)))
+            self._log_info(("git clone %s -> %s (branch:%s)" % (url, dest, branch)))
             # self.createDir(dest)
             extra = ""
             if depth is not None:
@@ -311,18 +287,23 @@ class GitFactory(j.baseclasses.object):
             self._log_info(cmd)
 
             # self._log_info(str(executor)+" "+cmd)
-            self.execute(cmd, timeout=timeout, executor=executor)
+            counter = 1
+            while rc > 0 and counter < 4:
+                rc, out, err = j.core.tools.execute(cmd, timeout=timeout, die=False)
+                # if rc > 0:
+                #     j.shell()
+                counter += 1
+            if rc > 0:
+                raise j.exceptions.Operations("retried git pull too many times, failed", data=cmd)
 
         if tag is not None:
             self._log_info("reset tag to:%s" % tag)
-            self.execute(
-                "cd %s;git fetch --tags; git checkout tags/%s" % (dest, tag), timeout=timeout, executor=executor
-            )
+            j.core.tools.execute("cd %s;git fetch --tags; git checkout tags/%s" % (dest, tag), timeout=timeout)
 
         if revision is not None:
             cmd = "mkdir -p %s;cd %s;git checkout %s" % (dest, dest, revision)
             self._log_info(cmd)
-            self.execute(cmd, timeout=timeout, executor=executor)
+            j.core.tools.execute(cmd, timeout=timeout)
 
         return dest
 
@@ -336,7 +317,7 @@ class GitFactory(j.baseclasses.object):
         # branch
         cmd = "cd %s;git rev-parse --abbrev-ref HEAD" % path
         try:
-            rc, out, err = self.execute(cmd, showout=False)
+            rc, out, err = j.core.tools.execute(cmd, showout=False)
             if rc == 0:
                 branch = out.strip()
             else:  # if we can't retrieve current branch, use master as default
@@ -359,12 +340,13 @@ class GitFactory(j.baseclasses.object):
         """
         return j.core.tools.code_giturl_parse(url)
 
-    def getContentInfoFromURL(self, url, pull=False):
+    def getContentInfoFromURL(self, url, pull=False, branch=None):
         """
         get content info of repo from url
 
         @param url : git repo url
         @param pull : if True will do a pull, otherwise only when it doesn't exist
+        @param branch: if set it will get priority, it can be comma separated, means will fall back if first branch specified does not exist
 
         @return (giturl,gitpath,relativepath)
 
@@ -375,10 +357,14 @@ class GitFactory(j.baseclasses.object):
         - https://github.com/threefoldtech/jumpscale_/jumpscaleX_core/tree/master/lib/Jumpscale/tools/docsite/macros
 
         """
+        if branch != None and branch.strip() == "":
+            branch = None
         url = url.strip()
-        repository_host, repository_type, repository_account, repository_name, repository_url, branch, gitpath, relpath, port = j.clients.git.giturl_parse(
+        repository_host, repository_type, repository_account, repository_name, repository_url, branch2, gitpath, relpath, port = j.clients.git.giturl_parse(
             url
         )
+        if not branch:
+            branch = branch2
         rpath = j.sal.fs.joinPaths(gitpath, relpath)
 
         if not j.sal.fs.exists(rpath, followlinks=True):
@@ -413,7 +399,7 @@ class GitFactory(j.baseclasses.object):
         path = j.sal.fs.joinPaths(gitpath, relativepath)
         return path
 
-    def getContentPathFromURLorPath(self, urlOrPath, pull=False):
+    def getContentPathFromURLorPath(self, urlOrPath, pull=False, branch=None):
         """
 
         @return path of the content found, will also do a pull to make sure git repo is up to date
@@ -425,9 +411,11 @@ class GitFactory(j.baseclasses.object):
         - https://github.com/threefoldtech/jumpscale_/jumpscaleX_core/tree/master/lib/Jumpscale/tools/docsite/macros
 
         """
+        if branch != None and branch.strip() == "":
+            branch = None
         if j.sal.fs.exists(urlOrPath, followlinks=True):
             return urlOrPath
-        repository_url, gitpath, relativepath = self.getContentInfoFromURL(urlOrPath, pull=pull)
+        repository_url, gitpath, relativepath = self.getContentInfoFromURL(urlOrPath, pull=pull, branch=branch)
         path = j.sal.fs.joinPaths(gitpath, relativepath)
         return path
 

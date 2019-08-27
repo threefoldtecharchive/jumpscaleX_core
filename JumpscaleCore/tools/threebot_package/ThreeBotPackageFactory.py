@@ -17,11 +17,10 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
         kosmos -p 'j.tools.threebotpackage.test()'
         """
 
-        branch = j.core.myenv.DEFAULTBRANCH
-
         wg = self.get(
             name="test",
-            giturl="https://github.com/threefoldtech/digitalmeX/tree/%s/threebot/packages/threefold/directory" % branch,
+            branch = j.core.myenv.DEFAULTBRANCH
+            giturl="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/directory",
         )
 
         j.shell()
