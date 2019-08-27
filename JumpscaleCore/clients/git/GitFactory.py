@@ -288,6 +288,7 @@ class GitFactory(j.baseclasses.object):
 
             # self._log_info(str(executor)+" "+cmd)
             counter = 1
+            rc = 1
             while rc > 0 and counter < 4:
                 rc, out, err = j.core.tools.execute(cmd, timeout=timeout, die=False)
                 # if rc > 0:

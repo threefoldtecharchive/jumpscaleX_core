@@ -19,7 +19,7 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
 
         wg = self.get(
             name="test",
-            branch = j.core.myenv.DEFAULTBRANCH
+            branch=j.core.myenv.DEFAULTBRANCH,
             giturl="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/directory",
         )
 
