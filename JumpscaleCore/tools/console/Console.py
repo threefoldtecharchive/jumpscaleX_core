@@ -46,7 +46,7 @@ class Console(j.baseclasses.object):  #!!!CONSOLE!!!
 
     __jslocation__ = "j.tools.console"
 
-    def _init(self):
+    def _init(self, **kwargs):
         self.width = 230
         self.indent = 0  # current indentation of messages send to console
         self.stdout = None

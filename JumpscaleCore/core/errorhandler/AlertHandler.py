@@ -20,7 +20,7 @@ class AlertHandler(j.baseclasses.object):
 
     __jslocation__ = "j.tools.alerthandler"
 
-    def _init(self):
+    def _init(self, **kwargs):
 
         if not j.application.schemas:
             raise j.exceptions.Base("cannot use alerthandler because digital me has not been installed")

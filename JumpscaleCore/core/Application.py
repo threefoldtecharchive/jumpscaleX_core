@@ -220,7 +220,7 @@ class Application(object):
         else:
             raise self._j.exceptions.RuntimeError("Can't break into jsshell in production mode.")
 
-    def init(self):
+    def init(self, **kwargs):
         pass
 
     @property

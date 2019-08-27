@@ -13,7 +13,7 @@ class Netconfig(j.baseclasses.object):
 
     __jslocation__ = "j.sal.netconfig"
 
-    def _init(self):
+    def _init(self, **kwargs):
         self.root = j.tools.path.get("/")
         self._executor = j.tools.executorLocal
         self._interfaceChanged = False

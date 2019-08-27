@@ -11,7 +11,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.servers.threebot"
     _CHILDCLASS = ThreeBotServer
 
-    def _init(self):
+    def _init(self, **kwargs):
         self._default = None
         self.current = None
         self.client = None

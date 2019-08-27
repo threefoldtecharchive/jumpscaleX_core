@@ -16,7 +16,7 @@ class Fixer(j.baseclasses.object):
 
     __jslocation__ = "j.tools.fixer"
 
-    def _init(self):
+    def _init(self, **kwargs):
         self.generator = JSGenerator(j)
         self.replacer = FixerReplacer()
 

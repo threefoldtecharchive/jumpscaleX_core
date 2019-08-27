@@ -193,14 +193,19 @@ class BuilderBaseClass(JSBase):
 
     ALREADY_DONE_VALUE = "ALREADY DONE"
 
-    def __init__(self):
+    def _init_pre2(self, **kwargs):
         if hasattr(self.__class__, "NAME"):
+            j.shell()
+            assert self.__class__.NAME
             assert isinstance(self.__class__.NAME, str)
-            self.DIR_BUILD = "/tmp/builders/{}".format(self.__class__.NAME)
-            self.DIR_SANDBOX = "/tmp/package/{}".format(self.__class__.NAME)
-
+            name = self.__class__.NAME.lower().strip()
+        elif hasattr(self.__class__, "__jslocation__"):
+            name = self.__class__.__jslocation__.lower().split(".")[-1]
+        else:
+            raise j.exceptions.JSBUG("need to specify NAME or __jslocation__ on builder class")
+        self.DIR_BUILD = "/tmp/builders/{}".format(name)
+        self.DIR_SANDBOX = "/tmp/package/{}".format(name)
         self._bash = None
-        JSBase.__init__(self)
 
     def state_sandbox_set(self):
         """
@@ -342,6 +347,8 @@ class BuilderBaseClass(JSBase):
             if key.upper() == key:
                 args[key] = item
         res = j.core.tools.text_replace(content=txt, args=args, text_strip=True)
+        # if "{" in res:
+        #     j.shell()
         return res
 
     def _execute(self, cmd, die=True, args={}, timeout=600, replace=True, showout=True, interactive=False):

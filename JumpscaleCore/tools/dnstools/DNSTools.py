@@ -24,7 +24,7 @@ class DNSTools(j.baseclasses.object):
     __jslocation__ = "j.tools.dnstools"
     __import__ = "dnspython"
 
-    def _init(self):
+    def _init(self, **kwargs):
         self._default = None
 
     def get(

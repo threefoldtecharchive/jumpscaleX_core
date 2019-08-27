@@ -10,7 +10,7 @@ JSBASE = j.baseclasses.object
 class Tmux(j.baseclasses.object):
     __jslocation__ = "j.servers.tmux"
 
-    def _init(self):
+    def _init(self, **kwargs):
         self._server = None
         self._session = None
         self._windows_active = {}

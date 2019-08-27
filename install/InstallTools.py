@@ -2884,7 +2884,7 @@ class MyEnv_:
 
             self.__init = True
 
-    def _init(self):
+    def _init(self, **kwargs):
         if not self.__init:
             raise RuntimeError("init on MyEnv did not happen yet")
 
@@ -4456,8 +4456,7 @@ class DockerContainer:
             args_txt += " --branch %s" % branch
         if not MyEnv.interactive:
             args_txt += " --no-interactive"
-            self.sshexec("echo INTERACTIVE = false > /sandbox/cfg/jumpscale_config.toml")
-            
+
         dirpath = os.path.dirname(inspect.getfile(Tools))
         if dirpath.startswith(MyEnv.config["DIR_CODE"]):
             cmd = (

@@ -255,7 +255,7 @@ class JSBaseService(j.baseclasses.object):
     #         ActorBase.__init__(self, coordinator=coordinator, data=data)
     #         self.init()
     #
-    #     def init(self):
+    #     def init(self,**kwargs):
     #         pass
     #
     #

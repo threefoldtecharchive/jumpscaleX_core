@@ -15,7 +15,7 @@ class IDGenerator(j.baseclasses.object):
 
     __jslocation__ = "j.data.idgenerator"
 
-    def _init(self):
+    def _init(self, **kwargs):
         self._cryptogen = ""
 
     @property

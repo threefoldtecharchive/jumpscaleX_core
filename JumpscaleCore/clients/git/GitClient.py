@@ -122,7 +122,7 @@ class GitClient(j.baseclasses.object):
                 self._repo = git.Repo(self.BASEDIR)
         return self._repo
 
-    def init(self):
+    def init(self, **kwargs):
         self.repo
 
     def getBranchOrTag(self):

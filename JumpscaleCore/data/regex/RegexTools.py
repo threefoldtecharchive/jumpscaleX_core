@@ -71,7 +71,7 @@ class RegexTools(j.baseclasses.object):
     # TODO: doe some propper error handling with re, now obscure errors  (id:21)
     __jslocation__ = "j.data.regex"
 
-    def _init(self):
+    def _init(self, **kwargs):
 
         self.templates = Empty()
         self.templates.lines = RegexTemplates_FindLines()
