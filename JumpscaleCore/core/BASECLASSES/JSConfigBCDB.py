@@ -52,6 +52,10 @@ class JSConfigBCDB(JSConfigBCDBBase):
         return self._data.name
 
     @property
+    def _key(self):
+        return self._name + "_" + self.name
+
+    @property
     def _id(self):
         return self._data.id
 

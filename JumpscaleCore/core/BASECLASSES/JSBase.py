@@ -525,8 +525,6 @@ class JSBase:
         """
         if isinstance(item, str) or isinstance(item, int):
             name = str(item)
-        elif "name" in item.__dict__:
-            name = item.name
         else:
             name = item._objid
         return name

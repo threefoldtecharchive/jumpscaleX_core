@@ -64,7 +64,7 @@ MyEnv.init()
 class Core:
     def __init__(self, j):
         self._dir_home = None
-        self._dir_jumpscaleX = None
+        self._dir_jumpscale = None
         self._isSandbox = None
         self.db = MyEnv.db
 
@@ -74,15 +74,15 @@ class Core:
         self.db = j.clients.redis.core_get(fromcache=False)
 
     @property
-    def dir_jumpscaleX(self):
-        if self._dir_jumpscaleX is None:
-            self._dir_jumpscaleX = os.path.dirname(os.path.dirname(__file__))
-        return self._dir_jumpscaleX
+    def dir_jumpscale(self):
+        if self._dir_jumpscale is None:
+            self._dir_jumpscale = os.path.dirname(os.path.dirname(__file__))
+        return self._dir_jumpscale
 
     @property
     def isSandbox(self):
         if self._isSandbox is None:
-            if self.dir_jumpscaleX.startswith("/sandbox"):
+            if self.dir_jumpscale.startswith("/sandbox"):
                 self._isSandbox = True
             else:
                 self._isSandbox = False

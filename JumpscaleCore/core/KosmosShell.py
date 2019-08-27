@@ -93,7 +93,7 @@ def get_completions(self, document, complete_event):
     def colored_completions(names, color):
         for name in names:
             if not isinstance(name, str):
-                raise j.exceptions.JSBug("name need to be str")
+                raise j.exceptions.JSBUG("name need to be str")
             if not name:
                 continue
             if name.startswith(member):

@@ -30,7 +30,7 @@ JSBASE = j.baseclasses.object
 class SystemProcess(j.baseclasses.object):
     __jslocation__ = "j.sal.process"
 
-    def _init(self):
+    def _init(self, **kwargs):
         self._isunix = None
 
     @property

@@ -13,7 +13,7 @@ JSBASE = j.baseclasses.object
 # https://blog.cryptoaustralia.org.au/2017/12/05/build-your-private-dns-server/
 
 
-class DNSServerFactory(j.baseclasses.factory):
+class DNSServerFactory(j.baseclasses.factory()):
 
     _CHILDCLASSES = [DNSServers, DNSResolvers]
     __jslocation__ = "j.servers.dns"

@@ -10,7 +10,7 @@ class GundbFactory(JSBASE):
 
     __jslocation__ = "j.servers.gundb"
 
-    def _init(self):
+    def _init(self, **kwargs):
         self._logger_enable()
 
     def gevent_server_get(self, port=7766):

@@ -162,8 +162,7 @@ class BaseClasses:
 
         return BuilderBaseClass
 
-    @property
-    def factory(self):
+    def factory(self, protected=True, testtools=True, isconfig_object=False):
         """
         factory class is combination of jsxobject+testtools+factory class
 
@@ -190,28 +189,6 @@ class BaseClasses:
         :return:
         """
         return JSFactory
-
-    @property
-    def factory_protected(self):
-        """
-        same as factory but attributes protected
-        """
-        return JSFactoryProtected
-
-    @property
-    def factory_testtools(self):
-        """
-        same as factory but testtools added e.g. self.test()
-        """
-        return JSFactoryTesttools
-
-    @property
-    def factory_protected_testtools(self):
-        """
-        same as factory but attributes protected
-        & testtools added e.g. self.test()
-        """
-        return JSFactoryProtectedTesttools
 
     @property
     def builder_method(self):

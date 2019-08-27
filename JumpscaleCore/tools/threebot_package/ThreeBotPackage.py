@@ -10,6 +10,7 @@ class ThreeBotPackage(JSConfigBase):
         giturl = "" (S)  #if empty then local
         path = ""
         threebotserver_name = ""
+        branch = ""
         """
 
     @property
@@ -26,7 +27,7 @@ class ThreeBotPackage(JSConfigBase):
 
     def _init(self, **kwargs):
         if self.giturl:
-            self.path = j.clients.git.getContentPathFromURLorPath(self.giturl)
+            self.path = j.clients.git.getContentPathFromURLorPath(self.giturl, branch=self.branch)
 
         self._path_package = "%s/package.py" % (self.path)
 

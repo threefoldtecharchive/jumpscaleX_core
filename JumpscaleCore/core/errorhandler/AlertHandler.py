@@ -20,7 +20,7 @@ class AlertHandler(j.baseclasses.object):
 
     __jslocation__ = "j.tools.alerthandler"
 
-    def _init(self):
+    def _init(self, **kwargs):
 
         if not j.application.schemas:
             raise j.exceptions.Base("cannot use alerthandler because digital me has not been installed")
@@ -31,7 +31,7 @@ class AlertHandler(j.baseclasses.object):
 
     def log(self, error, tb_text=""):
         """
-        :param error: is python exception (can be from jumpscaleX/Jumpscale/errorhandling/JSExceptions.py)
+        :param error: is python exception (can be from jumpscaleX_core/Jumpscale/errorhandling/JSExceptions.py)
         :return: jumpscale.alerthandler.alert object
         """
         e = self.schema_alert.new()

@@ -74,15 +74,24 @@ class Syncer(j.baseclasses.object_config):
         self.IGNOREDIR = [".git", ".github"]
         self._executor = None
 
+        j.application.debug = True
+
+        self._log_info("syncer started")
+
         # self.paths = []
         if self.paths == []:
-            self.paths.append("{DIR_CODE}/github/threefoldtech/jumpscaleX")
-            self.paths.append("{DIR_CODE}/github/threefoldtech/digitalmeX")
+            for item in [
+                "jumpscaleX_builders",
+                "jumpscaleX_core/",
+                "jumpscaleX_libs",
+                "jumpscaleX_libs_extra",
+                "jumpscaleX_threebot",
+            ]:
+                self.paths.append("{DIR_CODE}/github/threefoldtech/%s" % item)
             self.save()
 
     def _get_paths(self, executor=None):
         """
-
         :return: [[src,dest],...]
         """
         res = []
@@ -127,15 +136,14 @@ class Syncer(j.baseclasses.object_config):
         #     j.servers.rack.current.greenlets["fs_sync_monitor"] = self.monitor_greenlet
 
         self._monitor.start()
-
         gevent.time.sleep(3600)
 
     def handler(self, event, action="copy"):
         self._log_debug("%s:%s" % (event, action))
         for key, sshclient in self.sshclients.items():
-
             if sshclient.executor.isContainer:
                 continue
+            self._log_debug("open sftp to sshclient '%s'" % key)
             ftp = sshclient.sftp
             changedfile = event.src_path
             if event.src_path.endswith((".swp", ".swx")):
@@ -153,35 +161,38 @@ class Syncer(j.baseclasses.object_config):
                 return self.sync(monitor=False)  # no need to continue
             else:
                 self._log_info("file changed: %s" % changedfile)
-                error = False
+                if changedfile.find("/.git") != -1:
+                    return
+                elif changedfile.find("/__pycache__/") != -1:
+                    return
+                elif changedfile.find("/_tmp_/") != -1:
+                    return
+                elif changedfile.endswith(".pyc"):
+                    return
+                elif changedfile.endswith("___"):
+                    return
+                dest = self._path_dest_get(executor=sshclient.executor, src=changedfile)
 
-                if error is False:
-                    if changedfile.find("/.git") != -1:
-                        return
-                    elif changedfile.find("/__pycache__/") != -1:
-                        return
-                    elif changedfile.find("/_tmp_/") != -1:
-                        return
-                    elif changedfile.endswith(".pyc"):
-                        return
-                    elif changedfile.endswith("___"):
-                        return
-                    dest = self._path_dest_get(executor=sshclient.executor, src=changedfile)
+                e = ""
+                self._log_debug("action:%s for %s" % (action, changedfile))
 
-                    e = ""
-                    self._log_debug("action:%s for %s" % (action, changedfile))
-
+                rc = 1
+                counter = 0
+                while rc == 1 and counter < 10:
+                    counter += 1
                     if action == "copy":
                         self._log_info("copy (ssh:%s): %s:%s" % (sshclient.name, changedfile, dest))
                         try:
                             sshclient.file_copy(changedfile, dest)
+                            rc = 0
                             self._log_info("OK")
                         except Exception as e:
-                            j.shell()
-                            self._log_error("Couldn't sync file: %s:%s" % (changedfile, dest))
-                            self._log_error("** ERROR IN COPY, WILL SYNC ALL")
-                            self._log_error(str(e))
-                            error = True
+                            if str(e).find("SocketSendError") != -1:
+                                rc = 1
+                                continue
+                            else:
+                                rc = 2
+                                break
                     elif action == "delete":
                         self._log_debug("delete: %s:%s" % (changedfile, dest))
                         if self.ignore_delete:
@@ -189,25 +200,25 @@ class Syncer(j.baseclasses.object_config):
                         try:
                             cmd = "rm %s" % dest
                             sshclient.exec_command(cmd)
+                            rc = 0
+                            self._log_info("OK")
                         except Exception as e:
                             self._log_error("Couldn't remove file: %s" % (dest))
                             if "No such file" in str(e):
+                                rc = 0
                                 continue
                             else:
-                                error = True
-                                # raise j.exceptions.Base(e)
+                                rc = 1
+                                continue
                     else:
-                        raise j.exceptions.RuntimeError(
-                            "action not understood in filesystemhandler on sync:%s" % action
-                        )
+                        raise j.exceptions.JSBUG("action not understood in filesystemhandler on sync:%s" % action)
 
-                    if error:
-                        try:
-                            self._log_debug(e)
-                        except BaseException:
-                            pass
-                        return self.sync(monitor=False)
-                        error = False
+                if rc > 0:
+                    self._log_error("Couldn't sync file: %s:%s" % (changedfile, dest))
+                    self._log_error("** ERROR IN COPY, WILL SYNC ALL")
+                    self._log_error(str(e))
+                    self._log_debug(e)
+                    return self.sync(monitor=False)
 
     def delete(self):
         for item in j.clients.ssh.find(name=self.sshclient_name):

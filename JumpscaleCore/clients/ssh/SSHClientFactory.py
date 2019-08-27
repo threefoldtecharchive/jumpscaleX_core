@@ -10,7 +10,7 @@ class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
     _CHILDCLASS = SSHClientBase
     _SCHEMATEXT = _CHILDCLASS._SCHEMATEXT
 
-    def _init(self):
+    def _init(self, **kwargs):
         self._clients = {}
         self._SSHClientBaseClass = SSHClientBase
 

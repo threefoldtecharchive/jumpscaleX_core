@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 import copy
 import getpass
 
+DEFAULTBRANCH = "master"
 GITREPOS = {}
 
 GITREPOS["builders_extra"] = [
@@ -360,7 +361,7 @@ class RedisTools:
                 Tools.execute("redis-cli -s %s shutdown" % RedisTools.unix_socket_path, die=False, showout=False)
                 Tools.execute("redis-cli shutdown", die=False, showout=False)
             elif MyEnv.platform_is_linux:
-                Tools.execute("apt install redis-server -y")
+                Tools.execute("apt-get install redis-server -y")
             else:
                 raise Tools.exceptions.Base("platform not supported for start redis")
 
@@ -1093,6 +1094,168 @@ class Tools:
         return logdict
 
     @staticmethod
+    def _execute(command, die=True, env=None, cwd=None, useShell=True, async_=False, showout=True, timeout=3600):
+
+        os.environ["PYTHONUNBUFFERED"] = "1"  # WHY THIS???
+
+        # if hasattr(subprocess, "_mswindows"):
+        #     mswindows = subprocess._mswindows
+        # else:
+        #     mswindows = subprocess.mswindows
+
+        if env == None or env == {}:
+            env = os.environ
+
+        if useShell:
+            p = Popen(
+                command,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                close_fds=MyEnv.platform_is_unix,
+                shell=True,
+                universal_newlines=False,
+                cwd=cwd,
+                bufsize=0,
+                executable="/bin/bash",
+            )
+        else:
+            args = command.split(" ")
+            p = Popen(
+                args,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                close_fds=MyEnv.platform_is_unix,
+                shell=False,
+                env=env,
+                universal_newlines=False,
+                cwd=cwd,
+                bufsize=0,
+            )
+
+        # set the O_NONBLOCK flag of p.stdout file descriptor:
+        flags = fcntl(p.stdout, F_GETFL)  # get current p.stdout flags
+        flags = fcntl(p.stderr, F_GETFL)  # get current p.stderr flags
+        fcntl(p.stdout, F_SETFL, flags | O_NONBLOCK)
+        fcntl(p.stderr, F_SETFL, flags | O_NONBLOCK)
+
+        out = ""
+        err = ""
+
+        if async_:
+            return p
+
+        def readout(stream):
+            if MyEnv.platform_is_unix:
+                # Store all intermediate data
+                data = list()
+                while True:
+                    # Read out all available data
+                    line = stream.read()
+                    if not line:
+                        break
+                    line = line.decode()  # will be utf8
+                    # Honour subprocess univeral_newlines
+                    if p.universal_newlines:
+                        line = p._translate_newlines(line)
+                    # Add data to cache
+                    data.append(line)
+                    if showout:
+                        Tools.pprint(line, end="")
+
+                # Fold cache and return
+                return "".join(data)
+
+            else:
+                # This is not UNIX, most likely Win32. read() seems to work
+                def readout(stream):
+                    line = stream.read().decode()
+                    if showout:
+                        # Tools.log(line)
+                        Tools.pprint(line, end="")
+
+        if timeout < 0:
+            out, err = p.communicate()
+            out = out.decode()
+            err = err.decode()
+
+        else:  # timeout set
+            start = time.time()
+            end = start + timeout
+            now = start
+
+            # if command already finished then read stdout, stderr
+            out = readout(p.stdout)
+            err = readout(p.stderr)
+            if (out is None or err is None) and p.poll() is None:
+                raise Tools.exceptions.Base("prob bug, needs to think this through, seen the while loop")
+            while p.poll() is None:
+                # means process is still running
+
+                time.sleep(0.01)
+                now = time.time()
+                # print("wait")
+
+                if timeout != 0 and now > end:
+                    if MyEnv.platform_is_unix:
+                        # Soft and hard kill on Unix
+                        try:
+                            p.terminate()
+                            # Give the process some time to settle
+                            time.sleep(0.2)
+                            p.kill()
+                        except OSError:
+                            pass
+                    else:
+                        # Kill on anything else
+                        time.sleep(0.1)
+                        if p.poll():
+                            p.terminate()
+                    if MyEnv.debug or showout:
+                        Tools.log("process killed because of timeout", level=30)
+                    return (-2, out, err)
+
+                # Read out process streams, but don't block
+                out += readout(p.stdout)
+                err += readout(p.stderr)
+
+        rc = -1 if p.returncode < 0 else p.returncode
+
+        if rc < 0 or rc > 0:
+            if MyEnv.debug or showout:
+                Tools.log("system.process.run ended, exitcode was %d" % rc)
+        # if out!="":
+        #     Tools.log('system.process.run stdout:\n%s' % out)
+        # if err!="":
+        #     Tools.log('system.process.run stderr:\n%s' % err)
+
+        if die and rc != 0:
+            msg = "\nCould not execute:"
+            if command.find("\n") == -1 and len(command) < 40:
+                msg += " '%s'" % command
+            else:
+                command = "\n".join(command.split(";"))
+                msg += Tools.text_indent(command).rstrip() + "\n\n"
+            if out.strip() != "":
+                msg += "stdout:\n"
+                msg += Tools.text_indent(out).rstrip() + "\n\n"
+            if err.strip() != "":
+                msg += "stderr:\n"
+                msg += Tools.text_indent(err).rstrip() + "\n\n"
+            raise Tools.exceptions.Base(msg)
+
+        # close the files (otherwise resources get lost),
+        # wait for the process to die, and del the Popen object
+        p.stdin.close()
+        p.stderr.close()
+        p.stdout.close()
+        p.wait()
+        del p
+
+        return (rc, out, err)
+
+    @staticmethod
     def _execute_interactive(cmd=None, args=None, die=True, original_command=None):
 
         if args is None:
@@ -1774,10 +1937,14 @@ class Tools:
         original_command=None,
         log=False,
         sudo_remove=False,
+        retry=None,
+        errormsg=None,
     ):
 
         if env is None:
             env = {}
+        if not retry:
+            retry = 1
         if self is None:
             self = MyEnv
         command = Tools.text_strip(command, args=args, replace=replace)
@@ -1815,7 +1982,12 @@ class Tools:
         else:
 
             if interactive:
-                res = Tools._execute_interactive(cmd=command, die=die, original_command=original_command)
+                while retry:
+                    res = Tools._execute_interactive(cmd=command, die=die, original_command=original_command)
+                    if not res[0]:
+                        break
+                    retry -= 1
+
                 if MyEnv.debug or log:
                     Tools.log("execute interactive:%s" % command)
                 return res
@@ -1823,164 +1995,42 @@ class Tools:
                 if MyEnv.debug or log:
                     Tools.log("execute:%s" % command)
 
-            os.environ["PYTHONUNBUFFERED"] = "1"  # WHY THIS???
+                rc = 1
+                counter = 0
+                while rc > 0 and counter < retry:
+                    rc, out, err = Tools._execute(
+                        command=command,
+                        die=False,
+                        env=env,
+                        cwd=cwd,
+                        useShell=useShell,
+                        async_=async_,
+                        showout=showout,
+                        timeout=timeout,
+                    )
+                    if rc > 0 and die:
+                        Tools.log("redo cmd", level=30)
+                    counter += 1
 
-            # if hasattr(subprocess, "_mswindows"):
-            #     mswindows = subprocess._mswindows
-            # else:
-            #     mswindows = subprocess.mswindows
+                if die and rc != 0:
+                    if errormsg:
+                        msg = errormsg.rstrip() + "\n\n"
+                    else:
+                        msg = "\nCould not execute:"
+                    if command.find("\n") == -1 and len(command) < 40:
+                        msg += " '%s'" % command
+                    else:
+                        command = "\n".join(command.split(";"))
+                        msg += Tools.text_indent(command).rstrip() + "\n\n"
+                    if out.strip() != "":
+                        msg += "stdout:\n"
+                        msg += Tools.text_indent(out).rstrip() + "\n\n"
+                    if err.strip() != "":
+                        msg += "stderr:\n"
+                        msg += Tools.text_indent(err).rstrip() + "\n\n"
+                    raise Tools.exceptions.Base(msg)
 
-            if env == None or env == {}:
-                env = os.environ
-
-            if useShell:
-                p = Popen(
-                    command,
-                    stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    close_fds=MyEnv.platform_is_unix,
-                    shell=True,
-                    universal_newlines=False,
-                    cwd=cwd,
-                    bufsize=0,
-                    executable="/bin/bash",
-                )
-            else:
-                args = command.split(" ")
-                p = Popen(
-                    args,
-                    stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    close_fds=MyEnv.platform_is_unix,
-                    shell=False,
-                    env=env,
-                    universal_newlines=False,
-                    cwd=cwd,
-                    bufsize=0,
-                )
-
-            # set the O_NONBLOCK flag of p.stdout file descriptor:
-            flags = fcntl(p.stdout, F_GETFL)  # get current p.stdout flags
-            flags = fcntl(p.stderr, F_GETFL)  # get current p.stderr flags
-            fcntl(p.stdout, F_SETFL, flags | O_NONBLOCK)
-            fcntl(p.stderr, F_SETFL, flags | O_NONBLOCK)
-
-            out = ""
-            err = ""
-
-            if async_:
-                return p
-
-            def readout(stream):
-                if MyEnv.platform_is_unix:
-                    # Store all intermediate data
-                    data = list()
-                    while True:
-                        # Read out all available data
-                        line = stream.read()
-                        if not line:
-                            break
-                        line = line.decode()  # will be utf8
-                        # Honour subprocess univeral_newlines
-                        if p.universal_newlines:
-                            line = p._translate_newlines(line)
-                        # Add data to cache
-                        data.append(line)
-                        if showout:
-                            Tools.pprint(line, end="")
-
-                    # Fold cache and return
-                    return "".join(data)
-
-                else:
-                    # This is not UNIX, most likely Win32. read() seems to work
-                    def readout(stream):
-                        line = stream.read().decode()
-                        if showout:
-                            # Tools.log(line)
-                            Tools.pprint(line, end="")
-
-            if timeout < 0:
-                out, err = p.communicate()
-                out = out.decode()
-                err = err.decode()
-
-            else:  # timeout set
-                start = time.time()
-                end = start + timeout
-                now = start
-
-                # if command already finished then read stdout, stderr
-                out = readout(p.stdout)
-                err = readout(p.stderr)
-                if (out is None or err is None) and p.poll() is None:
-                    raise Tools.exceptions.Base("prob bug, needs to think this through, seen the while loop")
-                while p.poll() is None:
-                    # means process is still running
-
-                    time.sleep(0.01)
-                    now = time.time()
-                    # print("wait")
-
-                    if timeout != 0 and now > end:
-                        if MyEnv.platform_is_unix:
-                            # Soft and hard kill on Unix
-                            try:
-                                p.terminate()
-                                # Give the process some time to settle
-                                time.sleep(0.2)
-                                p.kill()
-                            except OSError:
-                                pass
-                        else:
-                            # Kill on anything else
-                            time.sleep(0.1)
-                            if p.poll():
-                                p.terminate()
-                        if MyEnv.debug or log:
-                            Tools.log("process killed because of timeout", level=30)
-                        return (-2, out, err)
-
-                    # Read out process streams, but don't block
-                    out += readout(p.stdout)
-                    err += readout(p.stderr)
-
-            rc = -1 if p.returncode < 0 else p.returncode
-
-            if rc < 0 or rc > 0:
-                if MyEnv.debug or log:
-                    Tools.log("system.process.run ended, exitcode was %d" % rc)
-            # if out!="":
-            #     Tools.log('system.process.run stdout:\n%s' % out)
-            # if err!="":
-            #     Tools.log('system.process.run stderr:\n%s' % err)
-
-            if die and rc != 0:
-                msg = "\nCould not execute:"
-                if command.find("\n") == -1 and len(command) < 40:
-                    msg += " '%s'" % command
-                else:
-                    command = "\n".join(command.split(";"))
-                    msg += Tools.text_indent(command).rstrip() + "\n\n"
-                if out.strip() != "":
-                    msg += "stdout:\n"
-                    msg += Tools.text_indent(out).rstrip() + "\n\n"
-                if err.strip() != "":
-                    msg += "stderr:\n"
-                    msg += Tools.text_indent(err).rstrip() + "\n\n"
-                raise Tools.exceptions.Base(msg)
-
-            # close the files (otherwise resources get lost),
-            # wait for the process to die, and del the Popen object
-            p.stdin.close()
-            p.stderr.close()
-            p.stdout.close()
-            p.wait()
-            del p
-
-            return (rc, out, err)
+                return rc, out, err
 
     # @staticmethod
     # def run(script,die=True,args={},interactive=True,showout=True):
@@ -2409,9 +2459,9 @@ class Tools:
 
         example Input
         - https://github.com/threefoldtech/jumpscale_/NOS/blob/master/specs/NOS_1.0.0.md
-        - https://github.com/threefoldtech/jumpscale_/jumpscaleX/blob/8.1.2/lib/Jumpscale/tools/docsite/macros/dot.py
-        - https://github.com/threefoldtech/jumpscale_/jumpscaleX/tree/8.2.0/lib/Jumpscale/tools/docsite/macros
-        - https://github.com/threefoldtech/jumpscale_/jumpscaleX/tree/master/lib/Jumpscale/tools/docsite/macros
+        - https://github.com/threefoldtech/jumpscale_/jumpscaleX_core/blob/8.1.2/lib/Jumpscale/tools/docsite/macros/dot.py
+        - https://github.com/threefoldtech/jumpscale_/jumpscaleX_core/tree/8.2.0/lib/Jumpscale/tools/docsite/macros
+        - https://github.com/threefoldtech/jumpscale_/jumpscaleX_core/tree/master/lib/Jumpscale/tools/docsite/macros
 
         :return
         - repository_account e,g, threefoldtech
@@ -2442,7 +2492,6 @@ class Tools:
                 if branch.endswith(".git"):
                     branch = branch[:-4]
             else:
-                raise RuntimeError()  # can never get here. why is it here?
                 branch, path = url_end.split("/", 1)
                 if path.endswith(".git"):
                     path = path[:-4]
@@ -2479,21 +2528,62 @@ class Tools:
 
         :param repo:
         :param account:
-        :param branch: is list of branches, default "development,master"
+        :param branch: falls back to the default branch on MyEnv.DEFAULTBRANCH
+                    if needed, when directory exists and pull is False will not check branch
         :param pull:
         :param reset:
         :return:
         """
+
+        def getbranch(args):
+            cmd = "cd {REPO_DIR}; git branch | grep \* | cut -d ' ' -f2"
+            rc, stdout, err = Tools.execute(cmd, die=False, args=args, interactive=False)
+            if rc > 0:
+                Tools.shell()
+            current_branch = stdout.strip()
+            Tools.log("Found branch: %s" % current_branch)
+            return current_branch
+
+        def checkoutbranch(args, branch):
+            args["BRANCH"] = branch
+            current_branch = getbranch(args=args)
+            if current_branch != branch:
+                script = """
+                set -ex
+                cd {REPO_DIR}
+                git checkout {BRANCH} -f
+                """
+                rc, out, err = Tools.execute(script, die=False, args=args, showout=True, interactive=False)
+                # if err:
+                #     script = """
+                #     set -ex
+                #     cd {REPO_DIR}
+                #     git checkout {BRANCH} -f
+                #     """
+                #     rc, out, err = Tools.execute(script, die=False, args=args, showout=True, interactive=False)
+
+                if rc > 0:
+                    return False
+
+            return True
+
         (host, type, account, repo, url2, branch2, gitpath, path, port) = Tools.code_giturl_parse(url=url)
         if rpath:
             path = rpath
         assert "/" not in repo
 
-        if not branch:
-            if not branch2:
-                branch = "development,master"
-            else:
-                branch = branch2
+        if branch is None:
+            branch = branch2
+        elif isinstance(branch, str):
+            if "," in branch:
+                raise j.exceptions.JSBUG("no support for multiple branches yet")
+                branch = [branch.strip() for branch in branch.split(",")]
+        elif isinstance(branch, (set, list)):
+            raise j.exceptions.JSBUG("no support for multiple branches yet")
+            branch = [branch.strip() for branch in branch]
+        else:
+            raise Tools.exceptions.JSBUG("branch should be a string or list, now %s" % branch)
+
         Tools.log("get code:%s:%s (%s)" % (url, path, branch))
         if MyEnv.config["SSH_AGENT"] and MyEnv.interactive:
             url = "git@github.com:%s/%s.git"
@@ -2513,20 +2603,16 @@ class Tools:
         args["URL"] = repo_url
         args["NAME"] = repo
 
-        if isinstance(branch, str):
-            if "," in branch:
-                branch = [branch.strip() for branch in branch.split(",")]
-        elif isinstance(branch, (set, list)):
-            branch = [branch.strip() for branch in branch]
-        else:
-            raise Tools.exceptions.JSBUG("branch should be a string or list, now %s" % branch)
-
-        args["BRANCH"] = branch
+        args["BRANCH"] = branch  # TODO:no support for multiple branches yet
 
         if "GITPULL" in os.environ:
             pull = str(os.environ["GITPULL"]) == "1"
 
         git_on_system = Tools.cmd_installed("git")
+
+        if exists and not foundgit and not pull:
+            """means code is already there, maybe synced?"""
+            return gitpath
 
         if git_on_system and MyEnv.config["USEGIT"] and ((exists and foundgit) or not exists):
             # there is ssh-key loaded
@@ -2549,14 +2635,9 @@ class Tools:
                 git clone {URL} -b {BRANCH}
                 cd {NAME}
                 """
-                rc, _, _ = Tools.execute(C, args=args, die=False, showout=False)
-                if rc > 0:
-                    C = """
-                    cd {ACCOUNT_DIR}
-                    git clone {URL}
-                    cd {NAME}
-                    """
-                    rc, _, _ = Tools.execute(C, args=args, die=True, showout=False)
+                rc, out, err = Tools.execute(
+                    C, args=args, die=True, showout=False, retry=4, errormsg="Could not clone %s" % repo_url
+                )
 
             else:
                 if pull:
@@ -2565,10 +2646,17 @@ class Tools:
                         set -x
                         cd {REPO_DIR}
                         git checkout . --force
+                        """
+                        Tools.log("get code & ignore changes: %s" % repo)
+                        Tools.execute(C, args=args, retry=1, errormsg="Could not checkout %s" % repo_url)
+                        C = """
+                        set -x
+                        cd {REPO_DIR}
                         git pull
                         """
                         Tools.log("get code & ignore changes: %s" % repo)
-                        Tools.execute(C, args=args)
+                        Tools.execute(C, args=args, retry=4, errormsg="Could not pull %s" % repo_url)
+
                     elif Tools.code_changed(REPO_DIR):
                         if Tools.ask_yes_no("\n**: found changes in repo '%s', do you want to commit?" % repo):
                             if "GITMESSAGE" in os.environ:
@@ -2583,94 +2671,54 @@ class Tools:
                         cd {REPO_DIR}
                         git add . -A
                         git commit -m "{MESSAGE}"
-                        git pull
-
                         """
                         Tools.log("get code & commit [git]: %s" % repo)
                         Tools.execute(C, args=args)
-
-            def getbranch(args):
-                cmd = "cd {REPO_DIR}; git branch | grep \* | cut -d ' ' -f2"
-                rc, stdout, err = Tools.execute(cmd, die=False, args=args, interactive=False)
-                if rc > 0:
-                    Tools.shell()
-                current_branch = stdout.strip()
-                Tools.log("Found branch: %s" % current_branch)
-                return current_branch
-
-            def checkoutbranch(args, branch):
-                args["BRANCH"] = branch
-                current_branch = getbranch(args=args)
-                if current_branch != branch:
-                    script = """
-                    set -ex
-                    cd {REPO_DIR}
-                    git checkout {BRANCH} -f
-                    """
-                    rc, out, err = Tools.execute(script, die=False, args=args, showout=True, interactive=False)
-                    if err:
-                        script = """
-                        set -ex
+                        C = """
+                        set -x
                         cd {REPO_DIR}
-                        git checkout development_jumpscale -f
+                        git pull
                         """
-                        rc, out, err = Tools.execute(script, die=False, args=args, showout=True, interactive=False)
+                        Tools.log("get code & commit [git]: %s" % repo)
+                        Tools.execute(C, args=args, retry=4, errormsg="Could not pull %s" % repo_url)
 
-                        if rc > 0:
-                            return False
-
-                return True
-
-            if not checkoutbranch(args, branch):
-                raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
+                    if not checkoutbranch(args, branch):
+                        raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
 
         else:
             Tools.log("get code [zip]: %s" % repo)
-            Tools.shell()
-            w
-            download = False
-            if download == False and (not exists or (not dontpull and pull)):
+            args = {}
+            args["ACCOUNT_DIR"] = ACCOUNT_DIR
+            args["REPO_DIR"] = REPO_DIR
+            args["URL"] = "https://github.com/%s/%s/archive/%s.zip" % (account, repo, branch)
+            args["NAME"] = repo
+            args["BRANCH"] = branch.strip()
 
-                for branch_item in branch:
-                    branch_item = branch_item.strip()
-                    url_http = "https://github.com/%s/%s/archive/%s.zip" % (account, repo, branch_item)
-
-                    args = {}
-                    args["ACCOUNT_DIR"] = ACCOUNT_DIR
-                    args["REPO_DIR"] = REPO_DIR
-                    args["URL"] = url_http
-                    args["NAME"] = repo
-                    args["BRANCH"] = branch_item
-
-                    script = """
-                    set -ex
-                    cd {DIR_TEMP}
-                    rm -f download.zip
-                    curl -L {URL} > download.zip
-                    """
-                    Tools.execute(script, args=args, die=False)
-                    statinfo = os.stat("/tmp/jumpscale/download.zip")
-                    if statinfo.st_size < 100000:
-                        continue
-                    else:
-                        script = """
-                        set -ex
-                        cd {DIR_TEMP}
-                        rm -rf {NAME}-{BRANCH}
-                        mkdir -p {REPO_DIR}
-                        rm -rf {REPO_DIR}
-                        unzip download.zip > /tmp/unzip
-                        mv {NAME}-{BRANCH} {REPO_DIR}
-                        rm -f download.zip
-                        """
-                        try:
-                            Tools.execute(script, args=args, die=True)
-                        except Exception as e:
-                            Tools.shell()
-                        download = True
-
-            if not exists and download == False:
-                raise Tools.exceptions.Base("Could not download some code")
+            script = """
+            set -ex
+            cd {DIR_TEMP}
+            rm -f download.zip
+            curl -L {URL} > download.zip
+            """
+            Tools.execute(script, args=args, retry=3, errormsg="Cannot download:%s" % args["URL"])
+            statinfo = os.stat("/tmp/jumpscale/download.zip")
+            if statinfo.st_size < 100000:
+                raise Tools.exceptions.Operations("cannot download:%s resulting file was too small" % args["URL"])
+            else:
+                script = """
+                set -ex
+                cd {DIR_TEMP}
+                rm -rf {NAME}-{BRANCH}
+                mkdir -p {REPO_DIR}
+                rm -rf {REPO_DIR}
+                unzip download.zip > /tmp/unzip
+                mv {NAME}-{BRANCH} {REPO_DIR}
+                rm -f download.zip
+                """
+                try:
+                    Tools.execute(script, args=args, die=True)
+                except Exception as e:
+                    Tools.shell()
 
         return gitpath
 
@@ -2765,7 +2813,7 @@ class MyEnv_:
         :param configdir: default /sandbox/cfg, then ~/sandbox/cfg if not exists
         :return:
         """
-
+        self.DEFAULTBRANCH = DEFAULTBRANCH
         self.readonly = False  # if readonly will not manipulate local filesystem appart from /tmp
         self.sandbox_python_active = False  # means we have a sandboxed environment where python3 works in
         self.sandbox_lua_active = False  # same for lua
@@ -2883,7 +2931,7 @@ class MyEnv_:
 
             self.__init = True
 
-    def _init(self):
+    def _init(self, **kwargs):
         if not self.__init:
             raise RuntimeError("init on MyEnv did not happen yet")
 
@@ -3168,7 +3216,7 @@ class MyEnv_:
         # defaults are now set, lets now configure the system
         if sshagent_use:
             # TODO: this is an error SSH_agent does not work because cannot identify which private key to use
-            # see also: https://github.com/threefoldtech/jumpscaleX/issues/561
+            # see also: https://github.com/threefoldtech/jumpscaleX_core/issues/561
             self.sshagent = SSHAgent()
             self.sshagent.key_default_name
         if secret is None:
@@ -3224,7 +3272,7 @@ class MyEnv_:
         :param die:
         :param stdout:
         :param level:
-        :return: logdict see github/threefoldtech/jumpscaleX/docs/Internals/logging_errorhandling/logdict.md
+        :return: logdict see github/threefoldtech/jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md
         """
         try:
             logdict = Tools.log(tb=tb, level=level, exception=exception_obj, stdout=stdout)
@@ -3253,7 +3301,7 @@ class MyEnv_:
         :param die: die if error
         :param stdout: if True send the error log to stdout
         :param level: 50 is error critical
-        :return: logdict see github/threefoldtech/jumpscaleX/docs/Internals/logging_errorhandling/logdict.md
+        :return: logdict see github/threefoldtech/jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md
 
         example
 
@@ -3765,14 +3813,14 @@ class UbuntuInstaller:
         if MyEnv.state_get("ubuntu_docker_install"):
             return
         script = """
-        apt update
-        apt upgrade -y --force-yes
-        apt install sudo python3-pip  -y
+        apt-get update
+        apt-get upgrade -y --force-yes
+        apt-get install sudo python3-pip  -y
         pip3 install pudb
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
         add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
-        apt update
-        sudo apt install docker-ce -y
+        apt-get update
+        sudo apt-get install docker-ce -y
         """
         Tools.execute(script, interactive=True)
         MyEnv.state_set("ubuntu_docker_install")
@@ -3952,7 +4000,7 @@ class JumpscaleInstaller:
             Tools.execute(script, args=locals())
 
     def cmds_link(self):
-        _, _, _, _, loc = Tools._code_location_get(repo="jumpscaleX_core", account="threefoldtech")
+        _, _, _, _, loc = Tools._code_location_get(repo="jumpscaleX_core/", account="threefoldtech")
         for src in os.listdir("%s/cmds" % loc):
             src2 = os.path.join(loc, "cmds", src)
             dest = "%s/bin/%s" % (MyEnv.config["DIR_BASE"], src)
@@ -4295,12 +4343,12 @@ class DockerContainer:
             self.dexec("rm -f /etc/service/sshd/down")
             if baseinstall:
                 print(" - Upgrade ubuntu")
-                self.dexec("apt update")
+                self.dexec("apt-get update")
                 self.dexec("DEBIAN_FRONTEND=noninteractive apt-get -y upgrade --force-yes")
                 print(" - Upgrade ubuntu ended")
-                self.dexec("apt install mc git -y")
+                self.dexec("apt-get install mc git -y")
 
-            Tools.execute("touch %s/.ssh/known_hosts" % MyEnv.config["DIR_HOME"])
+            Tools.execute("mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"]))
             Tools.execute(
                 'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"' % (MyEnv.config["DIR_HOME"], args["PORT"])
             )
@@ -4459,11 +4507,11 @@ class DockerContainer:
         dirpath = os.path.dirname(inspect.getfile(Tools))
         if dirpath.startswith(MyEnv.config["DIR_CODE"]):
             cmd = (
-                "python3 /sandbox/code/github/threefoldtech/jumpscaleX/install/jsx.py configure --sshkey %s -s"
+                "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py configure --sshkey %s -s"
                 % MyEnv.sshagent.key_default_name
             )
             Tools.execute(cmd)
-            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX/install/jsx.py install -s"
+            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s"
         else:
             print("copy installer over from where I install from")
             for item in ["jsx", "InstallTools.py"]:
@@ -4479,7 +4527,7 @@ class DockerContainer:
             )
         cmd += args_txt
         print(" - Installing jumpscaleX ")
-        self.sshexec("apt install python3-click -y")
+        self.sshexec("apt-get install python3-click -y")
         self.sshexec(cmd)
 
         cmd = """

@@ -1,7 +1,7 @@
 from Jumpscale import j
 from .CorexServer import CorexServer
 
-JSConfigs = j.baseclasses.object_config_collection
+JSConfigs = j.baseclasses.object_config_collection_testtools
 
 
 class CorexFactory(JSConfigs):

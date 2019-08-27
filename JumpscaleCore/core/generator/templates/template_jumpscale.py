@@ -18,6 +18,7 @@ j.core._groups = j.baseclasses.dict()
 class group_{{jsgroup.name}}(JSGroup):
 
     def __init__(self):
+        pass
         {% for child in jsgroup.children %}
         self._{{child.name}} = None
         {%- endfor %}
@@ -46,6 +47,8 @@ class group_{{jsgroup.name}}(JSGroup):
     {%- endfor %}
 
 {% if "." not in jsgroup.location %}
+# if "{{jsgroup.location}}".find("tutorials")!=-1:
+#     from pudb import set_trace; set_trace()
 {{jsgroup.location}} = group_{{jsgroup.name}}()
 j.core._groups["{{jsgroup.name}}"] = {{jsgroup.location}}
 {% else %}

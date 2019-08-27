@@ -214,3 +214,20 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             return True
         else:
             return False
+
+    def _children_get(self, filter=None):
+        """
+        :param filter: is '' then will show all, if None will ignore _
+                when * at end it will be considered a prefix
+                when * at start it will be considered a end of line filter (endswith)
+                when R as first char its considered to be a regex
+                everything else is a full match
+        :return:
+        """
+        x = []
+        for key, item in self._children.items():
+            x.append(item)
+        for item in self.find():
+            if item not in x:
+                x.append(item)
+        return self._filter(filter=filter, llist=x, nameonly=False)

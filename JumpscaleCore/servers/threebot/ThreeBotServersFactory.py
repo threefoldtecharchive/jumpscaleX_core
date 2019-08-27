@@ -11,7 +11,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.servers.threebot"
     _CHILDCLASS = ThreeBotServer
 
-    def _init(self):
+    def _init(self, **kwargs):
         self._default = None
         self.current = None
         self.client = None
@@ -51,18 +51,18 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         self.client.actors.package_manager.package_add(
             "tf_directory",
-            git_url="https://github.com/threefoldtech/digitalmeX/tree/development_jumpscale/threebot/packages/threefold/directory",
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/directory",
         )
 
         self.client.actors.package_manager.package_add(
             "threebot_phonebook",
-            git_url="https://github.com/threefoldtech/digitalmeX/tree/development_jumpscale/threebot/packages/threefold/phonebook",
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
         )
 
         if wiki:
             self.client.actors.package_manager.package_add(
                 "tf_wiki",
-                git_url="https://github.com/threefoldtech/digitalmeX/tree/development_jumpscale/threebot/packages/threefold/wiki",
+                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/wiki",
             )
 
         self.client.reload()

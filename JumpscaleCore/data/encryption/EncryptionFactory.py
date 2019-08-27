@@ -14,7 +14,7 @@ class EncryptionFactory(j.baseclasses.object):
 
     __jslocation__ = "j.data.encryption"
 
-    def _init(self):
+    def _init(self, **kwargs):
         self._mnemonic = None
 
     @property

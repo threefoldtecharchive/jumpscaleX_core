@@ -14,7 +14,7 @@ class GraphQLFactory(JSBASE):
         name = (S)
         """
 
-    def _init(self):
+    def _init(self, **kwargs):
         self._logger_enable()
 
     @property

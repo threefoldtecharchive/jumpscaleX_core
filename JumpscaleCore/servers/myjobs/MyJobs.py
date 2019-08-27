@@ -74,7 +74,7 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
     def job_get(self, job_id):
         return self.model_job.get(job_id)
 
-    def init(self):
+    def init(self, **kwargs):
         """
         activates the models and starts the worker manager if required
         """

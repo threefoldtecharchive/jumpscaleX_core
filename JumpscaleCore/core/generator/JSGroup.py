@@ -33,7 +33,9 @@ class JSGroup:
 
     @property
     def location_parent(self):
-        return ".".join(self.location.split(".")[:-1])
+        loc = self.location.strip(".")
+        r = ".".join(loc.split(".")[:-1])
+        return r
 
     @property
     def children(self):

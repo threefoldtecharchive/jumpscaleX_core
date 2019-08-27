@@ -46,7 +46,7 @@ class RedisServer(j.baseclasses.object):
 
         self.init()
 
-    def init(self):
+    def init(self, **kwargs):
         self._sig_handler.append(gevent.signal(signal.SIGINT, self.stop))
         if self.ssl:
             self.ssl_priv_key_path, self.ssl_cert_path = self.sslkeys_generate()

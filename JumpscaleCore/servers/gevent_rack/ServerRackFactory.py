@@ -26,7 +26,7 @@ class ServerRackFactory(JSBASE):
 
     __jslocation__ = "j.servers.rack"
 
-    def _init(self):
+    def _init(self, **kwargs):
         self._logger_enable()
         self.current = None
 

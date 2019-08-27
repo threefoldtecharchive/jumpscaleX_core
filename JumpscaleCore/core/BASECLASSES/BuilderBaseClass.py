@@ -188,13 +188,14 @@ class builder_method:
 
 class BuilderBaseClass(JSBase):
     """
-    doc in /sandbox/code/github/threefoldtech/jumpscaleX/docs/Internals/builders/Builders.md
+    doc in /sandbox/code/github/threefoldtech/jumpscaleX_core/docs/Internals/builders/Builders.md
     """
 
     ALREADY_DONE_VALUE = "ALREADY DONE"
 
     def __init__(self):
         self._bash = None
+        self._name = self.__class__.__jslocation__.lower().split(".")[-1]
         JSBase.__init__(self)
         self.DIR_BUILD = "/tmp/builders/{}".format(self._name)
         self.DIR_SANDBOX = "/tmp/package/{}".format(self._name)
@@ -339,6 +340,8 @@ class BuilderBaseClass(JSBase):
             if key.upper() == key:
                 args[key] = item
         res = j.core.tools.text_replace(content=txt, args=args, text_strip=True)
+        # if "{" in res:
+        #     j.shell()
         return res
 
     def _execute(self, cmd, die=True, args={}, timeout=600, replace=True, showout=True, interactive=False):

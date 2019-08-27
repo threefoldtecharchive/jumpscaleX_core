@@ -18,7 +18,7 @@ class ServerRack(JSBASE):
     is a group of gedis servers in a virtual rack
     """
 
-    def _init(self):
+    def _init(self, **kwargs):
         self.servers = {}
         self.greenlets = {}
         self._logger_enable()

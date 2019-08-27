@@ -30,7 +30,7 @@ class Struct(j.baseclasses.object):
 class CodeTools(j.baseclasses.object):
     __jslocation__ = "j.tools.code"
 
-    def _init(self):
+    def _init(self, **kwargs):
         self._templateengine = None
         # self.executor = CodeExecutor()
         self._wordreplacer = None

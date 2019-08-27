@@ -51,7 +51,7 @@ class JSGenerator:
         if path:
             rootDir = path
         else:
-            rootDir = os.path.dirname(self._j.core.dir_jumpscaleX.rstrip("/"))
+            rootDir = os.path.dirname(self._j.core.dir_jumpscale.rstrip("/"))
 
         p = Path(rootDir)
         for dpath in p.iterdir():
@@ -91,6 +91,7 @@ class JSGenerator:
                             )
 
         self.md.groups_load()  # make sure we find all groups
+        # self._j.shell()
         self._render()
         self.report()
 
