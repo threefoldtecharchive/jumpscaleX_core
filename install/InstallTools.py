@@ -1212,7 +1212,7 @@ class Tools:
                         time.sleep(0.1)
                         if p.poll():
                             p.terminate()
-                    if MyEnv.debug or log:
+                    if MyEnv.debug or showout:
                         Tools.log("process killed because of timeout", level=30)
                     return (-2, out, err)
 
