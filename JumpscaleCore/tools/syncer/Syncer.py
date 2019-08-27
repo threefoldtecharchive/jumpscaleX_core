@@ -74,6 +74,10 @@ class Syncer(j.baseclasses.object_config):
         self.IGNOREDIR = [".git", ".github"]
         self._executor = None
 
+        j.application.debug = True
+
+        self._log_info("syncer started")
+
         # self.paths = []
         if self.paths == []:
             for item in [
@@ -88,7 +92,6 @@ class Syncer(j.baseclasses.object_config):
 
     def _get_paths(self, executor=None):
         """
-
         :return: [[src,dest],...]
         """
         res = []
@@ -133,7 +136,6 @@ class Syncer(j.baseclasses.object_config):
         #     j.servers.rack.current.greenlets["fs_sync_monitor"] = self.monitor_greenlet
 
         self._monitor.start()
-
         gevent.time.sleep(3600)
 
     def handler(self, event, action="copy"):
@@ -141,6 +143,7 @@ class Syncer(j.baseclasses.object_config):
         for key, sshclient in self.sshclients.items():
             if sshclient.executor.isContainer:
                 continue
+            self._log_debug("open sftp to sshclient '%s'" % key)
             ftp = sshclient.sftp
             changedfile = event.src_path
             if event.src_path.endswith((".swp", ".swx")):
