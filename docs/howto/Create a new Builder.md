@@ -60,7 +60,7 @@ called in the end of `__init__` method in the superclass**
 ```python
 def _init(self):
     self.geth_repo = "github.com/ethereum/go-ethereum"
-    self.package_path = j.builders.runtimes.golang.package_path_get("ethereum/go-ethereum")
+    self.package_path = j.builders.runtimes.go.package_path_get("ethereum/go-ethereum")
 
 
 def build(self, reset=False):
@@ -72,12 +72,12 @@ def build(self, reset=False):
     if self._done_get('build') and reset is False:
         return
 
-    if not j.builders.runtimes.golang.is_installed:
-        j.builders.runtimes.golang.install()
+    if not j.builders.runtimes.go.is_installed:
+        j.builders.runtimes.go.install()
 
-    j.builders.runtimes.golang.get(self.geth_repo)
+    j.builders.runtimes.go.get(self.geth_repo)
 
-    j.builders.runtimes.golang.execute("cd {} && make geth".format(self.package_path))
+    j.builders.runtimes.go.execute("cd {} && make geth".format(self.package_path))
     self._done_set('build')
 
 ```

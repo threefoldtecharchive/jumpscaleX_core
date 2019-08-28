@@ -7,7 +7,7 @@ import os
 from .JSBase import JSBase
 
 
-class builder_method(object):
+class builder_method:
     """A Decorator to be used in all builder methods
     this will provide:
     1- State check to make sure not to do one action multiple times
@@ -193,19 +193,12 @@ class BuilderBaseClass(JSBase):
 
     ALREADY_DONE_VALUE = "ALREADY DONE"
 
-    def _init_pre2(self, **kwargs):
-        if hasattr(self.__class__, "NAME"):
-            j.shell()
-            assert self.__class__.NAME
-            assert isinstance(self.__class__.NAME, str)
-            name = self.__class__.NAME.lower().strip()
-        elif hasattr(self.__class__, "__jslocation__"):
-            name = self.__class__.__jslocation__.lower().split(".")[-1]
-        else:
-            raise j.exceptions.JSBUG("need to specify NAME or __jslocation__ on builder class")
-        self.DIR_BUILD = "/tmp/builders/{}".format(name)
-        self.DIR_SANDBOX = "/tmp/package/{}".format(name)
+    def __init__(self):
         self._bash = None
+        self._name = self.__class__.__jslocation__.lower().split(".")[-1]
+        JSBase.__init__(self)
+        self.DIR_BUILD = "/tmp/builders/{}".format(self._name)
+        self.DIR_SANDBOX = "/tmp/package/{}".format(self._name)
 
     def state_sandbox_set(self):
         """
@@ -565,19 +558,19 @@ class BuilderBaseClass(JSBase):
             self._copy("/lib64/ld-linux-x86-64.so.2", ld_dest)
 
         self._log_info("uploading flist to the hub")
-        flist_url = zhub_client.sandbox_upload(self.NAME, self.DIR_SANDBOX)
+        flist_url = zhub_client.sandbox_upload(self._name, self.DIR_SANDBOX)
         if merge_base_flist:
             self._log_info("merging the produced flist with {}".format(merge_base_flist))
 
-            target = "{}_merged_{}".format(self.NAME, merge_base_flist.replace("/", "_").replace(".flist", ""))
-            flist_name = "{username}/{flist_name}.flist".format(username=zhub_client.username, flist_name=self.NAME)
+            target = "{}_merged_{}".format(self._name, merge_base_flist.replace("/", "_").replace(".flist", ""))
+            flist_name = "{username}/{flist_name}.flist".format(username=zhub_client.username, flist_name=self._name)
             flist_url = zhub_client.merge(target, [flist_name, merge_base_flist])
 
         return flist_url
 
     @builder_method()
     def _tarfile_create(self):
-        tarfile = "/tmp/{}.tar.gz".format(self.NAME)
+        tarfile = "/tmp/{}.tar.gz".format(self._name)
         j.sal.process.execute("tar czf {} -C {} .".format(tarfile, self.DIR_SANDBOX))
         return tarfile
 
