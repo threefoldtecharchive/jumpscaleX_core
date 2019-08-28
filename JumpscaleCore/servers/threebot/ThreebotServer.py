@@ -6,14 +6,9 @@ from .OpenPublish import OpenPublish
 JSConfigs = j.baseclasses.object_config_collection
 
 
-class BCDBs:
-    def __init__(self):
-        pass
-
-
 class ThreeBotServer(j.baseclasses.object_config):
     """
-    Open Publish factory
+    Threebot server
     """
 
     _SCHEMATEXT = """
@@ -24,13 +19,11 @@ class ThreeBotServer(j.baseclasses.object_config):
         """
 
     def _init(self, **kwargs):
-        self.content = ""
-        self._rack = None
+        self._rack_server = None
         self._gedis_server = None
+        self._openresty_server = None
         self._startup_cmd = None
-        self._openresty = None
-
-        self.bcdbs = BCDBs()
+        self._zdb = None
         j.servers.threebot.current = self
 
     @property
@@ -38,85 +31,96 @@ class ThreeBotServer(j.baseclasses.object_config):
         return self.adminsecret_
 
     @property
-    def rack(self):
-        if not self._rack:
-            self._rack = j.servers.rack.get()
-        return self._rack
-
-    def bcdb_get(self, name):
-        if not name in self.bcdbs__dict__:
-            # will be made more secure but for now ok
-            zdb_admin = j.clients.zdb.client_admin_get()
-            name = "wiki"
-            if not j.data.bcdb.exists(name=name):
-                zdb = zdb_admin.namespace_new(name, secret=self.secret)
-                bcdb = j.data.bcdb.new(name=name, storclient=zdb)
-            else:
-                bcdb = j.data.bcdb.get(name=name)
-            self.bcdbs__dict__[name] = bcdb
-        return self.bcdbs__dict__[name]
+    def rack_server(self):
+        if not self._rack_server:
+            self._rack_server = j.servers.rack.get()
+        return self._rack_server
 
     @property
     def gedis_server(self):
         if not self._gedis_server:
-            self._gedis_server = j.servers.gedis.get("threebot_%s" % self.name, port=8901)
+            self._gedis_server = j.servers.gedis.get(name=f"{self.name}_gedis_threebot", port=8901)
         return self._gedis_server
 
     @property
-    def openresty(self):
-        if not self._openresty:
-            self._openresty = j.servers.openresty.get("threebot", executor=self.executor)
-        return self._openresty
+    def openresty_server(self):
+        if not self._openresty_server:
+            j.servers.openresty.install()
+            self._openresty_server = j.servers.openresty.get(name=f"{self.name}_openresty_threebot", executor=self.executor)
+        return self._openresty_server
+
+    def bcdb_get(self, name):
+        try:
+            return j.data.bcdb.get(name=name)
+        except j.exceptions.Input as e:
+            zdb_admin = j.clients.zdb.client_admin_get()
+            zdb = zdb_admin.namespace_new(name, secret=self.secret)
+            return j.data.bcdb.new(name=name, storclient=zdb)
+
+    @property
+    def zdb(self):
+        if not self._zdb:
+            self._zdb = j.servers.zdb.get(
+                name=f"{self.name}_zdb_threebot", adminsecret_=self.adminsecret_, executor=self.executor
+            )
+        return self._zdb
 
     def start(self, background=False):
         """
 
-        kosmos 'j.servers.threebot.default.start()'
+        kosmos 'j.servers.threebot.default.start(background=True)'
 
-        :param background:
-        :return:
+        :param background: if True will start all servers including threebot itself in the background
+
+        Threebot will start the following servers by default
+
+        zdb                                         (port:9900)
+        sonic                                       (port:1491)
+        gedis                                       (port:8901)
+        openresty                                   (port:80 and 443 for ssl)
+        gedis websocket                             (port:9999)
+        reverse proxy for gedis websocket           (port:4444) to use ssl certificate from openresty
+        dns server                                  (port:5354) #TODO: check if this is still needed
+        bottle server                               (port:4443) serves the bcdbfs content
+        reverse proxy for bottle server             (port:4442) to use ssl certificate from openresty
         """
 
         if not background:
 
-            j.application.debug = False  # otherwise we get a pudb session
-
-            zdb = j.servers.zdb.get("threebot", adminsecret_=self.adminsecret_, executor=self.executor)
-            zdb.start()
-
-            self.openresty = j.servers.openresty.get("threebot", executor=self.executor)
-            self.openresty.install()
-
+            # starting servers
+            self.openresty_server.install(reset=True)
+            self.zdb.start()
             j.servers.sonic.default.start()
 
-            # add system actors
+            # add system actors and basic chat flows
             self.gedis_server.actors_add("%s/base_actors" % self._dirpath)
             self.gedis_server.chatbot.chatflows_load("%s/base_chatflows" % self._dirpath)
+            gedis_websocket_server = j.servers.gedis_websocket.default.app
+            self.rack_server.websocket_server_add("websocket", 9999, gedis_websocket_server)
 
-            app = j.servers.gedis_websocket.default.app
-            self.rack.websocket_server_add("websocket", 9999, app)
-
-            websocket_reverse_proxy = self.openresty.reverseproxies.new(
-                name="websocket", port_source=4444, proxy_type="websocket", port_dest=9999, ipaddr_dest="0.0.0.0"
+            websocket_reverse_proxy = self.openresty_server.reverseproxies.get(
+                name=f"{self.name}_websocket_threebot",
+                port_source=4444,
+                proxy_type="websocket",
+                port_dest=9999,
+                ipaddr_dest="0.0.0.0",
             )
-
             websocket_reverse_proxy.configure()
 
             dns = j.servers.dns.get_gevent_server("main", port=5354)  # for now high port
-            self.rack.add("dns", dns)
+            self.rack_server.add("dns", dns)
 
-            self.rack.add("gedis", self.gedis_server.gevent_server)
-
-            gedis_reverse_proxy = self.openresty.reverseproxies.new(
-                name="gedis", port_source=8900, proxy_type="tcp", port_dest=8901, ipaddr_dest="0.0.0.0"
+            self.rack_server.add("gedis", self.gedis_server.gevent_server)
+            gedis_reverse_proxy = self.openresty_server.reverseproxies.get(
+                name="gedis_websocket", port_source=8900, proxy_type="tcp", port_dest=8901, ipaddr_dest="0.0.0.0"
             )
 
             gedis_reverse_proxy.configure()
 
-            self.rack.bottle_server_add(port=4443)
+            self.rack_server.bottle_server_add(port=4443)
 
-            bottle_reverse_proxy = self.openresty.reverseproxies.new(
-                name="bottle", port_source=4442, proxy_type="http", port_dest=4443, ipaddr_dest="0.0.0.0"
+            bottle_reverse_proxy = self.openresty_server.reverseproxies.get(
+                name="bottle_websocket", port_source=4442, proxy_type="http", port_dest=4443, ipaddr_dest="0.0.0.0"
             )
 
             bottle_reverse_proxy.configure()
@@ -125,8 +129,9 @@ class ThreeBotServer(j.baseclasses.object_config):
             for package in j.tools.threebotpackage.find():
                 package.start()
 
-            self.openresty.start()
-            self.rack.start()
+
+            self.openresty_server.start()
+            self.rack_server.start()
 
         else:
             if self.startup_cmd.is_running():
