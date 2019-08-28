@@ -31,7 +31,7 @@ import copy
 
 
 class BCDBFactory(j.baseclasses.object_config_collection_testtools):
-
+    _CHILDCLASS = BCDB
     __jslocation__ = "j.data.bcdb"
 
     def _init(self, **kwargs):

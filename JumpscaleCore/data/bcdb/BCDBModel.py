@@ -450,6 +450,8 @@ class BCDBModel(j.baseclasses.object):
                 obj = self.schema.new(datadict=data, bcdb=self.bcdb)
             elif isinstance(data, bytes):
                 obj = self.schema.new(serializeddata=data, bcdb=self.bcdb)
+            elif isinstance(data, j.data.schema._JSXObjectClass):
+                obj = self.schema.new(datadict=data._ddict, bcdb=self.bcdb)
             else:
                 raise j.exceptions.Base("need dict")
         else:
@@ -489,7 +491,7 @@ class BCDBModel(j.baseclasses.object):
 
         if not data:
             if die:
-                raise j.exceptions.Base("could not find obj with id:%s" % obj_id)
+                raise j.exceptions.NotFound("could not find obj with id:%s" % obj_id)
             else:
                 return None
 

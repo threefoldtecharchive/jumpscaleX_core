@@ -22,8 +22,6 @@ import os
 from copy import copy
 from .SchemaProperty import SchemaProperty
 from Jumpscale import j
-import sys
-from Jumpscale import j
 
 
 class SystemProps:

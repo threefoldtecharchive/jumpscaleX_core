@@ -1,10 +1,15 @@
 import json
 import asyncio
-import websockets
 from .utils import newuid, new_node, ham_mix
 from Jumpscale import j
 
-JSConfigBase = j.baseclasses.object
+try:
+    import websockets
+except:
+    j.builders.runtimes.python3.pip_package_install("websockets")
+    import websockets
+
+JSConfigBase = j.baseclasses.object_config
 
 
 def format_put_request(soul, **kwargs):
@@ -62,12 +67,16 @@ password_ = ""
 
 
 class GunClient(JSConfigBase):
-    def __init__(self, instance, data=None, parent=None, interactive=True):
-        if data is None:
-            data = {}
-        JSConfigBase.__init__(
-            self, instance=instance, data=data, parent=parent, template=TEMPLATE, interactive=interactive
-        )
+    _SCHEMATEXT = """
+        @url = jumpscale.gun.client
+        name* = "" (S)
+        data = "" (S)
+        """
+
+    def _init(self, **kwargs):
+        if self.data is None:
+            self.data = {}
+
         self.ws = None
         self.backend = Memory()
 

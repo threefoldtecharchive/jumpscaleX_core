@@ -1034,7 +1034,7 @@ class Tools:
                         exception = Tools.text_indent(exception.exception, 6)
                     msg += "\n - original Exception: %s" % exception
 
-        logdict["message"] = msg
+        logdict["message"] = Tools.text_replace(msg)
 
         logdict["linenr"] = linenr
         logdict["filepath"] = fname
