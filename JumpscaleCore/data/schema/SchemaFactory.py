@@ -20,12 +20,12 @@
 
 import sys
 
-from .Schema import *
+from .Schema import Schema
 from Jumpscale import j
 from .JSXObject import JSXObject
 
 
-class SchemaFactory(j.baseclasses.object_config_collection_testtools):
+class SchemaFactory(j.baseclasses.factory):
     __jslocation__ = "j.data.schema"
 
     def _init(self, **kwargs):

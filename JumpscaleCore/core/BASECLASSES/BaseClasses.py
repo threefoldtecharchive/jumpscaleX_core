@@ -25,7 +25,7 @@ from .JSConfigBCDBBase import JSConfigBCDBBase
 from .ThreeBotActorBase import ThreeBotActorBase
 from .ThreeBotPackageBase import ThreeBotPackageBase
 from .TestTools import TestTools
-from .JSFactory import *
+from .JSFactory import JSFactory
 from .JSDict import JSDict
 
 
