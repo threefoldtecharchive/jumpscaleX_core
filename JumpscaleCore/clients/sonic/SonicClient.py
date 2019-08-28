@@ -59,7 +59,7 @@ class SonicClient(JSConfigClient):
         try:
             from sonic import SearchClient, IngestClient
         except ImportError:
-            j.builders.runtimes.python.pip_package_install("sonic-client")
+            j.builders.runtimes.python3.pip_package_install("sonic-client")
             from sonic import SearchClient, IngestClient
 
         if not self._cached_client_search:
@@ -71,7 +71,7 @@ class SonicClient(JSConfigClient):
         try:
             from sonic import SearchClient, IngestClient
         except ImportError:
-            j.builders.runtimes.python.pip_package_install("sonic-client")
+            j.builders.runtimes.python3.pip_package_install("sonic-client")
             from sonic import SearchClient, IngestClient
 
         if not self._cached_client_ingest:

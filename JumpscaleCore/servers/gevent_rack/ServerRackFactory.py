@@ -48,8 +48,8 @@ class ServerRackFactory(JSBASE):
         kosmos 'j.servers.rack._server_test_start()'
         :return:
         """
-        j.builders.runtimes.python.pip_package_install("bottle,webdavclient3")
-        j.builders.runtimes.python.pip_package_install("git+https://github.com/mar10/wsgidav.git")
+        j.builders.runtimes.python3.pip_package_install("bottle,webdavclient3")
+        j.builders.runtimes.python3.pip_package_install("git+https://github.com/mar10/wsgidav.git")
 
     def _server_test_start(
         self, background=False, gedis=True, gedis_ssl=True, webdav=True, bottle=True, websockets=True
