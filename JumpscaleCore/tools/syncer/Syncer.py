@@ -215,7 +215,10 @@ class Syncer(j.baseclasses.object_config):
                 if rc > 0:
                     self._log_error("Couldn't sync file: %s:%s" % (changedfile, dest))
                     self._log_error("** ERROR IN COPY, WILL SYNC ALL")
-                    self._log_error(str(e))
+                    try:
+                        self._log_error(str(e))
+                    except:
+                        pass  # no idea why we need to do this, but e not known
                     return self.sync(monitor=False)
 
     def delete(self):

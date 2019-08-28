@@ -31,7 +31,11 @@ class JSON(TypeBaseClassUnserialized):
         return True
 
     def check(self, v):
-        return isinstance(v, str)
+        try:
+            j.data.serializers.json.loads(v)
+            return True
+        except j.exceptions.Value:
+            return False
 
     def clean(self, v=""):
         """
