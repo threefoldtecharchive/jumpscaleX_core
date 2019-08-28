@@ -2807,7 +2807,6 @@ class Tools:
 
 
 class MyEnv_:
-    DEFAULTBRANCH = "master"
     def __init__(self):
         """
 
