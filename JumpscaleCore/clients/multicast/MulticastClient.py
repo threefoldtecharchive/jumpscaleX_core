@@ -7,16 +7,16 @@ TEMPLATE = """
 port = 8123
 """
 
-JSConfigBase = j.baseclasses.object
+JSConfigBase = j.baseclasses.object_config
 
 
 class MulticastClient(JSConfigBase):
-    def __init__(self, instance, data=None, parent=None, interactive=False):
-        if not data:
-            data = {}
-        JSConfigBase.__init__(
-            self, instance=instance, data=data, parent=parent, template=TEMPLATE, interactive=interactive
-        )
+
+    _SCHEMATEXT = """
+        @url = jumpscale.multicast.client
+        name* = "main" (S)
+        data_ = "" (S)
+        """
 
     def send(self):
         # Get zerotier ipv6
@@ -37,9 +37,9 @@ class MulticastClient(JSConfigBase):
         s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
         s.bind((bind_ip, 0))
         while True:
-            data = str(time.time()).encode()
+            self.data_ = str(time.time()).encode()
             # "ff02::1" is the multicast address which represents all nodes on the local network segment
-            s.sendto(data, ("ff02::1", self.config.data["port"]))
+            s.sendto(self.data_, ("ff02::1", self.data["port"]))
             time.sleep(1)
 
     def listen(self):
@@ -47,11 +47,11 @@ class MulticastClient(JSConfigBase):
         s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
 
         # Bind it to the port
-        s.bind(("", self.config.data["port"]))
+        s.bind(("", self.data_["port"]))
 
-        # Loop, printing any data we receive
+        # Loop, printing any data_ we receive
         while True:
-            data, sender_address = s.recvfrom(1500)
-            while data[-1:] == "\0":
-                data = data[:-1]  # Strip trailing \0's
-            print(str(sender_address) + "  " + repr(data))
+            self.data_, sender_address = s.recvfrom(1500)
+            while self.data_[-1:] == "\0":
+                self.data_ = self.data_[:-1]  # Strip trailing \0's
+            print(str(sender_address) + "  " + repr(self.data_))
