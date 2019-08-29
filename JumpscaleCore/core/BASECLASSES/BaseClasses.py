@@ -29,7 +29,7 @@ from .JSFactory import JSFactory
 from .JSDict import JSDict
 
 
-class BaseClasses:
+class BaseClasses(JSBase, TestTools):
     def __init__(self):
         pass
 
@@ -109,13 +109,15 @@ class BaseClasses:
     @property
     def object_config_base(self):
         """
-        the base class as used by object_config_bcdb and object_config_collection
+        the base class as used by object_config and object_config_collection
 
         deals with base functionality as required for the object(s)_config classes
 
         - triggers
         - change schema's inside object
         - initialization
+
+        is useful to test classes against isinstance(...)
 
         :return:
         """
@@ -163,35 +165,26 @@ class BaseClasses:
         return BuilderBaseClass
 
     @property
-    def factory(self):
+    def builder_method(self):
         """
-        factory class is combination of testtools+factory class
-
-        functions
-
-        - use _ChildClass(es) functionality to create children
-        - recursive delete & reset
-        - can have an own jsxobject attached to it
-
-
-        :return:
+        decorator method for builder base class
         """
+        from .BuilderBaseClass import builder_method
 
-        class JSFactoryTestTools(JSFactory, TestTools):
-            pass
-
-        return JSFactoryTestTools
+        return builder_method
 
     @property
-    def factory_data(self):
+    def factory(self):
         """
-        factory class is combination of jsxobject+testtools+factory class
+        factory class is combination of jsxobject+factory class
 
         functions
 
         - use _ChildClass(es) functionality to create children
         - recursive delete & reset
         - can have an own jsxobject attached to it
+
+        example see /sandbox/code/github/threefoldtech/jumpscaleX_libs/tutorials/base/object_structure/BaseClasses_ConfigObjects.py
 
 
         :return:
@@ -201,12 +194,3 @@ class BaseClasses:
             pass
 
         return JSFactoryTestToolsData
-
-    @property
-    def builder_method(self):
-        """
-        decorator method for builder base class
-        """
-        from .BuilderBaseClass import builder_method
-
-        return builder_method

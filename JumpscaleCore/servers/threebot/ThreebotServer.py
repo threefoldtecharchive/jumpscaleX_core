@@ -46,7 +46,9 @@ class ThreeBotServer(j.baseclasses.object_config):
     def openresty_server(self):
         if not self._openresty_server:
             j.servers.openresty.install()
-            self._openresty_server = j.servers.openresty.get(name=f"{self.name}_openresty_threebot", executor=self.executor)
+            self._openresty_server = j.servers.openresty.get(
+                name=f"{self.name}_openresty_threebot", executor=self.executor
+            )
         return self._openresty_server
 
     def bcdb_get(self, name):
@@ -128,7 +130,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             # add user added packages
             for package in j.tools.threebotpackage.find():
                 package.start()
-
 
             self.openresty_server.start()
             self.rack_server.start()
