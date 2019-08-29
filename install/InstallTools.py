@@ -751,6 +751,9 @@ class JSExceptions:
 
         class SSHTimeout1(BaseJSException):
             pass
+        
+        class RemoteException1(BaseJSException):
+            pass
 
         self.Permission = Permission1
         self.SSHTimeout = SSHTimeout1
@@ -768,6 +771,7 @@ class JSExceptions:
         self.Runtime = RuntimeError1
         self.Halt = Halt1
         self.Base = BaseJSException
+        self.RemoteException = RemoteException1
 
 
 class Tools:
