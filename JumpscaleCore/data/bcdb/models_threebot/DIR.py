@@ -30,7 +30,7 @@ class DIR(j.data.bcdb._BCDBModelClass):
     @property
     def _file_model(self):
         if not self._file_model_:
-            self._file_model_ = self.bcdb.model_get_from_file("{}/models_threebot/DIR.py".format(self.bcdb._dirpath))
+            self._file_model_ = self.bcdb.model_get_from_file("{}/models_threebot/FILE.py".format(self.bcdb._dirpath))
         return self._file_model_
 
     def _create_root_dir(self):
@@ -67,5 +67,12 @@ class DIR(j.data.bcdb._BCDBModelClass):
 
         for dir_id in dir.dirs:
             self.delete_recursive(self.get(dir_id).name)
+
+        # delete the dir id from parent
+        parent_path = j.sal.fs.getParent(name)
+        if parent_path:
+            parent = self.get_by_name(name=parent_path)[0]
+            parent.dirs.remove(dir.id)
+            parent.save()
 
         dir.delete()
