@@ -23,7 +23,7 @@ class ThreeBotPackage(JSConfigBase):
 
     @property
     def openresty(self):
-        return self.threebot_server.openresty
+        return self.threebot_server.openresty_server
 
     def _init(self, **kwargs):
         if self.giturl:
