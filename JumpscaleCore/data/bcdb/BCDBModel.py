@@ -449,7 +449,13 @@ class BCDBModel(j.baseclasses.object):
             if isinstance(data, dict):
                 obj = self.schema.new(datadict=data, bcdb=self.bcdb)
             elif isinstance(data, bytes):
-                obj = self.schema.new(serializeddata=data, bcdb=self.bcdb)
+                try:
+
+                    data = j.data.serializers.json.loads(data)
+                    obj = self.schema.new(datadict=data, bcdb=self.bcdb)
+                except:
+                    obj = self.schema.new(serializeddata=data, bcdb=self.bcdb)
+
             elif isinstance(data, j.data.schema._JSXObjectClass):
                 obj = self.schema.new(datadict=data._ddict, bcdb=self.bcdb)
             else:
