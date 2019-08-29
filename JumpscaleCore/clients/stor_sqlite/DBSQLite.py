@@ -22,6 +22,12 @@ from Jumpscale import j
 
 
 class DBSQLite(j.baseclasses.object):
+    _SCHEMATEXT = """
+    @url = jumpscale.dbsqlite.client
+    name = "" (S)
+    nsname = "" (S)
+    """
+
     def _init(self, nsname=None, **kwargs):
 
         assert nsname
