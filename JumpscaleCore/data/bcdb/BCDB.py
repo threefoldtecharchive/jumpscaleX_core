@@ -38,12 +38,6 @@ JSBASE = j.baseclasses.object
 
 
 class BCDB(j.baseclasses.object):
-    _SCHEMATEXT = """
-    @url = jumpscale.bcdb.1
-    name* = "main"
-    storclient_name= "sql"
-    """
-
     def _init(self, name=None, storclient=None, reset=False):
         """
         :param name: name for the BCDB

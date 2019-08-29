@@ -152,9 +152,11 @@ class builder_method:
                 builder._init()
 
             if name == "build":
+                builder.stop()
                 builder.profile_builder_select()
 
             if name == "install":
+                builder.stop()
                 builder.profile_builder_select()
                 builder.build()
 
@@ -340,8 +342,6 @@ class BuilderBaseClass(JSBase):
             if key.upper() == key:
                 args[key] = item
         res = j.core.tools.text_replace(content=txt, args=args, text_strip=True)
-        # if "{" in res:
-        #     j.shell()
         return res
 
     def _execute(self, cmd, die=True, args={}, timeout=600, replace=True, showout=True, interactive=False):

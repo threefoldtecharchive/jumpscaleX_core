@@ -210,6 +210,7 @@ class BCDBModel(j.baseclasses.object):
             # if obj.id in self.obj_cache:
             #     self.obj_cache.pop(obj.id)
             if not self.storclient:
+                raise RuntimeError("should never get here")
                 self.bcdb.sqlclient.delete(key=obj.id)
             else:
                 self.storclient.delete(obj.id)
@@ -442,7 +443,7 @@ class BCDBModel(j.baseclasses.object):
     def new(self, data=None, nid=1):
         if data and isinstance(data, dict):
             data = self._dict_process_in(data)
-        elif j.data.types.json.check(str(data)):
+        elif isinstance(data, str) and j.data.types.json.check(data):
             data = j.data.serializers.json.loads(data)
 
         if data:
@@ -517,6 +518,12 @@ class BCDBModel(j.baseclasses.object):
             self.storclient.delete(obj_id)
         self.index.destroy()
         j.sal.fs.remove(self._data_dir)
+
+    def _list_ids(self, nid=1):
+        res = []
+        for obj_id in self.index._id_iterator(nid=nid):
+            res.append(obj_id)
+        return res
 
     def iterate(self, nid=1):
         """

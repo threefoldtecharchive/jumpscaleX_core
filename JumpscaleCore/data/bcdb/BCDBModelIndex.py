@@ -381,18 +381,62 @@ class BCDBModelIndex(j.baseclasses.object):
             self.model.schema.hasdata = True
             self.bcdb.meta.hasdata_set(self.model.schema)  # make sure we remember in metadata that there is data
             self.model.schema.hasdata = True
-        if id > self._ids_last[nid]:
-            if self._ids_redis_use:
-                r = self._ids_redis
-                redis_list_key = self._id_redis_listkey_get(nid)
-                r.rpush(redis_list_key, bin_id)
-            else:
-                # this allows us to know which objects are in a specific model namespace, otherwise we cannot iterate
-                ids_file_path = "%s/ids_%s.data" % (nid, self._data_dir)
-                j.sal.fs.writeFile(ids_file_path, bin_id, append=True)
-            self._ids_last[nid] = id
 
-    def _ids_exists(self, nid=1):
+        if self._ids_redis_use:
+            redis_list_key = self._id_redis_listkey_get(nid)
+            r = self._ids_redis
+            last = self._id_last_get(nid=nid)
+            if last is None:
+                # means index does not exist yet
+                r.rpush(redis_list_key, bin_id)
+                return
+            elif last == id:
+                # means exists, needs to be last
+                return
+            elif last > id:
+                # check if id is in there
+                if self._ids_exists(nid=nid, id=id):
+                    return
+                else:
+                    raise j.exceptions.JSBUG("id should be in list already or last: %s %s" % (redis_list_key, id))
+            elif last < id:
+                r.rpush(redis_list_key, bin_id)
+                return
+            else:
+                raise j.exceptions.JSBUG("should never get here: %s %s" % (redis_list_key, id))
+
+        else:
+            raise j.exceptions.JSBUG("not implemented for now")
+            # this allows us to know which objects are in a specific model namespace, otherwise we cannot iterate
+            ids_file_path = "%s/ids_%s.data" % (nid, self._data_dir)
+            j.sal.fs.writeFile(ids_file_path, bin_id, append=True)
+        self._ids_last[nid] = id
+
+    def _id_last_get(self, nid=1):
+        """
+        is the iterator empty?
+        :return:
+        """
+        if not nid:
+            nid = 1
+
+        if self._ids_redis_use:
+            redis_list_key = self._id_redis_listkey_get(nid)
+            chunk = self._ids_redis.lindex(redis_list_key, -1)
+            if not chunk:
+                return None
+            try:
+                last = struct.unpack("<I", chunk)[0]
+                return last
+            except Exception as e:
+                self._log_warning("ids in redis corrupt")
+                # means ids are invalid
+                self._ids_redis.delete(self._ids_redis)
+                return None
+        else:
+            raise j.exceptions.BASE("not implemented")
+
+    def _ids_exists(self, nid=1, id=None):
         """
         is the iterator empty?
         :return:

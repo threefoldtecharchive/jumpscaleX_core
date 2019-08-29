@@ -150,6 +150,8 @@ def main(self):
         # assert db_model.index.sql._id_exists(1)
         # assert db_model.index.sql._id_exists(10) == False  #NEEDS TO BE DEBUGGED & IMPROVED
 
+        assert db_model.bcdb.name == "test"
+
         self._log_info("TEST DONE: %s" % name)
 
     schema_sqlite = """

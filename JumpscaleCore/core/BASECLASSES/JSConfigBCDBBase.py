@@ -50,7 +50,6 @@ class JSConfigBCDBBase(JSBase, Attr):
         """
         if self._parent and self._parent._hasattr("_bcdb_selector"):
             return self._parent._bcdb_selector()
-
         return j.application.bcdb_system
 
     @property

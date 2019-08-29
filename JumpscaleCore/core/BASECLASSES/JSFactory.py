@@ -27,25 +27,9 @@ class JSFactory(JSBase, Attr):
                 assert obj._parent
                 self._children[name] = obj
 
-        # if hasattr(self.__class__, "_CHILDCLASS"):
-        #     # there is only a new function if there is a childclass factory
-        #     JSConfigBCDB.__init__(self, **kwargs)
-        #     # self.new = self._new
-
-        # self._object_config_factory = None
-        # self._object_config = None
-
-    # def _init_post(self, **kwargs):
-    #
-    #     if not self._object_config and self._object_config_factory:
-    #         # means we can create the default object
-    #         assert "name" in kwargs
-    #         name = kwargs["name"]
-    #         self._object_config = self._object_config_factory.new(name=name)
-    #
-    #     if self._object_config:
-    #         assert self._object_config._name
-    #         assert isinstance(self._object_config, JSConfigBCDB)
+    def _children_names_get(self, filter=None):
+        r = [str(i) for i in self._children.keys()]
+        return self._filter(filter=filter, llist=r)
 
     def _childclass_selector(self, **kwargs):
         return self.__class__._CHILDCLASS
@@ -69,7 +53,7 @@ class JSFactory(JSBase, Attr):
 
         :return:
         """
-        for item in self._children.items():
+        for key, item in self._children.items():
             if self._hasattr(item, "reset"):
                 item.reset()
 
@@ -202,9 +186,6 @@ class JSFactory(JSBase, Attr):
             if recursive:
                 self._children[name].delete(name=name, recursive=recursive)
             self._children.pop(name)
-
-        if self._object_config:
-            self._object_config.reset()
 
     def exists(self, name="main"):
         """

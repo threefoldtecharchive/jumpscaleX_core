@@ -173,29 +173,14 @@ class BaseClasses:
         - recursive delete & reset
         - can have an own jsxobject attached to it
 
-        to have jsxobject attached:
-
-            attach the object or the factory class for the object (jsx object model)
-
-            def _init():
-                self._object_config=... if you manually fetch object
-
-            or specify the factory
-
-            def _init():
-                self._object_config_factory= ...
-
-            this one will be used to create an object with _object_config_factory.new(name=...)
 
         :return:
         """
 
-        return JSFactory
+        class JSFactoryTestTools(JSFactory, TestTools):
+            pass
 
-        # class JSFactoryTestTools(JSFactory, TestTools):
-        #     pass
-        #
-        # return JSFactoryTestTools
+        return JSFactoryTestTools
 
     @property
     def factory_data(self):
@@ -208,19 +193,6 @@ class BaseClasses:
         - recursive delete & reset
         - can have an own jsxobject attached to it
 
-        to have jsxobject attached:
-
-            attach the object or the factory class for the object (jsx object model)
-
-            def _init():
-                self._object_config=... if you manually fetch object
-
-            or specify the factory
-
-            def _init():
-                self._object_config_factory= ...
-
-            this one will be used to create an object with _object_config_factory.new(name=...)
 
         :return:
         """

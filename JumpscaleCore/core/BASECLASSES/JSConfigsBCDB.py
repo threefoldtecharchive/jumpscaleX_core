@@ -127,6 +127,12 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         self._log_debug("reset all data")
         for item in self.find():
             item.delete()
+
+        # TODO: in fact this should work without having to do this, we put it in to get to some more tests, but if deletes work well it should work without (JO)
+        if not self._parent or self._parent._hasattr("_id") == False:
+            # means we can remove all objects of the url (index)
+            self._model.index.destroy()
+
         self._children = j.baseclasses.dict()
 
     def find(self, **kwargs):

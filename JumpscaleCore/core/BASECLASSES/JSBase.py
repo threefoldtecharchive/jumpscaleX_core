@@ -538,16 +538,22 @@ class JSBase:
 
     ################### mechanisms for autocompletion in kosmos
 
-    def __name_get(self, item):
+    def __name_get(self, item, instance=True):
         """
         helper mechanism to come to name
         """
         if isinstance(item, str) or isinstance(item, int):
             name = str(item)
-        elif self._hasattr(item, "name"):
-            name = item.name
+            return name
+        if instance:
+            if self._hasattr(item, "name"):
+                name = item.name
+            else:
+                name = item._objid
         else:
-            name = item._objid
+            name = self._hasattr(item, "_name")
+            if not name:
+                raise j.exceptions.JSBUG("cannot find _name")
         return name
 
     def _filter(self, filter=None, llist=[], nameonly=True, unique=True, sort=True):
@@ -567,6 +573,7 @@ class JSBase:
         res = []
         for item in llist:
             name = self.__name_get(item)
+            self._log_debug("filtername:%s" % name)
             if not name:
                 continue
             if name.startswith("_JSBase"):
