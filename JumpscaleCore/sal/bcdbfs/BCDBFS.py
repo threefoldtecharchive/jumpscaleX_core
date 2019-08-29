@@ -66,12 +66,6 @@ class BCDBFS(j.baseclasses.object):
         dir = self._dir_model.get_by_name(name=path)[0]
         if not recursive and dir.dirs:
             raise j.exceptions.Base("this dir contains other dirs you must pass recursive = True")
-        elif not recursive and not dir.dirs:
-            for file_id in dir.files:
-                file = self._file_model.get(file_id)
-                file.delete()
-            dir.files = []
-            dir.save()
         elif recursive:
             self._dir_model.delete_recursive(path)
 
@@ -110,12 +104,14 @@ class BCDBFS(j.baseclasses.object):
         :param recursive: copy subdirs
         :return:
         """
+        if path == j.sal.fs.getParent(dest):
+            raise j.exceptions.Base("{} can not copy directory into itself".format(path))
         dir_source = self._dir_model.get_by_name(name=path)[0]
         source_files = dir_source.files
         for file_id in source_files:
-            file = self._file_model.get_by_name(file_id)[0]
-            basename = j.sal.getBaseName(file.name)
-            self.file_copy_form_bcdbfs(file.path, j.sal.fs.joinPaths(path, basename))
+            file = self._file_model.get(file_id)
+            basename = j.sal.fs.getBaseName(file.name)
+            self.file_copy_form_bcdbfs(file.name, j.sal.fs.joinPaths(dest, basename))
         if recursive:
             source_dirs = dir_source.dirs
             for dir_id in source_dirs:

@@ -8,15 +8,22 @@ JSBASE = j.baseclasses.object
 # but for now prob ok, especially when used in read mode e.g. in myworker
 
 
-class RDBClient(j.baseclasses.object):
-    def __init__(self, nsname, redisclient):
+class RDBClient(j.baseclasses.object_config):
+
+    _SCHEMATEXT = """
+    @url = jumpscale.rdb.client
+    name* = "" (S)
+    nsname = "" (S)
+    type = "RDB" (S)
+    """
+
+    def _init(self, **kwargs):
         """
         is connection to RDB
         """
-        JSBASE.__init__(self)
-        self._redis = redisclient
-        self.type = "RDB"
-        self.nsname = nsname.lower().strip()
+        self._redis = j.clients.redis.get()
+        self.type = self.type
+        self.nsname = self.nsname
         self._logger_enable()
         self._hsetkey = "rdb:%s" % self.nsname
         self._incrkey = "rdbmeta:incr:%s" % self.nsname

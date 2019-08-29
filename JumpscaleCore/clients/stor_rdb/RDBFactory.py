@@ -8,6 +8,7 @@ JSBASE = j.baseclasses.object
 
 class RDBFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.clients.rdb"
+    _CHILDCLASS = RDBClient
 
     def client_get(self, namespace="test", redisconfig_name="core", fromcache=True, redisclient=None):
         """

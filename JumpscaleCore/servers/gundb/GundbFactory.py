@@ -29,7 +29,7 @@ class GundbFactory(JSBASE):
         :return:
         """
         # if install requirements put them here
-        j.builders.runtimes.python.pip_package_install("websockets")
+        j.builders.runtimes.python3.pip_package_install("websockets")
 
     def _server_test_start(self, background=False):
         """

@@ -7,8 +7,7 @@ JSConfigBase = j.baseclasses.object_config_collection
 class MulticastFactory(JSConfigBase):
     __jslocation__ = "j.clients.multicast"
 
-    def __init__(self):
-        JSConfigBase.__init__(self, MulticastClient)
+    _CHILDCLASS = MulticastClient
 
     def test_listen(self):
         """

@@ -33,12 +33,12 @@ class GraphQLFactory(JSBASE):
 
         :return:
         """
-        j.builders.runtimes.python.pip_package_install("bottle")
-        j.builders.runtimes.python.pip_package_install("graphene==2.1.7")
-        j.builders.runtimes.python.pip_package_install("flake8")
-        j.builders.runtimes.python.pip_package_install("tox")
-        j.builders.runtimes.python.pip_package_install("graphql-ws")
-        j.builders.runtimes.python.pip_package_install("Rx==1.6.0")
+        j.builders.runtimes.python3.pip_package_install("bottle")
+        j.builders.runtimes.python3.pip_package_install("graphene==2.1.7")
+        j.builders.runtimes.python3.pip_package_install("flake8")
+        j.builders.runtimes.python3.pip_package_install("tox")
+        j.builders.runtimes.python3.pip_package_install("graphql-ws")
+        j.builders.runtimes.python3.pip_package_install("Rx==1.6.0")
 
     def _server_test_start(self, background=False):
         """
