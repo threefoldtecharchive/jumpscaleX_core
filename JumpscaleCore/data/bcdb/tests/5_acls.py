@@ -103,13 +103,21 @@ def main(self):
         assert len(bcdb.acl.find()) == 1
 
         self._log_debug("MODIFY RIGHTS")
+
         a.acl.rights_set(userids=[1], rights="r")
         a.save()
 
-        assert len(bcdb.acl.find()) == 1  # there needs to be a new acl
+        a.acl.rights_set(circleids=[12, 13], rights="w")
+        a.save()
 
-        assert a.acl.rights_check(1, "r") is True
+        assert len(bcdb.acl.find()) == 1  # there needs to be a new acl
+        assert a.acl.rights_check(1, "r") is False
+        assert a.acl.rights_check(1, "w") is True
         assert a.acl.rights_check(1, "d") is False
+        # as user 2 is part of circle 13 it should be the same
+        assert a.acl.rights_check(2, "r") is False
+        assert a.acl.rights_check(2, "w") is True
+        assert a.acl.rights_check(2, "d") is False
 
         a.acl.rights_set([1], [], "rw")
         # users rights_check
@@ -122,8 +130,9 @@ def main(self):
         assert a.acl.rights_check(5, "w") is False
 
         # groups right_check
-        assert a.acl.rights_check(12, "rw") is True
+        assert a.acl.rights_check(12, "rw") is False
         assert a.acl.rights_check(13, "w") is True
+        assert a.acl.rights_check(13, "r") is False
         assert a.acl.rights_check(18, "rw") is False
         assert a.acl.rights_check(11, "rw") is False
 

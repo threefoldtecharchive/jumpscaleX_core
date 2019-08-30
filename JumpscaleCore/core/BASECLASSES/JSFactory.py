@@ -4,11 +4,12 @@ from .Attr import Attr
 from .JSBase import JSBase
 
 
-# from .TestTools import TestTools
+from .TestTools import TestTools
+
 # from .JSConfigBCDB import JSConfigBCDB
 
 
-class JSFactory(JSBase, Attr):
+class JSFactory(JSBase, TestTools, Attr):
     def _init_factory(self, **kwargs):
 
         # these are classes which will be created automatically when the factory class starts
