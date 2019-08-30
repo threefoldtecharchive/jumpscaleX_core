@@ -62,13 +62,11 @@ class BCDBModel(j.baseclasses.object):
 
         self._schema_url = schema_url
 
-        # TODO: this shouls not happen!!!!
-        # if self._schema_url in bcdb._schema_url_to_model:
-        #     raise j.exceptions.JSBUG("should never have 2 bcdbmodels for same url")
-
         self.bcdb = bcdb
+        self._md5_previous_ = None
 
         self.readonly = False
+        self._index_ = None
         self.autosave = False  # if set it will make sure data is automatically set from object
         self.nosave = False
 
@@ -84,16 +82,22 @@ class BCDBModel(j.baseclasses.object):
 
         self._kosmosinstance = None
 
-        indexklass = self._index_class_generate()
-        self.index = indexklass(model=self, reset=reset)
-
         self._sonic_client = None
         # self.cache_expiration = 3600
 
         self._triggers = []
 
         if reset:
+            indexklass = self._index_class_generate()
+            self._index_ = indexklass(model=self, reset=True)
             self.destroy()
+
+    @property
+    def index(self):
+        if not self._index_:
+            indexklass = self._index_class_generate()
+            self._index_ = indexklass(model=self, reset=False)
+        return self._index_
 
     def _index_class_generate(self):
         """
@@ -108,7 +112,7 @@ class BCDBModel(j.baseclasses.object):
         imodel = BCDBIndexMeta(schema=self.schema)
         imodel.include_schema = True
         tpath = "%s/templates/BCDBModelIndexClass.py" % j.data.bcdb._dirpath
-        name = "bcdbindex_%s" % self._schema_url
+        name = "bcdbindex_%s_%s" % (self._schema_url, self.schema._md5)
         name = name.replace(".", "_")
         myclass = j.tools.jinja2.code_python_render(
             name=name, path=tpath, objForHash=self.schema._md5, reload=True, schema=self, bcdb=self.bcdb, index=imodel
@@ -118,7 +122,11 @@ class BCDBModel(j.baseclasses.object):
 
     @property
     def schema(self):
-        return j.data.schema.get_from_url(self._schema_url)
+        schema = j.data.schema.get_from_url(self._schema_url)
+        if self._md5_previous_ != schema._md5:
+            self._md5_previous_ = schema._md5 + ""  # to make sure we have copy=
+            self._index_ = None
+        return schema
 
     @property
     def mid(self):

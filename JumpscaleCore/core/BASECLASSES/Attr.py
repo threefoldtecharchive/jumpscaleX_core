@@ -50,7 +50,7 @@ class Attr:
                     return self.__getattribute__(name)  # else see if we can from the factory find the child object
 
                 if isinstance(self, j.baseclasses.object_config_collection):
-                    r = self._get(name=name, die=False)
+                    rc, r = self._get(name=name, die=False)
                     if not r:
                         raise j.exceptions.NotFound(
                             "try to get attribute: '%s', instance did not exist, was also not a method or property, was on '%s'"

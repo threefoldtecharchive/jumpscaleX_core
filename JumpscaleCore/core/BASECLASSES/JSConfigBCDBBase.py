@@ -68,6 +68,7 @@ class JSConfigBCDBBase(JSBase, Attr):
                 if self._parent and isinstance(self._parent, j.baseclasses.object_config_collection):
                     self._model_ = self._parent._model
                     return self._model_
+
             if isinstance(self, j.baseclasses.object_config_base):
                 if "_SCHEMATEXT" in self.__class__.__dict__:
                     s = self.__class__._SCHEMATEXT
@@ -114,11 +115,11 @@ class JSConfigBCDBBase(JSBase, Attr):
             if "\n" != schematext[-1]:
                 schematext += "\n"
             schematext += 'name* = ""\n'
-        if isinstance(self._parent, j.baseclasses.object_config):
-            if schematext.find("parent_id") == -1:
+        if self._mother_id_get():
+            if schematext.find("mother_id") == -1:
                 if "\n" != schematext[-1]:
                     schematext += "\n"
-                schematext += "parent_id* = 0 (I)\n"
+                schematext += "mother_id* = 0 (I)\n"
 
         return schematext
 

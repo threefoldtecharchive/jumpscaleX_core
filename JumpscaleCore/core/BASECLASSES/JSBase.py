@@ -621,6 +621,30 @@ class JSBase:
             return self.__name_get(self._parent)
         return ""
 
+    def _mother_id_get(self):
+        """
+        this goes to all parents till it finds a parent which has a model attached
+        this is to find the parent which acts as the mother for the children
+        when you do a search only the children of this mother will be shown
+        :return:
+        """
+        obj = self
+        while obj and obj._parent:
+            if self._hasattr(obj._parent, "_model"):
+                if isinstance(obj._parent, j.baseclasses.object_config):
+                    if obj._parent._id is None:
+                        if obj._parent.name is None:
+                            raise j.exceptions.JSBUG("cannot happen, there needs to be a name")
+                        else:
+                            obj._parent.save()
+                            assert obj._parent._id > 0
+                            return obj._parent._id
+                    else:
+                        return obj._parent._id
+            obj = obj._parent
+        # means we did not find a parent which can act as mother
+        return None
+
     def _children_names_get(self, filter=None):
         return self._filter(filter=filter, llist=self._children_get(filter=filter))
 

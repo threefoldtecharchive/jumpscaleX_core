@@ -186,6 +186,13 @@ class JSFactory(JSBase, Attr):
             if recursive:
                 self._children[name].delete(name=name, recursive=recursive)
             self._children.pop(name)
+        # if we have a data object we need to remove it
+        if self._hasattr("_data") and self._data:
+            self._data.delete()
+        if self._parent:
+            # if we exist in the parent remove us from their children
+            if self._name in self._parent._children:
+                self._parent._children.pop(self._name)
 
     def exists(self, name="main"):
         """

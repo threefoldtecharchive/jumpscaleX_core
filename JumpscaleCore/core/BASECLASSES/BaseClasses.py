@@ -186,6 +186,29 @@ class BaseClasses(JSBase, TestTools):
 
         example see /sandbox/code/github/threefoldtech/jumpscaleX_libs/tutorials/base/object_structure/BaseClasses_ConfigObjects.py
 
+        this type of class will show all the objects of the type
+
+
+        :return:
+        """
+
+        return JSFactory
+
+    @property
+    def factory_data(self):
+        """
+        factory class is combination of jsxobject+factory class
+
+        functions
+
+        - use _ChildClass(es) functionality to create children
+        - recursive delete & reset
+        - can have an own jsxobject attached to it
+
+        example see /sandbox/code/github/threefoldtech/jumpscaleX_libs/tutorials/base/object_structure/BaseClasses_ConfigObjects.py
+
+        this one acts as a parent, only the children will be shown
+
 
         :return:
         """

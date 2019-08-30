@@ -87,6 +87,14 @@ class JSConfigBCDB(JSConfigBCDBBase):
     def save_(self):
         assert self._model
         self._triggers_call(self, "save")
+
+        mother_id = self._mother_id_get()
+        if mother_id:
+            # means there is a mother
+            assert self._hasattr(self._data, "mother_id")
+            self._data.mother_id = mother_id
+            assert self._data._model.schema._md5 == self._model.schema._md5
+
         self._data.save()
 
         self._triggers_call(self, "save_post")

@@ -41,7 +41,18 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         if self.exists(name=name):
             raise j.exceptions.Base("cannot do new object, exists")
-        return self._new(name=name, jsxobject=jsxobject, save=save, **kwargs)
+        jsconfig = self._new(name=name, jsxobject=jsxobject, save=save, **kwargs)
+        self._check(jsconfig)
+        return jsconfig
+
+    def _check(self, jsconfig):
+
+        # lets do some tests (maybe in future can be removed, but for now the safe bet)
+        assert jsconfig._id > 0
+        mother_id = jsconfig._mother_id_get()
+        if mother_id:
+            assert jsconfig.mother_id == mother_id
+        assert jsconfig._model.schema._md5 == self._model.schema._md5
 
     def _new(self, name, jsxobject=None, save=True, **kwargs):
         """
@@ -55,11 +66,11 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             jsxobject.name = name
 
         # means we need to remember the parent id
-        if isinstance(self._parent, j.baseclasses.object_config):
-            if not self._parent._id:
-                self._parent.save()
-                assert self._parent._id
-            jsxobject.parent_id = self._parent._id
+        mother_id = self._mother_id_get()
+        if mother_id:
+            if jsxobject.mother_id != mother_id:
+                jsxobject.mother_id = mother_id
+                jsxobject.save()
 
         jsconfig_klass = self._childclass_selector(jsxobject=jsxobject)
         jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject)
@@ -75,13 +86,17 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :param name: of the object
         """
 
-        jsconfig = self._get(name=name, die=needexist)
+        rc, jsconfig = self._get(name=name, die=needexist)
 
         if not jsconfig:
             self._log_debug("NEW OBJ:%s:%s" % (name, self._name))
             jsconfig = self._new(name=name, save=save, **kwargs)
         else:
             # check that the stored values correspond with kwargs given
+            # means comes from the database
+            if not jsconfig._data._model.schema._md5 == jsconfig._model.schema._md5:
+                # means data came from DB and schema is not same as config mgmt class
+                j.shell()
             changed = False
             for key, val in kwargs.items():
                 if not getattr(jsconfig, key) == val:
@@ -90,13 +105,17 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             if changed and save:
                 jsconfig.save()
 
+        # lets do some tests (maybe in future can be removed, but for now the safe bet)
+        self._check(jsconfig)
+
         jsconfig._triggers_call(jsconfig, "get")
+
         return jsconfig
 
     def _get(self, name="main", die=True):
         assert name
         if name in self._children:
-            return self._children[name]
+            return 1, self._children[name]
 
         self._log_debug("get child:'%s'from '%s'" % (name, self._name))
 
@@ -105,7 +124,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         if len(res) < 1:
             if not die:
-                return
+                return 3, None
             raise j.exceptions.Base(
                 "Did not find instance for:%s, name searched for:%s" % (self.__class__._location, name)
             )
@@ -117,7 +136,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         else:
             jsxconfig = res[0]
 
-        return jsxconfig
+        return 2, jsxconfig
 
     def reset(self):
         """
@@ -126,10 +145,14 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         self._log_debug("reset all data")
         for item in self.find():
-            item.delete()
+            try:
+                item.delete()
+            except Exception as e:
+                j.shell()
 
+        mother_id = self._mother_id_get()
         # TODO: in fact this should work without having to do this, we put it in to get to some more tests, but if deletes work well it should work without (JO)
-        if not self._parent or self._parent._hasattr("_id") == False:
+        if not mother_id:
             # means we can remove all objects of the url (index)
             self._model.index.destroy()
 
@@ -156,6 +179,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             name = jsxobject.name
             if not name in self._children:
                 r = self._new(name=name, jsxobject=jsxobject)
+                self._check(r)
                 res.append(r)
         return res
 
@@ -172,19 +196,17 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :return: list of the data objects (the data of the model)
         """
 
-        if isinstance(self._parent, j.baseclasses.object_config):
-            if not self._parent._id:
-                self._parent.save()
-                assert self._parent._id
-            kwargs["parent_id"] = str(self._parent._id)
+        mother_id = self._mother_id_get()
+        if mother_id:
+            kwargs["mother_id"] = mother_id
 
         if len(kwargs) > 0:
             propnames = [i for i in kwargs.keys()]
             propnames_keys_in_schema = [
                 item.name for item in self._model.schema.properties_index_keys if item.name in propnames
             ]
-            if len(propnames_keys_in_schema) > 0:
-                # we can try to find this config
+            if len(propnames_keys_in_schema) == len(propnames):
+                # we can do search the index is complete
                 return self._model.find(**kwargs)
             else:
                 raise j.exceptions.Base(
