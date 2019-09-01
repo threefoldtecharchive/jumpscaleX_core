@@ -169,7 +169,7 @@ class BCDBFS(j.baseclasses.object):
             self.file_write(dest, f, append=False, create=True)
         return
 
-    def file_copy_form_bcdbfs(self, path, dest):
+    def file_copy_form_bcdbfs(self, path, dest, overrrite=True):
         """
         copies file to another location in bcdbfs
         :param path: full path of the file
@@ -179,6 +179,8 @@ class BCDBFS(j.baseclasses.object):
         source_file = self._file_model.get_by_name(name=path)[0]
         if self.is_dir(dest):
             dest = j.sal.fs.joinPaths(dest, j.sal.fs.getBaseName(path))
+            if self.file_exists(dest) and overrrite:
+                self.file_delete(dest)
         dest_file = self.file_create_empty(dest)
         if source_file.blocks:
             dest_file.blocks = source_file.blocks
