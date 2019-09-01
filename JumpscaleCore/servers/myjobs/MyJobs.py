@@ -50,7 +50,7 @@ halt = false (B)
 """
 
 
-class MyJobs(JSBASE, j.application.JSFactoryTools):
+class MyJobs(j.baseclasses.testtools, j.baseclasses.object):
     __jslocation__ = "j.servers.myjobs"
 
     def _init(self, **kwargs):

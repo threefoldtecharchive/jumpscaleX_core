@@ -87,9 +87,12 @@ class Application(object):
         self._bcdb_system = None
         self._debug = None
         self._systempid = None
+        self._j_baseclass = self._j.baseclasses.object
+        self._j_baseclasses = self._j.baseclasses
         self._j.core.db_reset(self._j)
+
         for obj in self.obj_interator:
-            obj._children = j.baseclasses.dict()
+            obj._children = self._j.baseclasses.dict()
             obj._obj_cache_reset()
             obj._obj_reset()
 
@@ -379,7 +382,7 @@ class Application(object):
         :return:
         """
         for item in self._iterate_rootobj():
-            if isinstance(item, self.JSBaseClass):
+            if isinstance(item, self._j_baseclass):
                 yield item
                 for item in item._children_recursive_get():
                     yield item
