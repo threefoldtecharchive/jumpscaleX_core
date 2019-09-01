@@ -72,23 +72,18 @@ class GedisClientGenerated():
     {% endfor %}
 
 
-    def handle_error(self,e,source=None):
+    def handle_error(self, e, source=None):
         try:
             logdict = j.data.serializers.json.loads(str(e))
-        except Exception as e2:
-            # j.shell()
-            j.core.myenv.exception_handle(exception_obj=e,die=True)
-            # print(1)
-            # j.shell()
+        except Exception:
+            logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+
         addr = self._redis.connection_pool.connection_kwargs["host"]
         port = self._redis.connection_pool.connection_kwargs["port"]
-        msg = "GEDIS SERVER %s:%s"%(addr,port)
-        try:
-            logdict["source"]=msg
-        except:
-            print(2)
-            j.shell()
+        msg = "GEDIS SERVER %s:%s" % (addr,port)
+        logdict["source"] = msg
+ 
         j.core.tools.log2stdout(logdict=logdict, data_show=True)
         j.core.tools.process_logdict_for_handlers(logdict=logdict, iserror=True)
 
-        raise j.exceptions.Input("error in client")
+        raise j.exceptions.RemoteException(message=msg, data=logdict, exception=e)
