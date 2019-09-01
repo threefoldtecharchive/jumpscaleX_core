@@ -234,7 +234,7 @@ class JSXObject(j.baseclasses.object):
         return self._data == val._data
 
     def __hash__(self):
-        return j.data.hash.md5_string(self._data)
+        return hash(j.data.hash.md5_string(self._data))
         # return int(self.id)
         # CANNOT DO THIS it does not mean its the same
         # WHY DO WE NEED THIS?

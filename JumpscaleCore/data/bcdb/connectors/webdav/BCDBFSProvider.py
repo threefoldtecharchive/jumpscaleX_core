@@ -170,9 +170,9 @@ class BCDBFSProvider(DAVProvider):
     def __init__(self, bcdb_name):
         DAVProvider.__init__(self)
         self._bcdb = j.data.bcdb.get(bcdb_name)
-        self._file_model = self._bcdb.model_get_from_file("{}/models_system/FILE.py".format(self._bcdb._dirpath))
-        self._dir_model = self._bcdb.model_get_from_file("{}/models_system/DIR.py".format(self._bcdb._dirpath))
-        self._block_model = self._bcdb.model_get_from_file("{}/models_system/BLOCK.py".format(self._bcdb._dirpath))
+        self._file_model = self._bcdb.model_get_from_file("{}/models_threebot/FILE.py".format(self._bcdb._dirpath))
+        self._dir_model = self._bcdb.model_get_from_file("{}/models_threebot/DIR.py".format(self._bcdb._dirpath))
+        self._block_model = self._bcdb.model_get_from_file("{}/models_threebot/BLOCK.py".format(self._bcdb._dirpath))
 
     def get_resource_inst(self, path, environ):
         """
