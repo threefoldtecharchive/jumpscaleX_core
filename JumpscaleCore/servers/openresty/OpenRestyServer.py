@@ -1,4 +1,3 @@
-from .Wiki import Wikis
 from .Website import Websites
 from Jumpscale import j
 
