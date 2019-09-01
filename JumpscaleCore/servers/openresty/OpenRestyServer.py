@@ -16,13 +16,11 @@ class OpenRestyServer(j.baseclasses.factory_data):
     Factory for openresty
     """
 
-    _CHILDCLASSES = [Websites, ReverseProxies]
+    _CHILDCLASSES = [Websites]
     _SCHEMATEXT = """
            @url =  jumpscale.openresty.server.1
            name* = "default" (S)
            host = "127.0.0.1" (S)
-           port = 80 (I)
-           port_ssl = 443 (I)
            status = init,installed,ok (E)
            executor = tmux,corex (E)
            hardkill = false (b)
@@ -35,25 +33,89 @@ class OpenRestyServer(j.baseclasses.factory_data):
            time_stop = (T)
            """
 
+    _CONFIG = """
+        
+        user www www;
+        worker_processes  1;
+        
+        #error_log  logs/error.log;
+        #error_log  logs/error.log  notice;
+        #error_log  logs/error.log  info;
+        
+        #pid        logs/nginx.pid;
+        
+        error_log stderr notice;
+        daemon off;
+        pid logs/nginx.pid;
+        
+        
+        events {
+            worker_connections  1024;
+        }
+        
+        http {
+        
+            map $http_upgrade $connection_upgrade {
+                default upgrade;
+                '' close;
+            }
+        
+            include       mime.types;
+            default_type  application/octet-stream;
+        
+            error_log /dev/stdout info;
+        
+            sendfile        on;
+            keepalive_timeout  65;
+        
+            lua_shared_dict auto_ssl 1m;
+            lua_shared_dict auto_ssl_settings 64k;
+            resolver 8.8.8.8 ipv6=off;
+        
+            init_by_lua_block {
+              auto_ssl = (require "resty.auto-ssl").new()
+              auto_ssl:set("allow_domain", function(domain)
+                return true
+              end)
+              auto_ssl:init()
+            }
+        
+            init_worker_by_lua_block {
+              auto_ssl:init_worker()
+            }
+        
+            include servers/*.http.conf;
+        
+        }
+        
+        include servers/*.tcp.conf;
+    
+        """
+
     def _init(self, **kwargs):
         self._cmd = None
         self._web_path = "/sandbox/var/web/%s" % self.name
-        j.sal.fs.createDir(self._web_path)
+        self.path_web_default = "/sandbox/var/web/default"
+        self.path_web = "/sandbox/var/web/%s"% self.name
+        self.path_cfg_dir = "/sandbox/cfg/nginx/%s" % self.name
+        self.path_cfg =  = "%s/nginx.conf"%self.path_cfg_dir
+        j.sal.fs.createDir(self.path_web)
+        j.sal.fs.createDir(self.path_cfg_dir)
 
-        self.executor = "tmux"
+        self.executor = "tmux"  # only tmux for now
 
         self.install()
 
         if j.core.myenv.platform_is_linux:
             self.letsencrypt = True
         else:
-            self.letsencrypt = True
+            self.letsencrypt = False
 
         self.configure()
 
     def configure(self):
-        r = j.tools.jinja2.template_render(path="%s/templates/nginx.conf" % self._dirpath, obj=self)
-        j.sal.fs.writeFile("%s/nginx.conf" % self._web_path, r)
+        configtext = j.tools.jinja2.template_render(content=self.__class__.CONFIG, obj=self)
+        j.sal.fs.writeFile("%s/nginx.conf" % self._cfg_path, configtext)
 
     def install(self, reset=False):
         """
