@@ -27,7 +27,6 @@ import os
 import sys
 import redis
 import copy
-import copy
 
 
 class BCDBFactory(j.baseclasses.factory):
@@ -304,7 +303,8 @@ class BCDBFactory(j.baseclasses.factory):
         elif storclient.type == "RDB":
             data["namespace"] = storclient.nsname
             data["type"] = "rdb"
-            data["redisconfig_name"] = storclient._redis.redisconfig_name
+
+            # data["redisconfig_name"] = storclient._redis.redisconfig_name
             # link to which redis to connect to (name of the redis client in JSX)
 
         else:

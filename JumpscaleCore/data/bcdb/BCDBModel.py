@@ -115,7 +115,13 @@ class BCDBModel(j.baseclasses.object):
         name = "bcdbindex_%s_%s" % (self._schema_url, self.schema._md5)
         name = name.replace(".", "_")
         myclass = j.tools.jinja2.code_python_render(
-            name=name, path=tpath, objForHash=self.schema._md5, reload=True, schema=self, bcdb=self.bcdb, index=imodel
+            name=name,
+            path=tpath,
+            objForHash=self.schema._md5,
+            reload=True,
+            schema=self.schema,
+            bcdb=self.bcdb,
+            index=imodel,
         )
 
         return myclass

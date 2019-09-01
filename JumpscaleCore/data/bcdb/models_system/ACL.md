@@ -1,7 +1,8 @@
 # Access Control List
 An access-control list (ACL), with  BCDB, is a list of permissions attached to an object. An ACL specifies which users or circles are granted access to objects
 
-## User ACLs:
+## Users:
+schema url : __jumpscale.bcdb.user.2__
   - properties of user:
     - threebot_id
     - email
@@ -10,8 +11,15 @@ An access-control list (ACL), with  BCDB, is a list of permissions attached to a
   - behavior of access:
     - Read (r)
     - Write (w)
- 
-## Circle ACLs (groups):
+
+## User ACLs:
+schema url : __jumpscale.bcdb.acl.user.2__
+- name : a name (must be unique)
+- uid : id of the user (must be unique)
+- rights : the rights (e.g. rw)
+
+## Circle (groups):
+schema url : __jumpscale.bcdb.circle.2__
   - properties of user:
     - name
     - description
@@ -23,6 +31,13 @@ An access-control list (ACL), with  BCDB, is a list of permissions attached to a
     - Read
     - Write
 
+## Circle ACLs (groups):
+schema url : __jumpscale.bcdb.acl.circle.2__
+- name : a name (must be unique)
+- cid : id of the circle (must be unique)
+- rights : the rights (e.g. rw)
+
+![alt text](acl.png "Logo Title Text 1")
 
 ## example 
 

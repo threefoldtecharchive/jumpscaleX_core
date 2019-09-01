@@ -44,13 +44,16 @@ class ACL(j.data.bcdb._BCDBModelClass):
     def add_acl_users(self, users):
         acl_users = []
         for k, v in users.items():
-            user = self.bcdb.user.get(k)
-            acl_users.append(user)
+            user = self.bcdb.user.get(k)  # we make sure that the user exists
             model_acl_user = self.user.new()
+            acl_user = self.user.get_by_name("user_%s" % user.id)  # we retrieve the acl.user if it exists
+            if len(acl_user) > 0:
+                model_acl_user.id = acl_user[0].id
             model_acl_user.name = "user_%s" % k
-            model_acl_user.uid = k
+            model_acl_user.uid = user.id  # to make sure the user exists
             model_acl_user.rights = v
             model_acl_user.save()
+            acl_users.append(model_acl_user)  # add_acl_users should return jumpscale.bcdb.acl.user.2
         return acl_users
 
     def add_acl_circles(self, circles, visited=[]):
@@ -79,10 +82,14 @@ class ACL(j.data.bcdb._BCDBModelClass):
             self.add_acl_users(acl_circles_user)
             acl_circles.append(circle)
             model_acl_circle = self.circle.new()
+            acl_c = self.circle.get_by_name("circle_%s" % k)  # we retrieve the acl.user if it exists
+            if len(acl_c) > 0:
+                model_acl_circle.id = acl_c[0].id
             model_acl_circle.name = "circle_%s" % k
             model_acl_circle.cid = k
             model_acl_circle.rights = v
             model_acl_circle.save()
+            acl_circles.append(model_acl_circle)
         return acl_circles
 
     def rights_set(self, acl, userids=[], circleids=[], rights="r"):
@@ -100,7 +107,6 @@ class ACL(j.data.bcdb._BCDBModelClass):
             raise j.exceptions.Base("userids needs to be list")
         if not j.data.types.list.check(circleids):
             raise j.exceptions.Base("circleids needs to be list")
-
         rdict = acl._ddict
 
         change = False
@@ -127,9 +133,9 @@ class ACL(j.data.bcdb._BCDBModelClass):
         if change:
             for key, value in rdict.items():
                 if key == "users":
-                    acl.users = self.add_acl_users(value)
+                    acl.users = self.add_acl_users(value)  # should be jumpscale.bcdb.acl.user.2
                 elif key == "circles":
-                    acl.circles = self.add_acl_circles(value)
+                    acl.circles = self.add_acl_circles(value)  # should be jumpscale.bcdb.acl.circle.2
                 else:
                     setattr(acl, key, value)
             acl.md5 = j.data.hash.md5_string(acl._data)
@@ -144,15 +150,16 @@ class ACL(j.data.bcdb._BCDBModelClass):
                     return False
             return True
 
-        user_or_cirlce_id = int(id)
+        user_or_circle_id = int(id)
+
         for user in acl.users:
-            if user.id == user_or_cirlce_id:
-                user_rights = self.user.get_by_name("user_%s" % user_or_cirlce_id)[0]
+            if user.uid == user_or_circle_id:
+                user_rights = self.user.get_by_name("user_%s" % user_or_circle_id)[0]
                 return rights_check_user_group(rights, user_rights.rights)
 
         for circle in acl.circles:
-            if circle.id == id:
-                circle = self.circle.get_by_name("circle_%s" % circle.id)[0]
+            if circle.cid == id:
+                circle = self.circle.get_by_name("circle_%s" % circle.cid)[0]
                 if circle:
                     if rights_check_user_group(rights, circle.rights):
                         return True
@@ -174,18 +181,18 @@ class ACL(j.data.bcdb._BCDBModelClass):
         res = {}
         self._log_debug("dict_process_out:\n%s" % d)
         for circle in d["circles"]:
-            if circle.get("id"):
-                r = self.circle.get_by_name("circle_%s" % circle["id"])[0]
+            if circle.get("cid"):
+                r = self.circle.get_by_name("circle_%s" % circle["cid"])[0]
                 r = "".join(r.rights)
-                acl_circle = self.circle.get_by_name("circle_%s" % circle["id"])[0]
+                acl_circle = self.circle.get_by_name("circle_%s" % circle["cid"])[0]
                 res[acl_circle.cid] = r  # as string
         d["circles"] = res
         res = {}
         for user in d["users"]:
-            if user.get("id"):
-                r = self.user.get_by_name("user_%s" % user["id"])[0]
+            if user.get("uid"):
+                r = self.user.get_by_name("user_%s" % user["uid"])[0]
                 r = "".join(r.rights)
-                acl_user = self.user.get_by_name("user_%s" % user["id"])[0]
+                acl_user = self.user.get_by_name("user_%s" % user["uid"])[0]
                 res[acl_user.uid] = r  # as string
         d["users"] = res
         return d
@@ -195,8 +202,8 @@ class ACL(j.data.bcdb._BCDBModelClass):
         res["hash"] = d["hash"]
         res["circles"] = []
         res["users"] = []
-        for uid, rights in d["circles"].items():
-            res["circles"].append({"uid": uid, "rights": rights})
+        for cid, rights in d["circles"].items():
+            res["circles"].append({"cid": cid, "rights": rights})
         for uid, rights in d["users"].items():
             res["users"].append({"uid": uid, "rights": rights})
         self._log_debug("dict_process_in_result:\n%s" % res)
