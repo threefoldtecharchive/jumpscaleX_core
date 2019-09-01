@@ -33,7 +33,7 @@ class SerializerJSXObject(SerializerBase):
             objid = 0
         data2 = (
             version.to_bytes(1, "little")
-            + objid.to_bytes(4, "little")
+            + int(objid).to_bytes(4, "little")
             + bytes(bytearray.fromhex(obj._schema._md5))
             + data
         )

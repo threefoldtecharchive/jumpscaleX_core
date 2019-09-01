@@ -104,7 +104,7 @@ class DBSQLite(j.baseclasses.object):
         return self._table_model.select().count()
 
     def get(self, key):
-        res = self._table_model.select().where(self._table_model.id == (key + 1))
+        res = self._table_model.select().where(self._table_model.id == (int(key) + 1))
         if len(res) == 0:
             return None
         elif len(res) > 1:
@@ -120,7 +120,7 @@ class DBSQLite(j.baseclasses.object):
         return result
 
     def delete(self, key):
-        return self._table_model.delete_by_id(key + 1)
+        return self._table_model.delete_by_id(int(key) + 1)
 
     def iterate(self, key_start=None, **kwargs):
         if key_start:
