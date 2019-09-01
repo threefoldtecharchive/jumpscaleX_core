@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 import copy
 import getpass
 
-DEFAULTBRANCH = "master"
+DEFAULTBRANCH = "development"
 GITREPOS = {}
 
 GITREPOS["builders_extra"] = [
@@ -4509,12 +4509,16 @@ class DockerContainer:
             args_txt += " --no-interactive"
 
         dirpath = os.path.dirname(inspect.getfile(Tools))
+        from pudb import set_trace
+
+        set_trace()
         if dirpath.startswith(MyEnv.config["DIR_CODE"]):
             cmd = (
                 "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py configure --sshkey %s -s"
                 % MyEnv.sshagent.key_default_name
             )
             Tools.execute(cmd)
+            j.shell()
             cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s"
         else:
             print("copy installer over from where I install from")

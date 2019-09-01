@@ -27,6 +27,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         j.builders.runtimes.lua.install()
         j.builders.db.zdb.install()
         j.builders.apps.sonic.install()
+        self._log_info("install done for threebot server.")
 
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)

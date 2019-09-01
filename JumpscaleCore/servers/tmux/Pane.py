@@ -106,7 +106,7 @@ class Pane(j.baseclasses.object):
             try:
                 process_obj = self.process_obj
             except Exception as e:
-                j.shell()
+                return res
         if res is None:
             res = []
         curdepth = curdepth + 1
