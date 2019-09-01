@@ -1,4 +1,3 @@
-from .ReverseProxy import ReverseProxies
 from .Wiki import Wikis
 from .Website import Websites
 from Jumpscale import j
@@ -96,9 +95,9 @@ class OpenRestyServer(j.baseclasses.factory_data):
         self._cmd = None
         self._web_path = "/sandbox/var/web/%s" % self.name
         self.path_web_default = "/sandbox/var/web/default"
-        self.path_web = "/sandbox/var/web/%s"% self.name
+        self.path_web = "/sandbox/var/web/%s" % self.name
         self.path_cfg_dir = "/sandbox/cfg/nginx/%s" % self.name
-        self.path_cfg =  = "%s/nginx.conf"%self.path_cfg_dir
+        self.path_cfg = "%s/nginx.conf" % self.path_cfg_dir
         j.sal.fs.createDir(self.path_web)
         j.sal.fs.createDir(self.path_cfg_dir)
 
@@ -106,16 +105,11 @@ class OpenRestyServer(j.baseclasses.factory_data):
 
         self.install()
 
-        if j.core.myenv.platform_is_linux:
-            self.letsencrypt = True
-        else:
-            self.letsencrypt = False
-
         self.configure()
 
     def configure(self):
-        configtext = j.tools.jinja2.template_render(content=self.__class__.CONFIG, obj=self)
-        j.sal.fs.writeFile("%s/nginx.conf" % self._cfg_path, configtext)
+        configtext = j.tools.jinja2.template_render(text=self.__class__._CONFIG, obj=self)
+        j.sal.fs.writeFile(self.path_cfg, configtext)
 
     def install(self, reset=False):
         """

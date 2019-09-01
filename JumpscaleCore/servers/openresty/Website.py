@@ -1,8 +1,8 @@
+from .Location import Location
 from Jumpscale import j
 
 
 JSConfigs = j.baseclasses.object_config_collection
-from .Location import Location
 
 
 class Website(j.baseclasses.factory_data):
@@ -78,6 +78,12 @@ class Website(j.baseclasses.factory_data):
     {% endif %}           
 
         """
+
+    def __init__(self, *args, **kwargs):
+        if j.core.myenv.platform_is_linux:
+            self.letsencrypt = True
+        else:
+            self.letsencrypt = False
 
     @property
     def path_cfg_dir(self):
