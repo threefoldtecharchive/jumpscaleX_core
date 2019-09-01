@@ -111,8 +111,8 @@ def main(self):
         a.save()
 
         assert len(bcdb.acl.find()) == 1  # there needs to be a new acl
-        assert a.acl.rights_check(1, "r") is False
-        assert a.acl.rights_check(1, "w") is True
+        assert a.acl.rights_check(1, "r") is True
+        assert a.acl.rights_check(1, "w") is False
         assert a.acl.rights_check(1, "d") is False
         # as user 2 is part of circle 13 it should be the same
         assert a.acl.rights_check(2, "r") is False

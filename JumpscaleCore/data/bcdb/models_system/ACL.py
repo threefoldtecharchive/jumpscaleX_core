@@ -152,12 +152,13 @@ class ACL(j.data.bcdb._BCDBModelClass):
 
         user_or_circle_id = int(id)
 
-        for user in acl.users:
+        for user in self.user.find():
+
             if user.uid == user_or_circle_id:
                 user_rights = self.user.get_by_name("user_%s" % user_or_circle_id)[0]
                 return rights_check_user_group(rights, user_rights.rights)
 
-        for circle in acl.circles:
+        for circle in self.circle.find():
             if circle.cid == id:
                 circle = self.circle.get_by_name("circle_%s" % circle.cid)[0]
                 if circle:
