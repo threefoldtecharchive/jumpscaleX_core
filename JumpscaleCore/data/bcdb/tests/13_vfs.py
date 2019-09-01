@@ -41,7 +41,8 @@ def main(self):
     # md5 = "cbf134f55d0c7149ef188cf8a52db0eb"
     # sid = "7"
 
-    bcdb = j.data.bcdb.get("test", reset=True)
+    testname = "testvfs"
+    bcdb = j.data.bcdb.new(testname, reset=True)
 
     vfs = j.data.bcdb._get_vfs()
 
@@ -64,34 +65,21 @@ def main(self):
     r = vfs.get("/")
     bcdb_names = [i for i in r.list()]
 
-    assert "test" in bcdb_names
-    r = vfs.get("/test")
+    assert testname in bcdb_names
+    r = vfs.get(testname)
     indentifiers = [i for i in r.list()]
     print(indentifiers)
     assert "data" in indentifiers
 
-    r = vfs.get("/test/data")
+    r = vfs.get("/{}/data".format(testname))
     namespaces = [i for i in r.list()]
 
-    assert "system" in bcdb_names
-    r = vfs.get("/system/data")
-    namespaces = [i for i in r.list()]
     print("namespaces:%s" % namespaces)
     assert "1" in namespaces
 
-    vfs.delete("/")
-    self._log_info("TEST ROOT DIR DONE")
-
-    with test_case.assertRaises(Exception):
-        r = vfs.get("test/schema/md5")
-        r = vfs.get("schemas/1")
-        r = vfs.get("test/schema/sid/5/78")
-        r = vfs.get("test/data/md5")
-        r = vfs.get("test/data/2/md6")
-
     self._log_info("TEST DELETE DATA DONE")
 
-    r = vfs.get("test/data/1")
+    r = vfs.get("{}/data/1".format(testname))
     identifier_folders = [i for i in r.list()]
     assert len(identifier_folders) > 3
     r = vfs.get("data/1")  # current bcdb is test do to last test
@@ -111,10 +99,8 @@ def main(self):
         obj = j.data.serializers.json.loads(o)
         if obj["addr"] == "something:5":
             assert obj["name"] == "myuser_5"
-            obj_id_5 = obj["id"]
         if obj["addr"] == "something:4":
             assert obj["name"] == "myuser_4"
-            obj_id_4 = obj["id"]
         if obj["addr"] == "something:3":
             assert obj["name"] == "myuser_3"
             obj_id_3 = obj["id"]
@@ -283,6 +269,19 @@ def main(self):
     self._log_info("TEST DELETE DATA DONE")
 
     # clean state
-    vfs.delete("/")
+    vfs.delete(testname)
+    self._log_info("TEST ROOT DIR DONE")
+
+    with test_case.assertRaises(Exception):
+        vfs.get("{}/schema/md5".format(testname))
+    with test_case.assertRaises(Exception):
+        vfs.get("schemas/1".format(testname))
+    with test_case.assertRaises(Exception):
+        vfs.get("{}/schema/sid/5/78")
+    with test_case.assertRaises(Exception):
+        vfs.get("{}/data/md5".format(testname))
+    with test_case.assertRaises(Exception):
+        vfs.get("{}/data/2/md6".format(testname))
+
     self._log_info("TEST DONE")
     return "OK"
