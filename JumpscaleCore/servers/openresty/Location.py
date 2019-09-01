@@ -110,7 +110,7 @@ class Location(j.baseclasses.object_config):
         can use template variables with obj...  (obj is this obj = self, location object is the sub obj)
 
 
-        :param config:
+        :param config:￿,
         :return:
         """
         j.sal.fs.createDir(self.path_cfg_dir)
