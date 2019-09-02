@@ -7,4 +7,9 @@ def main(self):
     :return:
     """
 
-    # add an actor
+    server = j.servers.openresty.get("test")
+    server.configure()
+    website = server.websites.get("test2")
+    website.configure()
+    server.start()
+    website.locations.get("test")
