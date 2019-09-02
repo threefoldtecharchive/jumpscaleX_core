@@ -513,7 +513,7 @@ class BCDBModel(j.baseclasses.object):
         #             # print("cache hit")
         #             return obj
 
-        obj_id = int(obj_id) # make sure obj_id is always an integer
+        obj_id = int(obj_id)  # make sure obj_id is always an integer
         data = self.storclient.get(obj_id)
 
         if not data:
