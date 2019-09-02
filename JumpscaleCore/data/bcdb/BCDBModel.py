@@ -300,7 +300,7 @@ class BCDBModel(j.baseclasses.object):
         for obj in objs:
             parts = obj.split(":")
             if (property_name and parts[1] == property_name) or (not property_name):
-                res.append(self.get(parts[0]))
+                res.append(self.get(int(parts[0])))
         return res
 
     def upgrade(self, obj):
@@ -454,7 +454,9 @@ class BCDBModel(j.baseclasses.object):
         """
         return ddict
 
-    def new(self, data=None, nid=1):
+    def new(self, data=None, nid=1, **kwargs):
+        if kwargs != {}:
+            data = kwargs
         if data and isinstance(data, dict):
             data = self._dict_process_in(data)
         elif isinstance(data, str) and j.data.types.json.check(data):
@@ -485,6 +487,9 @@ class BCDBModel(j.baseclasses.object):
     def _methods_add(self, obj):
         return obj
 
+    def exists(self, obj_id):
+        return self.get(obj_id=obj_id, die=False) != None
+
     @queue_method_results
     def get(self, obj_id, return_as_capnp=False, usecache=True, die=True):
         """
@@ -508,6 +513,7 @@ class BCDBModel(j.baseclasses.object):
         #             # print("cache hit")
         #             return obj
 
+        obj_id = obj_id  # make sure obj_id is always an integer
         data = self.storclient.get(obj_id)
 
         if not data:
@@ -517,7 +523,6 @@ class BCDBModel(j.baseclasses.object):
                 return None
 
         obj = self.bcdb._unserialize(obj_id, data, return_as_capnp=return_as_capnp)
-
         if obj._schema.url == self._schema_url:
             obj = self._triggers_call(obj=obj, action="get")
         else:

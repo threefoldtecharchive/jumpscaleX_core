@@ -88,8 +88,8 @@ def main(self):
     start_cmd = """
     from Jumpscale import j
     rack = j.servers.rack.get()
-    from jumpscale.Jumpscale.data.bcdb.connectors.webdav.BCDBFSProvider import BCDBFSProvider
-    
+    from Jumpscale.data.bcdb.connectors.webdav.BCDBFSProvider import BCDBFSProvider
+
     rack.webdav_server_add(webdavprovider=BCDBFSProvider("test_fs"), port=4444)
     rack.start()
     """

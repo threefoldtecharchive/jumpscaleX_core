@@ -32,11 +32,13 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def test(self, name="basic", wiki=False, web=False):
+    def local_start_default(self, web=False):
         """
 
-        kosmos 'j.servers.threebot.test(name="basic")'
-        kosmos 'j.servers.threebot.test(name="onlystart",wiki=False)'
+        tbot_client = j.servers.threebot.local_start_default()
+
+        will check if there is already one running, will create client to localhost & return
+        gedis client
         :return:
         """
         if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
@@ -45,13 +47,24 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             self.default.stop()
             self.default.start(background=True, web=web)
 
-        self.client = j.clients.gedis.get(name="threebot", port=8901)
-        # self.client = j.clients.gedis.get(name="threebot", host="134.209.90.92")
-
         assert self.client.ping()
 
+        self.client = j.clients.gedis.get(name="threebot", port=8901)
+
+        return self.client
+
+    def test(self, name="basic", wiki=False, web=False, fileserver=False):
+        """
+
+        kosmos 'j.servers.threebot.test(name="basic")'
+        kosmos 'j.servers.threebot.test(name="onlystart")'
+        :return:
+        """
+
+        self.local_start_default()
+
         self.client.actors.package_manager.package_add(
-            "tf_directory",
+            "tfgrid_directory",
             git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/directory",
         )
 
@@ -59,6 +72,17 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             "threebot_phonebook",
             git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
         )
+
+        self.client.actors.package_manager.package_add(
+            "tfgrid_workloads",
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/workloads",
+        )
+
+        if fileserver:
+            self.client.actors.package_manager.package_add(
+                "threebot_fileserver",
+                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/fileserver",
+            )
 
         if wiki:
             self.client.actors.package_manager.package_add(
