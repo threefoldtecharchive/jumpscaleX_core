@@ -20,11 +20,29 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
             self._explorer = self.get(name="explorer", host="localhost")
         return self._explorer
 
-    def sign(self, payload):
+    def sign_data(self, data):
+        """
+        will sign any data with private key of our local 3bot private key
+        :param payload:
+        :return:
+        """
         n = j.data.nacl.default
-        return n.signing_key.sign(payload)
+        return n.signing_key.sign(data)
 
-    def threebot_get(self, tid=None, name=None):
+    def sign_jsxobject(self, jsxobject):
+        """
+        jsxobject, json, signature = j.clients.threebot.sign_jsxobject(jsxobject)
+
+        will sign a jsxobject with private key of our local 3bot private key
+        :param jsxobject:
+        :return:
+        """
+        # todo: check type
+        json = jsxobject._json
+        signature = self.sign_data(json)
+        return (jsxobject, json, signature)
+
+    def threebot_client_get(self, tid=None, name=None):
         """
 
         :param tid: threebot id
@@ -138,4 +156,11 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
 
         r = self.threebot_register("test.test", "test@incubaid.com", ipaddr="localhost")
 
-        clienttomyself = self.threebot_get(tid=r.id)
+        # tid = threebotid
+        clienttomyself = self.threebot_client_get(tid=r.id)
+        # or fetch based on name
+        clienttomyself2 = self.threebot_client_get(name="test.test")
+
+        assert clienttomyself2.client.ping()
+
+        self._log_info("test ok")
