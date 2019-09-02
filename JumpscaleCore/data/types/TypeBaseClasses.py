@@ -65,8 +65,8 @@ class TypeBaseObjClassNumeric(TypeBaseObjClass):
     def value(self):
         raise j.exceptions.NotImplemented()
 
-    # def __hash__(self):
-    #     return hash(self.value)
+    def __hash__(self):
+        return hash(self.value)
 
     def __eq__(self, other):
         # other = self._other_convert(other)
