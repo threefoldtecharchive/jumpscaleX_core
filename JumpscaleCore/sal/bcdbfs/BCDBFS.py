@@ -107,6 +107,10 @@ class BCDBFS(j.baseclasses.object):
         if path == j.sal.fs.getParent(dest):
             raise j.exceptions.Base("{} can not copy directory into itself".format(path))
         dir_source = self._dir_model.get_by_name(name=path)[0]
+        # Make sure dest, exists coz sometimes we move empty directory into another one, so
+        # in this case the emoty dir (dest) needs to created now otherwise they won't
+        if not self.dir_exists(dest):
+            self.dir_create(dest)
         source_files = dir_source.files
         for file_id in source_files:
             file = self._file_model.get(file_id)
@@ -186,7 +190,9 @@ class BCDBFS(j.baseclasses.object):
             dest_file.blocks = source_file.blocks
         elif source_file.content:
             dest_file.content = source_file.content
-
+        dest_file.size_bytes = source_file.size_bytes
+        dest_file.epoch = source_file.epoch
+        dest_file.content_type = source_file.content_type
         dest_file.save()
         return dest_file
 
