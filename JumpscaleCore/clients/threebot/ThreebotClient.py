@@ -11,7 +11,7 @@ class ThreebotClient(JSConfigBase):
     name* = ""                      #is the bot dns
     tid = 0 (I)                     #threebot id
     host = "127.0.0.1" (S)          #for caching purposes
-    port = 8900 (ipport)            #for caching purposes
+    port = 8901 (ipport)            #for caching purposes
     pubkey = ""                     #for caching purposes
     namespace = "default" (S)
     """

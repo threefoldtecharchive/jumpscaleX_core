@@ -9,13 +9,13 @@ class ThreeBotPackage(JSConfigBase):
         name* = "main"
         giturl = "" (S)  #if empty then local
         path = ""
-        threebotserver_name = ""
+        threebot_server_name = "default"
         branch = ""
         """
 
     @property
     def threebot_server(self):
-        return j.servers.threebot.get(name=self.threebotserver_name)
+        return j.servers.threebot.get(name=self.threebot_server_name)
 
     @property
     def gedis_server(self):

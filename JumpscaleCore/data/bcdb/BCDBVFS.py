@@ -361,7 +361,7 @@ class BCDBVFS(j.baseclasses.object):
                     pass
             del cached_keys
             self._dirs_cache = {}
-        elif len(split) == 1 and split not in ['schemas', 'info', 'data']:
+        elif len(split) == 1 and split not in ["schemas", "info", "data"]:
             self.change_current_bcdb(split[0])
             self._bcdb.destroy()
             self._bcdb_names.remove(split[0])
@@ -564,7 +564,7 @@ class BCDBVFS_Data_Dir:
         if info["type"] != "info":  # make sure that the directory contains data
             for i in self.items:
                 if isinstance(i, str):
-                    itemkey =  i
+                    itemkey = i
                 else:
                     itemkey = i.id
                 res.append(self.vfs.get("%s/%s" % (self.key.replace("_", "/"), itemkey)).delete())

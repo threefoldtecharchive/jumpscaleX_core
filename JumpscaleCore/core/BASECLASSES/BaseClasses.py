@@ -195,6 +195,30 @@ class BaseClasses(JSBase, TestTools):
         return JSFactory
 
     @property
+    def factory_testtools(self):
+        """
+        factory class is combination of jsxobject+factory class
+
+        functions
+
+        - use _ChildClass(es) functionality to create children
+        - recursive delete & reset
+        - can have an own jsxobject attached to it
+
+        example see /sandbox/code/github/threefoldtech/jumpscaleX_libs/tutorials/base/object_structure/BaseClasses_ConfigObjects.py
+
+        this type of class will show all the objects of the type
+
+
+        :return:
+        """
+
+        class JSFactoryDataTesttools(TestTools, JSFactory):
+            pass
+
+        return JSFactoryDataTesttools
+
+    @property
     def factory_data(self):
         """
         factory class is combination of jsxobject+factory class
@@ -213,7 +237,19 @@ class BaseClasses(JSBase, TestTools):
         :return:
         """
 
-        class JSFactoryTestToolsData(JSConfigBCDB, JSFactory):
+        class JSFactoryData(JSConfigBCDB, JSFactory):
             pass
 
-        return JSFactoryTestToolsData
+        return JSFactoryData
+
+    @property
+    def factory_data_testtools(self):
+        """
+
+        :return:
+        """
+
+        class JSFactoryDataTesttools(JSConfigBCDB, JSFactory, TestTools):
+            pass
+
+        return JSFactoryDataTesttools
