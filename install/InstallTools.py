@@ -751,7 +751,7 @@ class JSExceptions:
 
         class SSHTimeout1(BaseJSException):
             pass
-        
+
         class RemoteException1(BaseJSException):
             pass
 
