@@ -9,11 +9,10 @@ class ThreebotClient(JSConfigBase):
     _SCHEMATEXT = """
     @url = jumpscale.threebot.client
     name* = ""                      #is the bot dns
-    tid = 0 (I)                     #threebot id
+    tid* = 0 (I)                     #threebot id
     host = "127.0.0.1" (S)          #for caching purposes
     port = 8901 (ipport)            #for caching purposes
     pubkey = ""                     #for caching purposes
-    namespace = "default" (S)
     """
 
     def _init(self, **kwargs):
@@ -23,7 +22,7 @@ class ThreebotClient(JSConfigBase):
     @property
     def client(self):
         if not self._gedis:
-            self._gedis = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, namespace=self.namespace)
+            self._gedis = j.clients.gedis.get(name=self.name, host=self.host, port=self.port)
         return self._gedis
 
     def ping(self):

@@ -13,7 +13,6 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
 
     def _init(self, **kwargs):
         self._explorer = None
-        self.reset()
 
     @property
     def explorer(self):
@@ -25,13 +24,30 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         n = j.data.nacl.default
         return n.signing_key.sign(payload)
 
-    def reset(self):
-        self.threebot_records = j.baseclasses.dict()
+    def threebot_get(self, tid=None, name=None):
+        """
 
-    def threebot_record_get(self, user_id=None, name=None):
-        if user_id in self.threebot_records:
-            return self.threebot_records[user_id]
-        r = self.explorer.client.actors.phonebook.get(user_id=user_id, name=name)
+        :param tid: threebot id
+        :param name:
+        :return:
+        """
+        if name:
+            res = self.find(name=name)
+        elif tid:
+            res = self.find(tid=tid)
+        else:
+            raise j.exceptions.Input("specify name or tid")
+        if len(res) == 1:
+            return res[0]
+        elif len(res) > 1:
+            raise j.exceptions.JSBUG("should never be more than 1")
+
+        r = self.threebot_record_get(tid=tid, name=name)
+        return self.new(name=r.name, tid=r.tid, host=r.ipaddr, pubkey=r.pubkey)
+
+    def threebot_record_get(self, tid=None, name=None):
+        # did not find locally yet lets fetch
+        r = self.explorer.client.actors.phonebook.get(tid=tid, name=name)
         if r:
 
             signature_hex = j.clients.threebot._payload_check(
@@ -39,7 +55,8 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
             )
             if not r.signature == signature_hex:
                 raise j.exceptions.Input("threebot record, not valid, signature does not match")
-            self.threebot_records[r.id] = r
+
+            self.get(name=r.name, tid=r.id, host=r.ipaddr, pubkey=r.pubkey)
             return r
 
         raise j.exceptions.Input("could not find 3bot: user_id:{user_id} name:{name}")
@@ -82,7 +99,7 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
             pubkey = n.verify_key.encode()
         self._log(pubkey)
 
-        cl = j.clients.threebot.get("registrar")
+        cl = self.explorer
         cl.ping()
 
         # FOR ENCRYPTION WITH PUB KEY
@@ -106,12 +123,12 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
             name=name, email=email, ipaddr=ipaddr, description=description, pubkey=pubkey_hex, signature=signature_hex
         )
 
-        self.threebot_record_get(user_id=res.id)
-        record = self.threebot_record_get(name=res.name)
+        record0 = self.threebot_record_get(tid=res.id)
+        record1 = self.threebot_record_get(name=res.name)
 
         self._log_info("registration of threebot '{name}' done" % locals())
 
-        return record
+        return record1
 
     def test(self):
         """
@@ -120,4 +137,5 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         """
 
         r = self.threebot_register("test.test", "test@incubaid.com", ipaddr="localhost")
-        j.shell()
+
+        clienttomyself = self.threebot_get(tid=r.id)
