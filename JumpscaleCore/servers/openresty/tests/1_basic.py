@@ -3,6 +3,7 @@ from Jumpscale import j
 
 def main(self):
     """
+    kosmos -p 'j.servers.openresty.test(name="basic")'
     kosmos 'j.servers.openresty.test(name="basic")'
     :return:
     """
@@ -12,9 +13,6 @@ def main(self):
     website = server.websites.get("test2")
     website.configure()
 
-    from pudb import set_trace
-
-    set_trace()
     website.locations.get("test")
 
     server.start()

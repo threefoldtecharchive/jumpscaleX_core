@@ -77,8 +77,11 @@ class JSConfigBCDBBase(JSBase, Attr):
                 else:
                     raise j.exceptions.JSBUG("cannot find _SCHEMATEXT on childclass or class itself")
 
-            t = self._process_schematext(s)
-            t2 = j.data.schema._schema_blocks_get(t)[0]
+            j.data.schema.get_from_text(s)
+
+            t2 = j.data.schema._schema_blocks_get(s)[0]
+
+            t = self._process_schematext(t2)
 
             # if j.core.text.strip_to_ascii_dense(t) != j.core.text.strip_to_ascii_dense(s):
             #     from pudb import set_trace
@@ -86,7 +89,7 @@ class JSConfigBCDBBase(JSBase, Attr):
             #     set_trace()
             self._model_ = self._bcdb.model_get(schema=t)
 
-            assert self._model_.schema._md5 == j.data.schema._md5(t2)
+            assert self._model_.schema._md5 == j.data.schema._md5(t)
 
             # if self._model_.schema._md5 != j.data.schema._md5(t2):
             #     from pudb import set_trace
