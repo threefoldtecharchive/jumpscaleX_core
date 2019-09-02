@@ -76,7 +76,6 @@ class Website(j.baseclasses.factory_data):
 
         """
 
-
     @property
     def path_cfg_dir(self):
         return f"{self._parent._parent.path_cfg_dir}/servers"
