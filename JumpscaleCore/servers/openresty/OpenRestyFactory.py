@@ -35,10 +35,10 @@ class OpenRestyFactory(j.baseclasses.object_config_collection_testtools):
         j.clients.git.pullGitRepo(url="https://github.com/threefoldtech/jumpscale_weblibs")
         j.builders.runtimes.lua.install_certificates()
 
-    def test(self, install=True):
+    def test(self, name=None, install=True):
         """
         kosmos 'j.servers.openresty.test(install=False)'
-        kosmos 'j.servers.openresty.test()'
+        kosmos 'j.servers.openresty.test(name="basic")'
         :return:
         """
         if install:
@@ -83,4 +83,7 @@ class OpenRestyFactory(j.baseclasses.object_config_collection_testtools):
 
             openresty.stop()
 
-        do()
+        if name:
+            self._test_run(name=name)
+        else:
+            do()

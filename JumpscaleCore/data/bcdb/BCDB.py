@@ -494,7 +494,7 @@ class BCDB(j.baseclasses.object):
 
         return self._schema_url_to_model[model.schema.url]
 
-    def _schema_property_add_if_needed(self, schema):
+    def _schema_property_add_if_needed(self, schema, done=[]):
         """
         recursive walks over schema properties (multiple levels)
         if a sub property is a complex type by itself, then we need to make sure we remember the schema's also in BCDB
@@ -508,12 +508,18 @@ class BCDB(j.baseclasses.object):
                 s = prop.jumpscaletype.SUBTYPE._schema
                 self.meta._schema_set(s)
                 # now see if more subtypes
-                self._schema_property_add_if_needed(s)
+                if s._md5 not in done:
+                    done.append(s._md5)
+                    done = self._schema_property_add_if_needed(s)
             elif prop.jumpscaletype.NAME == "jsxobject":
                 s = prop.jumpscaletype._schema
                 self.meta._schema_set(s)
                 # now see if more subtypes
-                self._schema_property_add_if_needed(s)
+                if s._md5 not in done:
+                    done.append(s._md5)
+                    done = self._schema_property_add_if_needed(s)
+
+        return done
 
     def model_get_from_file(self, path):
         """
