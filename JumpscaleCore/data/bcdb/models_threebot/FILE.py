@@ -21,6 +21,7 @@
 from Jumpscale import j
 from wsgidav import compat
 import mimetypes
+import types
 
 
 class FILE(j.data.bcdb._BCDBModelClass):
@@ -193,8 +194,7 @@ class FileStream:
             self._vfile.extension = ext
             self._vfile.save()
 
-    def _drain_response(self, response):
-        response_generator = response.iter_content(self.BLOCK_SIZE)
+    def _drain_response(self, response_generator):
         while True:
             try:
                 yield next(response_generator)
@@ -217,6 +217,9 @@ class FileStream:
             self._vfile.save()
 
         if hasattr(stream, "iter_content"):
+            response_generator = stream.iter_content(self.BLOCK_SIZE)
+            blocks_generator = self._drain_response(response_generator)
+        elif isinstance(stream, types.GeneratorType):
             blocks_generator = self._drain_response(stream)
         else:
             blocks_generator = self._drain_stream(stream)

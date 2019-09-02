@@ -4513,30 +4513,18 @@ class DockerContainer:
             args_txt += " --no-interactive"
 
         dirpath = os.path.dirname(inspect.getfile(Tools))
-        from pudb import set_trace
-
-        set_trace()
-        if dirpath.startswith(MyEnv.config["DIR_CODE"]):
-            cmd = (
-                "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py configure --sshkey %s -s"
-                % MyEnv.sshagent.key_default_name
+        print("copy installers to the docker")
+        if not Tools.exists("%s/jsx" % dirpath):
+            Tools.link("%s/jsx.py" % dirpath, "%s/jsx" % dirpath)
+        for item in ["jsx", "InstallTools.py"]:
+            src1 = "%s/%s" % (dirpath, item)
+            cmd = "scp -P {} -o StrictHostKeyChecking=no \
+                -o UserKnownHostsFile=/dev/null \
+                -r {} root@localhost:/tmp/".format(
+                self.config.sshport, src1
             )
             Tools.execute(cmd)
-            j.shell()
-            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s"
-        else:
-            print("copy installer over from where I install from")
-            for item in ["jsx", "InstallTools.py"]:
-                src1 = "%s/%s" % (dirpath, item)
-                cmd = "scp -P {} -o StrictHostKeyChecking=no \
-                    -o UserKnownHostsFile=/dev/null \
-                    -r {} root@localhost:/tmp/".format(
-                    self.config.sshport, src1
-                )
-                Tools.execute(cmd)
-            cmd = (
-                "cd /tmp;python3 jsx configure --sshkey %s -s;python3 jsx install -s" % MyEnv.sshagent.key_default_name
-            )
+        cmd = "cd /tmp;python3 jsx configure --sshkey %s -s;python3 jsx install -s" % MyEnv.sshagent.key_default_name
         cmd += args_txt
         print(" - Installing jumpscaleX ")
         self.sshexec("apt-get install python3-click -y")
