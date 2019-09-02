@@ -10,7 +10,7 @@ def main(self):
 
     """
 
-    cl = self.client_get()
+    cl = self.client_get(namespace="test_sqlitedb")
     cl.flush()
     assert cl.count == 0
     assert len(cl.list()) == 0
@@ -84,9 +84,9 @@ def main(self):
     assert ns.nsinfo["entries"] == 1
 
     nritems = 1000
-    j.tools.timer.start("zdb")
+    j.tools.timer.start("sqlitedb")
 
-    self._log_debug("perftest for 10.000 records, should get above 5k per sec, +10k expected")
+    self._log_debug("perftest for 10.000 records, should get above 1k per sec, +10k expected")
     for i in range(nritems):
         id = cl.set(b"a")
 

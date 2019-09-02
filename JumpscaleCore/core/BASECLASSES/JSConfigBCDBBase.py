@@ -84,7 +84,6 @@ class JSConfigBCDBBase(JSBase, Attr):
             #     from pudb import set_trace
             #
             #     set_trace()
-
             self._model_ = self._bcdb.model_get(schema=t)
 
             assert self._model_.schema._md5 == j.data.schema._md5(t2)

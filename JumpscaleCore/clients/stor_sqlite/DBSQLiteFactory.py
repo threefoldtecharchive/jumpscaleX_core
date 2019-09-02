@@ -3,9 +3,9 @@ from Jumpscale import j
 from .DBSQLite import DBSQLite
 
 
-class DBSQLiteFactory(j.baseclasses.object_config_collection_testtools):
+# DO NOT USE CONFIG OBJECT HERE, OTHERWISE CHICKEN AND EGG SITUATION
+class DBSQLiteFactory(j.baseclasses.object, j.baseclasses.testtools):
     __jslocation__ = "j.clients.sqlitedb"
-    _CHILDCLASS = DBSQLite
 
     def client_get(self, namespace, fromcache=True):
         """

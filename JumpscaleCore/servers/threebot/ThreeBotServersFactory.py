@@ -32,20 +32,20 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def test(self, name="basic", wiki=False):
+    def test(self, name="basic", wiki=False, web=False):
         """
 
         kosmos 'j.servers.threebot.test(name="basic")'
-        kosmos 'j.servers.threebot.test(name="onlystart",wiki=True)'
+        kosmos 'j.servers.threebot.test(name="onlystart",wiki=False)'
         :return:
         """
-        if j.sal.nettools.tcpPortConnectionTest("localhost", 5354) == False:
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
             # means needs to be started
             self.install()
             self.default.stop()
-            self.default.start(background=True)
+            self.default.start(background=True, web=web)
 
-        self.client = j.clients.gedis.get(name="threebot")
+        self.client = j.clients.gedis.get(name="threebot", port=8901)
         # self.client = j.clients.gedis.get(name="threebot", host="134.209.90.92")
 
         assert self.client.ping()

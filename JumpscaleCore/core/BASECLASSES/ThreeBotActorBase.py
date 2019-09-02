@@ -28,3 +28,6 @@ class ThreeBotActorBase(JSBase):
     def _init_pre2(self, **kwargs):
         assert "gedis_server" in kwargs
         self._gedis_server = kwargs["gedis_server"]
+        self._threebot_server = self._gedis_server._threebot_server
+        self._bcdb_get = self._threebot_server.bcdb_get
+        self._rack_server = self._threebot_server._rack_server
