@@ -300,7 +300,7 @@ class BCDBModel(j.baseclasses.object):
         for obj in objs:
             parts = obj.split(":")
             if (property_name and parts[1] == property_name) or (not property_name):
-                res.append(self.get(parts[0]))
+                res.append(self.get(int(parts[0])))
         return res
 
     def upgrade(self, obj):
@@ -513,7 +513,7 @@ class BCDBModel(j.baseclasses.object):
         #             # print("cache hit")
         #             return obj
 
-        obj_id = int(obj_id) # make sure obj_id is always an integer
+        obj_id = obj_id  # make sure obj_id is always an integer
         data = self.storclient.get(obj_id)
 
         if not data:
