@@ -32,7 +32,6 @@ class OpenRestyFactory(j.baseclasses.object_config_collection_testtools):
             j.sal.fs.remove("/sandbox/var/web")
         j.builders.web.openresty.install()
         j.builders.runtimes.lua.install()
-        j.clients.git.pullGitRepo(url="https://github.com/threefoldtech/jumpscale_weblibs")
         j.builders.runtimes.lua.install_certificates()
 
     def test(self, name=None, install=True):
