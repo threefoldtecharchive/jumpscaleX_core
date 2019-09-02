@@ -40,6 +40,8 @@ class DIR(j.data.bcdb._BCDBModelClass):
         return new_dir
 
     def create_empty_dir(self, name, create_parent=True):
+        if self.get_by_name(name=name):
+            return name
         if name == "/" and not len(self.get_by_name(name="/")) > 0:
             return self._create_root_dir()
         if name == "/":

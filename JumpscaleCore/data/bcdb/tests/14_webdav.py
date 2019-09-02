@@ -25,7 +25,7 @@ import requests
 def main(self):
     """
     to run:
-    kosmos 'j.data.bcdb.test(name="vfs")'
+    kosmos 'j.data.bcdb.test(name="webdav")'
 
     """
 

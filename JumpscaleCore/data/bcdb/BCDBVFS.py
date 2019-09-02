@@ -87,11 +87,13 @@ class BCDBVFS(j.baseclasses.object):
         self.directories_under_root = ["data", "schemas", "info"]
 
     def change_current_bcdb(self, bcdb_name):
-        if bcdb_name in self._bcdb_names and self.current_bcbd_name != bcdb_name:
+        if "_" in bcdb_name:
+            raise j.exceptions.Input("VFS can not walk bdcname with underscore {}".format(bcdb_name))
+        if bcdb_name in self._bcdb_names:
             self.current_bcbd_name = bcdb_name
             self._bcdb = self._bcdb_instances[bcdb_name]
         else:
-            raise Exception("cannot change current bcdb name:%s is not in:%s" % (bcdb_name, self._bcdb_names))
+            raise Exception("cannot change current bcdb name: %s is not in: %s" % (bcdb_name, self._bcdb_names))
 
     def _split_clean_path(self, path):
         """split the path into elements and returns the element list
@@ -343,7 +345,8 @@ class BCDBVFS(j.baseclasses.object):
         return None
 
     def delete(self, path):
-        if self._split_clean_path(path) == []:
+        split = self._split_clean_path(path)
+        if split == []:
             # will change the current bcdb if it has to
             # it means we are trying to remove everything on the current bcdb
             self._log_info("WARNING bcdb:%s reset" % self.current_bcbd_name)
@@ -358,6 +361,10 @@ class BCDBVFS(j.baseclasses.object):
                     pass
             del cached_keys
             self._dirs_cache = {}
+        elif len(split) == 1 and split not in ['schemas', 'info', 'data']:
+            self.change_current_bcdb(split[0])
+            self._bcdb.destroy()
+            self._bcdb_names.remove(split[0])
         else:
             return self.get(path).delete()
 
@@ -554,9 +561,13 @@ class BCDBVFS_Data_Dir:
     def delete(self):
         info = self.vfs._extract_info_from_key(self.key)
         res = []
-        if not info["type"] is "info":  # make sure that the directory contains data
+        if info["type"] != "info":  # make sure that the directory contains data
             for i in self.items:
-                res.append(self.vfs.get("%s/%s" % (self.key.replace("_", "/"), i.id)).delete())
+                if isinstance(i, str):
+                    itemkey =  i
+                else:
+                    itemkey = i.id
+                res.append(self.vfs.get("%s/%s" % (self.key.replace("_", "/"), itemkey)).delete())
         else:
             raise Exception("that data directory can't be deleted")
         return res

@@ -366,6 +366,8 @@ class GitFactory(j.baseclasses.object):
         )
         if not branch:
             branch = branch2
+        if branch == "*":
+            branch = None
         rpath = j.sal.fs.joinPaths(gitpath, relpath)
 
         if not j.sal.fs.exists(rpath, followlinks=True):

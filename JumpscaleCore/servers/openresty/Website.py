@@ -2,10 +2,7 @@ from .Location import Location
 from Jumpscale import j
 
 
-JSConfigs = j.baseclasses.object_config_collection
-
-
-class Website(j.baseclasses.factory_data):
+class Website(j.baseclasses.object_config_collection_testtools):
     """
     Website hosted in openresty
     This is port / hostname combination
