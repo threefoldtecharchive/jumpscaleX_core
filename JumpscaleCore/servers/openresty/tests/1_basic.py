@@ -11,5 +11,10 @@ def main(self):
     server.configure()
     website = server.websites.get("test2")
     website.configure()
-    server.start()
+
+    from pudb import set_trace
+
+    set_trace()
     website.locations.get("test")
+
+    server.start()

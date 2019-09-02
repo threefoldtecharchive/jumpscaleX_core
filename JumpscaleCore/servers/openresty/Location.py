@@ -89,6 +89,11 @@ class Location(j.baseclasses.object_config):
 
     """
 
+    def _init_pre(self):
+        from pudb import set_trace
+
+        set_trace()
+
     @property
     def path_cfg_dir(self):
         return "%s/locations" % (self._parent._parent.path_cfg_dir)

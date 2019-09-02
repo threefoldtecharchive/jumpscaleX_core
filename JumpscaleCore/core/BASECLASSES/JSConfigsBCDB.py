@@ -209,9 +209,10 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 # we can do search the index is complete
                 return self._model.find(**kwargs)
             else:
+                j.shell()
                 raise j.exceptions.Base(
-                    "cannot find obj with kwargs:\n%s\n in %s\nbecause kwargs do not match, is there * in schema"
-                    % (kwargs, self)
+                    "cannot find obj with kwargs:\n %s in bcdb, because kwargs do not match, is there * in schema"
+                    % (kwargs)
                 )
             return []
         else:
