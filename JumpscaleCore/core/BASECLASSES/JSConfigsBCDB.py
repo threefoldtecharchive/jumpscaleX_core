@@ -211,8 +211,8 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             else:
                 j.shell()
                 raise j.exceptions.Base(
-                    "cannot find obj with kwargs:\n %s in bcdb, because kwargs do not match, is there * in schema"
-                    % (kwargs)
+                    "cannot find obj with kwargs:\n %s in bcdb for schmema:'%s', because kwargs do not match, is there * in schema"
+                    % (kwargs, self._model.schema.url)
                 )
             return []
         else:
