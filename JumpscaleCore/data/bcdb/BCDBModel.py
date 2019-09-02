@@ -513,6 +513,7 @@ class BCDBModel(j.baseclasses.object):
         #             # print("cache hit")
         #             return obj
 
+        obj_id = int(obj_id) # make sure obj_id is always an integer
         data = self.storclient.get(obj_id)
 
         if not data:
@@ -522,7 +523,6 @@ class BCDBModel(j.baseclasses.object):
                 return None
 
         obj = self.bcdb._unserialize(obj_id, data, return_as_capnp=return_as_capnp)
-
         if obj._schema.url == self._schema_url:
             obj = self._triggers_call(obj=obj, action="get")
         else:
