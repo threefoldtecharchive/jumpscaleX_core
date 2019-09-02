@@ -454,7 +454,9 @@ class BCDBModel(j.baseclasses.object):
         """
         return ddict
 
-    def new(self, data=None, nid=1):
+    def new(self, data=None, nid=1, **kwargs):
+        if kwargs != {}:
+            data = kwargs
         if data and isinstance(data, dict):
             data = self._dict_process_in(data)
         elif isinstance(data, str) and j.data.types.json.check(data):
@@ -484,6 +486,9 @@ class BCDBModel(j.baseclasses.object):
 
     def _methods_add(self, obj):
         return obj
+
+    def exists(self, obj_id):
+        return self.get(obj_id=obj_id, die=False) != None
 
     @queue_method_results
     def get(self, obj_id, return_as_capnp=False, usecache=True, die=True):
