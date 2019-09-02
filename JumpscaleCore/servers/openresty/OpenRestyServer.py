@@ -107,6 +107,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
         self.configure()
 
     def configure(self):
+        self.install()
         configtext = j.tools.jinja2.template_render(text=self.__class__._CONFIG, obj=self)
         j.sal.fs.writeFile(self.path_cfg, configtext)
 
@@ -125,7 +126,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
             weblibs_path = j.clients.git.getContentPathFromURLorPath(url, pull=False)
 
             # copy the templates to the right location
-            j.sal.fs.copyDirTree("%s/web_resources/" % self._dirpath, self._web_path)
+            j.sal.fs.copyDirTree("%s/web_resources/" % self._dirpath, self.path_cfg_dir)
 
             j.sal.fs.symlink(
                 "%s/static" % weblibs_path, "{}/static/weblibs".format(self._web_path), overwriteTarget=True
@@ -158,8 +159,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
             self._cmd = j.servers.startupcmd.get(
                 name="lapis",
                 cmd_start=cmd,
-                path=self._web_path,
-                ports=[self.port, self.port_ssl],
+                path=self.path_cfg_dir,
                 process_strings_regex="^nginx",
                 executor=self.executor,
             )
@@ -200,5 +200,5 @@ class OpenRestyServer(j.baseclasses.factory_data):
         :return:
         """
         self.configure()
-        cmd = "cd  %s;lapis build" % self._web_path
+        cmd = "cd  %s;lapis build" % self.path_cfg_dir
         j.sal.process.execute(cmd)

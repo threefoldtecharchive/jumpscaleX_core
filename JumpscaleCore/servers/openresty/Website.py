@@ -1,8 +1,8 @@
-from .Location import Location
+from .Location import Locations
 from Jumpscale import j
 
 
-class Website(j.baseclasses.object_config_collection_testtools):
+class Website(j.baseclasses.factory_data):
     """
     Website hosted in openresty
     This is port / hostname combination
@@ -13,14 +13,14 @@ class Website(j.baseclasses.object_config_collection_testtools):
 
     """
 
-    _CHILDCLASSES = [Location]
+    _CHILDCLASSES = [Locations]
 
     _SCHEMATEXT = """
         @url = jumpscale.openresty.website
         name* = (S)
         port = 80 (I)
         port_ssl = 443 (I)
-        
+        ssl = True (B)
         domain = ""
         path = ""
 
@@ -28,12 +28,12 @@ class Website(j.baseclasses.object_config_collection_testtools):
 
     CONFIG = """
         
-        {% if website.letsencrypt %}
+        {% if website.ssl %}
         server {
           {% if website.domain %}
           server_name ~^(www\.)?{{website.domain}}$;
           {% endif %}
-          listen {website.port_ssl} ssl;
+          listen {{website.port_ssl}} ssl;
           ssl_certificate_by_lua_block {
             auto_ssl:ssl_certificate()
           }
@@ -41,7 +41,7 @@ class Website(j.baseclasses.object_config_collection_testtools):
           ssl_certificate_key /sandbox/cfg/ssl/resty-auto-ssl-fallback.key;
           default_type text/html;
           
-          include {{website.path_cfg_dir}}/locations/*.conf;
+          include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
     
         }
     
@@ -60,35 +60,30 @@ class Website(j.baseclasses.object_config_collection_testtools):
     
     
         server {
-          listen {website.port};    
-          include {{website.path_cfg_dir}}/locations/*.conf;
+          listen {{website.port}} ssl;    
+          include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
         }     
         
     {% else %}
     server {
-      listen {website.port};
+      listen {{website.port}};
 
       default_type text/html;
-      include {{website.path_cfg_dir}}/locations/*.conf;
+      include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
 
     }
     {% endif %}           
 
         """
 
-    def __init__(self, *args, **kwargs):
-        if j.core.myenv.platform_is_linux:
-            self.letsencrypt = True
-        else:
-            self.letsencrypt = False
 
     @property
     def path_cfg_dir(self):
-        return "%s/%s" % (self._parent._parent.path_cfg_dir, self.name)
+        return f"{self._parent._parent.path_cfg_dir}/servers"
 
     @property
     def path_cfg(self):
-        return "%s/website.conf" % (self.path_cfg_dir)
+        return f"{self.path_cfg_dir}/{self.name}.http.conf"
 
     @property
     def path_web(self):
