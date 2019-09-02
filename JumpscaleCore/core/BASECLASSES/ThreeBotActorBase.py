@@ -29,5 +29,6 @@ class ThreeBotActorBase(JSBase):
         assert "gedis_server" in kwargs
         self._gedis_server = kwargs["gedis_server"]
         self._threebot_server = self._gedis_server._threebot_server
-        self._bcdb_get = self._threebot_server.bcdb_get
-        self._rack_server = self._threebot_server._rack_server
+        if self._threebot_server:
+            self._bcdb_get = self._threebot_server.bcdb_get
+            self._rack_server = self._threebot_server._rack_server
