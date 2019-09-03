@@ -115,7 +115,7 @@ class MyWorkerProcess(j.baseclasses.object):
     def _job_get(self, id):
         deadline = j.data.time.epoch + 3
         while deadline > j.data.time.epoch:
-            res = self._job_get(id)
+            res = self.model_job.get(id, die=False)
             if res:
                 return res
         raise j.exceptions.JSBUG("job should always be there:%s" % id)
