@@ -55,9 +55,11 @@ def main(self):
     self.w1.stop()
 
     found = False
-    timeend = j.data.time.epoch + 10
+    timeend = j.data.time.epoch + 20
     while not found and j.data.time.epoch < timeend:
         found = self.w1.pid == 0
+        time.sleep(0.1)
+        self._log("waiting stop:%s" % self.w1.state)
 
     assert found
 

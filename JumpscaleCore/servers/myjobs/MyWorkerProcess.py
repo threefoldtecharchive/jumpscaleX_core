@@ -119,6 +119,7 @@ class MyWorkerProcess(j.baseclasses.object):
         self.data.current_job = 2147483647
         self.data.state = "waiting"
         self.data.save()
+        last_info_push = j.data.time.epoch
         while True:
             res = None
 
@@ -128,7 +129,6 @@ class MyWorkerProcess(j.baseclasses.object):
                     gevent.sleep(0.1)
                     self._log_debug("jobget")
             else:
-
                 res = self.queue_jobs_start.get(timeout=1)
 
             self.data = self.model_worker.get(self.data.id)
@@ -137,110 +137,132 @@ class MyWorkerProcess(j.baseclasses.object):
 
             if res == None:
                 self._log_info("queue request timeout, no data, continue", data=self.data)
-                self.data.last_update = j.data.time.epoch
-                self.data.current_job = 2147483647
-                self.data.state = "waiting"
-                self.data.save()
-
+                if j.data.time.epoch > last_info_push + 20:
+                    self.data.last_update = j.data.time.epoch
+                    self.data.current_job = 2147483647
+                    self.data.state = "waiting"
+                    self.data.save()
+                    last_info_push = j.data.time.epoch
             else:
                 self._log_debug("queue has data")
                 jobid = int(res)
 
-                self.data.last_update = j.data.time.epoch
-                self.data.current_job = jobid
-
                 job = self.model_job.get(obj_id=jobid, die=False)
+                skip = False
+                for dep_id in job.dependencies:
+                    job_deb = self.model_job.get(obj_id=dep_id, die=False)
+                    if job_deb.state in ["ERROR", "HALTED"]:
+                        job.state = job_deb.state
+                        job.result = "cannot run because dependency failed: %s" % job_deb.id
+                        job.error["dependency_failure"] = job_deb.id
+                        job.time_stop = j.data.time.epoch8_tmux.py
+                        job.save()
+                        skip = True
+                    elif job_deb.state not in ["OK"]:
+                        skip = True
+                        # put the job back at end of queue, it needs to be done could not do yet
+                        self.queue_jobs_start.put(job_deb.id)
 
-                if job == None:
-                    self._log_error("ERROR: job:%s not found" % jobid)
-                else:
-                    # now have job
-                    action = self.model_action.get(job.action_id, die=False)
-                    if action == None:
-                        raise j.exceptions.Base("ERROR: action:%s not found" % job.action_id)
-                    kwargs = job.kwargs  # j.data.serializers.json.loads(job.kwargs)
-                    args = job.args
-
+                if not skip:
                     self.data.last_update = j.data.time.epoch
-                    self.data.current_job = jobid  # set current jobid
-                    self.data.state = "busy"
-                    self.data.save()
+                    self.data.current_job = jobid
 
-                    if self.showout:
-                        self._log_info("execute", data=job)
+                    if job == None:
+                        self._log_error("ERROR: job:%s not found" % jobid)
+                    else:
+                        # now have job
+                        action = self.model_action.get(job.action_id, die=False)
+                        if action == None:
+                            raise j.exceptions.Base("ERROR: action:%s not found" % job.action_id)
+                        kwargs = job.kwargs  # j.data.serializers.json.loads(job.kwargs)
+                        args = job.args
 
-                    try:
-                        exec(action.code)
-                        # better not to use eval but the JSX coderunner?
-                        method = eval(action.methodname)
-                    except Exception as e:
-                        tb = sys.exc_info()[-1]
-                        logdict = j.core.tools.log(
-                            tb=tb, exception=e, msg="cannot compile action", data=action.code, stdout=self.showout
-                        )
+                        if job.dependencies != []:
+                            kwargs["job"] = job
 
-                        job.error = logdict
-                        job.state = "ERROR"
-                        job.time_stop = j.data.time.epoch
-                        job.save()
+                        self.data.last_update = j.data.time.epoch
+                        self.data.current_job = jobid  # set current jobid
+                        self.data.state = "busy"
+                        self.data.save()
 
-                        if self.debug:
-                            pudb.post_mortem(tb)
-
-                        if self.onetime:
-                            return
-                        continue
-
-                    try:
-                        res = deadline(job.timeout)(method)(*args, **kwargs)
-                    except BaseException as e:
-                        tb = sys.exc_info()[-1]
-                        if isinstance(e, gevent.Timeout):
-                            msg = "time out"
-                            e = j.exceptions.Base(msg)
-                        else:
-                            msg = "cannot execute action"
-                            job.time_stop = j.data.time.epoch
-                        logdict = j.core.tools.log(tb=tb, exception=e, msg=msg, data=action.code, stdout=self.showout)
-                        job.error = logdict
-                        job.state = "ERROR"
-
-                        job.save()
-
-                        if self.debug:
-                            pudb.post_mortem(tb)
-
-                        if self.onetime:
-                            return
-                        continue
-
-                    try:
-                        job.result = j.data.serializers.json.dumps(res)
-                    except Exception as e:
-                        job.error = (
-                            str(e) + "\nCOULD NOT SERIALIZE RESULT OF THE METHOD, make sure json can be used on result"
-                        )
-                        job.state = "ERROR"
-                        job.time_stop = j.data.time.epoch
-                        job.save()
                         if self.showout:
-                            self._log_error("ERROR:%s" % e, exception=e, data=job)
-                        if self.onetime:
-                            return
-                        continue
+                            self._log_info("execute", data=job)
 
-                    job.time_stop = j.data.time.epoch
-                    job.state = "OK"
+                        try:
+                            exec(action.code)
+                            # better not to use eval but the JSX coderunner?
+                            method = eval(action.methodname)
+                        except Exception as e:
+                            tb = sys.exc_info()[-1]
+                            logdict = j.core.tools.log(
+                                tb=tb, exception=e, msg="cannot compile action", data=action.code, stdout=self.showout
+                            )
 
-                    if self.showout:
-                        self._log("OK", data=job)
+                            job.error = logdict
+                            job.state = "ERROR"
+                            job.time_stop = j.data.time.epoch
+                            job.save()
 
-                    job.save()
+                            if self.debug:
+                                pudb.post_mortem(tb)
 
-                    self.data.state = "waiting"
-                    self.data.current_job = 2147483647
-                    self.data.last_update = j.data.time.epoch
-                    self.data.save()
+                            if self.onetime:
+                                return
+                            continue
+
+                        try:
+                            res = deadline(job.timeout)(method)(*args, **kwargs)
+                        except BaseException as e:
+                            tb = sys.exc_info()[-1]
+                            if isinstance(e, gevent.Timeout):
+                                msg = "time out"
+                                e = j.exceptions.Base(msg)
+                            else:
+                                msg = "cannot execute action"
+                                job.time_stop = j.data.time.epoch
+                            logdict = j.core.tools.log(
+                                tb=tb, exception=e, msg=msg, data=action.code, stdout=self.showout
+                            )
+                            job.error = logdict
+                            job.state = "ERROR"
+
+                            job.save()
+
+                            if self.debug:
+                                pudb.post_mortem(tb)
+
+                            if self.onetime:
+                                return
+                            continue
+
+                        try:
+                            job.result = j.data.serializers.json.dumps(res)
+                        except Exception as e:
+                            job.error = (
+                                str(e)
+                                + "\nCOULD NOT SERIALIZE RESULT OF THE METHOD, make sure json can be used on result"
+                            )
+                            job.state = "ERROR"
+                            job.time_stop = j.data.time.epoch
+                            job.save()
+                            if self.showout:
+                                self._log_error("ERROR:%s" % e, exception=e, data=job)
+                            if self.onetime:
+                                return
+                            continue
+
+                        job.time_stop = j.data.time.epoch
+                        job.state = "OK"
+
+                        if self.showout:
+                            self._log("OK", data=job)
+
+                        job.save()
+
+                        self.data.state = "waiting"
+                        self.data.current_job = 2147483647
+                        self.data.last_update = j.data.time.epoch
+                        self.data.save()
 
             gevent.sleep(0)
             if self.onetime:

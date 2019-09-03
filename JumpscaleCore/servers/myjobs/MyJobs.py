@@ -20,6 +20,8 @@ kwargs = (dict)
 result = (S)
 error = (dict)
 return_queues = (LS)
+#will not execute this one before others done
+dependencies = (LI)
 
 
 """
@@ -415,6 +417,7 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
         inprocess=False,
         return_queues=[],
         return_queues_reset=False,
+        dependencies=None,
         gevent=False,
         **kwargs,
     ):
@@ -463,6 +466,14 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
         job.category = category
         job.args = j.data.serializers.json.dumps(args)
         job.kwargs = j.data.serializers.json.dumps(kwargs)
+        if dependencies:
+            for dep in dependencies:
+                if isinstance(dep, j.data.schema._JSXObjectClass):
+                    job.dependencies.append(dep.id)
+                elif isinstance(dep, int):
+                    job.dependencies.append(dep)
+                else:
+                    raise j.exceptions.Input("only jsx obj (job) or int supported in dependencies")
         if not gevent:
             for qname in return_queues:
                 job.return_queues.append(qname)
