@@ -22,6 +22,7 @@ class WireGuard(j.baseclasses.object_config):
     key_public = "" (S) 
     network_private = "" (S)
     network_public = "" (S)
+    interface_name = "wg0" (S)
     port = 7777 (I)
     peers = (LI)
     """
@@ -113,7 +114,7 @@ class WireGuard(j.baseclasses.object_config):
                 peer["EndPoint"] = f"{peerobject.network_public}:{peerobject.port}"
             config += to_section("Peer", peer)
 
-        configpath = "/tmp/{self.interface}.conf"
+        configpath = f"/tmp/{self.interface_name}.conf"
         self.executor.file_write(configpath, config)
         rc, _, _ = self.executor.execute(f"wg show {self.interface_name}", die=False, timeout=None)
         if rc != 0:
@@ -124,14 +125,10 @@ class WireGuard(j.baseclasses.object_config):
             self.executor.execute(f"wg-quick strip {configpath} | wg setconf {self.interface_name} /dev/stdin", timeout=None)
 
 
-    @property
-    def interface_name(self):
-        return f"wg-{self.name}"
-
     def start(self):
         if self.executor.platformtype.platform_is_osx:
             command = "sudo wireguard-go utun9"
         else:
-            command = "wg-quick up {}".format(self.get_interface_name())
+            command = f"wg-quick up {self.interface_name}"
         self.executor.execute(command)
 
