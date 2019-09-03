@@ -112,6 +112,22 @@ class MyWorkerProcess(j.baseclasses.object):
         self.data.save()
         self._log_info("WORKER REMOVE SELF:%s" % self.data.id)
 
+    def _job_get(self, id):
+        deadline = j.data.time.epoch + 3
+        while deadline > j.data.time.epoch:
+            res = self._job_get(id)
+            if res:
+                return res
+        raise j.exceptions.JSBUG("job should always be there:%s" % id)
+
+    def _action_get(self, id):
+        deadline = j.data.time.epoch + 3
+        while deadline > j.data.time.epoch:
+            res = self.model_action.get(id, die=False)
+            if res:
+                return res
+        raise j.exceptions.JSBUG("job should always be there:%s" % id)
+
     def start(self):
         self._log_info("start", data=self.data)
         # initial waiting state
@@ -146,11 +162,10 @@ class MyWorkerProcess(j.baseclasses.object):
             else:
                 self._log_debug("queue has data")
                 jobid = int(res)
-
-                job = self.model_job.get(obj_id=jobid, die=False)
+                job = self._job_get(jobid)
                 skip = False
                 for dep_id in job.dependencies:
-                    job_deb = self.model_job.get(obj_id=dep_id, die=False)
+                    job_deb = self._job_get(dep_id)
                     if job_deb.state in ["ERROR", "HALTED"]:
                         job.state = job_deb.state
                         job.result = "cannot run because dependency failed: %s" % job_deb.id
@@ -169,11 +184,11 @@ class MyWorkerProcess(j.baseclasses.object):
 
                     if job == None:
                         self._log_error("ERROR: job:%s not found" % jobid)
+                        j.shell()
+                        w
                     else:
                         # now have job
-                        action = self.model_action.get(job.action_id, die=False)
-                        if action == None:
-                            raise j.exceptions.Base("ERROR: action:%s not found" % job.action_id)
+                        action = self.model_action.get(job.action_id)
                         kwargs = job.kwargs  # j.data.serializers.json.loads(job.kwargs)
                         args = job.args
 
