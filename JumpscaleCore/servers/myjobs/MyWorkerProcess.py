@@ -189,7 +189,7 @@ class MyWorkerProcess(j.baseclasses.object):
                         w
                     else:
                         # now have job
-                        action = self.model_action.get(job.action_id)
+                        action = self._action_get(job.action_id)
                         kwargs = job.kwargs  # j.data.serializers.json.loads(job.kwargs)
                         args = job.args
 
