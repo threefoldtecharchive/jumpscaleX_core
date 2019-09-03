@@ -88,8 +88,9 @@ class Application(object):
         self._debug = None
         self._systempid = None
         self._j.core.db_reset(self._j)
-        for obj in self.obj_interator:
-            obj._children = j.baseclasses.dict()
+
+        for obj in self.obj_iterator:
+            obj._children = self._j.baseclasses.dict()
             obj._obj_cache_reset()
             obj._obj_reset()
 
@@ -370,16 +371,16 @@ class Application(object):
     #         # sys.modules.pop(key)
 
     @property
-    def obj_interator(self):
+    def obj_iterator(self):
         """
         iterates over all loaded objects in kosmos space (which inherits of JSBase class)
         e.g.
-        objnames = [i._name for i in j.application.obj_interator]
+        objnames = [i._name for i in j.application.obj_iterator]
 
         :return:
         """
         for item in self._iterate_rootobj():
-            if isinstance(item, self.JSBaseClass):
+            if isinstance(item, self._j.baseclasses.object):
                 yield item
                 for item in item._children_recursive_get():
                     yield item
