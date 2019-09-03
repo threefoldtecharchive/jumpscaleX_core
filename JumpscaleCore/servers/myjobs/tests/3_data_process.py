@@ -5,7 +5,7 @@ from Jumpscale import j
 
 def main(self, start=True, count=20):
     """
-    kosmos 'j.servers.myjobs.test("data_process")'
+    kosmos -p 'j.servers.myjobs.test("data_process")'
     """
     if start:
         self.workers_tmux_start(4)

@@ -2,6 +2,10 @@ import gevent
 
 
 def main(self, count=100):
+    """
+    kosmos -p 'j.servers.myjobs.test("start")'
+    """
+
     def wait_1sec():
         gevent.sleep(1)
         return "OK"

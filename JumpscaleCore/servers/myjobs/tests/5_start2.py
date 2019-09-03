@@ -2,6 +2,9 @@ import gevent
 
 
 def main(self):
+    """
+    kosmos -p 'j.servers.myjobs.test("start2")'
+    """
 
     self.workers_subprocess_start()
 

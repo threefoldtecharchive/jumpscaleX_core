@@ -3,6 +3,10 @@ import gevent
 
 
 def main(self):
+    """
+    kosmos -p 'j.servers.myjobs.test("workers")'
+    """
+
     j.tools.logger.debug = True
 
     j.tools.logger.debug = True

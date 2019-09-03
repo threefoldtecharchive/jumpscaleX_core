@@ -3,6 +3,10 @@ import gevent
 
 def main(self):
 
+    """
+    kosmos -p 'j.servers.myjobs.test("wait")'
+    """
+
     self.reset()
 
     def add(a, b):
