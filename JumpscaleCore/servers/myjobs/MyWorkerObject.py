@@ -57,8 +57,10 @@ class MyWorkerObject(j.baseclasses.object_config):
         # j.builders.apps.corex.install()
         # j.servers.corex.default.start()  # starts corex at port 1500
         if not reset:
+            self.load()
             if self.state in ["WAITING", "BUSY"]:
                 if self.last_update > j.data.time.epoch - 30:
+                    self._log_info("no need to start worker:%s" % self.nr)
                     return
         cmd = j.servers.startupcmd.get(name="workers_%s" % self.nr)
         cmd.cmd_start = "j.servers.myjobs._worker_inprocess_start_from_tmux(%s)" % self.nr

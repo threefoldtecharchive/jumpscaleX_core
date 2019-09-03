@@ -268,6 +268,8 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
             worker_object = self._model.get(objid)
             worker_object._data_update(data2)
             worker_object.save()
+            if worker_object.name in self._children:
+                self._children[worker_object.name].load()  # make sure in mem the data is ok
             return True
         elif cat == "J":
             job = self.model_job.new(data=data)
@@ -488,9 +490,10 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
         if self._dataloop != None:
             self._dataloop.kill()
 
-        for w in self.find():
-            # look for the workers and ask for halt in nice way
-            w.stop(hard=reset)
+        if not reset:
+            for w in self.find(reload=True):
+                # look for the workers and ask for halt in nice way
+                w.stop(hard=reset)
 
         timeout_end = j.data.time.epoch + timeout
         while not reset and graceful and j.data.time.epoch < timeout_end:
@@ -515,6 +518,7 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
             self.model_action.destroy()
             self.model_job.destroy()
             self._model.destroy()
+            self._children_reset()
             # delete the queue
             while self.queue_jobs_start.get_nowait() != None:
                 pass
@@ -608,15 +612,12 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
                     continue
                 return queue
 
-    def test(self, name="basic", start=False):
+    def test(self, name="basic"):
         """
         it's run all tests
         kosmos 'j.servers.myjobs.test()'
 
         """
-        if start:
-            self._workers_gipc_start()
-
         self._test_run(name=name)
 
         self.stop(reset=True)

@@ -45,6 +45,10 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         self._check(jsconfig)
         return jsconfig
 
+    def _check_children(self):
+        if not self._cache_use:
+            assert self._children == {}
+
     def _check(self, jsconfig):
 
         # lets do some tests (maybe in future can be removed, but for now the safe bet)
@@ -158,7 +162,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         self._children = j.baseclasses.dict()
 
-    def find(self, **kwargs):
+    def find(self, reload=False, **kwargs):
         """
         :param kwargs: e.g. color="red",...
         :return: list of the config objects
@@ -173,6 +177,8 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 else:
                     match = False
             if match:
+                if reload:
+                    item.load()
                 res.append(item)
 
         for jsxobject in self._findData(**kwargs):

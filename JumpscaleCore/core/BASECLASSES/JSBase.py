@@ -50,7 +50,7 @@ class JSBase:
 
         self._protected = False
         self._parent = parent
-        self._children = JSDict()
+        self._children_reset()
         self._properties_ = None
         if "parent" in kwargs:
             kwargs.pop("parent")
@@ -62,6 +62,9 @@ class JSBase:
         self._init_factory(**kwargs)
         self._init_post(**kwargs)
         self._init_post_attr()
+
+    def _children_reset(self):
+        self._children = JSDict()
 
     @property
     def _properties(self):
