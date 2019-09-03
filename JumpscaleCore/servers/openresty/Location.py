@@ -35,6 +35,7 @@ class Location(j.baseclasses.object_config):
         ipaddr_dest = (S)
         port_dest = (I)
         type = "http,websocket" (E)  
+        scheme = "http,https,ws,wss" (E)
         
         @url = jumpscale.openresty.location_lapis
         name = ""

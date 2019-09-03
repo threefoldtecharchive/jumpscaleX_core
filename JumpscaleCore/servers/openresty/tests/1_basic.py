@@ -11,7 +11,7 @@ def main(self):
     server = j.servers.openresty.get("test")
     server.install(reset=True)
     server.configure()
-    website = server.websites.get("test2")
+    website = server.websites.get("test")
     website.ssl = False
     locations = website.locations.get("main")
 
@@ -24,12 +24,6 @@ def main(self):
     lapis_location.name = "apps"
     lapis_location.path_url = "/"
     lapis_location.path_location = f"{self._dirpath}/examples/lapis"
-
-    static_location = locations.locations_static.new()
-    static_location.name = "static"
-    static_location.path_url = "/static"
-    static_location.path_location = f"{self._dirpath}/examples"
-    static_location.use_jumpscale_weblibs = True
 
     locations.configure()
     website.configure()
