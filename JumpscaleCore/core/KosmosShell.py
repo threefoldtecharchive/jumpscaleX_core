@@ -131,6 +131,8 @@ def get_completions(self, document, complete_event):
 
 
 def get_doc_string(tbc, locals_, globals_):
+    j = KosmosShellConfig.j
+
     obj = eval_code(tbc, locals_=locals_, globals_=globals_)
     if not obj:
         raise j.exceptions.Value("cannot get docstring of %s, not an object" % tbc)
@@ -328,8 +330,8 @@ def ptconfig(repl):
 
     @repl.add_key_binding(Keys.ControlB)
     def _debug_event(event):
-        ' Pressing Control-B will insert "pdb.set_trace()" '
-        event.cli.current_buffer.insert_text("\nimport pdb; pdb.set_trace()\n")
+        import pudb
+        pudb.pm()
 
     # Custom key binding for some simple autocorrection while typing.
 
@@ -349,22 +351,33 @@ def ptconfig(repl):
     @repl.add_key_binding("?", filter=~IsInsideString(repl))
     def _docevent(event):
         b = event.cli.current_buffer
-        tbc = b.document.current_line_before_cursor.rstrip("(")
+        parent, member, _ = get_current_line(b.document)
+        member = member.rstrip('(')
 
         try:
-            d = get_doc_string(tbc, repl.get_locals(), repl.get_globals())
+            d = None
+            try:
+                # try get the class member itself first
+                d = get_doc_string(f"{parent}.__class__.{member}", repl.get_locals(), repl.get_globals())
+            except:
+                pass
+
+            if not d:
+                d = get_doc_string(f"{parent}.{member}", repl.get_locals(), repl.get_globals())
         except Exception as exc:
-            j.tools.logger._log_error(exc)
+            j.tools.logger._log_error(str(exc))
             repl.docstring_buffer.reset()
             return
 
-        repl.docstring_buffer.reset(document=Document(d, cursor_position=0))
+        if d:
+            repl.docstring_buffer.reset(document=Document(d, cursor_position=0))
 
     sidebar_visible = Condition(lambda: repl.show_sidebar)
 
     @repl.add_key_binding("c-p", filter=~sidebar_visible)
     def _logevent(event):
         LogPane.Show = not LogPane.Show
+
 
     class CustomPrompt(PromptStyle):
         """
@@ -406,7 +419,6 @@ def ptconfig(repl):
         yield from filter_completions_on_prefix(completions, prefix)
 
     repl._completer.__class__.get_completions = custom_get_completions
-
     j.core.tools.custom_log_printer = add_logs_to_pane
 
     parent_container = get_ptpython_parent_container(repl)
