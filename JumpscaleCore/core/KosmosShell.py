@@ -1,6 +1,9 @@
 import inspect
+import pudb
+import time
 import traceback
 
+from prompt_toolkit.application import get_app
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
 from prompt_toolkit.completion import Completion
@@ -326,12 +329,23 @@ def ptconfig(repl):
 
     repl.min_brightness = 0.3
 
-    # Add custom key binding for PDB.
 
-    @repl.add_key_binding(Keys.ControlB)
+    @repl.add_key_binding(Keys.ControlJ)
     def _debug_event(event):
-        import pudb
-        pudb.pm()
+        """
+        custom binding for pudb, to allow debugging a statement and also
+        post-mortem debugging in case of any exception
+        """
+        b = event.cli.current_buffer
+        app = get_app()
+        statements = b.document.text
+        if statements:
+            import linecache
+            linecache.cache['<string>'] = (len(statements), time.time(), statements.split('\n'), '<string>')
+            app.exit(pudb.runstatement(statements))
+            app.pre_run_callables.append(b.reset)
+        else:
+            pudb.pm()
 
     # Custom key binding for some simple autocorrection while typing.
 
