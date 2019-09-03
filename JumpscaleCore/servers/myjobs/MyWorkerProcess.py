@@ -103,8 +103,22 @@ class MyWorkerProcess(j.baseclasses.object):
         if action == "save":
             self.return_data("J", obj)
 
+    def stop(self):
+        self.data.state = "halted"
+        self.data.current_job = 2147483647
+        self.data.last_update = j.data.time.epoch
+        self.data.halt = False
+        self.data.pid = 0
+        self.data.save()
+        self._log_info("WORKER REMOVE SELF:%s" % self.data.id)
+
     def start(self):
         self._log_info("start", data=self.data)
+        # initial waiting state
+        self.data.last_update = j.data.time.epoch
+        self.data.current_job = 2147483647
+        self.data.state = "waiting"
+        self.data.save()
         while True:
             res = None
 
@@ -114,7 +128,8 @@ class MyWorkerProcess(j.baseclasses.object):
                     gevent.sleep(0.1)
                     self._log_debug("jobget")
             else:
-                res = self.queue_jobs_start.get(timeout=10)
+
+                res = self.queue_jobs_start.get(timeout=5)
 
             if res == None:
                 if self.showout:
@@ -128,9 +143,7 @@ class MyWorkerProcess(j.baseclasses.object):
 
                 # have to fetch this again because was waiting on queue
                 if self.data.halt:
-                    # model_worker.
-                    self._log_debug("WORKER REMOVE SELF:%s" % self.data.id)
-                    return
+                    return self.stop()
             else:
                 jobid = int(res)
 
@@ -138,10 +151,7 @@ class MyWorkerProcess(j.baseclasses.object):
                 self.data = self.model_worker.get(self.data.id)
 
                 if res == b"halt":
-                    self.data.state = "halted"
-                    self.data.current_job = 2147483647
-                    self.data.save()
-                    return
+                    return self.stop()
 
                 self.data.last_update = j.data.time.epoch
                 self.data.current_job = jobid

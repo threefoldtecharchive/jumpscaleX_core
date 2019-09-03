@@ -10,8 +10,6 @@ def main(self):
     kosmos -p 'j.servers.myjobs.test("tmux")'
     """
 
-    # TODO: why does it take so long to get the workers responding on waiting?
-
     self.stop(reset=True)  # will make sure all tmux are gone
     assert len(self.find()) == 0
 
@@ -51,5 +49,24 @@ def main(self):
     self.workers_tmux_start(2)
     # means the tmux did not restart as it should, because its functional
     assert j.data.time.epoch < start + 1
+
+    assert self.w1.state == "WAITING"
+
+    self.w1.stop()
+
+    found = False
+    timeend = j.data.time.epoch + 10
+    while not found and j.data.time.epoch < timeend:
+        found = self.w1.pid == 0
+
+    assert found
+
+    assert self.w1.nr == 1
+    assert self.w1.pid == 0
+    assert self.w1.state == "HALTED"
+
+    assert self.w2.nr == 2
+    assert self.w2.pid > 0
+    assert self.w2.state == "WAITING"
 
     print("TEST OK FOR TMUX")

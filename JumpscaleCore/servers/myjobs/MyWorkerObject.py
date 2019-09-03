@@ -42,6 +42,11 @@ class MyWorkerObject(j.baseclasses.object_config):
             if self.type in ["TMUX"]:
                 cmd = j.servers.startupcmd.get(name="workers_%s" % self.nr)
                 cmd.stop(force=True)
+            self.state = "HALTED"
+            self.pid = 0
+            self.current_job = 2147483647
+            self.halt = False
+            self.save()
 
     def _worker_subprocess_start(self):
         worker = gipc.start_process(target=MyWorkerProcess, kwargs={"worker_id": self._id})
