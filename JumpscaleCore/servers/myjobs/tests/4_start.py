@@ -14,7 +14,7 @@ def main(self, count=100):
     for x in range(count):
         ids.append(self.schedule(wait_1sec))
 
-    self.workers_nr_max = 100
+    self._workers_gipc_nr_max = 1
     self.workers_subprocess_start()
 
     res = self.results(ids, timeout=120)
