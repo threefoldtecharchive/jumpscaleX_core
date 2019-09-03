@@ -13,7 +13,8 @@ def main(self):
     def add(a, b):
         return a + b
 
-    jobid = self.schedule(add, 1, 2)
+    job = self.schedule(add, 1, 2)
+    jobid = job.id
     assert isinstance(jobid, int)
 
     # means work scheduled
@@ -34,8 +35,8 @@ def main(self):
     assert job.state == "OK"
     assert job.time_stop > 0
 
-    jobid = self.schedule(add, 3, 4)
-
+    job = self.schedule(add, 3, 4)
+    jobid = job.id
     self.worker_inprocess_start()
 
     res = self.results([jobid])

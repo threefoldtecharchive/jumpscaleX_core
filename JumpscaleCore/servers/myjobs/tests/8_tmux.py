@@ -39,7 +39,8 @@ def main(self):
     ids = []
     self._data_process_untill_empty()
     for x in range(4):
-        ids.append(j.servers.myjobs.schedule(wait_1sec))
+        job_sch = j.servers.myjobs.schedule(wait_1sec)
+        ids.append(job_sch.id)
 
     res = self.results(ids)
     for id in ids:

@@ -28,7 +28,8 @@ def main(self):
 
     assert error
 
-    job_id = self.schedule(add, 1, 2)
+    job = self.schedule(add, 1, 2)
+    job_id = job.id
 
     self._log_info("job id waiting for:%s" % job_id)
 

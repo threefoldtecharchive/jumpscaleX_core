@@ -14,7 +14,7 @@ def main(self):
     for x in range(40):
         self.schedule(wait_2sec)
 
-    gevent.joinall([self.dataloop, self.mainloop])
+    gevent.joinall([self._dataloop, self._mainloop_gipc])
 
     self.stop(reset=True)
 

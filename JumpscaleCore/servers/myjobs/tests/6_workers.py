@@ -14,7 +14,7 @@ def main(self):
     def reset():
         # kill leftovers from last time, if any
         self.reset()
-        self.init()
+        # self.init()
 
         jobs = self.model_job.find()
         assert len(jobs) == 0
@@ -35,8 +35,8 @@ def main(self):
     self.workers_tmux_start(4)
 
     # test the behaviour for 1 job in process, only gevent for data handling
-    jobid = self.schedule(add_error, 1, 2)
-
+    job_sch = self.schedule(add_error, 1, 2)
+    jobid = job_sch.id
     wait_2sec()
 
     job = self.model_job.get(jobid)
