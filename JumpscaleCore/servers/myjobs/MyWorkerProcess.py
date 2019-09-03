@@ -129,29 +129,22 @@ class MyWorkerProcess(j.baseclasses.object):
                     self._log_debug("jobget")
             else:
 
-                res = self.queue_jobs_start.get(timeout=5)
+                res = self.queue_jobs_start.get(timeout=1)
+
+            self.data = self.model_worker.get(self.data.id)
+            if self.data.halt or res == b"halt":
+                return self.stop()
 
             if res == None:
-                if self.showout:
-                    self._log_info("queue request timeout, no data, continue", data=self.data)
-
-                self.data = self.model_worker.get(self.data.id)
+                self._log_info("queue request timeout, no data, continue", data=self.data)
                 self.data.last_update = j.data.time.epoch
                 self.data.current_job = 2147483647
                 self.data.state = "waiting"
                 self.data.save()
 
-                # have to fetch this again because was waiting on queue
-                if self.data.halt:
-                    return self.stop()
             else:
+                self._log_debug("queue has data")
                 jobid = int(res)
-
-                # update worker has been active
-                self.data = self.model_worker.get(self.data.id)
-
-                if res == b"halt":
-                    return self.stop()
 
                 self.data.last_update = j.data.time.epoch
                 self.data.current_job = jobid
