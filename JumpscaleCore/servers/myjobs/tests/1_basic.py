@@ -19,7 +19,7 @@ def main(self):
     # means work scheduled
     assert self.scheduled_ids == [jobid]
 
-    self.worker_start(onetime=True)
+    self.worker_inprocess_start()
     assert self.scheduled_ids == [jobid]
 
     res = self.results()
@@ -36,7 +36,7 @@ def main(self):
 
     jobid = self.schedule(add, 3, 4)
 
-    self.worker_start(onetime=True)
+    self.worker_inprocess_start()
 
     res = self.results([jobid])
     v = [i for i in res.values()]
@@ -44,6 +44,6 @@ def main(self):
 
     print(res)
 
-    self.halt(reset=True)
+    self.stop(reset=False)
 
     print("TEST OK")

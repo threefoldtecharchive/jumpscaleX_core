@@ -27,7 +27,7 @@ def main(self):
     for x in range(10):
         ids.append(self.schedule(add, 1, 2, return_queues=["q2"], return_queues_reset=True))
 
-    self.start(subprocess=True)
+    self.workers_subprocess_start()
 
     q = self.wait(queue_name="q2", size=11, timeout=5)
     assert q is None

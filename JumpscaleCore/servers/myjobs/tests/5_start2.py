@@ -3,7 +3,7 @@ import gevent
 
 def main(self):
 
-    self.start()
+    self.workers_subprocess_start()
 
     def wait_2sec():
         gevent.sleep(2)
@@ -13,6 +13,6 @@ def main(self):
 
     gevent.joinall([self.dataloop, self.mainloop])
 
-    self.halt(reset=True)
+    self.stop(reset=True)
 
     print("TEST OK")

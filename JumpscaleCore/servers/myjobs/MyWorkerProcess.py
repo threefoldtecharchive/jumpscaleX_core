@@ -4,6 +4,7 @@ import pudb
 import sys
 import gevent
 import signal
+import os
 
 
 def deadline(timeout, *args):
@@ -20,7 +21,7 @@ def deadline(timeout, *args):
     return decorate
 
 
-class MyWorker(j.baseclasses.object):
+class MyWorkerProcess(j.baseclasses.object):
     def _init(self, worker_id=None, onetime=False, showout=True, debug=False):
         """
         :return:
@@ -52,13 +53,14 @@ class MyWorker(j.baseclasses.object):
         self.queue_return = j.clients.redis.queue_get(redisclient=redisclient, key="queue:jobs:return", fromcache=False)
 
         # test we are using the right redis client
-        # assert self.queue_jobs_start._db_.source == "worker"
-        # assert self.queue_return._db_.source == "worker"
+        assert self.queue_jobs_start._db_.source == "worker"
+        assert self.queue_return._db_.source == "worker"
 
         j.errorhandler.handlers.append(self.error_handler)
 
         storclient = j.clients.rdb.client_get(redisclient=redisclient)
-        # assert storclient._redis.source == "worker"
+        # important, test we're using the right redis client
+        assert storclient._redis.source == "worker"
 
         self.bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
         self.model_job = self.bcdb.model_get(url="jumpscale.myjobs.job")
@@ -76,11 +78,13 @@ class MyWorker(j.baseclasses.object):
         self.data.state = "new"
         self.data.current_job = 2147483647  # means nil
         self.data.id = worker_id
+        self.data.pid = os.getpid()
         self.data.save()  # save in bcdb will not happen because readonly is True, it will trigger the triggers
 
         self.start()
 
     def return_data(self, cat, obj):
+        # self._log("return data", data=obj)
         data = [cat, obj.id, obj._json]
         data = j.data.serializers.json.dumps(data)
         self.queue_return.put(data)
@@ -100,6 +104,7 @@ class MyWorker(j.baseclasses.object):
             self.return_data("J", obj)
 
     def start(self):
+        self._log_info("start", data=self.data)
         while True:
             res = None
 
@@ -107,16 +112,24 @@ class MyWorker(j.baseclasses.object):
                 while not res:
                     res = self.queue_jobs_start.get(timeout=0)
                     gevent.sleep(0.1)
-                    print("jobget")
+                    self._log_debug("jobget")
             else:
                 res = self.queue_jobs_start.get(timeout=10)
+
             if res == None:
                 if self.showout:
-                    self._log_info("queue request timeout, no data, continue")
+                    self._log_info("queue request timeout, no data, continue", data=self.data)
+
+                self.data = self.model_worker.get(self.data.id)
+                self.data.last_update = j.data.time.epoch
+                self.data.current_job = 2147483647
+                self.data.state = "waiting"
+                self.data.save()
+
                 # have to fetch this again because was waiting on queue
                 if self.data.halt:
                     # model_worker.
-                    print("WORKER REMOVE SELF:%s" % self.data.id)
+                    self._log_debug("WORKER REMOVE SELF:%s" % self.data.id)
                     return
             else:
                 jobid = int(res)
@@ -125,10 +138,13 @@ class MyWorker(j.baseclasses.object):
                 self.data = self.model_worker.get(self.data.id)
 
                 if res == b"halt":
+                    self.data.state = "halted"
+                    self.data.current_job = 2147483647
+                    self.data.save()
                     return
+
                 self.data.last_update = j.data.time.epoch
                 self.data.current_job = jobid
-                self.data.save()
 
                 job = self.model_job.get(obj_id=jobid, die=False)
 
@@ -144,6 +160,7 @@ class MyWorker(j.baseclasses.object):
 
                     self.data.last_update = j.data.time.epoch
                     self.data.current_job = jobid  # set current jobid
+                    self.data.state = "busy"
                     self.data.save()
 
                     if self.showout:
@@ -217,9 +234,13 @@ class MyWorker(j.baseclasses.object):
 
                     job.save()
 
+                    self.data.state = "waiting"
                     self.data.current_job = 2147483647
+                    self.data.last_update = j.data.time.epoch
                     self.data.save()
 
             gevent.sleep(0)
             if self.onetime:
+                self.data.state = "halted"
+                self.data.save()
                 return

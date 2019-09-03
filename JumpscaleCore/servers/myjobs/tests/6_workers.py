@@ -28,7 +28,7 @@ def main(self):
 
     reset()
 
-    cmds = self.workers_start_tmux()
+    self.workers_tmux_start(4)
 
     # test the behaviour for 1 job in process, only gevent for data handling
     jobid = self.schedule(add_error, 1, 2)
@@ -53,7 +53,7 @@ def main(self):
 
     # lets start from scratch, now we know the super basic stuff is working
     reset()
-    self.workers_start_tmux()
+    self.workers_tmux_start(4)
 
     for x in range(10):
         self.schedule(add, 1, 2)
@@ -156,6 +156,6 @@ def main(self):
     jobs = [job for job in jobs if job.state == "OK"]
     assert len(jobs) == 20
 
-    self.halt(reset=True)
+    self.stop(reset=True)
 
     print("TEST OK")

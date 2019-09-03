@@ -794,7 +794,7 @@ class JSBase:
                         item = item.rstrip()
                         if name in ["data", "properties"]:
                             try:
-                                v = j.core.tools._data_serializer_safe(getattr(self, item)).rstrip()
+                                v = j.core._data_serializer_safe(getattr(self, item)).rstrip()
                                 if "\n" in v:
                                     # v = j.core.tools.text_indent(content=v, nspaces=4)
                                     v = "\n".join(v.split("\n")[:1])

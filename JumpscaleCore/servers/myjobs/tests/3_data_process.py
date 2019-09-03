@@ -4,8 +4,11 @@ from Jumpscale import j
 
 
 def main(self, start=True, count=20):
+    """
+    kosmos 'j.servers.myjobs.test("data_process")'
+    """
     if start:
-        self.workers_start_tmux(4)
+        self.workers_tmux_start(4)
 
     def wait_1sec():
         gevent.sleep(1)

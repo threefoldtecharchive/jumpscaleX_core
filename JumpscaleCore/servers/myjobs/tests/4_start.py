@@ -11,7 +11,7 @@ def main(self, count=100):
         ids.append(self.schedule(wait_1sec))
 
     self.workers_nr_max = 100
-    self.start(subprocess=True)
+    self.workers_subprocess_start()
 
     res = self.results(ids, timeout=120)
 

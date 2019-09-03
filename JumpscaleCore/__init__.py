@@ -55,7 +55,7 @@ from .core.InstallTools import Tools
 from .core.InstallTools import RedisTools
 
 from .core.InstallTools import MyEnv
-
+import yaml
 
 MyEnv.init()
 # TODO: there is something not right we get different version of this class, this should be like a singleton !!!
@@ -87,6 +87,35 @@ class Core:
             else:
                 self._isSandbox = False
         return self._isSandbox
+
+    @staticmethod
+    def _data_serializer_safe(data):
+        if isinstance(data, dict):
+            data = data.copy()  # important to have a shallow copy of data so we don't change original
+            for key in ["passwd", "password", "secret"]:
+                if key in data:
+                    data[key] = "***"
+        elif isinstance(data, int) or isinstance(data, str) or isinstance(data, list):
+            return str(data)
+        elif isinstance(data, j.baseclasses.object_config):
+            return str(data._data)
+        elif isinstance(data, j.baseclasses.object_config_collection):
+            return "collection of: %s" % data._model._schema.url
+        elif isinstance(data, j.data.schema._JSXObjectClass):
+            data = str(data)
+        elif isinstance(data, j.baseclasses.object):
+            # if hasattr(data,"data"):
+            #     data = data.data
+            return "jumpscale object of category: %s" % data._name
+
+        try:
+            serialized = yaml.dump(data, default_flow_style=False, default_style="", indent=4, line_break="\n")
+        except:
+            j.shell()
+            w
+            serialized = "CANNOT SERIALIZE CORE"
+        res = Tools.text_replace(content=serialized, ignorecolors=True)
+        return res
 
 
 from .core.KosmosShell import *
@@ -190,6 +219,8 @@ j.core.redistools = RedisTools
 j.core.installer_base = BaseInstaller
 j.core.installer_jumpscale = JumpscaleInstaller()
 j.core.tools = Tools
+
+j.core.tools._data_serializer_safe = j.core._data_serializer_safe
 
 j.core.profileStart = profileStart
 j.core.profileStop = profileStop
