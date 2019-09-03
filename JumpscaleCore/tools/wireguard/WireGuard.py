@@ -4,6 +4,7 @@ from io import StringIO
 
 def to_section(section, data):
     config = ConfigParser()
+    config.optionxform = str
     config.add_section(section)
     for key, value in data.items():
         config.set(section, key, str(value))
@@ -112,20 +113,20 @@ class WireGuard(j.baseclasses.object_config):
                 peer["EndPoint"] = f"{peerobject.network_public}:{peerobject.port}"
             config += to_section("Peer", peer)
 
-        configpath = "/tmp/{}.conf".format(self.interface_name)
+        configpath = "/tmp/{self.interface}.conf"
         self.executor.file_write(configpath, config)
-        rc, _, _ = self.executor.execute("wg show {}".format(self.interface_name), die=False, timeout=None)
+        rc, _, _ = self.executor.execute(f"wg show {self.interface_name}", die=False, timeout=None)
         if rc != 0:
             # interface is not up let's bring it up
-            self.executor.execute("wg-quick up {}".format(configpath), timeout=None)
+            self.executor.execute(f"wg-quick up {configpath}", timeout=None)
         else:
             # let's update config path
-            self.executor.execute("wg-quick strip {} | wg setconf {} /dev/stdin".format(configpath, self.interface_name), timeout=None)
+            self.executor.execute(f"wg-quick strip {configpath} | wg setconf {self.interface_name} /dev/stdin", timeout=None)
 
 
     @property
     def interface_name(self):
-        return "wg-{}".format(self.name)
+        return f"wg-{self.name}"
 
     def start(self):
         if self.executor.platformtype.platform_is_osx:

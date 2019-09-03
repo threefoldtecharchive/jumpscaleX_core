@@ -32,7 +32,7 @@ class ExecutorSSH(ExecutorBase):
 
     @property
     def uid(self):
-        return self.sshclient._id
+        return self.sshclient.uid
 
     @property
     def config_msgpack(self):

@@ -1,6 +1,6 @@
 from Jumpscale import j
 
-from .WGBase import WireGuard
+from .WireGuard import WireGuard
 
 
 class WGFactory(j.baseclasses.object_config_collection_testtools):
