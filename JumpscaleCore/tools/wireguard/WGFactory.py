@@ -28,6 +28,7 @@ class WGFactory(j.baseclasses.object_config_collection_testtools):
         print("Configuring server")
         wgs = self.get(name="test5", sshclient_name="do", network_private="10.5.0.1/24")
         wgs.sshclient_name = "do"
+        wgs.interface_name = "wg-test"
         wgs.network_private = "10.5.0.1/24"
         wgs.network_public = wgs.executor.sshclient.addr
         wgs.save()
@@ -37,6 +38,7 @@ class WGFactory(j.baseclasses.object_config_collection_testtools):
         wg = self.get(name="local", sshclient_name="myhost")
         wg.network_private = "10.5.0.2/24"
         wg.port = 7778
+        wg.interface_name = "wg-test"
         wg.peer_add(wgs)
         wg.save()
 

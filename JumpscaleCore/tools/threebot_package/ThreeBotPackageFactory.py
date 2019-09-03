@@ -9,12 +9,12 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
 
     """
 
-    __jslocation__ = "j.tools.threebotpackage"
+    __jslocation__ = "j.tools.threebot_packages"
     _CHILDCLASS = ThreeBotPackage
 
     def test(self):
         """
-        kosmos -p 'j.tools.threebotpackage.test()'
+        kosmos -p 'j.tools.threebot_packages.test()'
         """
 
         wg = self.get(
