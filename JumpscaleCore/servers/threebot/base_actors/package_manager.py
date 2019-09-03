@@ -27,9 +27,10 @@ class package_manager(j.baseclasses.threebot_actor):
 
         if git_url:
 
-            package = j.tools.threebotpackage.get(name=name, giturl=git_url, threebot_server_name=threebot_server_name)
+            package = j.tools.threebot_packages.get(
+                name=name, giturl=git_url, threebot_server_name=threebot_server_name)
         elif path:
-            package = j.tools.threebotpackage.get(name=name, path=path, threebot_server_name=threebot_server_name)
+            package = j.tools.threebot_packages.get(name=name, path=path, threebot_server_name=threebot_server_name)
         else:
             raise j.exceptions.Input("need to have git_url or path to package")
 
@@ -43,10 +44,10 @@ class package_manager(j.baseclasses.threebot_actor):
         name = ""
         ```
         """
-        if not j.tools.threebotpackage.exists(name):
+        if not j.tools.threebot_packages.exists(name):
             return
 
-        package = j.tools.threebotpackage.get(name)
+        package = j.tools.threebot_packages.get(name)
         package.uninstall()
         package.delete()
 
@@ -56,10 +57,10 @@ class package_manager(j.baseclasses.threebot_actor):
         name = ""
         ```
         """
-        if not j.tools.threebotpackage.exists(name):
+        if not j.tools.threebot_packages.exists(name):
             raise j.exceptions.NotFound("package not found", data={"name": name})
 
-        package = j.tools.threebotpackage.get(name)
+        package = j.tools.threebot_packages.get(name)
         package.stop()
 
     def package_start(self, name):
@@ -68,8 +69,8 @@ class package_manager(j.baseclasses.threebot_actor):
         name = ""
         ```
         """
-        if not j.tools.threebotpackage.exists(name):
+        if not j.tools.threebot_packages.exists(name):
             raise j.exceptions.NotFound("package not found", data={"name": name})
 
-        package = j.tools.threebotpackage.get(name)
+        package = j.tools.threebot_packages.get(name)
         package.start()
