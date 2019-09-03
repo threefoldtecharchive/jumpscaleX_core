@@ -419,6 +419,7 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
         return_queues_reset=False,
         dependencies=None,
         gevent=False,
+        wait=False,
         **kwargs,
     ):
         """
@@ -490,8 +491,21 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
 
         if job.id not in self.scheduled_ids:
             self.scheduled_ids.append(job.id)
+        if timeout == 0:
+            timeout = 60 * 20  # 20min
+        deadline = j.data.time.epoch + timeout
+        while wait and j.data.time.epoch < deadline:
+            # very ugly code, this needs to be done better !!! we can use the return queues or so
+            if job.state in ["OK", "ERROR", "HALTED"]:
+                return job
+            time.sleep(0.1)
 
-        return job.id
+        if wait:
+            if job.state in ["ERROR"]:
+                raise j.exceptions.Base("job failed", data=job)
+            raise j.exceptions.Base("job timeout or halted", data=job)
+
+        return job  # TODO: changed to return job more logical prob breaks stuff
 
     def stop(self, graceful=True, reset=True, timeout=60):
 

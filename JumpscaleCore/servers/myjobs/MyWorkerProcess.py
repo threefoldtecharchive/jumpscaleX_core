@@ -118,6 +118,7 @@ class MyWorkerProcess(j.baseclasses.object):
             res = self.model_job.get(id, die=False)
             if res:
                 return res
+        j.shell()
         raise j.exceptions.JSBUG("job should always be there:%s" % id)
 
     def _action_get(self, id):
