@@ -46,6 +46,18 @@ def main(self, reset=False):
 
     assert job3.state == "OK"
 
+    job1 = self.schedule(do_ok, wait_do=1)
+    job2 = self.schedule(do_error, wait_do=1)
+    job3 = self.schedule(do_ok, dependencies=[job1, job2], wait=True, timeout=5, die=False)
+
+    job2 = self.model_job.get(job2.id)
+    job1 = self.model_job.get(job1.id)
+
+    assert job3.state == "ERROR"
+    assert job3.error["dependency_failure"] == job2.id
+    assert job2.state == "ERROR"
+    assert job1.state == "OK"
+
     print("TEST OK FOR dependencies")
 
     # j.application.stop()

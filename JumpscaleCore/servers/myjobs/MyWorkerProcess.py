@@ -174,6 +174,7 @@ class MyWorkerProcess(j.baseclasses.object):
                 jobid = int(res)
                 job = self._job_get(jobid)
                 skip = False
+                relaunch = False
                 jobdata = job._ddict
                 for dep_id in job.dependencies:
                     job_deb = self._job_get(dep_id)
@@ -187,7 +188,11 @@ class MyWorkerProcess(j.baseclasses.object):
                     elif job_deb.state not in ["OK"]:
                         skip = True
                         # put the job back at end of queue, it needs to be done could not do yet
-                        self.queue_jobs_start.put(job.id)
+                        if job_deb.state in ["NEW"]:
+                            relaunch = True
+
+                if skip and relaunch:
+                    self.queue_jobs_start.put(job.id)
 
                 if not skip:
                     self.data.last_update = j.data.time.epoch

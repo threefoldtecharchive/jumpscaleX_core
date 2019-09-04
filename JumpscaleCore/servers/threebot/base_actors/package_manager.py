@@ -28,7 +28,8 @@ class package_manager(j.baseclasses.threebot_actor):
         if git_url:
 
             package = j.tools.threebot_packages.get(
-                name=name, giturl=git_url, threebot_server_name=threebot_server_name)
+                name=name, giturl=git_url, threebot_server_name=threebot_server_name
+            )
         elif path:
             package = j.tools.threebot_packages.get(name=name, path=path, threebot_server_name=threebot_server_name)
         else:

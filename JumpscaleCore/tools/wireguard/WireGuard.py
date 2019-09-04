@@ -2,13 +2,14 @@ from Jumpscale import j
 from configparser import ConfigParser
 from io import StringIO
 
+
 def to_section(section, data):
     config = ConfigParser()
     config.optionxform = str
     config.add_section(section)
     for key, value in data.items():
         config.set(section, key, str(value))
-    buffer=  StringIO()
+    buffer = StringIO()
     config.write(buffer)
     return buffer.getvalue()
 
@@ -26,6 +27,7 @@ class WireGuard(j.baseclasses.object_config):
     port = 7777 (I)
     peers = (LI)
     """
+
     def _init(self, **kwargs):
         self._executor = None
 
@@ -41,7 +43,6 @@ class WireGuard(j.baseclasses.object_config):
             rc, publickey, err = self.executor.execute("echo {} | wg pubkey".format(privatekey.strip()), showout=False)
             self.key_public = publickey.strip()
         return self.key_private_, self.key_public
-
 
     def save(self):
         if not self.key_private_ or not self.key_public:
@@ -99,17 +100,18 @@ class WireGuard(j.baseclasses.object_config):
         config = ConfigParser()
         config.add_section("Interface")
         private, _ = self.key_pair_get()
-        interface = {"Address": self.network_private,
-                "SaveConfig": "true",
-                "PrivateKey": private,
-                "ListenPort": str(self.port)}
+        interface = {
+            "Address": self.network_private,
+            "SaveConfig": "true",
+            "PrivateKey": private,
+            "ListenPort": str(self.port),
+        }
 
         config = ""
         config += to_section("Interface", interface)
         for peerobject in self.peers_objects:
             _, publickey = peerobject.key_pair_get()
-            peer = {"PublicKey": publickey,
-                    "AllowedIPs": peerobject.network_private}
+            peer = {"PublicKey": publickey, "AllowedIPs": peerobject.network_private}
             if peerobject.network_public:
                 peer["EndPoint"] = f"{peerobject.network_public}:{peerobject.port}"
             config += to_section("Peer", peer)
@@ -122,8 +124,9 @@ class WireGuard(j.baseclasses.object_config):
             self.executor.execute(f"wg-quick up {configpath}", timeout=None)
         else:
             # let's update config path
-            self.executor.execute(f"wg-quick strip {configpath} | wg setconf {self.interface_name} /dev/stdin", timeout=None)
-
+            self.executor.execute(
+                f"wg-quick strip {configpath} | wg setconf {self.interface_name} /dev/stdin", timeout=None
+            )
 
     def start(self):
         if self.executor.platformtype.platform_is_osx:
@@ -131,4 +134,3 @@ class WireGuard(j.baseclasses.object_config):
         else:
             command = f"wg-quick up {self.interface_name}"
         self.executor.execute(command)
-
