@@ -65,7 +65,9 @@ class ThreeBotServer(j.baseclasses.object_config):
     def zdb(self):
         if not self._zdb:
             self._zdb = j.servers.zdb.get(
-                name=f"{self.name}_zdb_threebot", adminsecret_=self.adminsecret_, executor=self.executor
+                name=f"{self.name}_zdb_threebot",
+                adminsecret_=self.adminsecret_,
+                executor=self.executor,
             )
         return self._zdb
 
@@ -172,7 +174,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             startup.executor = self.executor
             startup.interpreter = "python"
             startup.timeout = 60
-            startup.ports = [8900, 4444, 8090]
+            startup.ports = [8901, 4444, 8090]
             self._startup_cmd = startup
         return self._startup_cmd
 
