@@ -65,9 +65,7 @@ class ThreeBotServer(j.baseclasses.object_config):
     def zdb(self):
         if not self._zdb:
             self._zdb = j.servers.zdb.get(
-                name=f"{self.name}_zdb_threebot",
-                adminsecret_=self.adminsecret_,
-                executor=self.executor,
+                name=f"{self.name}_zdb_threebot", adminsecret_=self.adminsecret_, executor=self.executor
             )
         return self._zdb
 

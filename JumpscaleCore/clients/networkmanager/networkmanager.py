@@ -1,5 +1,6 @@
 from Jumpscale import j
 
+
 class NetManagerFactory:
     __jslocation__ = "j.clients.netmanager"
 
@@ -39,7 +40,7 @@ class NetworkManagerClient:
             localendpoint.save()
 
             wg.peer_add(localendpoint)
-       
+
         wg.save()
         try:
             wg.configure()
@@ -47,4 +48,3 @@ class NetworkManagerClient:
             wg.delete()
             self._manager.network_peer_remove(networkname, hostname)
             raise
-

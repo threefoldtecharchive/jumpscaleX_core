@@ -128,7 +128,7 @@ class FILE(j.data.bcdb._BCDBModelClass):
         :return: file object
         """
         path = j.sal.fs.pathClean(path)
-        file = self.get_by_name(name=path, die=not create) # die if create=False and file not found
+        file = self.get_by_name(name=path, die=not create)  # die if create=False and file not found
 
         # file not found, & create=True
         if not file:
