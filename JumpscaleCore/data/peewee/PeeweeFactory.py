@@ -57,7 +57,7 @@ class PeeweeFactory(j.baseclasses.object):
         :return:
         """
 
-        j.builders.db.postgres.start()
+        j.builders.db.psql.start()
         cl = j.clients.postgres.db_client_get()
         cl.db_create("pewee_test")
         db = self.db_postgresql_get()
