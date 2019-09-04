@@ -651,12 +651,27 @@ class SystemFS(j.baseclasses.object):
         for item in items:
             self.unlink(item)
 
-    def _listInDir(self, path, followSymlinks=True):
+    def _listInDir(self, path, listSymlinks=True):
         """returns array with dirs & files in directory
         @param path: string (Directory path to list contents under)
         """
         names = os.listdir(path)
+        if not listSymlinks:
+            sym_links = self._list_sym_links(path)
+            if sym_links:
+                for link in sym_links:
+                    if link in names:
+                        names.remove(link)
         return names
+
+    def _list_sym_links(self, path):
+        sym_links = []
+        for name in os.listdir(path):
+            if name not in (os.curdir, os.pardir):
+                full = os.path.join(path, name)
+                if os.path.islink(full):
+                    sym_links.append(name)
+        return sym_links
 
     @path_check(path={"required", "replace", "exists", "dir"})
     def listFilesInDir(
@@ -777,7 +792,7 @@ class SystemFS(j.baseclasses.object):
         # 2. `sensitive`: case-sensitive comparison
         # 3. `insensitive`: case-insensitive comparison
         """
-        dircontent = self._listInDir(path)
+        dircontent = self._listInDir(path, listSymlinks=listSymlinks)
         filesreturn = []
 
         if case_sensitivity.lower() == "sensitive":
