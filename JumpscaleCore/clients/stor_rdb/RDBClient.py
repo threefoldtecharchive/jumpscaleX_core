@@ -21,7 +21,10 @@ class RDBClient(j.baseclasses.object_config):
         """
         is connection to RDB
         """
-        self._redis = j.clients.redis.get()
+        if "redisclient" in kwargs:
+            self._redis = kwargs["redisclient"]
+        else:
+            self._redis = j.clients.redis.get()
         self.type = self.type
         self.nsname = self.nsname
         self._logger_enable()

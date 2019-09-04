@@ -228,6 +228,8 @@ class JSXObject(j.baseclasses.object):
         return j.data.serializers.msgpack.dumps(self._ddict)
 
     def __eq__(self, val):
+        if isinstance(val, str) or isinstance(val, int) or isinstance(val, float) or isinstance(val, set):
+            return False
         if not isinstance(val, JSXObject):
             tt = j.data.types.get("jsxobject", self._schema.url)
             val = tt.clean(val)

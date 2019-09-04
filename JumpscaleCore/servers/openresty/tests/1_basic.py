@@ -13,6 +13,6 @@ def main(self):
     website = server.websites.get("test2")
     website.configure()
 
-    website.locations.get("test")
+    website.locations.get("test")k
 
     server.start()
