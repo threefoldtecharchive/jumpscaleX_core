@@ -14,7 +14,6 @@ class WGFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.tools.wireguard"
     _CHILDCLASS = WireGuard
 
-
     def get_by_id(self, id):
         data = self._model.get(id)
         return self._new(data.name, data)
@@ -53,4 +52,3 @@ class WGFactory(j.baseclasses.object_config_collection_testtools):
         print("Install client")
         wg.install()
         wg.configure()
-

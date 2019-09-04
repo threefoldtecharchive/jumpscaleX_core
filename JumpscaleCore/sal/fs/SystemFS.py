@@ -651,12 +651,27 @@ class SystemFS(j.baseclasses.object):
         for item in items:
             self.unlink(item)
 
-    def _listInDir(self, path, followSymlinks=True):
+    def _listInDir(self, path, listSymlinks=True):
         """returns array with dirs & files in directory
         @param path: string (Directory path to list contents under)
         """
         names = os.listdir(path)
+        if not listSymlinks:
+            sym_links = self._list_sym_links(path)
+            if sym_links:
+                for link in sym_links:
+                    if link in names:
+                        names.remove(link)
         return names
+
+    def _list_sym_links(self, path):
+        sym_links = []
+        for name in os.listdir(path):
+            if name not in (os.curdir, os.pardir):
+                full = os.path.join(path, name)
+                if os.path.islink(full):
+                    sym_links.append(name)
+        return sym_links
 
     @path_check(path={"required", "replace", "exists", "dir"})
     def listFilesInDir(
@@ -777,7 +792,25 @@ class SystemFS(j.baseclasses.object):
         # 2. `sensitive`: case-sensitive comparison
         # 3. `insensitive`: case-insensitive comparison
         """
-        dircontent = self._listInDir(path)
+
+        def filter_include(fullpath):
+            include = False
+            if (filter is None) or matcher(direntry, filter):
+                if (minmtime is not None) or (maxmtime is not None):
+                    mymtime = os.stat(fullpath)[ST_MTIME]
+                    if (minmtime is None) or (mymtime > minmtime):
+                        if (maxmtime is None) or (mymtime < maxmtime):
+                            include = True
+                else:
+                    include = True
+                if include:
+                    if exclude != []:
+                        for excludeItem in exclude:
+                            if matcher(direntry, excludeItem):
+                                include = False
+            return include
+
+        dircontent = self._listInDir(path, listSymlinks=listSymlinks)
         filesreturn = []
 
         if case_sensitivity.lower() == "sensitive":
@@ -801,26 +834,13 @@ class SystemFS(j.baseclasses.object):
                     fullpath = self.readLink(fullpath)
 
             if self.isFile(fullpath) and "f" in type:
-                includeFile = False
-                if (filter is None) or matcher(direntry, filter):
-                    if (minmtime is not None) or (maxmtime is not None):
-                        mymtime = os.stat(fullpath)[ST_MTIME]
-                        if (minmtime is None) or (mymtime > minmtime):
-                            if (maxmtime is None) or (mymtime < maxmtime):
-                                includeFile = True
-                    else:
-                        includeFile = True
-                if includeFile:
-                    if exclude != []:
-                        for excludeItem in exclude:
-                            if matcher(direntry, excludeItem):
-                                includeFile = False
-                    if includeFile:
-                        filesreturn.append(fullpath)
+                if filter_include(fullpath):
+                    filesreturn.append(fullpath)
             elif self.isDir(fullpath):
                 if "d" in type:
                     # if not(listSymlinks==False and self.isLink(fullpath)):
-                    filesreturn.append(fullpath)
+                    if filter_include(fullpath):
+                        filesreturn.append(fullpath)
                 if recursive:
                     newdepth = depth
                     if newdepth is not None and newdepth != 0:

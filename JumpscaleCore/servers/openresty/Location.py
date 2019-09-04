@@ -23,25 +23,25 @@ class Location(j.baseclasses.object_config):
         locations_proxy = (LO) !jumpscale.openresty.location_proxy
         locations_lapis = (LO) !jumpscale.openresty.location_lapis
         locations_custom = (LO) !jumpscale.openresty.location_custom
-        
+
         @url = jumpscale.openresty.location_static
         name = "" (S)
         path_url = "/"
         path_location = ""
         use_jumpscale_weblibs = false (B)
-        
+
         @url = jumpscale.openresty.location_proxy
         name = "" (S)
         ipaddr_dest = (S)
         port_dest = (I)
-        type = "http,websocket" (E)  
+        type = "http,websocket" (E)
         scheme = "http,https,ws,wss" (E)
-        
+
         @url = jumpscale.openresty.location_lapis
         name = ""
         path_url = ""
         path_location = ""
-        
+
         @url = jumpscale.openresty.location_custom
         name = ""
         config = ""
@@ -108,11 +108,12 @@ class Location(j.baseclasses.object_config):
         url = "https://github.com/threefoldtech/jumpscale_weblibs"
         weblibs_path = j.clients.git.getContentPathFromURLorPath(url, pull=False)
 
-        # copy the templates to the right location
-        static_dir = f"{path}/static/weblibs"
+        # copy static dir from repo to the right location
+        static_dir = j.sal.fs.joinPaths(path, "static", "weblibs")
         if not j.sal.fs.exists(static_dir):
             j.sal.fs.createDir(static_dir)
-            j.sal.fs.copyDirTree(weblibs_path, static_dir)
+            j.sal.fs.copyDirTree(j.sal.fs.joinPaths(weblibs_path, "static"), static_dir)
+
 
 class Locations(j.baseclasses.object_config_collection):
 

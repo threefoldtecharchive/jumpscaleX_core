@@ -5,6 +5,7 @@ def main(self):
     """
     kosmos 'j.servers.myjobs.test("simple_error")'
     """
+    self.stop(reset=True)
 
     j.tools.logger.debug = True
 
@@ -16,7 +17,8 @@ def main(self):
     job = self.schedule(add, 1, 2)
 
     error = False
-    self.worker_start(onetime=True)
+
+    self.worker_inprocess_start()
 
     ##there should be job in errorstate
 
@@ -27,11 +29,12 @@ def main(self):
 
     assert error
 
-    job_id = self.schedule(add, 1, 2)
+    job = self.schedule(add, 1, 2)
+    job_id = job.id
 
     self._log_info("job id waiting for:%s" % job_id)
 
-    self.worker_start(onetime=True)
+    self.worker_inprocess_start()
 
     res = self.results(die=False)
 
@@ -43,6 +46,6 @@ def main(self):
 
     self._log_info("basic error test done")
 
-    self.halt(reset=True)
+    self.stop(reset=False)
 
     print("TEST OK")

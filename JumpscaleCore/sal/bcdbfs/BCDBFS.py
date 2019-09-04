@@ -63,7 +63,7 @@ class BCDBFS(j.baseclasses.object):
         :param recursive: if true will perform recursive delete by deleting all sub directorie
         :return: None
         """
-        dir = self._dir_model.get_by_name(name=path)[0]
+        dir = self._dir_model.get_by_name(name=path)
         if not recursive and dir.dirs:
             raise j.exceptions.Base("this dir contains other dirs you must pass recursive = True")
         elif recursive:
@@ -75,7 +75,7 @@ class BCDBFS(j.baseclasses.object):
         :param path: path to be checked
         :return: bool
         """
-        return self._dir_model.get_by_name(name=path) != []
+        return self._dir_model.get_by_name(name=path, die=False) is not None
 
     def dir_copy_from_local(self, path, dest, recursive=True):
         """
@@ -106,7 +106,7 @@ class BCDBFS(j.baseclasses.object):
         """
         if path == j.sal.fs.getParent(dest):
             raise j.exceptions.Base("{} can not copy directory into itself".format(path))
-        dir_source = self._dir_model.get_by_name(name=path)[0]
+        dir_source = self._dir_model.get_by_name(name=path)
         # Make sure dest, exists coz sometimes we move empty directory into another one, so
         # in this case the emoty dir (dest) needs to created now otherwise they won't
         if not self.dir_exists(dest):
@@ -180,7 +180,7 @@ class BCDBFS(j.baseclasses.object):
         :param dest: destination path
         :return: file object
         """
-        source_file = self._file_model.get_by_name(name=path)[0]
+        source_file = self._file_model.get_by_name(name=path)
         if self.is_dir(dest):
             dest = j.sal.fs.joinPaths(dest, j.sal.fs.getBaseName(path))
             if self.file_exists(dest) and overrrite:
@@ -225,7 +225,7 @@ class BCDBFS(j.baseclasses.object):
         :param path: path for a file to be checked
         :return: bool
         """
-        return self._file_model.get_by_name(name=path) != []
+        return self._file_model.get_by_name(name=path, die=False) is not None
 
     def file_read(self, path):
         """
@@ -248,9 +248,7 @@ class BCDBFS(j.baseclasses.object):
         """
         path = j.sal.fs.pathClean(path)
         dir_obj = self._dir_model.get_by_name(path)
-        if not dir_obj:
-            raise j.exceptions.Base("path {} does not exist".format(path))
-        res = [self._dir_model.get(item).name for item in dir_obj[0].dirs]
+        res = [self._dir_model.get(item).name for item in dir_obj.dirs]
         return res
 
     def list_files(self, path="/"):
@@ -261,9 +259,7 @@ class BCDBFS(j.baseclasses.object):
         """
         path = j.sal.fs.pathClean(path)
         dir_obj = self._dir_model.get_by_name(path)
-        if not dir_obj:
-            raise j.exceptions.Base("path {} does not exist".format(path))
-        res = [self._file_model.get(item).name for item in dir_obj[0].files]
+        res = [self._file_model.get(item).name for item in dir_obj.files]
         return res
 
     def list_files_and_dirs(self, path="/"):

@@ -72,6 +72,16 @@ class JSConfigBCDB(JSConfigBCDBBase):
     def delete(self):
         self._delete()
 
+    def load(self):
+        """
+        load from bcdb
+        :return:
+        """
+        jsxobjects = self._model.find(name=self.name)
+        if len(jsxobjects) == 0:
+            raise j.exceptions.JSBUG("cannot find obj:%s for reload" % self.name)
+        self._data = jsxobjects[0]
+
     def _delete(self):
         self._triggers_call(self, "delete")
         assert self._model

@@ -21,7 +21,16 @@ class ExecutorSSH(ExecutorBase):
         self.type = "ssh"
 
     def execute(
-        self, cmd, die=True, showout=False, timeout=1000, env=None, sudo=False, replace=True, interactive=False, script=False
+        self,
+        cmd,
+        die=True,
+        showout=False,
+        timeout=1000,
+        env=None,
+        sudo=False,
+        replace=True,
+        interactive=False,
+        script=False,
     ):
         """
         @RETURN rc, out, err

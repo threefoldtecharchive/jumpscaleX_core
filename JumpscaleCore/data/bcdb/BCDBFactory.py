@@ -176,8 +176,6 @@ class BCDBFactory(j.baseclasses.factory):
 
     def exists(self, name):
         if name in self._children:
-            if not name in self._config:
-                j.shell()
             assert name in self._config
             return True
 
@@ -216,7 +214,10 @@ class BCDBFactory(j.baseclasses.factory):
             assert name in self._config
             return bcdb
         elif storclient:
-            return self._get(name=name, storclient=storclient, reset=reset)
+            if not self.exists(name=name):
+                return self.new(name=name, storclient=storclient, reset=reset)
+            else:
+                return self._get(name=name, storclient=storclient, reset=reset)
         elif name in self._config:
             storclient = self._get_storclient(name)
             return self._get(name=name, storclient=storclient, reset=reset)
@@ -303,8 +304,7 @@ class BCDBFactory(j.baseclasses.factory):
         elif storclient.type == "RDB":
             data["namespace"] = storclient.nsname
             data["type"] = "rdb"
-
-            # data["redisconfig_name"] = storclient._redis.redisconfig_name
+            data["redisconfig_name"] = storclient._redis.redisconfig_name
             # link to which redis to connect to (name of the redis client in JSX)
 
         else:
