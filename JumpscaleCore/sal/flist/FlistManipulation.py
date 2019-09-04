@@ -9,7 +9,7 @@ class FlistManipulation(j.baseclasses.object):
     _properties_ = None
     __jslocation__ = "j.sal.flist"
 
-    def __init__(self):
+    def _init(self, **kwargs):
         self.hub = {"host": "playground.hub.grid.tf", "port": 9910}
 
     @classmethod

@@ -2,8 +2,11 @@ import gevent
 
 
 def main(self):
+    """
+    kosmos -p 'j.servers.myjobs.test("start2")'
+    """
 
-    self.start()
+    self.workers_subprocess_start()
 
     def wait_2sec():
         gevent.sleep(2)
@@ -11,8 +14,8 @@ def main(self):
     for x in range(40):
         self.schedule(wait_2sec)
 
-    gevent.joinall([self.dataloop, self.mainloop])
+    gevent.joinall([self._dataloop, self._mainloop_gipc])
 
-    self.halt(reset=True)
+    self.stop(reset=True)
 
     print("TEST OK")

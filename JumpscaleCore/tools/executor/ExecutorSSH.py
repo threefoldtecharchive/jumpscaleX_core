@@ -12,7 +12,6 @@ class ExecutorSSH(ExecutorBase):
 
         self.kosmos = self.sshclient.kosmos
         self.shell = self.sshclient.shell
-        self.execute = self.sshclient.execute
         self.upload = self.sshclient.upload
         self.download = self.sshclient.download
         self.execute_jumpscale = self.sshclient.execute_jumpscale
@@ -21,14 +20,28 @@ class ExecutorSSH(ExecutorBase):
 
         self.type = "ssh"
 
-        # self.__check_base = None
+    def execute(
+        self,
+        cmd,
+        die=True,
+        showout=False,
+        timeout=1000,
+        env=None,
+        sudo=False,
+        replace=True,
+        interactive=False,
+        script=False,
+    ):
+        """
+        @RETURN rc, out, err
+        """
+        if env or sudo or script:
+            raise j.exceptions.NotFound("Not implemented for ssh execuor")
+        return self.sshclient.execute(cmd, interactive, showout, replace, die, timeout)
 
-    # def executeRaw(self, cmd, die=True, showout=False):
-    #     return self.sshclient.execute(cmd, die=die, showout=showout)
-
-    # def executeRaw(self, cmds, die=True, showout=True, timeout=120):
-    #     rc, out, err = self.sshclient.execute(cmds, die=die, showout=showout, timeout=timeout)
-    #     return rc, out, err
+    @property
+    def uid(self):
+        return self.sshclient.uid
 
     @property
     def config_msgpack(self):

@@ -1,9 +1,8 @@
 import io
-import functools
 from Jumpscale import j
 from .SSHClientBase import SSHClientBase
-import os
 import time
+import ssh2.sftp
 
 
 class SSHClient(SSHClientBase):
@@ -63,7 +62,6 @@ class SSHClient(SSHClientBase):
                 if str(e).find("Error connecting to host") != -1:
                     msg = e.args[0] % e.args[1:]
                     raise j.exceptions.Base("PSSH:%s" % msg)
-                j.shell()
 
         return self._client_
 
@@ -97,6 +95,16 @@ class SSHClient(SSHClientBase):
             raise j.exceptions.RuntimeError("Cannot execute (ssh):\n%s\noutput:\n%serrors:\n%s" % (cmd, output, error))
 
         return rc, output, error
+
+    def file_write(self, path, content, mode=0o755, append=False):
+        flags = ssh2.sftp.LIBSSH2_FXF_CREAT
+        if append:
+            flags |= ssh2.sftp.LIBSSH2_FXF_APPEND
+        else:
+            flags |= ssh2.sftp.LIBSSH2_FXF_WRITE
+        file = self.sftp.open(path, flags, mode)
+        file.write(content)
+        file.close()
 
     def sftp_stat(self, path):
         res = self.sftp.stat(path)

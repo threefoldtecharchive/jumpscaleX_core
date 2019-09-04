@@ -3,8 +3,7 @@ from Jumpscale import j
 import gipc
 import gevent
 import time
-
-from .MyWorker import MyWorker
+from .MyWorkerProcess import MyWorkerProcess
 
 JSBASE = j.baseclasses.object
 
@@ -21,6 +20,8 @@ kwargs = (dict)
 result = (S)
 error = (dict)
 return_queues = (LS)
+#will not execute this one before others done
+dependencies = (LI)
 
 
 """
@@ -35,61 +36,33 @@ code = ""
 
 """
 
-# NOT THE FASTEST WAY TO KEEP STATE OF WORKER BETWEEN THE PROCESSES, BUT EASY
-schema_worker = """
-@url = jumpscale.myjobs.worker
-timeout = 3600
-time_start = 0 (T)
-last_update = 0 (T)
-current_job = (I)
-error = "" (S)
-state* = "NEW"
-pid = 0
-halt = false (B)
-
-"""
+from .MyWorkerObject import MyWorkerObject
 
 
-class MyJobs(JSBASE, j.application.JSFactoryTools):
+class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
     __jslocation__ = "j.servers.myjobs"
+    _CHILDCLASS = MyWorkerObject
 
     def _init(self, **kwargs):
         self.queue_jobs_start = j.clients.redis.queue_get(redisclient=j.core.db, key="queue:jobs:start")
         self.queue_return = j.clients.redis.queue_get(redisclient=j.core.db, key="queue:jobs:return")
-        self.workers = {}
-        self.workers_nr_min = 1
-        self.workers_nr_max = 10
-        self.mainloop = None
-        self.dataloop = None
 
-        db = j.data.bcdb.get("myjobs", storclient=j.clients.rdb.client_get())
+        self._workers_gipc = {}
+        self._workers_gipc_nr_min = 1
+        self._workers_gipc_nr_max = 10
+        self._mainloop_gipc = None
+        self._dataloop = None
 
-        self.model_job = db.model_get(schema=schema_job)
-        self.model_action = db.model_get(schema=schema_action)
-        self.model_worker = db.model_get(schema=schema_worker)
+        self.model_job = self._bcdb.model_get(schema=schema_job)
+        self.model_action = self._bcdb.model_get(schema=schema_action)
 
-        self._init_ = False
         self.scheduled_ids = []
 
     def job_get(self, job_id):
         return self.model_job.get(job_id)
 
-    def init(self, **kwargs):
-        """
-        activates the models and starts the worker manager if required
-        """
-        if self._init_ is False:
-
-            if self.mainloop != None:
-                self.mainloop.kill()
-
-            if self.dataloop != None:
-                self.dataloop.kill()
-
-            self._init_ = True
-
     def action_get(self, key, return_none_if_not_exist=False):
-        self.init()
+
         res = self.model_action.find(key=key)
         if len(res) > 0:
             o = self.model_action.get(res[0].id)
@@ -100,95 +73,183 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
             o = self.model_action.new()
             return True, o
 
+    def _bcdb_selector(self):
+        return j.data.bcdb.get("myjobs", storclient=j.clients.rdb.client_get())
+
     @property
-    def workers_count(self):
-        return len(self.workers.values())
+    def _workers_gipc_count(self):
+        return len(self._workers_gipc.values())
 
-    def start(self, debug=False, fixed_workers=None, subprocess=False):
+    def worker_inprocess_start(self, nr=None, debug=False):
         """
 
-        kosmos -p "j.servers.myjobs.start()"
-        kosmos -p "j.servers.myjobs.start(debug=True)"
-        kosmos -p "j.servers.myjobs.start(debug=True,fixed_workers=10)"
+        :param nr: is the nr of the worker 1 to x will be a child with name w$nr e.g. w3
+        :param debug:
+        :return:
+        """
+        if not nr:
+            nr = self._worker_next_get()
+        w = self.get(name="w%s" % nr)
+        w.type = "inprocess"
+        w.debug = debug
+        w.nr = nr
+        w.start()
 
-        if non debug and fixed workers is None:
-            always in subprocess, cannot see the output
-            will add worker(s) when needed, when there is more work
+    def worker_tmux_start(self, nr=None, debug=False):
+        """
+        :param nr: is the nr of the worker 1 to x will be a child with name w$nr e.g. w3
+        :param debug:
+        :return:
+        """
+        if not nr:
+            nr = self._worker_next_get()
+        w = self.get(name="w%s" % nr)
+        w.type = "tmux"
+        w.nr = nr
+        w.debug = debug
+        w.start()
+        self._dataloop_start()
 
-        to test can but debug on True and run in separate console
+    def _worker_inprocess_start_from_tmux(self, nr):
+        w = self.get(name="w%s" % nr)
+        w.time_start = j.data.time.epoch
+        w.last_update = j.data.time.epoch
+        self._log_info("worker in process for tmux: %s" % nr)
+        MyWorkerProcess(worker_id=w._id, onetime=False)
+
+    def workers_tmux_start(self, nr_workers=4, debug=False):
+        """
+
+        run the workers in subprocess
+
+        kosmos -p "j.servers.myjobs.workers_tmux_start()"
+        kosmos -p "j.servers.myjobs.workers_tmux_start(nr_workers=4)"
+
+        :return:
+        """
+        for i in range(nr_workers):
+            self.worker_tmux_start(nr=i + 1, debug=debug)
+
+    def worker_subprocess_start(self, nr=None, debug=False):
+        """
+        :param nr: is the nr of the worker 1 to x will be a child with name w$nr e.g. w3
+        :param debug:
+        :return:
+        """
+        if not nr:
+            nr = self._worker_next_get()
+        w = self.get(name="w%s" % nr)
+        w.type = "subprocess"
+        w.debug = debug
+        w.nr = nr
+        w.start()
+        self._dataloop_start()
+
+    def _worker_next_get(self):
+        last = 0
+        for i in self._model.find():
+            if i.nr > last:
+                last = i.nr
+        return last + 1
+
+    def workers_subprocess_start(self, nr_fixed_workers=None, debug=False):
+        """
+
+        run the workers in subprocess
+
+        kosmos -p "j.servers.myjobs.workers_subprocess_start()"
+        kosmos -p "j.servers.myjobs.workers_subprocess_start(fixed_workers=10)"
 
         :return:
         """
 
-        # self.init()
-        if not debug:
-            if not fixed_workers:
-                self.mainloop = gevent.spawn(self._main_loop, subprocess)
-            else:
-                self._main_loop_fixed(nr=fixed_workers, debug=debug)  # does not wait, no need to do in gevent
-        self.dataloop = gevent.spawn(self._data_loop)  # returns the data
-        if debug:
-            j.tools.logger.debug = True
-            if not fixed_workers:
-                self._main_loop()
-            else:
-                self._main_loop_fixed(nr=fixed_workers, debug=debug)
-
-    def worker_start(self, onetime=False, subprocess=True, worker_id=None, debug=False):
-        self.init()
-        if onetime:
-            subprocess = False
-        if worker_id:
-            w = self.model_worker.get(worker_id)
+        if not nr_fixed_workers:
+            self._mainloop_gipc = gevent.spawn(self._main_loop_subprocess)
         else:
-            w = self.model_worker.new()
-            w.time_start = j.data.time.epoch
-            w.last_update = j.data.time.epoch
-            w = self.model_worker.set(w)
-        self._log_debug("worker add: %s" % w.id, data=w._data)
-        if subprocess:
-            worker = gipc.start_process(target=MyWorker, kwargs={"worker_id": w.id})
-            self.workers[w.id] = worker
-        else:
-            MyWorker(worker_id=w.id, onetime=onetime, debug=debug)
-            # will make sure the data comes back
-            self._data_process_untill_empty(timeout=5, die=False)
+            for i in range(nr_fixed_workers):
+                self.start_subprocess_worker(nr=i, debug=debug)
 
-    def dataloop_start(self):
-        if not self.dataloop:
-            self.dataloop = gevent.spawn(self._data_loop)
+    def _dataloop_start(self):
+        if not self._dataloop:
+            self._dataloop = gevent.spawn(self._data_loop)
 
-    def workers_start_tmux(self, nrworkers=3, debug=False):
+    def _dataloop_stop(self):
+        if not self._dataloop:
+            self._dataloop.kill()
+            self._dataloop = None
+
+    def workers_check(self, kill_workers_in_error=True):
         """
-        kosmos "j.servers.myjobs.workers_start_tmux(1)"
-        """
-        # j.builders.apps.corex.install()
-        # j.servers.corex.default.start()  # starts corex at port 1500
+        kosmos "print(j.servers.myjobs.workers_check())"
+        
+        res,count,errors = j.servers.myjobs.workers_check()
 
-        for nr in range(nrworkers):
-            cmd = j.servers.startupcmd.get(name="workers_%s" % nr)
-            if debug:
-                cmd.cmd_start = "j.servers.myjobs.worker_start(subprocess=False,debug=True)"
-            else:
-                cmd.cmd_start = "j.servers.myjobs.worker_start(subprocess=False,debug=False)"
-            # COREX has still issues so fall back on tmux
-            cmd.executor = "tmux"
-            cmd.interpreter = "jumpscale"
-            cmd.start(reset=True)
-
-        self.dataloop_start()
-
-        self._log_info("visit http://localhost:1500/ for seeing the corex webscreen")
-
-    def worker_start_inprocess(self, worker_id=None):
-        """
-        kosmos "j.servers.myjobs.worker_start_inprocess()"
-
-        easy to debug the myworker framework because can see issues in the jobs executed
+        will check that workers are running
 
         :return:
         """
-        self.worker_start(subprocess=False, worker_id=worker_id)
+
+        # state* = "NEW,ERROR,BUSY,WAITING,HALTED" (E)
+
+        def kill(worker_obj):
+            if kill_workers_in_error:
+                if worker_obj.pid > 0:
+                    self._log_warning(
+                        "will kill job, worker:%s pid:%s" % (worker_obj.id, worker_obj.pid), data=worker_obj
+                    )
+                    j.shell()
+                    w
+                else:
+                    self._log_warning(
+                        "cannot kill worker, workerid:%s pid:%s is unknown" % (worker_obj._id, worker_obj.pid),
+                        data=worker_obj,
+                    )
+
+        count = 0
+        errors = 0
+        res = []
+        for w in self.find():
+            if w.state in ["NEW"] and w.last_update < j.data.time.epoch - 20:
+                # means error should not be there
+                w.state = "ERROR"
+                w.error = "did not start queue to wait for work"
+                w.save()
+                errors += 1
+                res.append(w)
+                kill(w)
+            elif w.state in ["WAITING"]:
+                if w.last_update < j.data.time.epoch - 20:
+                    # means error should not be there
+                    w.state = "ERROR"
+                    w.error = "queue started but watchdog failed, worker should have reported back"
+                    kill(w)
+                    w.save()
+                    errors += 1
+                else:
+                    # means hapily waiting all ok
+                    count += 1
+                res.append(w)
+            elif w.state in ["BUSY"]:
+                if w.last_update < j.data.time.epoch - 7200:  # 2h
+                    w.state = "ERROR"
+                    w.error = "TIMEOUT, is waiting on work for longer than 2h"
+                    w.save()
+                    errors += 1
+                    kill(w)
+                else:
+                    # job active but ok
+                    count += 1
+                res.append(w)
+            elif w.state in ["ERROR"]:
+                errors += 1
+                res.append(w)
+                kill(w)
+            elif w.state in ["HALTED"]:
+                pass
+            else:
+                raise j.exceptions.JSBUG("unknown state of worker")
+
+        return res, count, errors
 
     def _data_loop(self):
         while True:
@@ -205,9 +266,12 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
         cat, objid, data = thedata
 
         if cat == "W":
-            worker = self.model_worker.new(data=data)
-            worker.id = objid
-            worker.save()
+            data2 = j.data.serializers.json.loads(data)
+            worker_object = self._model.get(objid)
+            worker_object._data_update(data2)
+            worker_object.save()
+            if worker_object.name in self._children:
+                self._children[worker_object.name].load()  # make sure in mem the data is ok
             return True
         elif cat == "J":
             job = self.model_job.new(data=data)
@@ -227,7 +291,7 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
             raise j.exceptions.Base("return queue does not have right obj")
 
     def _data_process_untill_empty(self, timeout=1, die=True):
-        self.init()
+
         # need to wait till first one comes
         r = self._data_process_1time(timeout=timeout, die=die)
         if not r:
@@ -238,54 +302,45 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
                 return
             r = self._data_process_1time(timeout=timeout, die=die)
 
-    def _main_loop_fixed(self, nr=10, debug=False):
+    def _main_loop_subprocess(self):
         """
-        will not dynamically allocate the workers, will be a fixed pool
-        :param nr:
-        :param debug:
+        gevent loop
         :return:
         """
-
-        for i in range(nr):
-            self.worker_start()
-        if debug:
-            j.shell()
-
-    def _main_loop(self, subprocess=True):
         self._log_debug("monitor start")
 
         def test_workers_more():
-            workers_count = self.workers_count
-            a = workers_count < self.workers_nr_max
-            b = workers_count < self.queue_jobs_start.qsize() or workers_count < self.workers_nr_min
+            _workers_gipc_count = self._workers_gipc_count
+            a = _workers_gipc_count < self._workers_gipc_nr_max
+            b = _workers_gipc_count < self.queue_jobs_start.qsize() or _workers_gipc_count < self._workers_gipc_nr_min
             return a and b
 
         def test_workers_less():
-            workers_count = self.workers_count
-            a = workers_count > self.workers_nr_max
-            b = workers_count > self.queue_jobs_start.qsize() and workers_count > self.workers_nr_min
+            _workers_gipc_count = self._workers_gipc_count
+            a = _workers_gipc_count > self._workers_gipc_nr_max
+            b = _workers_gipc_count > self.queue_jobs_start.qsize() and _workers_gipc_count > self._workers_gipc_nr_min
             return a or b
 
         while True:
 
-            self._log_debug("monitor run")
+            self._log_debug("monitor run for subprocess loop")
 
             # #there is already 1 working, lets give 2 sec time before we start monitoring
             # gevent.sleep(2)
 
             # TEST for timeout
-            wids = [key for key in self.workers.keys()]
+            wids = [key for key in self._workers_gipc.keys()]
             for wid in wids:
-                if wid in self.workers:
-                    gproc = self.workers[wid]
+                if wid in self._workers_gipc:
+                    gproc = self._workers_gipc[wid]
                 else:
                     continue
                 if gproc.exitcode != None:
                     raise j.exceptions.Base("subprocess should never have been exitted")
-                w = self.model_worker.get(wid)
+                w = self.get(wid)
                 if w == None:
                     # should always find the worker
-                    # j.shell()
+                    j.shell()
                     continue
 
                 job_running = w.current_job != 2147483647
@@ -299,32 +354,32 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
                         # print(w)
                         self._log_info("KILL:%s in worker %s" % (w.id, job.id))
                         gproc.terminate()
-                        self.workers.pop(wid)
+                        self._workers_gipc.pop(wid)
                         job.state = "ERROR"
                         job.error = "TIMEOUT"
                         job.time_stop = j.data.time.epoch
                         self.model_job.set(job)
                         print(job)
                         # make sure right nr of workers are active
-                        self.worker_start()
+                        self.worker_subprocess_start()
 
             if test_workers_more():
                 # test if we need to add workers
                 while test_workers_more():
                     print("WORKERS START")
-                    self.worker_start(subprocess=subprocess)
-                gipc.gipc.gevent.joinall([p for p in self.workers.values()])
+                    self.worker_subprocess_start()
+                gipc.gipc.gevent.joinall([p for p in self._workers_gipc.values()])
             else:
 
                 # test if we have too many workers
                 removed_one = False
-                active_workers = [key for key in self.workers.keys()]
+                active_workers = [key for key in self._workers_gipc.keys()]
                 active_workers.sort()
                 for wid in active_workers:
-                    gproc = self.workers[wid]
+                    gproc = self._workers_gipc[wid]
                     if gproc.exitcode != None:
                         raise j.exceptions.Base("subprocess should never have been exit-ed")
-                    w = self.model_worker.get(wid)
+                    w = self.get(wid)
                     if w == None:
                         continue
 
@@ -340,16 +395,17 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
                             gproc.kill()
                             gproc.terminate()
                             self.model_worker.delete(wid)
-                            gproc2 = self.workers[wid]
+                            gproc2 = self._workers_gipc[wid]
                             while gproc.is_alive():
                                 gevent.sleep(0.1)
                                 print("worker,killing:%s" % wid)
                             assert gproc2.is_alive() == False
-                            self.workers.pop(wid)
+                            self._workers_gipc.pop(wid)
+                            self.delete(wid)
 
-            # print(self.workers)
+            # print(self._workers_gipc)
 
-            self._log_debug("nr workers:%s, queuesize:%s" % (self.workers_count, self.queue_jobs_start.qsize()))
+            self._log_debug("nr workers:%s, queuesize:%s" % (self._workers_gipc_count, self.queue_jobs_start.qsize()))
             gevent.sleep(1)
 
     def schedule(
@@ -361,7 +417,10 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
         inprocess=False,
         return_queues=[],
         return_queues_reset=False,
+        dependencies=None,
         gevent=False,
+        wait=False,
+        die=True,
         **kwargs,
     ):
         """
@@ -380,7 +439,7 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
         print("executing method {0} with *args {1} and **kwargs {2} ".format(method.__name__, args, kwargs))
         if inprocess:
             return method(*args, **kwargs)
-        self.init()
+
         code = inspect.getsource(method)
         code = j.core.text.strip(code)
         code = code.replace("self,", "").replace("self ,", "").replace("self  ,", "")
@@ -409,6 +468,14 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
         job.category = category
         job.args = j.data.serializers.json.dumps(args)
         job.kwargs = j.data.serializers.json.dumps(kwargs)
+        if dependencies:
+            for dep in dependencies:
+                if isinstance(dep, j.data.schema._JSXObjectClass):
+                    job.dependencies.append(dep.id)
+                elif isinstance(dep, int):
+                    job.dependencies.append(dep)
+                else:
+                    raise j.exceptions.Input("only jsx obj (job) or int supported in dependencies")
         if not gevent:
             for qname in return_queues:
                 job.return_queues.append(qname)
@@ -425,22 +492,56 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
 
         if job.id not in self.scheduled_ids:
             self.scheduled_ids.append(job.id)
+        if timeout == 0:
+            timeout = 60 * 20  # 20min
+        deadline = j.data.time.epoch + timeout
+        while wait and j.data.time.epoch < deadline:
+            #  non performant code, this needs to be done better !!! we can use the return queues or so
+            job = self.model_job.get(job.id)
+            if job.state in ["OK", "ERROR", "HALTED"]:
+                wait = False
+                continue
+            time.sleep(0.1)
 
-        return job.id
+        if wait:
+            if job.state in ["ERROR"]:
+                if die:
+                    raise j.exceptions.Base("job failed", data=job)
+                else:
+                    return job
+            if die:
+                raise j.exceptions.Base("job timeout or halted", data=job)
+            else:
+                return job
 
-    def halt(self, graceful=True, reset=True):
+        return job  # TODO: changed to return job more logical prob breaks stuff
 
-        if self.mainloop != None:
-            self.mainloop.kill()
+    def stop(self, graceful=True, reset=True, timeout=60):
 
-        if self.dataloop != None:
-            self.dataloop.kill()
+        if self._mainloop_gipc != None:
+            self._mainloop_gipc.kill()
 
-        for wid, gproc in self.workers.items():
+        if self._dataloop != None:
+            self._dataloop.kill()
+
+        if not reset:
+            for w in self.find(reload=True):
+                # look for the workers and ask for halt in nice way
+                w.stop(hard=reset)
+
+        timeout_end = j.data.time.epoch + timeout
+        while not reset and graceful and j.data.time.epoch < timeout_end:
+            active, count, errors = self.workers_check(True)
+            if count == 0:
+                break
+            time.sleep(1)
+            self._log_debug("wait gracefull shutdown")
+
+        for wid, gproc in self._workers_gipc.items():
             if gproc.exitcode != None:
                 continue
 
-            w = self.model_worker.get(wid)
+            w = self.get(wid)
 
             job_running = w.current_job != 2147483647
 
@@ -450,7 +551,8 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
         if reset:
             self.model_action.destroy()
             self.model_job.destroy()
-            self.model_worker.destroy()
+            self._model.destroy()
+            self._children_reset()
             # delete the queue
             while self.queue_jobs_start.get_nowait() != None:
                 pass
@@ -461,7 +563,7 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
 
     def reset(self):
         # kill leftovers from last time, if any
-        self.halt(graceful=False, reset=True)
+        self.stop(graceful=False, reset=True)
         assert self.queue_jobs_start.qsize() == 0
         assert self.queue_return.qsize() == 0
 
@@ -476,6 +578,16 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
 
         if not ids:
             ids = self.scheduled_ids
+        else:
+            ids2 = []
+            for obj in ids:
+                if isinstance(obj, j.data.schema._JSXObjectClass):
+                    ids2.append(obj.id)
+                elif isinstance(obj, int):
+                    ids2.append(obj)
+                else:
+                    raise j.exceptions.Input("can only be int or job object")
+            ids = ids2
         res = {}
         counter = 0
         now = time.time()
@@ -485,7 +597,8 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
             current_id = None
 
         while current_id:
-            job = self.model_job.get(current_id)
+            assert isinstance(current_id, int)
+            job = self.model_job.get(current_id, die=False)
             if job == None:
                 raise j.exceptions.Base("job:%s not found" % current_id)
             if job.time_stop != 0:
@@ -528,35 +641,38 @@ class MyJobs(JSBASE, j.application.JSFactoryTools):
                 self.scheduled_ids = []
                 raise j.exceptions.Base("timeout for results with jobids:%s" % ids)
 
-            if not self.dataloop:
+            if not self._dataloop:
                 # means we have to manually fetch the objects there is no dataloop doing it for us
                 self._data_process_untill_empty(die=False)
 
         self.scheduled_ids = []
         return res
 
-    workers_start = workers_start_tmux
-
-    def wait(self, queue_name, size, timeout=120):
+    def wait(self, queue_name, size, timeout=120, returnjobs=True):
         queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)
         with gevent.Timeout(timeout, False):
             while True:
                 if queue.qsize() < size:
                     gevent.sleep(0)
                     continue
-                return queue
+                res = []
+                jobid = True
+                while jobid:
+                    jobid = queue.get_nowait()
+                    if jobid:
+                        jobid = int(jobid.decode())
+                        if returnjobs:
+                            res.append(self.model_job.get(jobid))
+                        else:
+                            res.append(jobid)
+                return res
 
-    def test(self, name="basic", start=False):
+    def test(self, name="basic", **kwargs):
         """
         it's run all tests
         kosmos 'j.servers.myjobs.test()'
 
         """
-        if start:
-            self.workers_start()
-
-        self._test_run(name=name)
-
-        self.halt(reset=True)
+        self._test_run(name=name, **kwargs)
 
         print("TEST OK ALL PASSED")

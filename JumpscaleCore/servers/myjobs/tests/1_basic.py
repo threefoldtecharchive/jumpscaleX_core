@@ -13,13 +13,14 @@ def main(self):
     def add(a, b):
         return a + b
 
-    jobid = self.schedule(add, 1, 2)
+    job = self.schedule(add, 1, 2)
+    jobid = job.id
     assert isinstance(jobid, int)
 
     # means work scheduled
     assert self.scheduled_ids == [jobid]
 
-    self.worker_start(onetime=True)
+    self.worker_inprocess_start()
     assert self.scheduled_ids == [jobid]
 
     res = self.results()
@@ -34,9 +35,9 @@ def main(self):
     assert job.state == "OK"
     assert job.time_stop > 0
 
-    jobid = self.schedule(add, 3, 4)
-
-    self.worker_start(onetime=True)
+    job = self.schedule(add, 3, 4)
+    jobid = job.id
+    self.worker_inprocess_start()
 
     res = self.results([jobid])
     v = [i for i in res.values()]
@@ -44,6 +45,6 @@ def main(self):
 
     print(res)
 
-    self.halt(reset=True)
+    self.stop(reset=False)
 
     print("TEST OK")

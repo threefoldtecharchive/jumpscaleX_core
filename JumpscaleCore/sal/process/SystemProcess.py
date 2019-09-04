@@ -27,7 +27,7 @@ from Jumpscale import j
 JSBASE = j.baseclasses.object
 
 
-class SystemProcess(j.baseclasses.object):
+class SystemProcess(JSBASE):
     __jslocation__ = "j.sal.process"
 
     def _init(self, **kwargs):
@@ -586,11 +586,11 @@ class SystemProcess(j.baseclasses.object):
 
     def getProcessPid(self, process, match_predicate=None):
         """Get process ID(s) for a given process
-        
+
         :param process: process to look for
         :type process: str
-        :param match_predicate: function that does matching between 
-            found processes and the targested process, the function should accept 
+        :param match_predicate: function that does matching between
+            found processes and the targested process, the function should accept
             two arguments and return a boolean, defaults to None
         :type match_predicate: callable, optional
         :raises j.exceptions.RuntimeError: If process is None
@@ -746,13 +746,13 @@ class SystemProcess(j.baseclasses.object):
 
     def killProcessByName(self, name, sig=None, match_predicate=None):
         """Kill all processes for a given command
-        
+
         :param name: Name of the command that started the process(s)
         :type name: str
         :param sig: os signal to send to the process(s), defaults to None
         :type sig: int, optional
-        :param match_predicate: function that does matching between 
-            found processes and the targested process, the function should accept 
+        :param match_predicate: function that does matching between
+            found processes and the targested process, the function should accept
             two arguments and return a boolean, defaults to None
         :type match_predicate: callable, optional
         """

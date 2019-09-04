@@ -137,7 +137,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                 bottle_reverse_proxy.configure()
 
             # add user added packages
-            for package in j.tools.threebotpackage.find():
+            for package in j.tools.threebot_packages.find():
                 package.start()
 
             if web:
