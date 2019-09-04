@@ -50,6 +50,9 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             assert self._children == {}
 
     def _check(self, jsconfig):
+        if jsconfig._id is None:
+            # model has never been saved no check required yet
+            return
 
         # lets do some tests (maybe in future can be removed, but for now the safe bet)
         assert jsconfig._id > 0

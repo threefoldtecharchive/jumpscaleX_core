@@ -1,7 +1,7 @@
 from Jumpscale import j
 from configparser import ConfigParser
 from io import StringIO
-
+import netaddr
 
 def to_section(section, data):
     config = ConfigParser()
@@ -64,7 +64,7 @@ class WireGuard(j.baseclasses.object_config):
         :return:
         """
         if self.executor.platformtype.platform_is_osx:
-            self.executor.execute("brew install wireguard-tools")
+            self.executor.execute("brew install wireguard-tools", timeout=None)
         else:
             # need to check on ubuntu
             rc, out, err = self.executor.execute("wg", die=False)
@@ -75,7 +75,7 @@ class WireGuard(j.baseclasses.object_config):
                 apt-get upgrade -y --force-yes
                 apt-get install wireguard -y
                 """
-                self.executor.execute(C)
+                self.executor.execute(C, timeout=None)
 
     @property
     def peers_objects(self):
@@ -111,9 +111,13 @@ class WireGuard(j.baseclasses.object_config):
         config += to_section("Interface", interface)
         for peerobject in self.peers_objects:
             _, publickey = peerobject.key_pair_get()
-            peer = {"PublicKey": publickey, "AllowedIPs": peerobject.network_private}
+            peer = {"PublicKey": publickey}
+            subnet = netaddr.IPNetwork(peerobject.network_private)
             if peerobject.network_public:
                 peer["EndPoint"] = f"{peerobject.network_public}:{peerobject.port}"
+                peer["AllowedIPs"] = f"{subnet.network}/{subnet.prefixlen}"
+            else:
+                peer["AllowedIPs"] = f"{subnet.ip}"
             config += to_section("Peer", peer)
 
         configpath = f"/tmp/{self.interface_name}.conf"

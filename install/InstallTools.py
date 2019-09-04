@@ -1,5 +1,4 @@
 from __future__ import unicode_literals
-import copy
 import getpass
 
 DEFAULTBRANCH = "development"
@@ -1187,7 +1186,7 @@ class Tools:
                         # Tools.log(line)
                         Tools.pprint(line, end="")
 
-        if timeout < 0:
+        if timeout is None or timeout < 0:
             out, err = p.communicate()
             out = out.decode()
             err = err.decode()
