@@ -377,7 +377,10 @@ def ptconfig(repl):
                 pass
 
             if not d:
-                d = get_doc_string(f"{parent}.{member}", repl.get_locals(), repl.get_globals())
+                if parent:
+                    d = get_doc_string(f"{parent}.{member}", repl.get_locals(), repl.get_globals())
+                else:
+                    d = get_doc_string(member, repl.get_locals(), repl.get_globals())
         except Exception as exc:
             j.tools.logger._log_error(str(exc))
             repl.docstring_buffer.reset()
