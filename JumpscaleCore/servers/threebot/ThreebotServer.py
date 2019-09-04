@@ -103,7 +103,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             self.gedis_server.chatbot.chatflows_load("%s/base_chatflows" % self._dirpath)
             gedis_websocket_server = j.servers.gedis_websocket.default.app
-            self.rack_server.websocket_server_add("websocket", 9999, gedis_websocket_server)
+            self.rack_server.websocket_server_add("websocket", 4444, gedis_websocket_server)
 
             if web:
                 websocket_reverse_proxy = self.openresty_server.reverseproxies.get(
@@ -127,7 +127,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
                 gedis_reverse_proxy.configure()
 
-            self.rack_server.bottle_server_add(port=4443)
+            self.rack_server.bottle_server_add(port=4442)
 
             if web:
                 bottle_reverse_proxy = self.openresty_server.reverseproxies.get(
