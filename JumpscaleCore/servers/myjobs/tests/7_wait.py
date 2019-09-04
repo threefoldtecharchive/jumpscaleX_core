@@ -1,4 +1,5 @@
 import gevent
+from Jumpscale import j
 
 
 def main(self, reset=False):
@@ -20,8 +21,8 @@ def main(self, reset=False):
     self.workers_tmux_start()
 
     print("here")
-    q = self.wait(queue_name="q1", size=10)
-    assert q is not None
+    res = self.wait(queue_name="q1", size=10, returnjobs=True)
+    assert len(res) == 10
 
     res = self.results(ids, timeout=120)
     print(res)

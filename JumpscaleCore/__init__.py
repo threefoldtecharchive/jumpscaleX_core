@@ -98,11 +98,17 @@ class Core:
         elif isinstance(data, int) or isinstance(data, str) or isinstance(data, list):
             return str(data)
         elif isinstance(data, j.baseclasses.object_config):
-            return str(data._data)
+            try:
+                data = data._data._ddict_hr
+            except Exception as e:
+                return "ERROR IN SERIALIZE OBJECTCONFIG:%s" % e
         elif isinstance(data, j.baseclasses.object_config_collection):
             return "collection of: %s" % data._model._schema.url
         elif isinstance(data, j.data.schema._JSXObjectClass):
-            data = str(data)
+            try:
+                data = data._ddict_hr
+            except Exception as e:
+                return "ERROR IN SERIALIZE _JSXObjectClass:%s" % e
         elif isinstance(data, j.baseclasses.object):
             # if hasattr(data,"data"):
             #     data = data.data
@@ -110,9 +116,7 @@ class Core:
 
         try:
             serialized = yaml.dump(data, default_flow_style=False, default_style="", indent=4, line_break="\n")
-        except:
-            j.shell()
-            w
+        except Exception as e:
             serialized = "CANNOT SERIALIZE CORE"
         res = Tools.text_replace(content=serialized, ignorecolors=True)
         return res

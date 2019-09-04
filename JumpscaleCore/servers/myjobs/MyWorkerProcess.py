@@ -174,19 +174,20 @@ class MyWorkerProcess(j.baseclasses.object):
                 jobid = int(res)
                 job = self._job_get(jobid)
                 skip = False
+                jobdata = job._ddict
                 for dep_id in job.dependencies:
                     job_deb = self._job_get(dep_id)
                     if job_deb.state in ["ERROR", "HALTED"]:
                         job.state = job_deb.state
                         job.result = "cannot run because dependency failed: %s" % job_deb.id
                         job.error["dependency_failure"] = job_deb.id
-                        job.time_stop = j.data.time.epoch8_tmux.py
+                        job.time_stop = j.data.time.epoch
                         job.save()
                         skip = True
                     elif job_deb.state not in ["OK"]:
                         skip = True
                         # put the job back at end of queue, it needs to be done could not do yet
-                        self.queue_jobs_start.put(job_deb.id)
+                        self.queue_jobs_start.put(job.id)
 
                 if not skip:
                     self.data.last_update = j.data.time.epoch
@@ -199,11 +200,8 @@ class MyWorkerProcess(j.baseclasses.object):
                     else:
                         # now have job
                         action = self._action_get(job.action_id)
-                        kwargs = job.kwargs  # j.data.serializers.json.loads(job.kwargs)
+                        kwargs = job.kwargs
                         args = job.args
-
-                        if job.dependencies != []:
-                            kwargs["job"] = job
 
                         self.data.last_update = j.data.time.epoch
                         self.data.current_job = jobid  # set current jobid
@@ -236,7 +234,10 @@ class MyWorkerProcess(j.baseclasses.object):
                             continue
 
                         try:
-                            res = deadline(job.timeout)(method)(*args, **kwargs)
+                            if job.dependencies != []:
+                                res = deadline(job.timeout)(method)(*args, job=job, **kwargs)
+                            else:
+                                res = deadline(job.timeout)(method)(*args, **kwargs)
                         except BaseException as e:
                             tb = sys.exc_info()[-1]
                             if isinstance(e, gevent.Timeout):

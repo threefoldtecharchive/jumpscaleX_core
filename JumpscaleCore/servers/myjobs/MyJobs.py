@@ -420,6 +420,7 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
         dependencies=None,
         gevent=False,
         wait=False,
+        die=True,
         **kwargs,
     ):
         """
@@ -495,15 +496,23 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
             timeout = 60 * 20  # 20min
         deadline = j.data.time.epoch + timeout
         while wait and j.data.time.epoch < deadline:
-            # very ugly code, this needs to be done better !!! we can use the return queues or so
+            #  non performant code, this needs to be done better !!! we can use the return queues or so
+            job = self.model_job.get(job.id)
             if job.state in ["OK", "ERROR", "HALTED"]:
-                return job
+                wait = False
+                continue
             time.sleep(0.1)
 
         if wait:
             if job.state in ["ERROR"]:
-                raise j.exceptions.Base("job failed", data=job)
-            raise j.exceptions.Base("job timeout or halted", data=job)
+                if die:
+                    raise j.exceptions.Base("job failed", data=job)
+                else:
+                    return job
+            if die:
+                raise j.exceptions.Base("job timeout or halted", data=job)
+            else:
+                return job
 
         return job  # TODO: changed to return job more logical prob breaks stuff
 
@@ -569,6 +578,16 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
 
         if not ids:
             ids = self.scheduled_ids
+        else:
+            ids2 = []
+            for obj in ids:
+                if isinstance(obj, j.data.schema._JSXObjectClass):
+                    ids2.append(obj.id)
+                elif isinstance(obj, int):
+                    ids2.append(obj)
+                else:
+                    raise j.exceptions.Input("can only be int or job object")
+            ids = ids2
         res = {}
         counter = 0
         now = time.time()
@@ -578,6 +597,7 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
             current_id = None
 
         while current_id:
+            assert isinstance(current_id, int)
             job = self.model_job.get(current_id, die=False)
             if job == None:
                 raise j.exceptions.Base("job:%s not found" % current_id)
@@ -628,23 +648,31 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
         self.scheduled_ids = []
         return res
 
-    def wait(self, queue_name, size, timeout=120):
+    def wait(self, queue_name, size, timeout=120, returnjobs=True):
         queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)
         with gevent.Timeout(timeout, False):
             while True:
                 if queue.qsize() < size:
                     gevent.sleep(0)
                     continue
-                return queue
+                res = []
+                jobid = True
+                while jobid:
+                    jobid = queue.get_nowait()
+                    if jobid:
+                        jobid = int(jobid.decode())
+                        if returnjobs:
+                            res.append(self.model_job.get(jobid))
+                        else:
+                            res.append(jobid)
+                return res
 
-    def test(self, name="basic"):
+    def test(self, name="basic", **kwargs):
         """
         it's run all tests
         kosmos 'j.servers.myjobs.test()'
 
         """
-        self._test_run(name=name)
-
-        self.stop(reset=True)
+        self._test_run(name=name, **kwargs)
 
         print("TEST OK ALL PASSED")

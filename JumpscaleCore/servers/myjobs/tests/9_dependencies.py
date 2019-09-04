@@ -5,20 +5,19 @@ from Jumpscale import j
 import time
 
 
-def main(self):
+def main(self, reset=False):
     """
     kosmos -p 'j.servers.myjobs.test("dependencies")'
+    kosmos -p 'j.servers.myjobs.test("dependencies",reset=True)'
     """
-    self.stop(reset=True)
 
-    reset = True
     if reset:
         self.stop(reset=True)  # will make sure all tmux are gone
         assert len(self.find()) == 0
 
-    self.workers_tmux_start(4)
-
-    assert len(self.find()) == 4
+    nrworkers = 3
+    self.workers_tmux_start(nrworkers)
+    assert len(self.find()) == nrworkers
 
     def do_ok(job=None, wait_do=0):
         import time
@@ -27,8 +26,8 @@ def main(self):
             time.sleep(wait_do)
         if job:
             for dep in job.dependencies:
-                j.shell()
-                w
+                job = j.servers.myjobs.model_job.get(dep)
+                assert job.result == "OK"
             return "OK:%s" % job.id
         else:
             return "OK"
@@ -41,7 +40,11 @@ def main(self):
 
     job1 = self.schedule(do_ok, wait_do=4)
     job2 = self.schedule(do_ok, wait_do=2)
-    job3 = self.schedule(do_ok, dependencies=[job1, job2], wait=True)
+    job3 = self.schedule(do_ok, dependencies=[job1, job2], wait=True, timeout=10, die=False)
+
+    # j.shell()
+
+    assert job3.state == "OK"
 
     print("TEST OK FOR dependencies")
 
