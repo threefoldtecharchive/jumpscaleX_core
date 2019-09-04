@@ -792,6 +792,23 @@ class SystemFS(j.baseclasses.object):
         # 2. `sensitive`: case-sensitive comparison
         # 3. `insensitive`: case-insensitive comparison
         """
+        def filter_include(fullpath):
+            include = False
+            if (filter is None) or matcher(direntry, filter):
+                if (minmtime is not None) or (maxmtime is not None):
+                    mymtime = os.stat(fullpath)[ST_MTIME]
+                    if (minmtime is None) or (mymtime > minmtime):
+                        if (maxmtime is None) or (mymtime < maxmtime):
+                            include = True
+                else:
+                    include = True
+                if include:
+                    if exclude != []:
+                        for excludeItem in exclude:
+                            if matcher(direntry, excludeItem):
+                                include = False
+            return include
+
         dircontent = self._listInDir(path, listSymlinks=listSymlinks)
         filesreturn = []
 
@@ -816,26 +833,13 @@ class SystemFS(j.baseclasses.object):
                     fullpath = self.readLink(fullpath)
 
             if self.isFile(fullpath) and "f" in type:
-                includeFile = False
-                if (filter is None) or matcher(direntry, filter):
-                    if (minmtime is not None) or (maxmtime is not None):
-                        mymtime = os.stat(fullpath)[ST_MTIME]
-                        if (minmtime is None) or (mymtime > minmtime):
-                            if (maxmtime is None) or (mymtime < maxmtime):
-                                includeFile = True
-                    else:
-                        includeFile = True
-                if includeFile:
-                    if exclude != []:
-                        for excludeItem in exclude:
-                            if matcher(direntry, excludeItem):
-                                includeFile = False
-                    if includeFile:
+                    if filter_include(fullpath):
                         filesreturn.append(fullpath)
             elif self.isDir(fullpath):
                 if "d" in type:
                     # if not(listSymlinks==False and self.isLink(fullpath)):
-                    filesreturn.append(fullpath)
+                    if filter_include(fullpath):
+                        filesreturn.append(fullpath)
                 if recursive:
                     newdepth = depth
                     if newdepth is not None and newdepth != 0:
