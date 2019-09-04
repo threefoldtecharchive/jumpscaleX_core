@@ -5,6 +5,7 @@ import sys
 import gevent
 import signal
 import os
+import time
 
 
 def deadline(timeout, *args):
@@ -175,7 +176,6 @@ class MyWorkerProcess(j.baseclasses.object):
                 job = self._job_get(jobid)
                 skip = False
                 relaunch = False
-                jobdata = job._ddict
                 for dep_id in job.dependencies:
                     job_deb = self._job_get(dep_id)
                     if job_deb.state in ["ERROR", "HALTED"]:
@@ -192,6 +192,10 @@ class MyWorkerProcess(j.baseclasses.object):
                             relaunch = True
 
                 if skip and relaunch:
+                    if self.queue_jobs_start.qsize() == 0:
+                        # means we are waiting for some jobs to finish, lets wait 1 sec before we throw this job back on queue
+                        self._log_info("job queue empty, will wait 1 sec to relaunch the job", data=job)
+                        time.sleep(1)
                     self.queue_jobs_start.put(job.id)
 
                 if not skip:
