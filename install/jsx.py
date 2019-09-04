@@ -65,7 +65,7 @@ def jumpscale_get(die=True):
         from Jumpscale import j
     except Exception as e:
         if die:
-            raise j.exceptions.Operations("ERROR: cannot use jumpscale yet, has not been installed")
+            raise RuntimeError("ERROR: cannot use jumpscale yet, has not been installed")
         return None
     return j
 

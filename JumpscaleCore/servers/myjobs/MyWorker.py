@@ -52,13 +52,13 @@ class MyWorker(j.baseclasses.object):
         self.queue_return = j.clients.redis.queue_get(redisclient=redisclient, key="queue:jobs:return", fromcache=False)
 
         # test we are using the right redis client
-        assert self.queue_jobs_start._db_.source == "worker"
-        assert self.queue_return._db_.source == "worker"
+        # assert self.queue_jobs_start._db_.source == "worker"
+        # assert self.queue_return._db_.source == "worker"
 
         j.errorhandler.handlers.append(self.error_handler)
 
         storclient = j.clients.rdb.client_get(redisclient=redisclient)
-        assert storclient._redis.source == "worker"
+        # assert storclient._redis.source == "worker"
 
         self.bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
         self.model_job = self.bcdb.model_get(url="jumpscale.myjobs.job")

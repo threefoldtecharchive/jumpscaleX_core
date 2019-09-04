@@ -291,7 +291,10 @@ class BCDBModel(j.baseclasses.object):
 
     def get_by_name(self, name, nid=1):
         args = {"name": name}
-        return self.find(nid=nid, **args)
+        list_obj = self.find(nid=nid, **args)
+        if len(list_obj) > 0:
+            return list_obj[0]
+        raise j.exceptions.NotFound("cannot find data with name : %s" % name)
 
     def search(self, text, property_name=None):
         # FIXME: get the real nids

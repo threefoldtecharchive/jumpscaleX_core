@@ -83,7 +83,7 @@ class ZDBServer(j.baseclasses.object_config):
     def datadir(self):
         return "/sandbox/var/zdb/%s/" % self.name
 
-    def client_admin_get(self, name="test"):
+    def client_admin_get(self):
         """
 
         """

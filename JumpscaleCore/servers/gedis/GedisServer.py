@@ -48,6 +48,7 @@ class GedisServer(JSBaseConfig):
         self.chatbot = GedisChatBotFactory()
 
         self.namespaces = ["system", "default"]
+        self._threebot_server = None
 
         # hook to allow external servers to find this gedis
         # self.server_gedis = self

@@ -1,7 +1,4 @@
 from Jumpscale import j
-
-import base64
-import time
 import os
 
 
@@ -418,7 +415,6 @@ class SSHClientBase(j.baseclasses.object_config):
         @param remote can be ip addr or hostname of remote,
                     if given will execute cmds there
         """
-
         if "sudo -H -SE" in content:
             raise j.exceptions.Base(content)
 
@@ -429,11 +425,11 @@ class SSHClientBase(j.baseclasses.object_config):
             content += "\n"
 
         if die:
-            content = "set -ex\n{}".format(content)
+            content = "set -e\n{}".format(content)
 
         dpath = "/tmp/jsxssh_{}.sh".format(j.data.idgenerator.generateRandomInt(1, 100000))
 
-        self.executor.file_write(dpath, content, mode="7770")
+        self.executor.file_write(dpath, content, mode="777")
 
         # j.sal.fs.writeFile(path, content)
         #

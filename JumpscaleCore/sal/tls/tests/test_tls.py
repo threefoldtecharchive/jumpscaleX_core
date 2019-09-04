@@ -1,7 +1,6 @@
 import subprocess
 import pytest
 
-from JumpscaleLibs.sal.tls.TLS import TLS
 from Jumpscale import j
 
 SUBJECTS = {"C": "AE", "L": "Dubai", "O": "GreenITGlobe", "OU": "0-complexity", "ST": "Dubai", "CN": "test.com"}
@@ -9,7 +8,7 @@ SUBJECTS = {"C": "AE", "L": "Dubai", "O": "GreenITGlobe", "OU": "0-complexity", 
 
 def full_flow():
     j.sal.fs.createDir("/tmp/testtls")
-    tls = TLS(path="/tmp/testtls")
+    tls = j.sal.tls.get(path="/tmp/testtls")
 
     ca, ca_key = tls.ca_create(dict(SUBJECTS))
     assert j.sal.fs.exists(ca)
@@ -26,7 +25,7 @@ def full_flow():
 
 def signedcert_flow():
     j.sal.fs.createDir("/tmp/testtls")
-    tls = TLS(path="/tmp/testtls")
+    tls = j.sal.tls.get(path="/tmp/testtls")
 
     ca, ca_key = tls.ca_create(dict(SUBJECTS))
     assert j.sal.fs.exists(ca)
