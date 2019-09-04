@@ -74,7 +74,7 @@ class MyWorkerProcess(j.baseclasses.object):
         self.model_worker.trigger_add(self._save_data)
         self.model_job.trigger_add(self._save_job)
 
-        self.data = self.model_worker.get(worker_id)
+        self.data = self._worker_get(worker_id)
         self.data.state = "new"
         self.data.current_job = 2147483647  # means nil
         self.data.id = worker_id
@@ -127,7 +127,16 @@ class MyWorkerProcess(j.baseclasses.object):
             res = self.model_action.get(id, die=False)
             if res:
                 return res
-        raise j.exceptions.JSBUG("job should always be there:%s" % id)
+        raise j.exceptions.JSBUG("action should always be there:%s" % id)
+
+    def _worker_get(self, id):
+        deadline = j.data.time.epoch + 3
+        while deadline > j.data.time.epoch:
+            res = self.model_worker.get(id, die=False)
+            if res:
+                return res
+        self._log_info("worker object no longer exists, so I need to stop, prob reset of data")
+        sys.exit(0)
 
     def start(self):
         self._log_info("start", data=self.data)
@@ -148,7 +157,7 @@ class MyWorkerProcess(j.baseclasses.object):
             else:
                 res = self.queue_jobs_start.get(timeout=1)
 
-            self.data = self.model_worker.get(self.data.id)
+            self.data = self._worker_get(self.data.id)
             if self.data.halt or res == b"halt":
                 return self.stop()
 

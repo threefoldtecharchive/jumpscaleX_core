@@ -5,6 +5,7 @@ def main(self):
     """
     kosmos 'j.servers.myjobs.test("simple_error")'
     """
+    self.stop(reset=True)
 
     j.tools.logger.debug = True
 
@@ -45,6 +46,6 @@ def main(self):
 
     self._log_info("basic error test done")
 
-    self.stop(reset=True)
+    self.stop(reset=False)
 
     print("TEST OK")

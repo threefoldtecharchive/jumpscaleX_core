@@ -9,6 +9,8 @@ def main(self):
     """
     kosmos -p 'j.servers.myjobs.test("dependencies")'
     """
+    self.stop(reset=True)
+
     reset = True
     if reset:
         self.stop(reset=True)  # will make sure all tmux are gone

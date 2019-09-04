@@ -578,7 +578,7 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
             current_id = None
 
         while current_id:
-            job = self.model_job.get(current_id)
+            job = self.model_job.get(current_id, die=False)
             if job == None:
                 raise j.exceptions.Base("job:%s not found" % current_id)
             if job.time_stop != 0:

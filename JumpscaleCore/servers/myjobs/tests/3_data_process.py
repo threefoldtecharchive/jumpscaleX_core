@@ -2,12 +2,14 @@ import gevent
 from Jumpscale import j
 
 
-def main(self, start=True, count=20):
+def main(self, reset=True, count=20):
     """
     kosmos -p 'j.servers.myjobs.test("data_process")'
     """
-    if start:
-        self.workers_tmux_start(4)
+    if reset:
+        self.stop(reset=True)
+
+    self.workers_tmux_start(4)
 
     def wait_1sec():
         gevent.sleep(1)
