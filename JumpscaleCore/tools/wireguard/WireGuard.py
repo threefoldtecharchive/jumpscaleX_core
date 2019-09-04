@@ -3,6 +3,7 @@ from configparser import ConfigParser
 from io import StringIO
 import netaddr
 
+
 def to_section(section, data):
     config = ConfigParser()
     config.optionxform = str

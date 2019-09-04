@@ -36,7 +36,4 @@ def main(self):
     )
 
     static_content = j.clients.http.get("http://0.0.0.0/website/")
-    assert (
-        static_content
-        == '<html>\nHello from static!\n</html>\n'
-    )
+    assert static_content == "<html>\nHello from static!\n</html>\n"

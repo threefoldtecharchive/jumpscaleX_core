@@ -172,7 +172,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             startup.executor = self.executor
             startup.interpreter = "python"
             startup.timeout = 60
-            startup.ports = [8900, 4444, 8090]
+            startup.ports = [8901, 4444, 8090]
             self._startup_cmd = startup
         return self._startup_cmd
 

@@ -792,6 +792,7 @@ class SystemFS(j.baseclasses.object):
         # 2. `sensitive`: case-sensitive comparison
         # 3. `insensitive`: case-insensitive comparison
         """
+
         def filter_include(fullpath):
             include = False
             if (filter is None) or matcher(direntry, filter):
@@ -833,8 +834,8 @@ class SystemFS(j.baseclasses.object):
                     fullpath = self.readLink(fullpath)
 
             if self.isFile(fullpath) and "f" in type:
-                    if filter_include(fullpath):
-                        filesreturn.append(fullpath)
+                if filter_include(fullpath):
+                    filesreturn.append(fullpath)
             elif self.isDir(fullpath):
                 if "d" in type:
                     # if not(listSymlinks==False and self.isLink(fullpath)):
