@@ -73,19 +73,7 @@ def main(self):
 
     # nothing got started yet
 
-    def tmux_start():
-        w = self.model_worker.new()
-        cmd = j.servers.startupcmd.get(name="myjobs_worker")
-        cmd.cmd_start = "j.servers.myjobs.worker_start_inprocess(worker_id=%s)" % w.id
-        cmd.process_strings = "/sandbox/var/cmds/myjobs_worker.py"
-        cmd.interpreter = "jumpscale"
-        cmd.stop(force=True)
-        cmd.start()
-        print("WORKER STARTED IN TMUX")
-        return cmd
-
-    cmd = tmux_start()
-    self.dataloop = gevent.spawn(self._data_loop)
+    gevent.spawn(self._data_loop)
 
     job = jobs[0]
 
@@ -119,12 +107,11 @@ def main(self):
     # assert job_return.id == 11
     # assert job_return.state == "OK"
 
-    cmd.stop(force=True)
 
     # TMUX and in process tests are done, lets now see if as subprocess it works
 
     reset()
-    self.workers_start_tmux(nrworkers=10)
+    self.workers_tmux_start(nr_workers=10)
 
     print("wait to schedule jobs")
     gevent.sleep(2)
