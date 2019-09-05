@@ -6,7 +6,7 @@ GITREPOS = {}
 
 GITREPOS["builders_extra"] = [
     "https://github.com/threefoldtech/jumpscaleX_builders",
-    "%s" %DEFAULTBRANCH,
+    "%s" % DEFAULTBRANCH,
     "JumpscaleBuildersExtra",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersExtra",
 ]
@@ -14,13 +14,13 @@ GITREPOS["builders_extra"] = [
 
 GITREPOS["installer"] = [
     "https://github.com/threefoldtech/jumpscaleX_core",
-    "%s" %DEFAULTBRANCH,
+    "%s" % DEFAULTBRANCH,
     "install",  # directory in the git repo
     "{DIR_BASE}/installer",
 ]
 GITREPOS["core"] = [
     "https://github.com/threefoldtech/jumpscaleX_core",
-    "%s" %DEFAULTBRANCH,
+    "%s" % DEFAULTBRANCH,
     "JumpscaleCore",
     "{DIR_BASE}/lib/jumpscale/Jumpscale",
 ]
@@ -28,14 +28,14 @@ GITREPOS["home"] = ["https://github.com/threefoldtech/home", "master", "", "{DIR
 
 GITREPOS["builders"] = [
     "https://github.com/threefoldtech/jumpscaleX_builders",
-    "%s" %DEFAULTBRANCH,
+    "%s" % DEFAULTBRANCH,
     "JumpscaleBuilders",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuilders",
 ]
 
 GITREPOS["builders_community"] = [
     "https://github.com/threefoldtech/jumpscaleX_builders",
-    "%s" %DEFAULTBRANCH,
+    "%s" % DEFAULTBRANCH,
     "JumpscaleBuildersCommunity",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersCommunity",
 ]
@@ -43,33 +43,33 @@ GITREPOS["builders_community"] = [
 
 GITREPOS["libs_extra"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs_extra",
-    "%s" %DEFAULTBRANCH,
+    "%s" % DEFAULTBRANCH,
     "JumpscaleLibsExtra",
     "{DIR_BASE}/lib/jumpscale/JumpscaleLibsExtra",
 ]
 GITREPOS["libs"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs",
-    "%s" %DEFAULTBRANCH,
+    "%s" % DEFAULTBRANCH,
     "JumpscaleLibs",
     "{DIR_BASE}/lib/jumpscale/JumpscaleLibs",
 ]
 GITREPOS["threebot"] = [
     "https://github.com/threefoldtech/jumpscaleX_threebot",
-    "%s" %DEFAULTBRANCH,
+    "%s" % DEFAULTBRANCH,
     "ThreeBotPackages",
     "{DIR_BASE}/lib/jumpscale/threebot_packages",
 ]
 
 GITREPOS["tutorials"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs",
-    "%s" %DEFAULTBRANCH,
+    "%s" % DEFAULTBRANCH,
     "tutorials",
     "{DIR_BASE}/lib/jumpscale/tutorials",
 ]
 
 GITREPOS["kosmos"] = [
     "https://github.com/threefoldtech/jumpscaleX_threebot",
-    "%s" %DEFAULTBRANCH,
+    "%s" % DEFAULTBRANCH,
     "kosmos",
     "{DIR_BASE}/lib/jumpscale/kosmos",
 ]

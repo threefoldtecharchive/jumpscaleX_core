@@ -130,8 +130,7 @@ class WireGuard(j.baseclasses.object_config):
             self.executor.execute(f"wg-quick up {configpath}")
         else:
             # let's update config path
-            self.executor.execute(
-                f"wg-quick strip {configpath} | wg setconf {self.interface_name} /dev/stdin")
+            self.executor.execute(f"wg-quick strip {configpath} | wg setconf {self.interface_name} /dev/stdin")
 
     def start(self):
         if self.executor.platformtype.platform_is_osx:

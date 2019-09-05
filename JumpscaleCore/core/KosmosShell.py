@@ -329,7 +329,6 @@ def ptconfig(repl):
 
     repl.min_brightness = 0.3
 
-
     @repl.add_key_binding(Keys.ControlJ)
     def _debug_event(event):
         """
@@ -341,7 +340,8 @@ def ptconfig(repl):
         statements = b.document.text
         if statements:
             import linecache
-            linecache.cache['<string>'] = (len(statements), time.time(), statements.split('\n'), '<string>')
+
+            linecache.cache["<string>"] = (len(statements), time.time(), statements.split("\n"), "<string>")
             app.exit(pudb.runstatement(statements))
             app.pre_run_callables.append(b.reset)
         else:
@@ -366,7 +366,7 @@ def ptconfig(repl):
     def _docevent(event):
         b = event.cli.current_buffer
         parent, member, _ = get_current_line(b.document)
-        member = member.rstrip('(')
+        member = member.rstrip("(")
 
         try:
             d = None
@@ -394,7 +394,6 @@ def ptconfig(repl):
     @repl.add_key_binding("c-p", filter=~sidebar_visible)
     def _logevent(event):
         LogPane.Show = not LogPane.Show
-
 
     class CustomPrompt(PromptStyle):
         """

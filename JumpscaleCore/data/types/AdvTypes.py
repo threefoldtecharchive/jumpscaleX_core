@@ -194,7 +194,7 @@ class IPRange(String):
         self.BASETYPE = "string"
         self._RE = re.compile("[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,2}")
         if not default:
-                default = "192.168.0.1.1/24"
+            default = "192.168.0.1.1/24"
         self._default = default
 
     def check(self, value):

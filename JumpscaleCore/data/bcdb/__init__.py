@@ -23,11 +23,13 @@ import sys
 import gevent
 import gevent.monkey
 
+
 def flush_bcdb(*args):
     for bcdb in j.data.bcdb.find():
         bcdb.dataprocessor_stop()
     if args:
         sys.exit(1)
+
 
 atexit.register(flush_bcdb)
 if gevent.monkey.saved:

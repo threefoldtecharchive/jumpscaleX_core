@@ -107,7 +107,6 @@ def main(self):
     # assert job_return.id == 11
     # assert job_return.state == "OK"
 
-
     # TMUX and in process tests are done, lets now see if as subprocess it works
 
     reset()
