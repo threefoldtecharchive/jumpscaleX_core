@@ -47,7 +47,7 @@ Usage: jsx install [OPTIONS]
 Options:
   --configdir TEXT   default /sandbox/cfg if it exists otherwise ~/sandbox/cfg
   -w, --wiki         also install the wiki system
-  --no_sshagent      do you want to use an ssh-agent
+  --no-sshagent      do you want to use an ssh-agent
   -b, --branch TEXT  jumpscale branch. default 'master' or 'development' for
                      unstable release
   --pull             pull code from git, if not specified will only pull if
