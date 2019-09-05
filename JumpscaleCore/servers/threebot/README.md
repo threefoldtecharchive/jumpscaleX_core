@@ -2,9 +2,30 @@
 Threebot server is designed to be your own digital self, you can host content, sites and even complex applications very easily
 
 ## how to start 
+### Basic threebot
 ```bash
-kosmos 'j.servers.threebot.get("3bot_name").start()'
+kosmos 'j.servers.threebot.get("3bot_name").start(web=False, ssl=False)'
 ```
+this will start the basic threebot server which will have:
+- [gedis server](https://github.com/threefoldtech/jumpscaleX_core/blob/development/docs/Gedis/README.md) with base actors loaded
+- [zdb server](https://github.com/threefoldtech/0-db/blob/development/README.md)
+- [sonic server](https://github.com/valeriansaliou/sonic/blob/master/README.md) (used for full text indexing)
+
+### threebot for web
+```bash
+kosmos 'j.servers.threebot.get("3bot_name").start(web=True, ssl=False)'
+```
+this will start the basic servers in addition to servers that will be needed to host a web application
+- [openresty server]() 
+- [threebot bottle server]() a bottle server to serve the content of [bcdbfs](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/sal/bcdbfs/README.md) as static files 
+- websocket proxy server for gedis server
+
+### threebot for web with ssl
+```bash
+kosmos 'j.servers.threebot.get("3bot_name").start(web=True, ssl=True)'
+```
+this will start the same threebot for web server with ssl configured
+
 
 ## Packages
 packages is how you tell your threebot what to serve and how
@@ -54,3 +75,9 @@ j.tools.threebot_packages.get("package_name",
                             path="{path to your local package}" ,
                             threebotserver_name="{threebot server name}")
 ```
+
+## example packages
+- [pastebin](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development_web_examples/ThreeBotPackages/pastebin/README.md
+)
+- [alerta](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development_web_examples/ThreeBotPackages/alerta/README.md)
+- [myjobs](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development_web_examples/ThreeBotPackages/myjobs/README.md)
