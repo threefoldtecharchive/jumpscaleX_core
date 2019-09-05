@@ -40,7 +40,7 @@ def queue_method(func):
         else:
             event = Event()
             # print("need to find bcdb through self")
-            j.data.bcdb.latest.queue.put((func, args, kwargs, event, None))
+            self.bcdb.queue.put((func, args, kwargs, event, None))
             event.wait(1000.0)  # will wait for processing
             # self._log_debug("OK")
             return
@@ -66,12 +66,12 @@ def queue_method_results(func):
                 id = 0
                 self.results_id = 0
             # print("need to find bcdb through self")
-            j.data.bcdb.latest.results_id += 1
-            j.data.bcdb.latest.queue.put((func, args, kwargs, event, id))
+            self.bcdb.results_id += 1
+            self.bcdb.queue.put((func, args, kwargs, event, id))
             event.wait(1000.0)  # will wait for processing
             # self._log_debug("OK")
-            res = j.data.bcdb.latest.results[id]
-            j.data.bcdb.latest.results.pop(id)
+            res = self.bcdb.results[id]
+            self.bcdb.results.pop(id)
             return res
 
     return wrapper_queue_method

@@ -24,7 +24,6 @@ import gevent
 from Jumpscale.clients.stor_zdb.ZDBClientBase import ZDBClientBase
 from Jumpscale.clients.stor_rdb.RDBClient import RDBClient
 from Jumpscale.clients.stor_sqlite.DBSQLite import DBSQLite
-from gevent import queue
 from .BCDBModel import BCDBModel
 from .BCDBMeta import BCDBMeta
 
@@ -313,8 +312,7 @@ class BCDB(j.baseclasses.object):
                 self.queue.put((None, ["STOP"], {}, None, None))
                 while self.queue.qsize() > 0:
                     self._log_debug("wait dataprocessor to stop")
-                    time.sleep(0.1)
-            self.dataprocessor_greenlet.kill()
+                    gevent.sleep(1)
 
         self._log_info("DATAPROCESSOR & SQLITE STOPPED OK")
         return True

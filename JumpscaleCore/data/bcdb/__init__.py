@@ -16,3 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
 # LICENSE END
+from Jumpscale import j
+import atexit
+import signal
+import sys
+import gevent
+import gevent.monkey
+
+def flush_bcdb(*args):
+    for bcdb in j.data.bcdb.find():
+        bcdb.dataprocessor_stop()
+    if args:
+        sys.exit(1)
+
+atexit.register(flush_bcdb)
+if gevent.monkey.saved:
+    gevent.signal(signal.SIGTERM, flush_bcdb, 1)
