@@ -26,9 +26,10 @@ from Jumpscale.sal.fs.SystemFSDecorators import (
 )
 
 JSBASE = j.baseclasses.object
+TESTTOOLS = j.baseclasses.testtools
 
 
-class SystemFS(j.baseclasses.testtools, j.baseclasses.object):
+class SystemFS(JSBASE, TESTTOOLS):
 
     __jslocation__ = "j.sal.fs"
 
@@ -910,21 +911,6 @@ class SystemFS(j.baseclasses.testtools, j.baseclasses.object):
             if new_file_name != file_name:
                 new_path = self.joinPaths(dir_name, new_file_name)
                 self.renameFile(path, new_path)
-
-    def replaceWordsInFiles(
-        self, pathToSearchIn, templateengine, recursive=True, filter=None, minmtime=None, maxmtime=None
-    ):
-        """
-        apply templateengine to list of found files
-        @param templateengine =te  #example below
-            te=j.tools.code.template_engine_get()
-            te.add("name",self.a.name)
-            te.add("description",self.ayses.description)
-            te.add("version",self.ayses.version)
-        """
-        paths = self.listFilesInDir(pathToSearchIn, recursive, filter, minmtime, maxmtime)
-        for path in paths:
-            templateengine.replaceInsideFile(path)
 
     @path_check(path={"required", "replace"})
     def listDirsInDir(self, path, recursive=False, dirNameOnly=False, findDirectorySymlinks=True, followSymlinks=True):
