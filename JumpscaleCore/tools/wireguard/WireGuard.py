@@ -116,6 +116,7 @@ class WireGuard(j.baseclasses.object_config):
             subnet = netaddr.IPNetwork(peerobject.network_private)
             if peerobject.network_public:
                 peer["EndPoint"] = f"{peerobject.network_public}:{peerobject.port}"
+                peer["PersistentKeepalive"] = "25"
                 peer["AllowedIPs"] = f"{subnet.network}/{subnet.prefixlen}"
             else:
                 peer["AllowedIPs"] = f"{subnet.ip}"
