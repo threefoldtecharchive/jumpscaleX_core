@@ -8,6 +8,16 @@ website is equivalent to vhost in Nginx, it listens on a port and serves some lo
 ## Locations:
 there are three types of locations
 
+to use locations:
+```
+server = j.servers.openresty.get("example")
+server.install(reset=True)
+server.configure()
+website = server.websites.get("example")
+website.ssl = False
+locations = website.locations.get("main")
+```
+
 
 ### 1- static location:
 a location to serve static files  
