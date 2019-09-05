@@ -18,8 +18,8 @@ def main(self):
 
     website_location = locations.locations_static.new()
     website_location.name = "home"
-    website_location.path_url = ""
-    website_location.path_location = f"{self._dirpath}/examples/website"
+    website_location.path_url = "/"
+    website_location.path_location = f"{self._dirpath}/examples/website/"
 
     locations.configure()
     website.configure()

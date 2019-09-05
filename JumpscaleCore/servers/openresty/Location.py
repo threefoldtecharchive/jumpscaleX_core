@@ -28,6 +28,7 @@ class Location(j.baseclasses.object_config):
         name = "" (S)
         path_url = "/"
         path_location = ""
+        index = "index.html"
         use_jumpscale_weblibs = false (B)
 
         @url = jumpscale.openresty.location_proxy
@@ -68,13 +69,13 @@ class Location(j.baseclasses.object_config):
         in the location obj: config is a server config file of nginx (in text format)
         can use template variables with obj...  (obj is this obj = self, location object is the sub obj)
 
-
-        :param config:￿,
         :return:
         """
         j.sal.fs.createDir(self.path_cfg_dir)
 
         for location in self.locations_static:
+            if not location.path_location.endswith("/"):
+                location.path_location += "/"
             content = j.tools.jinja2.file_render(
                 path=f"{self._dirpath}/templates/location_static.conf", write=False, obj=location
             )

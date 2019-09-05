@@ -27,7 +27,7 @@ rack.start()
     locations = website.locations.get("websocket_proxied")
     proxy_location = locations.locations_proxy.new()
     proxy_location.name = "proxy2"
-    proxy_location.path_url = "ws/"
+    proxy_location.path_url = "/"
     proxy_location.ipaddr_dest = "0.0.0.0"
     proxy_location.port_dest = "4444"
     proxy_location.type = "websocket"
@@ -39,5 +39,5 @@ rack.start()
     from websocket import WebSocket
 
     ws = WebSocket()
-    ws.connect("ws://0.0.0.0/ws/")
+    ws.connect("ws://0.0.0.0/")
     assert ws.connected
