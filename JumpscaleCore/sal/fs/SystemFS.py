@@ -1390,7 +1390,7 @@ class SystemFS(j.baseclasses.testtools, j.baseclasses.object):
         @rtype: md5 of the directory
         """
         dir_hash = hashlib.md5()
-        files = self.listFilesInDir(folder, recursive=True, followSymlinks=True, listSymlinks=True)
+        files = sorted(self.listFilesInDir(folder, recursive=True, followSymlinks=True, listSymlinks=True))
         for file in files:
             if ignore_empty_files:
                 if self.fileSize(file) == 0:
