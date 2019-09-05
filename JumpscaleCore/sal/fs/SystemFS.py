@@ -1131,7 +1131,7 @@ class SystemFS(j.baseclasses.object):
                 return True
         return False
 
-    @path_check(path={"required", "replace", "exists"})
+    @path_check(path={"required", "replace"})
     def isLink(self, path, checkJunction=False, check_valid=False):
         """Check if the specified path is a link
         @param path: string
@@ -1161,9 +1161,10 @@ class SystemFS(j.baseclasses.object):
 
         if os.path.islink(path):
             if check_valid:
-                j.shell()
-                w
-            self._log_debug("path %s is a link" % path, _levelup=3)
+                if not os.path.exists(path):
+                    self._log_debug("path %s is not a link and will be removed" % path, _levelup=3)
+                    self.isLinkAndBroken(path)
+                    return False
             return True
         self._log_debug("path %s is not a link" % path, _levelup=3)
         return False
