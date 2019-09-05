@@ -87,7 +87,7 @@ Options:
                        code directory does not exist yet
   -r, --reinstall      reinstall, basically means will try to re-do everything
                        without removing the data
-  --no_interactive     default is interactive
+  --no-interactive     default is interactive
   --help               Show this message and exit.
 ```
 
