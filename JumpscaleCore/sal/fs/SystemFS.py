@@ -1765,12 +1765,12 @@ class SystemFS(j.baseclasses.testtools, j.baseclasses.object):
             cmd = "tar xzf '%s' -C '%s'" % (sourceFile, destinationdir)
             j.sal.process.execute(cmd)
 
-    def test(self, name="basic", **kwargs):
+    def test(self, name=""):
         """
         it's run all tests
         kosmos 'j.sal.fs.test()'
 
         """
-        self._test_run(name=name, **kwargs)
+        self._test_run(name=name)
 
         print("TEST OK ALL PASSED")
