@@ -28,7 +28,7 @@ from Jumpscale.sal.fs.SystemFSDecorators import (
 JSBASE = j.baseclasses.object
 
 
-class SystemFS(j.baseclasses.object):
+class SystemFS(j.baseclasses.testtools, j.baseclasses.object):
 
     __jslocation__ = "j.sal.fs"
 
@@ -573,7 +573,12 @@ class SystemFS(j.baseclasses.object):
         if checkIsFile and not self.isFile(path):
             raise j.exceptions.RuntimeError("Path %s should be a file (not e.g. a dir), error when importing" % path)
         extension = ""
-        if self.isDir(path):
+
+        isDir = False
+        if existCheck:
+            isDir = self.isDir(path)
+
+        if isDir:
             name = ""
             path = self.pathClean(path)
         else:
@@ -581,6 +586,8 @@ class SystemFS(j.baseclasses.object):
             path = self.pathClean(path)
             # make sure only clean path is left and the filename is out
             path = self.getDirName(path)
+            # if it is a root directory getDirName will return //
+            path = self.pathClean(path)
             # find extension
             regexToFindExt = "\.\w*$"
             if j.data.regex.match(regexToFindExt, name):
@@ -597,6 +604,10 @@ class SystemFS(j.baseclasses.object):
             dirOrFilename = self.getDirName(path, lastOnly=True)
         else:
             dirOrFilename = name
+
+        if name == "" and dirOrFilename == "":
+            # Here we are at a root level so instead of retruning an empty string we want to return the directory name
+            dirOrFilename = self.pathClean(path)
         # check for priority
         regexToFindPriority = "^\d*_"
         if j.data.regex.match(regexToFindPriority, dirOrFilename):
@@ -608,7 +619,9 @@ class SystemFS(j.baseclasses.object):
             )
         else:
             priority = 0
-
+        # for consistency reason path should always end with a /
+        if path[len(path) - 1] != "/":
+            path += "/"
         return path, name, extension, priority  # if name =="" then is dir
 
     def getcwd(self):
@@ -1749,3 +1762,13 @@ class SystemFS(j.baseclasses.object):
         else:
             cmd = "tar xzf '%s' -C '%s'" % (sourceFile, destinationdir)
             j.sal.process.execute(cmd)
+
+    def test(self, name="basic", **kwargs):
+        """
+        it's run all tests
+        kosmos 'j.sal.fs.test()'
+
+        """
+        self._test_run(name=name, **kwargs)
+
+        print("TEST OK ALL PASSED")
