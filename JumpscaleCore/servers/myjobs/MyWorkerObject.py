@@ -71,7 +71,7 @@ class MyWorkerObject(j.baseclasses.object_config):
         cmd.cmd_start = "j.servers.myjobs._worker_inprocess_start_from_tmux(%s)" % self.nr
         # COREX has still issues so fall back on tmux
         cmd.executor = "tmux"
-        cmd.interpreter = "jumpscale"
+        cmd.interpreter = "jumpscale_gevent"
         cmd.start(reset=True)
 
     def _worker_start_inprocess(self):

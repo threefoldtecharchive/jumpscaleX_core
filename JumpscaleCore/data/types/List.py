@@ -273,7 +273,8 @@ class List(TypeBaseObjFactory):
         elif j.data.types.string.check(val):
             if val.strip("'\" []") in [None, ""]:
                 return ListObject(self, [], ttype)
-            val = [i.strip("[").strip("]") for i in val.split(",")]
+            val = val.strip().strip("[").strip("]").strip()
+            val = [i.strip() for i in val.split(",") if i.strip() != ""]
 
         if val.__class__.__name__ in ["_DynamicListBuilder", "_DynamicListReader"]:
             val = [i for i in val]  # get binary data

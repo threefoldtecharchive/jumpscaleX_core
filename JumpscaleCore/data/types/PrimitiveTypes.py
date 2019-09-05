@@ -39,6 +39,8 @@ class String(TypeBaseClass):
         """
         if value is None:
             return self.default_get()
+        if isinstance(value, str) and value.lower() == "none":
+            return
         if isinstance(value, bytes):
             value = value.decode()
         try:

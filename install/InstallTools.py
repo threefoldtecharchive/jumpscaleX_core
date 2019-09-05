@@ -1645,7 +1645,24 @@ class Tools:
         for replace_args in args_list:
             for key, val in replace_args.items():
                 if key not in args_new:
-                    args_new[key] = val
+                    if isinstance(val, list) or isinstance(val, set):
+                        val = [str(i) for i in val]
+                        val = ",".join(val)
+                        val = "[%s]" % val
+                    elif isinstance(val, str):
+                        if val.strip().lower() == "self":
+                            val = None
+                        if val.strip().lower() == "none":
+                            val = None
+                    elif isinstance(val, int) or isinstance(val, float) or isinstance(val, bool):
+                        # val = str(val)
+                        pass
+                    elif val != None:
+                        # Tools.shell()
+                        # w
+                        raise Tools.exceptions.Input("cannot replace unknown argument:%s" % val)
+                    if val:
+                        args_new[key] = val
 
         def process_line(line, args_new):
             # IF YOU TOUCH THIS LET KRISTOF KNOW

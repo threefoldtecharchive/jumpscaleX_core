@@ -421,6 +421,7 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
         gevent=False,
         wait=False,
         die=True,
+        code_replace=False,
         **kwargs,
     ):
         """
@@ -443,6 +444,11 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
         code = inspect.getsource(method)
         code = j.core.text.strip(code)
         code = code.replace("self,", "").replace("self ,", "").replace("self  ,", "")
+
+        if code_replace:
+            code = j.core.tools.text_replace(code, text_strip=False, args=kwargs)
+
+            j.shell()
 
         methodname = ""
         for line in code.split("\n"):

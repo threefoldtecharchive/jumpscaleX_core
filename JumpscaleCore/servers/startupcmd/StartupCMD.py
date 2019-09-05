@@ -30,7 +30,7 @@ class StartupCMD(j.baseclasses.object_config):
         @url = jumpscale.startupcmd.1
         name* = ""
         cmd_start = "" (s)
-        interpreter = "bash,jumpscale,direct,python" (E)  #direct means we will not put in bash script
+        interpreter = "bash,jumpscale,jumpscale_gevent,direct,python" (E)  #direct means we will not put in bash script
         cmd_stop = ""
         debug = False (b)
         path = "/tmp"
@@ -542,6 +542,19 @@ class StartupCMD(j.baseclasses.object_config):
             {% endif %}
             {{cmd}}
             """
+        elif self.interpreter == "jumpscale_gevent":
+            C = """
+            import gevent
+            from gevent import monkey
+            monkey.patch_all(subprocess=False)
+            from Jumpscale import j
+            j.application.bcdb_system
+            {% if cmdpath %}
+            j.sal.fs.changeDir("{{cmdpath}}")
+            {% endif %}
+            {{cmd}}
+            """
+
         elif "\n" in self.cmd_start.strip():
             C = self.cmd_start
         else:
