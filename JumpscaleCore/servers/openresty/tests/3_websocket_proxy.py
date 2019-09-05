@@ -37,6 +37,7 @@ rack.start()
     server.start()
 
     from websocket import WebSocket
+
     ws = WebSocket()
     ws.connect("ws://0.0.0.0/ws/")
     assert ws.connected

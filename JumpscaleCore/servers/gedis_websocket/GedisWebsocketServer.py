@@ -62,9 +62,11 @@ class GedisWebsocketServer(JSConfigClient):
         self.default.start()
         self.default.stop()
 
+
 class Application(WebSocketApplication):
 
     GEDIS_PORT = None
+
     def on_message(self, message):
         print(message)
         if message is None:

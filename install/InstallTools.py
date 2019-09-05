@@ -171,14 +171,12 @@ except:
                 return json.dumps(data, ensure_ascii=False, sort_keys=True, indent=True)
             except Exception as e:
                 # data = str(data)
-                Tools.shell()
-                data = "CANNOT SERIALIZE JSON"
+                data = "CANNOT SERIALIZE"
                 return data
 
     except:
 
         def serializer(data):
-            Tools.shell()
             return "CANNOT SERIALIZE"
 
 
@@ -1645,7 +1643,30 @@ class Tools:
         for replace_args in args_list:
             for key, val in replace_args.items():
                 if key not in args_new:
-                    args_new[key] = val
+                    if isinstance(val, list) or isinstance(val, set):
+                        out = "["
+                        for v in val:
+                            if isinstance(v, str):
+                                v = "'%s'" % v
+                            else:
+                                v = str(v)
+                            out += "%s," % v
+                        val = out.rstrip(",") + "]"
+                    elif isinstance(val, str):
+                        if val.strip().lower() == "self":
+                            val = None
+                        if val.strip().lower() == "none":
+                            val = None
+                    elif isinstance(val, int) or isinstance(val, float) or isinstance(val, bool):
+                        # val = str(val)
+                        pass
+                    elif val != None:
+                        val = Tools._data_serializer_safe(val)
+                        # Tools.shell()
+                        # w
+                        # raise Tools.exceptions.Input("cannot replace unknown argument:%s" % val)
+                    if val:
+                        args_new[key] = val
 
         def process_line(line, args_new):
             # IF YOU TOUCH THIS LET KRISTOF KNOW

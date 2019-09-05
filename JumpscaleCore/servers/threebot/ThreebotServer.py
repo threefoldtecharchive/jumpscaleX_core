@@ -76,7 +76,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         :return:
         """
         website = self.openresty_server.websites.get(f"{self.name}_websites")
-        website.ssl = (scheme_source == "https")
+        website.ssl = scheme_source == "https"
         website.port = port_source
         locations = website.locations.get(name)
         proxy_location = locations.locations_proxy.new()

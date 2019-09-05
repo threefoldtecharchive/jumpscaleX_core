@@ -39,7 +39,4 @@ def main(self):
     server.start()
 
     static_content = j.clients.http.get("http://0.0.0.0/proxy/")
-    assert (
-        static_content
-        == '<html>\nHello from static!\n</html>\n'
-    )
+    assert static_content == "<html>\nHello from static!\n</html>\n"
