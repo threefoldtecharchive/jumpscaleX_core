@@ -25,9 +25,13 @@ class JSXObject(j.baseclasses.object):
     def _init_pre(self, capnpdata=None, datadict={}, schema=None, model=None):
         self._capnp_obj_ = None
         self.id = None
-        assert schema
-        self._schema = schema
-        self._model = model
+        if model:
+            self._model = model
+            self._schema_ = None
+        else:
+            self._schema_ = schema
+            self._model = None
+            assert model == None
 
         self._deserialized_items = {}
 
@@ -42,6 +46,13 @@ class JSXObject(j.baseclasses.object):
         # self.nid = 1
 
         self._logger_enable()
+
+    @property
+    def _schema(self):
+        if self._model:
+            return self._model.schema
+        assert self._schema_
+        return self._schema_
 
     @property
     def _key(self):

@@ -77,7 +77,12 @@ class JSConfigBCDBBase(JSBase, Attr):
                 else:
                     raise j.exceptions.JSBUG("cannot find _SCHEMATEXT on childclass or class itself")
 
-            j.data.schema.get_from_text(s)
+            schema = j.data.schema.get_from_text(s)
+
+            # if schema.url == "jumpscale.servers.gipc.process.1":
+            #     from pudb import set_trace
+            #
+            #     set_trace()
 
             t2 = j.data.schema._schema_blocks_get(s)[0]
 

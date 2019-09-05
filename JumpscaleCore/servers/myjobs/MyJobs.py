@@ -51,6 +51,7 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
         self._workers_gipc_nr_min = 1
         self._workers_gipc_nr_max = 10
         self._mainloop_gipc = None
+        self._mainloop_tmux = None
         self._dataloop = None
 
         self.model_job = self._bcdb.model_get(schema=schema_job)
@@ -107,8 +108,10 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
         w.type = "tmux"
         w.nr = nr
         w.debug = debug
-        w.start()
+        w.save()
         self._dataloop_start()
+        if not self._mainloop_tmux:
+            self._mainloop_tmux = gevent.spawn(self._main_loop_tmux)
 
     def _worker_inprocess_start_from_tmux(self, nr):
         w = self.get(name="w%s" % nr)
@@ -174,7 +177,7 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
             self._dataloop = gevent.spawn(self._data_loop)
 
     def _dataloop_stop(self):
-        if not self._dataloop:
+        if self._dataloop:
             self._dataloop.kill()
             self._dataloop = None
 
@@ -255,6 +258,38 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
         while True:
             self._log_debug("data_process run")
             self._data_process_1time(timeout=1)
+
+    def _main_loop_tmux(self, reset=False):
+        while True:
+            self._log_debug("check workers")
+            for w in self.find():
+                if w.state == "HALTED":
+                    w.delete()
+                elif w.state in ["ERROR"]:
+                    self._log_warning("WORKER IN ERROR:%s" % w.nr)
+                    # auto restart when 41 sec in error
+                    if self.last_update < j.data.time.epoch - 41:
+                        w.stop(hard=True)
+                        w.start()
+                elif w.state in ["WAITING"]:
+                    if self.last_update > j.data.time.epoch - 40:
+                        self._log_info("no need to start worker:%s" % self.nr)
+                        return
+                    else:
+                        self._log_warning("worker was frozen because watchdog expired, will kill:%s" % self.nr)
+                        w.stop(hard=True)
+                        w.start()
+                    else:
+                elif w.state in ["BUSY"]:
+                    if reset:
+                        w.stop(hard=True)
+                        w.start()
+                    if self.last_update < j.data.time.epoch - 1200:
+                        self._log_warning("worker was busy for 20 min, will kill:%s" % self.nr)
+                        return
+
+            j.shell()
+            gevent.time.sleep(10)
 
     def _data_process_1time(self, timeout=0, die=False):
         r = self.queue_return.get(timeout=timeout)
@@ -421,7 +456,7 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
         gevent=False,
         wait=False,
         die=True,
-        code_replace=False,
+        args_replace=None,
         **kwargs,
     ):
         """
@@ -445,10 +480,10 @@ class MyJobs(j.baseclasses.testtools, j.baseclasses.object_config_collection):
         code = j.core.text.strip(code)
         code = code.replace("self,", "").replace("self ,", "").replace("self  ,", "")
 
-        if code_replace:
-            code = j.core.tools.text_replace(code, text_strip=False, args=kwargs)
-
-            j.shell()
+        if args_replace:
+            if "self" in args_replace:
+                args_replace.pop("self")
+            code = j.core.tools.text_replace(code, text_strip=False, args=args_replace)
 
         methodname = ""
         for line in code.split("\n"):

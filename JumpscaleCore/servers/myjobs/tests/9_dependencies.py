@@ -22,7 +22,7 @@ def main(self, reset=False):
     def do_ok(job=None, wait_do=0):
         import time
 
-        if wait_do:
+        if wait_do:k
             time.sleep(wait_do)
         if job:
             for dep in job.dependencies:

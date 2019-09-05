@@ -576,7 +576,7 @@ class JSBase:
         res = []
         for item in llist:
             name = self.__name_get(item)
-            self._log_debug("filtername:%s" % name)
+            # self._log_debug("filtername:%s" % name)
             if not name:
                 continue
             if name.startswith("_JSBase"):

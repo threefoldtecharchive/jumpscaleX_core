@@ -169,8 +169,6 @@ class MyWorkerProcess(j.baseclasses.object):
                     self.data.last_update = j.data.time.epoch
                     self.data.current_job = 2147483647
                     self.data.state = "waiting"
-                    j.shell()
-                    w
                     self.data.save()
                     last_info_push = j.data.time.epoch
             else:

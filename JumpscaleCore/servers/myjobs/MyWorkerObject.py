@@ -64,15 +64,22 @@ class MyWorkerObject(j.baseclasses.object_config):
         if not reset:
             self.load()
             if self.state in ["WAITING", "BUSY"]:
-                if self.last_update > j.data.time.epoch - 30:
+                if self.last_update > j.data.time.epoch - 40:
                     self._log_info("no need to start worker:%s" % self.nr)
                     return
-        cmd = j.servers.startupcmd.get(name="workers_%s" % self.nr)
-        cmd.cmd_start = "j.servers.myjobs._worker_inprocess_start_from_tmux(%s)" % self.nr
-        # COREX has still issues so fall back on tmux
-        cmd.executor = "tmux"
-        cmd.interpreter = "jumpscale_gevent"
-        cmd.start(reset=True)
+
+        def start(nr):
+            cmd = j.servers.startupcmd.get(name="workers_%s" % nr)
+            cmd.cmd_start = "j.servers.myjobs._worker_inprocess_start_from_tmux(%s)" % nr
+            # COREX has still issues so fall back on tmux
+            cmd.executor = "tmux"
+            cmd.interpreter = "jumpscale_gevent"
+            cmd.start(reset=True)
+
+        # start(nr)
+
+        # was attempt to start with gipc but got some weird stuff
+        p = j.servers.gipc.schedule(start, nr=self.nr)
 
     def _worker_start_inprocess(self):
         """

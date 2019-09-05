@@ -1646,9 +1646,14 @@ class Tools:
             for key, val in replace_args.items():
                 if key not in args_new:
                     if isinstance(val, list) or isinstance(val, set):
-                        val = [str(i) for i in val]
-                        val = ",".join(val)
-                        val = "[%s]" % val
+                        out = "["
+                        for v in val:
+                            if isinstance(v, str):
+                                v = "'%s'" % v
+                            else:
+                                v = str(v)
+                            out += "%s," % v
+                        val = out.rstrip(",") + "]"
                     elif isinstance(val, str):
                         if val.strip().lower() == "self":
                             val = None
@@ -1658,9 +1663,10 @@ class Tools:
                         # val = str(val)
                         pass
                     elif val != None:
+                        val = Tools._data_serializer_safe(val)
                         # Tools.shell()
                         # w
-                        raise Tools.exceptions.Input("cannot replace unknown argument:%s" % val)
+                        # raise Tools.exceptions.Input("cannot replace unknown argument:%s" % val)
                     if val:
                         args_new[key] = val
 

@@ -594,7 +594,7 @@ class StartupCMD(j.baseclasses.object_config):
         elif self.interpreter == "bash":
             tpath = self._cmd_path + ".sh"
             toexec = "sh %s" % tpath
-        elif self.interpreter in ["jumpscale", "python"]:
+        elif self.interpreter in ["jumpscale", "jumpscale_gevent", "python"]:
             tpath = self._cmd_path + ".py"
             # toexec = "python3 %s" % tpath
             if self.debug:
