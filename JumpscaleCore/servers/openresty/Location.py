@@ -110,10 +110,10 @@ class Location(j.baseclasses.object_config):
         weblibs_path = j.clients.git.getContentPathFromURLorPath(url, pull=False)
 
         # copy static dir from repo to the right location
-        static_dir = j.sal.fs.joinPaths(path, "weblibs")
+        static_dir = j.sal.fs.joinPaths(path, "static", "weblibs")
         if not j.sal.fs.exists(static_dir):
             j.sal.fs.createDir(static_dir)
-            j.sal.fs.copyDirTree(j.sal.fs.joinPaths(weblibs_path, "static"), static_dir)
+            j.sal.fs.copyDirTree(j.sal.fs.joinPaths(weblibs_path, "static/"), static_dir)
 
 
 class Locations(j.baseclasses.object_config_collection):
