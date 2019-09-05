@@ -1,21 +1,21 @@
 from Jumpscale import j
 
 
-class NetManagerFactory:
-    __jslocation__ = "j.clients.netmanager"
+class GridnetworkFactory(j.baseclasses.object):
+    __jslocation__ = "j.clients.gridnetwork"
 
     def get(self, gedisclient_name):
         gedisclient = j.clients.gedis.get(gedisclient_name)
-        return NetworkManagerClient(gedisclient)
+        return GridnetworkClient(gedisclient)
 
 
-class NetworkManagerClient:
+class GridnetworkClient(j.baseclasses.object):
     def __init__(self, gedisclient):
         self._gedisclient = gedisclient
-        self._manager = self._gedisclient.actors.network_manager
+        self._network = self._gedisclient.actors.gridnetwork
 
     def networks_find(self):
-        return self._manager.networks_find()
+        return self._network.networks_find()
 
     def network_connect(self, networkname, sshclient_name=None, port=7777):
         wg = j.tools.wireguard.new(f"{networkname}_{sshclient_name}", save=False)
@@ -28,7 +28,7 @@ class NetworkManagerClient:
         wg.key_pair_get()
         wg.port = port
         hostname = wg.executor.platformtype.hostname
-        serverinfo = self._manager.network_peer_add(networkname, hostname, wg.key_public)
+        serverinfo = self._network.network_peer_add(networkname, hostname, wg.key_public)
         wg.network_private = serverinfo.network_private
         for endpoint in serverinfo.endpoints:
             # save local copy of endpoint
@@ -46,5 +46,5 @@ class NetworkManagerClient:
             wg.configure()
         except:
             wg.delete()
-            self._manager.network_peer_remove(networkname, hostname)
+            self._network.network_peer_remove(networkname, hostname)
             raise
