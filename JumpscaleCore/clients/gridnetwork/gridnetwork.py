@@ -17,7 +17,7 @@ class GridnetworkClient(j.baseclasses.object):
     def networks_find(self):
         return self._network.networks_find()
 
-    def network_connect(self, networkname, sshclient_name=None, port=7777):
+    def network_connect(self, networkname, sshclient_name=None, port=7777, interface_name="wg0"):
         wg = j.tools.wireguard.new(f"{networkname}_{sshclient_name}", save=False)
         wg.sshclient_name = sshclient_name
         try:
@@ -27,6 +27,7 @@ class GridnetworkClient(j.baseclasses.object):
             raise
         wg.key_pair_get()
         wg.port = port
+        wg.interface_name = interface_name
         hostname = wg.executor.platformtype.hostname
         serverinfo = self._network.network_peer_add(networkname, hostname, wg.key_public)
         wg.network_private = serverinfo.network_private
