@@ -258,9 +258,9 @@ class SystemFS(j.baseclasses.testtools, j.baseclasses.object):
             dstpath2 = dst.split(":")[1] if ":" in dst else dst  # OTHERWISE CANNOT WORK FOR SSH
 
             dstpath = dst
-            dstpath = dstpath.replace("//", "/")
+            dstpath = self.pathClean(dstpath)
 
-            src = src.replace("//", "/")
+            src = self.pathClean(src)
 
             # ":" is there to make sure we support ssh
             if ":" not in src and j.sal.fs.isDir(src):
@@ -277,7 +277,9 @@ class SystemFS(j.baseclasses.testtools, j.baseclasses.object):
                 cmd += " -rLt --partial %s" % excl
             if not recursive:
                 cmd += ' --exclude "*/"'
-            if rsyncdelete:
+            if not overwriteFiles:
+                cmd += " --ignore-existing "
+            if rsyncdelete and overwriteFiles:
                 cmd += " --delete --delete-excluded "
             if ssh:
                 cmd += " -e 'ssh -o StrictHostKeyChecking=no -p %s' " % sshport
