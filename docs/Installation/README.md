@@ -50,6 +50,7 @@ eval `ssh-agent -s`
 ssh-keygen
 ssh-add
 ```
+Make sure to check whether **this** ssh key is stored in your github account. If not the installation script will break when it's trying to download the latest version from GitHub.
 
 ### Installation
 
