@@ -1,3 +1,5 @@
+import sys
+
 from Jumpscale import j
 
 JSConfigBase = j.baseclasses.object_config
@@ -28,6 +30,12 @@ class ThreeBotPackage(JSConfigBase):
     def _init(self, **kwargs):
         if self.giturl:
             self.path = j.clients.git.getContentPathFromURLorPath(self.giturl, branch=self.branch)
+
+        # Parent root directory for packages needed to be in sys.path
+        # in order to be able to import file properly inside packages
+        packages_root = j.sal.fs.getParent(self.path)
+        if not packages_root in sys.path:
+            sys.path.append(packages_root)
 
         self._path_package = "%s/package.py" % (self.path)
 

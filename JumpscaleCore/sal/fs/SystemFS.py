@@ -28,7 +28,7 @@ from Jumpscale.sal.fs.SystemFSDecorators import (
 JSBASE = j.baseclasses.object
 
 
-class SystemFS(j.baseclasses.object):
+class SystemFS(j.baseclasses.testtools, j.baseclasses.object):
 
     __jslocation__ = "j.sal.fs"
 
@@ -258,9 +258,9 @@ class SystemFS(j.baseclasses.object):
             dstpath2 = dst.split(":")[1] if ":" in dst else dst  # OTHERWISE CANNOT WORK FOR SSH
 
             dstpath = dst
-            dstpath = dstpath.replace("//", "/")
+            dstpath = self.pathClean(dstpath)
 
-            src = src.replace("//", "/")
+            src = self.pathClean(src)
 
             # ":" is there to make sure we support ssh
             if ":" not in src and j.sal.fs.isDir(src):
@@ -277,7 +277,9 @@ class SystemFS(j.baseclasses.object):
                 cmd += " -rLt --partial %s" % excl
             if not recursive:
                 cmd += ' --exclude "*/"'
-            if rsyncdelete:
+            if not overwriteFiles:
+                cmd += " --ignore-existing "
+            if rsyncdelete and overwriteFiles:
                 cmd += " --delete --delete-excluded "
             if ssh:
                 cmd += " -e 'ssh -o StrictHostKeyChecking=no -p %s' " % sshport
@@ -573,7 +575,12 @@ class SystemFS(j.baseclasses.object):
         if checkIsFile and not self.isFile(path):
             raise j.exceptions.RuntimeError("Path %s should be a file (not e.g. a dir), error when importing" % path)
         extension = ""
-        if self.isDir(path):
+
+        isDir = False
+        if existCheck:
+            isDir = self.isDir(path)
+
+        if isDir:
             name = ""
             path = self.pathClean(path)
         else:
@@ -581,6 +588,8 @@ class SystemFS(j.baseclasses.object):
             path = self.pathClean(path)
             # make sure only clean path is left and the filename is out
             path = self.getDirName(path)
+            # if it is a root directory getDirName will return //
+            path = self.pathClean(path)
             # find extension
             regexToFindExt = "\.\w*$"
             if j.data.regex.match(regexToFindExt, name):
@@ -597,6 +606,10 @@ class SystemFS(j.baseclasses.object):
             dirOrFilename = self.getDirName(path, lastOnly=True)
         else:
             dirOrFilename = name
+
+        if name == "" and dirOrFilename == "":
+            # Here we are at a root level so instead of retruning an empty string we want to return the directory name
+            dirOrFilename = self.pathClean(path)
         # check for priority
         regexToFindPriority = "^\d*_"
         if j.data.regex.match(regexToFindPriority, dirOrFilename):
@@ -608,7 +621,9 @@ class SystemFS(j.baseclasses.object):
             )
         else:
             priority = 0
-
+        # for consistency reason path should always end with a /
+        if path[len(path) - 1] != "/":
+            path += "/"
         return path, name, extension, priority  # if name =="" then is dir
 
     def getcwd(self):
@@ -1131,7 +1146,7 @@ class SystemFS(j.baseclasses.object):
                 return True
         return False
 
-    @path_check(path={"required", "replace", "exists"})
+    @path_check(path={"required", "replace"})
     def isLink(self, path, checkJunction=False, check_valid=False):
         """Check if the specified path is a link
         @param path: string
@@ -1161,9 +1176,10 @@ class SystemFS(j.baseclasses.object):
 
         if os.path.islink(path):
             if check_valid:
-                j.shell()
-                w
-            self._log_debug("path %s is a link" % path, _levelup=3)
+                if not os.path.exists(path):
+                    self._log_debug("path %s is not a link and will be removed" % path, _levelup=3)
+                    self.isLinkAndBroken(path)
+                    return False
             return True
         self._log_debug("path %s is not a link" % path, _levelup=3)
         return False
@@ -1748,3 +1764,13 @@ class SystemFS(j.baseclasses.object):
         else:
             cmd = "tar xzf '%s' -C '%s'" % (sourceFile, destinationdir)
             j.sal.process.execute(cmd)
+
+    def test(self, name=""):
+        """
+        it's run all tests
+        kosmos 'j.sal.fs.test()'
+
+        """
+        self._test_run(name=name)
+
+        print("TEST OK ALL PASSED")

@@ -1,53 +1,48 @@
+import os
 from Jumpscale import j
 
-JSBASE = j.baseclasses.object
+JSConfigClient = j.baseclasses.object_config
 
 
-class RsyncInstance(j.baseclasses.object):
-    def __init__(self):
-        JSBASE.__init__(self)
-        self.name
-        self.secret
-        self.users = []
-        self.readonly = True
-        self.exclude = "*.pyc .git"
+class RsyncServer(JSConfigClient):
+    _SCHEMATEXT = """
+           @url =  jumpscale.servers.rsync.1
+           name* = "default" (S)
+           root =  (S)
+           port = 873 (I)
+           dir = "" (S)
+           """
 
+    def _init(self, **kwargs):
+        if not self.root:
+            raise j.exceptions.Input("root can't be empty")
 
-class RsyncServer(j.baseclasses.object):
+        self._startupcmd = None
 
-    """
-    """
+        self.path_secrets = j.tools.path.get("%s/secrets.cfg" % self.root)
+        self.path_users = j.tools.path.get("%s/users.cfg" % self.root)
+        if self.dir == "":
+            self.dir = "%s/apps/agentcontroller/distrdir/" % j.dirs.BASEDIR
 
-    def __init__(self, root, port=873, distrdir=""):
-        JSBASE.__init__(self)
-        self._local = j.tools.executorLocal
-        self.root = root
-        self.port = port
-        self.pathsecrets = j.tools.path.get("%s/secrets.cfg" % self.root)
-        self.pathusers = j.tools.path.get("%s/users.cfg" % self.root)
-        if distrdir == "":
-            distrdir = "%s/apps/agentcontroller/distrdir/" % j.dirs.BASEDIR
-
-        self.distrdir = j.tools.path.get(distrdir)
+        self.distrdir = j.tools.path.get(self.dir)
+        if not self.distrdir.exists():
+            j.sal.fs.createDir(self.dir)
 
         self.rolesdir = j.tools.path.get(self.root).joinpath("roles")
 
         j.tools.path.get("/etc/rsync").mkdir_p()
 
-        if self.pathsecrets.exists():
-            self.secrets = j.data.serializers.toml.loads(self.pathsecrets.text())
+        if self.path_secrets.exists():
+            self.secrets = j.data.serializers.toml.loads(self.path_secrets.text())
         else:
             self.secrets = {}
 
-        if self.pathusers.exists():
-            self.users = j.data.serializers.toml.loads(self.pathusers.text())
+        if self.path_users.exists():
+            self.users = j.data.serializers.toml.loads(self.path_users.text())
         else:
             self.users = {}
 
-    def addUserAccessUpload(self, user, passwd):
-        self.users.append([user, passwd])
-
-    def addSecret(self, name, secret=""):
+    def secret_add(self, name, secret=""):
         if name in self.secrets and secret == "":
             # generate secret
             secret = self.secrets[name]
@@ -55,13 +50,13 @@ class RsyncServer(j.baseclasses.object):
             secret = j.data.idgenerator.generateGUID().replace("-", "")
 
         self.secrets[name.strip()] = secret.strip()
-        self.pathsecrets.write_text(j.data.serializers.toml.dumps(self.secrets))
+        self.path_secrets.write_text(j.data.serializers.toml.dumps(self.secrets))
 
-    def addUser(self, name, passwd):
+    def user_add(self, name, passwd):
         self.users[name.strip()] = passwd.strip()
-        self.pathusers.write_text(j.data.serializers.toml.dumps(self.users))
+        self.path_users.write_text(j.data.serializers.toml.dumps(self.users))
 
-    def saveConfig(self):
+    def config_save(self):
 
         C = """
         #motd file = /etc/rsync/rsyncd.motd
@@ -142,18 +137,31 @@ class RsyncServer(j.baseclasses.object):
         #     j.sal.process.execute(cmd)
 
     def start(self, background=False):
-        self.saveConfig()
-        self.prepareroles()
+        self._log_info("start rsync server")
+        if not j.core.tools.cmd_installed("rsync"):
+            raise j.exceptions.Base("install rsync: 'j.servers.rsync.install()'")
 
-        j.sal.process.killProcessByPort(self.port)
+        self.config_save()
+        self.roles_prepare()
 
-        if background:
-            cmd = "rsync --daemon --config=/etc/rsync/rsyncd.conf"
-        else:
+        self.startupcmd.start()
+
+    def stop(self):
+        self._log_info("stop rsync server")
+        self.startupcmd.stop()
+
+    @property
+    def startupcmd(self):
+        if not self._startupcmd:
+            if not j.core.tools.cmd_installed("rsync"):
+                raise j.exceptions.Base("cannot find command rsync, please install")
             cmd = "rsync -v --daemon --no-detach --config=/etc/rsync/rsyncd.conf"
-        # print cmd
+            self._startupcmd = j.servers.startupcmd.get("rsync_%s" % self.name, cmd_start=cmd, ports=[self.port])
+            self._startupcmd.executor = "tmux"
 
-    def prepareroles(self):
+        return self._startupcmd
+
+    def roles_prepare(self):
         for catpath in self.distrdir.dirs():
             for path in catpath.walkdirs():
                 rolepath = path.joinpath(".roles")
@@ -172,59 +180,3 @@ class RsyncServer(j.baseclasses.object):
                         #     destpathfile=j.sal.fs.joinPaths(destdir,relpath)
                         #     j.sal.fs.createDir(j.sal.fs.getDirName(destpathfile))
                         #     j.sal.fs.symlink(item, destpathfile, overwriteTarget=True)
-
-
-class RsyncClient(j.baseclasses.object):
-
-    """
-    """
-
-    def __init__(self):
-        JSBASE.__init__(self)
-        self.options = "-r --delete-after --modify-window=60 --compress --stats  --progress"
-
-    def _pad(self, dest):
-        if len(dest) != 0 and dest[-1] != "/":
-            dest += "/"
-        return dest
-
-    def syncFromServer(self, src, dest):
-        src = self._pad(src)
-        dest = self._pad(dest)
-        if src == dest:
-            return
-        j.tools.path.get(dest).mkdir_p()
-        cmd = "rsync -av %s %s %s" % (src, dest, self.options)
-        self._log_debug(cmd)
-        self._local.execute(cmd)
-
-    def syncToServer(self, src, dest):
-        src = self._pad(src)
-        dest = self._pad(dest)
-        if src == dest:
-            return
-        cmd = "rsync -av %s %s %s" % (src, dest, self.options)
-        self._log_debug(cmd)
-        self._local.execute(cmd)
-
-
-class RsyncClientSecret(RsyncClient):
-
-    """
-    """
-
-    def __init__(self):
-        RsyncClient.__init__(self)
-        self.options = "-r --delete-after --modify-window=60 --compress --stats --progress"
-
-    def sync(self, src, dest):
-        """
-        can only sync from server to client
-        """
-        src = self._pad(src)
-        dest = self._pad(dest)
-        if src == dest:
-            return
-        cmd = "rsync %s %s %s" % (src, dest, self.options)
-        self._log_debug(cmd)
-        self._local.execute(cmd)
