@@ -65,7 +65,7 @@ class WireGuard(j.baseclasses.object_config):
         :return:
         """
         if self.executor.platformtype.platform_is_osx:
-            self.executor.execute("brew install wireguard-tools", timeout=None)
+            self.executor.execute("brew install wireguard-tools")
         else:
             # need to check on ubuntu
             rc, out, err = self.executor.execute("wg", die=False)
@@ -76,7 +76,7 @@ class WireGuard(j.baseclasses.object_config):
                 apt-get upgrade -y --force-yes
                 apt-get install wireguard -y
                 """
-                self.executor.execute(C, timeout=None)
+                self.executor.execute(C)
 
     @property
     def peers_objects(self):
@@ -124,15 +124,14 @@ class WireGuard(j.baseclasses.object_config):
 
         configpath = f"/tmp/{self.interface_name}.conf"
         self.executor.file_write(configpath, config)
-        rc, _, _ = self.executor.execute(f"wg show {self.interface_name}", die=False, timeout=None)
+        rc, _, _ = self.executor.execute(f"wg show {self.interface_name}", die=False)
         if rc != 0:
             # interface is not up let's bring it up
-            self.executor.execute(f"wg-quick up {configpath}", timeout=None)
+            self.executor.execute(f"wg-quick up {configpath}")
         else:
             # let's update config path
             self.executor.execute(
-                f"wg-quick strip {configpath} | wg setconf {self.interface_name} /dev/stdin", timeout=None
-            )
+                f"wg-quick strip {configpath} | wg setconf {self.interface_name} /dev/stdin")
 
     def start(self):
         if self.executor.platformtype.platform_is_osx:
