@@ -1383,9 +1383,21 @@ class SystemFS(j.baseclasses.testtools, j.baseclasses.object):
         return digest.hexdigest()
 
     @path_check(folder={"required", "replace", "exists", "dir"})
-    def getFolderMD5sum(self, folder):
-        files = sorted(self.walk(folder, recurse=1))
-        return self.md5sum(files)
+    def getFolderMD5sum(self, folder, ignore_empty_files=False):
+        """Return the hex digest of a file without loading it all into memory
+        @param folder: string (folder to get the hex digest of it)
+        @param ignore_empty_files: Boolean (ignore empty files)
+        @rtype: md5 of the directory
+        """
+        dir_hash = hashlib.md5()
+        files = self.listFilesInDir(folder, recursive=True, followSymlinks=True, listSymlinks=True)
+        for file in files:
+            if ignore_empty_files:
+                if self.fileSize(file) == 0:
+                    continue
+            md5 = self.md5sum(file).encode("utf-8")
+            dir_hash.update(md5)
+        return dir_hash.hexdigest()
 
     def getTmpDirPath(self, name="", create=True):
         """
