@@ -86,9 +86,9 @@ class ExecutorInstallers(j.baseclasses.object):
 
     @executor_method()
     def base(self):
-        self.executor.execute("apt update")
+        self.executor.execute("apt-get update")
         self.executor.execute(
-            'DEBIAN_FRONTEND=noninteractive apt upgrade -y -q -o DEBIAN_PRIORITY=critical -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold"',
+            'DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -q -o DEBIAN_PRIORITY=critical -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold"',
             interactive=True,
         )
 
@@ -99,7 +99,7 @@ class ExecutorInstallers(j.baseclasses.object):
     def secure(self, web=True):
         if web:
             C = """
-            apt install ufw -y
+            apt-get install ufw -y
             echo "y" | ufw reset
             ufw allow 22/tcp
             ufw allow 80/tcp
@@ -111,7 +111,7 @@ class ExecutorInstallers(j.baseclasses.object):
             """
         else:
             C = """
-            apt install ufw -y
+            apt-get install ufw -y
             echo "y" | ufw reset
             ufw allow 22/tcp
             ufw allow 6000:6100/udp
@@ -122,7 +122,7 @@ class ExecutorInstallers(j.baseclasses.object):
 
     @executor_method()
     def mosh(self):
-        self.executor.execute("apt install mosh -y")
+        self.executor.execute("apt-get install mosh -y")
         self.secure(web=False)
 
     @executor_method()
@@ -160,10 +160,10 @@ class ExecutorInstallers(j.baseclasses.object):
                         echo "# Jumpscale Setup" >> /etc/apt/sources.list
                         echo deb http://mirror.unix-solutions.be/ubuntu/ bionic main universe multiverse restricted >> /etc/apt/sources.list
                     fi
-                    apt update
-                    apt install rsync curl wget -y
-                    apt install git -y
-                    # apt install mosh -y
+                    apt-get update
+                    apt-get install rsync curl wget -y
+                    apt-get install git -y
+                    # apt-get install mosh -y
                     """
                     self.execute(j.core.text.strip(C))
                     self.state_set("check_base")
