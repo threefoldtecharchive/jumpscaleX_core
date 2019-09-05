@@ -42,8 +42,11 @@ class DIR(j.data.bcdb._BCDBModelClass):
     def create_empty_dir(self, name, create_parent=True):
         if self.get_by_name(name=name, die=False):
             return name
-        if name == "/" and not len(self.get_by_name(name="/")) > 0:
-            return self._create_root_dir()
+        if name == "/":
+            try:
+                return self.get_by_name(name="/")
+            except j.exceptions.NotFound:
+                return self._create_root_dir()
         if name == "/":
             return self.get_by_name("/")[0]
         parent_path = j.sal.fs.getParent(name)

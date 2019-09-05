@@ -12,6 +12,7 @@ class GedisWebsocketServer(JSConfigClient):
         @url = jumpscale.gedis.websocket.1
         name* = "default" (S)
         port = 4444
+        gedis_port = 8901
         ssl = False (B)
         ssl_keyfile = "/sandbox/cfg/ssl/resty-auto-ssl-fallback.key" (S) #bad to do like this, harcoded TODO:, also should not be here can be done in openresty
         ssl_certfile = "/sandbox/cfg/ssl/resty-auto-ssl-fallback.crt" (S)
@@ -45,6 +46,7 @@ class GedisWebsocketServer(JSConfigClient):
     @property
     def app(self):
         if not self._app:
+            Application.GEDIS_PORT = self.gedis_port
             self._app = Application
         return self._app
 
@@ -62,6 +64,9 @@ class GedisWebsocketServer(JSConfigClient):
 
 
 class Application(WebSocketApplication):
+
+    GEDIS_PORT = None
+
     def on_message(self, message):
         print(message)
         if message is None:
@@ -95,4 +100,4 @@ class Application(WebSocketApplication):
         print(reason)
 
     def on_open(self):
-        self.client_gedis = j.clients.gedis.get("main", port=8900)
+        self.client_gedis = j.clients.gedis.get("main", port=self.GEDIS_PORT)
