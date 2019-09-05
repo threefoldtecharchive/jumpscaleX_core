@@ -5,10 +5,10 @@ from Jumpscale import j
 JSBASE = j.baseclasses.object
 TESTTOOLS = j.baseclasses.testtools
 
-class TLS(JSBASE, TESTTOOLS):
 
+class TLS(JSBASE, TESTTOOLS):
     def _init(self, **kwargs):
-        self.cwd = j.tools.path.get(kwargs['path'])
+        self.cwd = j.tools.path.get(kwargs["path"])
 
     def subjects_ask(self):
         """

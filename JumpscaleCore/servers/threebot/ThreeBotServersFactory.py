@@ -47,9 +47,8 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             self.default.stop()
             self.default.start(background=True, web=web)
 
-        assert self.client.ping()
-
         self.client = j.clients.gedis.get(name="threebot", port=8901)
+        assert self.client.ping()
 
         return self.client
 

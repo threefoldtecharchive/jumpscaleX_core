@@ -31,6 +31,12 @@ brew install curl python3 git rsync
 
 #### Required Python Packages
 
+Make sure the pip3 package is installed
+```bash
+apt install python3-pip
+```
+If so, or after installing please do:
+
 ```bash
 pip3 install click
 ```
@@ -44,6 +50,7 @@ eval `ssh-agent -s`
 ssh-keygen
 ssh-add
 ```
+Make sure to check whether **this** ssh key is stored in your github account. If not the installation script will break when it's trying to download the latest version from GitHub.
 
 ### Installation
 
