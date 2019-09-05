@@ -16,7 +16,7 @@ this will start the basic threebot server which will have:
 kosmos 'j.servers.threebot.get("3bot_name").start(web=True, ssl=False)'
 ```
 this will start the basic servers in addition to servers that will be needed to host a web application
-- [openresty server]() 
+- [openresty server](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/servers/openresty/README.md) 
 - [threebot bottle server]() a bottle server to serve the content of [bcdbfs](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/sal/bcdbfs/README.md) as static files 
 - websocket proxy server for gedis server
 
