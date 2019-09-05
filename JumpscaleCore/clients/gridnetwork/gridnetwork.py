@@ -28,6 +28,8 @@ class GridnetworkClient(j.baseclasses.object):
         wg.key_pair_get()
         wg.port = port
         wg.interface_name = interface_name
+
+        # Is hostname unique enough?
         hostname = wg.executor.platformtype.hostname
         serverinfo = self._network.network_peer_add(networkname, hostname, wg.key_public)
         wg.network_private = serverinfo.network_private
