@@ -76,8 +76,16 @@ j.tools.threebot_packages.get("package_name",
                             threebotserver_name="{threebot server name}")
 ```
 
-## example packages
+## Example packages
 - [pastebin](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development_web_examples/ThreeBotPackages/pastebin/README.md
 )
 - [alerta](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development_web_examples/ThreeBotPackages/alerta/README.md)
 - [myjobs](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development_web_examples/ThreeBotPackages/myjobs/README.md)
+
+## Troubleshooting
+
+if you encounter an error after launching the threebot make sure that you have the latest code on all the repository (libs,libs_extra, threebot, builders, jsx_core)
+and run this comand to gather all the locations and builds the j object tree
+```shell
+3bot:~: jsx generate
+```
