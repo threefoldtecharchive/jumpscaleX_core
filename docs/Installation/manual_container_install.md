@@ -1,37 +1,36 @@
 ## Manual local jumpscaleX_core
 
-———-
-Step 1:  Install the docker software.  There is a lot of documentation on how to do this for your operating system <<insert docker installation page link>>
+If not installed already, install the docker software.  There is a lot of documentation on how to do this for your operating system <<insert docker installation page link>>
 
 Please check the installation by issuing the following commands:
 ```
-Docker image ls
-Docker ps
+docker image ls
+docker ps
 ```
 
 If this is successful you have a working docker environment! Now get yourself the latest (official) Ubuntu container:
 
 ```
-Docker pull Ubuntu
+docker pull ubuntu
 ```
 This pulls in the office Ubuntu container from the docker hub and installs in onto your local system.  You can verify this by performing the following command:
 
 ```
-Docker image ls
-<<insert command output>>
+docker image ls
 ```
-We need to start the Ubuntu container. The rest of the installation will run inside the Ubuntu container. All of the modifications to the Ubuntu image will be stored inside the container.  This container will have the local installation of the jumpscale_coreX SDK.
+The output should show that there is a ubuntu container installed on your local system.
+
+We need to start this Ubuntu container. The rest of the installation will run inside the Ubuntu container. All of the modifications to the Ubuntu image will be stored inside the container.  This container will have the local installation of the jumpscale_coreX SDK.
 
 Start the ubuntu container and login to a interactive (Unix) shell:
 ```
 Docker run -ti ubuntu
 ```
-
 The result of this command is a Unix prompt, representing the ```root``` user account of the ubuntu system. For here onwards we will configure the container to be a local installation of the jumpscalecoreX SDK.
 
 First update the Ubuntu binaries to the latest version:
 ```
-Apt update -y
+apt update -y
 ```
 Then add some additional software packages not part of the official container image:
 ```
