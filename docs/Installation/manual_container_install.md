@@ -24,7 +24,7 @@ We need to start this Ubuntu container. The rest of the installation will run in
 
 Start the ubuntu container and login to a interactive (Unix) shell:
 ```
-Docker run -ti ubuntu
+docker run -ti ubuntu
 ```
 The result of this command is a Unix prompt, representing the ```root``` user account of the ubuntu system. For here onwards we will configure the container to be a local installation of the jumpscalecoreX SDK.
 
@@ -53,10 +53,10 @@ ssh-keygen
 The binary will ask you where store the key pair - default answer is fine. It will then ask you to set a passphrase.  Just press enter twice or add an actual passphrase.
 
 Next step is to get the public key added to the github account youown.  Look up your public key in on the chosen directory or of you opted for the default directory it should be this:
-‘’’
-Cd
-Cd .ssh
-More id_rsa.pub
+```
+cd
+cd .ssh
+more id_rsa.pub
 ```
 Copy the text and add it to you github account. Please find instructions here how to do this. <<insert github documents how to add a public key>>
 
