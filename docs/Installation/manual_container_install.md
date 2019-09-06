@@ -1,6 +1,6 @@
 ## Manual local jumpscaleX_core
 
-If not installed already, install the docker software.  There is a lot of documentation on how to do this for your operating system <<insert docker installation page link>>
+If not installed already, install the docker software.  There is a lot of documentation on how to do this for your operating system.  Find more information about that [here](https://docs.docker.com/install/linux/docker-ce/binaries/)
 
 Please check the installation by issuing the following commands:
 ```
@@ -9,12 +9,10 @@ docker ps
 ```
 
 If this is successful you have a working docker environment! Now get yourself the latest (official) Ubuntu container:
-
 ```
 docker pull ubuntu
 ```
 This pulls in the office Ubuntu container from the docker hub and installs in onto your local system.  You can verify this by performing the following command:
-
 ```
 docker image ls
 ```
@@ -58,7 +56,7 @@ cd
 cd .ssh
 more id_rsa.pub
 ```
-Copy the text and add it to you github account. Please find instructions here how to do this. <<insert github documents how to add a public key>>
+Copy the text and add it to you github account. Please find instructions here how to do this. Here is a manual how to do [this](https://help.github.com/en/articles/adding-a-new-ssh-key-to-your-github-account)
 
 Once this is done - load the identity into your container root account:
 ```
