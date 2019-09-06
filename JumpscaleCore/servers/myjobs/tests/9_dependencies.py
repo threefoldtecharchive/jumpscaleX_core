@@ -37,16 +37,19 @@ def main(self, reset=False):
 
     job1 = self.schedule(do_ok, wait_do=1)
     job2 = self.schedule(do_ok, wait_do=1)
-    job3 = self.schedule(do_ok, wait_do=1, dependencies=[job1, job2], wait=True, timeout=30, die=True)
+    job3 = self.schedule(do_ok, wait_do=1, dependencies=[job1, job2], timeout=30, die=True)
 
+    job3.wait()
     assert job3.state == "OK"
 
     job1 = self.schedule(do_ok, wait_do=1)
     job2 = self.schedule(do_error)
-    job3 = self.schedule(do_ok, wait_do=1, dependencies=[job1, job2], wait=True, timeout=10, die=False)
+    job3 = self.schedule(do_ok, wait_do=1, dependencies=[job1, job2] timeout=10, die=False)
 
     job2 = self.model_job.get(job2.id)
     job1 = self.model_job.get(job1.id)
+
+    job3.wait()
 
     assert job3.state == "ERROR"
     assert job3.error["dependency_failure"] == job2.id

@@ -806,7 +806,17 @@ class Tools:
         if tb is None:
             tb = sys.last_traceback
         res = []
-        ignore_items = ["click/", "ipython", "bpython", "loghandler", "errorhandler", "importlib._bootstrap"]
+        ignore_items = [
+            "click/",
+            "ipython",
+            "bpython",
+            "loghandler",
+            "errorhandler",
+            "importlib._bootstrap",
+            "gevent/",
+            "gevent.",
+            "__getattr__",
+        ]
 
         def ignore(filename):
             for ignorefind in ignore_items:

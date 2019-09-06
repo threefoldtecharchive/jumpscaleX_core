@@ -249,7 +249,7 @@ class JSXObject(j.baseclasses.object):
     def __hash__(self):
         return hash(j.data.hash.md5_string(self._data))
 
-    def __str__(self):
+    def __repr__(self):
         # FIXME: breaks in some cases in docsites generation needs to be cleanly implemented
         out = self._str_get(ansi=True)
         # # #TODO: *1 when returning the text it does not represent propertly, needs to be in kosmos shell I think
@@ -257,4 +257,6 @@ class JSXObject(j.baseclasses.object):
         print(out)
         return ""
 
-    __repr__ = __str__
+    def __str__(self):
+        out = self._str_get(ansi=False)
+        return out

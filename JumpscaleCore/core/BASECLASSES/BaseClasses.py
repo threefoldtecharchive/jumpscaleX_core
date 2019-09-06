@@ -213,7 +213,7 @@ class BaseClasses(JSBase, TestTools):
         :return:
         """
 
-        class JSFactoryDataTesttools(TestTools, JSFactory):
+        class JSFactoryDataTesttools(JSFactory, TestTools):
             pass
 
         return JSFactoryDataTesttools

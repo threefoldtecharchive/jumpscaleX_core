@@ -285,10 +285,14 @@ class BCDB(j.baseclasses.object):
                 if returnid:
                     self.results[returnid] = res
                 event.set()
+            self._data_process_1time()
         self.dataprocessor_greenlet = None
         if event:
             event.set()
         self._log_warning("DATAPROCESSOR STOPS")
+
+    def _data_process_1time(self, timeout=0, die=False):
+        return
 
     def dataprocessor_start(self):
         """

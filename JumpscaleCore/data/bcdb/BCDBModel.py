@@ -94,7 +94,12 @@ class BCDBModel(j.baseclasses.object):
     def index(self):
         if not self._index_:
             indexklass = self._index_class_generate()
+
             self._index_ = indexklass(model=self, reset=False)
+            if self._index_.index_sql_needed and self.storclient.type == "RDB":
+                raise j.exceptions.BASE(
+                    "cannot do sql index with a rdb backend because rdb backend is supposed to be multiuser"
+                )
         return self._index_
 
     def _index_class_generate(self):
@@ -437,6 +442,14 @@ class BCDBModel(j.baseclasses.object):
             self.index.set(obj)
 
         obj = self._triggers_call(obj=obj, action="set_post")
+
+        # if self.storclient.type == "RDB":
+        #     # TODO: should be part of the storclient itself and we should use lua code on the redis, is much faster
+        #     self.storclient._redis
+        #     # idea is to allow subscribers to listen to changes, each change needs to get a unique nr
+        #     # so remote users can replicate where needed, or can be used to do replication
+        #     j.shell()
+        #     self.storclient
 
         return obj
 

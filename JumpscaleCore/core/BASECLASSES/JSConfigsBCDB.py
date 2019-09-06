@@ -68,8 +68,19 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :param kwargs: the data elements which will be given to JSXObject underneith (given to constructor)
         :return: the service
         """
+        kwargs_to_class = {}
         if not jsxobject:
-            jsxobject = self._model.new(data=kwargs)
+            if kwargs:
+                kwargs_to_obj_new = {}
+                props = [i.name for i in self._model.schema.properties]
+                for key, val in kwargs.items():
+                    if key in props:
+                        kwargs_to_obj_new[key] = val
+                    else:
+                        kwargs_to_class[key] = val
+                jsxobject = self._model.new(data=kwargs_to_obj_new)
+            else:
+                jsxobject = self._model.new()
             jsxobject.name = name
 
         # means we need to remember the parent id
@@ -80,7 +91,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 jsxobject.save()
 
         jsconfig_klass = self._childclass_selector(jsxobject=jsxobject)
-        jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject)
+        jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject, **kwargs_to_class)
         jsconfig._triggers_call(jsconfig, "new")
         self._children[name] = jsconfig
         if save:
@@ -274,3 +285,6 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             if item not in x:
                 x.append(item)
         return self._filter(filter=filter, llist=x, nameonly=False)
+
+    def __str__(self):
+        return "jsxconfigobj:collection:%s" % self._model.schema.url

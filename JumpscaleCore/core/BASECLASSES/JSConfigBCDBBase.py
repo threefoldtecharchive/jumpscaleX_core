@@ -160,8 +160,3 @@ class JSConfigBCDBBase(JSBase, Attr):
             jsconfig = method(jsconfigs=self, jsconfig=jsconfig, action=action)
             assert isinstance(jsconfig, j.baseclasses.object_config)
         return jsconfig
-
-    def __str__(self):
-        return str(self._data)
-
-    __repr__ = __str__

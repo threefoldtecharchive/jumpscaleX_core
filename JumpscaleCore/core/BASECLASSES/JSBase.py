@@ -779,9 +779,9 @@ class JSBase:
 
     ###################
 
-    def __str__(self):
+    def __repr__(self):
 
-        out = "## {GRAY}{RED}%s{BLUE} %s{RESET}\n\n" % (
+        out = "{YELLOW}## %s{BLUE} %s{RESET}\n\n" % (
             # self._objcat_name,
             self.__class__._location,
             self.__class__.__name__,
@@ -826,4 +826,10 @@ class JSBase:
         # TODO: *1 dirty hack, the ansi codes are not printed, need to check why
         return ""
 
-    __repr__ = __str__
+    def __str__(self):
+        """
+        this will give us cleaner reporting in logs, the repr needs to be big, is for user
+        __str__ is for logging, printing, ...
+        :return:
+        """
+        return "jsxobj:%s:%s" % (self.__class__._location, self.__class__.__name__)

@@ -68,10 +68,9 @@ class MyWorkerProcess(j.baseclasses.object):
         self.model_action = self.bcdb.model_get(url="jumpscale.myjobs.action")
         self.model_worker = self.bcdb.model_get(url="jumpscale.myjobs.worker")
 
+        # will ise direct saving to the backend
         self.model_job.nosave = True
-        self.model_action.nosave = True
         self.model_worker.nosave = True
-
         self.model_worker.trigger_add(self._save_data)
         self.model_job.trigger_add(self._save_job)
 
@@ -80,7 +79,7 @@ class MyWorkerProcess(j.baseclasses.object):
         self.data.current_job = 2147483647  # means nil
         self.data.id = worker_id
         self.data.pid = os.getpid()
-        self.data.save()  # save in bcdb will not happen because readonly is True, it will trigger the triggers
+        self.data.save()
 
         self.start()
 
@@ -111,7 +110,7 @@ class MyWorkerProcess(j.baseclasses.object):
         self.data.halt = False
         self.data.pid = 0
         self.data.save()
-        self._log_info("WORKER REMOVE SELF:%s" % self.data.id)
+        self._log_info("WORKER REMOVE SELF:%s" % self.data.id, data=self)
 
     def _job_get(self, id):
         deadline = j.data.time.epoch + 3

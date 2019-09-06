@@ -95,31 +95,25 @@ class Core:
             for key in ["passwd", "password", "secret"]:
                 if key in data:
                     data[key] = "***"
-        elif isinstance(data, int) or isinstance(data, str) or isinstance(data, list):
-            return str(data)
-        elif isinstance(data, j.baseclasses.object_config):
             try:
-                data = data._data._ddict_hr
+                serialized = yaml.dump(data, default_flow_style=False, default_style="", indent=4, line_break="\n")
             except Exception as e:
-                return "ERROR IN SERIALIZE OBJECTCONFIG:%s" % e
-        elif isinstance(data, j.baseclasses.object_config_collection):
-            return "collection of: %s" % data._model._schema.url
-        elif isinstance(data, j.data.schema._JSXObjectClass):
-            try:
-                data = data._ddict_hr
-            except Exception as e:
-                return "ERROR IN SERIALIZE _JSXObjectClass:%s" % e
-        elif isinstance(data, j.baseclasses.object):
-            # if hasattr(data,"data"):
-            #     data = data.data
-            return "jumpscale object of category: %s" % data._name
+                serialized = "CANNOT SERIALIZE CORE FOR DICT"
 
-        try:
-            serialized = yaml.dump(data, default_flow_style=False, default_style="", indent=4, line_break="\n")
-        except Exception as e:
-            serialized = "CANNOT SERIALIZE CORE"
-        res = Tools.text_replace(content=serialized, ignorecolors=True)
-        return res
+        elif isinstance(data, list) or isinstance(data, set):
+            try:
+                serialized = yaml.dump(data, default_flow_style=False, default_style="", indent=4, line_break="\n")
+            except Exception as e:
+                serialized = "CANNOT SERIALIZE CORE FOR LIST"
+        else:
+            try:
+                serialized = str(data)
+                # to deal with special value
+                if serialized == "2147483647":
+                    serialized = ""
+            except Exception as e:
+                serialized = "CANNOT SERIALIZE CORE FOR STR"
+        return serialized
 
 
 from .core.KosmosShell import *

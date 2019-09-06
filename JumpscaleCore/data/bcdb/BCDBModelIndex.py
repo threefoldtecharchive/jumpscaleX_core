@@ -229,7 +229,7 @@ class BCDBModelIndex(j.baseclasses.object):
             ids.append(obj_id)
         data = j.data.serializers.msgpack.dumps(ids)
         hash = self._key_index_redis_get(key)  # this to have a smaller key to store in mem
-        self._log_debug("set key:%s (id:%s)" % (key, obj_id))
+        # self._log_debug("set key:%s (id:%s)" % (key, obj_id))
         j.clients.credis_core.hset(self._key_index_hsetkey_get(nid=nid).encode() + b":" + hash[0:2], hash[2:], data)
 
     def _key_index_delete_(self, property_name, val, obj_id, nid=1):
@@ -246,7 +246,7 @@ class BCDBModelIndex(j.baseclasses.object):
         else:
             data = j.data.serializers.msgpack.dumps(ids)
             hash = self._key_index_redis_get(key)
-            self._log_debug("set key:%s (id:%s)" % (key, obj_id))
+            # self._log_debug("set key:%s (id:%s)" % (key, obj_id))
             j.clients.credis_core.hset(self._key_index_hsetkey_get(nid=nid).encode() + b":" + hash[0:2], hash[2:], data)
 
     def _key_index_destroy(self, nid=1):
@@ -267,11 +267,11 @@ class BCDBModelIndex(j.baseclasses.object):
         r = j.clients.credis_core.hget(self._key_index_hsetkey_get(nid=nid).encode() + b":" + hash[0:2], hash[2:])
         if r is not None:
             # means there is already one
-            self._log_debug("get key(exists):%s" % key)
+            # self._log_debug("get key(exists):%s" % key)
             ids = j.data.serializers.msgpack.loads(r)
 
         else:
-            self._log_debug("get key(new):%s" % key)
+            # self._log_debug("get key(new):%s" % key)
             ids = []
         return ids
 
