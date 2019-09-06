@@ -88,23 +88,19 @@ Source /sandbox/env.sh
 Kosmos
 ```
 
-## In Dockerfile format
+Now that we've modified the container we have to commit the changes. First exit the container with the command exit. To commit the changes and create a new image based on said changes, issue the command:
 
+When the container stops you are back the the terminal prompt on you laptop.  Find the container_id by executing the command:
 ```
-FROM ubuntu:latest
-RUN apt update -y
-RUN apt install -y openssh-server locales curl git rsync unzip lsb python3 python3-pip
-RUN pip3 install click
+docker image ls
+```
+With the optained container_id commit the new build container:
+```
+sudo docker commit CONTAINER_ID jumpscaleX_core
+```
+After this - anytime you want to restart the container use:
+```
+docker run -ti jumpscaleX_core
+```
 
-RUN eval ssh-agent -s
-RUN yes | ssh-keygen -N “”
-RUN ssh-add ~/y
-RUN echo "copy this public RSA key into your GitHub account, this is required by the rest of the install and will commence in 90 second"
-RUN cat ~/y.pub
-RUN sleep 90
-RUN curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx;
-RUN chmod +x /tmp/jsx;
-RUN export LC_ALL=C.UTF-8
-RUN export LANG=C.UTF-8
-RUN /tmp/jsx install
-```
+All done!
