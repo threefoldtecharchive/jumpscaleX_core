@@ -183,17 +183,17 @@ class ACL(j.data.bcdb._BCDBModelClass):
         self._log_debug("dict_process_out:\n%s" % d)
         for circle in d["circles"]:
             if circle.get("cid"):
-                r = self.circle.get_by_name("circle_%s" % circle["cid"])[0]
+                r = self.circle.get_by_name("circle_%s" % circle["cid"])
                 r = "".join(r.rights)
-                acl_circle = self.circle.get_by_name("circle_%s" % circle["cid"])[0]
+                acl_circle = self.circle.get_by_name("circle_%s" % circle["cid"])
                 res[acl_circle.cid] = r  # as string
         d["circles"] = res
         res = {}
         for user in d["users"]:
             if user.get("uid"):
-                r = self.user.get_by_name("user_%s" % user["uid"])[0]
+                r = self.user.get_by_name("user_%s" % user["uid"])
                 r = "".join(r.rights)
-                acl_user = self.user.get_by_name("user_%s" % user["uid"])[0]
+                acl_user = self.user.get_by_name("user_%s" % user["uid"])
                 res[acl_user.uid] = r  # as string
         d["users"] = res
         return d

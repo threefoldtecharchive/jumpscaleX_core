@@ -122,7 +122,7 @@ def main(self):
         if sqlite:
             assert db_model.index.sql.select().where(db_model.index.sql.id == model_obj.id).first().token_price == 10
         else:
-            o = db_model.get_by_name("name1")[0]
+            o = db_model.get_by_name("name1")
             o.name == "name1"
 
         def do(id, obj, result):
