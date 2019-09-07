@@ -31,65 +31,6 @@ class OpenRestyServer(j.baseclasses.factory_data):
            time_stop = (T)
            """
 
-    _CONFIG = """
-        
-        user www www;
-        worker_processes  1;
-        
-        #error_log  logs/error.log;
-        #error_log  logs/error.log  notice;
-        #error_log  logs/error.log  info;
-        
-        #pid        logs/nginx.pid;
-        
-        error_log stderr notice;
-        daemon off;
-        pid logs/nginx.pid;
-        
-        
-        events {
-            worker_connections  1024;
-        }
-        
-        http {
-        
-            map $http_upgrade $connection_upgrade {
-                default upgrade;
-                '' close;
-            }
-        
-            include       mime.types;
-            default_type  application/octet-stream;
-        
-            error_log /dev/stdout info;
-        
-            sendfile        on;
-            keepalive_timeout  65;
-        
-            lua_shared_dict auto_ssl 1m;
-            lua_shared_dict auto_ssl_settings 64k;
-            resolver 8.8.8.8 ipv6=off;
-        
-            init_by_lua_block {
-              auto_ssl = (require "resty.auto-ssl").new()
-              auto_ssl:set("allow_domain", function(domain)
-                return true
-              end)
-              auto_ssl:init()
-            }
-        
-            init_worker_by_lua_block {
-              auto_ssl:init_worker()
-            }
-        
-            include servers/*.http.conf;
-        
-        }
-        
-        include servers/*.tcp.conf;
-    
-        """
-
     def _init(self, **kwargs):
         self._cmd = None
         self._web_path = "/sandbox/var/web/%s" % self.name
@@ -108,7 +49,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
 
     def configure(self):
         self.install()
-        configtext = j.tools.jinja2.template_render(text=self.__class__._CONFIG, obj=self)
+        configtext = j.tools.jinja2.file_render(path=f"{self._dirpath}/templates/nginx.conf", obj=self)
         j.sal.fs.writeFile(self.path_cfg, configtext)
 
     def install(self, reset=False):
@@ -122,7 +63,6 @@ class OpenRestyServer(j.baseclasses.factory_data):
 
             # get weblib
             url = "https://github.com/threefoldtech/jumpscale_weblibs"
-
             weblibs_path = j.clients.git.getContentPathFromURLorPath(url, pull=False)
 
             # copy the templates to the right location
@@ -139,9 +79,9 @@ class OpenRestyServer(j.baseclasses.factory_data):
             j.sal.fs.copyFile(
                 "%s/web_resources/lualib/redis.lua" % self._dirpath, "/sandbox/openresty/lualib/redis.lua"
             )
-            j.sal.fs.copyFile(
-                "%s/web_resources/lualib/websocket.lua" % self._dirpath, "/sandbox/openresty/lualib/websocket.lua"
-            )
+            # j.sal.fs.copyFile(
+            #     "%s/web_resources/lualib/websocket.lua" % self._dirpath, "/sandbox/openresty/lualib/websocket.lua"
+            # )
             self.status = "installed"
 
             self.save()

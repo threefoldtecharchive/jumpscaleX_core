@@ -73,7 +73,7 @@ class ServerRack(JSBASE):
             def index(url):
                 try:
                     file = j.sal.bcdbfs.file_read("/" + url)
-                except RuntimeError:
+                except j.exceptions.NotFound:
                     abort(404)
                 response.headers["Content-Type"] = mimetypes.guess_type(url)[0]
                 return file

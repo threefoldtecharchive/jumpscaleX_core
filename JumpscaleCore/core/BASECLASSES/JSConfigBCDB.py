@@ -89,6 +89,14 @@ class JSConfigBCDB(JSConfigBCDBBase):
         if self._parent:
             if self._data.name in self._parent._children:
                 del self._parent._children[self._data.name]
+
+        if self._children:
+            for child_class in self._children:
+                child_class_inst = self._children[child_class]
+                if child_class_inst._children:
+                    for child in child_class_inst._children._data.copy():
+                        child_class_inst._children[child].delete()
+
         self._triggers_call(self, "delete_post")
 
     def save(self):
