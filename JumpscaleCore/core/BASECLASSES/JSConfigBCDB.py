@@ -53,7 +53,7 @@ class JSConfigBCDB(JSConfigBCDBBase):
 
     @property
     def _key(self):
-        return self._name + "_" + self.name
+        return self._classname + "_" + self.name
 
     @property
     def _id(self):
@@ -117,7 +117,6 @@ class JSConfigBCDB(JSConfigBCDBBase):
         mother_id = self._mother_id_get()
         if mother_id:
             # means there is a mother
-            assert self._hasattr(self._data, "mother_id")
             self._data.mother_id = mother_id
             assert self._data._model.schema._md5 == self._model.schema._md5
 
@@ -164,7 +163,7 @@ class JSConfigBCDB(JSConfigBCDBBase):
         print(j.core.tools.text_replace(out, check_no_args_left=False).rstrip())
         return self._data.__repr__()
         #
-        # out = "{YELLOW}## JSXOBJ: %s{RESET}\n\n" % (self.__class__._name,)
+        # out = "{YELLOW}## JSXOBJ: %s{RESET}\n\n" % (self.__class__._classname,)
         #
         # def add(name, color, items, out):
         #     if len(items) > 0:

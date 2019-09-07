@@ -38,6 +38,14 @@ class MyWorker(j.baseclasses.object_config):
         if not self.nr > 0 and self.nr < 20:
             raise j.exceptions.JSBUG("worker nr is between 1 and 20")
 
+    def _state_set_new(self):
+        self.time_start = 0
+        self.last_update = 0
+        self.state = "NEW"
+        self.pid = 0
+        self.current_job = 2147483647
+        self.halt = False
+
     def start(self):
         def state_update():
             self.state = "WAITING"

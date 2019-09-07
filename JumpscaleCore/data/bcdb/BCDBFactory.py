@@ -29,7 +29,7 @@ import redis
 import copy
 
 
-class BCDBFactory(j.baseclasses.factory):
+class BCDBFactory(j.baseclasses.factory_testtools):
 
     __jslocation__ = "j.data.bcdb"
 

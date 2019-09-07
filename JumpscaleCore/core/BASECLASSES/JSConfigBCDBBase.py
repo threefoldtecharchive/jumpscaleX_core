@@ -37,10 +37,7 @@ class JSConfigBCDBBase(JSBase, Attr):
         # self._model._kosmosinstance = self
 
     def _init_post(self, **kwargs):
-        # I THINK THIS CAN BE MOVED TO __init_class_post (LETS DO LATER)
-        props, methods = self._inspect()
-        self._properties_ = props
-        self._methods_ = methods
+        self._inspect()  # force inspection
         self._protected = True
 
     def _bcdb_selector(self):

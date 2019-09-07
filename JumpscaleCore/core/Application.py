@@ -375,7 +375,7 @@ class Application(object):
         """
         iterates over all loaded objects in kosmos space (which inherits of JSBase class)
         e.g.
-        objnames = [i._name for i in j.application.obj_iterator]
+        objnames = [i._classname,for i in j.application.obj_iterator]
 
         :return:
         """

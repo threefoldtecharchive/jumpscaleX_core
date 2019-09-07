@@ -38,11 +38,11 @@ class MyWorkerProcess(j.baseclasses.object):
             j.application.debug = self.debug
             j.core.myenv.debug = self.debug
 
-        # make sure all traces of existing clients are gone
-        j.application.subprocess_prepare()
-        j.data.bcdb._children = j.baseclasses.dict()
-
-        j.clients.redis._cache_clear()  # make sure we have redis connections empty, because comes from parent
+        if not onetime:
+            # make sure all traces of existing clients are gone
+            j.data.bcdb._children = j.baseclasses.dict()
+            j.application.subprocess_prepare()
+            j.clients.redis._cache_clear()  # make sure we have redis connections empty, because comes from parent
 
         # MAKE SURE YOU DON'T REUSE SOCKETS FROM MOTHER PROCESSS
         j.core.db.source = "worker"  # this allows us to test
@@ -68,11 +68,12 @@ class MyWorkerProcess(j.baseclasses.object):
         self.model_action = self.bcdb.model_get(url="jumpscale.myjobs.action")
         self.model_worker = self.bcdb.model_get(url="jumpscale.myjobs.worker")
 
-        # will ise direct saving to the backend
-        self.model_job.nosave = True
-        self.model_worker.nosave = True
-        self.model_worker.trigger_add(self._save_data)
-        self.model_job.trigger_add(self._save_job)
+        if not self.onetime:
+            # will ise direct saving to the backend
+            self.model_job.nosave = True
+            self.model_worker.nosave = True
+            self.model_worker.trigger_add(self._save_data)
+            self.model_job.trigger_add(self._save_job)
 
         self.data = self._worker_get(worker_id)
         self.data.state = "new"
@@ -82,6 +83,10 @@ class MyWorkerProcess(j.baseclasses.object):
         self.data.save()
 
         self.start()
+
+    @property
+    def id(self):
+        return self.data.id
 
     def return_data(self, cat, obj):
         # self._log("return data", data=obj)
@@ -110,7 +115,10 @@ class MyWorkerProcess(j.baseclasses.object):
         self.data.halt = False
         self.data.pid = 0
         self.data.save()
-        self._log_info("WORKER REMOVE SELF:%s" % self.data.id, data=self)
+        if not self.onetime:
+            self._log_info("WORKER REMOVE SELF:%s" % self.id, data=self)
+        else:
+            self._log_info("WORKER ONETIME DONE")
 
     def _job_get(self, id):
         deadline = j.data.time.epoch + 3
@@ -138,6 +146,12 @@ class MyWorkerProcess(j.baseclasses.object):
         self._log_info("worker object no longer exists, so I need to stop, prob reset of data")
         sys.exit(0)
 
+    def _state_set(self, state="WAITING"):
+        self.data.state = state
+        self.data.current_job = 2147483647
+        self.data.last_update = j.data.time.epoch
+        self.data.save()
+
     def start(self):
         self._log_info("start", data=self.data)
         # initial waiting state
@@ -153,11 +167,11 @@ class MyWorkerProcess(j.baseclasses.object):
                 while not res:
                     res = self.queue_jobs_start.get(timeout=0)
                     gevent.sleep(0.1)
-                    self._log_debug("jobget")
+                    self._log_debug("jobget from queue")
             else:
                 res = self.queue_jobs_start.get(timeout=1)
 
-            self.data = self._worker_get(self.data.id)
+            self.data = self._worker_get(self.id)
             if self.data.halt or res == b"halt":
                 return self.stop()
 
@@ -165,22 +179,20 @@ class MyWorkerProcess(j.baseclasses.object):
                 if j.data.time.epoch > last_info_push + 20:
                     print(self.data)
                     self._log_info("queue request timeout, no data, continue", data=self.data)
-                    self.data.last_update = j.data.time.epoch
-                    self.data.current_job = 2147483647
-                    self.data.state = "waiting"
-                    self.data.save()
+                    self._state_set()
                     last_info_push = j.data.time.epoch
             else:
                 self._log_debug("queue has data")
                 jobid = int(res)
                 job = self._job_get(jobid)
+                job.time_start = j.data.time.epoch
                 skip = False
                 relaunch = False
                 for dep_id in job.dependencies:
                     job_deb = self._job_get(dep_id)
                     if job_deb.state in ["ERROR", "HALTED"]:
                         job.state = job_deb.state
-                        job.result = "cannot run because dependency failed: %s" % job_deb.id
+                        job.result = '"cannot run because dependency failed: %s"' % job_deb.id
                         job.error["dependency_failure"] = job_deb.id
                         job.time_stop = j.data.time.epoch
                         job.save()
@@ -210,7 +222,6 @@ class MyWorkerProcess(j.baseclasses.object):
                         # now have job
                         action = self._action_get(job.action_id)
                         kwargs = job.kwargs
-                        args = job.args
 
                         self.data.last_update = j.data.time.epoch
                         self.data.current_job = jobid  # set current jobid
@@ -244,9 +255,9 @@ class MyWorkerProcess(j.baseclasses.object):
 
                         try:
                             if job.dependencies != []:
-                                res = deadline(job.timeout)(method)(*args, job=job, **kwargs)
+                                res = deadline(job.timeout)(method)(job=job, **kwargs)
                             else:
-                                res = deadline(job.timeout)(method)(*args, **kwargs)
+                                res = deadline(job.timeout)(method)(**kwargs)
                         except BaseException as e:
                             tb = sys.exc_info()[-1]
                             if isinstance(e, gevent.Timeout):
@@ -260,7 +271,6 @@ class MyWorkerProcess(j.baseclasses.object):
                             )
                             job.error = logdict
                             job.state = "ERROR"
-
                             job.save()
 
                             if self.debug:
@@ -271,12 +281,13 @@ class MyWorkerProcess(j.baseclasses.object):
                             continue
 
                         try:
-                            job.result = j.data.serializers.json.dumps(res)
+                            job.result_json = j.data.serializers.json.dumps(res)
                         except Exception as e:
-                            job.error = (
-                                str(e)
-                                + "\nCOULD NOT SERIALIZE RESULT OF THE METHOD, make sure json can be used on result"
-                            )
+                            e.message_pub = "could not json serialize result of job"
+                            try:
+                                job.error = e.logdict
+                            except Exception as e:
+                                job.error = str(e)
                             job.state = "ERROR"
                             job.time_stop = j.data.time.epoch
                             job.save()
@@ -294,13 +305,13 @@ class MyWorkerProcess(j.baseclasses.object):
 
                         job.save()
 
-                        self.data.state = "waiting"
-                        self.data.current_job = 2147483647
-                        self.data.last_update = j.data.time.epoch
-                        self.data.save()
+                        if self.queue_jobs_start.qsize() == 0:
+                            # make sure we already set here, otherwise no need because a new job is waiting anyhow
+                            self._state_set()
 
             gevent.sleep(0)
             if self.onetime:
-                self.data.state = "halted"
+                self._state_set(state="HALTED")
                 self.data.save()
+                # need to make sure all gets processed
                 return

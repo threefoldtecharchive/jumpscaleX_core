@@ -146,7 +146,7 @@ class JSXObject(j.baseclasses.object):
             if serialize:
                 self._deserialized_items = {}  # need to go back to smallest form
         if self._model:
-            if not self._model.__class__._name == "acl" and self._acl is not None:
+            if not self._model._classname == "acl" and self._acl is not None:
                 if self.acl.id is None:
                     self.acl.save()
                 if self.acl.id != self.acl_id:

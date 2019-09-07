@@ -18,7 +18,7 @@ code = ""
 """
 
 
-class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
+class MyJobsFactory(j.baseclasses.factory_testtools):
     __jslocation__ = "j.servers.myjobs"
     _CHILDCLASSES = [MyWorkers, MyJobs]
 
@@ -46,6 +46,9 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
         # need to make sure at startup we process all data which is still waiting there for us
         self._data_process_untill_empty()
         self._dataloop_start()
+        assert self._children
+        assert self.jobs
+        assert self.workers
 
     def action_get(self, key, return_none_if_not_exist=False):
 
@@ -77,6 +80,7 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
             nr = self._worker_next_get()
         w = self.workers.get(name="w%s" % nr)
         w.type = "inprocess"
+        w._state_set_new()
         w.debug = debug
         w.nr = nr
         w.start()
@@ -291,7 +295,7 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
 
             gevent.time.sleep(10)
 
-    def _data_process_1time(self, timeout=0, die=False):
+    def _data_process_1time(self, timeout=0, die=True):
         r = self.queue_return.get(timeout=timeout)
         if r == None:
             return
@@ -305,37 +309,40 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
             worker_object = self.workers._model.get(objid)
             worker_object._data_update(data2)
             worker_object.save()
-            if worker_object.name in self._children:
-                self._children[worker_object.name].load()  # make sure in mem the data is ok
+            if worker_object.name in self.workers._children:
+                self.workers._children[worker_object.name].load()  # make sure in mem the data is ok
             return True
         elif cat == "J":
-            job = self.jobs.new(data=data)
-            job.id = objid
-            job.save()
-            for queue_name in job.return_queues:
+            data2 = j.data.serializers.json.loads(data)
+            job_obj = self.jobs._model.get(objid)
+            job_obj._data_update(data2)
+            job_obj.save()
+            if job_obj.name in self.jobs._children:
+                self.jobs._children[job_obj.name].load()  #
+            for queue_name in job_obj.return_queues:
                 queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)
-                queue.put(job.id)
+                queue.put(job_obj.id)
             return True
         elif cat == "E":
             datae = j.data.serializers.json.loads(data)
             j.core.tools.log2stdout(datae)
             if die:
-                raise j.exceptions.Base(data=datae)
+                raise j.exceptions.RemoteException(data=datae)
             return True
         else:
             raise j.exceptions.Base("return queue does not have right obj")
 
-    def _data_process_untill_empty(self, timeout=1, die=True):
+    def _data_process_untill_empty(self, timeout=0):
 
         # need to wait till first one comes
-        r = self._data_process_1time(timeout=timeout, die=die)
+        r = self._data_process_1time(timeout=timeout)
         if not r:
             return
 
         while r is not None:
             if self.queue_return.empty:
                 return
-            r = self._data_process_1time(timeout=timeout, die=die)
+            r = self._data_process_1time(timeout=timeout)
 
     def _main_loop_subprocess(self):
         """
@@ -457,7 +464,6 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
         gevent=False,
         wait=False,
         die=True,
-        args_replace=None,
         **kwargs,
     ):
         """
@@ -475,20 +481,28 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
         """
         if not name:
             name = "j%s" % j.core.db.incr("myjobs.ourid")
+        if self.jobs.exists(name=name):
+            self.jobs.delete(name=name)
+        if "self" in kwargs:
+            kwargs.pop("self")
         job = self.jobs.new(
             name=name,
             method=method,
             kwargs=kwargs,
             dependencies=dependencies,
-            args_replace=args_replace,
             return_queues=return_queues,
             return_queues_reset=return_queues_reset,
         )
+
         job.time_start = j.data.time.epoch
         job.state = "NEW"
         job.timeout = timeout
         job.category = category
         job.die = die
+        self.scheduled_ids.append(job.id)
+        self.queue_jobs_start.put(job.id)
+        if wait:
+            return job.wait()
         return job
 
     def stop(self, graceful=True, reset=True, timeout=60):
@@ -561,30 +575,50 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
 
         for obj in ids:
             if isinstance(obj, j.data.schema._JSXObjectClass):
+                obj = self.jobs.get(id=obj.id)
+                if obj not in jobs:
+                    jobs.append(obj)
+            elif isinstance(obj, j.baseclasses.object_config):
+                obj.load()
                 if obj not in jobs:
                     jobs.append(obj)
             elif isinstance(obj, int):
-                obj = self.get(obj)
+                obj = self.jobs.get(id=obj)
+                obj.load()
                 if obj not in jobs:
                     jobs.append(obj)
             else:
                 raise j.exceptions.Input("can only be int or job object")
 
+        if len(jobs) == 0:
+            raise j.exceptions.BUG("jobs to wait on should not be None, there are no jobs in scheduled ids")
+
         with gevent.Timeout(timeout, False):
             while True:
                 ready = 0
                 for job in jobs:
+                    job.load()
                     if job.check_ready(die=die):
                         ready += 1
                 if not self._dataloop:
                     # means we have to manually fetch the objects there is no dataloop doing it for us
-                    self._data_process_untill_empty(die=False)
+                    self._data_process_untill_empty()
 
                 if ready == len(jobs):
-                    j.servers.myjobs.scheduled_ids
                     return jobs
 
                 gevent.time.sleep(0.3)
+
+                # job.load()
+                # print(job)
+                # gevent.time.sleep(1)
+
+    def results(self, ids=None, timeout=100, die=True):
+        jobs = self.wait(ids=ids, timeout=timeout, die=die)
+        res = {}
+        for job in jobs:
+            res[job.id] = job.result
+        return res
 
     def wait_queue(self, queue_name, size, timeout=120, returnjobs=True):
         queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)

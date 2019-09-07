@@ -129,7 +129,7 @@ class builder_method:
             name = func.__name__
 
             if not j.application._log2fs_session_name:
-                j.application.log2fs_register(builder._name)
+                j.application.log2fs_register(builder._classname)
             j.application.log2fs_context_change(name)
 
             kwargs = self.get_all_as_keyword_arguments(func, args, kwargs)
@@ -144,7 +144,7 @@ class builder_method:
             #     builder.state_reset()  # lets not reset the full module
 
             if self.already_done(func, builder, done_key, reset):
-                builder._log_info("no need to do: %s:%s, was already done" % (builder._name, kwargs_without_reset))
+                builder._log_info("no need to do: %s:%s, was already done" % (builder._classname, kwargs_without_reset))
                 return builder.ALREADY_DONE_VALUE
 
             # Make sure to call _init before any method
@@ -197,9 +197,9 @@ class BuilderBaseClass(JSBase):
 
     def __init__(self):
         self._bash = None
-        self._name = self.__class__.__jslocation__.lower().split(".")[-1]
-        self.DIR_BUILD = "/tmp/builders/{}".format(self._name)
-        self.DIR_SANDBOX = "/tmp/package/{}".format(self._name)
+        self._classname = self.__class__.__jslocation__.lower().split(".")[-1]
+        self.DIR_BUILD = "/tmp/builders/{}".format(self._classname)
+        self.DIR_SANDBOX = "/tmp/package/{}".format(self._classname)
         JSBase.__init__(self)
 
     def state_sandbox_set(self):
@@ -362,7 +362,7 @@ class BuilderBaseClass(JSBase):
             raise j.exceptions.Base("cmd cannot be empty")
 
         cmd = "cd /tmp/\n. %s\n%s" % (self.profile.profile_path, cmd)
-        name = self.__class__._name
+        name = self.__class__._classname
         name = name.replace("builder", "")
         path = "/tmp/builder_%s.sh" % (name)
         self._log_debug("execute: '%s'" % path)
@@ -558,19 +558,21 @@ class BuilderBaseClass(JSBase):
             self._copy("/lib64/ld-linux-x86-64.so.2", ld_dest)
 
         self._log_info("uploading flist to the hub")
-        flist_url = zhub_client.sandbox_upload(self._name, self.DIR_SANDBOX)
+        flist_url = zhub_client.sandbox_upload(self._classname, self.DIR_SANDBOX)
         if merge_base_flist:
             self._log_info("merging the produced flist with {}".format(merge_base_flist))
 
-            target = "{}_merged_{}".format(self._name, merge_base_flist.replace("/", "_").replace(".flist", ""))
-            flist_name = "{username}/{flist_name}.flist".format(username=zhub_client.username, flist_name=self._name)
+            target = "{}_merged_{}".format(self._classname, merge_base_flist.replace("/", "_").replace(".flist", ""))
+            flist_name = "{username}/{flist_name}.flist".format(
+                username=zhub_client.username, flist_name=self._classname
+            )
             flist_url = zhub_client.merge(target, [flist_name, merge_base_flist])
 
         return flist_url
 
     @builder_method()
     def _tarfile_create(self):
-        tarfile = "/tmp/{}.tar.gz".format(self._name)
+        tarfile = "/tmp/{}.tar.gz".format(self._classname)
         j.sal.process.execute("tar czf {} -C {} .".format(tarfile, self.DIR_SANDBOX))
         return tarfile
 

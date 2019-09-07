@@ -9,6 +9,7 @@ class MyJob(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
         @url = jumpscale.myjobs.job
+        name* = ""
         category*= ""
         time_start = 0 (T)
         time_stop = 0 (T)
@@ -17,7 +18,7 @@ class MyJob(j.baseclasses.object_config):
         timeout = 0
         action_id* = 0
         kwargs = (dict)
-        result = (dict)
+        result_json = "" (S)
         error = (dict)
         return_queues = (LS)
         die = false (B)
@@ -27,19 +28,11 @@ class MyJob(j.baseclasses.object_config):
         """
 
     def _init(
-        self,
-        method=None,
-        kwargs=None,
-        dependencies=None,
-        args_replace=None,
-        return_queues_reset=None,
-        return_queues=None,
-        **kwargs2,
+        self, method=None, dependencies=None, args_replace=None, return_queues_reset=None, return_queues=None, **kwargs2
     ):
 
         # leave this check for now please
         assert self._bcdb.storclient._check_cat == "myjobs"
-        self._method = method
 
         if dependencies:
             for dep in dependencies:
@@ -50,17 +43,35 @@ class MyJob(j.baseclasses.object_config):
                 else:
                     raise j.exceptions.Input("only jsx obj (job) or int supported in dependencies")
 
-        self._log_debug("executing method {0} with **kwargs {1} ".format(self._method.__name__, kwargs))
-        # is for debug purposes
+        if args_replace:
+            for key, val in args_replace.items():
+                self.kwargs[key] = val
 
-        code = inspect.getsource(self._method)
+        if return_queues:
+            for qname in return_queues:
+                self.return_queues.append(qname)
+                if return_queues_reset:
+                    q = j.clients.redis.queue_get(redisclient=j.clients.redis.core_get(), key="myjobs:%s" % qname)
+                    q.reset()
+
+        if method:
+            self.process_code(method)
+
+    @property
+    def result(self):
+        return j.data.serializers.json.loads(self.result_json)
+
+    # @result.setter
+    # def result(self, v):
+    #     j.shell()
+    #     self.result_json = j.data.serializers.json.dumps(v)
+
+    def process_code(self, method):
+        code = inspect.getsource(method)
         code = j.core.text.strip(code)
         code = code.replace("self,", "").replace("self ,", "").replace("self  ,", "")
 
-        if args_replace:
-            if "self" in args_replace:
-                args_replace.pop("self")
-            code = j.core.tools.text_replace(code, text_strip=False, args=args_replace)
+        code = j.core.tools.text_replace(code, text_strip=False, args=self.kwargs)
 
         methodname = ""
         for line in code.split("\n"):
@@ -78,13 +89,6 @@ class MyJob(j.baseclasses.object_config):
             action.methodname = methodname
             j.servers.myjobs.model_action.set(action)
 
-        if return_queues:
-            for qname in return_queues:
-                self.return_queues.append(qname)
-                if return_queues_reset:
-                    q = j.clients.redis.queue_get(redisclient=j.clients.redis.core_get(), key="myjobs:%s" % qname)
-                    q.reset()
-
         self.action_id = action.id
 
         # if gevent and return_queues != []:
@@ -93,7 +97,7 @@ class MyJob(j.baseclasses.object_config):
 
         self.save()
 
-    def check_ready(self, die=True):
+    def check_ready(self, die=True, load=True):
         """
         checks if there is a timeout or an error an error will be raised unless if die==False
         it will make sure that the object data is right e.g. state, time, ...
@@ -103,6 +107,8 @@ class MyJob(j.baseclasses.object_config):
 
         :return:
         """
+        if load:
+            self.load()
         if self.time_stop == 0:
             # if time stop filled in then the job does not need any further processing
             if self.state == "ERROR":
@@ -133,6 +139,7 @@ class MyJob(j.baseclasses.object_config):
         return self.check_ready()
 
     def start(self):
+        self._log_debug("executing method {0} with **kwargs {1} ".format(self.name, self.kwargs))
         j.servers.myjobs.scheduled_ids.append(self.id)
         j.servers.myjobs.queue_jobs_start.put(self.id)
 

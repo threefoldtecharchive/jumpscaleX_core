@@ -99,15 +99,15 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             self._children[name]._autosave = True
         return self._children[name]
 
-    def get(self, name="main", needexist=False, save=True, **kwargs):
+    def get(self, name="main", id=None, needexist=False, save=True, reload=False, **kwargs):
         """
         :param name: of the object
         """
 
-        rc, jsconfig = self._get(name=name, die=needexist)
+        rc, jsconfig = self._get(name=name, id=id, die=needexist)
 
         if not jsconfig:
-            self._log_debug("NEW OBJ:%s:%s" % (name, self._name))
+            self._log_debug("NEW OBJ:%s:%s" % (name, self._classname))
             jsconfig = self._new(name=name, save=save, **kwargs)
         else:
             # check that the stored values correspond with kwargs given
@@ -126,16 +126,23 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         # lets do some tests (maybe in future can be removed, but for now the safe bet)
         self._check(jsconfig)
 
+        if reload:
+            jsconfig.load()
+
         jsconfig._triggers_call(jsconfig, "get")
 
         return jsconfig
 
-    def _get(self, name="main", die=True):
-        assert name
+    def _get(self, name="main", id=None, die=True):
+
+        if id:
+            obj = self._model.get(id)
+            name = obj.name
+
         if name in self._children:
             return 1, self._children[name]
 
-        self._log_debug("get child:'%s'from '%s'" % (name, self._name))
+        self._log_debug("get child:'%s'from '%s'" % (name, self._classname))
 
         # new = False
         res = self.find(name=name)
@@ -192,7 +199,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         for key, item in self._children.items():
             match = True
             for key, val in kwargs.items():
-                if self._hasattr(item, key):
+                if item._hasattr(key):
                     if val != getattr(item, key):
                         match = False
                 else:
@@ -247,7 +254,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
     def save(self):
         for item in self._children_get():
-            if self._hasattr(item, "save"):
+            if item._hasattr("save"):
                 item.save()
 
     def delete(self, name=None, recursive=None):
@@ -278,7 +285,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             self._children.pop(name)
 
         if not name and self._parent:
-            if self._name in self._parent._children:
+            if self._classname in self._parent._children:
                 if not isinstance(self._parent, j.baseclasses.factory):
                     # only delete when not a factory means is a custom class we're building
                     del self._parent._children[self._data.name]
