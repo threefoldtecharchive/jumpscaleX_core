@@ -527,7 +527,6 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
             self.model_action.destroy()
             self.jobs._model.destroy()
             self.workers._model.destroy()
-            self._children_reset()
             # delete the queue
             while self.queue_jobs_start.get_nowait() != None:
                 pass

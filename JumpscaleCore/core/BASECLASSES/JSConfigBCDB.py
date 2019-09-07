@@ -59,6 +59,10 @@ class JSConfigBCDB(JSConfigBCDBBase):
     def _id(self):
         return self._data.id
 
+    @property
+    def id(self):
+        return self._data.id
+
     def _data_update(self, datadict):
         """
         will not automatically save the data, don't forget to call self.save()
