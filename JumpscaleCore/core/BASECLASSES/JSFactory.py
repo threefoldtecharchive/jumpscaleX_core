@@ -9,7 +9,7 @@ from .TestTools import TestTools
 # from .JSConfigBCDB import JSConfigBCDB
 
 
-class JSFactory(JSBase, TestTools, Attr):
+class JSFactory(JSBase, Attr):
     def _init_factory(self, **kwargs):
 
         # these are classes which will be created automatically when the factory class starts

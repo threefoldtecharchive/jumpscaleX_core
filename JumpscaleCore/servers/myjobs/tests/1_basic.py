@@ -3,7 +3,7 @@ from Jumpscale import j
 
 def main(self):
     """
-    kosmos 'j.servers.myjobs.test("basic")'
+    kosmos -p 'j.servers.myjobs.test("basic")'
     """
 
     j.tools.logger.debug = True

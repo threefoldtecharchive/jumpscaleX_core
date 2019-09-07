@@ -90,6 +90,8 @@ class JSConfigBCDB(JSConfigBCDBBase):
             if self._data.name in self._parent._children:
                 del self._parent._children[self._data.name]
 
+        # TODO: seems to be not right, why going 2 levels deep here, why copy data?
+        # TODO: why delete all children in first place, should only be done if there is a mother
         if self._children:
             for child_class in self._children:
                 child_class_inst = self._children[child_class]

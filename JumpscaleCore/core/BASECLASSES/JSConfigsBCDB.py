@@ -243,7 +243,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             if self._hasattr(item, "save"):
                 item.save()
 
-    def delete(self, name):
+    def delete(self, name, recursive=True):
         self._model
         if name in self._children:
             self._children.pop(name)

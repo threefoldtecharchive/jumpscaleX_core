@@ -18,7 +18,7 @@ code = ""
 """
 
 
-class MyJobsFactory(j.baseclasses.factory_testtools):
+class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
     __jslocation__ = "j.servers.myjobs"
     _CHILDCLASSES = [MyWorkers, MyJobs]
 
