@@ -395,7 +395,11 @@ class ExecutorBase(JSBASE):
         echo UNAME = \""$(uname -mnprs)"\"
         echo "HOME = $HOME"
         echo HOSTNAME = "$(hostname)"
-        echo OS_TYPE = "ubuntu"
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+            echo OS_TYPE = "darwin"
+        else
+            echo OS_TYPE = "ubuntu"
+        fi
 
         # lsmod > /dev/null 2>&1|grep vboxdrv |grep -v grep  > /dev/null 2>&1 && echo 'VBOXDRV=1' || echo 'VBOXDRV=0'
 

@@ -6,7 +6,7 @@ GITREPOS = {}
 
 GITREPOS["builders_extra"] = [
     "https://github.com/threefoldtech/jumpscaleX_builders",
-    "master",
+    "%s" % DEFAULTBRANCH,
     "JumpscaleBuildersExtra",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersExtra",
 ]
@@ -14,13 +14,13 @@ GITREPOS["builders_extra"] = [
 
 GITREPOS["installer"] = [
     "https://github.com/threefoldtech/jumpscaleX_core",
-    "master",
+    "%s" % DEFAULTBRANCH,
     "install",  # directory in the git repo
     "{DIR_BASE}/installer",
 ]
 GITREPOS["core"] = [
     "https://github.com/threefoldtech/jumpscaleX_core",
-    "master",
+    "%s" % DEFAULTBRANCH,
     "JumpscaleCore",
     "{DIR_BASE}/lib/jumpscale/Jumpscale",
 ]
@@ -28,14 +28,14 @@ GITREPOS["home"] = ["https://github.com/threefoldtech/home", "master", "", "{DIR
 
 GITREPOS["builders"] = [
     "https://github.com/threefoldtech/jumpscaleX_builders",
-    "master",
+    "%s" % DEFAULTBRANCH,
     "JumpscaleBuilders",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuilders",
 ]
 
 GITREPOS["builders_community"] = [
     "https://github.com/threefoldtech/jumpscaleX_builders",
-    "master",
+    "%s" % DEFAULTBRANCH,
     "JumpscaleBuildersCommunity",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersCommunity",
 ]
@@ -43,33 +43,33 @@ GITREPOS["builders_community"] = [
 
 GITREPOS["libs_extra"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs_extra",
-    "master",
+    "%s" % DEFAULTBRANCH,
     "JumpscaleLibsExtra",
     "{DIR_BASE}/lib/jumpscale/JumpscaleLibsExtra",
 ]
 GITREPOS["libs"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs",
-    "master",
+    "%s" % DEFAULTBRANCH,
     "JumpscaleLibs",
     "{DIR_BASE}/lib/jumpscale/JumpscaleLibs",
 ]
 GITREPOS["threebot"] = [
     "https://github.com/threefoldtech/jumpscaleX_threebot",
-    "master",
+    "%s" % DEFAULTBRANCH,
     "ThreeBotPackages",
     "{DIR_BASE}/lib/jumpscale/threebot_packages",
 ]
 
 GITREPOS["tutorials"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs",
-    "master",
+    "%s" % DEFAULTBRANCH,
     "tutorials",
     "{DIR_BASE}/lib/jumpscale/tutorials",
 ]
 
 GITREPOS["kosmos"] = [
     "https://github.com/threefoldtech/jumpscaleX_threebot",
-    "master",
+    "%s" % DEFAULTBRANCH,
     "kosmos",
     "{DIR_BASE}/lib/jumpscale/kosmos",
 ]
@@ -171,14 +171,12 @@ except:
                 return json.dumps(data, ensure_ascii=False, sort_keys=True, indent=True)
             except Exception as e:
                 # data = str(data)
-                Tools.shell()
-                data = "CANNOT SERIALIZE JSON"
+                data = "CANNOT SERIALIZE"
                 return data
 
     except:
 
         def serializer(data):
-            Tools.shell()
             return "CANNOT SERIALIZE"
 
 
@@ -1646,9 +1644,14 @@ class Tools:
             for key, val in replace_args.items():
                 if key not in args_new:
                     if isinstance(val, list) or isinstance(val, set):
-                        val = [str(i) for i in val]
-                        val = ",".join(val)
-                        val = "[%s]" % val
+                        out = "["
+                        for v in val:
+                            if isinstance(v, str):
+                                v = "'%s'" % v
+                            else:
+                                v = str(v)
+                            out += "%s," % v
+                        val = out.rstrip(",") + "]"
                     elif isinstance(val, str):
                         if val.strip().lower() == "self":
                             val = None
@@ -1658,9 +1661,7 @@ class Tools:
                         # val = str(val)
                         pass
                     elif val != None:
-                        # Tools.shell()
-                        # w
-                        raise Tools.exceptions.Input("cannot replace unknown argument:%s" % val)
+                        val = Tools._data_serializer_safe(val)
                     if val:
                         args_new[key] = val
 

@@ -118,4 +118,3 @@ def main(self):
     assert res[1] == "datacenter"
     assert res[2] == "txt"
     assert res[3] == 0
-
