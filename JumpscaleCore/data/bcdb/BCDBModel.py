@@ -65,7 +65,6 @@ class BCDBModel(j.baseclasses.object):
 
         self.readonly = False
         self._index_ = None
-        self.autosave = False  # if set it will make sure data is automatically set from object
         self.nosave = False
 
         if self.storclient and self.storclient.type == "ZDB":
@@ -96,10 +95,6 @@ class BCDBModel(j.baseclasses.object):
             indexklass = self._index_class_generate()
 
             self._index_ = indexklass(model=self, reset=False)
-            if self._index_.index_sql_needed and self.storclient.type == "RDB":
-                raise j.exceptions.BASE(
-                    "cannot do sql index with a rdb backend because rdb backend is supposed to be multiuser"
-                )
         return self._index_
 
     def _index_class_generate(self):

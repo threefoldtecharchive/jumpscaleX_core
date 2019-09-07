@@ -210,8 +210,7 @@ class JSFactory(JSBase, Attr):
                     self._children[name].delete(recursive=recursive)
                 self._children.pop(name)
 
-        if recursive:
-            self._children_delete(recursive=recursive)
+        self._children_delete(recursive=recursive)
 
         if self._parent:
             # if we exist in the parent remove us from their children

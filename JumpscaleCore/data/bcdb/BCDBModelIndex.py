@@ -434,7 +434,7 @@ class BCDBModelIndex(j.baseclasses.object):
                 self._ids_redis.delete(self._ids_redis)
                 return None
         else:
-            raise j.exceptions.BASE("not implemented")
+            raise j.exceptions.Base("not implemented")
 
     def _ids_exists(self, nid=1, id=None):
         """
@@ -459,7 +459,7 @@ class BCDBModelIndex(j.baseclasses.object):
                 return False
             return True
         else:
-            raise j.exceptions.BASE("not implemented")
+            raise j.exceptions.Base("not implemented")
 
     def _id_iterator(self, nid=1):
         """
@@ -510,6 +510,12 @@ class BCDBModelIndex(j.baseclasses.object):
                 raise j.exceptions.Base("should always get something back?")
             return None
         return struct.unpack("<I", chunk)[0]
+
+    def _id_index_count(self, nid=1):
+        r = self._ids_redis
+        redis_list_key = self._id_redis_listkey_get(nid)
+        l = r.llen(redis_list_key)
+        return l
 
     def _id_delete(self, id, nid=1):
         if not nid:

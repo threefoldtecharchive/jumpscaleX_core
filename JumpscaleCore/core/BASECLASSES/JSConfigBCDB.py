@@ -48,6 +48,10 @@ class JSConfigBCDB(JSConfigBCDBBase):
             self._data.name = name
 
     @property
+    def _autosave(self):
+        return self._model._autosave
+
+    @property
     def name(self):
         return self._data.name
 
@@ -89,6 +93,8 @@ class JSConfigBCDB(JSConfigBCDBBase):
         if len(jsxobjects) == 0:
             raise j.exceptions.JSBUG("cannot find obj:%s for reload" % self.name)
         self._data = jsxobjects[0]
+        self._data._autosave = True
+        return self
 
     def _delete(self, recursive=None):
         self._triggers_call(self, "delete")

@@ -5,11 +5,10 @@ def main(self):
     """
     kosmos 'j.servers.myjobs.test("simple_error")'
     """
-    self.stop(reset=True)
 
     j.tools.logger.debug = True
 
-    self.reset()
+    self.stop(reset=True)
 
     def add(a=None, b=None):
         assert a

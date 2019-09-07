@@ -89,7 +89,7 @@ def main(self):
         self._log_info("walked over all data (DONE)")
 
         assert len(l) == 20
-        assert bcdb.acl.autosave is False
+        assert bcdb.acl._autosave is False
 
         a = m.new()
         a.name = "aname"

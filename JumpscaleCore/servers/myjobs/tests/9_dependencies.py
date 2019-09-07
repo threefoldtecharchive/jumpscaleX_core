@@ -31,7 +31,7 @@ def main(self, reset=False):
             return "OK:%s" % job.id
         else:
             return "OK"
-
+i
     def do_error():
         raise RuntimeError("BOEM")
 

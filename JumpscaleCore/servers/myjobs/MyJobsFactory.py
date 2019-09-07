@@ -41,14 +41,19 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self.model_action = self._bcdb.model_get(schema=schema_action)
 
         self.scheduled_ids = []
+        self._init_pre_schedule_ = False
+        self._i_am_worker = False
 
-    def _init_post(self):
-        # need to make sure at startup we process all data which is still waiting there for us
-        self._data_process_untill_empty()
-        self._dataloop_start()
-        assert self._children
-        assert self.jobs
-        assert self.workers
+    def _init_pre_schedule(self):
+        if not self._init_pre_schedule_:
+            assert self._i_am_worker == False
+            # need to make sure at startup we process all data which is still waiting there for us
+            self._data_process_untill_empty(subprocess_errors_ignore=True)
+            self._dataloop_start()
+            assert self._children
+            assert self.jobs
+            assert self.workers
+            self._init_pre_schedule_ = True
 
     def action_get(self, key, return_none_if_not_exist=False):
 
@@ -76,6 +81,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         :param debug:
         :return:
         """
+        self._init_pre_schedule()
         if not nr:
             nr = self._worker_next_get()
         w = self.workers.get(name="w%s" % nr)
@@ -91,6 +97,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         :param debug:
         :return:
         """
+        self._init_pre_schedule()
         if not nr:
             nr = self._worker_next_get()
         w = self.workers.get(name="w%s" % nr)
@@ -121,6 +128,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         :return:
         """
+        self._init_pre_schedule()
         for i in range(nr_workers):
             self.worker_tmux_start(nr=i + 1, debug=debug)
 
@@ -130,6 +138,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         :param debug:
         :return:
         """
+        self._init_pre_schedule()
         if not nr:
             nr = self._worker_next_get()
         w = self.workers.get(name="w%s" % nr)
@@ -156,7 +165,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         :return:
         """
-
+        self._init_pre_schedule()
         if not nr_fixed_workers:
             self._mainloop_gipc = gevent.spawn(self._main_loop_subprocess)
         else:
@@ -295,7 +304,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
             gevent.time.sleep(10)
 
-    def _data_process_1time(self, timeout=0, die=True):
+    def _data_process_1time(self, timeout=0, die=True, subprocess_errors_ignore=False):
         r = self.queue_return.get(timeout=timeout)
         if r == None:
             return
@@ -306,36 +315,48 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         if cat == "W":
             data2 = j.data.serializers.json.loads(data)
-            worker_object = self.workers._model.get(objid)
-            worker_object._data_update(data2)
-            worker_object.save()
-            if worker_object.name in self.workers._children:
-                self.workers._children[worker_object.name].load()  # make sure in mem the data is ok
+            worker_object = self.workers._model.get(objid, die=False)
+            if worker_object:
+                worker_object._data_update(data2)
+                worker_object.save()
+                if worker_object.name in self.workers._children:
+                    self.workers._children[worker_object.name].load()  # make sure in mem the data is ok
+            else:
+                # means could not find, maybe there was a delete done in between, so can happen but should not be in children
+                if data2["name"] in self.workers._children:
+                    self.workers._children.pop(data2["name"])
+
             return True
         elif cat == "J":
             data2 = j.data.serializers.json.loads(data)
-            job_obj = self.jobs._model.get(objid)
-            job_obj._data_update(data2)
-            job_obj.save()
-            if job_obj.name in self.jobs._children:
-                self.jobs._children[job_obj.name].load()  #
-            for queue_name in job_obj.return_queues:
-                queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)
-                queue.put(job_obj.id)
+            job_obj = self.jobs._model.get(objid, die=False)
+            if job_obj:
+                job_obj._data_update(data2)
+                job_obj.save()
+                if job_obj.name in self.jobs._children:
+                    self.jobs._children[job_obj.name].load()  #
+                for queue_name in job_obj.return_queues:
+                    queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)
+                    queue.put(job_obj.id)
+            else:
+                if data2["name"] in self.workers._children:
+                    self.workers._children.pop(data2["name"])
+
             return True
         elif cat == "E":
-            datae = j.data.serializers.json.loads(data)
-            j.core.tools.log2stdout(datae)
-            if die:
-                raise j.exceptions.RemoteException(data=datae)
-            return True
+            if not subprocess_errors_ignore:
+                datae = j.data.serializers.json.loads(data)
+                j.core.tools.log2stdout(datae)
+                if die:
+                    raise j.exceptions.RemoteException(data=datae)
+                return True
         else:
             raise j.exceptions.Base("return queue does not have right obj")
 
-    def _data_process_untill_empty(self, timeout=0):
+    def _data_process_untill_empty(self, timeout=0, subprocess_errors_ignore=False):
 
         # need to wait till first one comes
-        r = self._data_process_1time(timeout=timeout)
+        r = self._data_process_1time(timeout=timeout, subprocess_errors_ignore=subprocess_errors_ignore)
         if not r:
             return
 
@@ -479,6 +500,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         :param kwargs:
         :return:
         """
+        self._init_pre_schedule()
         if not name:
             name = "j%s" % j.core.db.incr("myjobs.ourid")
         if self.jobs.exists(name=name):
@@ -503,6 +525,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self.queue_jobs_start.put(job.id)
         if wait:
             return job.wait()
+        assert job._data._autosave == True
         return job
 
     def stop(self, graceful=True, reset=True, timeout=60):

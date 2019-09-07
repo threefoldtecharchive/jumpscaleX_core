@@ -651,16 +651,12 @@ class BaseJSException(Exception):
 
     def __init__(self, message="", level=None, cat=None, msgpub=None, context=None, data=None, exception=None):
 
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        self._exc_traceback = exc_traceback
-        self._exc_value = exc_value
-        self._exc_type = exc_type
+        super().__init__(message)
 
-        if not self._exc_traceback:
-            try:
-                self._exc_traceback = sys.last_traceback
-            except:
-                self._exc_traceback = inspect.currentframe().f_back
+        # exc_type, exc_value, exc_traceback = sys.exc_info()
+        # self._exc_traceback = exc_traceback
+        # self._exc_value = exc_value
+        # self._exc_type = exc_type
 
         if level:
             if isinstance(level, str):
@@ -673,16 +669,15 @@ class BaseJSException(Exception):
             assert level > 9
             assert level < 51
 
-        super().__init__(message)
         self.message = message
         self.message_pub = msgpub
         self.level = level
         self.context = context
         self.cat = cat  # is a dot notation category, to make simple no more tags
         self.data = data
+        self._logdict = None
         self.exception = exception
         self._init(message=message, level=level, cat=cat, msgpub=msgpub, context=context, exception=exception)
-        self._logdict = Tools.log(exception=self, stdout=False, replace=False)
 
     def _init(self, **kwargs):
         pass
@@ -690,7 +685,6 @@ class BaseJSException(Exception):
     @property
     def logdict(self):
         return self._logdict
-        # return Tools.log(exception=self, stdout=False, replace=False)
 
     @property
     def type(self):
@@ -3362,12 +3356,13 @@ class MyEnv_:
             traceback.print_exception(etype=ttype, tb=tb, value=msg)
             Tools.pprint("{RESET}")
             sys.exit(1)
-            Tools.shell()
 
-        if self.debug and traceback and pudb:
+        exception_obj._logdict = logdict
+
+        if self.debug and tb and pudb:
             # exception_type, exception_obj, tb = sys.exc_info()
             pudb.post_mortem(tb)
-        # Tools.pprint("{RED}CANNOT CONTINUE{RESET}")
+
         if die == False:
             return logdict
         else:

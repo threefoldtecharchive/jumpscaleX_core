@@ -36,6 +36,7 @@ class JSXObject(j.baseclasses.object):
         self._deserialized_items = {}
 
         self._autosave = False
+
         self.acl_id = None
         self._acl = None
 

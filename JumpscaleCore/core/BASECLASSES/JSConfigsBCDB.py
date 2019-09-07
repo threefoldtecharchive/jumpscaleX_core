@@ -83,6 +83,8 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 jsxobject = self._model.new()
             jsxobject.name = name
 
+        jsxobject._autosave = True
+
         # means we need to remember the parent id
         mother_id = self._mother_id_get()
         if mother_id:
@@ -93,10 +95,11 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         jsconfig_klass = self._childclass_selector(jsxobject=jsxobject)
         jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject, **kwargs_to_class)
         jsconfig._triggers_call(jsconfig, "new")
+        jsconfig._data._autosave = True
         self._children[name] = jsconfig
         if save:
             self._children[name].save()
-            self._children[name]._autosave = True
+
         return self._children[name]
 
     def get(self, name="main", id=None, needexist=False, save=True, reload=False, **kwargs):
@@ -116,10 +119,12 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 # means data came from DB and schema is not same as config mgmt class
                 j.shell()
             changed = False
+            jsconfig._data._autosave = False
             for key, val in kwargs.items():
                 if not getattr(jsconfig, key) == val:
                     changed = True
                     setattr(jsconfig, key, val)
+            jsconfig._data._autosave = True
             if changed and save:
                 jsconfig.save()
 
@@ -190,6 +195,13 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         self._children = j.baseclasses.dict()
 
+    def _children_names_get(self, filter=None):
+        if self.count() > 50:
+            llist = []
+        else:
+            llist = self._children_get()
+        return self._filter(filter=filter, llist=llist)
+
     def find(self, reload=False, **kwargs):
         """
         :param kwargs: e.g. color="red",...
@@ -222,6 +234,9 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :param kwargs: e.g. color="red",...
         :return: list of the config objects
         """
+        if j.servers.myjobs.jobs._mother_id_get() == None:
+            # much faster and we can do if not mother id
+            return j.servers.myjobs.jobs._model.index._id_index_count()
         return len(self._findData(**kwargs))
 
     def _findData(self, **kwargs):

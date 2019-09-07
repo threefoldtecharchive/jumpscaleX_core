@@ -36,7 +36,6 @@ class MyWorkerProcess(j.baseclasses.object):
 
         if self.debug:
             j.application.debug = self.debug
-            j.core.myenv.debug = self.debug
 
         if not onetime:
             # make sure all traces of existing clients are gone
@@ -69,7 +68,10 @@ class MyWorkerProcess(j.baseclasses.object):
         self.model_worker = self.bcdb.model_get(url="jumpscale.myjobs.worker")
 
         if not self.onetime:
-            # will ise direct saving to the backend
+            # if not onetime then will send all to queue which will be processed on parent process (the myjobs manager)
+            j.servers.myjobs._i_am_worker = (
+                True
+            )  # makes sure that we cannot start by coincidence the data processing loop
             self.model_job.nosave = True
             self.model_worker.nosave = True
             self.model_worker.trigger_add(self._save_data)

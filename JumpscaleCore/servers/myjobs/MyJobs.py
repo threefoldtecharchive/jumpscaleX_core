@@ -13,10 +13,10 @@ class MyJob(j.baseclasses.object_config):
         category*= ""
         time_start = 0 (T)
         time_stop = 0 (T)
-        state* = "NEW,ERROR,OK,RUNNING" (E)
-        error_cat = "NA,TIMEOUT,CRASH,HALTED"  (E)
+        state** = "NEW,ERROR,OK,RUNNING,DONE" (E)
+        error_cat** = "NA,TIMEOUT,CRASH,HALTED"  (E)
         timeout = 0
-        action_id* = 0
+        action_id** = 0 (I)
         kwargs = (dict)
         result_json = "" (S)
         error = (dict)
@@ -56,6 +56,34 @@ class MyJob(j.baseclasses.object_config):
 
         if method:
             self.process_code(method)
+
+    def _children_get(self, filter=None):
+        """
+        :param filter: is '' then will show all, if None will ignore _
+                when * at end it will be considered a prefix
+                when * at start it will be considered a end of line filter (endswith)
+                when R as first char its considered to be a regex
+                everything else is a full match
+        :return:
+        """
+        x = []
+        for key, item in self._children.items():
+            x.append(item)
+        if len(x) > 49:
+            return x
+        for item in self.find(state="OK"):
+            if item not in x:
+                x.append(item)
+        for item in self.find(state="NEW"):
+            if item not in x:
+                x.append(item)
+        for item in self.find(state="ERROR"):
+            if item not in x:
+                x.append(item)
+        for item in self.find(state="RUNNING"):
+            if item not in x:
+                x.append(item)
+        return self._filter(filter=filter, llist=x, nameonly=False)
 
     @property
     def result(self):
@@ -130,7 +158,7 @@ class MyJob(j.baseclasses.object_config):
             logdict = job.error
             j.core.tools.log2stdout(logdict)
             if die:
-                raise j.exceptions.BASE("job failed:%s" % self.id, data=self)
+                raise j.exceptions.Base("job failed:%s" % self.id, data=self)
             return False
         return True
 

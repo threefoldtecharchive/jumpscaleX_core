@@ -548,6 +548,8 @@ class JSBase:
         if isinstance(item, str) or isinstance(item, int):
             name = str(item)
             return name
+        elif isinstance(item, j.baseclasses.object_config):
+            return item.name
         elif isinstance(item, j.baseclasses.object):
             return item._name
         else:

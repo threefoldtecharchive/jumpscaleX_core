@@ -212,6 +212,15 @@ class Application(object):
     def debug(self, value):
         self._j.core.myenv.debug = value
 
+    def debug_set_in_config(self, value=True):
+        """
+        the std debug is only set in memory, if you want to have on config file use this one
+        :return:
+        """
+        value = j.data.types.bool.clean(value)
+        j.core.myenv.config["DEBUG"] = True
+        j.core.myenv.config.config_save()
+
     def break_into_jshell(self, msg="DEBUG NOW"):
         if self.debug is True:
             self._log_debug(msg)

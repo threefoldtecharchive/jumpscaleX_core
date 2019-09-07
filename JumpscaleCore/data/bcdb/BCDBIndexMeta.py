@@ -32,6 +32,8 @@ class IndexField:
         self.jumpscaletype = property.jumpscaletype
         if self.jumpscaletype.NAME == "string":
             self.type = "TextField"
+        elif self.jumpscaletype.NAME == "enum":
+            self.type = "TextField"
         elif self.jumpscaletype.NAME in ["int", "date"]:
             self.type = "IntegerField"
         elif self.jumpscaletype.NAME in ["boolean"]:
@@ -41,6 +43,8 @@ class IndexField:
         elif self.jumpscaletype.NAME in ["float"]:
             self.type = "FloatField"
         else:
+            self.type = "UNKNOWN"
+            j.shell()
             raise j.exceptions.Base("did not find required type for peewee:%s" % self)
 
     def __str__(self):

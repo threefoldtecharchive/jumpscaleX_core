@@ -74,8 +74,6 @@ class Syncer(j.baseclasses.object_config):
         self.IGNOREDIR = [".git", ".github"]
         self._executor = None
 
-        j.application.debug = True
-
         self._log_info("syncer started")
 
         # self.paths = []
