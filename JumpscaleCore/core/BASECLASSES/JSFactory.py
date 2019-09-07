@@ -54,10 +54,6 @@ class JSFactory(JSBase, Attr):
 
         :return:
         """
-        for key, item in self._children.items():
-            if self._hasattr(item, "reset"):
-                item.reset()
-
         self.delete()
 
     def save(self):
@@ -171,7 +167,7 @@ class JSFactory(JSBase, Attr):
                 res.append(item)
         return res
 
-    def count(self, name, recursive=False):
+    def count(self, name):
         """
         :param kwargs: e.g. color="red",...
         :return: list of the config objects
@@ -182,14 +178,29 @@ class JSFactory(JSBase, Attr):
             if self._hasattr(child, "count"):
                 r += child.count(name=name)
 
-    def delete(self, name=None, recursive=False):
-        if name in self._children:
-            if recursive:
-                self._children[name].delete(name=name, recursive=recursive)
-            self._children.pop(name)
-        # if we have a data object we need to remove it
-        if self._hasattr("_data") and self._data:
-            self._data.delete()
+    def delete(self, name=None, recursive=None):
+        """
+
+        :param name:
+        :param recursive: None means will be True if there is a mother, otherwise will be False or True forced
+        :return:
+        """
+        self._delete(name=name, recursive=recursive)
+
+    def _delete(self, name=None, recursive=None):
+
+        if recursive == None and self._mother_id_get():
+            recursive = True
+
+        if name:
+            if name in self._children:
+                if recursive:
+                    self._children[name].delete(recursive=recursive)
+                self._children.pop(name)
+
+        if recursive:
+            self._children_delete(recursive=recursive)
+
         if self._parent:
             # if we exist in the parent remove us from their children
             if self._name in self._parent._children:

@@ -69,8 +69,12 @@ class JSConfigBCDB(JSConfigBCDBBase):
         # ddict = self._data._ddict  # why was this needed? (kristof)
         self._data._data_update(datadict=datadict)
 
-    def delete(self):
-        self._delete()
+    def delete(self, recursive=None):
+        """
+        :param recursive: None means will be True if there is a mother, otherwise will be False or True forced
+        :return:
+        """
+        self._delete(recursive=recursive)
 
     def load(self):
         """
@@ -82,22 +86,20 @@ class JSConfigBCDB(JSConfigBCDBBase):
             raise j.exceptions.JSBUG("cannot find obj:%s for reload" % self.name)
         self._data = jsxobjects[0]
 
-    def _delete(self):
+    def _delete(self, recursive=None):
         self._triggers_call(self, "delete")
         assert self._model
         self._model.delete(self._data)
         if self._parent:
             if self._data.name in self._parent._children:
-                del self._parent._children[self._data.name]
-
-        # TODO: seems to be not right, why going 2 levels deep here, why copy data?
-        # TODO: why delete all children in first place, should only be done if there is a mother
-        if self._children:
-            for child_class in self._children:
-                child_class_inst = self._children[child_class]
-                if child_class_inst._children:
-                    for child in child_class_inst._children._data.copy():
-                        child_class_inst._children[child].delete()
+                if not isinstance(self._parent, j.baseclasses.factory):
+                    # if factory then cannot delete from the mother because its the only object
+                    del self._parent._children[self._data.name]
+        mother_id = self._mother_id_get()
+        if mother_id and recursive == None:
+            recursive = True
+        if recursive:
+            self._children_delete(recursive=recursive)
 
         self._triggers_call(self, "delete_post")
 

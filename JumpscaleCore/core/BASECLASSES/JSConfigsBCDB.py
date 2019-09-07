@@ -156,7 +156,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         return 2, jsxconfig
 
-    def reset(self):
+    def reset(self, recursive=None):
         """
         will destroy all data in the DB, be carefull
         :return:
@@ -173,6 +173,13 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         if not mother_id:
             # means we can remove all objects of the url (index)
             self._model.index.destroy()
+        else:
+            # if we did not specify and there is a mother_id for sure we can do the recursive behaviour
+            if recursive == None:
+                recursive = True
+
+        if recursive:
+            self._children_delete(recursive=recursive)
 
         self._children = j.baseclasses.dict()
 
@@ -243,15 +250,38 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             if self._hasattr(item, "save"):
                 item.save()
 
-    def delete(self, name, recursive=True):
+    def delete(self, name=None, recursive=None):
+        """
+
+        :param name:
+        :param recursive: None means will be True if there is a mother, otherwise will be False or True forced
+        :return:
+        """
+        self._delete(name=name, recursive=recursive)
+
+    def _delete(self, name=None, recursive=None):
         self._model
+        if recursive == None and self._mother_id_get():
+            recursive = True
+        if name:
+            res = self._findData(name=name)
+            if len(res) == 0:
+                return
+            elif len(res) == 1:
+                self._model.delete(res[0].id)
+        else:
+            return self.reset(recursive=recursive)
+
         if name in self._children:
+            if recursive:
+                self._children[name].delete(recursive=recursive)
             self._children.pop(name)
-        res = self._findData(name=name)
-        if len(res) == 0:
-            return
-        elif len(res) == 1:
-            self._model.delete(res[0].id)
+
+        if not name and self._parent:
+            if self._name in self._parent._children:
+                if not isinstance(self._parent, j.baseclasses.factory):
+                    # only delete when not a factory means is a custom class we're building
+                    del self._parent._children[self._data.name]
 
     def exists(self, name="main"):
         """

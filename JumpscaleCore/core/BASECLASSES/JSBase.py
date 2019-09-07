@@ -669,6 +669,19 @@ class JSBase:
         else:
             return []
 
+    def _children_delete(self, recursive=True, filter=None):
+        """
+        filter only applies on the first children search
+        :param recursive:
+        :param filter:
+        :return:
+        """
+        for child in self._children_get(filter=filter):
+            if child._hasattr("delete"):
+                child.delete(recursive=recursive)
+            else:
+                child._children_delete(recursive=recursive)
+
     def _child_get(self, name=None, id=None):
         """
         finds a child based on name or id
