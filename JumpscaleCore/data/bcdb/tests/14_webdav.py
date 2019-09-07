@@ -76,7 +76,8 @@ def main(self):
     assert data["name"] == "myuser_0"
     assert data["id"] == 1
 
-    """  data["email"] = "yolo@nofear.com"
+    """  
+    data["email"] = "yolo@nofear.com"
     session.auth = requests.auth.HTTPBasicAuth("root", "root")
     put = session.put("http://0.0.0.0:4443/test/data/1/threefoldtoken.wallet.test/1", data)
     print(put)

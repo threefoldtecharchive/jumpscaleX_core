@@ -48,7 +48,7 @@ class DIR(j.data.bcdb._BCDBModelClass):
             except j.exceptions.NotFound:
                 return self._create_root_dir()
         if name == "/":
-            return self.get_by_name("/")[0]
+            return self.get_by_name("/")
         parent_path = j.sal.fs.getParent(name)
         parent = self.get_by_name(name=parent_path, die=False)
         if not parent and create_parent:
