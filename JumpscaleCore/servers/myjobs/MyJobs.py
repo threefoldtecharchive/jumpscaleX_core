@@ -11,8 +11,8 @@ class MyJob(j.baseclasses.object_config):
         @url = jumpscale.myjobs.job
         name** = ""
         category**= ""
-        time_start = 0 (T)
-        time_stop = 0 (T)
+        time_start** = 0 (T)
+        time_stop** = 0 (T)
         state** = "NEW,ERROR,OK,RUNNING,DONE" (E)
         error_cat** = "NA,TIMEOUT,CRASH,HALTED"  (E)
         timeout = 0
