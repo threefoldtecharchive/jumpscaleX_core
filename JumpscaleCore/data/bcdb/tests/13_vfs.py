@@ -31,7 +31,7 @@ def main(self):
 
     SCHEMA = """
     @url = threefoldtoken.wallet.test
-    name* = "wallet"
+    name** = "wallet"
     addr = ""                   # Address
     ipaddr = (ipaddr)           # IP Address
     email = "" (S)              # Email address
@@ -139,12 +139,12 @@ def main(self):
 
     SCHEMAS = """
     @url = ben.pc.test
-    description* = "top_pc"
+    description** =  "top_pc"
     cpu = "6ghz" (S)            # power
     ram =  (LI)                   
     enable = true (B)  
     @url = ben.pc.test.2
-    description* = "super_top_pc"
+    description** =  "super_top_pc"
     cpu = "12ghz" (S)            # power
     ram =  (LI)                   
     enable = false (B)            

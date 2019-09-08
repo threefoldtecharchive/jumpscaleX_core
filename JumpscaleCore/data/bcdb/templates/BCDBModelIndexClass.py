@@ -31,25 +31,31 @@ class {{BASENAME}}(BCDBModelIndex):
 
         p = j.clients.peewee
 
-        db = self.bcdb.sqlite_index_client
+        self.db = self.bcdb.sqlite_index_client
         # print(db)
 
         class BaseModel(p.Model):
             class Meta:
                 # print("*%s"%db)
-                database = db
+                database = self.db
 
-        class Index_{{schema.key}}(BaseModel):
+        class Index_{{schema.key}}_{{model.mid}}(BaseModel):
             id = p.IntegerField(unique=True)
             nid = p.IntegerField(index=True) #need to store the namespace id
             {%- for field in index.fields %}
+            {%- if field.unique %}
+            {{field.name}} = p.{{field.type}}(unique=True)
+            {%- else %}
             {{field.name}} = p.{{field.type}}(index=True)
+            {%- endif %}
             {%- endfor %}
 
-        self._sql_index_db = Index_{{schema.key}}
+        self._sql_index_db = Index_{{schema.key}}_{{model.mid}}
         self._sql_index_db.create_table(safe=True)
         self.sql=self._sql_index_db
         self._schema_md5_generated = "{{schema._md5}}"
+
+        self.sql_table_name = "index_{{schema.key}}_{{model.mid}}".lower()
 
 
     def _sql_index_set(self,obj):

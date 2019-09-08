@@ -65,6 +65,7 @@ class BCDBModel(j.baseclasses.object):
 
         self.readonly = False
         self._index_ = None
+        self._autosave = False  # if set it will make sure data is automatically set from object
         self.nosave = False
 
         if self.storclient and self.storclient.type == "ZDB":
@@ -120,6 +121,7 @@ class BCDBModel(j.baseclasses.object):
             schema=self.schema,
             bcdb=self.bcdb,
             index=imodel,
+            model=self,
         )
 
         return myclass
@@ -310,70 +312,6 @@ class BCDBModel(j.baseclasses.object):
         j.shell()
         return obj
 
-    def find(self, nid=1, **args):
-        """
-        is a the retrieval part of a very fast indexing system
-        e.g.
-        self.get_from_keys(name="myname",nid=2)
-        :return:
-        """
-        delete_if_not_found = True
-        # if no args are provided that mean we will do a get all
-        if len(args.keys()) == 0:
-            res = []
-            for obj in self.iterate(nid=nid):
-                if obj is None:
-                    raise j.exceptions.Base("iterate should not return None, ever")
-                res.append(obj)
-            return res
-
-        ids = self.index._key_index_find(nid=nid, **args)
-
-        def check2(obj, args):
-            dd = obj._ddict
-            for propname, val in args.items():
-                if not propname in dd:
-                    self._log_warning("need to update an object, could not find propname:%s" % propname, data=dd)
-                    return propname
-                if dd[propname] != val:
-                    return False
-            return True
-
-        res = []
-        for id_ in ids:
-            # ids right now come from redis, they should be fone when model is gone, when they exist there they should really exist
-            res2 = self.get(id_, die=True)
-            if res2 is None:
-                # only when we use file based id index then there can be situation where id is in file but not in db
-                # if id index in redis which is default now then there needs to be consistency between id index & db
-                if len(args) == 0:
-                    # means we were iterating so there could be
-                    if delete_if_not_found:
-                        for key, val in args.items():
-                            self._key_index_delete(key, val, id_, nid=nid)
-            else:
-                # we now need to check if there was no false positive
-                check = check2(res2, args)
-                if isinstance(check, str):
-                    # FOR NOW NO UPGRADE POSSIBLE, JUST FAIL
-                    # j.shell()
-                    # from pudb import set_trace
-                    #
-                    # set_trace()
-                    # res2 = self.upgrade(res2)
-                    # check = check2(res2, args)
-                    if isinstance(check, str):
-                        # means we still don't find the argument, the upgrade did notwork
-                        raise j.exceptions.JSBUG(
-                            "find was done on argument:%s which does not exist in model." % res, data=obj
-                        )
-                elif check:
-                    res.append(res2)
-                else:
-                    self._log_warning("index system produced false positive, is not abnormal")
-
-        return res
-
     # @queue_method_results
     def set(self, obj, index=True, store=True):
         """
@@ -434,7 +372,16 @@ class BCDBModel(j.baseclasses.object):
                     raise
 
         if index:
-            self.index.set(obj)
+            try:
+                self.index.set(obj)
+            except j.clients.peewee.IntegrityError as e:
+                # this deals with checking on e.g. uniqueness
+                if store:
+                    # delete from the storclient was incorrect
+                    self.storclient.delete(obj.id)
+                obj.id = None
+                if str(e).find("UNIQUE") != -1:
+                    raise j.exceptions.Input("Could not insert object, unique constraint failed:%s" % e, data=obj)
 
         obj = self._triggers_call(obj=obj, action="set_post")
 
@@ -555,21 +502,25 @@ class BCDBModel(j.baseclasses.object):
         j.sal.fs.remove(self._data_dir)
 
     def _list_ids(self, nid=1):
-        res = []
-        for obj_id in self.index._id_iterator(nid=nid):
-            res.append(obj_id)
-        return res
+        return self.find_ids(nid=nid)
+        # res = []
+        # for obj_id in self.index._id_iterator(nid=nid):
+        #     res.append(obj_id)
+        # return res
 
     def iterate(self, nid=1):
         """
         walk over objects which are of type of this model
         """
-        for obj_id in self.index._id_iterator(nid=nid):
-            # self._log_debug("iterate:%s" % obj_id)
-            assert obj_id > 0
-            o = self.get(obj_id, die=False)
-            if not o:
-                continue
+        # for obj_id in self.index._id_iterator(nid=nid):
+        #     # self._log_debug("iterate:%s" % obj_id)
+        #     assert obj_id > 0
+        #     o = self.get(obj_id, die=False)
+        #     if not o:
+        #         continue
+        #     yield o
+        for id in self.find_ids(nid=nid):
+            o = self.get(id)
             yield o
 
     def _text_index_content_pre_(self, property_name, val, obj_id, nid=1):
@@ -577,9 +528,125 @@ class BCDBModel(j.baseclasses.object):
         """
         return property_name, val, obj_id, nid
 
+    def find_ids(self, nid=None, **kwargs):
+        """
+        is an iterator !!!
+        :param nid:
+        :param kwargs:
+        :return:
+        """
+        if not nid:
+            nid = 1
+        if kwargs == {}:
+            query = "SELECT id FROM %s; " % self.index.sql_table_name
+        else:
+            query = "SELECT id FROM %s WHERE " % self.index.sql_table_name
+            first = True
+            for key, val in kwargs.items():
+                if not first:
+                    query += " AND"
+                if isinstance(val, bool):
+                    if val:
+                        val = 1
+                    else:
+                        val = 0
+                query += " %s = '%s'" % (key, val)
+                first = False
+            query += ";"
+        cursor = self.index.db.execute_sql(query)
+        r = cursor.fetchone()
+        while r:
+            yield (r[0])
+            r = cursor.fetchone()
+
+    def query(self, query):
+        """
+        returns id's
+
+        ps there are lots of good tools which allow you to build sql statements graphically
+        e.g. razorsql
+
+        to load the sqlite db go to : /sandbox/var/bcdb/myjobs/sqlite_index.db
+        in this case name of this bcdb is myjobs
+
+        :param sqlquery:
+        :return:
+        """
+        j.shell()
+
+    def find(self, nid=None, **kwargs):
+        res = []
+        for id in self.find_ids(nid=nid, **kwargs):
+            res.append(self.get(id))
+        return res
+
     def __str__(self):
         out = "model:%s\n" % self._schema_url
         # out += j.core.text.prefix("    ", self.schema.text)
         return out
 
     __repr__ = __str__
+
+    # def find(self, nid=1, **args):
+    #     """
+    #     is a the retrieval part of a very fast indexing system
+    #     e.g.
+    #     self.get_from_keys(name="myname",nid=2)
+    #     :return:
+    #     """
+    #     delete_if_not_found = True
+    #     # if no args are provided that mean we will do a get all
+    #     if len(args.keys()) == 0:
+    #         res = []
+    #         for obj in self.iterate(nid=nid):
+    #             if obj is None:
+    #                 raise j.exceptions.Base("iterate should not return None, ever")
+    #             res.append(obj)
+    #         return res
+    #
+    #     ids = self.index._key_index_find(nid=nid, **args)
+    #
+    #     def check2(obj, args):
+    #         dd = obj._ddict
+    #         for propname, val in args.items():
+    #             if not propname in dd:
+    #                 self._log_warning("need to update an object, could not find propname:%s" % propname, data=dd)
+    #                 return propname
+    #             if dd[propname] != val:
+    #                 return False
+    #         return True
+    #
+    #     res = []
+    #     for id_ in ids:
+    #         # ids right now come from redis, they should be fone when model is gone, when they exist there they should really exist
+    #         res2 = self.get(id_, die=True)
+    #         if res2 is None:
+    #             # only when we use file based id index then there can be situation where id is in file but not in db
+    #             # if id index in redis which is default now then there needs to be consistency between id index & db
+    #             if len(args) == 0:
+    #                 # means we were iterating so there could be
+    #                 if delete_if_not_found:
+    #                     for key, val in args.items():
+    #                         self._key_index_delete(key, val, id_, nid=nid)
+    #         else:
+    #             # we now need to check if there was no false positive
+    #             check = check2(res2, args)
+    #             if isinstance(check, str):
+    #                 # FOR NOW NO UPGRADE POSSIBLE, JUST FAIL
+    #                 # j.shell()
+    #                 # from pudb import set_trace
+    #                 #
+    #                 # set_trace()
+    #                 # res2 = self.upgrade(res2)
+    #                 # check = check2(res2, args)
+    #                 if isinstance(check, str):
+    #                     # means we still don't find the argument, the upgrade did notwork
+    #                     raise j.exceptions.JSBUG(
+    #                         "find was done on argument:%s which does not exist in model." % res, data=obj
+    #                     )
+    #             elif check:
+    #                 res.append(res2)
+    #             else:
+    #                 self._log_warning("index system produced false positive, is not abnormal")
+    #
+    #     return res

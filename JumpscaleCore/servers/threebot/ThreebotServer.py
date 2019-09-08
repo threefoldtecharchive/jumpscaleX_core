@@ -13,7 +13,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
         @url = jumpscale.threebot_server.1
-        name* = "main" (S)
+        name** = "main" (S)
         executor = tmux,corex (E)
         adminsecret_ = "123456"  (S)
         """

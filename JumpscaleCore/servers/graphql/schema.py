@@ -77,7 +77,7 @@ class Query(graphene.ObjectType):
     def resolve_posts(root, info):
         _SCHEMA_TEXT = """
         @url = graphql.posts.schema
-        info_id* = (I)
+        info_id** =  (I)
         title = (S) 
         author = (S)
         name = (S)

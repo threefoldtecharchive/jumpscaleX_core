@@ -9,13 +9,13 @@ class MyWorker(j.baseclasses.object_config):
     _name = "worker"
     _SCHEMATEXT = """
         @url = jumpscale.myjobs.worker
-        name*= ""
+        name**= ""
         timeout = 3600
         time_start = 0 (T)
         last_update = 0 (T)
         current_job = (I)
         error = "" (S)
-        state* = "NEW,ERROR,BUSY,WAITING,HALTED" (E)
+        state** = "NEW,ERROR,BUSY,WAITING,HALTED" (E)
         pid = 0
         #if halt on True will stop
         halt = false (B)

@@ -10,7 +10,7 @@ JSConfigClient = j.baseclasses.object_config
 class GedisWebsocketServer(JSConfigClient):
     _SCHEMATEXT = """
         @url = jumpscale.gedis.websocket.1
-        name* = "default" (S)
+        name** = "default" (S)
         port = 4444
         gedis_port = 8901
         ssl = False (B)

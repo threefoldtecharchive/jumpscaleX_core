@@ -24,7 +24,7 @@ def waiter(job):
 class GedisServer(JSBaseConfig):
     _SCHEMATEXT = """
         @url = jumpscale.gedis.server
-        name* = "main" (S)
+        name** = "main" (S)
         host = "0.0.0.0" (ipaddress)
         port = 9900 (ipport)
         ssl = False (B)

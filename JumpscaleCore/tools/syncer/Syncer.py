@@ -28,7 +28,7 @@ class Syncer(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
         @url = jumpscale.syncer.1
-        name* = "" (S)
+        name** = "" (S)
         sshclient_names = [] (LS)
         paths = [] (LS)
         ignoredir = [] (LS)

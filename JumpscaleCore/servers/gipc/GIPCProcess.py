@@ -9,7 +9,7 @@ JSConfigClient = j.baseclasses.object_config
 class GIPCProcess(JSConfigClient):
     _SCHEMATEXT = """
            @url =  jumpscale.servers.gipc.process.1
-           name* = "default" (S)
+           name** = "default" (S)
            start = (T)
            end = (T)
            kwargs= (dict)

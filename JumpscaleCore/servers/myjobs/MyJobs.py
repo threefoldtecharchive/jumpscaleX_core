@@ -9,8 +9,8 @@ class MyJob(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
         @url = jumpscale.myjobs.job
-        name* = ""
-        category*= ""
+        name** = ""
+        category**= ""
         time_start = 0 (T)
         time_stop = 0 (T)
         state** = "NEW,ERROR,OK,RUNNING,DONE" (E)

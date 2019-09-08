@@ -356,7 +356,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             schema = """
             @url = despiegk.test
             llist2 = "" (LS)
-            name** = ""
+            name*** = ""
             email** = ""
             nr** = 0
             date_start** = 0 (D)

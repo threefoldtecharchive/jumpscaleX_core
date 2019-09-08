@@ -5,7 +5,7 @@ class SSHKey(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
         @url = jumpscale.sshkey.client
-        name* = "" (S)
+        name** = "" (S)
         pubkey = "" (S) 
         allow_agent = True (B)
         passphrase_ = "" (S)

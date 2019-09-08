@@ -30,7 +30,7 @@ epoch = (T)
 
 @url = jumpscale.bcdb.fs.link.2
 @sub = true
-name* = "" (S)
+name** = "" (S)
 destination = (I)
 destination_bot_id = 0 (I)
 #posixattr = (O) !jumpscale.bcdb.meta.posixattr.2
@@ -40,7 +40,7 @@ epoch = (T)
 
 #max 1 MB
 @url = jumpscale.bcdb.fs.block.2
-md5* = ""
+md5** = ""
 size = (I)
 content = (BIN)
 epoch = (T)

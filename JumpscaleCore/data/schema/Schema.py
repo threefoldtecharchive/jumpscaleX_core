@@ -193,6 +193,7 @@ class Schema(j.baseclasses.object):
                 name = name[:-2]
                 p.index = True
             if name.endswith("*"):
+                raise j.exceptions.Input("key based indexing (*) for now not supported use **", data=text)
                 name = name[:-1]
                 p.index_key = True
             if name.startswith("&"):
@@ -202,7 +203,7 @@ class Schema(j.baseclasses.object):
                 p.index_key = True
 
             if name in ["id"]:
-                self._error_raise("do not use 'id' in your schema, is reserved for system.", schema=text)
+                self._error_raise("do not use 'id' in your schema, is reserved for system.", data=text)
             elif name in ["name"]:
                 p.unique = True
                 # everything which is unique also needs to be indexed
@@ -345,8 +346,9 @@ class Schema(j.baseclasses.object):
                 index_text = True
             if p.index:
                 index_sql = True
-            if p.index_key:
-                index_key = True
+            index_key = False
+            # if p.index_key:
+            #     index_key = True
         return (index_key, index_sql, index_text)
 
     def new(self, capnpdata=None, serializeddata=None, datadict=None, bcdb=None):

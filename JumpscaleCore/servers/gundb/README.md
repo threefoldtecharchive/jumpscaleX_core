@@ -12,52 +12,52 @@ bcdb = j.data.bcdb.get(name="test")
 bcdb.reset()
 j.data.schema.get_from_text("""
 @url = proj.todo
-title* = "" (S)
-done* = False (B)
+title** =  "" (S)
+done** =  False (B)
 
 """)
 
 j.data.schema.get_from_text("""
 @url = proj.todolist
-name* = "" (S)
-todos* = (LO) !proj.todo
+name** =  "" (S)
+todos** =  (LO) !proj.todo
 
 """)
 j.data.schema.get_from_text("""
 @url = proj.simple
 attr1* = "" (S)
 attr2* = 0 (I)
-mychars* = (LS) 
+mychars** =  (LS) 
 """)
 
 j.data.schema.get_from_text("""
 @url = proj.email
-addr* = "" (S)
+addr** =  "" (S)
 """)
 j.data.schema.get_from_text("""
 @url = proj.person
-name* = "" (S)
-email* = "" !proj.email
+name** =  "" (S)
+email** = "" !proj.email
 """)
 
 
 j.data.schema.get_from_text("""
 @url = proj.os
-name* = "" (S)
+name** =  "" (S)
 """)
 
 
 j.data.schema.get_from_text("""
 @url = proj.phone
-model* = "" (S)
-os* = "" !proj.os
+model** =  "" (S)
+os** =  "" !proj.os
 """)
 
 
 j.data.schema.get_from_text("""
 @url = proj.human
-name* = "" (S)
-phone* = "" !proj.phone
+name** =  "" (S)
+phone** =  "" !proj.phone
 """)
 
 

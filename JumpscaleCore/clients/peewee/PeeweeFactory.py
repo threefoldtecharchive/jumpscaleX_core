@@ -1,15 +1,20 @@
 from Jumpscale import j
+from .peeweeClient import PeeweeClient
 
-from .peewee import *
+import importlib
+
+# dont use the system one
+# from .peewee import *
 
 import uuid
 
 
-class PeeweeFactory(j.baseclasses.object):
+class PeeweeFactory(j.baseclasses.object_config_collection_testtools):
     """
     """
 
-    __jslocation__ = "j.data.peewee"
+    __jslocation__ = "j.clients.peewee"
+    _CHILDCLASS = PeeweeClient
 
     def _init(self, **kwargs):
         self.__imports__ = "peewee"
@@ -27,6 +32,7 @@ class PeeweeFactory(j.baseclasses.object):
             FloatField,
             DateTimeField,
             ForeignKeyField,
+            IntegrityError,
         )
 
         self.PrimaryKeyField = PrimaryKeyField
@@ -40,13 +46,7 @@ class PeeweeFactory(j.baseclasses.object):
         self.SqliteDatabase = SqliteDatabase
         self.FloatField = FloatField
         self.ForeignKeyField = ForeignKeyField
-
-    def db_postgresql_get(self, dbname="template", login="postgres", passwd="", ipaddr="localhost", port=5432):
-        if not self._peewee:
-            from Jumpscale.clients.peewee.peewee import PostgresqlDatabase
-
-            db = PostgresqlDatabase(dbname, user=login, password=passwd, host=ipaddr, port=port)
-        return db
+        self.IntegrityError = IntegrityError
 
     def test_model_create(self, psqlclient):
         pass
@@ -60,7 +60,9 @@ class PeeweeFactory(j.baseclasses.object):
         j.builders.db.psql.start()
         cl = j.clients.postgres.db_client_get()
         cl.db_create("pewee_test")
-        db = self.db_postgresql_get()
+        pw = self.get(name="test", dbname="pewee_test", passwd_="123456")
+        db = pw.db
+        pw.save()
 
         class BaseModel(self.Model):
             class Meta:

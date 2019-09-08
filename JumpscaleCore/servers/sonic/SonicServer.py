@@ -7,7 +7,7 @@ JSConfigClient = j.baseclasses.object_config
 class SonicServer(JSConfigClient):
     _SCHEMATEXT = """
            @url =  jumpscale.sonic.server.1
-           name* = "default" (S)
+           name** = "default" (S)
            host = "127.0.0.1" (S)
            port = 1491 (I)
            password = "123456" (S)

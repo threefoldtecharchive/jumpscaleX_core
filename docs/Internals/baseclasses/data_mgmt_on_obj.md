@@ -33,6 +33,7 @@ will call the method as follows before doing a set in DB
 - kosmosinstance only if _model used in an jumpscale configuration enabled class
 - action is in "new, change, get,set_pre,set_post,delete"  done on DB layer
 - propertyname only relevant for changes, is when object property gets changed e.g. ipaddr...
+- return None or the changed object
 
 to add a custom Trigger on kosmos obj do
 
@@ -69,6 +70,16 @@ easiest to add as staticmethod, that way its part of the class
 
 
 ```
+
+see also /sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/data/bcdb/tests/17_sqlite.py
+this shows how to use a custom peewee class to build an additional index
+
+#### examples of the sqlite tables created
+
+![](inages/sqlite1.png)
+
+
+![](images/sqlite3.png)
 
 
 

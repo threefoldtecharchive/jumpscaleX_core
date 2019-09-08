@@ -14,7 +14,7 @@ class MulticastClient(JSConfigBase):
 
     _SCHEMATEXT = """
         @url = jumpscale.multicast.client
-        name* = "main" (S)
+        name** = "main" (S)
         data_ = "" (S)
         """
 

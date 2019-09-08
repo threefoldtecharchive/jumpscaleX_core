@@ -48,9 +48,9 @@ class BCDBModelIndex(j.baseclasses.object):
         self.model = model
         self.bcdb = model.bcdb
 
-        self._ids_redis_use = True  # let only use redis for now for the id's (the id index file)
-        self._ids_redis = self.bcdb._redis_index
-        self._ids_last = {}  # need to keep last id per namespace
+        # self._ids_redis_use = True  # let only use redis for now for the id's (the id index file)
+        # self._ids_redis = self.bcdb._redis_index
+        # self._ids_last = {}  # need to keep last id per namespace
 
         self.storclient = self.bcdb.storclient
         self._sonic = None
@@ -62,8 +62,7 @@ class BCDBModelIndex(j.baseclasses.object):
         if self.index_key_needed:
             self.bcdb._redis_index.ping()
 
-        if self.index_sql_needed:
-            self._sql_index_init()
+        self._sql_index_init()
 
         if self.index_text_needed:
             self.sonic  # sonic needs to be started and needs to exist !
@@ -80,17 +79,17 @@ class BCDBModelIndex(j.baseclasses.object):
         """
 
         # id's are always used, otherwise the iteration does not work
-        self._ids_destroy(nid=nid)
+        # self._ids_destroy(nid=nid)
 
-        if self.index_key_needed:
-            self._key_index_destroy(nid=nid)
+        # if self.index_key_needed:
+        #     self._key_index_destroy(nid=nid)
 
         if self.index_text_needed:
             # means there is a sonic
             self._text_index_destroy_(nid=nid)
 
-        if self.index_sql_needed:
-            self._sql_index_destroy(nid=nid)
+        # if self.index_sql_needed:
+        self._sql_index_destroy(nid=nid)
 
     def set(self, obj):
         """
@@ -99,18 +98,18 @@ class BCDBModelIndex(j.baseclasses.object):
         :param obj:
         :return:
         """
-        if self.index_sql_needed:
-            self._sql_index_set(obj)
+        # if self.index_sql_needed:
+        self._sql_index_set(obj)
 
-        if self.index_key_needed:
-            self._key_index_set(obj)
+        # if self.index_key_needed:
+        #     self._key_index_set(obj)
 
         if self.index_text_needed:
             self._text_index_set(obj)
 
         assert obj.nid
 
-        self._id_set(obj.id, nid=obj.nid)
+        # self._id_set(obj.id, nid=obj.nid)
 
     def delete(self, obj):
         """
@@ -121,13 +120,13 @@ class BCDBModelIndex(j.baseclasses.object):
         assert obj.nid
         if obj.id is not None:
 
-            self._id_delete(obj.id)
+            # self._id_delete(obj.id)
 
-            if self.index_sql_needed:
-                self._sql_index_delete(obj)
+            # if self.index_sql_needed:
+            self._sql_index_delete(obj)
 
-            if self.index_key_needed:
-                self._key_index_delete(obj)
+            # if self.index_key_needed:
+            #     self._key_index_delete(obj)
 
             if self.index_text_needed:
                 self._text_index_delete(obj)
@@ -201,393 +200,412 @@ class BCDBModelIndex(j.baseclasses.object):
 
     ###### INDEXER ON KEYS:
 
-    def _key_index_hsetkey_get(self, nid=1):
-        """
-        :param namespaceid: default is 1 namespace = 1
-        :return: hset key for the storing the index in redis
-
-        use as
-
-        key = self._key_index_hsetkey_get(nid)
-
-        """
-        return "bcdb:%s:%s:%s:index" % (self.bcdb.name, nid, self.model.mid)
-
-    def _key_index_set_(self, property_name, val, obj_id, nid=1):
-        """
-
-        :param property_name: property name to index
-        :param val: the value of the property which we want to index
-        :param obj_id: id of the obj
-        :return:
-        """
-        key = "%s__%s" % (property_name, val)
-        ids = self._key_index_getids(key, nid=nid)
-        if obj_id is None:
-            raise j.exceptions.Base("id cannot be None")
-        if obj_id not in ids:
-            ids.append(obj_id)
-        data = j.data.serializers.msgpack.dumps(ids)
-        hash = self._key_index_redis_get(key)  # this to have a smaller key to store in mem
-        # self._log_debug("set key:%s (id:%s)" % (key, obj_id))
-        j.clients.credis_core.hset(self._key_index_hsetkey_get(nid=nid).encode() + b":" + hash[0:2], hash[2:], data)
-
-    def _key_index_delete_(self, property_name, val, obj_id, nid=1):
-        assert nid
-        key = "%s__%s" % (property_name, val)
-        ids = self._key_index_getids(key, nid=nid)
-        if obj_id is None:
-            raise j.exceptions.Base("id cannot be None")
-        if obj_id in ids:
-            ids.pop(ids.index(obj_id))
-        hash = self._key_index_redis_get(key)
-        if ids == []:
-            j.clients.credis_core.hdel(self._key_index_hsetkey_get(nid=nid).encode() + b":" + hash[0:2], hash[2:])
-        else:
-            data = j.data.serializers.msgpack.dumps(ids)
-            hash = self._key_index_redis_get(key)
-            # self._log_debug("set key:%s (id:%s)" % (key, obj_id))
-            j.clients.credis_core.hset(self._key_index_hsetkey_get(nid=nid).encode() + b":" + hash[0:2], hash[2:], data)
-
-    def _key_index_destroy(self, nid=1):
-
-        k = self._key_index_hsetkey_get(nid=nid) + ":*"
-        for key in j.clients.credis_core.keys(k):
-            j.clients.credis_core.delete(key)
-
-    def _key_index_getids(self, key, nid=1):
-        """
-        return all the id's which are already in redis
-        :param key:
-        :return: [] if not or the id's which are relevant for this namespace
-        """
-
-        hash = self._key_index_redis_get(key)
-
-        r = j.clients.credis_core.hget(self._key_index_hsetkey_get(nid=nid).encode() + b":" + hash[0:2], hash[2:])
-        if r is not None:
-            # means there is already one
-            # self._log_debug("get key(exists):%s" % key)
-            ids = j.data.serializers.msgpack.loads(r)
-
-        else:
-            # self._log_debug("get key(new):%s" % key)
-            ids = []
-        return ids
-
-    def _key_index_redis_get(self, key):
-        """
-        returns 10 bytes as key (non HR readable)
-        :param key:
-        :return:
-        """
-        # schema id needs to be in to make sure its different key per schema
-        # import to use the mid because needs to be search over all versions of schema
-        if len(key) > 10:
-            # can do 900k per second
-            hash = blake2b(str(key).encode(), digest_size=10).digest()
-        else:
-            if isinstance(key, str):
-                key = key.encode()
-            hash = key
-        return hash
-
-    def _key_index_find(self, delete_if_not_found=False, nid=1, **args):
-        """
-        find the possible candidates (id's only)
-        e.g.
-        self._key_index_find(name="myname",nid=2)
-        :return:
-        """
-        if len(args.keys()) == 0:
-            raise j.exceptions.Base("get from keys need arguments")
-        ids_prev = []
-        ids = []
-        for propname, val in args.items():
-            key = "%s__%s" % (propname, val)
-            ids = self._key_index_getids(key, nid=nid)
-            if ids_prev != []:
-                ids = [x for x in ids if x in ids_prev]
-            ids_prev = ids
-
-        return ids
+    # def _key_index_hsetkey_get(self, nid=1):
+    #     """
+    #     :param namespaceid: default is 1 namespace = 1
+    #     :return: hset key for the storing the index in redis
+    #
+    #     use as
+    #
+    #     key = self._key_index_hsetkey_get(nid)
+    #
+    #     """
+    #     raise j.exceptions.NotImplemented
+    #     return "bcdb:%s:%s:%s:index" % (self.bcdb.name, nid, self.model.mid)
+    #
+    # def _key_index_set_(self, property_name, val, obj_id, nid=1):
+    #     """
+    #
+    #     :param property_name: property name to index
+    #     :param val: the value of the property which we want to index
+    #     :param obj_id: id of the obj
+    #     :return:
+    #     """
+    #     raise j.exceptions.NotImplemented
+    #     key = "%s__%s" % (property_name, val)
+    #     ids = self._key_index_getids(key, nid=nid)
+    #     if obj_id is None:
+    #         raise j.exceptions.Base("id cannot be None")
+    #     if obj_id not in ids:
+    #         ids.append(obj_id)
+    #     data = j.data.serializers.msgpack.dumps(ids)
+    #     hash = self._key_index_redis_get(key)  # this to have a smaller key to store in mem
+    #     # self._log_debug("set key:%s (id:%s)" % (key, obj_id))
+    #     j.clients.credis_core.hset(self._key_index_hsetkey_get(nid=nid).encode() + b":" + hash[0:2], hash[2:], data)
+    #
+    # def _key_index_delete_(self, property_name, val, obj_id, nid=1):
+    #     raise j.exceptions.NotImplemented
+    #     assert nid
+    #     key = "%s__%s" % (property_name, val)
+    #     ids = self._key_index_getids(key, nid=nid)
+    #     if obj_id is None:
+    #         raise j.exceptions.Base("id cannot be None")
+    #     if obj_id in ids:
+    #         ids.pop(ids.index(obj_id))
+    #     hash = self._key_index_redis_get(key)
+    #     if ids == []:
+    #         j.clients.credis_core.hdel(self._key_index_hsetkey_get(nid=nid).encode() + b":" + hash[0:2], hash[2:])
+    #     else:
+    #         data = j.data.serializers.msgpack.dumps(ids)
+    #         hash = self._key_index_redis_get(key)
+    #         # self._log_debug("set key:%s (id:%s)" % (key, obj_id))
+    #         j.clients.credis_core.hset(self._key_index_hsetkey_get(nid=nid).encode() + b":" + hash[0:2], hash[2:], data)
+    #
+    # def _key_index_destroy(self, nid=1):
+    #     raise j.exceptions.NotImplemented
+    #     k = self._key_index_hsetkey_get(nid=nid) + ":*"
+    #     for key in j.clients.credis_core.keys(k):
+    #         j.clients.credis_core.delete(key)
+    #
+    # def _key_index_getids(self, key, nid=1):
+    #     """
+    #     return all the id's which are already in redis
+    #     :param key:
+    #     :return: [] if not or the id's which are relevant for this namespace
+    #     """
+    #
+    #     hash = self._key_index_redis_get(key)
+    #
+    #     r = j.clients.credis_core.hget(self._key_index_hsetkey_get(nid=nid).encode() + b":" + hash[0:2], hash[2:])
+    #     if r is not None:
+    #         # means there is already one
+    #         # self._log_debug("get key(exists):%s" % key)
+    #         ids = j.data.serializers.msgpack.loads(r)
+    #
+    #     else:
+    #         # self._log_debug("get key(new):%s" % key)
+    #         ids = []
+    #     return ids
+    #
+    # def _key_index_redis_get(self, key):
+    #     """
+    #     returns 10 bytes as key (non HR readable)
+    #     :param key:
+    #     :return:
+    #     """
+    #     raise j.exceptions.NotImplemented
+    #     # schema id needs to be in to make sure its different key per schema
+    #     # import to use the mid because needs to be search over all versions of schema
+    #     if len(key) > 10:
+    #         # can do 900k per second
+    #         hash = blake2b(str(key).encode(), digest_size=10).digest()
+    #     else:
+    #         if isinstance(key, str):
+    #             key = key.encode()
+    #         hash = key
+    #     return hash
+    #
+    # def _key_index_find(self, delete_if_not_found=False, nid=1, **args):
+    #     """
+    #     find the possible candidates (id's only)
+    #     e.g.
+    #     self._key_index_find(name="myname",nid=2)
+    #     :return:
+    #     """
+    #     raise j.exceptions.NotImplemented
+    #     if len(args.keys()) == 0:
+    #         raise j.exceptions.Base("get from keys need arguments")
+    #     ids_prev = []
+    #     ids = []
+    #     for propname, val in args.items():
+    #         key = "%s__%s" % (propname, val)
+    #         ids = self._key_index_getids(key, nid=nid)
+    #         if ids_prev != []:
+    #             ids = [x for x in ids if x in ids_prev]
+    #         ids_prev = ids
+    #
+    #     return ids
 
     ##### ID METHODS, this allows us to see which id's are in which namespace
 
-    def _id_redis_listkey_get(self, nid=1):
-        """
-        :param namespaceid: default is 1 namespace = 1
-        :return: list key for the storing the id's in redis
+    # def _id_redis_listkey_get(self, nid=1):
+    #     """
+    #     :param namespaceid: default is 1 namespace = 1
+    #     :return: list key for the storing the id's in redis
+    #
+    #     use as
+    #
+    #     key = self._id_redis_listkey_get(nid)
+    #
+    #     """
+    #     raise j.exceptions.NotImplemented
+    #     if not nid:
+    #         nid = 1
+    #     return "bcdb:%s:%s:%s:ids" % (self.bcdb.name, nid, self.model.mid)
 
-        use as
+    # def _ids_destroy(self, nid=1):
+    #     raise j.exceptions.NotImplemented
+    #     if not nid:
+    #         nid = 1
 
-        key = self._id_redis_listkey_get(nid)
+    # self._ids_redis.delete(self._id_redis_listkey_get(nid=nid))
+    # self._ids_last[nid] = 0
 
-        """
-        if not nid:
-            nid = 1
-        return "bcdb:%s:%s:%s:ids" % (self.bcdb.name, nid, self.model.mid)
+    # def _ids_init(self, nid=1):
+    #     """
+    #     we keep track of id's per namespace and per model, this to allow easy enumeration
+    #     :return:
+    #     """
+    #     raise j.exceptions.NotImplemented
+    #     if not nid:
+    #         nid = 1
+    #
+    #     if nid not in self._ids_last:
+    #         if self._ids_redis_use:
+    #             r = self._ids_redis
+    #             self._ids_last[nid] = 0
+    #             redis_list_key = self._id_redis_listkey_get(nid)
+    #             chunk = r.lindex(redis_list_key, -1)  # get the last element, works because its an ordered list
+    #             if not chunk:
+    #                 # means we don't have the list yet
+    #                 self._ids_last[nid] = 0
+    #             else:
+    #                 last = struct.unpack("<I", chunk)[0]
+    #                 self._ids_last[nid] = last  # need to know the last one
+    #         else:
+    #             raise j.exceptions.Base("needs to be 100% checked")
+    #             # next one always happens
+    #             ids_file_path = "%s/ids_%s.data" % (nid, self._data_dir)
+    #             if not j.sal.fs.exists(ids_file_path) or j.sal.fs.fileSize(ids_file_path) == 0:
+    #                 j.sal.fs.touch(ids_file_path)
+    #                 self._ids_last[nid] = 0
+    #             else:
+    #                 llen = j.sal.fs.fileSize(ids_file_path)
+    #                 # make sure the len is multiplication of 4 bytes
+    #                 assert float(llen / 4) == llen / 4
+    #                 f = open(ids_file_path, "rb")
+    #                 f.seek(llen - 4, 0)
+    #                 bindata = f.read(4)
+    #                 self._ids_last[nid] = struct.unpack(b"<I", bindata)[0]
+    #                 f.close()
 
-    def _ids_destroy(self, nid=1):
-        if not nid:
-            nid = 1
-        self._ids_redis.delete(self._id_redis_listkey_get(nid=nid))
-        self._ids_last[nid] = 0
+    # def _id_set(self, id, nid=1):
+    #     return  # is not needed because is part of the sqlite index which is created anyhow
 
-    def _ids_init(self, nid=1):
-        """
-        we keep track of id's per namespace and per model, this to allow easy enumeration
-        :return:
-        """
-        if not nid:
-            nid = 1
+    # self._ids_init(nid=nid)
+    # bin_id = struct.pack("<I", id)
+    # if not self.model.schema.hasdata:
+    #     self.model.schema.hasdata = True
+    #     self.bcdb.meta.hasdata_set(self.model.schema)  # make sure we remember in metadata that there is data
+    #     self.model.schema.hasdata = True
+    #
+    # if self._ids_redis_use:
+    #     redis_list_key = self._id_redis_listkey_get(nid)
+    #     r = self._ids_redis
+    #     last = self._id_last_get(nid=nid)
+    #     if last is None:
+    #         # means index does not exist yet
+    #         r.rpush(redis_list_key, bin_id)
+    #         return
+    #     elif last == id:
+    #         # means exists, needs to be last
+    #         return
+    #     elif last > id:
+    #         # check if id is in there
+    #         if self._ids_exists(nid=nid, id=id):
+    #             return
+    #         else:
+    #             raise j.exceptions.JSBUG("id should be in list already or last: %s %s" % (redis_list_key, id))
+    #     elif last < id:
+    #         r.rpush(redis_list_key, bin_id)
+    #         return
+    #     else:
+    #         raise j.exceptions.JSBUG("should never get here: %s %s" % (redis_list_key, id))
+    #
+    # else:
+    #     raise j.exceptions.JSBUG("not implemented for now")
+    #     # this allows us to know which objects are in a specific model namespace, otherwise we cannot iterate
+    #     ids_file_path = "%s/ids_%s.data" % (nid, self._data_dir)
+    #     j.sal.fs.writeFile(ids_file_path, bin_id, append=True)
+    # self._ids_last[nid] = id
 
-        if nid not in self._ids_last:
-            if self._ids_redis_use:
-                r = self._ids_redis
-                self._ids_last[nid] = 0
-                redis_list_key = self._id_redis_listkey_get(nid)
-                chunk = r.lindex(redis_list_key, -1)  # get the last element, works because its an ordered list
-                if not chunk:
-                    # means we don't have the list yet
-                    self._ids_last[nid] = 0
-                else:
-                    last = struct.unpack("<I", chunk)[0]
-                    self._ids_last[nid] = last  # need to know the last one
-            else:
-                raise j.exceptions.Base("needs to be 100% checked")
-                # next one always happens
-                ids_file_path = "%s/ids_%s.data" % (nid, self._data_dir)
-                if not j.sal.fs.exists(ids_file_path) or j.sal.fs.fileSize(ids_file_path) == 0:
-                    j.sal.fs.touch(ids_file_path)
-                    self._ids_last[nid] = 0
-                else:
-                    llen = j.sal.fs.fileSize(ids_file_path)
-                    # make sure the len is multiplication of 4 bytes
-                    assert float(llen / 4) == llen / 4
-                    f = open(ids_file_path, "rb")
-                    f.seek(llen - 4, 0)
-                    bindata = f.read(4)
-                    self._ids_last[nid] = struct.unpack(b"<I", bindata)[0]
-                    f.close()
+    # def _id_last_get(self, nid=1):
+    #     """
+    #     is the iterator empty?
+    #     :return:
+    #     """
+    #     if not nid:
+    #         nid = 1
+    #
+    #     raise j.exceptions.NotImplemented
 
-    def _id_set(self, id, nid=1):
-        if not nid:
-            nid = 1
+    # if self._ids_redis_use:
+    #     redis_list_key = self._id_redis_listkey_get(nid)
+    #     chunk = self._ids_redis.lindex(redis_list_key, -1)
+    #     if not chunk:
+    #         return None
+    #     try:
+    #         last = struct.unpack("<I", chunk)[0]
+    #         return last
+    #     except Exception as e:
+    #         self._log_warning("ids in redis corrupt")
+    #         # means ids are invalid
+    #         self._ids_redis.delete(self._ids_redis)
+    #         return None
+    # else:
+    #     raise j.exceptions.Base("not implemented")
 
-        self._ids_init(nid=nid)
-        bin_id = struct.pack("<I", id)
-        if not self.model.schema.hasdata:
-            self.model.schema.hasdata = True
-            self.bcdb.meta.hasdata_set(self.model.schema)  # make sure we remember in metadata that there is data
-            self.model.schema.hasdata = True
+    # def _ids_exists(self, nid=1, id=None):
+    #     """
+    #     is the iterator empty?
+    #     :return:
+    #     """
+    #     raise j.exceptions.NotImplemented
+    #     if not nid:
+    #         nid = 1
 
-        if self._ids_redis_use:
-            redis_list_key = self._id_redis_listkey_get(nid)
-            r = self._ids_redis
-            last = self._id_last_get(nid=nid)
-            if last is None:
-                # means index does not exist yet
-                r.rpush(redis_list_key, bin_id)
-                return
-            elif last == id:
-                # means exists, needs to be last
-                return
-            elif last > id:
-                # check if id is in there
-                if self._ids_exists(nid=nid, id=id):
-                    return
-                else:
-                    raise j.exceptions.JSBUG("id should be in list already or last: %s %s" % (redis_list_key, id))
-            elif last < id:
-                r.rpush(redis_list_key, bin_id)
-                return
-            else:
-                raise j.exceptions.JSBUG("should never get here: %s %s" % (redis_list_key, id))
+    # if self._ids_redis_use:
+    #     redis_list_key = self._id_redis_listkey_get(nid)
+    #     chunk = self._ids_redis.lindex(redis_list_key, -1)
+    #     if not chunk:
+    #         return False
+    #     try:
+    #         last = struct.unpack("<I", chunk)[0]
+    #         assert last > 0
+    #     except Exception as e:
+    #         self._log_warning("ids in redis corrupt")
+    #         # means ids are invalid
+    #         self._ids_redis.delete(self._ids_redis)
+    #         return False
+    #     return True
+    # else:
+    #     raise j.exceptions.Base("not implemented")
 
-        else:
-            raise j.exceptions.JSBUG("not implemented for now")
-            # this allows us to know which objects are in a specific model namespace, otherwise we cannot iterate
-            ids_file_path = "%s/ids_%s.data" % (nid, self._data_dir)
-            j.sal.fs.writeFile(ids_file_path, bin_id, append=True)
-        self._ids_last[nid] = id
+    # def _id_iterator(self, nid=1):
+    #     """
+    #     if nid==None then will iterate over all namespaces
+    #
+    #     ```
+    #     for obj_id in m.id_iterator:
+    #         o=m.get(obj_id)
+    #     ```
+    #     :return:
+    #     """
+    #     if not nid:
+    #         nid = 1
+    #
+    #     raise j.exceptions.NotImplemented
 
-    def _id_last_get(self, nid=1):
-        """
-        is the iterator empty?
-        :return:
-        """
-        if not nid:
-            nid = 1
-
-        if self._ids_redis_use:
-            redis_list_key = self._id_redis_listkey_get(nid)
-            chunk = self._ids_redis.lindex(redis_list_key, -1)
-            if not chunk:
-                return None
-            try:
-                last = struct.unpack("<I", chunk)[0]
-                return last
-            except Exception as e:
-                self._log_warning("ids in redis corrupt")
-                # means ids are invalid
-                self._ids_redis.delete(self._ids_redis)
-                return None
-        else:
-            raise j.exceptions.Base("not implemented")
-
-    def _ids_exists(self, nid=1, id=None):
-        """
-        is the iterator empty?
-        :return:
-        """
-        if not nid:
-            nid = 1
-
-        if self._ids_redis_use:
-            redis_list_key = self._id_redis_listkey_get(nid)
-            chunk = self._ids_redis.lindex(redis_list_key, -1)
-            if not chunk:
-                return False
-            try:
-                last = struct.unpack("<I", chunk)[0]
-                assert last > 0
-            except Exception as e:
-                self._log_warning("ids in redis corrupt")
-                # means ids are invalid
-                self._ids_redis.delete(self._ids_redis)
-                return False
-            return True
-        else:
-            raise j.exceptions.Base("not implemented")
-
-    def _id_iterator(self, nid=1):
-        """
-        if nid==None then will iterate over all namespaces
-
-        ```
-        for obj_id in m.id_iterator:
-            o=m.get(obj_id)
-        ```
-        :return:
-        """
-        if not nid:
-            nid = 1
-
-        self._ids_init(nid=nid)
-        if self._ids_redis_use:
-            r = self._ids_redis
-            if nid is None:
-                for nid in r.keys("bcdb:%s:*" % (self.bcdb.name)):
-                    self._id_iterator(nid=nid)
-            redis_list_key = self._id_redis_listkey_get(nid)
-            l = r.llen(redis_list_key)
-            if l > 0:
-                for i in range(0, l):
-                    obj_id = self._id_get_objid_redis(i, nid=nid)
-                    # print(obj_id)
-                    yield obj_id
-        else:
-            ids_file_path = "%s/ids_%s.data" % (nid, self._data_dir)
-            # print("idspath:%s"%ids_file_path)
-            with open(ids_file_path, "rb") as f:
-                while True:
-                    chunk = f.read(4)
-                    if chunk:
-                        obj_id = struct.unpack("<I", chunk)[0]
-                        yield obj_id
-                    else:
-                        break
-
-    def _id_get_objid_redis(self, pos, nid=1, die=True):
-        if not nid:
-            nid = 1
-
-        r = self._ids_redis
-        chunk = r.lindex(self._id_redis_listkey_get(nid=nid), pos)
-        if not chunk:
-            if die:
-                raise j.exceptions.Base("should always get something back?")
-            return None
-        return struct.unpack("<I", chunk)[0]
-
-    def _id_index_count(self, nid=1):
-        r = self._ids_redis
-        redis_list_key = self._id_redis_listkey_get(nid)
-        l = r.llen(redis_list_key)
-        return l
-
-    def _id_delete(self, id, nid=1):
-        if not nid:
-            nid = 1
-
-        self._ids_init(nid=nid)
-        if self._ids_redis_use:
-            id = int(id)
-            r = self._ids_redis
-            bin_id = struct.pack("<I", id)
-            redis_list_key = self._id_redis_listkey_get(nid)
-            # should remove all redis elements of the list with this id
-            r.execute_command("LREM", redis_list_key, 0, bin_id)
-        else:
-            ids_file_path = "%s/ids_%s.data" % (nid, self._data_dir)
-            out = b""
-            for id_ in self._id_iterator:
-                if id_ != id:
-                    out += struct.pack("<I", id_)
-            j.sal.fs.writeFile(ids_file_path, out)
-
-    def _id_exists(self, id, nid=1):
-        """ 
-        Check if an object eist based on its id 
-        TODO: Improve it with a binary search 
-        """
-        if not nid:
-            nid = 1
-
-        self._ids_init(nid=nid)
-
-        if self._ids_redis_use:
-            id = int(id)
-            r = self._ids_redis
-            redis_list_key = self._id_redis_listkey_get(nid)
-            l = r.llen(redis_list_key)
-            if l > 0:
-                last_id = self._id_get_objid_redis(-1, nid=nid)
-                # this gives me an estimate where to look for the info in the list
-                trypos = int(l / last_id * id)
-                if trypos == last_id:
-                    potentialid = self._id_get_objid_redis(trypos, die=False, nid=nid)
-                if not potentialid:
-                    raise j.exceptions.Base("can't get a model from data:%s" % bdata)
-                elif potentialid == id:
-                    # lucky
-                    return True
-                elif potentialid is None or potentialid > id:
-                    # walk back
-                    for i in range(trypos, 0, -1):
-                        potentialid = self._id_get_objid_redis(i, nid=nid)
-                        if potentialid == id:
-                            return True
-                        if potentialid < id:
-                            return False  # we're already too low
-                elif potentialid < id:
-                    # walk forward
-                    for i in range(0, trypos):
-                        potentialid = self._id_get_objid_redis(i, nid=nid)
-                        if potentialid == id:
-                            return True
-                        if potentialid > id:
-                            return False  # we're already too high
-                else:
-                    raise j.exceptions.Base("did not find, should not get here")
-
-                return False
-        else:
-            ids_file_path = "%s/ids_%s.data" % (nid, self._data_dir)
-            raise j.exceptions.Base("not implemented yet")
+    # self._ids_init(nid=nid)
+    # if self._ids_redis_use:
+    #     r = self._ids_redis
+    #     if nid is None:
+    #         for nid in r.keys("bcdb:%s:*" % (self.bcdb.name)):
+    #             self._id_iterator(nid=nid)
+    #     redis_list_key = self._id_redis_listkey_get(nid)
+    #     l = r.llen(redis_list_key)
+    #     if l > 0:
+    #         for i in range(0, l):
+    #             obj_id = self._id_get_objid_redis(i, nid=nid)
+    #             # print(obj_id)
+    #             yield obj_id
+    # else:
+    #     ids_file_path = "%s/ids_%s.data" % (nid, self._data_dir)
+    #     # print("idspath:%s"%ids_file_path)
+    #     with open(ids_file_path, "rb") as f:
+    #         while True:
+    #             chunk = f.read(4)
+    #             if chunk:
+    #                 obj_id = struct.unpack("<I", chunk)[0]
+    #                 yield obj_id
+    #             else:
+    #                 break
+    #
+    # def _id_get_objid_redis(self, pos, nid=1, die=True):
+    #     raise j.exceptions.NotImplemented
+    #     if not nid:
+    #         nid = 1
+    #
+    #     r = self._ids_redis
+    #     chunk = r.lindex(self._id_redis_listkey_get(nid=nid), pos)
+    #     if not chunk:
+    #         if die:
+    #             raise j.exceptions.Base("should always get something back?")
+    #         return None
+    #     return struct.unpack("<I", chunk)[0]
+    #
+    # def _id_index_count(self, nid=1):
+    #     raise j.exceptions.NotImplemented
+    #     r = self._ids_redis
+    #     redis_list_key = self._id_redis_listkey_get(nid)
+    #     l = r.llen(redis_list_key)
+    #     return l
+    #
+    # def _id_delete(self, id, nid=1):
+    #     raise j.exceptions.NotImplemented
+    #     if not nid:
+    #         nid = 1
+    #
+    #     self._ids_init(nid=nid)
+    #     if self._ids_redis_use:
+    #         id = int(id)
+    #         r = self._ids_redis
+    #         bin_id = struct.pack("<I", id)
+    #         redis_list_key = self._id_redis_listkey_get(nid)
+    #         # should remove all redis elements of the list with this id
+    #         r.execute_command("LREM", redis_list_key, 0, bin_id)
+    #     else:
+    #         ids_file_path = "%s/ids_%s.data" % (nid, self._data_dir)
+    #         out = b""
+    #         for id_ in self._id_iterator:
+    #             if id_ != id:
+    #                 out += struct.pack("<I", id_)
+    #         j.sal.fs.writeFile(ids_file_path, out)
+    #
+    # def _id_exists(self, id, nid=1):
+    #     """
+    #     Check if an object eist based on its id
+    #     """
+    #     raise j.exceptions.NotImplemented
+    #     if not nid:
+    #         nid = 1
+    #
+    #     self._ids_init(nid=nid)
+    #
+    #     if self._ids_redis_use:
+    #         id = int(id)
+    #         r = self._ids_redis
+    #         redis_list_key = self._id_redis_listkey_get(nid)
+    #         l = r.llen(redis_list_key)
+    #         if l > 0:
+    #             last_id = self._id_get_objid_redis(-1, nid=nid)
+    #             # this gives me an estimate where to look for the info in the list
+    #             trypos = int(l / last_id * id)
+    #             if trypos == last_id:
+    #                 potentialid = self._id_get_objid_redis(trypos, die=False, nid=nid)
+    #             if not potentialid:
+    #                 raise j.exceptions.Base("can't get a model from data:%s" % bdata)
+    #             elif potentialid == id:
+    #                 # lucky
+    #                 return True
+    #             elif potentialid is None or potentialid > id:
+    #                 # walk back
+    #                 for i in range(trypos, 0, -1):
+    #                     potentialid = self._id_get_objid_redis(i, nid=nid)
+    #                     if potentialid == id:
+    #                         return True
+    #                     if potentialid < id:
+    #                         return False  # we're already too low
+    #             elif potentialid < id:
+    #                 # walk forward
+    #                 for i in range(0, trypos):
+    #                     potentialid = self._id_get_objid_redis(i, nid=nid)
+    #                     if potentialid == id:
+    #                         return True
+    #                     if potentialid > id:
+    #                         return False  # we're already too high
+    #             else:
+    #                 raise j.exceptions.Base("did not find, should not get here")
+    #
+    #             return False
+    #     else:
+    #         ids_file_path = "%s/ids_%s.data" % (nid, self._data_dir)
+    #         raise j.exceptions.Base("not implemented yet")
 
     ######## SQL INDEX
+
+    def _sql_index_find(self, **kwargs):
+        j.shell()
 
     def _sql_index_destroy(self, nid=1):
         """

@@ -47,7 +47,7 @@ def main(self):
     test_case = TestCase()
     scm = """
     @url = test.schema.1
-    &name* = "" (S)
+    &name** = "" (S)
     new_name = "" (S)
     &test = "" (S)
     &number = 0 (I)

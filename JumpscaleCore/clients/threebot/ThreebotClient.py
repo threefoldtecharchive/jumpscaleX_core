@@ -8,8 +8,8 @@ JSConfigBase = j.baseclasses.object_config
 class ThreebotClient(JSConfigBase):
     _SCHEMATEXT = """
     @url = jumpscale.threebot.client
-    name* = ""                      #is the bot dns
-    tid* = 0 (I)                     #threebot id
+    name** = ""                      #is the bot dns
+    tid** =  0 (I)                     #threebot id
     host = "127.0.0.1" (S)          #for caching purposes
     port = 8901 (ipport)            #for caching purposes
     pubkey = ""                     #for caching purposes

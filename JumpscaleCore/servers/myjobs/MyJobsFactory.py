@@ -11,7 +11,7 @@ schema_action = """
 @url = jumpscale.myjobs.action
 actorname = ""
 methodname = ""
-key* = ""  #hash
+key** = ""  #hash
 code = ""
 
 
@@ -192,7 +192,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         :return:
         """
 
-        # state* = "NEW,ERROR,BUSY,WAITING,HALTED" (E)
+        # state** = "NEW,ERROR,BUSY,WAITING,HALTED" (E)
 
         def kill(worker_obj):
             if kill_workers_in_error:

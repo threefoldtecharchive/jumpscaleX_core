@@ -19,7 +19,7 @@ class GedisClientSchemas(j.baseclasses.object):
 class GedisClient(JSConfigBase):
     _SCHEMATEXT = """
     @url = jumpscale.gedis.client
-    name* = "main"
+    name** = "main"
     host = "127.0.0.1" (S)
     port = 8900 (ipport)
     namespace = "default" (S)
