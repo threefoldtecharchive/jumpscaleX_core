@@ -1,4 +1,3 @@
-import os
 from Jumpscale import j
 from .MyWorkerProcess import MyWorkerProcess
 import gipc
@@ -28,15 +27,15 @@ class MyWorker(j.baseclasses.object_config):
         # important to check (at least for now)
         assert self._bcdb.storclient._check_cat == "myjobs"
         if "nr" in kwargs:
-            self.nr = nr
-            self.name = "w%s" % nr
+            self.nr = kwargs["nr"]
+            self.name = "w%s" % self.nr
         elif self.name.startswith("w"):
             try:
                 self.nr = int(self.name[1:])
             except Exception as e:
                 raise j.exceptions.JSBUG("need to be int after w")
         if not self.nr > 0 and self.nr < 20:
-            raise j.exceptions.JSBUG("worker nr is between 1 and 20")
+            raise j.exceptions.JSBUG(f"worker '{self.nr}' nr is not between 1 and 20 ")
 
     def _state_set_new(self):
         self.time_start = 0

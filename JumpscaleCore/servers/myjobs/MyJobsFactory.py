@@ -107,6 +107,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         if w.state in ["HALTED", "ERROR"]:
             w.state = "NEW"
         w.save()
+        w.start()
         self._dataloop_start()
         if not self._mainloop_tmux:
             self._mainloop_tmux = gevent.spawn(self._main_loop_tmux)

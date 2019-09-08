@@ -142,6 +142,8 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         if id:
             obj = self._model.get(id)
             name = obj.name
+            self._children[name] = obj
+            return 1, self._new(name, obj)
 
         if name in self._children:
             if reload:
@@ -199,7 +201,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         self._children = j.baseclasses.dict()
 
     def _children_names_get(self, filter=None):
-        j.shell()
+        # j.shell() TODO what is the expecited behaviour here? (KDS)
         if self.count() > 50:
             llist = []
         else:
@@ -235,7 +237,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         ids = self._model.find_ids(**kwargs)
         for id in ids:
             if id not in ids_done:
-                item = self.get(id, reload=reload, save=False)
+                item = self.get(id=id, reload=reload, save=False)
                 res.append(item)
 
         return res
@@ -252,7 +254,8 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :return: list of the config objects
         """
         kwargs = self._kwargs_update(kwargs)
-        return len(self._model.find_ids(**kwargs))
+        # TODO do proper count query
+        return len(list(self._model.find_ids(**kwargs)))
 
     def _findData(self, **kwargs):
         """
@@ -308,7 +311,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         if name in self._children:
             return True
         # will only use the index
-        return len(self.count(name=name)) == 1
+        return self.count(name=name) == 1
 
     def _children_get(self, filter=None):
         """
@@ -319,16 +322,16 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 everything else is a full match
         :return:
         """
+        # TODO implement filter properly
         x = []
         for key, item in self._children.items():
             x.append(item)
         x = self._filter(filter=filter, llist=x, nameonly=False)
         # be smarter in how we use the index
-        j.shell()
         for item in self.find():
             if item not in x:
                 x.append(item)
-        return
+        return x
 
     def __str__(self):
         return "jsxconfigobj:collection:%s" % self._model.schema.url
