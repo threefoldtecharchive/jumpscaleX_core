@@ -199,12 +199,16 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         self._children = j.baseclasses.dict()
 
     def _children_names_get(self, filter=None):
-        j.shell()
-        if self.count() > 50:
-            llist = []
+        Item = self._model.index.sql
+        if filter:
+            res = [i.name for i in Item.select().where(Item.name.startswith(filter))]
         else:
-            llist = self._children_get()
-        return self._filter(filter=filter, llist=llist)
+            res = [i.name for i in Item.select()]
+
+        if len(res) > 50:
+            return []
+
+        return res
 
     def find(self, reload=False, **kwargs):
         """
@@ -252,7 +256,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :return: list of the config objects
         """
         kwargs = self._kwargs_update(kwargs)
-        return len(self._model.find_ids(**kwargs))
+        return len([i for i in self._model.find_ids(**kwargs)])
 
     def _findData(self, **kwargs):
         """
