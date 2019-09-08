@@ -64,8 +64,7 @@ class BCDBModel(j.baseclasses.object):
         self._md5_previous_ = None
 
         self.readonly = False
-        self._index_ = None
-        self._autosave = False  # if set it will make sure data is automatically set from object
+        self._index_ = None  # if set it will make sure data is automatically set from object
         self.nosave = False
 
         if self.storclient and self.storclient.type == "ZDB":
@@ -382,6 +381,7 @@ class BCDBModel(j.baseclasses.object):
                 obj.id = None
                 if str(e).find("UNIQUE") != -1:
                     raise j.exceptions.Input("Could not insert object, unique constraint failed:%s" % e, data=obj)
+                raise
 
         obj = self._triggers_call(obj=obj, action="set_post")
 
@@ -570,9 +570,9 @@ class BCDBModel(j.baseclasses.object):
         in this case name of this bcdb is myjobs
 
         :param sqlquery:
-        :return:
+        :return: sqlite cursor
         """
-        j.shell()
+        return self.index.db.execute_sql(query)
 
     def find(self, nid=None, **kwargs):
         res = []

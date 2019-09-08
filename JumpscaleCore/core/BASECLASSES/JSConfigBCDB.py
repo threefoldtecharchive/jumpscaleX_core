@@ -49,7 +49,11 @@ class JSConfigBCDB(JSConfigBCDBBase):
 
     @property
     def _autosave(self):
-        return self._model._autosave
+        return self._data._autosave
+
+    @_autosave.setter
+    def _autosave(self, val):
+        self._data._autosave = val
 
     @property
     def name(self):

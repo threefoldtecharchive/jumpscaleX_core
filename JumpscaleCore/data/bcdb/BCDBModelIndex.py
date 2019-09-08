@@ -89,7 +89,7 @@ class BCDBModelIndex(j.baseclasses.object):
             self._text_index_destroy_(nid=nid)
 
         # if self.index_sql_needed:
-        self._sql_index_destroy(nid=nid)
+        self.sql_index_destroy(nid=nid)
 
     def set(self, obj):
         """
@@ -604,20 +604,20 @@ class BCDBModelIndex(j.baseclasses.object):
 
     ######## SQL INDEX
 
-    def _sql_index_find(self, **kwargs):
-        j.shell()
-
-    def _sql_index_destroy(self, nid=1):
+    def sql_index_destroy(self, nid=1):
         """
         will remove all namespaces indexes
         :param nid:
         :return:
         """
         if nid:
-            self._sql_index_db.delete().where(self._sql_index_db.nid == nid).execute()
+            self.sql.delete().where(self.sql.nid == nid).execute()
         else:
-            self._sql_index_db.drop_table()
-            self._sql_index_db.create_table()
+            self.sql.drop_table()
+            self.sql.create_table()
+
+    def sql_index_count(self):
+        return len([i for i in self.sql.select()])
 
     def __str__(self):
         out = "modelindex:%s\n" % self.model.schema.url

@@ -50,34 +50,36 @@ class {{BASENAME}}(BCDBModelIndex):
             {%- endif %}
             {%- endfor %}
 
-        self._sql_index_db = Index_{{schema.key}}_{{model.mid}}
-        self._sql_index_db.create_table(safe=True)
-        self.sql=self._sql_index_db
+        self.sql = Index_{{schema.key}}_{{model.mid}}
+        self.sql.create_table(safe=True)
         self._schema_md5_generated = "{{schema._md5}}"
 
         self.sql_table_name = "index_{{schema.key}}_{{model.mid}}".lower()
 
 
     def _sql_index_set(self,obj):
-        idict={}
-        {%- for field in index.fields %}
-        {%- if field.jumpscaletype.NAME == "numeric" %}
-        idict["{{field.name}}"] = obj.{{field.name}}_usd
-        {%- else %}
-        idict["{{field.name}}"] = obj.{{field.name}}
-        {%- endif %}
-        {%- endfor %}
         assert obj.id
         assert obj.nid
-        idict["id"] = obj.id
-        idict["nid"] = obj.nid
-        #need to delete previous record from index
-        self._sql_index_delete(obj)
-        self._sql_index_db.insert(**idict).execute()
+        dd={}
+
+        {%- for field in index.fields %}
+        {%- if field.jumpscaletype.NAME == "numeric" %}
+        dd["{{field.name}}"] = obj.{{field.name}}_usd
+        {%- else %}
+        dd["{{field.name}}"] = obj.{{field.name}}
+        {%- endif %}
+        {%- endfor %}
+        dd["id"] = obj.id
+        dd["nid"] = obj.nid
+
+        #TODO: REEM there need to be other ways, why can peewee update when needed
+        self.sql.delete().where(self.sql.id == obj.id).execute()
+        d=self.sql.create(**dd)
+        d.save()
 
     def _sql_index_delete(self,obj):
-        # if not self._sql_index_db.select().where(self._sql_index_db.id == obj.id).count()==0:
-        self._sql_index_db.delete().where(self._sql_index_db.id == obj.id).execute()
+        # if not self.sql.select().where(self.sql.id == obj.id).count()==0:
+        self.sql.delete().where(self.sql.id == obj.id).execute()
 
 
     {% else %}
@@ -90,7 +92,7 @@ class {{BASENAME}}(BCDBModelIndex):
     def _sql_index_delete(self,obj):
         return
 
-    def _sql_index_destroy(self, nid=1):
+    def sql_index_destroy(self, nid=1):
         return
 
     {% endif %}

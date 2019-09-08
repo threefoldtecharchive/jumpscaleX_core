@@ -401,8 +401,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         assert bcdb.name == "test"
 
-        if type == "zdb":
-            bcdb.reset()  # empty
+        bcdb.reset()  # empty
 
         assert bcdb.storclient.get(0)
         assert bcdb.storclient.count == 1
@@ -411,7 +410,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         model = bcdb.model_get(schema=schema)
 
-        self._log_debug("bcdb already exists")
+        # lets check the sql index is empty
+        assert model.index.sql_index_count() == 0
 
         if type.lower() in ["zdb"]:
             # print(model.storclient.nsinfo["entries"])
