@@ -19,9 +19,8 @@
 
 
 from Jumpscale import j
-import json
 from gevent.pool import Pool
-from gevent import time, signal
+from gevent import signal
 import gevent
 from gevent.server import StreamServer
 from redis.exceptions import ConnectionError

@@ -1,4 +1,3 @@
-import inspect
 from Jumpscale import j
 import gipc
 import gevent
@@ -6,6 +5,7 @@ import time
 from .MyWorkerProcess import MyWorkerProcess
 from .MyJobs import MyJobs
 from .MyWorker import MyWorkers
+from Jumpscale.data.bcdb.connectors.redis.RedisServer import RedisServer
 
 schema_action = """
 @url = jumpscale.myjobs.action
@@ -31,7 +31,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self._workers_gipc_nr_max = 10
         self._mainloop_gipc = None
         self._mainloop_tmux = None
-        self._dataloop = None
+        self._mainloop_greenlet_redis = None
 
         storclient = j.clients.rdb.client_get()
         storclient._check_cat = "myjobs"
@@ -107,7 +107,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             w.state = "NEW"
         w.save()
         w.start()
-        self._dataloop_start()
         if not self._mainloop_tmux:
             self._mainloop_tmux = gevent.spawn(self._main_loop_tmux)
 
@@ -146,7 +145,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         w.debug = debug
         w.nr = nr
         w.start()
-        self._dataloop_start()
 
     def _worker_next_get(self):
         last = 0
@@ -154,6 +152,16 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             if i.nr > last:
                 last = i.nr
         return last + 1
+
+    def start(self, nr_workers=4):
+        self._mainloop_gipc = gevent.spawn(self._main_loop_subprocess)
+        self._mainloop_greenlet_redis = gevent.spawn(self._main_loop_redis())
+        self.workers_tmux_start(nr_workers=nr_workers)
+
+    def _main_loop_redis(self):
+        serv = RedisServer(j.data.bcdb.system, addr="0.0.0.0")
+        serv._init2(j.data.bcdb.system)
+        serv.start()
 
     def workers_subprocess_start(self, nr_fixed_workers=None, debug=False):
         """
@@ -170,7 +178,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             self._mainloop_gipc = gevent.spawn(self._main_loop_subprocess)
         else:
             for i in range(nr_fixed_workers):
-                self.start_subprocess_worker(nr=i, debug=debug)
+                self.workers_subprocess_start(nr=i, debug=debug)
 
     def workers_check(self, kill_workers_in_error=True):
         """
@@ -244,15 +252,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 raise j.exceptions.JSBUG("unknown state of worker")
 
         return res, count, errors
-
-    def _data_loop(self):
-        nr = 0
-        while True:
-            nr += 1
-            if nr > 5:
-                self._log_debug("data_process run")
-                nr = 0
-            self._data_process_1time(timeout=2)
 
     def _main_loop_tmux(self, reset=False):
         """

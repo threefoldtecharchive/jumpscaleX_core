@@ -3,9 +3,12 @@ from Jumpscale import j
 import pudb
 import sys
 import gevent
-import signal
 import os
 import time
+
+URL_JOB = "jumpscale.myjobs.job"
+URL_ACTION = "jumpscale.myjobs.action"
+URL_WORKER = "jumpscale.myjobs.worker"
 
 
 def deadline(timeout, *args):
@@ -45,23 +48,23 @@ class MyWorkerProcess(j.baseclasses.object):
 
         # MAKE SURE YOU DON'T REUSE SOCKETS FROM MOTHER PROCESSS
         j.core.db.source = "worker"  # this allows us to test
-        redisclient = j.core.db
+        self.redisclient = j.core.db
 
         self.queue_jobs_start = j.clients.redis.queue_get(
-            redisclient=redisclient, key="queue:jobs:start", fromcache=False
+            redisclient=self.redisclient, key="queue:jobs:start", fromcache=False
         )
         # self.queue_return = j.clients.redis.queue_get(redisclient=redisclient, key="queue:jobs:return", fromcache=False)
 
         j.errorhandler.handlers.append(self.error_handler)
 
-        storclient = j.clients.rdb.client_get(redisclient=redisclient)
+        storclient = j.clients.rdb.client_get(redisclient=self.redisclient)
         # important, test we're using the right redis client
         assert storclient._redis.source == "worker"
 
         self.bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
-        self.model_job = self.bcdb.model_get(url="jumpscale.myjobs.job")
-        self.model_action = self.bcdb.model_get(url="jumpscale.myjobs.action")
-        self.model_worker = self.bcdb.model_get(url="jumpscale.myjobs.worker")
+        self.model_job = self.bcdb.model_get(url=URL_JOB)
+        self.model_action = self.bcdb.model_get(url=URL_ACTION)
+        self.model_worker = self.bcdb.model_get(url=URL_WORKER)
 
         if not self.onetime:
             # if not onetime then will send all to queue which will be processed on parent process (the myjobs manager)
@@ -105,36 +108,44 @@ class MyWorkerProcess(j.baseclasses.object):
 
     # DATA LOGIC
     def _job_get(self, id):
-        raise NotImplemented()
         # call through redis client the local BCDB
         # get data as json
         # use model_schema to give the object
+        return self._redis_get(URL_JOB, id, self.model_job)
+
+    def _redis_get(self, url, id, schema):
+        key = f"{self.bcdb.name}:data:1:{url}.{id}"
+        data = self.redisclient.get(key)
+        ddata = j.data.serializers.json.loads(data)
+        return schema.new(ddata)
+
+    def _redis_set(self, obj):
+        key = f"{self.bcdb.name}:data:1:{obj._schema.url}.{obj.id}"
+        self.redisclient.set(key, obj._ddict_json_hr)
 
     def _action_get(self, id):
         if self.onetime:
             return self.model_action.get(id, die=True)
         else:
-            raise NotImplemented()
             # call through redis client the local BCDB
             # get data as json
             # use model_schema
+            return self._redis_get(URL_ACTION, id, self.model_action)
 
     def _worker_get(self, id):
         if self.onetime:
-            res = self.model_worker.get(id, die=True)
+            return self.model_worker.get(id, die=True)
         else:
-            raise NotImplemented()
+            return self._redis_get(URL_WORKER, id, self.model_worker)
             # call through redis client the local BCDB
             # get data as json
             # use model_schema
             #if exists put on self.worker_obj & return this one
             # if dont exists, quit
-            self._log_info("worker object no longer exists, so I need to stop, prob reset of data")
-            sys.exit(0)
 
     def _worker_set(self, obj, action="save", propertyname=None, **kwargs):
         if action == "save":
-            raise NotImplemented()
+            self._redis_set(obj)
             # call through redis client the local BCDB
             #get data as json (from _data) and use redis client to set to server
 
@@ -142,6 +153,7 @@ class MyWorkerProcess(j.baseclasses.object):
         if action == "save":
             # call through redis client the local BCDB
             #get data as json (from _data) and use redis client to set to server
+            self._redis_set(obj)
 
 
     ################

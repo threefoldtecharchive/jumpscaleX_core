@@ -496,7 +496,7 @@ class BCDBModel(j.baseclasses.object):
         self._log_warning("destroy: %s nid:%s" % (self, nid))
         assert isinstance(nid, int)
         assert nid > 0
-        for obj_id in self.index._id_iterator(nid=nid):
+        for obj_id in self.find_ids(nid=nid):
             self.storclient.delete(obj_id)
         self.index.destroy()
         j.sal.fs.remove(self._data_dir)

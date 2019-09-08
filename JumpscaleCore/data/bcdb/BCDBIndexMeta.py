@@ -19,7 +19,6 @@
 
 
 from Jumpscale import j
-import os
 
 JSBASE = j.baseclasses.object
 
@@ -35,7 +34,7 @@ class IndexField:
             self.type = "TextField"
         elif self.jumpscaletype.NAME == "enum":
             self.type = "TextField"
-        elif self.jumpscaletype.NAME in ["int", "date"]:
+        elif self.jumpscaletype.NAME in ["int", "date", "datetime"]:
             self.type = "IntegerField"
         elif self.jumpscaletype.NAME in ["boolean", "bool"]:
             self.type = "BooleanField"
