@@ -48,11 +48,10 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         if not self._init_pre_schedule_:
             assert self._i_am_worker == False
             # need to make sure at startup we process all data which is still waiting there for us
-            self._data_process_untill_empty(subprocess_errors_ignore=True)
-            self._dataloop_start()
             assert self._children
             assert self.jobs
             assert self.workers
+            # TODO: need to start the gevent loop for redis server for BCDB *if we are not running in a 3bot
             self._init_pre_schedule_ = True
 
     def action_get(self, key, return_none_if_not_exist=False):
@@ -172,15 +171,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         else:
             for i in range(nr_fixed_workers):
                 self.start_subprocess_worker(nr=i, debug=debug)
-
-    def _dataloop_start(self):
-        if not self._dataloop:
-            self._dataloop = gevent.spawn(self._data_loop)
-
-    def _dataloop_stop(self):
-        if self._dataloop:
-            self._dataloop.kill()
-            self._dataloop = None
 
     def workers_check(self, kill_workers_in_error=True):
         """
@@ -304,67 +294,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                     w.start()
 
             gevent.time.sleep(10)
-
-    def _data_process_1time(self, timeout=0, die=True, subprocess_errors_ignore=False):
-        r = self.queue_return.get(timeout=timeout)
-        if r == None:
-            return
-
-        thedata = j.data.serializers.json.loads(r)  # change to json
-
-        cat, objid, data = thedata
-
-        if cat == "W":
-            data2 = j.data.serializers.json.loads(data)
-            worker_object = self.workers._model.get(objid, die=False)
-            if worker_object:
-                worker_object._data_update(data2)
-                worker_object.save()
-                if worker_object.name in self.workers._children:
-                    self.workers._children[worker_object.name].load()  # make sure in mem the data is ok
-            else:
-                # means could not find, maybe there was a delete done in between, so can happen but should not be in children
-                if data2["name"] in self.workers._children:
-                    self.workers._children.pop(data2["name"])
-
-            return True
-        elif cat == "J":
-            data2 = j.data.serializers.json.loads(data)
-            job_obj = self.jobs._model.get(objid, die=False)
-            if job_obj:
-                job_obj._data_update(data2)
-                job_obj.save()
-                if job_obj.name in self.jobs._children:
-                    self.jobs._children[job_obj.name].load()  #
-                for queue_name in job_obj.return_queues:
-                    queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)
-                    queue.put(job_obj.id)
-            else:
-                if data2["name"] in self.workers._children:
-                    self.workers._children.pop(data2["name"])
-
-            return True
-        elif cat == "E":
-            if not subprocess_errors_ignore:
-                datae = j.data.serializers.json.loads(data)
-                j.core.tools.log2stdout(datae)
-                if die:
-                    raise j.exceptions.RemoteException(data=datae)
-                return True
-        else:
-            raise j.exceptions.Base("return queue does not have right obj")
-
-    def _data_process_untill_empty(self, timeout=0, subprocess_errors_ignore=False):
-
-        # need to wait till first one comes
-        r = self._data_process_1time(timeout=timeout, subprocess_errors_ignore=subprocess_errors_ignore)
-        if not r:
-            return
-
-        while r is not None:
-            if self.queue_return.empty:
-                return
-            r = self._data_process_1time(timeout=timeout)
 
     def _main_loop_subprocess(self):
         """
