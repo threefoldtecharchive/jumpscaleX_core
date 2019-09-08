@@ -60,7 +60,7 @@ def main(self):
     # we now have some data
     assert len(m_wallet_test.find()) == 10
     r = m_wallet_test.get_by_name("myuser_8")
-    assert r[0].addr == "something:8"
+    assert r.addr == "something:8"
 
     r = vfs.get("/")
     bcdb_names = [i for i in r.list()]
@@ -169,6 +169,7 @@ def main(self):
     # defining a new object based on model url threefoldtoken.wallet.test
     def get_obj(i):
         model_obj = m_wallet_test.new()
+        model_obj.name = "wallet_%s" % i
         model_obj.addr = "a very very long address that you can easily spot"
         model_obj.email = "ben%s@threefoldtech.com" % i
         model_obj.username = "incredible_username%s" % i
