@@ -180,7 +180,6 @@ class SystemFS(JSBASE, TESTTOOLS):
         @param deletefirst: bool (Set to True if you want to erase destination first, be carefull, this can erase directories)
         @param overwriteFiles: if True will overwrite files, otherwise will not overwrite when destination exists
         """
-
         default_ignore_dir = [".egg-info", ".dist-info", "__pycache__"]
         if ignoredir is None:
             ignoredir = []
@@ -245,6 +244,7 @@ class SystemFS(JSBASE, TESTTOOLS):
                             overwriteFiles=overwriteFiles,
                             ignoredir=ignoredir,
                             ignorefiles=ignorefiles,
+                            rsync=rsync,
                         )
                     if self.isFile(srcname):
                         # print "2:%s %s"%(srcname,dstname)
@@ -255,6 +255,9 @@ class SystemFS(JSBASE, TESTTOOLS):
             excl = " "
             for item in ignoredir:
                 excl += "--exclude '*%s/' " % item
+
+            for item in ignorefiles:
+                excl += "--exclude '*%s' " % item
 
             dstpath2 = dst.split(":")[1] if ":" in dst else dst  # OTHERWISE CANNOT WORK FOR SSH
 
