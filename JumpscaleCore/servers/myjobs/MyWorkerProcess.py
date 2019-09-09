@@ -1,15 +1,11 @@
 from Jumpscale import j
+from . import schemas
 
 import pudb
 import sys
 import gevent
 import os
 import time
-
-URL_JOB = "jumpscale.myjobs.job"
-URL_ACTION = "jumpscale.myjobs.action"
-URL_WORKER = "jumpscale.myjobs.worker"
-
 
 def deadline(timeout, *args):
     def decorate(f):
@@ -49,6 +45,7 @@ class MyWorkerProcess(j.baseclasses.object):
         # MAKE SURE YOU DON'T REUSE SOCKETS FROM MOTHER PROCESSS
         j.core.db.source = "worker"  # this allows us to test
         self.redisclient = j.core.db
+        self.bcdbclient = j.clients.redis.get(port=6380)
 
         self.queue_jobs_start = j.clients.redis.queue_get(
             redisclient=self.redisclient, key="queue:jobs:start", fromcache=False
@@ -62,9 +59,9 @@ class MyWorkerProcess(j.baseclasses.object):
         assert storclient._redis.source == "worker"
 
         self.bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
-        self.model_job = self.bcdb.model_get(url=URL_JOB)
-        self.model_action = self.bcdb.model_get(url=URL_ACTION)
-        self.model_worker = self.bcdb.model_get(url=URL_WORKER)
+        self.model_job = self.bcdb.model_get(schema=schemas.job)
+        self.model_action = self.bcdb.model_get(schema=schemas.action)
+        self.model_worker = self.bcdb.model_get(schema=schemas.worker)
 
         if not self.onetime:
             # if not onetime then will send all to queue which will be processed on parent process (the myjobs manager)
@@ -111,17 +108,17 @@ class MyWorkerProcess(j.baseclasses.object):
         # call through redis client the local BCDB
         # get data as json
         # use model_schema to give the object
-        return self._redis_get(URL_JOB, id, self.model_job)
+        return self._redis_get(id, self.model_job)
 
-    def _redis_get(self, url, id, schema):
-        key = f"{self.bcdb.name}:data:1:{url}.{id}"
-        data = self.redisclient.get(key)
+    def _redis_get(self, id, schema):
+        key = f"{self.bcdb.name}:data:1:{schema._schema_url}"
+        data = self.bcdbclient.hget(key, str(id))
         ddata = j.data.serializers.json.loads(data)
         return schema.new(ddata)
 
     def _redis_set(self, obj):
-        key = f"{self.bcdb.name}:data:1:{obj._schema.url}.{obj.id}"
-        self.redisclient.set(key, obj._ddict_json_hr)
+        key = f"{self.bcdb.name}:data:1:{obj._schema.url}"
+        self.bcdbclient.hset(key, str(obj.id), obj._json)
 
     def _action_get(self, id):
         if self.onetime:
@@ -130,13 +127,13 @@ class MyWorkerProcess(j.baseclasses.object):
             # call through redis client the local BCDB
             # get data as json
             # use model_schema
-            return self._redis_get(URL_ACTION, id, self.model_action)
+            return self._redis_get(id, self.model_action)
 
     def _worker_get(self, id):
         if self.onetime:
             return self.model_worker.get(id, die=True)
         else:
-            return self._redis_get(URL_WORKER, id, self.model_worker)
+            return self._redis_get(id, self.model_worker)
             # call through redis client the local BCDB
             # get data as json
             # use model_schema

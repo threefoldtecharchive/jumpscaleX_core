@@ -2,20 +2,12 @@ from Jumpscale import j
 import gipc
 import gevent
 import time
+from . import schemas
 from .MyWorkerProcess import MyWorkerProcess
 from .MyJobs import MyJobs
 from .MyWorker import MyWorkers
 from Jumpscale.data.bcdb.connectors.redis.RedisServer import RedisServer
 
-schema_action = """
-@url = jumpscale.myjobs.action
-actorname = ""
-methodname = ""
-key** = ""  #hash
-code = ""
-
-
-"""
 
 
 class MyJobsFactory(j.baseclasses.factory_testtools):
@@ -38,7 +30,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         self._bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
 
-        self.model_action = self._bcdb.model_get(schema=schema_action)
+        self.model_action = self._bcdb.model_get(schema=schemas.action)
 
         self.scheduled_ids = []
         self._init_pre_schedule_ = False
@@ -111,6 +103,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             self._mainloop_tmux = gevent.spawn(self._main_loop_tmux)
 
     def _worker_inprocess_start_from_tmux(self, nr):
+        # make sure jobs schema loaded
+        _ = self.jobs
         w = self.workers.get(name="w%s" % nr)
         w.time_start = j.data.time.epoch
         w.last_update = j.data.time.epoch
@@ -278,11 +272,10 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 elif w.state in ["WAITING"]:
                     if w.last_update > j.data.time.epoch - 40:
                         w._log_info("no need to start worker:%s" % w.nr)
-                    else:
-                        j.shell()
-                        w._log_warning("worker was frozen because watchdog expired, will kill:%s" % w.nr)
-                        w.stop(hard=True)
-                        w.start()
+                    # else:
+                    #     w._log_warning("worker was frozen because watchdog expired, will kill:%s" % w.nr)
+                    #     w.stop(hard=True)
+                    #     w.start()
                 elif w.state in ["BUSY"]:
                     if reset:
                         w.stop(hard=True)

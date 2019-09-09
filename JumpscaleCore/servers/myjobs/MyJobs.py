@@ -1,4 +1,5 @@
 from Jumpscale import j
+from . import schemas
 import inspect
 import gevent
 
@@ -6,26 +7,7 @@ import gevent
 class MyJob(j.baseclasses.object_config):
 
     _name = "job"
-
-    _SCHEMATEXT = """
-        @url = jumpscale.myjobs.job
-        name** = ""
-        category**= ""
-        time_start** = 0 (T)
-        time_stop** = 0 (T)
-        state** = "NEW,ERROR,OK,RUNNING,DONE" (E)
-        error_cat** = "NA,TIMEOUT,CRASH,HALTED"  (E)
-        timeout = 0
-        action_id** = 0 (I)
-        kwargs = (dict)
-        result_json = "" (S)
-        error = (dict)
-        return_queues = (LS)
-        die = false (B)
-        #will not execute this one before others done
-        dependencies = (LI)
-        
-        """
+    _SCHEMATEXT = schemas.job
 
     def _init(
         self, method=None, dependencies=None, args_replace=None, return_queues_reset=None, return_queues=None, **kwargs2

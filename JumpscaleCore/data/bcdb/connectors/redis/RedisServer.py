@@ -222,8 +222,8 @@ class RedisServer(j.baseclasses.object):
                 response.error("cannot set, key:'%s' not supported" % key)
         else:
             try:
-                key = parse_key.split("/")
-                self.vfs.add_datas(val, int(key[1]), key[2])
+                tree = self.vfs.get(parse_key)
+                tree.set(val)
                 response.encode("OK")
                 return
             except:
@@ -280,23 +280,16 @@ class RedisServer(j.baseclasses.object):
         response._array(["0", res])
 
     def hset(self, response, key, id, val):
+        key = f"{key}/{id}"
         return self.set(response, key, val)
 
     def hget(self, response, key, id):
-        parse_key = key.replace(":", "/")
-        try:
-            vfs_objs = self.vfs.get(self.bcdb.name + "/" + parse_key)
-            if not isinstance(vfs_objs.get(), str):
-                objs = [i for i in vfs_objs.list()]
-                response.encode(objs)
-            else:
-                response.encode(vfs_objs.get())
-            return
-        except:
-            response.error("cannot get, key:'%s' not found" % key)
+        key = f"{key}/{id}"
+        return self.get(response, key)
 
     def hdel(self, response, key, id):
-        raise j.exceptions.Base("not implemented")
+        key = f"{key}/{id}"
+        return self.delete(response, key)
 
     def hlen(self, response, key):
         parse_key = key.replace(":", "/")

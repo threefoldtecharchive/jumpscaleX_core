@@ -1,28 +1,13 @@
 from Jumpscale import j
 from .MyWorkerProcess import MyWorkerProcess
+from . import schemas
 import gipc
 import sys
 
 
 class MyWorker(j.baseclasses.object_config):
     _name = "worker"
-    _SCHEMATEXT = """
-        @url = jumpscale.myjobs.worker
-        name**= ""
-        timeout = 3600
-        time_start = 0 (T)
-        last_update = 0 (T)
-        current_job = (I)
-        error = "" (S)
-        state** = "NEW,ERROR,BUSY,WAITING,HALTED" (E)
-        pid = 0
-        #if halt on True will stop
-        halt = false (B)
-        type = "tmux,subprocess,inprocess" (E)
-        debug = false (B)
-        nr = 0 (I)
-        """
-
+    _SCHEMATEXT =  schemas.worker
     def _init(self, **kwargs):
         # important to check (at least for now)
         assert self._bcdb.storclient._check_cat == "myjobs"
