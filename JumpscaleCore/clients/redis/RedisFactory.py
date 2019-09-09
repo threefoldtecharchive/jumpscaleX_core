@@ -5,8 +5,8 @@ from redis._compat import nativestr
 
 from Jumpscale import j
 
-from core.InstallTools import Redis
-from core.InstallTools import RedisTools
+from Jumpscale.core.InstallTools import Redis
+from Jumpscale.core.InstallTools import RedisTools
 
 
 class RedisFactory(j.baseclasses.factory):
