@@ -797,7 +797,7 @@ class Tools:
     exceptions = JSExceptions()
 
     @staticmethod
-    def traceback_format(tb):
+    def traceback_list_format(tb):
         """
 
         :param tb:
@@ -1018,7 +1018,7 @@ class Tools:
                 extype_, value_, tb = sys.exc_info()
 
         if tb:
-            logdict["traceback"] = Tools.traceback_format(tb)
+            logdict["traceback"] = Tools.traceback_list_format(tb)
             fname, defname, linenr, line_, locals_ = logdict["traceback"][-1]
         else:
 
@@ -1762,6 +1762,34 @@ class Tools:
             p(text)
 
     @staticmethod
+    def traceback_format(tb):
+        """format traceback
+
+        :param tb: traceback
+        :type tb: traceback object or a formatted list
+        :return: formatted trackeback
+        :rtype: str
+        """
+        if not isinstance(tb, list):
+            tb = Tools.traceback_list_format(tb)
+
+        out = Tools.text_replace("{RED}--TRACEBACK------------------{RESET}\n")
+        for tb_path, tb_name, tb_lnr, tb_line, tb_locals in tb:
+            C = "{GREEN}{tb_path}{RESET} in {BLUE}{tb_name}{RESET}\n"
+            C += "    {GREEN}{tb_lnr}{RESET}    {tb_code}{RESET}"
+            if Tools.pygments_formatter:
+                tb_code = Tools.pygments.highlight(
+                    tb_line, Tools.pygments_pylexer, Tools.pygments_formatter
+                ).rstrip()
+            else:
+                tb_code = tb_line
+            tbdict = {"tb_path": tb_path, "tb_name": tb_name, "tb_lnr": tb_lnr, "tb_code": tb_code}
+            C = Tools.text_replace(C.lstrip(), args=tbdict, text_strip=True)
+            out += C.rstrip() + "\n"
+        out += Tools.text_replace("{RED}-----------------------------\n{RESET}")
+        return out
+
+    @staticmethod
     def log2str(logdict, data_show=True, replace=True):
         """
 
@@ -1820,20 +1848,7 @@ class Tools:
         #     out += Tools.text_replace("{RED}--SOURCE: %s-20--{RESET}\n" % logdict["source"])
 
         if "traceback" in logdict and logdict["traceback"]:
-            out += Tools.text_replace("{RED}--TRACEBACK------------------{RESET}\n")
-            for tb_path, tb_name, tb_lnr, tb_line, tb_locals in logdict["traceback"]:
-                C = "{GREEN}{tb_path}{RESET} in {BLUE}{tb_name}{RESET}\n"
-                C += "    {GREEN}{tb_lnr}{RESET}    {tb_code}{RESET}"
-                if Tools.pygments_formatter:
-                    tb_code = Tools.pygments.highlight(
-                        tb_line, Tools.pygments_pylexer, Tools.pygments_formatter
-                    ).rstrip()
-                else:
-                    tb_code = tb_line
-                tbdict = {"tb_path": tb_path, "tb_name": tb_name, "tb_lnr": tb_lnr, "tb_code": tb_code}
-                C = Tools.text_replace(C.lstrip(), args=tbdict, text_strip=True)
-                out += C.rstrip() + "\n"
-            out += Tools.text_replace("{RED}-----------------------------\n{RESET}")
+            out += Tools.traceback_format(logdict["traceback"])
 
         if data_show:
             if logdict["data"] != None:
