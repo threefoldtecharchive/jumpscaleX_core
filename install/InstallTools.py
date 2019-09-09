@@ -1548,6 +1548,7 @@ class Tools:
         # find generic prepend for full file
         minchars = 9999
         prechars = 0
+        assert isinstance(content, str)
         for line in content.split("\n"):
             if line.strip() == "":
                 continue
@@ -1639,7 +1640,7 @@ class Tools:
         return content2
 
     @staticmethod
-    def args_replace(content, *args_list):
+    def args_replace(content, primitives_only=False, *args_list):
         """
 
         :param content:
@@ -1647,33 +1648,42 @@ class Tools:
         :return:
         """
         assert isinstance(content, str)
+        for replace_args in args_list:
+            if not isinstance(replace_args, dict):
+                raise Tools.exceptions.Input("replace args need to be dict", data=replace_args)
         if content == "":
             return content
         args_new = {}
         for replace_args in args_list:
             for key, val in replace_args.items():
-                if key not in args_new:
-                    if isinstance(val, list) or isinstance(val, set):
-                        out = "["
-                        for v in val:
-                            if isinstance(v, str):
-                                v = "'%s'" % v
+                if key not in ["self"]:
+                    if key not in args_new:
+                        if isinstance(val, list) or isinstance(val, set):
+                            out = "["
+                            for v in val:
+                                if isinstance(v, str):
+                                    v = "'%s'" % v
+                                else:
+                                    v = str(v)
+                                out += "%s," % v
+                            val = out.rstrip(",") + "]"
+                        elif isinstance(val, str):
+                            if val.strip().lower() == "none":
+                                val = None
+                        elif isinstance(val, int) or isinstance(val, float) or isinstance(val, bool):
+                            pass  # otherwise format_map does not work
+                        elif isinstance(val, bool):
+                            if val:
+                                val = "1"
                             else:
-                                v = str(v)
-                            out += "%s," % v
-                        val = out.rstrip(",") + "]"
-                    elif isinstance(val, str):
-                        if val.strip().lower() == "self":
-                            val = None
-                        if val.strip().lower() == "none":
-                            val = None
-                    elif isinstance(val, int) or isinstance(val, float) or isinstance(val, bool):
-                        # val = str(val)
-                        pass
-                    elif val != None:
-                        val = Tools._data_serializer_safe(val)
-                    if val:
-                        args_new[key] = val
+                                val = "0"
+                        elif val != None:
+                            if primitives_only:
+                                val = None
+                            else:
+                                val = Tools._data_serializer_safe(val)
+                        if val:
+                            args_new[key] = val
 
         def process_line(line, args_new):
             # IF YOU TOUCH THIS LET KRISTOF KNOW
@@ -1696,9 +1706,20 @@ class Tools:
 
             return line
 
-        for replace_args in args_list:
-            if not isinstance(replace_args, dict):
-                raise Tools.exceptions.Input("replace args need to be dict", data=replace_args)
+        # print(args_list)
+        # print(args_new)
+
+        do = True
+        counter = 1
+        while do and counter < 20:
+            do = False
+            counter += 1
+            for key, val in args_new.items():
+                val = str(val)
+                if "{" in val:
+                    args_new[key] = process_line(val, args_new)
+                    do = True
+
         out = ""
         for line in content.split("\n"):
             if "{" in line:
@@ -1790,6 +1811,7 @@ class Tools:
 
         out = ""
 
+        # TO SHOW WERE LOG COMES FROM e.g. from subprocess
         # if "source" in logdict:
         #     out += Tools.text_replace("{RED}--SOURCE: %s-20--{RESET}\n" % logdict["source"])
 
@@ -1978,7 +2000,31 @@ class Tools:
         sudo_remove=False,
         retry=None,
         errormsg=None,
+        check_no_args_left=False,
     ):
+        """
+
+        :param command:
+        :param showout:
+        :param useShell:
+        :param cwd:
+        :param timeout:
+        :param die:
+        :param async_:
+        :param args:
+        :param env:
+        :param interactive:
+        :param self:
+        :param replace:
+        :param asfile:
+        :param original_command:
+        :param log:
+        :param sudo_remove:
+        :param retry:
+        :param errormsg:
+        :param check_no_args_left: it True will search for { if found after replace will die
+        :return:
+        """
 
         if env is None:
             env = {}
@@ -1987,6 +2033,8 @@ class Tools:
         if self is None:
             self = MyEnv
         command = Tools.text_strip(command, args=args, replace=replace)
+        if check_no_args_left and "{" in command:
+            raise j.exceptions.Input("Found { in %s" % command)
         if sudo_remove:
             command = command.replace("sudo ", "")
 
@@ -2577,7 +2625,7 @@ class Tools:
 
         def getbranch(args):
             cmd = "cd {REPO_DIR}; git branch | grep \* | cut -d ' ' -f2"
-            rc, stdout, err = Tools.execute(cmd, die=False, args=args, interactive=False)
+            rc, stdout, err = Tools.execute(cmd, die=False, args=args, interactive=False, check_no_args_left=True)
             if rc > 0:
                 Tools.shell()
             current_branch = stdout.strip()
@@ -2593,7 +2641,9 @@ class Tools:
                 cd {REPO_DIR}
                 git checkout {BRANCH} -f
                 """
-                rc, out, err = Tools.execute(script, die=False, args=args, showout=True, interactive=False)
+                rc, out, err = Tools.execute(
+                    script, die=False, args=args, showout=True, interactive=False, check_no_args_left=True
+                )
                 # if err:
                 #     script = """
                 #     set -ex
@@ -2668,7 +2718,7 @@ class Tools:
                 mkdir -p {ACCOUNT_DIR}
                 """
                 Tools.log("get code [git] (first time): %s" % repo)
-                Tools.execute(C, args=args, showout=False)
+                Tools.execute(C, args=args, showout=False, check_no_args_left=True)
                 C = """
                 cd {ACCOUNT_DIR}
                 # git clone  --depth 1 {URL} -b {BRANCH}
@@ -2676,7 +2726,13 @@ class Tools:
                 cd {NAME}
                 """
                 rc, out, err = Tools.execute(
-                    C, args=args, die=True, showout=False, retry=4, errormsg="Could not clone %s" % repo_url
+                    C,
+                    args=args,
+                    die=True,
+                    showout=False,
+                    retry=4,
+                    errormsg="Could not clone %s" % repo_url,
+                    check_no_args_left=True,
                 )
 
             else:
@@ -2688,14 +2744,18 @@ class Tools:
                         git checkout . --force
                         """
                         Tools.log("get code & ignore changes: %s" % repo)
-                        Tools.execute(C, args=args, retry=1, errormsg="Could not checkout %s" % repo_url)
+                        Tools.execute(
+                            C, args=args, retry=1, errormsg="Could not checkout %s" % repo_url, check_no_args_left=True
+                        )
                         C = """
                         set -x
                         cd {REPO_DIR}
                         git pull
                         """
                         Tools.log("get code & ignore changes: %s" % repo)
-                        Tools.execute(C, args=args, retry=4, errormsg="Could not pull %s" % repo_url)
+                        Tools.execute(
+                            C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, check_no_args_left=True
+                        )
 
                     elif Tools.code_changed(REPO_DIR):
                         if Tools.ask_yes_no("\n**: found changes in repo '%s', do you want to commit?" % repo):
@@ -2713,14 +2773,16 @@ class Tools:
                         git commit -m "{MESSAGE}"
                         """
                         Tools.log("get code & commit [git]: %s" % repo)
-                        Tools.execute(C, args=args)
+                        Tools.execute(C, args=args, check_no_args_left=True)
                         C = """
                         set -x
                         cd {REPO_DIR}
                         git pull
                         """
                         Tools.log("get code & commit [git]: %s" % repo)
-                        Tools.execute(C, args=args, retry=4, errormsg="Could not pull %s" % repo_url)
+                        Tools.execute(
+                            C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, check_no_args_left=True
+                        )
 
                     if not checkoutbranch(args, branch):
                         raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
@@ -2740,7 +2802,9 @@ class Tools:
             rm -f download.zip
             curl -L {URL} > download.zip
             """
-            Tools.execute(script, args=args, retry=3, errormsg="Cannot download:%s" % args["URL"])
+            Tools.execute(
+                script, args=args, retry=3, errormsg="Cannot download:%s" % args["URL"], check_no_args_left=True
+            )
             statinfo = os.stat("/tmp/jumpscale/download.zip")
             if statinfo.st_size < 100000:
                 raise Tools.exceptions.Operations("cannot download:%s resulting file was too small" % args["URL"])
@@ -2756,7 +2820,7 @@ class Tools:
                 rm -f download.zip
                 """
                 try:
-                    Tools.execute(script, args=args, die=True)
+                    Tools.execute(script, args=args, die=True, check_no_args_left=True)
                 except Exception as e:
                     Tools.shell()
 
@@ -3202,7 +3266,7 @@ class MyEnv_:
             st = os.stat(self.config["DIR_HOME"])
             gid = st.st_gid
             args["GROUPNAME"] = grp.getgrgid(gid)[0]
-            Tools.execute(script, interactive=True, args=args)
+            Tools.execute(script, interactive=True, args=args, check_no_args_left=True)
 
         self.config_file_path = os.path.join(config["DIR_CFG"], "jumpscale_config.toml")
 
@@ -3480,7 +3544,7 @@ class BaseInstaller:
                         Tools.file_write(env_path, bashprofile)
             else:
                 # if not sandboxed need to remove old python's from bin dir
-                Tools.execute("rm -f {DIR_BASE}/bin/pyth*")
+                Tools.execute("rm -f {DIR_BASE}/bin/pyth*", check_no_args_left=True)
                 env_path = "%s/%s" % (MyEnv.config["DIR_HOME"], profile_name)
                 if not Tools.exists(env_path):
                     bashprofile = ""
@@ -3509,7 +3573,7 @@ class BaseInstaller:
             mkdir -p var
 
             """
-            Tools.execute(script, interactive=MyEnv.interactive)
+            Tools.execute(script, interactive=MyEnv.interactive, check_no_args_left=True)
 
         else:
 
@@ -3522,7 +3586,7 @@ class BaseInstaller:
             rsync -ra {DIR_BASE}/code/github/threefoldtech/sandbox_base/base/ {DIR_BASE}/
             mkdir -p root
             """
-            Tools.execute(script, interactive=MyEnv.interactive)
+            Tools.execute(script, interactive=MyEnv.interactive, check_no_args_left=True)
 
             if MyEnv.platform() == "darwin":
                 reponame = "sandbox_osx"
@@ -3543,7 +3607,7 @@ class BaseInstaller:
             args = {}
             args["REPONAME"] = reponame
 
-            Tools.execute(script, interactive=MyEnv.interactive, args=args)
+            Tools.execute(script, interactive=MyEnv.interactive, args=args, check_no_args_left=True)
 
             script = """
             set -e
@@ -3551,7 +3615,7 @@ class BaseInstaller:
             source env.sh
             python3 -c 'print("- PYTHON OK, SANDBOX USABLE")'
             """
-            Tools.execute(script, interactive=MyEnv.interactive)
+            Tools.execute(script, interactive=MyEnv.interactive, check_no_args_left=True)
 
             Tools.log("INSTALL FOR BASE OK")
 
@@ -3572,7 +3636,7 @@ class BaseInstaller:
         mkdir -p {DIR_VAR}/log
 
         """
-        Tools.execute(script, interactive=True)
+        Tools.execute(script, interactive=True, check_no_args_left=True)
 
         if MyEnv.platform_is_osx:
             OSXInstaller.base()
@@ -3951,7 +4015,7 @@ class JumpscaleInstaller:
         # kosmos --instruct=/tmp/instructions.toml
         kosmos 'j.core.tools.pprint("JumpscaleX init step for nacl (encryption) OK.")'
         """
-        Tools.execute(script)
+        Tools.execute(script, check_no_args_left=True)
 
     def remove_old_parts(self):
         tofind = ["DigitalMe", "Jumpscale", "ZeroRobot"]
@@ -4036,8 +4100,15 @@ class JumpscaleInstaller:
 
             script = Tools.text_replace(script, args=locals())
             script = Tools.text_replace(script, args=locals())  # NEED TO DO THIS 2x
+            if "{" in script:
+                from pudb import set_trace
+
+                set_trace()
+                script = Tools.text_replace(script, args=locals())
+                Tools.shell()
+                raise Tools.exceptions.BUG("replace did not work")
             Tools.log(Tools.text_replace("link {GITPATH}/{PATH} {DEST}", args=locals()), data=script)
-            Tools.execute(script, args=locals())
+            Tools.execute(script, args=locals(), check_no_args_left=True)
 
     def cmds_link(self):
         _, _, _, _, loc = Tools._code_location_get(repo="jumpscaleX_core/", account="threefoldtech")
@@ -4047,7 +4118,7 @@ class JumpscaleInstaller:
             if not os.path.exists(dest):
                 Tools.link(src2, dest, chmod=770)
         Tools.link("%s/install/jsx.py" % loc, "{DIR_BASE}/bin/jsx", chmod=770)
-        Tools.execute("cd /sandbox;source env.sh;js_init generate", interactive=False)
+        Tools.execute("cd /sandbox;source env.sh;js_init generate", interactive=False, check_no_args_left=True)
 
 
 class DockerFactory:
@@ -4545,19 +4616,32 @@ class DockerContainer:
             args_txt += " --no-interactive"
 
         dirpath = os.path.dirname(inspect.getfile(Tools))
-        print("copy installers to the docker")
-        if not Tools.exists("%s/jsx" % dirpath):
-            Tools.link("%s/jsx.py" % dirpath, "%s/jsx" % dirpath)
-        for item in ["jsx", "InstallTools.py"]:
-            src1 = "%s/%s" % (dirpath, item)
-            cmd = "scp -P {} -o StrictHostKeyChecking=no \
-                -o UserKnownHostsFile=/dev/null \
-                -r {} root@localhost:/tmp/".format(
-                self.config.sshport, src1
+        if dirpath.startswith(MyEnv.config["DIR_CODE"]):
+            cmd = (
+                "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py configure --sshkey %s -s"
+                % MyEnv.sshagent.key_default_name
             )
+            Tools.log("CONFIGURE THE CONTAINER", data=cmd)
             Tools.execute(cmd)
-        cmd = "cd /tmp;python3 jsx configure --sshkey %s -s;python3 jsx install -s" % MyEnv.sshagent.key_default_name
-        cmd += args_txt
+            Tools.execute("rm -f /tmp/InstallTools.py;rm -f /tmp/jsx")
+            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s"
+            cmd += args_txt
+        else:
+            print("copy installer over from where I install from")
+            for item in ["jsx", "InstallTools.py"]:
+                src1 = "%s/%s" % (dirpath, item)
+                cmd = "scp -P {} -o StrictHostKeyChecking=no \
+                    -o UserKnownHostsFile=/dev/null \
+                    -r {} root@localhost:/tmp/".format(
+                    self.config.sshport, src1
+                )
+                Tools.execute(cmd)
+
+                cmd = (
+                    "cd /tmp;python3 jsx configure --sshkey %s -s;python3 jsx install -s"
+                    % MyEnv.sshagent.key_default_name
+                )
+                cmd += args_txt
         print(" - Installing jumpscaleX ")
         self.sshexec("apt-get install python3-click -y")
         self.sshexec(cmd)
@@ -5020,7 +5104,7 @@ class WireGuard:
             AllowedIPs = 10.10.10.0/24
             """
             path = "/tmp/wg0.conf"
-            Tools.file_write(path, Tools.text_replace(C, args=config))
+            Tools.file_write(path, Tools.text_replace(C, args=config, check_no_args_left=True))
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
             cmd = "wg-quick up %s" % path
             Tools.execute(cmd)

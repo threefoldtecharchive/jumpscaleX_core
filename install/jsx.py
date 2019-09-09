@@ -9,10 +9,8 @@ import inspect
 import argparse
 import os
 
+DEFAULT_BRANCH = "development"
 os.environ["LC_ALL"] = "en_US.UTF-8"
-
-
-DEFAULT_BRANCH = "master"
 
 
 def load_install_tools(branch=None):
@@ -42,17 +40,17 @@ def load_install_tools(branch=None):
     return IT
 
 
-def check_branch(IT):
-    HOMEDIR = os.environ["HOME"]
-    paths = ["/sandbox/code/github/threefoldtech/jumpscaleX", "%s/code/github/threefoldtech/jumpscaleX" % HOMEDIR]
-    for path in paths:
-        if os.path.exists(path):
-            cmd = "cd %s; git branch | grep \* | cut -d ' ' -f2" % path
-            rc, out, err = IT.Tools.execute(cmd)
-            if out.strip() != DEFAULT_BRANCH:
-                print("WARNING the branch of jumpscale in %s needs to be %s" % (path, DEFAULT_BRANCH))
-                if not IT.Tools.ask_yes_no("OK to work with branch above?"):
-                    sys.exit(1)
+# def check_branch(IT):
+#     HOMEDIR = os.environ["HOME"]
+#     paths = ["/sandbox/code/github/threefoldtech/jumpscaleX", "%s/code/github/threefoldtech/jumpscaleX" % HOMEDIR]
+#     for path in paths:
+#         if os.path.exists(path):
+#             cmd = "cd %s; git branch | grep \* | cut -d ' ' -f2" % path
+#             rc, out, err = IT.Tools.execute(cmd)
+#             if out.strip() != DEFAULT_BRANCH:
+#                 print("WARNING the branch of jumpscale in %s needs to be %s" % (path, DEFAULT_BRANCH))
+#                 if not IT.Tools.ask_yes_no("OK to work with branch above?"):
+#                     sys.exit(1)
 
 
 IT = load_install_tools()
