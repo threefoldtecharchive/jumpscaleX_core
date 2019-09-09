@@ -10,7 +10,7 @@ class MyJob(j.baseclasses.object_config):
     _SCHEMATEXT = schemas.job
 
     def _init(
-        self, method=None, dependencies=None, args_replace=None, return_queues_reset=None, return_queues=None, **kwargs2
+        self, method=None, dependencies=None, args_replace=None, **kwargs2
     ):
 
         # leave this check for now please
@@ -28,13 +28,6 @@ class MyJob(j.baseclasses.object_config):
         if args_replace:
             for key, val in args_replace.items():
                 self.kwargs[key] = val
-
-        if return_queues:
-            for qname in return_queues:
-                self.return_queues.append(qname)
-                if return_queues_reset:
-                    q = j.clients.redis.queue_get(redisclient=j.clients.redis.core_get(), key="myjobs:%s" % qname)
-                    q.reset()
 
         if method:
             self.process_code(method)
@@ -69,7 +62,11 @@ class MyJob(j.baseclasses.object_config):
 
     @property
     def result(self):
-        return j.data.serializers.json.loads(self.result_json)
+        if self.result_json:
+            return j.data.serializers.json.loads(self.result_json)
+        else:
+            return self.result_json
+
 
     # @result.setter
     # def result(self, v):
@@ -120,27 +117,26 @@ class MyJob(j.baseclasses.object_config):
         if load:
             self.load()
         if self.time_stop == 0:
-            # if time stop filled in then the job does not need any further processing
-            if self.state == "ERROR":
+            if self.time_start + self.timeout > j.data.time.epoch:
                 self.time_stop = j.data.time.epoch
-                if self.error_cat == "NA":
-                    self.error_cat = "ERROR"
-
-            elif self.time_start + self.timeout > j.data.time.epoch:
-                self.time_stop = j.data.time.epoch
-                escalate = True
                 # means we have timeout
                 self.error_cat = "TIMEOUT"
                 self.save()
+                if die:
+                    raise j.exceptions.Timeout(f"Job timed out: {self.id}")
             else:
                 # nothing wrong found, can return
                 return False
 
+        if self.state == "ERROR":
+            self.time_stop = j.data.time.epoch
+            if self.error_cat == "NA":
+                self.error_cat = "ERROR"
             self.save()
-            logdict = job.error
-            j.core.tools.log2stdout(logdict)
+            if self.error:
+                j.core.tools.log2stdout(self.error)
             if die:
-                raise j.exceptions.Base("job failed:%s" % self.id, data=self)
+                raise j.exceptions.Base(f"job failed: {self.id}", data=self)
             return False
         return True
 

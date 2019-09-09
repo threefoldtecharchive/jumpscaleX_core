@@ -8,7 +8,8 @@ def main(self):
 
     j.tools.logger.debug = True
 
-    self.stop(reset=True)
+    self.reset()
+    self.start()
 
     def add(a=None, b=None):
         assert a

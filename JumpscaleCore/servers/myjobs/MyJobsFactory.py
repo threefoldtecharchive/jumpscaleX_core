@@ -147,7 +147,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 last = i.nr
         return last + 1
 
-    def start(self, nr_workers=4, subprocess=False):
+    def start(self):
         if not self._mainloop_greenlet_redis:
             self._mainloop_greenlet_redis = gevent.spawn(self._main_loop_redis)
 
@@ -478,6 +478,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             if not graceful or not job_running:
                 gproc.terminate()
 
+        if self._mainloop_greenlet_redis:
+            self._mainloop_greenlet_redis.kill()
+
         if reset:
             self.model_action.destroy()
             self.jobs._model.destroy()
@@ -535,21 +538,15 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             raise j.exceptions.BUG("jobs to wait on should not be None, there are no jobs in scheduled ids")
 
         with gevent.Timeout(timeout, False):
-            while True:
-                ready = 0
-                for job in jobs:
+            runningjobs = jobs.copy()
+            while runningjobs:
+                gevent.time.sleep(0.3)
+                for job in runningjobs[:]:
                     job.load()
                     if job.check_ready(die=die):
-                        ready += 1
+                        runningjobs.remove(job)
+            return jobs
 
-                if ready == len(jobs):
-                    return jobs
-
-                gevent.time.sleep(0.3)
-
-                # job.load()
-                # print(job)
-                # gevent.time.sleep(1)
 
     def results(self, ids=None, timeout=100, die=True):
         jobs = self.wait(ids=ids, timeout=timeout, die=die)
