@@ -148,11 +148,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         return last + 1
 
     def start(self, nr_workers=4, subprocess=False):
-        self._mainloop_greenlet_redis = gevent.spawn(self._main_loop_redis)
-        if subprocess:
-            self._mainloop_gipc = gevent.spawn(self._main_loop_subprocess)
-        else:
-            self.workers_tmux_start(nr_workers=nr_workers)
+        if not self._mainloop_greenlet_redis:
+            self._mainloop_greenlet_redis = gevent.spawn(self._main_loop_redis)
 
     def _main_loop_redis(self):
         serv = RedisServer(j.data.bcdb.system, addr="0.0.0.0")
@@ -457,9 +454,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         if self._mainloop_gipc != None:
             self._mainloop_gipc.kill()
 
-        if self._dataloop != None:
-            self._dataloop.kill()
-
         if not reset:
             for w in self.find(reload=True):
                 # look for the workers and ask for halt in nice way
@@ -547,9 +541,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                     job.load()
                     if job.check_ready(die=die):
                         ready += 1
-                if not self._dataloop:
-                    # means we have to manually fetch the objects there is no dataloop doing it for us
-                    self._data_process_untill_empty()
 
                 if ready == len(jobs):
                     return jobs
