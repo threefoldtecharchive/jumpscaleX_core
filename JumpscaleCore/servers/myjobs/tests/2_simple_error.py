@@ -5,16 +5,18 @@ def main(self):
     """
     kosmos 'j.servers.myjobs.test("simple_error")'
     """
-    self.stop(reset=True)
 
     j.tools.logger.debug = True
 
     self.reset()
+    self.start()
 
-    def add(a, b):
+    def add(a=None, b=None):
+        assert a
+        assert b
         raise ValueError("aaa")
 
-    job = self.schedule(add, 1, 2)
+    job = self.schedule(add, a=1, b=2)
 
     error = False
 
@@ -29,7 +31,7 @@ def main(self):
 
     assert error
 
-    job = self.schedule(add, 1, 2)
+    job = self.schedule(add, a=1, b=2)
     job_id = job.id
 
     self._log_info("job id waiting for:%s" % job_id)

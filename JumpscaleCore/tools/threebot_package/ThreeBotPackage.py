@@ -8,7 +8,7 @@ JSConfigBase = j.baseclasses.object_config
 class ThreeBotPackage(JSConfigBase):
     _SCHEMATEXT = """
         @url = jumpscale.threebot.package.1
-        name* = "main"
+        name** = "main"
         giturl = "" (S)  #if empty then local
         path = ""
         threebot_server_name = "default"

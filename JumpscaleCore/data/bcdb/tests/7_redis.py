@@ -143,10 +143,10 @@ def main(self):
     schema = """
         @url = despiegk.test2
         llist2 = "" (LS)
-        name* = ""
-        email* = ""
-        nr* = 0
-        date_start* = 0 (D)
+        name** = ""
+        email** = ""
+        nr** =  0
+        date_start** =  0 (D)
         description = ""
         cost_estimate = 0.0 #this is a comment
         llist = []

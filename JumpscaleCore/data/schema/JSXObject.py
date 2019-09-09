@@ -36,6 +36,7 @@ class JSXObject(j.baseclasses.object):
         self._deserialized_items = {}
 
         self._autosave = False
+
         self.acl_id = None
         self._acl = None
 
@@ -146,7 +147,7 @@ class JSXObject(j.baseclasses.object):
             if serialize:
                 self._deserialized_items = {}  # need to go back to smallest form
         if self._model:
-            if not self._model.__class__._name == "acl" and self._acl is not None:
+            if not self._model._classname == "acl" and self._acl is not None:
                 if self.acl.id is None:
                     self.acl.save()
                 if self.acl.id != self.acl_id:
@@ -154,29 +155,30 @@ class JSXObject(j.baseclasses.object):
 
             if self._changed:
 
-                for prop_u in self._model.schema.properties_unique:
-                    # find which properties need to be unique
-                    # unique properties have to be indexed
-                    args_search = {prop_u.name: getattr(self, prop_u.name)}
-                    r = self._model.find(**args_search)
-                    if len(r) > 1:
-                        msg = "could not save, was not unique.\n%s." % (args_search)
-                        # can for sure not be ok
-                        raise j.exceptions.Input(msg)
-                    elif len(r) == 1:
-                        msg = "could not save, was not unique.\n%s." % (args_search)
-                        if self.id:
-                            if not self.id == r[0].id:
-                                # j.shell()
-                                raise j.exceptions.Input(msg)
-                        else:
-                            self.id = r[0].id
-                            self._ddict_hr  # to trigger right serialization
-                            if self._data == r[0]._data:
-                                return self  # means data was not changed
-                            else:  # means data is not the same
-                                self.id = None
-                                raise j.exceptions.Input(msg)
+                # NOT MORE NEEDED THE SQLITE INDEX DEALS WITH THE UNIQUE PROPERTIES
+                # for prop_u in self._model.schema.properties_unique:
+                #     # find which properties need to be unique
+                #     # unique properties have to be indexed
+                #     args_search = {prop_u.name: getattr(self, prop_u.name)}
+                #     r = self._model.find(**args_search)
+                #     if len(r) > 1:
+                #         msg = "could not save, was not unique.\n%s." % (args_search)
+                #         # can for sure not be ok
+                #         raise j.exceptions.Input(msg)
+                #     elif len(r) == 1:
+                #         msg = "could not save, was not unique.\n%s." % (args_search)
+                #         if self.id:
+                #             if not self.id == r[0].id:
+                #                 # j.shell()
+                #                 raise j.exceptions.Input(msg)
+                #         else:
+                #             self.id = r[0].id
+                #             self._ddict_hr  # to trigger right serialization
+                #             if self._data == r[0]._data:
+                #                 return self  # means data was not changed
+                #             else:  # means data is not the same
+                #                 self.id = None
+                #                 raise j.exceptions.Input(msg)
 
                 if not self._nosave:
                     o = self._model.set(self)

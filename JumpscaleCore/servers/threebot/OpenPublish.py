@@ -11,7 +11,7 @@ DEV_SUFFIX = "_dev"
 class OpenPublish(JSConfigClient):
     _SCHEMATEXT = """
         @url = jumpscale.open_publish.1
-        name* = "" (S)
+        name** = "" (S)
         websites = (LO) !jumpscale.open_publish.website.1
         wikis = (LO) !jumpscale.open_publish.wiki.1
 

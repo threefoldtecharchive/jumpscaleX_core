@@ -1,5 +1,5 @@
 @url = jumpscale.startupcmd.1
-name* = ""
+name** = ""
 cmd_start = ""
 cmd_stop = ""
 

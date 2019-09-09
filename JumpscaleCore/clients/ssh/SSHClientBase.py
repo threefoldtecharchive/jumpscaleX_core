@@ -9,7 +9,7 @@ class SSHClientBase(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
         @url = jumpscale.sshclient.1
-        name* = ""
+        name** = ""
         addr = ""
         port = 22
         #addr_priv = ""

@@ -49,11 +49,11 @@ def main(self):
     schema1 = """
         @url = jumpscale.myjobs.job
         category*= ""
-        time_start* = 0 (D)
+        time_start** = 0 (D)
         time_stop = 0 (D)
-        state* = ""
+        state** = ""
         timeout = 0
-        action_id* = 0
+        action_id** =  0
         args = ""   #json
         kwargs = "" #json
         result = "" #json

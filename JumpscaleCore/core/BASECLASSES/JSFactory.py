@@ -18,7 +18,6 @@ class JSFactory(JSBase, Attr):
                 # childclasses are the e.g. JSConfigs classes
 
                 if not kl._name:
-                    # raise j.exceptions.JSBUG("Cannot start childclass it has no _name")
                     name = j.core.text.strip_to_ascii_dense(str(kl)).split(".")[-1].lower()
                 else:
                     name = kl._name
@@ -58,8 +57,11 @@ class JSFactory(JSBase, Attr):
 
     def save(self):
         for item in self._children_get():
-            if self._hasattr(item, "save"):
-                item.save()
+            if isinstance(item, j.baseclasses.object):
+                if item._hasattr("save"):
+                    item.save()
+            else:
+                raise j.exceptions.JSBUG("only suport j.baseclasses.object")
 
         # if self._object_config:
         #     self._object_config.save()
@@ -134,7 +136,7 @@ class JSFactory(JSBase, Attr):
     #         self._children[child].save()
     #     return self._children[name]
 
-    def get(self, name="main", needexist=False, save=False, **kwargs):
+    def get(self, name="main", needexist=False, save=False, reload=False, **kwargs):
         """
 
         :param name: of the child to get, if it doesn't need to exist then will try to create new
@@ -147,6 +149,8 @@ class JSFactory(JSBase, Attr):
                 self.new(name=name, save=save, **kwargs)
             else:
                 raise j.exceptions.Value("cannot get child with name:%s" % name)
+        if reload:
+            self._children[name].load()
         return self._children[name]
 
     def find(self, **kwargs):
@@ -157,26 +161,34 @@ class JSFactory(JSBase, Attr):
         res = []
         for key, item in self._children.items():
             match = True
-            for key, val in kwargs.items():
-                if self._hasattr(item, key):
-                    if val != getattr(item, key):
-                        match = False
-                else:
-                    raise j.exceptions.Value("could not find for prop:%s, did not exist in %s" % (key, self._key))
+            if isinstance(item, j.baseclasses.object_config):
+                for key, val in kwargs.items():
+                    print("need to check in properties of schema to see if we can check")
+                    j.shell()
+            elif isinstance(item, j.baseclasses.object):
+                for key, val in kwargs.items():
+                    if item._hasattr(key):
+                        if val != getattr(item, key):
+                            match = False
+                    else:
+                        raise j.exceptions.Value("could not find for prop:%s, did not exist in %s" % (key, self._key))
+            else:
+                raise j.exceptions.JSBUG("only support jsx objects in _children")
             if match:
                 res.append(item)
         return res
 
-    def count(self, name):
-        """
-        :param kwargs: e.g. color="red",...
-        :return: list of the config objects
-        """
-        r = 0
-        if name in self._children:
-            child = self._children[name]
-            if self._hasattr(child, "count"):
-                r += child.count(name=name)
+    # def count(self, name):
+    #     """
+    #     :param kwargs: e.g. color="red",...
+    #     :return: list of the config objects
+    #     """
+    #     raise j.exceptions.NotImplemented()
+    #     # r = 0
+    #     # if name in self._children:
+    #     #     child = self._children[name]
+    #     #     if self._hasattr(child, "count"):
+    #     #         r += child.count(name=name)
 
     def delete(self, name=None, recursive=None):
         """
@@ -198,13 +210,12 @@ class JSFactory(JSBase, Attr):
                     self._children[name].delete(recursive=recursive)
                 self._children.pop(name)
 
-        if recursive:
-            self._children_delete(recursive=recursive)
+        self._children_delete(recursive=recursive)
 
         if self._parent:
             # if we exist in the parent remove us from their children
-            if self._name in self._parent._children:
-                self._parent._children.pop(self._name)
+            if self._classname in self._parent._children:
+                self._parent._children.pop(self._classname)
 
     def exists(self, name="main"):
         """

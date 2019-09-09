@@ -62,9 +62,9 @@ def main(self):
 
     schema_updated = """
     @url = jumpscale.bcdb.test.house
-    name* = "" (S)
-    active* = "" (B)
-    cost* = (N)
+    name** = "" (S)
+    active** = "" (B)
+    cost** =  (N)
     newprop = ""
     room = (LO) !jumpscale.bcdb.test.room
     """

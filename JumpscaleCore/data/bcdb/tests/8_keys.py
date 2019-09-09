@@ -30,12 +30,12 @@ def main(self):
 
     SCHEMA = """
     @url = threefoldtoken.wallet.test
-    name* = "wallet"
+    name** = "wallet"
     jwt = "" (S)                # JWT Token
-    addr* = ""                   # Address
-    ipaddr* = (ipaddr)           # IP Address
-    email* = "" (S)              # Email address
-    username* = "" (S)           # User name
+    addr** =  ""                   # Address
+    ipaddr** =  (ipaddr)           # IP Address
+    email** = "" (S)              # Email address
+    username** = "" (S)           # User name
     
     
     """
@@ -100,11 +100,11 @@ def main(self):
 
     SCHEMA3 = """
     @url = threefoldtoken.wallet.test2
-    name* = "wallet3"
+    name** = "wallet3"
     jwt = "" (S)                # JWT Token
-    addr* = "aa"                   # Address
-    ipaddr* = "" (ipaddr)           # IP Address
-    email* =  (S)              # Email address 
+    addr** =  "aa"                   # Address
+    ipaddr** =  "" (ipaddr)           # IP Address
+    email** =  (S)              # Email address 
     nr = 10 (I)
     nr2 =  (I)
     nr3 =  (N)

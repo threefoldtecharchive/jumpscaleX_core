@@ -275,7 +275,7 @@ class BCDB(j.baseclasses.object):
 
     def _data_process(self):
         # needs gevent loop to process incoming data
-        self._log_info("DATAPROCESSOR STARTS")
+        # self._log_info("DATAPROCESSOR STARTS")
         while True:
             method, args, kwargs, event, returnid = self.queue.get()
             if args == ["STOP"]:
@@ -289,7 +289,7 @@ class BCDB(j.baseclasses.object):
         self.dataprocessor_greenlet = None
         if event:
             event.set()
-        self._log_warning("DATAPROCESSOR STOPS")
+        # self._log_warning("DATAPROCESSOR STOPS")
 
     def _data_process_1time(self, timeout=0, die=False):
         return
@@ -315,10 +315,11 @@ class BCDB(j.baseclasses.object):
                 # stop dataprocessor
                 self.queue.put((None, ["STOP"], {}, None, None))
                 while self.queue.qsize() > 0:
-                    self._log_debug("wait dataprocessor to stop")
+                    # self._log_debug("wait dataprocessor to stop")
                     gevent.sleep(1)
 
-        self._log_info("DATAPROCESSOR & SQLITE STOPPED OK")
+        self._log_warning("DATAPROCESSOR & SQLITE STOPPED OK")
+        # TODO: JO is this ok that it happens 2x
         return True
 
     def reset(self):

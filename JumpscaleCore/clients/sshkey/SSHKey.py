@@ -5,7 +5,7 @@ class SSHKey(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
         @url = jumpscale.sshkey.client
-        name* = "" (S)
+        name** = "" (S)
         pubkey = "" (S) 
         allow_agent = True (B)
         passphrase_ = "" (S)
@@ -21,7 +21,7 @@ class SSHKey(j.baseclasses.object_config):
         if self.name == "":
             raise j.exceptions.Base("need to specify name")
 
-        self.autosave = True  # means every write will be saved (is optional to set)
+        self._autosave = True  # means every write will be saved (is optional to set)
 
         if self.path == "":
             keyspath = "%s/keys" % (j.sal.fs.getcwd())

@@ -9,7 +9,7 @@ the model in BCDB is a class using [JumpScale Schema](/docs/schema/README.md) it
  this can be achieved easily by just adding `*` beside the field you want to index in the schema 
         ```
         @url = school.student
-        name* = (S)
+        name** =  (S)
         subjects = (LS)
         address = !schema.address
         ```
@@ -33,7 +33,7 @@ for a key value store (ZDB, Redis or ETCD) which will be used to save the data
 # Define the Schema
 schema = """
         @url = school.student
-        name* = (S)
+        name** =  (S)
         subjects = (LS)
         address = (S)
         """
