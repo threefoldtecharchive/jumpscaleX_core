@@ -153,10 +153,12 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 last = i.nr
         return last + 1
 
-    def start(self, nr_workers=4):
-        self._mainloop_gipc = gevent.spawn(self._main_loop_subprocess)
-        self._mainloop_greenlet_redis = gevent.spawn(self._main_loop_redis())
-        self.workers_tmux_start(nr_workers=nr_workers)
+    def start(self, nr_workers=4, subprocess=False):
+        self._mainloop_greenlet_redis = gevent.spawn(self._main_loop_redis)
+        if subprocess:
+            self._mainloop_gipc = gevent.spawn(self._main_loop_subprocess)
+        else:
+            self.workers_tmux_start(nr_workers=nr_workers)
 
     def _main_loop_redis(self):
         serv = RedisServer(j.data.bcdb.system, addr="0.0.0.0")
