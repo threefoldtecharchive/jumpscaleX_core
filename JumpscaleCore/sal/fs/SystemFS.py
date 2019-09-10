@@ -1217,7 +1217,7 @@ class SystemFS(JSBASE, TESTTOOLS):
         self._log_debug("Unlink file with path: %s" % filename, _levelup=3)
         os.unlink(filename)
 
-    @path_check(filename={"required", "replace", "exists", "file"})
+    @path_check(filename={"required", "replace", "exists"})
     def unlink(self, filename):
         """Remove the given file if it's a file or a symlink
 
