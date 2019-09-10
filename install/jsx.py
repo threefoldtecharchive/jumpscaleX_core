@@ -12,7 +12,7 @@ import os
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
-DEFAULT_BRANCH = "master"
+DEFAULT_BRANCH = "development"
 
 
 def load_install_tools(branch=None):
@@ -20,10 +20,11 @@ def load_install_tools(branch=None):
     path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py"
     if not branch:
         branch = DEFAULT_BRANCH
+    # first check on code tools
     if not os.path.exists(path):
         rootdir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(rootdir, "InstallTools.py")
-
+        # now check on path next to jsx
         if not os.path.exists(path) or path.find("/code/") == -1:
             url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py" % branch
 
@@ -42,17 +43,17 @@ def load_install_tools(branch=None):
     return IT
 
 
-def check_branch(IT):
-    HOMEDIR = os.environ["HOME"]
-    paths = ["/sandbox/code/github/threefoldtech/jumpscaleX", "%s/code/github/threefoldtech/jumpscaleX" % HOMEDIR]
-    for path in paths:
-        if os.path.exists(path):
-            cmd = "cd %s; git branch | grep \* | cut -d ' ' -f2" % path
-            rc, out, err = IT.Tools.execute(cmd)
-            if out.strip() != DEFAULT_BRANCH:
-                print("WARNING the branch of jumpscale in %s needs to be %s" % (path, DEFAULT_BRANCH))
-                if not IT.Tools.ask_yes_no("OK to work with branch above?"):
-                    sys.exit(1)
+# def check_branch(IT):
+#     HOMEDIR = os.environ["HOME"]
+#     paths = ["/sandbox/code/github/threefoldtech/jumpscaleX", "%s/code/github/threefoldtech/jumpscaleX" % HOMEDIR]
+#     for path in paths:
+#         if os.path.exists(path):
+#             cmd = "cd %s; git branch | grep \* | cut -d ' ' -f2" % path
+#             rc, out, err = IT.Tools.execute(cmd)
+#             if out.strip() != DEFAULT_BRANCH:
+#                 print("WARNING the branch of jumpscale in %s needs to be %s" % (path, DEFAULT_BRANCH))
+#                 if not IT.Tools.ask_yes_no("OK to work with branch above?"):
+#                     sys.exit(1)
 
 
 IT = load_install_tools()
@@ -236,7 +237,7 @@ def container_install(
         image = "despiegk/3bot"
 
     if not branch:
-        branch = DEFAULT_BRANCH
+        branch = IT.DEFAULT_BRANCH
 
     docker = IT.DockerContainer(name=name, delete=delete, portrange=portrange, image=image)
 
@@ -302,7 +303,7 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
         force = False
 
     if not branch:
-        branch = DEFAULT_BRANCH
+        branch = IT.DEFAULT_BRANCH
 
     installer = IT.JumpscaleInstaller()
     installer.install(sandboxed=False, force=force, gitpull=pull)

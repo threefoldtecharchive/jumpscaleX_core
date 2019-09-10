@@ -1,12 +1,12 @@
 from __future__ import unicode_literals
 import getpass
 
-DEFAULTBRANCH = "development"
+DEFAULT_BRANCH = "development"
 GITREPOS = {}
 
 GITREPOS["builders_extra"] = [
     "https://github.com/threefoldtech/jumpscaleX_builders",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "JumpscaleBuildersExtra",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersExtra",
 ]
@@ -14,13 +14,13 @@ GITREPOS["builders_extra"] = [
 
 GITREPOS["installer"] = [
     "https://github.com/threefoldtech/jumpscaleX_core",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "install",  # directory in the git repo
     "{DIR_BASE}/installer",
 ]
 GITREPOS["core"] = [
     "https://github.com/threefoldtech/jumpscaleX_core",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "JumpscaleCore",
     "{DIR_BASE}/lib/jumpscale/Jumpscale",
 ]
@@ -28,14 +28,14 @@ GITREPOS["home"] = ["https://github.com/threefoldtech/home", "master", "", "{DIR
 
 GITREPOS["builders"] = [
     "https://github.com/threefoldtech/jumpscaleX_builders",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "JumpscaleBuilders",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuilders",
 ]
 
 GITREPOS["builders_community"] = [
     "https://github.com/threefoldtech/jumpscaleX_builders",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "JumpscaleBuildersCommunity",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersCommunity",
 ]
@@ -43,33 +43,33 @@ GITREPOS["builders_community"] = [
 
 GITREPOS["libs_extra"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs_extra",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "JumpscaleLibsExtra",
     "{DIR_BASE}/lib/jumpscale/JumpscaleLibsExtra",
 ]
 GITREPOS["libs"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "JumpscaleLibs",
     "{DIR_BASE}/lib/jumpscale/JumpscaleLibs",
 ]
 GITREPOS["threebot"] = [
     "https://github.com/threefoldtech/jumpscaleX_threebot",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "ThreeBotPackages",
     "{DIR_BASE}/lib/jumpscale/threebot_packages",
 ]
 
 GITREPOS["tutorials"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "tutorials",
     "{DIR_BASE}/lib/jumpscale/tutorials",
 ]
 
 GITREPOS["kosmos"] = [
     "https://github.com/threefoldtech/jumpscaleX_threebot",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "kosmos",
     "{DIR_BASE}/lib/jumpscale/kosmos",
 ]
@@ -2569,7 +2569,7 @@ class Tools:
 
         :param repo:
         :param account:
-        :param branch: falls back to the default branch on MyEnv.DEFAULTBRANCH
+        :param branch: falls back to the default branch on MyEnv.DEFAULT_BRANCH
                     if needed, when directory exists and pull is False will not check branch
         :param pull:
         :param reset:
@@ -2853,7 +2853,7 @@ class MyEnv_:
         :param configdir: default /sandbox/cfg, then ~/sandbox/cfg if not exists
         :return:
         """
-        self.DEFAULTBRANCH = DEFAULTBRANCH
+        self.DEFAULT_BRANCH = DEFAULT_BRANCH
         self.readonly = False  # if readonly will not manipulate local filesystem appart from /tmp
         self.sandbox_python_active = False  # means we have a sandboxed environment where python3 works in
         self.sandbox_lua_active = False  # same for lua
