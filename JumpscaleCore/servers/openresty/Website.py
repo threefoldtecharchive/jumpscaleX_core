@@ -43,13 +43,6 @@ class Website(j.baseclasses.factory_data):
       include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
 
     }
-    server {
-      listen 80;
-      location /.well-known/acme-challenge/ {
-        content_by_lua_block {
-            auto_ssl:challenge_server()
-        }
-    }
     {% else %}
     server {
       {% if website.domain %}
@@ -59,8 +52,8 @@ class Website(j.baseclasses.factory_data):
 
       default_type text/html;
       include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
-
     }
+    
     {% endif %}           
 
         """

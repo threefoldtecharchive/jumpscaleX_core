@@ -86,6 +86,34 @@ class OpenRestyServer(j.baseclasses.factory_data):
 
             self.save()
 
+    def _letsencrypt_configure(self):
+        """
+        add location required by let's encrypt to any website listening on port 80
+        """
+
+        ssl = False
+        listening_80 = None
+        for website in self.websites.find():
+            if website.ssl:
+                ssl = True
+            if website.port == 80:
+                listening_80 = website
+
+        if not ssl:
+            return
+
+        if not listening_80:
+            listening_80 = self.websites.new("listening_80")
+            listening_80.port = 80
+            listening_80.ssl = False
+
+        listening_80.configure()
+        location_dir = f"{listening_80.path_cfg_dir}/{listening_80.name}_locations"
+        j.sal.fs.createDir(location_dir)
+        j.sal.fs.copyFile(
+            f"{self._dirpath}/templates/letsencrypt_challenge_location.conf", f"{location_dir}/letsencrypt.conf"
+        )
+
     @property
     def startup_cmd(self):
         """
@@ -113,6 +141,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
         """
         self.install(reset=reset)
         self.configure()
+        self._letsencrypt_configure()
         # compile all 1 time to lua, can do this at each start
         j.sal.process.execute("cd %s;moonc ." % self._web_path)
         if reset:
