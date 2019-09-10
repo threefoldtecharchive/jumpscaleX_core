@@ -5,7 +5,7 @@ import nacl
 from Jumpscale import j
 from redis.connection import ConnectionError
 
-JSConfigBase = j.baseclasses.object_config
+JSConfigBase = j.baseclasses.factory_data
 
 
 class GedisClientActors(j.baseclasses.object):
