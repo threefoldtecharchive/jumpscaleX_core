@@ -203,7 +203,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         count = 0
         errors = 0
         res = []
-        for w in self.find():
+        for w in self.workers.find():
             if w.state in ["NEW"] and w.last_update < j.data.time.epoch - 20:
                 # means error should not be there
                 w.state = "ERROR"
@@ -455,7 +455,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             self._mainloop_gipc.kill()
 
         if not reset:
-            for w in self.find(reload=True):
+            for w in self.workers.find(reload=True):
                 # look for the workers and ask for halt in nice way
                 w.stop(hard=reset)
 
@@ -485,10 +485,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             self.model_action.destroy()
             self.jobs._model.destroy()
             self.workers._model.destroy()
+            self.scheduled_ids = []
             # delete the queue
             while self.queue_jobs_start.get_nowait() != None:
-                pass
-            while self.queue_return.get_nowait() != None:
                 pass
 
             self._init_ = False

@@ -137,7 +137,7 @@ class MyJob(j.baseclasses.object_config):
                 j.core.tools.log2stdout(self.error)
             if die:
                 raise j.exceptions.Base(f"job failed: {self.id}", data=self)
-            return False
+            return True
         return True
 
     @property
