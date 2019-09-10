@@ -19,7 +19,6 @@ class Website(j.baseclasses.factory_data):
         @url = jumpscale.openresty.website
         name* = (S)
         port = 80 (I)
-        port_ssl = 443 (I)
         ssl = True (B)
         domain = ""
         path = ""
@@ -33,7 +32,7 @@ class Website(j.baseclasses.factory_data):
       {% if website.domain %}
       server_name ~^(www\.)?{{website.domain}}$;
       {% endif %}
-      listen {{website.port_ssl}} ssl;
+      listen {{website.port}} ssl;
       ssl_certificate_by_lua_block {
         auto_ssl:ssl_certificate()
       }
@@ -44,8 +43,14 @@ class Website(j.baseclasses.factory_data):
       include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
 
     }
-    {% endif %}
-    {% if website.port %}
+    server {
+      listen 80;
+      location /.well-known/acme-challenge/ {
+        content_by_lua_block {
+            auto_ssl:challenge_server()
+        }
+    }
+    {% else %}
     server {
       {% if website.domain %}
       server_name ~^(www\.)?{{website.domain}}$;
