@@ -28,44 +28,28 @@ class Website(j.baseclasses.factory_data):
 
     CONFIG = """
         
-        {% if website.ssl %}
-        server {
-          {% if website.domain %}
-          server_name ~^(www\.)?{{website.domain}}$;
-          {% endif %}
-          listen {{website.port_ssl}} ssl;
-          ssl_certificate_by_lua_block {
-            auto_ssl:ssl_certificate()
-          }
-          ssl_certificate /sandbox/cfg/ssl/resty-auto-ssl-fallback.crt;
-          ssl_certificate_key /sandbox/cfg/ssl/resty-auto-ssl-fallback.key;
-          default_type text/html;
-          
-          include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
-    
-        }
-    
-        #also used by letsencrypt
-        server {
-          listen 127.0.0.1:8999;
-          client_body_buffer_size 128k;
-          client_max_body_size 128k;
-    
-          location / {
-            content_by_lua_block {
-              auto_ssl:hook_server()
-            }
-          }
-        }
-    
-    
-        server {
-          listen {{website.port}} ssl;    
-          include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
-        }     
-        
-    {% else %}
+    {% if website.ssl %}
     server {
+      {% if website.domain %}
+      server_name ~^(www\.)?{{website.domain}}$;
+      {% endif %}
+      listen {{website.port_ssl}} ssl;
+      ssl_certificate_by_lua_block {
+        auto_ssl:ssl_certificate()
+      }
+      ssl_certificate /sandbox/cfg/ssl/resty-auto-ssl-fallback.crt;
+      ssl_certificate_key /sandbox/cfg/ssl/resty-auto-ssl-fallback.key;
+      default_type text/html;
+      
+      include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
+
+    }
+    {% endif %}
+    {% if website.port %}
+    server {
+      {% if website.domain %}
+      server_name ~^(www\.)?{{website.domain}}$;
+      {% endif %}
       listen {{website.port}};
 
       default_type text/html;

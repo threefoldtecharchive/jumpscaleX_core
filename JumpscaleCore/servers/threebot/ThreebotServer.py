@@ -75,13 +75,19 @@ class ThreeBotServer(j.baseclasses.object_config):
         creates reverse proxy for ports
         :return:
         """
-        website = self.openresty_server.websites.get(f"{self.name}_websites")
-        website.ssl = scheme_source == "https"
-        website.port = port_source
+        website = self.openresty_server.websites.get(f"{name}_websites")
+        if scheme_source == "https":
+            website.ssl = True
+            website.port = None
+            website.port_ssl = port_source
+        else:
+            website.ssl = False
+            website.port = port_source
+            website.port_ssl = None
         locations = website.locations.get(name)
         proxy_location = locations.locations_proxy.new()
         proxy_location.name = name
-        proxy_location.path_url = ""
+        proxy_location.path_url = "/"
         proxy_location.ipaddr_dest = "0.0.0.0"
         proxy_location.port_dest = port_dest
         proxy_location.scheme = scheme_dest
@@ -105,6 +111,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             # create reverse proxies for websocket and bottle
             self._proxy_create("bottle_proxy", 4442, 4443)
             self._proxy_create("gedis_proxy", 4444, 9999)
+            # self._proxy_create("openresty", 80, 443)
 
     def start(self, background=False, web=False, ssl=False):
         """
