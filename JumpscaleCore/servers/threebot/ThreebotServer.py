@@ -70,7 +70,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             )
         return self._zdb
 
-    def _proxy_create(self, name, port_source, port_dest, scheme_source="https", scheme_dest="http"):
+    def _proxy_create(self, name, port_source, port_dest, scheme_source="https", scheme_dest="http", type="http"):
         """
         creates reverse proxy for ports
         :return:
@@ -84,6 +84,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         proxy_location.path_url = "/"
         proxy_location.ipaddr_dest = "0.0.0.0"
         proxy_location.port_dest = port_dest
+        proxy_location.type = type
         proxy_location.scheme = scheme_dest
         locations.configure()
         website.configure()
@@ -104,8 +105,8 @@ class ThreeBotServer(j.baseclasses.object_config):
         if ssl:
             # create reverse proxies for websocket and bottle
             self._proxy_create("bottle_proxy", 4442, 4443)
-            self._proxy_create("gedis_proxy", 4444, 9999)
-            # self._proxy_create("openresty", 80, 443)
+            self._proxy_create("gedis_proxy", 4444, 9999, type="websocket")
+            self._proxy_create("openresty", 443, 80)
 
     def start(self, background=False, web=False, ssl=False):
         """
