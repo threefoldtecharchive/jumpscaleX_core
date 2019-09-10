@@ -1217,7 +1217,7 @@ class SystemFS(JSBASE, TESTTOOLS):
         self._log_debug("Unlink file with path: %s" % filename, _levelup=3)
         os.unlink(filename)
 
-    @path_check(filename={"required", "replace", "exists", "file"})
+    @path_check(filename={"required", "replace", "exists"})
     def unlink(self, filename):
         """Remove the given file if it's a file or a symlink
 
@@ -1683,10 +1683,7 @@ class SystemFS(JSBASE, TESTTOOLS):
                 self._log_debug("fs.tar: add file %s to tar" % path)
                 # print "fstar: add file %s to tar" % path
                 if not (j.core.platformtype.myplatform.platform_is_windows and j.sal.windows.checkFileToIgnore(path)):
-                    if self.isFile(path) or self.isLink(path):
-                        tarfile.add(path, destpath)
-                    else:
-                        raise j.exceptions.RuntimeError("Cannot add file %s to destpath" % destpath)
+                    tarfile.add(path, destpath)
 
             params = {}
             params["t"] = t
