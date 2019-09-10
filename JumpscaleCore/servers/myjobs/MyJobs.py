@@ -58,6 +58,7 @@ class MyJob(j.baseclasses.object_config):
                 x.append(item)
         return self._filter(filter=filter, llist=x, nameonly=False)
 
+<<<<<<< HEAD
         @property
     def result(self):
         if self.result_json:
@@ -70,6 +71,8 @@ class MyJob(j.baseclasses.object_config):
     #     j.shell()
     #     self.result_json = j.data.serializers.json.dumps(v)
 
+=======
+>>>>>>> Make it possible to call tests by nr
     def process_code(self, method):
         code = inspect.getsource(method)
         code = j.core.text.strip(code)
