@@ -79,9 +79,10 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
 
         raise j.exceptions.Input("could not find 3bot: user_id:{user_id} name:{name}")
 
-    def _payload_check(self, name=None, email=None, ipaddr="", description="", pubkey_hex=None):
+    def _payload_check(self, id=None, name=None, email=None, ipaddr="", description="", pubkey_hex=None):
         assert name
         assert email
+        assert id
 
         if isinstance(pubkey_hex, bytes):
             pubkey_hex = pubkey_hex.decode()
@@ -93,6 +94,7 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         n = j.data.nacl.default
 
         buffer = BytesIO()
+        buffer.write(str(id).encode())
         buffer.write(name.encode())
         buffer.write(email.encode())
         buffer.write(ipaddr.encode())
@@ -110,11 +112,39 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
 
         return signature_hex
 
-    def threebot_register(self, name, email, ipaddr="", description="", pubkey=None):
+    def threebot_bcdb_wallet_create(self):
+        """
+
+        the threebot will create a wallet for you as a user and you can leave money on there to be used for
+        paying services on the threefold network
+
+        if a wallet stays empty during 1 day it will be removed automatically
+
+        :return: a TFT wallet address
+        """
+        # TODO: needs to be implemented
+        return ""
+
+    def threebot_register_name(self, name, tft_transaction_id, sender_signature_hex):
+        """
+
+        is the first step of a registration, this is the step where money is involved.
+        without enough funding it won't happen. The cost is 20 TFT today to register a name.
+
+        :param: name you want to register can eb $name.$extension of $name if no extension will be $name.3bot
+        :param: the id of the transacto
+        :param:
+
+        :return:
+        """
+        self._log_info("register step1: for 3bot name: %s" % name)
+        cl = self.explorer
+        cl.ping()
+
+    def threebot_register(self, name, email, ipaddr="", description=""):
         self._log_info("register: {name} {email} {ipaddr}" % locals())
         n = j.data.nacl.default
-        if not pubkey:
-            pubkey = n.verify_key.encode()
+        pubkey = n.verify_key.encode()
         self._log(pubkey)
 
         cl = self.explorer
