@@ -103,20 +103,7 @@ class MyJob(j.baseclasses.object_config):
         """
         if load:
             self.load()
-        if self.time_stop == 0:
-            if self.time_start + self.timeout > j.data.time.epoch:
-                self.time_stop = j.data.time.epoch
-                # means we have timeout
-                self.error_cat = "TIMEOUT"
-                self.save()
-                if die:
-                    raise j.exceptions.Timeout(f"Job timed out: {self.id}")
-            else:
-                # nothing wrong found, can return
-                return False
-
         if self.state == "ERROR":
-            self.time_stop = j.data.time.epoch
             if self.error_cat == "NA":
                 self.error_cat = "ERROR"
             self.save()
@@ -125,6 +112,16 @@ class MyJob(j.baseclasses.object_config):
             if die:
                 raise j.exceptions.Base(f"job failed: {self.id}", data=self)
             return True
+        if self.time_stop == 0:
+            if self.time_start + self.timeout > j.data.time.epoch:
+                # means we have timeout
+                self.error_cat = "TIMEOUT"
+                self.save()
+                if die:
+                    raise j.exceptions.Timeout(f"Job timed out: {self.id}")
+            else:
+                # nothing wrong found, can return
+                return False
         return True
 
     @property

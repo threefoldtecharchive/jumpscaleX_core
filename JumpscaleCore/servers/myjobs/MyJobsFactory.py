@@ -482,8 +482,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         if reset:
             self.model_action.destroy()
-            self.jobs._model.destroy()
-            self.workers._model.destroy()
+            self.jobs.reset()
+            self.workers.reset()
             self.scheduled_ids = []
             # delete the queue
             while self.queue_jobs_start.get_nowait() != None:

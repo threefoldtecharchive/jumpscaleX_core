@@ -200,14 +200,11 @@ class RedisServer(j.baseclasses.object):
             # If we have a url we should be able to get the corresponding model if we already have seen that model
             # otherwise we leave the model to an empty string because it is tested further on to know that we have to set
             # this schema
-            for i in list(self.bcdb.meta._data.schemas):
-
-                if url == i.url:
-                    m = self.bcdb.model_get(url=i.url)
-                elif url == i.md5:
-                    m = self.bcdb.model_get(url=i.url)
-                elif url == str(i.sid):
-                    m = self.bcdb.model_get(url=i.url)
+            for schema in self.bcdb.meta.schema_dicts:
+                if url == schema["url"]:
+                    m = self.bcdb.model_get(url=schema["url"])
+                elif url == schema["md5"]:
+                    m = self.bcdb.model_get(url=schema["url"])
 
         return (cat, url, key, m)
 
@@ -318,7 +315,6 @@ class RedisServer(j.baseclasses.object):
         return urls
 
     def hscan(self, response, key, startid, count=10000):
-
         _, _, _, model = self._split(key)
         # objs = model.get_all()
         res = []
