@@ -4,7 +4,6 @@ JSBASE = j.baseclasses.object
 
 
 class base(JSBASE):
-
     def _init(self, **kwargs):
         self.server = kwargs["gedis_server"]
         self.format = "json"
@@ -29,7 +28,7 @@ class base(JSBASE):
         nacl = j.data.nacl.default
         out.current_time = str(j.data.time.epoch)
         out.current_time_signed = nacl.sign(out.current_time.encode())
-        out.server_id = j.core.myenv.config['THREEBOT_ID']
+        out.server_id = j.core.myenv.config["THREEBOT_ID"]
         return self._return_format(out)
 
     def phonebook_get(self, threebot_id, schema_out):
@@ -53,5 +52,4 @@ class base(JSBASE):
         out = client.actors.phonebook.get(threebot_id)
         return self._return_format(out)
 
-    #def authorize(self, threebot_id, signature):
-
+    # def authorize(self, threebot_id, signature):

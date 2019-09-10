@@ -272,14 +272,15 @@ class MyWorkerProcess(j.baseclasses.object):
                             if isinstance(e, gevent.Timeout):
                                 msg = "time out"
                                 e = j.exceptions.Base(msg)
+                                job.error_cat = "TIMEOUT"
                             else:
                                 msg = "cannot execute action"
-                                job.time_stop = j.data.time.epoch
                             logdict = j.core.tools.log(
                                 tb=tb, exception=e, msg=msg, data=action.code, stdout=self.showout
                             )
-                            job.error = logdict
                             job.state = "ERROR"
+                            job.time_stop = j.data.time.epoch
+                            job.error = logdict
                             job.save()
 
                             if self.debug:
@@ -290,7 +291,7 @@ class MyWorkerProcess(j.baseclasses.object):
                             continue
 
                         try:
-                            job.result_json = j.data.serializers.json.dumps(res)
+                            job.result = j.data.serializers.json.dumps(res)
                         except Exception as e:
                             e.message_pub = "could not json serialize result of job"
                             try:

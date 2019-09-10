@@ -15,7 +15,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
     def _init(self, **kwargs):
         self.queue_jobs_start = j.clients.redis.queue_get(redisclient=j.core.db, key="queue:jobs:start")
-        self.queue_return = j.clients.redis.queue_get(redisclient=j.core.db, key="queue:jobs:return")
 
         self._workers_gipc = {}
         self._workers_gipc_nr_min = 1
@@ -170,7 +169,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             self._mainloop_gipc = gevent.spawn(self._main_loop_subprocess)
         else:
             for i in range(nr_fixed_workers):
-                self.workers_subprocess_start(nr=i, debug=debug)
+                self.worker_subprocess_start(nr=i, debug=debug)
 
     def workers_check(self, kill_workers_in_error=True):
         """
@@ -202,7 +201,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         count = 0
         errors = 0
         res = []
-        for w in self.find():
+        for w in self.workers.find():
             if w.state in ["NEW"] and w.last_update < j.data.time.epoch - 20:
                 # means error should not be there
                 w.state = "ERROR"
@@ -454,7 +453,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             self._mainloop_gipc.kill()
 
         if not reset:
-            for w in self.find(reload=True):
+            for w in self.workers.find(reload=True):
                 # look for the workers and ask for halt in nice way
                 w.stop(hard=reset)
 
@@ -470,7 +469,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             if gproc.exitcode != None:
                 continue
 
-            w = self.workers.get(wid)
+            w = self.workers.get(id=wid)
 
             job_running = w.current_job != 2147483647
 
@@ -482,12 +481,11 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         if reset:
             self.model_action.destroy()
-            self.jobs._model.destroy()
-            self.workers._model.destroy()
+            self.jobs.reset()
+            self.workers.reset()
+            self.scheduled_ids = []
             # delete the queue
             while self.queue_jobs_start.get_nowait() != None:
-                pass
-            while self.queue_return.get_nowait() != None:
                 pass
 
             self._init_ = False
@@ -496,7 +494,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         # kill leftovers from last time, if any
         self.stop(graceful=False, reset=True)
         assert self.queue_jobs_start.qsize() == 0
-        assert self.queue_return.qsize() == 0
 
     def check_all(self, die=True):
         for job in self.find(state="NEW"):

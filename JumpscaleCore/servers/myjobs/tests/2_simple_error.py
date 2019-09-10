@@ -25,7 +25,7 @@ def main(self):
     ##there should be job in errorstate
 
     try:
-        res = self.results()
+        self.results()
     except Exception as e:
         error = True
 
@@ -38,11 +38,10 @@ def main(self):
 
     self.worker_inprocess_start()
 
-    res = self.results(die=False)
+    jobs = {job.id: job for job in self.wait(die=False)}
+    jobs[job_id].error["traceback"]
 
-    res[job_id].error["traceback"]
-
-    assert len(res[job_id].error["traceback"]) > 0
+    assert len(jobs[job_id].error["traceback"]) > 0
 
     # print(self.results([job]))
 

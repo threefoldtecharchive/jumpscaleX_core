@@ -35,9 +35,8 @@ error_cat** = "NA,TIMEOUT,CRASH,HALTED"  (E)
 timeout = 0
 action_id** = 0 (I)
 kwargs = (dict)
-result_json = "" (S)
+result = "" (json)
 error = (dict)
-return_queues = (LS)
 die = false (B)
 #will not execute this one before others done
 dependencies = (LI)

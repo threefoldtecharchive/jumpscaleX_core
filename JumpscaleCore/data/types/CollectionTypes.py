@@ -4,7 +4,7 @@ from Jumpscale import j
 
 
 import struct
-from .TypeBaseClasses import *
+from .TypeBaseClasses import TypeBaseClassUnserialized
 
 
 class JSON(TypeBaseClassUnserialized):
@@ -37,6 +37,9 @@ class JSON(TypeBaseClassUnserialized):
         except j.exceptions.Value:
             return False
 
+    def _default_get(self):
+        return None
+
     def clean(self, v=""):
         """
         returns to a dict
@@ -52,7 +55,7 @@ class JSON(TypeBaseClassUnserialized):
                 v = j.data.serializers.json.loads(v)
             except j.exceptions.Value:
                 pass
-        elif isinstance(v, set) or isinstance(v, list):
+        elif isinstance(v, (set, list, int, float)):
             pass
         elif isinstance(v, j.data.schema._JSXObjectClass):
             v = v._ddict
