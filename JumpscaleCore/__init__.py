@@ -285,13 +285,6 @@ if not os.path.exists(j.core.application._lib_generation_path):
     j.core.jsgenerator.report()
     generated = True
 
-ipath = j.core.tools.text_replace("{DIR_BASE}/lib/jumpscale/Jumpscale")
-if ipath not in sys.path:
-    sys.path.append(ipath)
-
-ipath = j.core.tools.text_replace("{DIR_BASE}/lib/jumpscale")
-if ipath not in sys.path:
-    sys.path.append(ipath)
 
 import jumpscale_generated
 
