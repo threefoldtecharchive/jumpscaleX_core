@@ -65,7 +65,7 @@ class {{BASENAME}}(BCDBModelIndex):
         {%- for field in index.fields %}
         {%- if field.jumpscaletype.NAME == "numeric" %}
         dd["{{field.name}}"] = obj.{{field.name}}_usd
-        query.append((self.sql.{{field.name}} == obj.{{field.name}}))
+        query.append((self.sql.{{field.name}} == obj.{{field.name}}_usd))
         {%- else %}
         dd["{{field.name}}"] = obj.{{field.name}}
         query.append((self.sql.{{field.name}} == obj.{{field.name}}))
