@@ -16,7 +16,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
     def _init(self, **kwargs):
         self.queue_jobs_start = j.clients.redis.queue_get(redisclient=j.core.db, key="queue:jobs:start")
-        self.queue_return = j.clients.redis.queue_get(redisclient=j.core.db, key="queue:jobs:return")
 
         self._workers_gipc = {}
         self._workers_gipc_nr_min = 1
@@ -496,7 +495,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         # kill leftovers from last time, if any
         self.stop(graceful=False, reset=True)
         assert self.queue_jobs_start.qsize() == 0
-        assert self.queue_return.qsize() == 0
 
     def check_all(self, die=True):
         for job in self.find(state="NEW"):

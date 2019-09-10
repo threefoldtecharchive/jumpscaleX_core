@@ -14,6 +14,7 @@ def main(self, reset=True, count=20):
         gevent.sleep(1)
         return "OK"
 
+    j.servers.myjobs.start()
     job_sch = j.servers.myjobs.schedule(wait_1sec)
     # just to have 1
 
@@ -21,6 +22,8 @@ def main(self, reset=True, count=20):
 
     # lets now delete and check the index is empty
     j.servers.myjobs.delete()
+    # we also need to clear the internal scheduled_ids
+    j.servers.myjobs.scheduled_ids = []
 
     # get the sqlite peewee model we can work with to query
     Jobs = j.servers.myjobs.jobs._model.index.sql
@@ -29,7 +32,6 @@ def main(self, reset=True, count=20):
     assert len([(item.id) for item in Jobs.select()]) == 0
 
     ids = []
-    self._data_process_untill_empty()
     for x in range(count):
         job_sch = j.servers.myjobs.schedule(wait_1sec)
         ids.append(job_sch.id)
@@ -55,8 +57,6 @@ def main(self, reset=True, count=20):
     assert job_sch._data._autosave == True
     r = [(item.id, item.state) for item in Jobs.select().where(Jobs.state == "NEW")]
     assert len(r) == count
-
-    j.shell()
 
     self.workers_tmux_start(4)
 

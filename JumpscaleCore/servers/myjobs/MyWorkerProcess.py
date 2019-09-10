@@ -290,7 +290,7 @@ class MyWorkerProcess(j.baseclasses.object):
                             continue
 
                         try:
-                            job.result_json = j.data.serializers.json.dumps(res)
+                            job.result = j.data.serializers.json.dumps(res)
                         except Exception as e:
                             e.message_pub = "could not json serialize result of job"
                             try:
