@@ -1,8 +1,11 @@
 import inspect
 import pudb
+import six
+import sys
 import time
 import traceback
 
+from functools import partial
 from prompt_toolkit.application import get_app
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
@@ -15,6 +18,7 @@ from prompt_toolkit.layout.controls import BufferControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.processors import HighlightIncrementalSearchProcessor, Processor, Transformation
 from prompt_toolkit.lexers import PygmentsLexer
+from prompt_toolkit.shortcuts import print_formatted_text
 from ptpython.filters import ShowDocstring, PythonInputFilter
 from ptpython.prompt_style import PromptStyle
 from ptpython.utils import get_jedi_script_from_document
@@ -153,6 +157,31 @@ def get_doc_string(tbc, locals_, globals_):
     if not signature:
         return doc
     return "\n\n".join([signature, doc])
+
+
+def patched_handle_exception(self, e):
+    j = KosmosShellConfig.j
+    output = self.app.output
+
+    # Instead of just calling ``traceback.format_exc``, we take the
+    # traceback and skip the bottom calls of this framework.
+    t, v, tb = sys.exc_info()
+
+    # Required for pdb.post_mortem() to work.
+    sys.last_type, sys.last_value, sys.last_traceback = t, v, tb
+
+    # loop until getting actual traceback
+    last_stdin_tb = tb
+    while tb:
+        if tb.tb_frame.f_code.co_filename == "<stdin>":
+            last_stdin_tb = tb
+        tb = tb.tb_next
+
+    formatted_tb = j.core.tools.traceback_format(last_stdin_tb)
+    print_formatted_text(ANSI(formatted_tb))
+
+    output.write("%s\n" % e)
+    output.flush()
 
 
 class LogPane:
@@ -409,6 +438,7 @@ def ptconfig(repl):
         def out_prompt(self):
             return []
 
+    repl._handle_exception = partial(patched_handle_exception, repl)
     repl.all_prompt_styles["custom"] = CustomPrompt()
     repl.prompt_style = "custom"
 
