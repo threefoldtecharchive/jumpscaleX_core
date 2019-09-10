@@ -22,6 +22,7 @@ from Jumpscale import j
 import operator
 from functools import reduce
 from Jumpscale.data.bcdb.BCDBModelIndex import BCDBModelIndex
+
 class {{BASENAME}}(BCDBModelIndex):
 
     {% if index.active %}
@@ -75,8 +76,12 @@ class {{BASENAME}}(BCDBModelIndex):
         dd["nid"] = obj.nid
     
         #TODO: REEM there need to be other ways, why can peewee update when needed
-        self.sql.delete().where(reduce(operator.or_, query)).execute()
-        self.sql.create(**dd)
+        #self.sql.delete().where(reduce(operator.or_, query)).execute()
+        self.sql.replace(**dd).execute()
+        #TODO: if there is other  unique constraint beside ID and we try to force it then 
+        # the replace function will  delete the row where the constraint is and still update the row 
+        # where the id points
+
 
     def _sql_index_delete(self,obj):
         # if not self.sql.select().where(self.sql.id == obj.id).count()==0:
