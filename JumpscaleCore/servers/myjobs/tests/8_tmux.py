@@ -23,7 +23,7 @@ def main(self):
     while not found and j.data.time.epoch < timeend:
         found = [str(i.state) for i in self.workers.find(reload=False)] == ["WAITING", "WAITING"]
         print([str(i.state) for i in self.workers.find(reload=False)])
-        time.sleep(0.1)
+        time.sleep(3)
 
     assert found
     assert [i.nr for i in self.workers.find()] == [1, 2]
@@ -52,7 +52,7 @@ def main(self):
     found = False
     timeend = j.data.time.epoch + 20
     while not found and j.data.time.epoch < timeend:
-        found = self.workers.w1.pid == 0
+        found = self.workers.w1.state == "HALTED"
         time.sleep(0.1)
         self._log("waiting stop:%s" % self.workers.w1.state)
 

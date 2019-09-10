@@ -76,11 +76,6 @@ class MyWorkerProcess(j.baseclasses.object):
         self.model_job.trigger_add(self._job_set)
 
         self.worker_obj = self._worker_get(worker_id)
-        self.worker_obj.state = "new"
-        self.worker_obj.current_job = 2147483647  # means nil
-        self.worker_obj.id = worker_id
-        self.worker_obj.pid = os.getpid()
-        self.worker_obj.save()
 
         self.start()
 
@@ -166,7 +161,8 @@ class MyWorkerProcess(j.baseclasses.object):
         # initial waiting state
         self.worker_obj.last_update = j.data.time.epoch
         self.worker_obj.current_job = 2147483647
-        self.worker_obj.state = "waiting"
+        self.worker_obj.state = "WAITING"
+        self.worker_obj.pid = os.getpid()
         self.worker_obj.save()
         last_info_push = j.data.time.epoch
         while True:
