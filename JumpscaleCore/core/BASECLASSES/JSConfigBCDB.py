@@ -170,7 +170,7 @@ class JSConfigBCDB(JSConfigBCDBBase):
 
     def __repr__(self):
         out = "{BLUE}# JSXOBJ:{RESET}\n"
-        print(j.core.tools.text_replace(out, check_no_args_left=False).rstrip())
+        print(j.core.tools.text_replace(out, die_if_args_left=False).rstrip())
         return self._data.__repr__()
         #
         # out = "{YELLOW}## JSXOBJ: %s{RESET}\n\n" % (self.__class__._classname,)
@@ -205,7 +205,7 @@ class JSConfigBCDB(JSConfigBCDBBase):
         #
         # out += "{RESET}"
         #
-        # out = j.core.tools.text_replace(out, check_no_args_left=False)
+        # out = j.core.tools.text_replace(out, die_if_args_left=False)
         # print(out)
         #
         # # TODO: *1 dirty hack, the ansi codes are not printed, need to check why

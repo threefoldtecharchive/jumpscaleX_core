@@ -9,7 +9,6 @@ from .MyWorker import MyWorkers
 from Jumpscale.data.bcdb.connectors.redis.RedisServer import RedisServer
 
 
-
 class MyJobsFactory(j.baseclasses.factory_testtools):
     __jslocation__ = "j.servers.myjobs"
     _CHILDCLASSES = [MyWorkers, MyJobs]
@@ -546,7 +545,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                     if job.check_ready(die=die):
                         runningjobs.remove(job)
             return jobs
-
 
     def results(self, ids=None, timeout=100, die=True):
         jobs = self.wait(ids=ids, timeout=timeout, die=die)

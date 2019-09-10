@@ -7,6 +7,7 @@ import gevent
 import os
 import time
 
+
 def deadline(timeout, *args):
     def decorate(f):
         def new_f(*args, **kwargs):
@@ -66,8 +67,8 @@ class MyWorkerProcess(j.baseclasses.object):
         if not self.onetime:
             # if not onetime then will send all to queue which will be processed on parent process (the myjobs manager)
             # makes sure that we cannot start by coincidence the data processing loop
-            #TODO: need to check this in the processing loop that this is not True
-            j.servers.myjobs._i_am_worker =   True
+            # TODO: need to check this in the processing loop that this is not True
+            j.servers.myjobs._i_am_worker = True
             self.model_job.nosave = True
             self.model_worker.nosave = True
 
@@ -137,21 +138,20 @@ class MyWorkerProcess(j.baseclasses.object):
             # call through redis client the local BCDB
             # get data as json
             # use model_schema
-            #if exists put on self.worker_obj & return this one
+            # if exists put on self.worker_obj & return this one
             # if dont exists, quit
 
     def _worker_set(self, obj, action="save", propertyname=None, **kwargs):
         if action == "save":
             self._redis_set(obj)
             # call through redis client the local BCDB
-            #get data as json (from _data) and use redis client to set to server
+            # get data as json (from _data) and use redis client to set to server
 
     def _job_set(self, obj, action="save", propertyname=None, **kwargs):
         if action == "save":
             # call through redis client the local BCDB
-            #get data as json (from _data) and use redis client to set to server
+            # get data as json (from _data) and use redis client to set to server
             self._redis_set(obj)
-
 
     ################
 

@@ -129,7 +129,7 @@ class ExecutorInstallers(j.baseclasses.object):
     def jumpscale(self):
         self.executor.execute(
             "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/jsx.py\?$RANDOM > /tmp/jsx"
-            % j.core.myenv.DEFAULTBRANCH
+            % j.core.myenv.DEFAULT_BRANCH
         )
         self.executor.execute("chmod +x /tmp/jsx")
         cmd = "cd /tmp;python3 jsx configure --sshkey %s -s" % j.core.myenv.sshagent.key_default_name
@@ -144,7 +144,7 @@ class ExecutorInstallers(j.baseclasses.object):
     def jumpscale_container(self):
         self.executor.execute(
             "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/jsx.py\?$RANDOM > /tmp/jsx"
-            % j.core.myenv.DEFAULTBRANCH
+            % j.core.myenv.DEFAULT_BRANCH
         )
         self.executor.execute("chmod 777 /tmp/jsx")
         self.executor.execute("/tmp/jsx container_install", interactive=True)

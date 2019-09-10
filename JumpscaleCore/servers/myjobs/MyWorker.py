@@ -7,7 +7,8 @@ import sys
 
 class MyWorker(j.baseclasses.object_config):
     _name = "worker"
-    _SCHEMATEXT =  schemas.worker
+    _SCHEMATEXT = schemas.worker
+
     def _init(self, **kwargs):
         # important to check (at least for now)
         assert self._bcdb.storclient._check_cat == "myjobs"

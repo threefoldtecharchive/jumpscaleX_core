@@ -9,9 +9,7 @@ class MyJob(j.baseclasses.object_config):
     _name = "job"
     _SCHEMATEXT = schemas.job
 
-    def _init(
-        self, method=None, dependencies=None, args_replace=None, **kwargs2
-    ):
+    def _init(self, method=None, dependencies=None, args_replace=None, **kwargs2):
 
         # leave this check for now please
         assert self._bcdb.storclient._check_cat == "myjobs"
@@ -66,7 +64,6 @@ class MyJob(j.baseclasses.object_config):
             return j.data.serializers.json.loads(self.result_json)
         else:
             return self.result_json
-
 
     # @result.setter
     # def result(self, v):

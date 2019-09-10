@@ -1,12 +1,12 @@
 from __future__ import unicode_literals
 import getpass
 
-DEFAULTBRANCH = "development"
+DEFAULT_BRANCH = "development"
 GITREPOS = {}
 
 GITREPOS["builders_extra"] = [
     "https://github.com/threefoldtech/jumpscaleX_builders",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "JumpscaleBuildersExtra",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersExtra",
 ]
@@ -14,13 +14,13 @@ GITREPOS["builders_extra"] = [
 
 GITREPOS["installer"] = [
     "https://github.com/threefoldtech/jumpscaleX_core",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "install",  # directory in the git repo
     "{DIR_BASE}/installer",
 ]
 GITREPOS["core"] = [
     "https://github.com/threefoldtech/jumpscaleX_core",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "JumpscaleCore",
     "{DIR_BASE}/lib/jumpscale/Jumpscale",
 ]
@@ -28,14 +28,14 @@ GITREPOS["home"] = ["https://github.com/threefoldtech/home", "master", "", "{DIR
 
 GITREPOS["builders"] = [
     "https://github.com/threefoldtech/jumpscaleX_builders",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "JumpscaleBuilders",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuilders",
 ]
 
 GITREPOS["builders_community"] = [
     "https://github.com/threefoldtech/jumpscaleX_builders",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "JumpscaleBuildersCommunity",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersCommunity",
 ]
@@ -43,33 +43,33 @@ GITREPOS["builders_community"] = [
 
 GITREPOS["libs_extra"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs_extra",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "JumpscaleLibsExtra",
     "{DIR_BASE}/lib/jumpscale/JumpscaleLibsExtra",
 ]
 GITREPOS["libs"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "JumpscaleLibs",
     "{DIR_BASE}/lib/jumpscale/JumpscaleLibs",
 ]
 GITREPOS["threebot"] = [
     "https://github.com/threefoldtech/jumpscaleX_threebot",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "ThreeBotPackages",
     "{DIR_BASE}/lib/jumpscale/threebot_packages",
 ]
 
 GITREPOS["tutorials"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "tutorials",
     "{DIR_BASE}/lib/jumpscale/tutorials",
 ]
 
 GITREPOS["kosmos"] = [
     "https://github.com/threefoldtech/jumpscaleX_threebot",
-    "%s" % DEFAULTBRANCH,
+    "%s" % DEFAULT_BRANCH,
     "kosmos",
     "{DIR_BASE}/lib/jumpscale/kosmos",
 ]
@@ -781,6 +781,14 @@ class JSExceptions:
         self.RemoteException = RemoteException1
 
 
+from string import Formatter
+
+
+class OurTextFormatter(Formatter):
+    def check_unused_args(self, used_args, args, kwargs):
+        return used_args, args, kwargs
+
+
 class Tools:
 
     _supported_editors = ["micro", "mcedit", "joe", "vim", "vi"]  # DONT DO AS SET  OR ITS SORTED
@@ -795,6 +803,8 @@ class Tools:
     pygments_pylexer = pygments_pylexer
 
     exceptions = JSExceptions()
+
+    formatter = OurTextFormatter()
 
     @staticmethod
     def traceback_list_format(tb):
@@ -1559,7 +1569,7 @@ class Tools:
 
     @staticmethod
     def text_strip(
-        content, ignorecomments=False, args={}, replace=False, executor=None, colors=True, check_no_args_left=False
+        content, ignorecomments=False, args={}, replace=False, executor=None, colors=True, die_if_args_left=False
     ):
         """
         remove all spaces at beginning & end of line when relevant (this to allow easy definition of scripts)
@@ -1600,7 +1610,7 @@ class Tools:
 
         if replace:
             content = Tools.text_replace(
-                content=content, args=args, executor=executor, text_strip=False, check_no_args_left=check_no_args_left
+                content=content, args=args, executor=executor, text_strip=False, die_if_args_left=die_if_args_left
             )
         else:
             if colors and "{" in content:
@@ -1616,8 +1626,9 @@ class Tools:
         executor=None,
         ignorecomments=False,
         text_strip=True,
-        check_no_args_left=False,
+        die_if_args_left=False,
         ignorecolors=False,
+        primitives_only=False,
     ):
         """
 
@@ -1648,17 +1659,22 @@ class Tools:
         if not "{" in content:
             return content
 
-        if ignorecolors:
-            content = Tools.args_replace(content, MyEnv.MYCOLORS_IGNORE)
-
         if executor and executor.config:
-            content2 = Tools.args_replace(content, args, executor.config, MyEnv.MYCOLORS)
+            content2 = Tools.args_replace(
+                content,
+                args_list=(args, executor.config),
+                ignorecolors=ignorecolors,
+                die_if_args_left=die_if_args_left,
+                primitives_only=primitives_only,
+            )
         else:
-            content2 = Tools.args_replace(content, args, MyEnv.config, MyEnv.MYCOLORS)
-
-        if check_no_args_left:
-            if "{" in content:
-                raise Tools.exceptions.Input("{ found in %s" % content2, data=args)
+            content2 = Tools.args_replace(
+                content,
+                args_list=(args, MyEnv.config),
+                ignorecolors=ignorecolors,
+                die_if_args_left=die_if_args_left,
+                primitives_only=primitives_only,
+            )
 
         if text_strip:
             content = Tools.text_strip(content2, ignorecomments=ignorecomments, replace=False)
@@ -1666,90 +1682,130 @@ class Tools:
         return content2
 
     @staticmethod
-    def args_replace(content, primitives_only=False, *args_list):
+    def args_replace(content, args_list=None, primitives_only=False, ignorecolors=False, die_if_args_left=False):
         """
 
         :param content:
-        :param args_list: add all dicts you want to replace
+        :param args: add all dicts you want to replace in a list
         :return:
         """
+
+        # IF YOU TOUCH THIS LET KRISTOF KNOW (despiegk)
+
         assert isinstance(content, str)
-        for replace_args in args_list:
-            if not isinstance(replace_args, dict):
-                raise Tools.exceptions.Input("replace args need to be dict", data=replace_args)
+        assert args_list
+
         if content == "":
             return content
-        args_new = {}
-        for replace_args in args_list:
-            for key, val in replace_args.items():
-                if key not in ["self"]:
+
+        def arg_process(key, val):
+            if key in ["self"]:
+                return None
+            if val == None:
+                return ""
+            if isinstance(val, str):
+                if val.strip().lower() == "none":
+                    return None
+                return val
+            if isinstance(val, bool):
+                if val:
+                    return "1"
+                else:
+                    return "0"
+            if isinstance(val, int) or isinstance(val, float):
+                return val
+            if isinstance(val, list) or isinstance(val, set):
+                out = "["
+                for v in val:
+                    if isinstance(v, str):
+                        v = "'%s'" % v
+                    else:
+                        v = str(v)
+                    out += "%s," % v
+                val = out.rstrip(",") + "]"
+                return val
+            if primitives_only:
+                return None
+            else:
+                return Tools._data_serializer_safe(val)
+
+        def args_combine():
+            args_new = {}
+            for replace_args in args_list:
+                for key, val in replace_args.items():
                     if key not in args_new:
-                        if isinstance(val, list) or isinstance(val, set):
-                            out = "["
-                            for v in val:
-                                if isinstance(v, str):
-                                    v = "'%s'" % v
-                                else:
-                                    v = str(v)
-                                out += "%s," % v
-                            val = out.rstrip(",") + "]"
-                        elif isinstance(val, str):
-                            if val.strip().lower() == "none":
-                                val = None
-                        elif isinstance(val, int) or isinstance(val, float) or isinstance(val, bool):
-                            pass  # otherwise format_map does not work
-                        elif isinstance(val, bool):
-                            if val:
-                                val = "1"
-                            else:
-                                val = "0"
-                        elif val != None:
-                            if primitives_only:
-                                val = None
-                            else:
-                                val = Tools._data_serializer_safe(val)
+                        val = arg_process(key, val)
                         if val:
                             args_new[key] = val
+            return args_new
 
-        def process_line(line, args_new):
-            # IF YOU TOUCH THIS LET KRISTOF KNOW
-            line = line.replace("{}", ">>EMPTYDICT<<")
-            try:
-                line = line.format_map(args_new)
-            except KeyError as e:
-                # means the format map did not work,lets fall back on something more failsafe
-                for arg, val in replace_args.items():
-                    assert arg
-                    line = line.replace("{%s}" % arg, val)
-            except ValueError as e:
-                # means the format map did not work,lets fall back on something more failsafe
-                for arg, val in replace_args.items():
-                    assert arg
-                    line = line.replace("{%s}" % arg, val)
-            except Exception as e:
-                return line
-            line = line.replace(">>EMPTYDICT<<", "{}")
-
+        def process_line_failback(line):
+            args_new = args_combine()
+            # SLOW!!!
+            print("FALLBACK REPLACE:%s" % line)
+            for arg, val in args_new.items():
+                assert arg
+                line = line.replace("{%s}" % arg, val)
             return line
 
-        # print(args_list)
-        # print(args_new)
+        def process_line(line):
+            if line.find("{") == -1:
+                return line
+            emptyone = False
+            if line.find("{}") != -1:
+                emptyone = True
+                line = line.replace("{}", ">>EMPTYDICT<<")
 
-        do = True
-        counter = 1
-        while do and counter < 20:
-            do = False
-            counter += 1
-            for key, val in args_new.items():
-                val = str(val)
-                if "{" in val:
-                    args_new[key] = process_line(val, args_new)
-                    do = True
+            try:
+                items = Tools.formatter.parse(content)
+            except Exception as e:
+                return process_line_failback(line)
+
+            do = {}
+
+            for literal_text, field_name, format_spec, conversion in items:
+                if not field_name:
+                    continue
+                if field_name in MyEnv.MYCOLORS:
+                    if ignorecolors:
+                        do[field_name] = ""
+                    else:
+                        do[field_name] = MyEnv.MYCOLORS[field_name]
+                for args in args_list:
+                    if field_name in args:
+                        do[field_name] = arg_process(field_name, args[field_name])
+                if field_name not in do:
+                    if die_if_args_left:
+                        raise Tools.exceptions.Input("could not find:%s in line:%s" % (field_name, line))
+                    # put back the original
+                    if conversion and format_spec:
+                        do[field_name] = "{%s!%s:%s}" % (field_name, conversion, format_spec)
+                    elif format_spec:
+                        do[field_name] = "{%s:%s}" % (field_name, format_spec)
+                    elif conversion:
+                        do[field_name] = "{%s!%s}" % (field_name, conversion)
+                    else:
+                        do[field_name] = "{%s}" % (field_name)
+
+            try:
+                line = line.format_map(do)
+            except KeyError as e:
+                # means the format map did not work,lets fall back on something more failsafe
+                return process_line_failback(line)
+            except ValueError as e:
+                # means the format map did not work,lets fall back on something more failsafe
+                return process_line_failback(line)
+            except Exception as e:
+                return line
+            if emptyone:
+                line = line.replace(">>EMPTYDICT<<", "{}")
+
+            return line
 
         out = ""
         for line in content.split("\n"):
             if "{" in line:
-                line = process_line(line, args_new)
+                line = process_line(line)
             out += "%s\n" % line
 
         out = out[:-1]  # needs to remove the last one, is because of the split there is no last \n
@@ -1799,9 +1855,7 @@ class Tools:
             C = "{GREEN}{tb_path}{RESET} in {BLUE}{tb_name}{RESET}\n"
             C += "    {GREEN}{tb_lnr}{RESET}    {tb_code}{RESET}"
             if Tools.pygments_formatter:
-                tb_code = Tools.pygments.highlight(
-                    tb_line, Tools.pygments_pylexer, Tools.pygments_formatter
-                ).rstrip()
+                tb_code = Tools.pygments.highlight(tb_line, Tools.pygments_pylexer, Tools.pygments_formatter).rstrip()
             else:
                 tb_code = tb_line
             tbdict = {"tb_path": tb_path, "tb_name": tb_name, "tb_lnr": tb_lnr, "tb_code": tb_code}
@@ -1886,7 +1940,7 @@ class Tools:
                 out += data.rstrip() + "\n"
                 out += Tools.text_replace("-----------------------------\n{RESET}\n")
 
-        msg = Tools.text_replace(LOGFORMAT, args=logdict, check_no_args_left=False).rstrip()
+        msg = Tools.text_replace(LOGFORMAT, args=logdict, die_if_args_left=False).rstrip()
         out += msg
 
         if logdict["level"] > 39:
@@ -1933,7 +1987,7 @@ class Tools:
             content = str(content)
         if args or colors or text_strip:
             content = Tools.text_replace(
-                content, args=args, text_strip=text_strip, ignorecomments=ignorecomments, check_no_args_left=False
+                content, args=args, text_strip=text_strip, ignorecomments=ignorecomments, die_if_args_left=False
             )
             for key, val in MyEnv.MYCOLORS.items():
                 content = content.replace("{%s}" % key, val)
@@ -2041,7 +2095,7 @@ class Tools:
         sudo_remove=False,
         retry=None,
         errormsg=None,
-        check_no_args_left=False,
+        die_if_args_left=False,
     ):
         """
 
@@ -2063,7 +2117,7 @@ class Tools:
         :param sudo_remove:
         :param retry:
         :param errormsg:
-        :param check_no_args_left: it True will search for { if found after replace will die
+        :param die_if_args_left: it True will search for { if found after replace will die
         :return:
         """
 
@@ -2074,7 +2128,7 @@ class Tools:
         if self is None:
             self = MyEnv
         command = Tools.text_strip(command, args=args, replace=replace)
-        if check_no_args_left and "{" in command:
+        if die_if_args_left and "{" in command:
             raise j.exceptions.Input("Found { in %s" % command)
         if sudo_remove:
             command = command.replace("sudo ", "")
@@ -2657,7 +2711,7 @@ class Tools:
 
         :param repo:
         :param account:
-        :param branch: falls back to the default branch on MyEnv.DEFAULTBRANCH
+        :param branch: falls back to the default branch on MyEnv.DEFAULT_BRANCH
                     if needed, when directory exists and pull is False will not check branch
         :param pull:
         :param reset:
@@ -2666,7 +2720,7 @@ class Tools:
 
         def getbranch(args):
             cmd = "cd {REPO_DIR}; git branch | grep \* | cut -d ' ' -f2"
-            rc, stdout, err = Tools.execute(cmd, die=False, args=args, interactive=False, check_no_args_left=True)
+            rc, stdout, err = Tools.execute(cmd, die=False, args=args, interactive=False, die_if_args_left=True)
             if rc > 0:
                 Tools.shell()
             current_branch = stdout.strip()
@@ -2683,7 +2737,7 @@ class Tools:
                 git checkout {BRANCH} -f
                 """
                 rc, out, err = Tools.execute(
-                    script, die=False, args=args, showout=True, interactive=False, check_no_args_left=True
+                    script, die=False, args=args, showout=True, interactive=False, die_if_args_left=True
                 )
                 # if err:
                 #     script = """
@@ -2759,7 +2813,7 @@ class Tools:
                 mkdir -p {ACCOUNT_DIR}
                 """
                 Tools.log("get code [git] (first time): %s" % repo)
-                Tools.execute(C, args=args, showout=False, check_no_args_left=True)
+                Tools.execute(C, args=args, showout=False, die_if_args_left=True)
                 C = """
                 cd {ACCOUNT_DIR}
                 # git clone  --depth 1 {URL} -b {BRANCH}
@@ -2773,7 +2827,7 @@ class Tools:
                     showout=False,
                     retry=4,
                     errormsg="Could not clone %s" % repo_url,
-                    check_no_args_left=True,
+                    die_if_args_left=True,
                 )
 
             else:
@@ -2786,7 +2840,7 @@ class Tools:
                         """
                         Tools.log("get code & ignore changes: %s" % repo)
                         Tools.execute(
-                            C, args=args, retry=1, errormsg="Could not checkout %s" % repo_url, check_no_args_left=True
+                            C, args=args, retry=1, errormsg="Could not checkout %s" % repo_url, die_if_args_left=True
                         )
                         C = """
                         set -x
@@ -2795,7 +2849,7 @@ class Tools:
                         """
                         Tools.log("get code & ignore changes: %s" % repo)
                         Tools.execute(
-                            C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, check_no_args_left=True
+                            C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, die_if_args_left=True
                         )
 
                     elif Tools.code_changed(REPO_DIR):
@@ -2814,7 +2868,7 @@ class Tools:
                         git commit -m "{MESSAGE}"
                         """
                         Tools.log("get code & commit [git]: %s" % repo)
-                        Tools.execute(C, args=args, check_no_args_left=True)
+                        Tools.execute(C, args=args, die_if_args_left=True)
                         C = """
                         set -x
                         cd {REPO_DIR}
@@ -2822,7 +2876,7 @@ class Tools:
                         """
                         Tools.log("get code & commit [git]: %s" % repo)
                         Tools.execute(
-                            C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, check_no_args_left=True
+                            C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, die_if_args_left=True
                         )
 
                     if not checkoutbranch(args, branch):
@@ -2844,7 +2898,7 @@ class Tools:
             curl -L {URL} > download.zip
             """
             Tools.execute(
-                script, args=args, retry=3, errormsg="Cannot download:%s" % args["URL"], check_no_args_left=True
+                script, args=args, retry=3, errormsg="Cannot download:%s" % args["URL"], die_if_args_left=True
             )
             statinfo = os.stat("/tmp/jumpscale/download.zip")
             if statinfo.st_size < 100000:
@@ -2861,7 +2915,7 @@ class Tools:
                 rm -f download.zip
                 """
                 try:
-                    Tools.execute(script, args=args, die=True, check_no_args_left=True)
+                    Tools.execute(script, args=args, die=True, die_if_args_left=True)
                 except Exception as e:
                     Tools.shell()
 
@@ -2957,7 +3011,7 @@ class MyEnv_:
         :param configdir: default /sandbox/cfg, then ~/sandbox/cfg if not exists
         :return:
         """
-        self.DEFAULTBRANCH = DEFAULTBRANCH
+        self.DEFAULT_BRANCH = DEFAULT_BRANCH
         self.readonly = False  # if readonly will not manipulate local filesystem appart from /tmp
         self.sandbox_python_active = False  # means we have a sandboxed environment where python3 works in
         self.sandbox_lua_active = False  # same for lua
@@ -3307,7 +3361,7 @@ class MyEnv_:
             st = os.stat(self.config["DIR_HOME"])
             gid = st.st_gid
             args["GROUPNAME"] = grp.getgrgid(gid)[0]
-            Tools.execute(script, interactive=True, args=args, check_no_args_left=True)
+            Tools.execute(script, interactive=True, args=args, die_if_args_left=True)
 
         self.config_file_path = os.path.join(config["DIR_CFG"], "jumpscale_config.toml")
 
@@ -3595,7 +3649,7 @@ class BaseInstaller:
                         Tools.file_write(env_path, bashprofile)
             else:
                 # if not sandboxed need to remove old python's from bin dir
-                Tools.execute("rm -f {DIR_BASE}/bin/pyth*", check_no_args_left=True)
+                Tools.execute("rm -f {DIR_BASE}/bin/pyth*", die_if_args_left=True)
                 env_path = "%s/%s" % (MyEnv.config["DIR_HOME"], profile_name)
                 if not Tools.exists(env_path):
                     bashprofile = ""
@@ -3624,7 +3678,7 @@ class BaseInstaller:
             mkdir -p var
 
             """
-            Tools.execute(script, interactive=MyEnv.interactive, check_no_args_left=True)
+            Tools.execute(script, interactive=MyEnv.interactive, die_if_args_left=True)
 
         else:
 
@@ -3637,7 +3691,7 @@ class BaseInstaller:
             rsync -ra {DIR_BASE}/code/github/threefoldtech/sandbox_base/base/ {DIR_BASE}/
             mkdir -p root
             """
-            Tools.execute(script, interactive=MyEnv.interactive, check_no_args_left=True)
+            Tools.execute(script, interactive=MyEnv.interactive, die_if_args_left=True)
 
             if MyEnv.platform() == "darwin":
                 reponame = "sandbox_osx"
@@ -3658,7 +3712,7 @@ class BaseInstaller:
             args = {}
             args["REPONAME"] = reponame
 
-            Tools.execute(script, interactive=MyEnv.interactive, args=args, check_no_args_left=True)
+            Tools.execute(script, interactive=MyEnv.interactive, args=args, die_if_args_left=True)
 
             script = """
             set -e
@@ -3666,7 +3720,7 @@ class BaseInstaller:
             source env.sh
             python3 -c 'print("- PYTHON OK, SANDBOX USABLE")'
             """
-            Tools.execute(script, interactive=MyEnv.interactive, check_no_args_left=True)
+            Tools.execute(script, interactive=MyEnv.interactive, die_if_args_left=True)
 
             Tools.log("INSTALL FOR BASE OK")
 
@@ -3687,7 +3741,7 @@ class BaseInstaller:
         mkdir -p {DIR_VAR}/log
 
         """
-        Tools.execute(script, interactive=True, check_no_args_left=True)
+        Tools.execute(script, interactive=True, die_if_args_left=True)
 
         if MyEnv.platform_is_osx:
             OSXInstaller.base()
@@ -4066,7 +4120,7 @@ class JumpscaleInstaller:
         # kosmos --instruct=/tmp/instructions.toml
         kosmos 'j.core.tools.pprint("JumpscaleX init step for nacl (encryption) OK.")'
         """
-        Tools.execute(script, check_no_args_left=True)
+        Tools.execute(script, die_if_args_left=True)
 
     def remove_old_parts(self):
         tofind = ["DigitalMe", "Jumpscale", "ZeroRobot"]
@@ -4159,7 +4213,7 @@ class JumpscaleInstaller:
                 Tools.shell()
                 raise Tools.exceptions.BUG("replace did not work")
             Tools.log(Tools.text_replace("link {GITPATH}/{PATH} {DEST}", args=locals()), data=script)
-            Tools.execute(script, args=locals(), check_no_args_left=True)
+            Tools.execute(script, args=locals(), die_if_args_left=True)
 
     def cmds_link(self):
         _, _, _, _, loc = Tools._code_location_get(repo="jumpscaleX_core/", account="threefoldtech")
@@ -4169,7 +4223,7 @@ class JumpscaleInstaller:
             if not os.path.exists(dest):
                 Tools.link(src2, dest, chmod=770)
         Tools.link("%s/install/jsx.py" % loc, "{DIR_BASE}/bin/jsx", chmod=770)
-        Tools.execute("cd /sandbox;source env.sh;js_init generate", interactive=False, check_no_args_left=True)
+        Tools.execute("cd /sandbox;source env.sh;js_init generate", interactive=False, die_if_args_left=True)
 
 
 class DockerFactory:
@@ -5155,7 +5209,7 @@ class WireGuard:
             AllowedIPs = 10.10.10.0/24
             """
             path = "/tmp/wg0.conf"
-            Tools.file_write(path, Tools.text_replace(C, args=config, check_no_args_left=True))
+            Tools.file_write(path, Tools.text_replace(C, args=config, die_if_args_left=True))
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
             cmd = "wg-quick up %s" % path
             Tools.execute(cmd)

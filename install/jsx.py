@@ -13,15 +13,19 @@ DEFAULT_BRANCH = "development"
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
+DEFAULT_BRANCH = "development"
+
+
 def load_install_tools(branch=None):
     # get current install.py directory
     path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py"
     if not branch:
         branch = DEFAULT_BRANCH
+    # first check on code tools
     if not os.path.exists(path):
         rootdir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(rootdir, "InstallTools.py")
-
+        # now check on path next to jsx
         if not os.path.exists(path) or path.find("/code/") == -1:
             url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py" % branch
 
@@ -234,7 +238,7 @@ def container_install(
         image = "despiegk/3bot"
 
     if not branch:
-        branch = DEFAULT_BRANCH
+        branch = IT.DEFAULT_BRANCH
 
     docker = IT.DockerContainer(name=name, delete=delete, portrange=portrange, image=image)
 
@@ -300,7 +304,7 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
         force = False
 
     if not branch:
-        branch = DEFAULT_BRANCH
+        branch = IT.DEFAULT_BRANCH
 
     installer = IT.JumpscaleInstaller()
     installer.install(sandboxed=False, force=force, gitpull=pull)

@@ -1,4 +1,3 @@
-
 worker = """
 @url = jumpscale.myjobs.worker
 name**= ""
