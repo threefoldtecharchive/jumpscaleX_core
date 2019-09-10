@@ -8,33 +8,27 @@ class EnumerationObj(TypeBaseObjClass):
         convert init value to raw type inside this object
         :return:
         """
-        try:
-            value_id = int(value)
-        except:
-            pass
         if isinstance(value, str):
             if value == "":
                 return 0
             else:
                 value_str = value.upper().strip()
                 if value_str not in self._typebase.values:
-                    return 0
-                return self._typebase.values.index(value_str) + 1
+                    raise j.exceptions.Input("cannot find '%s' in enumeration" % value, data=self._typebase.values)
+                return self._typebase.values.index(value_str)
         elif isinstance(value, int):
-            if value > len(self._typebase.values) + 1:
-                return 0
-            if value == 0:
+            if value < 0:
+                raise j.exceptions.Input("cannot find '%s' in enumeration" % value, data=self._typebase.values)
+            if value + 1 > len(self._typebase.values):
+                raise j.exceptions.Input("cannot find '%s' in enumeration" % value, data=self._typebase.values)
                 return 0
             return value
         else:
             raise j.exceptions.Value("unsupported type for enum, is int or string")
-        raise
 
     @property
     def _string(self):
-        if self._data is 0:
-            return "UNKNOWN"
-        return self._typebase.values[self._data - 1]
+        return self._typebase.values[self._data]
 
     @property
     def _python_code(self):
@@ -74,7 +68,7 @@ class EnumerationObj(TypeBaseObjClass):
 
     def __getattr__(self, item):
         if item in self._typebase.values:
-            self._data = self._typebase.values.index(item) + 1
+            self._data = self._typebase.values.index(item)
             return self
         return self.__getattribute__(item)
 
@@ -110,7 +104,7 @@ class Enumeration(TypeBaseObjFactory):
             raise j.exceptions.Value("input for enum is comma separated str or list")
         self.values = [item.upper().strip() for item in values]
 
-        self._default = 1
+        self._default = 0
 
     def capnp_schema_get(self, name, nr):
         return "%s @%s :UInt8;" % (name, nr)
@@ -138,7 +132,7 @@ class Enumeration(TypeBaseObjFactory):
 
     def __getattr__(self, item):
         if item in self.values:
-            data = self.values.index(item) + 1
+            data = self.values.index(item)
             return self.clean(data)
         return self.__getattribute__(item)
 

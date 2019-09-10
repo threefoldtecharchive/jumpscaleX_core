@@ -58,7 +58,7 @@ class MyJob(j.baseclasses.object_config):
                 x.append(item)
         return self._filter(filter=filter, llist=x, nameonly=False)
 
-    @property
+        @property
     def result(self):
         if self.result_json:
             return j.data.serializers.json.loads(self.result_json)
