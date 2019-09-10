@@ -19,7 +19,6 @@ class Website(j.baseclasses.factory_data):
         @url = jumpscale.openresty.website
         name** = (S)
         port = 80 (I)
-        port_ssl = 443 (I)
         ssl = True (B)
         domain = ""
         path = ""
@@ -28,44 +27,34 @@ class Website(j.baseclasses.factory_data):
 
     CONFIG = """
         
-        {% if website.ssl %}
-        server {
-          {% if website.domain %}
-          server_name ~^(www\.)?{{website.domain}}$;
-          {% endif %}
-          listen {{website.port_ssl}} ssl;
-          ssl_certificate_by_lua_block {
-            auto_ssl:ssl_certificate()
-          }
-          ssl_certificate /sandbox/cfg/ssl/resty-auto-ssl-fallback.crt;
-          ssl_certificate_key /sandbox/cfg/ssl/resty-auto-ssl-fallback.key;
-          default_type text/html;
-          
-          include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
-    
+    {% if website.ssl %}
+    server {
+      {% if website.domain %}
+      server_name ~^(www\.)?{{website.domain}}$;
+      {% endif %}
+      listen {{website.port}} ssl;
+      ssl_certificate_by_lua_block {
+        auto_ssl:ssl_certificate()
+      }
+      ssl_certificate /sandbox/cfg/ssl/resty-auto-ssl-fallback.crt;
+      ssl_certificate_key /sandbox/cfg/ssl/resty-auto-ssl-fallback.key;
+      default_type text/html;
+      
+      include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
+
+    }
+    server {
+      listen 80;
+      location /.well-known/acme-challenge/ {
+        content_by_lua_block {
+            auto_ssl:challenge_server()
         }
-    
-        #also used by letsencrypt
-        server {
-          listen 127.0.0.1:8999;
-          client_body_buffer_size 128k;
-          client_max_body_size 128k;
-    
-          location / {
-            content_by_lua_block {
-              auto_ssl:hook_server()
-            }
-          }
-        }
-    
-    
-        server {
-          listen {{website.port}} ssl;    
-          include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
-        }     
-        
+    }
     {% else %}
     server {
+      {% if website.domain %}
+      server_name ~^(www\.)?{{website.domain}}$;
+      {% endif %}
       listen {{website.port}};
 
       default_type text/html;
