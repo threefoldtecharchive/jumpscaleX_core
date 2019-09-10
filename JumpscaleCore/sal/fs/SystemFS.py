@@ -626,8 +626,11 @@ class SystemFS(JSBASE, TESTTOOLS):
         else:
             priority = 0
         # for consistency reason path should always end with a /
-        if path[len(path) - 1] != "/":
-            path += "/"
+        if len(path) > 0:
+            if path[len(path) - 1] != "/":
+                path += "/"
+        else:
+            path = "/"
         return path, name, extension, priority  # if name =="" then is dir
 
     def getcwd(self):

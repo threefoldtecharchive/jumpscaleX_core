@@ -39,6 +39,7 @@ class GraphQLFactory(JSBASE):
         j.builders.runtimes.python3.pip_package_install("tox")
         j.builders.runtimes.python3.pip_package_install("graphql-ws")
         j.builders.runtimes.python3.pip_package_install("Rx==1.6.0")
+        j.builders.runtimes.python3.pip_package_install("graphql_core<3.0.0a2")
 
     def _server_test_start(self, background=False):
         """
