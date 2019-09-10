@@ -7,7 +7,7 @@ JSConfigClient = j.baseclasses.object_config
 class CorexServer(JSConfigClient):
     _SCHEMATEXT = """
            @url =  jumpscale.servers.corex.1
-           name* = "default" (S)
+           name** = "default" (S)
            port = 1500 (I)
            user = "" (S)
            password = "" (S)

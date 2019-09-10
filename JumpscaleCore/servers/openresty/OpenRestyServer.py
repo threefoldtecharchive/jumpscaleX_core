@@ -17,7 +17,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
     _CHILDCLASSES = [Websites]
     _SCHEMATEXT = """
            @url =  jumpscale.openresty.server.1
-           name* = "default" (S)
+           name** = "default" (S)
            host = "127.0.0.1" (S)
            status = init,installed,ok (E)
            executor = tmux,corex (E)

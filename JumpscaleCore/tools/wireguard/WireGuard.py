@@ -18,7 +18,7 @@ def to_section(section, data):
 class WireGuard(j.baseclasses.object_config):
     _SCHEMATEXT = """
     @url = jumpscale.wireguard.peer.1
-    name* = "main"
+    name** = "main"
     sshclient_name = "" (S)
     key_private_ = "" (S)
     key_public = "" (S) 

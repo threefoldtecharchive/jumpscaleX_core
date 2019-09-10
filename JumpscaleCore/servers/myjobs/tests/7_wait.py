@@ -11,12 +11,12 @@ def main(self, reset=False):
     if reset:
         self.reset()
 
-    def add(a, b):
+    def add(a=None, b=None):
         return a + b
 
     ids = []
     for x in range(10):
-        ids.append(self.schedule(add, 1, 2, return_queues=["q1"], return_queues_reset=True))
+        ids.append(self.schedule(add, a=1, b=2, return_queues=["q1"], return_queues_reset=True))
 
     self.workers_tmux_start()
 

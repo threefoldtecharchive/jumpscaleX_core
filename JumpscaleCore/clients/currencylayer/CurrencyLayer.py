@@ -16,7 +16,7 @@ class CurrencyLayerFactory(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
     @url = jumpscale.currencylayer.client
-    name* = "" (S)
+    name** = "" (S)
     api_key_ = "" (S)
     """
 

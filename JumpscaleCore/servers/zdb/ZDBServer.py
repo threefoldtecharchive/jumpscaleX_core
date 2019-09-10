@@ -6,7 +6,7 @@ import socket
 class ZDBServer(j.baseclasses.object_config):
     _SCHEMATEXT = """
            @url =  jumpscale.zdb.server.1
-           name* = "default" (S)
+           name** = "default" (S)
            addr = "127.0.0.1" (S)
            port = 9900 (I)
            adminsecret_ = "123456" (S)

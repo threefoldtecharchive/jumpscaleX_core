@@ -30,7 +30,7 @@ def main(self):
 
     SCHEMA = """
     @url = threefoldtoken.wallet.test
-    name* = "wallet"
+    name** = "wallet"
     addr = ""                   # Address
     ipaddr = (ipaddr)           # IP Address
     email = "" (S)              # Email address
@@ -51,18 +51,21 @@ def main(self):
     # we now have some data
     assert len(m.find()) == 10
     r = m.get_by_name("myuser_8")
-    assert r[0].addr == "something:8"
+
+    assert r.addr == "something:8"
 
     assert "test" in j.data.bcdb._config
 
     # j.data.bcdb.bcdb_instances = {}  # make sure we don't have instances in memory
-    keylength_before = len(j.core.db.keys())
+
+    keylength_before = len(m.find())
     m.index.destroy()
-    keylength_after = len(j.core.db.keys())
+    keylength_after = len(m.find())
+
     assert keylength_after < keylength_before
     assert len(m.find()) == 0
     bcdb.index_rebuild()
-    assert keylength_before == len(j.core.db.keys())
+    assert keylength_before == len(m.find())
     # stop redis
 
     # j.core.redistools.core_stop()
@@ -79,7 +82,7 @@ def main(self):
 
     assert len(m.find()) == 10
     r = m.get_by_name("myuser_8")
-    assert r[0].addr == "something:8"
+    assert r.addr == "something:8"
 
     self._log_info("TEST DONE")
     return "OK"

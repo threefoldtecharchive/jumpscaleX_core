@@ -21,10 +21,14 @@ def main(self):
         assert self.queue_jobs_start.qsize() == 0
         assert self.queue_return.qsize() == 0
 
-    def add(a, b):
+    def add(a=None, b=None):
+        assert a
+        assert b
         return a + b
 
-    def add_error(a, b):
+    def add_error(a=None, b=None):
+        assert a
+        assert b
         raise j.exceptions.Base("s")
 
     def wait_2sec():
@@ -35,7 +39,7 @@ def main(self):
     self.workers_tmux_start(4)
 
     # test the behaviour for 1 job in process, only gevent for data handling
-    job_sch = self.schedule(add_error, 1, 2)
+    job_sch = self.schedule(add_error, a=1, b=2)
     jobid = job_sch.id
     wait_2sec()
 
@@ -60,9 +64,9 @@ def main(self):
     self.workers_tmux_start(4)
 
     for x in range(10):
-        self.schedule(add, 1, 2)
+        self.schedule(add, a=1, b=2)
 
-    j.servers.myjobs.schedule(add_error, 1, 2)
+    j.servers.myjobs.schedule(add_error, a=1, b=2)
 
     jobs = self.model_job.find()
 
@@ -81,7 +85,7 @@ def main(self):
 
     assert res == {job.id: "3"}  # is the result back
 
-    assert 3 == j.servers.myjobs.schedule(add, 1, 2, inprocess=True)
+    assert 3 == j.servers.myjobs.schedule(add, a=1, b=2, inprocess=True)
 
     print("will wait for results")
     assert self.results([jobs[2].id, jobs[3].id, jobs[4].id], timeout=1) == {
@@ -99,7 +103,7 @@ def main(self):
     q = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)
     q.reset()  # lets make sure its empty
 
-    j.servers.myjobs.schedule(add, 1, 2, return_queues=[queue_name])
+    j.servers.myjobs.schedule(add, a=1, b=2, return_queues=[queue_name])
     gevent.sleep(0.5)
     assert q.qsize() == 1
     # job_return = j.servers.myjobs.wait("myself")
@@ -119,7 +123,7 @@ def main(self):
         self.schedule(wait_2sec)
 
     j.servers.myjobs.schedule(wait_2sec, timeout=1)
-    j.servers.myjobs.schedule(add_error, 1, 2)
+    j.servers.myjobs.schedule(add_error, a=1, b=2)
 
     print("there should be 10 workers, so wait is max 5 sec")
     gevent.sleep(10)

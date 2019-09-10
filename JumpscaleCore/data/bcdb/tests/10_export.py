@@ -32,7 +32,7 @@ def main(self):
 
     SCHEMA = """
     @url = threefoldtoken.wallet.test
-    name* = "wallet"
+    name** = "wallet"
     addr = ""                   # Address
     ipaddr = (ipaddr)           # IP Address
     email = "" (S)              # Email address
@@ -53,7 +53,7 @@ def main(self):
 
     SCHEMA2 = """
     @url = threefoldtoken.wallet.test2
-    lastname* = "lienard"
+    lastname** = "lienard"
     firstname = ""                   # Address    
     """
 

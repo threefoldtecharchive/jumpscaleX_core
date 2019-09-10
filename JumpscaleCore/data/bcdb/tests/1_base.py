@@ -157,7 +157,7 @@ def main(self):
     schema_sqlite = """
     @url = despiegk.test.sqlite
     llist2 = "" (LS)
-    name** = ""
+    name*** = ""
     email** = ""
     nr** = 0
     date_start** = 0 (D)
@@ -174,12 +174,12 @@ def main(self):
     schema = """
     @url = despiegk.test
     llist2 = "" (LS)
-    name* = ""
-    email* = ""
-    nr* = 0
-    date_start* = 0 (D)
+    name** = ""
+    email** = ""
+    nr** =  0
+    date_start** =  0 (D)
     description = ""
-    token_price* = "10 USD" (N)
+    token_price** =  "10 USD" (N)
     hw_cost = 0.0 #this is a comment
     llist = []
     llist3 = "1,2,3" (LF)

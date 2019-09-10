@@ -8,11 +8,11 @@ Job represents a runnable `action` or `task` that needs to be executed `asynchro
 ```toml
 @url = jumpscale.myjobs.job
 category*= ""
-time_start* = 0 (T)
+time_start** = 0 (T)
 time_stop = 0 (T)
-state* = ""
+state** = ""
 timeout = 0
-action_id* = 0
+action_id** =  0
 args = ""   #json
 kwargs = "" #json
 result = "" #json
@@ -36,7 +36,7 @@ return_queues = (LS)
 Action is a serialized python function `(function name, function code)` identified by a `hash` that can be referenced in multiple jobs instead of copying it over to every job.
 ```toml
 @url = jumpscale.myjobs.action
-key* = ""  #hash
+key** = ""  #hash
 code = ""
 methodname = ""
 ```

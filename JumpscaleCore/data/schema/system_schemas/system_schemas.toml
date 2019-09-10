@@ -35,13 +35,13 @@ rights = "write,delete" (E)
 
 @url = jumpscale.ebcdb.block.chain.1
 zdb_block_md5 = ""
-zdb_block_id* = ""
+zdb_block_id** = ""
 last_block_id = (I)
 last_block_md5 = ""
 dispersal_meta = (LO) !jumpscale.ebcdb.block.disperal.profile.1
 
 @url = jumpscale.ebcdb.block.disperal.profile.1
-name* = ""
+name** = ""
 profile = (LO) !jumpscale.ebcdb.block.disperal.item.1
 
 @url = jumpscale.ebcdb.block.disperal.item.1

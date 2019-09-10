@@ -69,7 +69,7 @@ password_ = ""
 class GunClient(JSConfigBase):
     _SCHEMATEXT = """
         @url = jumpscale.gun.client
-        name* = "" (S)
+        name** = "" (S)
         data = "" (S)
         """
 

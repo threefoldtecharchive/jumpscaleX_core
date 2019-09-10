@@ -1,24 +1,16 @@
-import inspect
 from Jumpscale import j
 import gipc
 import gevent
 import time
+from . import schemas
 from .MyWorkerProcess import MyWorkerProcess
 from .MyJobs import MyJobs
 from .MyWorker import MyWorkers
-
-schema_action = """
-@url = jumpscale.myjobs.action
-actorname = ""
-methodname = ""
-key* = ""  #hash
-code = ""
+from Jumpscale.data.bcdb.connectors.redis.RedisServer import RedisServer
 
 
-"""
 
-
-class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
+class MyJobsFactory(j.baseclasses.factory_testtools):
     __jslocation__ = "j.servers.myjobs"
     _CHILDCLASSES = [MyWorkers, MyJobs]
 
@@ -31,21 +23,28 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
         self._workers_gipc_nr_max = 10
         self._mainloop_gipc = None
         self._mainloop_tmux = None
-        self._dataloop = None
+        self._mainloop_greenlet_redis = None
 
         storclient = j.clients.rdb.client_get()
         storclient._check_cat = "myjobs"
 
         self._bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
 
-        self.model_action = self._bcdb.model_get(schema=schema_action)
+        self.model_action = self._bcdb.model_get(schema=schemas.action)
 
         self.scheduled_ids = []
+        self._init_pre_schedule_ = False
+        self._i_am_worker = False
 
-    def _init_post(self):
-        # need to make sure at startup we process all data which is still waiting there for us
-        self._data_process_untill_empty()
-        self._dataloop_start()
+    def _init_pre_schedule(self):
+        if not self._init_pre_schedule_:
+            assert self._i_am_worker == False
+            # need to make sure at startup we process all data which is still waiting there for us
+            assert self._children
+            assert self.jobs
+            assert self.workers
+            # TODO: need to start the gevent loop for redis server for BCDB *if we are not running in a 3bot
+            self._init_pre_schedule_ = True
 
     def action_get(self, key, return_none_if_not_exist=False):
 
@@ -73,10 +72,12 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
         :param debug:
         :return:
         """
+        self._init_pre_schedule()
         if not nr:
             nr = self._worker_next_get()
         w = self.workers.get(name="w%s" % nr)
         w.type = "inprocess"
+        w._state_set_new()
         w.debug = debug
         w.nr = nr
         w.start()
@@ -87,6 +88,7 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
         :param debug:
         :return:
         """
+        self._init_pre_schedule()
         if not nr:
             nr = self._worker_next_get()
         w = self.workers.get(name="w%s" % nr)
@@ -96,11 +98,13 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
         if w.state in ["HALTED", "ERROR"]:
             w.state = "NEW"
         w.save()
-        self._dataloop_start()
+        w.start()
         if not self._mainloop_tmux:
             self._mainloop_tmux = gevent.spawn(self._main_loop_tmux)
 
     def _worker_inprocess_start_from_tmux(self, nr):
+        # make sure jobs schema loaded
+        _ = self.jobs
         w = self.workers.get(name="w%s" % nr)
         w.time_start = j.data.time.epoch
         w.last_update = j.data.time.epoch
@@ -117,6 +121,7 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
 
         :return:
         """
+        self._init_pre_schedule()
         for i in range(nr_workers):
             self.worker_tmux_start(nr=i + 1, debug=debug)
 
@@ -126,6 +131,7 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
         :param debug:
         :return:
         """
+        self._init_pre_schedule()
         if not nr:
             nr = self._worker_next_get()
         w = self.workers.get(name="w%s" % nr)
@@ -133,7 +139,6 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
         w.debug = debug
         w.nr = nr
         w.start()
-        self._dataloop_start()
 
     def _worker_next_get(self):
         last = 0
@@ -141,6 +146,15 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
             if i.nr > last:
                 last = i.nr
         return last + 1
+
+    def start(self):
+        if not self._mainloop_greenlet_redis:
+            self._mainloop_greenlet_redis = gevent.spawn(self._main_loop_redis)
+
+    def _main_loop_redis(self):
+        serv = RedisServer(j.data.bcdb.system, addr="0.0.0.0")
+        serv._init2(j.data.bcdb.system)
+        serv.start()
 
     def workers_subprocess_start(self, nr_fixed_workers=None, debug=False):
         """
@@ -152,21 +166,12 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
 
         :return:
         """
-
+        self._init_pre_schedule()
         if not nr_fixed_workers:
             self._mainloop_gipc = gevent.spawn(self._main_loop_subprocess)
         else:
             for i in range(nr_fixed_workers):
-                self.start_subprocess_worker(nr=i, debug=debug)
-
-    def _dataloop_start(self):
-        if not self._dataloop:
-            self._dataloop = gevent.spawn(self._data_loop)
-
-    def _dataloop_stop(self):
-        if self._dataloop:
-            self._dataloop.kill()
-            self._dataloop = None
+                self.workers_subprocess_start(nr=i, debug=debug)
 
     def workers_check(self, kill_workers_in_error=True):
         """
@@ -179,7 +184,7 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
         :return:
         """
 
-        # state* = "NEW,ERROR,BUSY,WAITING,HALTED" (E)
+        # state** = "NEW,ERROR,BUSY,WAITING,HALTED" (E)
 
         def kill(worker_obj):
             if kill_workers_in_error:
@@ -241,15 +246,6 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
 
         return res, count, errors
 
-    def _data_loop(self):
-        nr = 0
-        while True:
-            nr += 1
-            if nr > 5:
-                self._log_debug("data_process run")
-                nr = 0
-            self._data_process_1time(timeout=2)
-
     def _main_loop_tmux(self, reset=False):
         """
         idea is to check how tmux is doing, if not enough workers add
@@ -273,11 +269,10 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
                 elif w.state in ["WAITING"]:
                     if w.last_update > j.data.time.epoch - 40:
                         w._log_info("no need to start worker:%s" % w.nr)
-                    else:
-                        j.shell()
-                        w._log_warning("worker was frozen because watchdog expired, will kill:%s" % w.nr)
-                        w.stop(hard=True)
-                        w.start()
+                    # else:
+                    #     w._log_warning("worker was frozen because watchdog expired, will kill:%s" % w.nr)
+                    #     w.stop(hard=True)
+                    #     w.start()
                 elif w.state in ["BUSY"]:
                     if reset:
                         w.stop(hard=True)
@@ -290,52 +285,6 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
                     w.start()
 
             gevent.time.sleep(10)
-
-    def _data_process_1time(self, timeout=0, die=False):
-        r = self.queue_return.get(timeout=timeout)
-        if r == None:
-            return
-
-        thedata = j.data.serializers.json.loads(r)  # change to json
-
-        cat, objid, data = thedata
-
-        if cat == "W":
-            data2 = j.data.serializers.json.loads(data)
-            worker_object = self.workers._model.get(objid)
-            worker_object._data_update(data2)
-            worker_object.save()
-            if worker_object.name in self._children:
-                self._children[worker_object.name].load()  # make sure in mem the data is ok
-            return True
-        elif cat == "J":
-            job = self.jobs.new(data=data)
-            job.id = objid
-            job.save()
-            for queue_name in job.return_queues:
-                queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)
-                queue.put(job.id)
-            return True
-        elif cat == "E":
-            datae = j.data.serializers.json.loads(data)
-            j.core.tools.log2stdout(datae)
-            if die:
-                raise j.exceptions.Base(data=datae)
-            return True
-        else:
-            raise j.exceptions.Base("return queue does not have right obj")
-
-    def _data_process_untill_empty(self, timeout=1, die=True):
-
-        # need to wait till first one comes
-        r = self._data_process_1time(timeout=timeout, die=die)
-        if not r:
-            return
-
-        while r is not None:
-            if self.queue_return.empty:
-                return
-            r = self._data_process_1time(timeout=timeout, die=die)
 
     def _main_loop_subprocess(self):
         """
@@ -457,7 +406,6 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
         gevent=False,
         wait=False,
         die=True,
-        args_replace=None,
         **kwargs,
     ):
         """
@@ -473,31 +421,38 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
         :param kwargs:
         :return:
         """
+        self._init_pre_schedule()
         if not name:
             name = "j%s" % j.core.db.incr("myjobs.ourid")
+        if self.jobs.exists(name=name):
+            self.jobs.delete(name=name)
+        if "self" in kwargs:
+            kwargs.pop("self")
         job = self.jobs.new(
             name=name,
             method=method,
             kwargs=kwargs,
             dependencies=dependencies,
-            args_replace=args_replace,
             return_queues=return_queues,
             return_queues_reset=return_queues_reset,
         )
+
         job.time_start = j.data.time.epoch
         job.state = "NEW"
         job.timeout = timeout
         job.category = category
         job.die = die
+        self.scheduled_ids.append(job.id)
+        self.queue_jobs_start.put(job.id)
+        if wait:
+            return job.wait()
+        assert job._data._autosave == True
         return job
 
     def stop(self, graceful=True, reset=True, timeout=60):
 
         if self._mainloop_gipc != None:
             self._mainloop_gipc.kill()
-
-        if self._dataloop != None:
-            self._dataloop.kill()
 
         if not reset:
             for w in self.find(reload=True):
@@ -522,6 +477,9 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
 
             if not graceful or not job_running:
                 gproc.terminate()
+
+        if self._mainloop_greenlet_redis:
+            self._mainloop_greenlet_redis.kill()
 
         if reset:
             self.model_action.destroy()
@@ -561,30 +519,41 @@ class MyJobsFactory(j.baseclasses.factory, j.baseclasses.testtools):
 
         for obj in ids:
             if isinstance(obj, j.data.schema._JSXObjectClass):
+                obj = self.jobs.get(id=obj.id)
+                if obj not in jobs:
+                    jobs.append(obj)
+            elif isinstance(obj, j.baseclasses.object_config):
+                obj.load()
                 if obj not in jobs:
                     jobs.append(obj)
             elif isinstance(obj, int):
-                obj = self.get(obj)
+                obj = self.jobs.get(id=obj)
+                obj.load()
                 if obj not in jobs:
                     jobs.append(obj)
             else:
                 raise j.exceptions.Input("can only be int or job object")
 
+        if len(jobs) == 0:
+            raise j.exceptions.BUG("jobs to wait on should not be None, there are no jobs in scheduled ids")
+
         with gevent.Timeout(timeout, False):
-            while True:
-                ready = 0
-                for job in jobs:
-                    if job.check_ready(die=die):
-                        ready += 1
-                if not self._dataloop:
-                    # means we have to manually fetch the objects there is no dataloop doing it for us
-                    self._data_process_untill_empty(die=False)
-
-                if ready == len(jobs):
-                    j.servers.myjobs.scheduled_ids
-                    return jobs
-
+            runningjobs = jobs.copy()
+            while runningjobs:
                 gevent.time.sleep(0.3)
+                for job in runningjobs[:]:
+                    job.load()
+                    if job.check_ready(die=die):
+                        runningjobs.remove(job)
+            return jobs
+
+
+    def results(self, ids=None, timeout=100, die=True):
+        jobs = self.wait(ids=ids, timeout=timeout, die=die)
+        res = {}
+        for job in jobs:
+            res[job.id] = job.result
+        return res
 
     def wait_queue(self, queue_name, size, timeout=120, returnjobs=True):
         queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)

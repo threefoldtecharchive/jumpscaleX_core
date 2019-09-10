@@ -11,7 +11,7 @@ class SockExec(j.application.JSBaseDataObjClass):
 
     _SCHEMATEXT = """
            @url =  jumpscale.servers.sockexec.1
-           name* = "default" (S)
+           name** = "default" (S)
            socketpath = "/sandbox/var/exec.sock"
            """
 

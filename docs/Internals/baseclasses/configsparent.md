@@ -14,7 +14,7 @@ class TFChainWallet(j.baseclasses.object_config):
     """
     _SCHEMATEXT = """
         @url = jumpscale.tfchain.wallet
-        name* = "" (S)
+        name** =  "" (S)
         """
     @property
     def network_type(self):
@@ -34,7 +34,7 @@ class TFChainClient(j.application.JSBaseConfigParentClass):
     """
     _SCHEMATEXT = """
         @url = jumpscale.tfchain.client
-        name* = "" (S)
+        name** =  "" (S)
         network_type = "STD,TEST,DEV" (E)
         """
 

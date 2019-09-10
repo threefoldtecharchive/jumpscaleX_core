@@ -5,7 +5,7 @@ class RedisConfig(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
     @url = jumpscale.redis_config.client
-    name* = "" (S)
+    name** = "" (S)
     addr = "127.0.0.1" (ipaddr)
     port = 6379 (ipport)
     password_ = "" (S)

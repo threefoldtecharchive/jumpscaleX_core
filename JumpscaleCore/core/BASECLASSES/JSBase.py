@@ -37,7 +37,7 @@ class JSBase:
     _cache_expiration = 3600
     _test_runs = {}
     _test_runs_error = {}
-    _name = ""
+    _classname = ""
     _location = ""
     _logger_min_level = 10
     _class_children = []
@@ -50,8 +50,9 @@ class JSBase:
 
         self._protected = False
         self._parent = parent
-        self._children_reset()
+        self._children = JSDict()
         self._properties_ = None
+        self._methods_ = None
         if "parent" in kwargs:
             kwargs.pop("parent")
         self._init_pre(**kwargs)
@@ -69,37 +70,28 @@ class JSBase:
     @property
     def _properties(self):
         if self._properties_ == None:  # need to be specific None
-            props, methods = self._inspect()
-            return props
-        else:
-            return self._properties_
+            self._inspect()
+        return self._properties_
 
     @property
     def _methods(self):
-        if not self._hasattr(self, "_methods_"):
-            props, methods = self._inspect()
-            return methods
-        else:
-            return self._methods_
+        if self._methods_ == None:
+            self._inspect()
+        return self._methods_
 
-    def _hasattr(self, *args):
+    def _hasattr(self, key):
         """
-        the std hasattr does not work like we were expecting
-        will try other aproaches later
+        will only returh the properties, methods & children (will not lookin jsconfig data)
         :param name:
         :return:
         """
-        if len(args) == 2:
-            obj, key = args
-        elif len(args) == 1:
-            obj = self
-            key = args[0]
-        else:
-            raise j.exceptions.JSBUG("can only have 1 or 2 arguments")
-        try:
-            return hasattr(obj, key)
-        except j.exceptions.NotFound:
-            return False
+        if key in self._properties:
+            return True
+        if key in self._methods:
+            return True
+        if key in self._children:
+            return True
+        return False
 
     def __init_class(self):
 
@@ -107,8 +99,8 @@ class JSBase:
 
             # short location name:
 
-            if not self.__class__._name:
-                self.__class__._name = j.core.text.strip_to_ascii_dense(str(self.__class__)).split(".")[-1].lower()
+            if not self.__class__._classname:
+                self.__class__._classname = j.core.text.strip_to_ascii_dense(str(self.__class__)).split(".")[-1].lower()
                 # name = str(self.__class__).split(".")[-1].split("'", 1)[0].lower()  # wonder if there is no better way
 
             if "__jslocation__" in self.__dict__:
@@ -127,7 +119,7 @@ class JSBase:
                         break
                     parent = parent._parent
                 if self.__class__._location is None:
-                    self.__class__._location = self.__class__._name
+                    self.__class__._location = self.__class__._classname
 
             # # walk to all parents, let them know that there are child classes
             # self.__class__._class_children = []
@@ -137,16 +129,16 @@ class JSBase:
             #         parent._class_children.append(parent.__class__)
             #     parent = parent._parent
 
-            # if self.__class__._location.lower() != self.__class__._name.lower():
-            #     self.__class__._key = "%s:%s" % (self.__class__._location, self.__class__._name)
+            # if self.__class__._location.lower() != self.__class__._classname.lower():
+            #     self.__class__._key = "%s:%s" % (self.__class__._location, self.__class__._classname)
             # else:
-            #     self.__class__._key = self.__class__._name.lower()
+            #     self.__class__._key = self.__class__._classname.lower()
 
             self.__init_class_post()
 
             self.__class__.__init_class_done = True
 
-            self._log_debug("***CLASS INIT 1: %s" % self.__class__._name)
+            self._log_debug("***CLASS INIT 1: %s" % self.__class__._classname)
 
             # lets make sure the initial loglevel gets set
             self._logger_set(children=False, parents=False)
@@ -191,11 +183,19 @@ class JSBase:
                 continue
             if item not in properties:
                 properties.append(item)
-        return properties, methods
+
+        self._properties_ = properties
+        self._methods_ = methods
+
+        return self._properties_, self._methods_
 
     @property
     def _key(self):
-        return self._name
+        return self._classname
+
+    @property
+    def _name(self):
+        return self._key
 
     def _init(self, **kwargs):
         pass
@@ -392,7 +392,7 @@ class JSBase:
         if minlevel is not None or self._logging_enable_check():
             # if minlevel specified we overrule anything
 
-            # print ("%s:loginit"%self.__class__._name)
+            # print ("%s:loginit"%self.__class__._classname)
             if minlevel is None:
                 minlevel = int(j.core.myenv.config.get("LOGGER_LEVEL", 15))
 
@@ -541,23 +541,19 @@ class JSBase:
 
     ################### mechanisms for autocompletion in kosmos
 
-    def __name_get(self, item, instance=True):
+    def __name_get(self, item):
         """
         helper mechanism to come to name
         """
         if isinstance(item, str) or isinstance(item, int):
             name = str(item)
             return name
-        if instance:
-            if self._hasattr(item, "name"):
-                name = item.name
-            else:
-                name = item._objid
+        elif isinstance(item, j.baseclasses.object_config):
+            return item.name
+        elif isinstance(item, j.baseclasses.object):
+            return item._name
         else:
-            name = self._hasattr(item, "_name")
-            if not name:
-                raise j.exceptions.JSBUG("cannot find _name")
-        return name
+            raise j.exceptions.JSBUG("don't know how to find name")
 
     def _filter(self, filter=None, llist=[], nameonly=True, unique=True, sort=True):
         """
@@ -633,17 +629,16 @@ class JSBase:
         """
         obj = self
         while obj and obj._parent:
-            if self._hasattr(obj._parent, "_model"):
-                if isinstance(obj._parent, j.baseclasses.object_config):
-                    if obj._parent._id is None:
-                        if obj._parent.name is None:
-                            raise j.exceptions.JSBUG("cannot happen, there needs to be a name")
-                        else:
-                            obj._parent.save()
-                            assert obj._parent._id > 0
-                            return obj._parent._id
+            if isinstance(obj._parent, j.baseclasses.object_config):
+                if obj._parent._id is None:
+                    if obj._parent.name is None:
+                        raise j.exceptions.JSBUG("cannot happen, there needs to be a name")
                     else:
+                        obj._parent.save()
+                        assert obj._parent._id > 0
                         return obj._parent._id
+                else:
+                    return obj._parent._id
             obj = obj._parent
         # means we did not find a parent which can act as mother
         return None
@@ -663,7 +658,7 @@ class JSBase:
 
         :return:
         """
-        if self._hasattr(self, "_children"):
+        if self._hasattr("_children"):
             children = self._children.values()
             return self._filter(filter=filter, llist=children, nameonly=False)
         else:
@@ -709,7 +704,6 @@ class JSBase:
 
         :return: list of the names
         """
-        # return self._filter(filter=filter, llist=self._names_methods_)
         return []
 
     def _methods_names_get(self, filter=None):
@@ -737,7 +731,7 @@ class JSBase:
 
         """
         others = self._children_names_get(filter=filter)
-        if self._hasattr(self, "_parent"):
+        if self._hasattr("_parent"):
             pname = self._parent_name_get()  # why do we need the parent name?
             if pname not in others:
                 others.append(pname)
@@ -752,36 +746,16 @@ class JSBase:
             self._children_names_get()
             + self._properties_names_get()
             + self._dataprops_names_get()
-            + self._children_names_get()
             + self._methods_names_get()
         )
         return l
 
     def _prop_exist(self, name):
         """
-        only returns in protected mode otherwise always True
         :param name:
         :return:
         """
-        if self.__class__._protected:
-            if name in self._names_properties_:
-                return True
-            if name in self._names_methods_:
-                return True
-            if self._children_get(filter=name):
-                return True
-            if name == self._parent_name_get():
-                return True
-            if self._children_get(filter=name):
-                return True
-            if self._dataprops_get(filter=name):
-                return True
-            if self._methods_names_get(filter=name):
-                return True
-            if self._properties_names_get(filter=name):
-                return True
-        else:
-            return True
+        raise
 
     def _children_recursive_get(self):
         res = []

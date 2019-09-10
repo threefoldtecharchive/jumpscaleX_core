@@ -25,7 +25,7 @@ from Jumpscale import j
 from .JSXObject import JSXObject
 
 
-class SchemaFactory(j.baseclasses.factory):
+class SchemaFactory(j.baseclasses.factory_testtools):
     __jslocation__ = "j.data.schema"
 
     def _init(self, **kwargs):

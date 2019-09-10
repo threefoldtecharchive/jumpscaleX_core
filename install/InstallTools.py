@@ -651,6 +651,13 @@ class BaseJSException(Exception):
 
     def __init__(self, message="", level=None, cat=None, msgpub=None, context=None, data=None, exception=None):
 
+        super().__init__(message)
+
+        # exc_type, exc_value, exc_traceback = sys.exc_info()
+        # self._exc_traceback = exc_traceback
+        # self._exc_value = exc_value
+        # self._exc_type = exc_type
+
         if level:
             if isinstance(level, str):
                 level = int(level)
@@ -662,25 +669,22 @@ class BaseJSException(Exception):
             assert level > 9
             assert level < 51
 
-        super().__init__(message)
         self.message = message
         self.message_pub = msgpub
         self.level = level
         self.context = context
         self.cat = cat  # is a dot notation category, to make simple no more tags
         self.data = data
+        self._logdict = None
         self.exception = exception
-
         self._init(message=message, level=level, cat=cat, msgpub=msgpub, context=context, exception=exception)
-
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        self._tb = exc_traceback
-        self._exc_traceback = exc_traceback
-        self._exc_value = exc_value
-        self._exc_type = exc_type
 
     def _init(self, **kwargs):
         pass
+
+    @property
+    def logdict(self):
+        return self._logdict
 
     @property
     def type(self):
@@ -701,10 +705,11 @@ class BaseJSException(Exception):
         return msg.strip()
 
     def __str__(self):
-        d = Tools.log(exception=self, stdout=False, replace=True)
-        return d["message"]
+        return Tools._data_serializer_safe(self.logdict)
 
-    __repr__ = __str__
+    def __repr__(self):
+        print(Tools.log2str(self.logdict))
+        return ""
 
     # def trace_print(self):
     #     j.core.errorhandler._trace_print(self._trace)
@@ -801,11 +806,10 @@ class Tools:
         locals doesn't seem to be working yet, None for now
 
         """
-        if tb is None:
-            tb = sys.last_traceback
-        res = []
+
         ignore_items = [
             "click/",
+            "bin/kosmos",
             "ipython",
             "bpython",
             "loghandler",
@@ -822,6 +826,31 @@ class Tools:
                     return True
             return False
 
+        if inspect.isframe(tb):
+            #
+            frame = tb
+            res = []
+            while frame:
+                tb2 = inspect.getframeinfo(frame)
+                if tb2.code_context:
+                    if len(tb2.code_context) == 1:
+                        line = tb2.code_context[0].strip()
+                    else:
+                        Tools.shell()
+                        w
+                else:
+                    line = ""
+                if not ignore(frame.f_code.co_filename):
+                    tb_item = [frame.f_code.co_filename, frame.f_code.co_name, frame.f_lineno, line, None]
+                    res.insert(0, tb_item)
+                    print("++++++%s" % line)
+                frame = frame.f_back
+            return res
+
+        if tb is None:
+            tb = sys.last_traceback
+        res = []
+
         for item in traceback.extract_tb(tb):
             if not ignore(item.filename):
                 if item.locals:
@@ -831,18 +860,6 @@ class Tools:
                 tb_item = [item.filename, item.name, item.lineno, item.line, llocals]
                 res.append(tb_item)
         return res
-
-        # if tb.tb_next is not None:
-        #     frame_ = tb.tb_next.tb_frame
-        # else:
-        #
-        #     frame_ = tb.tb_frame
-        #
-        #     Tools.shell()
-        #     Tools.traceback_text_get(tb, stdout=True)
-        #     tb_item = ()
-        #     logdict["tb"] = [tb_item, tb_item]  # just example for now #TODO:
-        #     print()
 
     @staticmethod
     def traceback_text_get(tb=None, stdout=False):
@@ -992,19 +1009,11 @@ class Tools:
         if isinstance(msg, Exception):
             raise Tools.exceptions.JSBUG("msg cannot be an exception raise by means of exception=... in constructor")
 
-        if not frame_:
-            frame_ = inspect.currentframe().f_back
-            if _levelup > 0:
-                levelup = 0
-                while frame_ and levelup < _levelup:
-                    frame_ = frame_.f_back
-                    levelup += 1
-
         # first deal with traceback
         if exception and not tb:
             # if isinstance(exception, BaseJSException):
             if hasattr(exception, "exception"):
-                tb = exception._tb
+                tb = exception._exc_traceback
             else:
                 extype_, value_, tb = sys.exc_info()
 
@@ -1012,6 +1021,15 @@ class Tools:
             logdict["traceback"] = Tools.traceback_format(tb)
             fname, defname, linenr, line_, locals_ = logdict["traceback"][-1]
         else:
+
+            if not frame_:
+                frame_ = inspect.currentframe().f_back
+                if _levelup > 0:
+                    levelup = 0
+                    while frame_ and levelup < _levelup:
+                        frame_ = frame_.f_back
+                        levelup += 1
+
             fname = frame_.f_code.co_filename.split("/")[-1]
             defname = frame_.f_code.co_name
             # linenr = frame_.f_code.co_firstlineno  #this is the line nr of the def
@@ -1025,15 +1043,22 @@ class Tools:
             else:
                 msg_e = exception.__repr__()
             if msg:
-                msg = (
-                    "{RED}EXCEPTION: \n"
-                    + Tools.text_indent(msg, 4).rstrip()
-                    + "\n"
-                    + Tools.text_indent(msg_e, 4)
-                    + "{RESET}"
-                )
+                if stdout:
+                    msg = (
+                        "{RED}EXCEPTION: \n"
+                        + Tools.text_indent(msg, 4).rstrip()
+                        + "\n"
+                        + Tools.text_indent(msg_e, 4)
+                        + "{RESET}"
+                    )
+                else:
+                    msg = "EXCEPTION: \n" + Tools.text_indent(msg, 4).rstrip() + "\n" + Tools.text_indent(msg_e, 4)
+
             else:
-                msg = "{RED}EXCEPTION: \n" + Tools.text_indent(msg_e, 4).rstrip() + "{RESET}"
+                if stdout:
+                    msg = "{RED}EXCEPTION: \n" + Tools.text_indent(msg_e, 4).rstrip() + "{RESET}"
+                else:
+                    msg = "EXCEPTION: \n" + Tools.text_indent(msg_e, 4).rstrip()
             level = 50
             if cat is "":
                 cat = "exception"
@@ -3378,6 +3403,15 @@ class MyEnv_:
         :param level:
         :return: logdict see github/threefoldtech/jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md
         """
+        # not optimal, cannot check on type doesn't work, there is still something wrong with classes or multiple versions of it I thinkg
+        if str(exception_type).find("RemoteException1") != -1:
+            print(Tools.text_replace("{RED}*****Remote Exception*****{RESET}"))
+            logdict = exception_obj.data
+            Tools.log2stdout(logdict)
+            if die == False:
+                return logdict
+            else:
+                sys.exit(1)
         try:
             logdict = Tools.log(tb=tb, level=level, exception=exception_obj, stdout=stdout)
         except Exception as e:
@@ -3387,12 +3421,13 @@ class MyEnv_:
             traceback.print_exception(etype=ttype, tb=tb, value=msg)
             Tools.pprint("{RESET}")
             sys.exit(1)
-            Tools.shell()
 
-        if self.debug and traceback and pudb:
+        exception_obj._logdict = logdict
+
+        if self.debug and tb and pudb:
             # exception_type, exception_obj, tb = sys.exc_info()
             pudb.post_mortem(tb)
-        # Tools.pprint("{RED}CANNOT CONTINUE{RESET}")
+
         if die == False:
             return logdict
         else:
@@ -3700,7 +3735,7 @@ class BaseInstaller:
                 "ssh2-python",
                 "paramiko>=2.2.3",
                 "path.py>=10.3.1",
-                "peewee",
+                # "peewee", #DO NOT INSTALL PEEWEE !!!
                 "psutil>=5.4.3",
                 "pudb>=2017.1.2",
                 "pyblake2>=0.9.3",
