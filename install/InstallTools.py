@@ -4580,7 +4580,7 @@ class DockerContainer:
         install succesfull:
 
         # if you use a container do:
-        jsx container-kosmos
+        /tmp/jsx container-kosmos
 
         or
 
