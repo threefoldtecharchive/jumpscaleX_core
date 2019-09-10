@@ -170,7 +170,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             self._mainloop_gipc = gevent.spawn(self._main_loop_subprocess)
         else:
             for i in range(nr_fixed_workers):
-                self.workers_subprocess_start(nr=i, debug=debug)
+                self.worker_subprocess_start(nr=i, debug=debug)
 
     def workers_check(self, kill_workers_in_error=True):
         """
@@ -470,7 +470,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             if gproc.exitcode != None:
                 continue
 
-            w = self.workers.get(wid)
+            w = self.workers.get(id=wid)
 
             job_running = w.current_job != 2147483647
 

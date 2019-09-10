@@ -58,9 +58,13 @@ class MyWorker(j.baseclasses.object_config):
             if self.type in ["TMUX"]:
                 cmd = j.servers.startupcmd.get(name="workers_%s" % self.nr)
                 cmd.stop(force=True)
-            if self.type in ["INPROCESS"]:
+            elif self.type in ["INPROCESS"]:
                 self._log_info("INPROCESS STOP")
                 sys.exit(0)
+            elif self.type in ["SUBPROCESS"]:
+                worker = j.servers.myjobs._workers_gipc.pop(self._id, None)
+                if worker:
+                    worker.terminate()
             self.state = "HALTED"
             self.pid = 0
             self.last_update = j.data.time.epoch
