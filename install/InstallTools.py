@@ -1745,7 +1745,7 @@ class Tools:
             print("FALLBACK REPLACE:%s" % line)
             for arg, val in args_new.items():
                 assert arg
-                line = line.replace("{%s}" % arg, val)
+                line = line.replace("{%s}" % arg, str(val))
             return line
 
         def process_line(line):
@@ -1757,7 +1757,7 @@ class Tools:
                 line = line.replace("{}", ">>EMPTYDICT<<")
 
             try:
-                items = Tools.formatter.parse(content)
+                items = [i for i in Tools.formatter.parse(line)]
             except Exception as e:
                 return process_line_failback(line)
 
