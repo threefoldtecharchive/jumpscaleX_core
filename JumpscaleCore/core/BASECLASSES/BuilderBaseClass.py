@@ -152,11 +152,13 @@ class builder_method:
                 builder._init()
 
             if name == "build":
-                builder.stop()
+                if builder._done_check(done_key):
+                    builder.stop()
                 builder.profile_builder_select()
 
             if name == "install":
-                builder.stop()
+                if builder._done_check(done_key):
+                    builder.stop()
                 builder.profile_builder_select()
                 builder.build()
 

@@ -17,6 +17,8 @@ class BytesEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, bytes):
             return obj.decode(self.ENCODING)
+        elif isinstance(obj, j.baseclasses.dict):
+            return obj._data
         return json.JSONEncoder.default(self, obj)
 
 

@@ -1224,6 +1224,7 @@ class Tools:
                             # Give the process some time to settle
                             time.sleep(0.2)
                             p.kill()
+                            raise Tools.exceptions.Timeout(f"command: {command} timed out after {timeout} seconds")
                         except OSError:
                             pass
                     else:
