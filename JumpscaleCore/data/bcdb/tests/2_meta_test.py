@@ -42,7 +42,7 @@ def main(self):
 
     schema_text = """
     @url = jumpscale.schema.test.a
-    category*= ""
+    category**= ""
     txt = ""
     i = 0
     """
@@ -84,7 +84,7 @@ def main(self):
     a2.i = 2
     a2.save()
 
-    assert len([i for i in model.index._id_iterator()]) == 2
+    assert len([i for i in model.index.model.find()]) == 2
 
     myid = a.id + 0
 
