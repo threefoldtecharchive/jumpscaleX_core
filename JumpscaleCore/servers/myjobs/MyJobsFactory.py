@@ -178,7 +178,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         :return:
         """
 
-
         def kill(worker_obj):
             if kill_workers_in_error:
                 if worker_obj.pid > 0:
