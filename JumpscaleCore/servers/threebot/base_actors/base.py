@@ -16,18 +16,21 @@ class base(JSBASE):
             raise j.exceptions.Input("format_type needs to be either json or msgpack")
         self.format = format_type
 
-    def identify(self, schema_out):
+    def identify(self, seed_encrypted, schema_out):
         """
-        ```out
-        current_time = (S)
-        server_id = (I)
-        current_time_signed = (bin)
-        ```
+        :seed_encrypted: a random seed as given by the client, encrypted by private key of client
+        :return: "$threebotid:$signature"
+
+        $signature is bytesignature in hex format of "$seed:$threebotid"
+        this can be used by the client who asks identity
+
         """
         out = schema_out.new()
         nacl = j.data.nacl.default
-        out.current_time = str(j.data.time.epoch)
-        out.current_time_signed = nacl.sign(out.current_time.encode())
+
+        assert isinstance(seed_encrypted, bytes)
+        toencode = "%s:%s" % (seed, j.core.myenv.config["THREEBOT_ID"])
+        signature = j.tools.threebot.sign_data(toencode.encode())
         out.server_id = j.core.myenv.config["THREEBOT_ID"]
         return self._return_format(out)
 

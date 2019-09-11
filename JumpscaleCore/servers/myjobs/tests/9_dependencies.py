@@ -1,7 +1,6 @@
 from Jumpscale import j
 
 
-
 def main(self, reset=False):
     """
     kosmos -p 'j.servers.myjobs.test("dependencies")'
