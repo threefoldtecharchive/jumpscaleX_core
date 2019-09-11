@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 import getpass
 
-DEFAULT_BRANCH = "development"
+DEFAULT_BRANCH = "development_stabilize"
 GITREPOS = {}
 
 GITREPOS["builders_extra"] = [

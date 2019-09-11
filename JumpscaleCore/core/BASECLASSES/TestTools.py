@@ -159,7 +159,7 @@ class TestTools:
                 for item in j.sal.fs.listFilesInDir("%s/tests" % self._dirpath, recursive=False, filter="*.py")
             ]
 
-            natsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split('(\d+)', s)]
+            natsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split("(\d+)", s)]
             items.sort(key=natsort)
             for name in items:
                 self.__test_run(name=name, obj_key=obj_key, **kwargs)
