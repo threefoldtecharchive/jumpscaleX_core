@@ -77,10 +77,10 @@ j.tools.threebot_packages.get("package_name",
 ```
 
 ## Example packages
-- [pastebin](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development_web_examples/ThreeBotPackages/pastebin/README.md
+- [pastebin](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/ThreeBotPackages/pastebin/README.md
 )
-- [alerta](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development_web_examples/ThreeBotPackages/alerta/README.md)
-- [myjobs](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development_web_examples/ThreeBotPackages/myjobs/README.md)
+- [alerta](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/ThreeBotPackages/alerta/README.md)
+- [myjobs](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/ThreeBotPackages/myjobs/README.md)
 
 ## Troubleshooting
 
