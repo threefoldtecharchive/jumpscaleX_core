@@ -46,7 +46,7 @@ class MyWorkerProcess(j.baseclasses.object):
         # MAKE SURE YOU DON'T REUSE SOCKETS FROM MOTHER PROCESSS
         j.core.db.source = "worker"  # this allows us to test
         self.redisclient = j.core.db
-        self.bcdbclient = j.clients.redis.get(port=6380)
+        self.bcdbclient = j.clients.redis.get(port=j.servers.myjobs.BCDB_CONNECTOR_PORT)
 
         self.queue_jobs_start = j.clients.redis.queue_get(
             redisclient=self.redisclient, key="queue:jobs:start", fromcache=False

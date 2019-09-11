@@ -14,6 +14,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
     _CHILDCLASSES = [MyWorkers, MyJobs]
 
     def _init(self, **kwargs):
+        self.BCDB_CONNECTOR_PORT = 6385
         self.queue_jobs_start = j.clients.redis.queue_get(redisclient=j.core.db, key="queue:jobs:start")
 
         self._workers_gipc = {}
@@ -146,8 +147,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         return last + 1
 
     def _main_loop_redis(self):
-        serv = RedisServer(j.data.bcdb.system, addr="0.0.0.0")
-        serv._init2(j.data.bcdb.system)
+        serv = RedisServer(j.data.bcdb.system)
+        serv._init2(j.data.bcdb.system, port=self.BCDB_CONNECTOR_PORT)
         serv.start()
 
     def workers_subprocess_start(self, nr_fixed_workers=None, debug=False):
@@ -177,7 +178,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         :return:
         """
-
 
         def kill(worker_obj):
             if kill_workers_in_error:
