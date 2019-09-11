@@ -166,23 +166,19 @@ def patched_handle_exception(self, e):
     # traceback and skip the bottom calls of this framework.
     t, v, tb = sys.exc_info()
 
-    logdict = j.core.tools.log(tb=tb, level=50, exception=e, stdout=False)
-    formatted_tb = j.core.tools.log2str(logdict, data_show=True, replace=True)
-
     output = self.app.output
-    #
-    # # Required for pdb.post_mortem() to work.
-    # sys.last_type, sys.last_value, sys.last_traceback = t, v, tb
-    #
-    # # loop until getting actual traceback
-    # last_stdin_tb = tb
-    # while tb:
-    #     if tb.tb_frame.f_code.co_filename == "<stdin>":
-    #         last_stdin_tb = tb
-    #     tb = tb.tb_next
-    #
-    # formatted_tb = j.core.tools.traceback_format(last_stdin_tb)
+    # Required for pdb.post_mortem() to work.
+    sys.last_type, sys.last_value, sys.last_traceback = t, v, tb
 
+    # loop until getting actual traceback (without internal ptpython part)
+    last_stdin_tb = tb
+    while tb:
+        if tb.tb_frame.f_code.co_filename == "<stdin>":
+            last_stdin_tb = tb
+        tb = tb.tb_next
+
+    logdict = j.core.tools.log(tb=last_stdin_tb, level=50, exception=e, stdout=False)
+    formatted_tb = j.core.tools.log2str(logdict, data_show=True, replace=True)
     print_formatted_text(ANSI(formatted_tb))
 
     output.write("%s\n" % e)
