@@ -1,0 +1,16 @@
+prequisties:
+  - docker
+
+install:
+  - apt-get update; apt-get install -y python3 curl locales language-pack-en rsync unzip python3-pip lsb
+  - pip3 install click nose nose-progressive nose-testconfig loguru parameterized
+  - eval `ssh-agent -s`; ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa ; ssh-add
+  - cp /opt/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx
+  - chmod +x /tmp/jsx
+  - branch=$(cd /opt/code/github/threefoldtech/jumpscaleX_core/ && git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* //')
+  - /tmp/jsx configure -s --secret mysecret
+  - /tmp/jsx install -s -b $branch
+  - cp -r /opt/code/github/threefoldtech/jumpscaleX_core /sandbox/code/github/threefoldtech/jumpscaleX_core
+
+script:
+  - source /sandbox/env.sh; nosetests-3.4 -v /sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/ --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpsalceX_core
