@@ -48,7 +48,7 @@ def main(self):
 
     schema1 = """
         @url = jumpscale.myjobs.job
-        category*= ""
+        category**= ""
         time_start** = 0 (D)
         time_stop = 0 (D)
         state** = ""

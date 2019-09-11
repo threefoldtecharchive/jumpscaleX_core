@@ -19,6 +19,8 @@
 
 
 from Jumpscale import j
+from Jumpscale.clients.peewee import peewee
+import time
 import operator
 from functools import reduce
 from Jumpscale.data.bcdb.BCDBModelIndex import BCDBModelIndex
@@ -77,7 +79,21 @@ class {{BASENAME}}(BCDBModelIndex):
     
         #TODO: REEM there need to be other ways, why can peewee update when needed
         #self.sql.delete().where(reduce(operator.or_, query)).execute()
-        self.sql.replace(**dd).execute()
+        msg = ""
+        for _ in range(10):
+            try:
+                z = self.sql.get_or_none(id=obj.id)
+                if z == None:
+                    self.sql.create(**dd)
+                else:
+                    rid = dd.pop('id')
+                    self.sql.update(**dd).where(self.sql.id==rid).execute()
+                break
+            except peewee.OperationalError as e:
+                time.sleep(0.5)
+                msg = str(e)
+        else:
+            raise j.exceptions.Runtime(msg)
         #TODO: if there is other  unique constraint beside ID and we try to force it then 
         # the replace function will  delete the row where the constraint is and still update the row 
         # where the id points

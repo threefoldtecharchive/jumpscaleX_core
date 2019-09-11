@@ -1,6 +1,5 @@
 **Development:**  
-[![Build Status](http://188.165.233.148:6010/status?project=build)](http://188.165.233.148:6010/status?project=build&&file=True)
-[![Builders Status](http://188.165.233.148:6010/status?project=builders)](http://188.165.233.148:6010/status?project=builders&&file=True)
+[![Build Status](http://188.165.233.148:6010/status?repo=threefoldtech/jumpscaleX_core&&branch=development)](http://188.165.233.148:6010/status?repo=threefoldtech/jumpscaleX_core&&branch=development&&result=True)
 
 # Jumpscale
 

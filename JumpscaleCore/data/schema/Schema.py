@@ -366,6 +366,8 @@ class Schema(j.baseclasses.object):
 
         if bcdb:
             model = bcdb.model_get(url=self.url)
+            # here the model retrieved will be linked to a schema with the same url
+            # but can be a different md5
         else:
             model = None
 

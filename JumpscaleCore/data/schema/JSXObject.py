@@ -25,9 +25,10 @@ class JSXObject(j.baseclasses.object):
     def _init_pre(self, capnpdata=None, datadict={}, schema=None, model=None):
         self._capnp_obj_ = None
         self.id = None
+
         if model:
             self._model = model
-            self._schema_ = None
+            self._schema_ = schema
         else:
             self._schema_ = schema
             self._model = None
@@ -50,10 +51,10 @@ class JSXObject(j.baseclasses.object):
 
     @property
     def _schema(self):
-        if self._model:
+        if self._schema_:
+            return self._schema_
+        else:
             return self._model.schema
-        assert self._schema_
-        return self._schema_
 
     @property
     def _key(self):
