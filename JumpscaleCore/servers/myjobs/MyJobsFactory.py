@@ -438,7 +438,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self.scheduled_ids.append(job.id)
         self.queue_jobs_start.put(job.id)
         if wait:
-            return job.wait()
+            return job.wait(die=die)
         assert job._data._autosave == True
         return job
 

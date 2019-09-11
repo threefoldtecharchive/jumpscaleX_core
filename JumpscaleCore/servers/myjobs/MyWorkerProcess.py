@@ -100,7 +100,7 @@ class MyWorkerProcess(j.baseclasses.object):
             self._log_info("WORKER ONETIME DONE")
 
     # DATA LOGIC
-    def _job_get(self, id):
+    def job_get(self, id):
         # call through redis client the local BCDB
         # get data as json
         # use model_schema to give the object
@@ -189,30 +189,36 @@ class MyWorkerProcess(j.baseclasses.object):
             else:
                 self._log_debug("queue has data")
                 jobid = int(res)
-                job = self._job_get(jobid)
+                job = self.job_get(jobid)
+                self.job = job
                 job.time_start = j.data.time.epoch
                 skip = False
                 relaunch = False
                 for dep_id in job.dependencies:
-                    job_deb = self._job_get(dep_id)
-                    if job_deb.state in ["ERROR", "HALTED"]:
+                    job_deb = self.job_get(dep_id)
+                    if job_deb.state in ["ERROR"]:
                         job.state = job_deb.state
-                        job.result = '"cannot run because dependency failed: %s"' % job_deb.id
-                        job.error["dependency_failure"] = job_deb.id
+
+                        msg = f"cannot run because dependency failed: {job_deb.id}"
+                        job.result = msg
+                        log = j.core.tools.log(msg, stdout=False)
+                        log["dependency_failure"] = job_deb.id
+                        job.error = log
                         job.time_stop = j.data.time.epoch
                         job.save()
                         skip = True
-                    elif job_deb.state not in ["OK"]:
+                    elif job_deb.state not in ["OK", "DONE"]:
                         skip = True
                         # put the job back at end of queue, it needs to be done could not do yet
-                        if job_deb.state in ["NEW"]:
-                            relaunch = True
+                        relaunch = True
 
                 if skip and relaunch:
                     if self.queue_jobs_start.qsize() == 0:
                         # means we are waiting for some jobs to finish, lets wait 1 sec before we throw this job back on queue
                         self._log_info("job queue empty, will wait 1 sec to relaunch the job", data=job)
                         time.sleep(1)
+                    job.state = "NEW"
+                    job.save()
                     self.queue_jobs_start.put(job.id)
 
                 if not skip:
@@ -222,7 +228,6 @@ class MyWorkerProcess(j.baseclasses.object):
                     if job == None:
                         self._log_error("ERROR: job:%s not found" % jobid)
                         j.shell()
-                        w
                     else:
                         # now have job
                         action = self._action_get(job.action_id)
@@ -260,7 +265,7 @@ class MyWorkerProcess(j.baseclasses.object):
 
                         try:
                             if job.dependencies != []:
-                                res = deadline(job.timeout)(method)(job=job, **kwargs)
+                                res = deadline(job.timeout)(method)(process=self, **kwargs)
                             else:
                                 res = deadline(job.timeout)(method)(**kwargs)
                         except BaseException as e:

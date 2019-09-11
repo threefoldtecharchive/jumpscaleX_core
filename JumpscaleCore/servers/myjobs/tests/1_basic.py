@@ -55,7 +55,10 @@ def main(self):
     v = [i for i in res.values()]
     assert v[0] == 7
 
-    print(res)
+    job = self.schedule(add, a=3, b=4)
+    self.worker_inprocess_start()
+    res = job.wait()
+    assert res
 
     self.stop(reset=True)
 
