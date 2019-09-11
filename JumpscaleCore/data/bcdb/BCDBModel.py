@@ -367,8 +367,10 @@ class BCDBModel(j.baseclasses.object):
             if obj.id is None:
                 # means a new one
                 obj.id = self.storclient.set(data)
+                new = True
                 # self._log_debug("NEW:\n%s" % obj)
             else:
+                new = False
                 try:
                     self.storclient.set(data, key=obj.id)
                 except Exception as e:
@@ -381,9 +383,12 @@ class BCDBModel(j.baseclasses.object):
                 self.index.set(obj)
             except j.clients.peewee.IntegrityError as e:
                 # this deals with checking on e.g. uniqueness
-                if store:
+                if store and new:
                     # delete from the storclient was incorrect
+                    # never ever delete when object exists, so only when new
                     self.storclient.delete(obj.id)
+                else:
+                    j.shell()
                 obj.id = None
                 if str(e).find("UNIQUE") != -1:
                     raise j.exceptions.Input("Could not insert object, unique constraint failed:%s" % e, data=obj)

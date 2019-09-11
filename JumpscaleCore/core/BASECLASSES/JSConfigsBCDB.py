@@ -126,7 +126,11 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                     changed = True
                     setattr(jsconfig, key, val)
             if changed and save:
-                jsconfig.save()
+                try:
+                    jsconfig.save()
+                except Exception as e:
+                    print("CHECK WHY ERROR")
+                    j.shell()
 
         # lets do some tests (maybe in future can be removed, but for now the safe bet)
         self._check(jsconfig)
