@@ -19,7 +19,8 @@
 
 
 from Jumpscale import j
-
+import operator
+from functools import reduce
 from Jumpscale.data.bcdb.BCDBModelIndex import BCDBModelIndex
 
 class {{BASENAME}}(BCDBModelIndex):
@@ -61,21 +62,26 @@ class {{BASENAME}}(BCDBModelIndex):
         assert obj.id
         assert obj.nid
         dd={}
-
+        query = [self.sql.id == obj.id]
         {%- for field in index.fields %}
         {%- if field.jumpscaletype.NAME == "numeric" %}
         dd["{{field.name}}"] = obj.{{field.name}}_usd
+        query.append((self.sql.{{field.name}} == obj.{{field.name}}_usd))
         {%- else %}
         dd["{{field.name}}"] = obj.{{field.name}}
+        query.append((self.sql.{{field.name}} == obj.{{field.name}}))
         {%- endif %}
         {%- endfor %}
         dd["id"] = obj.id
         dd["nid"] = obj.nid
-
+    
         #TODO: REEM there need to be other ways, why can peewee update when needed
-        self.sql.delete().where(self.sql.id == obj.id).execute()
-        d=self.sql.create(**dd)
-        d.save()
+        #self.sql.delete().where(reduce(operator.or_, query)).execute()
+        self.sql.replace(**dd).execute()
+        #TODO: if there is other  unique constraint beside ID and we try to force it then 
+        # the replace function will  delete the row where the constraint is and still update the row 
+        # where the id points
+
 
     def _sql_index_delete(self,obj):
         # if not self.sql.select().where(self.sql.id == obj.id).count()==0:

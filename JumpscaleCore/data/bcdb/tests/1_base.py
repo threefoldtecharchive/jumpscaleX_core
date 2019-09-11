@@ -30,6 +30,14 @@ def main(self):
     """
 
     def test(name, schema, sqlite=True):
+        def print_objects(objs):
+            result = {}
+            for obj in objs:
+                result[obj.nr] = obj.name
+
+            print(result)
+            return result
+
         def load(schema_url):
 
             # don't forget the record 0 is always a systems record
@@ -67,9 +75,14 @@ def main(self):
             schema_url = "despiegk.test"
         db = load(schema_url)
         db_model = db.model_get(url=schema_url)
-
+        print_objects(db_model.find())
         if sqlite:
+            print("SQLITE TESTING")
+            import pudb
+
+            pudb.set_trace()
             query = db_model.index.sql.select()
+
             qres = [(item.name, item.nr) for item in query]
 
             assert qres == [
@@ -103,21 +116,33 @@ def main(self):
             first_id = res.first().id
 
         # see that the change of data does not set the _changed_items
+
         model_obj3 = db_model.find()[2]
+
         model_obj = db_model.get(model_obj3.id)
+        assert model_obj.id == 3
         n2 = model_obj.name + ""
         model_obj.name = n2
 
         # because data did not change, was already that data
-        model_obj.name = "name3"
+        assert model_obj.name == "name2"
+        model_obj.name = "name43"
 
-        assert model_obj._ddict["name"] == "name3"
+        assert model_obj._ddict["name"] == "name43"
 
         model_obj.token_price = "10 USD"
         assert model_obj.token_price_usd == 10
+
+        print_objects(db_model.find())
+
+        # TODO ADD a test where we set the object name to an existing one this should fail as there is a unique constraint on name
         db_model.set(model_obj)
+
+        print_objects(db_model.find())
+        assert model_obj.id == 3
         model_obj2 = db_model.get(model_obj.id)
         assert model_obj2.token_price_usd == 10
+        assert model_obj2._ddict["name"] == "name43"
 
         if sqlite:
             assert db_model.index.sql.select().where(db_model.index.sql.id == model_obj.id).first().token_price == 10
@@ -125,19 +150,11 @@ def main(self):
             o = db_model.get_by_name("name1")
             o.name == "name1"
 
-        def do(id, obj, result):
-            result[obj.nr] = obj.name
-            return result
-
-        result = {}
-        for obj in db_model.iterate():
-            result[obj.nr] = obj.name
-
-        print(result)
-        assert result == {
+        result = print_objects(db_model.iterate())
+        res = {
             0: "name0",
             1: "name1",
-            2: "name3",
+            2: "name43",
             3: "name3",
             4: "name4",
             5: "name5",
@@ -146,6 +163,8 @@ def main(self):
             8: "name8",
             9: "name9",
         }
+
+        assert result == res
 
         # assert db_model.index.sql._id_exists(1)
         # assert db_model.index.sql._id_exists(10) == False  #NEEDS TO BE DEBUGGED & IMPROVED

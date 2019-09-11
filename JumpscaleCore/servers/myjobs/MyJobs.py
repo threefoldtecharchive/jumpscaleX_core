@@ -58,18 +58,6 @@ class MyJob(j.baseclasses.object_config):
                 x.append(item)
         return self._filter(filter=filter, llist=x, nameonly=False)
 
-        @property
-    def result(self):
-        if self.result_json:
-            return j.data.serializers.json.loads(self.result_json)
-        else:
-            return self.result_json
-
-    # @result.setter
-    # def result(self, v):
-    #     j.shell()
-    #     self.result_json = j.data.serializers.json.dumps(v)
-
     def process_code(self, method):
         code = inspect.getsource(method)
         code = j.core.text.strip(code)

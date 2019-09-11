@@ -570,7 +570,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                     gevent.time.sleep(0.3)
                 return res
 
-    def test(self, name="basic", **kwargs):
+    def test(self, name="", **kwargs):
         """
         it's run all tests
         kosmos 'j.servers.myjobs.test()'

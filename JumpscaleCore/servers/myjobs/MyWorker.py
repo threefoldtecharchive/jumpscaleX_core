@@ -33,10 +33,10 @@ class MyWorker(j.baseclasses.object_config):
 
     def start(self):
         def state_update():
-            self.state = "WAITING"
             self.time_start = j.data.time.epoch
             self.last_update = j.data.time.epoch
             self.current_job = 2147483647  # means none
+            self.state = "WAITING"
             self.save()
 
         if self.type in ["TMUX"]:
@@ -49,7 +49,6 @@ class MyWorker(j.baseclasses.object_config):
             self.stop()
         else:
             raise j.exceptions.JSBUG("did not find right type to start worker")
-        state_update()
 
     def stop(self, hard=False):
         self.halt = True
@@ -84,8 +83,6 @@ class MyWorker(j.baseclasses.object_config):
         :param: nr is the nr of the tmux session workers_$nr is the name
 
         """
-        # j.builders.apps.corex.install()
-        # j.servers.corex.default.start()  # starts corex at port 1500
         if not reset:
             self.load()
             if self.state in ["WAITING", "BUSY"]:
@@ -103,9 +100,6 @@ class MyWorker(j.baseclasses.object_config):
             cmd.start(reset=True)
 
         start(self.nr)
-
-        # was attempt to start with gipc but got some weird stuff
-        # p = j.servers.gipc.schedule(start, nr=self.nr)
 
     def _worker_start_inprocess(self):
         """
