@@ -86,15 +86,7 @@ def main(self):
     assert len(m.find()) == 3
     o_check = m.find()[-1]
     assert o_check.id == o.id
-
-    rkey = m.index._key_index_hsetkey_get()
     o.delete()
-    for key in j.clients.credis_core.keys(rkey + ":*"):
-        for key2 in j.clients.credis_core.hkeys(key):
-            data_ = j.clients.credis_core.hget(key, key2)
-            data__ = j.data.serializers.msgpack.loads(data_)
-            if o.id in data__:
-                raise j.exceptions.Base("the id should not be in the redis index")
 
     m2 = bcdb.model_get(schema=SCHEMA)
 

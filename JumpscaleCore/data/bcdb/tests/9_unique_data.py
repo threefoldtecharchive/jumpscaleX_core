@@ -88,8 +88,9 @@ def main(self):
     with test_case.assertRaises(Exception):
         schema_obj2.save()
     # check that in DB only 1 matches from the past
-    r4 = model.find(number=number)
+    r4 = model.find(name=schema_obj.name)
     print(r4)
+
     assert r4[0].id == schema_obj.id
 
     assert len(r4) == 1  # there should be one in DB and index should return 1
@@ -121,7 +122,7 @@ def main(self):
     name = schema_obj2.name + ""
     test = schema_obj2.test + ""
     number = schema_obj2.number + 0
-    args_search = {"number": number}
+    args_search = {"name": name}
     r = model.find(**args_search)
     assert len(r) == 1
     schema_obj2.delete()
@@ -131,14 +132,8 @@ def main(self):
     assert "not find obj with id:%s" % schema_obj2.id in str(ex.args[0])
 
     # lets now check that the index has been cleaned
-    args_search = {"number": number}
-    r = model.find(**args_search)
-    assert len(r) == 0
     args_search = {"name": name}
     r = model.find(**args_search)
-    assert len(r) == 0
-    args_search = {"test": test}
-    r = schema_obj2._model.find(**args_search)
     assert len(r) == 0
 
     try:
