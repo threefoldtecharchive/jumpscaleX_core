@@ -230,7 +230,7 @@ class BCDBModel(j.baseclasses.object):
                 # if obj.id in self.obj_cache:
                 #     self.obj_cache.pop(obj.id)
                 self.storclient.delete(obj.id)
-                self.index.delete(id=id)
+                self.index.delete_by_id(obj_id=obj.id)
         else:
             self.storclient.delete(obj_id)
             self.index.delete_by_id(obj_id=obj_id)
