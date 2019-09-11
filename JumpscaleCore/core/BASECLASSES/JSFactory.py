@@ -17,13 +17,11 @@ class JSFactory(JSBase, Attr):
             for kl in self.__class__._CHILDCLASSES:
                 # childclasses are the e.g. JSConfigs classes
 
-                if not kl._name:
-                    name = j.core.text.strip_to_ascii_dense(str(kl)).split(".")[-1].lower()
-                else:
-                    name = kl._name
-                assert name
-
+                # if not kl._name or not isinstance(kl._name, str):
+                #     name = j.core.text.strip_to_ascii_dense(str(kl)).split(".")[-1].lower()
+                # else:
                 obj = kl(parent=self, **kwargs)
+                name = obj._name
                 assert obj._parent
                 self._children[name] = obj
 

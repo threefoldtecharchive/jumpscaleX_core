@@ -111,13 +111,25 @@ class BCDBModelIndex(j.baseclasses.object):
 
         # self._id_set(obj.id, nid=obj.nid)
 
+    def delete_by_id(self, obj_id=None):
+        """
+        remove everything from index for this object
+        :param obj:
+        :return:
+        """
+        assert isinstance(obj_id, int)
+        self._sql_index_delete_by_id(obj_id=obj_id)
+        if self.index_text_needed:
+            self._text_index_delete(obj_id=obj_id)
+
     def delete(self, obj):
         """
         remove everything from index for this object
         :param obj:
         :return:
         """
-        assert obj.nid
+        assert not obj_id
+        assert not nid
         if obj.id is not None:
 
             # self._id_delete(obj.id)
@@ -188,9 +200,10 @@ class BCDBModelIndex(j.baseclasses.object):
         for chunk in self._chunks(text, int(self.sonic.bufsize) // 2):
             self.sonic.push(bucket, collection, object_tag, chunk)
 
-    def _text_index_delete_(self, property_name, val, obj_id, nid=1):
+    def _text_index_delete_(self, property_name, obj_id=None, nid=1):
         if not nid:
             nid = 1
+        assert obj_id
         keys = self._text_index_keys_get_(property_name, None, obj_id, nid)
         self.sonic.flush_object(*keys)
 

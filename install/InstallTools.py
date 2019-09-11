@@ -1022,7 +1022,7 @@ class Tools:
         # first deal with traceback
         if exception and not tb:
             # if isinstance(exception, BaseJSException):
-            if hasattr(exception, "exception"):
+            if hasattr(exception, "_exc_traceback"):
                 tb = exception._exc_traceback
             else:
                 extype_, value_, tb = sys.exc_info()

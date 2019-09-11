@@ -256,7 +256,6 @@ class Schema(j.baseclasses.object):
             if line.startswith("#"):
                 continue
             if "=" not in line:
-                j.shell()
                 raise j.exceptions.Input(
                     "did not find =, need to be there to define field, line=%s\ntext:%s" % (line, text)
                 )

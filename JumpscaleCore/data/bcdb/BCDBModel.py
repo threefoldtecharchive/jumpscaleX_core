@@ -211,23 +211,29 @@ class BCDBModel(j.baseclasses.object):
             self.set(obj, store=False, index=True)
 
     @queue_method
-    def delete(self, obj):
+    def delete(self, obj, force=True):
         if not isinstance(obj, j.data.schema._JSXObjectClass):
             if isinstance(obj, int):
-                obj = self.get(obj)
+                try:
+                    obj = self.get(obj)
+                except Exception as e:
+                    if not force:
+                        raise
+                    obj_id = obj + 0  # make sure is copy
+                    obj = None
             else:
                 raise j.exceptions.Base("specify id or obj")
-        assert obj.nid
-        if obj.id is not None:
-            self._triggers_call(obj=obj, action="delete")
-            # if obj.id in self.obj_cache:
-            #     self.obj_cache.pop(obj.id)
-            if not self.storclient:
-                raise RuntimeError("should never get here")
-                self.bcdb.sqlclient.delete(key=obj.id)
-            else:
+        if obj:
+            assert obj.nid
+            if obj.id is not None:
+                self._triggers_call(obj=obj, action="delete")
+                # if obj.id in self.obj_cache:
+                #     self.obj_cache.pop(obj.id)
                 self.storclient.delete(obj.id)
-            self.index.delete(obj)
+                self.index.delete(id=id)
+        else:
+            self.storclient.delete(obj_id)
+            self.index.delete_by_id(obj_id=obj_id)
 
     def check(self, obj):
         if not isinstance(obj, j.data.schema._JSXObjectClass):
@@ -506,6 +512,26 @@ class BCDBModel(j.baseclasses.object):
         # for obj_id in self.index._id_iterator(nid=nid):
         #     res.append(obj_id)
         # return res
+
+    @property
+    def ids_names(self):
+        """
+        return list of [[name,id]]
+        :return:
+        """
+        query = "SELECT id,name FROM %s; " % self.index.sql_table_name
+        cursor = self.index.db.execute_sql(query)
+        return [(item[0], item[1]) for item in cursor]
+
+    @property
+    def ids(self):
+        """
+        return list of ids (read from index)
+        :return:
+        """
+        query = "SELECT id FROM %s; " % self.index.sql_table_name
+        cursor = self.index.db.execute_sql(query)
+        return [item[0] for item in cursor]
 
     def iterate(self, nid=1):
         """

@@ -55,10 +55,13 @@ class ThreeBotServer(j.baseclasses.object_config):
         return self._openresty_server
 
     def bcdb_get(self, name):
+        zdb_admin = j.clients.zdb.client_admin_get()
+        if j.data.bcdb.exists(name=name):
+            if not zdb_admin.namespace_exists(name):
+                j.data.bcdb.destroy(name=name)
         if j.data.bcdb.exists(name=name):
             return j.data.bcdb.get(name=name)
         else:
-            zdb_admin = j.clients.zdb.client_admin_get()
             zdb = zdb_admin.namespace_new(name, secret=self.secret)
             return j.data.bcdb.new(name=name, storclient=zdb)
 
@@ -145,7 +148,10 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             # add user added packages
             for package in j.tools.threebot_packages.find():
-                package.start()
+                try:
+                    package.start()
+                except Exception as e:
+                    logdict = j.core.tools.log(level=50, exception=e, stdout=True)
 
             if web:
                 self.openresty_server.start()

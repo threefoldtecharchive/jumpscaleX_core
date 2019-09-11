@@ -186,11 +186,17 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         assert isinstance(name, str)
 
         if name in self._config:
-            storclient = self._get_storclient(name)
+            try:
+                storclient = self._get_storclient(name)
+            except Exception as e:
+                self._log_warning("could not create BCDB to destroy, will go without")
+                # logdict = j.core.tools.log(tb=tb, level=50, exception=e, stdout=True)
+                storclient = None
         else:
             raise RuntimeError("there should always be a storclient")
 
-        dontuse = BCDB(storclient=storclient, name=name, reset=True)
+        if storclient:
+            dontuse = BCDB(storclient=storclient, name=name, reset=True)
 
         if name in self._children:
             self._children.pop(name)

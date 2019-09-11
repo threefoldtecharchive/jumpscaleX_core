@@ -138,7 +138,7 @@ def get_completions(self, document, complete_event):
 
 
 def get_doc_string(tbc, locals_, globals_):
-    j = KosmosShellConfig.j
+    # j = KosmosShellConfig.j
 
     obj = eval_code(tbc, locals_=locals_, globals_=globals_)
     if not obj:
@@ -161,23 +161,28 @@ def get_doc_string(tbc, locals_, globals_):
 
 def patched_handle_exception(self, e):
     j = KosmosShellConfig.j
-    output = self.app.output
 
     # Instead of just calling ``traceback.format_exc``, we take the
     # traceback and skip the bottom calls of this framework.
     t, v, tb = sys.exc_info()
 
-    # Required for pdb.post_mortem() to work.
-    sys.last_type, sys.last_value, sys.last_traceback = t, v, tb
+    logdict = j.core.tools.log(tb=tb, level=50, exception=e, stdout=False)
+    formatted_tb = j.core.tools.log2str(logdict, data_show=True, replace=True)
 
-    # loop until getting actual traceback
-    last_stdin_tb = tb
-    while tb:
-        if tb.tb_frame.f_code.co_filename == "<stdin>":
-            last_stdin_tb = tb
-        tb = tb.tb_next
+    output = self.app.output
+    #
+    # # Required for pdb.post_mortem() to work.
+    # sys.last_type, sys.last_value, sys.last_traceback = t, v, tb
+    #
+    # # loop until getting actual traceback
+    # last_stdin_tb = tb
+    # while tb:
+    #     if tb.tb_frame.f_code.co_filename == "<stdin>":
+    #         last_stdin_tb = tb
+    #     tb = tb.tb_next
+    #
+    # formatted_tb = j.core.tools.traceback_format(last_stdin_tb)
 
-    formatted_tb = j.core.tools.traceback_format(last_stdin_tb)
     print_formatted_text(ANSI(formatted_tb))
 
     output.write("%s\n" % e)
@@ -457,6 +462,8 @@ def ptconfig(repl):
             completions = list(get_completions(self, document, complete_event))
         except Exception:
             j.tools.logger._log_error("Error while getting completions\n" + traceback.format_exc())
+
+        # j.tools.logger._log_error(completions)
 
         if not completions:
             completions = old_get_completions(self, document, complete_event)

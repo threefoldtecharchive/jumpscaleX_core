@@ -79,8 +79,10 @@ class {{BASENAME}}(BCDBModelIndex):
 
     def _sql_index_delete(self,obj):
         # if not self.sql.select().where(self.sql.id == obj.id).count()==0:
-        self.sql.delete().where(self.sql.id == obj.id).execute()
+        self.sql.delete().where(self.sql.id == id).execute()
 
+    def _sql_index_delete_by_id(self,obj_id):
+        self.sql.delete().where(self.sql.id == obj_id).execute()
 
     {% else %}
     def _init_index(self):
@@ -138,12 +140,11 @@ class {{BASENAME}}(BCDBModelIndex):
             self._text_index_set_("{{property_name}}",val,obj.id,nid=obj.nid)
         {%- endfor %}
 
-    def _text_index_delete(self,obj):
+    def _text_index_delete(self,obj_id=None,nid=None):
+        assert obj_id
+        assert nid
         {%- for property_name in index.fields_text %}
-        val = obj.{{property_name}}
-        if val not in ["",None]:
-            val=str(val)
-            self._text_index_delete_("{{property_name}}",val,obj.id,nid=obj.nid)
+        self._text_index_delete_("{{property_name}}",obj_id=obj_id,nid=nid)
         {%- endfor %}
 
     {% else %}
