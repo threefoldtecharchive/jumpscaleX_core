@@ -82,7 +82,12 @@ class {{BASENAME}}(BCDBModelIndex):
         msg = ""
         for _ in range(10):
             try:
-                self.sql.replace(**dd).execute()
+                z = self.sql.get_or_none(id=obj.id)
+                if z == None:
+                    self.sql.create(**dd)
+                else:
+                    rid = dd.pop('id')
+                    self.sql.update(**dd).where(self.sql.id==rid).execute()
                 break
             except peewee.OperationalError as e:
                 time.sleep(0.5)
