@@ -268,10 +268,16 @@ class BCDB(j.baseclasses.object):
             self._sqlite_index_client = None
 
     def redis_server_start(self, port=6380, secret="123456"):
+        self.redis_server_get(port=port, secret=secret)
+        self.redis_server.start()
+
+    def redis_server_get(self, port=6380, secret="123456"):
 
         self.redis_server = RedisServer(bcdb=self, port=port, secret=secret, addr="0.0.0.0")
         self.redis_server._init2(bcdb=self, port=port, secret=secret, addr="0.0.0.0")
-        self.redis_server.start()
+        return self.redis_server
+
+        redis_server
 
     def _data_process(self):
         # needs gevent loop to process incoming data

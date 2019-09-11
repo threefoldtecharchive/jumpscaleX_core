@@ -13,9 +13,6 @@ DEFAULT_BRANCH = "development_stabilize"
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
-DEFAULT_BRANCH = "development"
-
-
 def load_install_tools(branch=None):
     # get current install.py directory
     path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py"
