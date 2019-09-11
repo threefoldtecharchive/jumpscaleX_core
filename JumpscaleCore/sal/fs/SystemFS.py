@@ -177,7 +177,7 @@ class SystemFS(JSBASE, TESTTOOLS):
         @param createdir:   bool (when ssh creates parent directory)
         @param dst: string (path directory to be copied to...should not already exist)
         @param keepsymlinks: bool (True keeps symlinks instead of copying the content of the file)
-        @param deletefirst: bool (Set to True if you want to erase destination first, be carefull, this can erase directories)
+        @param deletefirst: bool (Set to True if you want to erase files/folders in the destination that also exist in the source, before copying.)
         @param overwriteFiles: if True will overwrite files, otherwise will not overwrite when destination exists
         """
         default_ignore_dir = [".egg-info", ".dist-info", "__pycache__"]
@@ -477,7 +477,7 @@ class SystemFS(JSBASE, TESTTOOLS):
         if not found will return None or die
 
         Raises:
-            RuntimeError -- if die 
+            RuntimeError -- if die
 
         Returns:
             string -- the path which has the dirname or None
