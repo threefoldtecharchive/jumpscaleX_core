@@ -41,7 +41,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             assert self._children
             assert self.jobs
             assert self.workers
-            # TODO: need to start the gevent loop for redis server for BCDB *if we are not running in a 3bot
+            self._mainloop_greenlet_redis = gevent.spawn(self._main_loop_redis)
             self._init_pre_schedule_ = True
 
     def action_get(self, key, return_none_if_not_exist=False):
@@ -145,10 +145,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 last = i.nr
         return last + 1
 
-    def start(self):
-        if not self._mainloop_greenlet_redis:
-            self._mainloop_greenlet_redis = gevent.spawn(self._main_loop_redis)
-
     def _main_loop_redis(self):
         serv = RedisServer(j.data.bcdb.system, addr="0.0.0.0")
         serv._init2(j.data.bcdb.system)
@@ -182,7 +178,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         :return:
         """
 
-        # state** = "NEW,ERROR,BUSY,WAITING,HALTED" (E)
 
         def kill(worker_obj):
             if kill_workers_in_error:
@@ -478,6 +473,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         if self._mainloop_greenlet_redis:
             self._mainloop_greenlet_redis.kill()
+        self._init_pre_schedule_ = False
 
         if reset:
             self.model_action.destroy()
