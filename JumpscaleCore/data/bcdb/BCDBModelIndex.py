@@ -111,7 +111,7 @@ class BCDBModelIndex(j.baseclasses.object):
 
         # self._id_set(obj.id, nid=obj.nid)
 
-    def delete_by_id(self, obj_id=None):
+    def delete_by_id(self, obj_id=None, nid=1):
         """
         remove everything from index for this object
         :param obj:
@@ -120,7 +120,7 @@ class BCDBModelIndex(j.baseclasses.object):
         assert isinstance(obj_id, int)
         self._sql_index_delete_by_id(obj_id=obj_id)
         if self.index_text_needed:
-            self._text_index_delete(obj_id=obj_id)
+            self._text_index_delete(obj_id=obj_id, nid=nid)
 
     def delete(self, obj):
         """

@@ -231,10 +231,10 @@ class BCDBModel(j.baseclasses.object):
                 # if obj.id in self.obj_cache:
                 #     self.obj_cache.pop(obj.id)
                 self.storclient.delete(obj.id)
-                self.index.delete_by_id(obj_id=obj.id)
+                self.index.delete_by_id(obj_id=obj.id, nid=obj.nid)
         else:
             self.storclient.delete(obj_id)
-            self.index.delete_by_id(obj_id=obj_id)
+            self.index.delete_by_id(obj_id=obj_id, nid=obj.nid)
 
     def check(self, obj):
         if not isinstance(obj, j.data.schema._JSXObjectClass):
