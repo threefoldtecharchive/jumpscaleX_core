@@ -4727,8 +4727,8 @@ class DockerContainer:
                 % MyEnv.sshagent.key_default_name
             )
             Tools.log("CONFIGURE THE CONTAINER", data=cmd)
-            Tools.execute(cmd)
-            Tools.execute("rm -f /tmp/InstallTools.py;rm -f /tmp/jsx")
+            self.sshexec(cmd)
+            self.sshexec("rm -f /tmp/InstallTools.py;rm -f /tmp/jsx")
             cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s"
             cmd += args_txt
         else:
