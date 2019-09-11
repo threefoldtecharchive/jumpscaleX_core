@@ -78,9 +78,6 @@ def main(self):
         print_objects(db_model.find())
         if sqlite:
             print("SQLITE TESTING")
-            import pudb
-
-            pudb.set_trace()
             query = db_model.index.sql.select()
 
             qres = [(item.name, item.nr) for item in query]
@@ -118,9 +115,10 @@ def main(self):
         # see that the change of data does not set the _changed_items
 
         model_obj3 = db_model.find()[2]
-
+        m3_id = model_obj3.id
         model_obj = db_model.get(model_obj3.id)
-        assert model_obj.id == 3
+
+        assert model_obj.id == m3_id
         n2 = model_obj.name + ""
         model_obj.name = n2
 
@@ -139,7 +137,7 @@ def main(self):
         db_model.set(model_obj)
 
         print_objects(db_model.find())
-        assert model_obj.id == 3
+        assert model_obj.id == m3_id
         model_obj2 = db_model.get(model_obj.id)
         assert model_obj2.token_price_usd == 10
         assert model_obj2._ddict["name"] == "name43"
@@ -176,7 +174,7 @@ def main(self):
     schema_sqlite = """
     @url = despiegk.test.sqlite
     llist2 = "" (LS)
-    name*** = ""
+    name** = ""
     email** = ""
     nr** = 0
     date_start** = 0 (D)
