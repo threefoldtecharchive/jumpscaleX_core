@@ -14,7 +14,6 @@ def main(self, reset=True, count=20):
         gevent.sleep(1)
         return "OK"
 
-    j.servers.myjobs.start()
     job_sch = j.servers.myjobs.schedule(wait_1sec)
     # just to have 1
 

@@ -7,7 +7,6 @@ def main(self, count=100):
     """
 
     self.reset()
-    self.start()
 
     def wait_1sec():
         gevent.sleep(1)

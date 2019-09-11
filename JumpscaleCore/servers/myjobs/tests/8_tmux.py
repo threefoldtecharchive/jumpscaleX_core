@@ -11,7 +11,6 @@ def main(self):
     """
 
     self.stop(reset=True)  # will make sure all tmux are gone
-    self.start()
     assert len(self.workers.find()) == 0
 
     self.workers_tmux_start(2)

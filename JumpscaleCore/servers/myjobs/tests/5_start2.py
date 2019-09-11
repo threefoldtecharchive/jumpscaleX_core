@@ -6,7 +6,6 @@ def main(self, count=40):
     kosmos -p 'j.servers.myjobs.test("start2")'
     """
 
-    self.start()
     self.workers_subprocess_start()
 
     def wait_2sec():

@@ -12,7 +12,6 @@ def main(self):
     def reset():
         # kill leftovers from last time, if any
         self.reset()
-        self.start()
         # self.init()
 
         jobs = self.jobs.find()
