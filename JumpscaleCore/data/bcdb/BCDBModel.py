@@ -65,6 +65,7 @@ class BCDBModel(j.baseclasses.object):
 
         self.readonly = False
         self._index_ = None  # if set it will make sure data is automatically set from object
+        self.autosave = False
         self.nosave = False
 
         if self.storclient and self.storclient.type == "ZDB":
