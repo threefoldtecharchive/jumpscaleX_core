@@ -6,7 +6,6 @@ from . import schemas
 from .MyWorkerProcess import MyWorkerProcess
 from .MyJobs import MyJobs
 from .MyWorker import MyWorkers
-from Jumpscale.data.bcdb.connectors.redis.RedisServer import RedisServer
 
 
 class MyJobsFactory(j.baseclasses.factory_testtools):
@@ -42,7 +41,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             assert self._children
             assert self.jobs
             assert self.workers
-            self._mainloop_greenlet_redis = gevent.spawn(self._main_loop_redis)
+            self._mainloop_greenlet_redis = gevent.spawn(self._bcdb.redis_server_start, port=self.BCDB_CONNECTOR_PORT)
             self._init_pre_schedule_ = True
 
     def action_get(self, key, return_none_if_not_exist=False):
@@ -145,11 +144,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             if i.nr > last:
                 last = i.nr
         return last + 1
-
-    def _main_loop_redis(self):
-        serv = RedisServer(j.data.bcdb.system)
-        serv._init2(j.data.bcdb.system, port=self.BCDB_CONNECTOR_PORT)
-        serv.start()
 
     def workers_subprocess_start(self, nr_fixed_workers=None, debug=False):
         """

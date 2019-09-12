@@ -31,7 +31,6 @@ from .BCDBMeta import BCDBMeta
 from .connectors.redis.RedisServer import RedisServer
 from Jumpscale import j
 import sys
-import time
 
 JSBASE = j.baseclasses.object
 
@@ -272,12 +271,9 @@ class BCDB(j.baseclasses.object):
         self.redis_server.start()
 
     def redis_server_get(self, port=6380, secret="123456"):
-
         self.redis_server = RedisServer(bcdb=self, port=port, secret=secret, addr="0.0.0.0")
         self.redis_server._init2(bcdb=self, port=port, secret=secret, addr="0.0.0.0")
         return self.redis_server
-
-        redis_server
 
     def _data_process(self):
         # needs gevent loop to process incoming data
