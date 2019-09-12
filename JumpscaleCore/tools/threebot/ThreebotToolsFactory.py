@@ -1,8 +1,9 @@
 from Jumpscale import j
 import binascii
-from .ThreebotClient import ThreebotClient
+from Jumpscale.clients.threebot.ThreebotClient import ThreebotClient
 from io import BytesIO
 from nacl.signing import VerifyKey
+from nacl.public import PrivateKey, PublicKey, SealedBox
 
 JSConfigBase = j.baseclasses.object_config_collection
 
@@ -25,6 +26,29 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
             return j.data.serializers.json
         if serialization_format == "msgpack":
             return j.data.serializers.msgpack
+
+    def _unserialize_item(self, data, serialization_format="json"):
+        """
+        :param data: can be a binary blob or a list of items, which will be converted to binary counterpart
+        :param serialization_format: json or msgpack
+
+        unserialization as follows:
+
+            int,float,str,binary  -> stay in native format
+            json.dumps(list)  -> list   
+            json.dumps(dict) -> dict   
+            jsxobject.json -> jsxobject  
+
+        """
+        serializer = self._serializer_get(serialization_format)
+
+        if isinstance(data, str) or isinstance(data, int) or isinstance(data, float):
+            return data
+        else:
+            try:
+                return serializer.loads(data)
+            except:
+                return data
 
     def _serialize_item(self, data, serialization_format="json"):
         """
@@ -79,6 +103,33 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
             res.append(self._serialize_item(item, serialization_format=serialization_format))
         return serializer.dumps(res)
 
+    def unserialize(self, data, serialization_format="json"):
+        """
+        :param data: a list which needs to be unserialized, can be a list of 1 item ofcourse
+        :param serialization_format: json or msgpack
+
+        members of the list (if a list) or the item itself if no list
+
+            int,float,str,binary  -> stay in native format
+            list -> json.dumps(list)   (or other serialization format)
+            dict -> json.dumps(dict)
+            jsxobject -> jsxobject.json
+
+        return unserialized list of unserialized items
+        or if no list
+        return serialized item
+
+        """
+        serializer = self._serializer_get(serialization_format)
+        data = serializer.loads(data)
+        if not isinstance(data, list):
+            raise j.exceptions.Input("only list supported")
+
+        res = []
+        for item in data:
+            res.append(self._unserialize_item(item, serialization_format=serialization_format))
+        return res
+
     def serialize_sign_encrypt(self, data, serialization_format="json", pubkey_hex=None):
         """
         will sign any data with private key of our local 3bot private key
@@ -106,10 +157,12 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
         """
         data2 = self.serialize(data, serialization_format=serialization_format)
         tid = j.core.myenv.config["THREEBOT_ID"]
-        signature = self._nacl.signing_key.sign(data2)
+        if isinstance(data2, str):
+            data2 = data2.encode()
+        signature = self._nacl.sign(data2)
         if pubkey_hex:
-            pubkey = binascii.unhexlify(pubkey_hex)
-            data3 = ""  # TODO: encrypt using pubkey
+            pubkey = PublicKey(binascii.unhexlify(pubkey_hex))
+            data3 = self._nacl.encrypt(data2, public_key=pubkey)
         else:
             data3 = data2
         return [tid, data3, signature]
@@ -117,17 +170,29 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
     def deserialize_check_decrypt(self, data, serialization_format="json", pubkey_hex=None):
         """
 
-        if public_encryption_key given will then check the signature (is binary encoded pub key)
+        if pubkey_hex given will then check the signature (is binary encoded pub key)
         decryption will happen with the private key
-
+        the serialization_format should be the one used in self.serialize_sign_encrypt()
+        as we will use it to deserialize the encrypted data
         :param data: result of self.serialize_sign_encrypt()
         :param serialization_format: json or msgpack
 
-        :return: [list of items] which were serialized using self.serialize()
+        :return: [list of items] deserialized but which were serialized in data using serialization_format 
+        raises exceptions if decryption or signature fails
 
         """
-        # TODO:
-        pass
+
+        # decrypt data
+        data_dec_ser = self._nacl.decrypt(data[1])
+        # unserialize data
+        data_dec = self.unserialize(data_dec_ser, serialization_format=serialization_format)
+        # verify the signature against the provided pubkey and the decrypted data
+        sign_is_ok = self._nacl.verify(data_dec_ser, data[2], verify_key=binascii.unhexlify(pubkey_hex))
+        if not sign_is_ok:
+            raise j.exceptions.Base(
+                "could not verify signature:%s, against pubkey:%s" % (data[2], binascii.unhexlify(pubkey_hex))
+            )
+        return data_dec
 
     #
     # def _payload_check(self, id=None, name=None, email=None, ipaddr="", description="", pubkey_hex=None):
@@ -162,53 +227,27 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
     #     assert n.verify(payload, signature, verify_key=pubkey)
     #
     #     return signature_hex
+    def get_test_data(self):
+        dico = {}
+        dico["a"] = 1
+        dico["yolo"] = "yeeh"
+        data_list = [42, 5.6, "lorem ipsum gloria dea alea jacta es", dico, ["uouo", dico]]
+        return data_list
 
-    def test(self):
+    def test(self, name=""):
         """
+        following will run all tests
+
         kosmos 'j.tools.threebot.test()'
         :return:
+
+
         """
 
-        # simulate I am remote threebot
-        client_nacl = ""  # TODO create a new nacl
-        server_nacl = j.data.nacl.default (the one we have)
+        print(name)
+        if not "THREEBOT_ID" in j.core.myenv.config:
+            j.core.myenv.config["THREEBOT_ID"] = "t1000.advanced.prototype"
+        self._test_run(name=name)
 
-        server_tid = j.core.myenv.config["THREEBOT_ID"]
-        client_tid = 99
-
-        self._nacl = client_nacl
-        data = [True, 1, [1, 2, "a"], jsxobject, "astring"]
-        data_send_over_wire = self.serialize_sign_encrypt(
-            data, pubkey_hex=server_nacl.pubkey
-        )  # todo select right pubkey
-
-        # client send the above to server
-
-        #now we are server
-        self._nacl = server_nacl
-
-        # server just returns the info
-
-        data_readable_on_server = self.deserialize_check_decrypt(data_send_over_wire, pubkey_hex=client_nacl.pubkey)
-        # data has now been verified with pubkey of client
-
-        assert data_readable_on_server == [True, 1, [1, 2, "a"], jsxobject._json, "astring"]
-
-        # lets now return the data to the client
-
-        data_send_over_wire_return = self.serialize_sign_encrypt(data, pubkey_hex=client_nacl.pubkey)
-
-        #now we are client
-        self._nacl = client_nacl
-        # now on client we check
-        data_readable_on_client = self.deserialize_check_decrypt(
-            data_send_over_wire_return, pubkey_hex=server_nacl.pubkey
-        )
-
-        #back to normal
-        self._nacl = server_nacl
-        j.core.myenv.config["THREEBOT_ID"] = server_tid
-
-
-
-        self._log_info("test ok")
+        self._log_info("All TESTS DONE")
+        return "OK"
