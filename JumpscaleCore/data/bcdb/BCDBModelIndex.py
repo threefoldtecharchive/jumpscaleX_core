@@ -18,11 +18,7 @@
 # LICENSE END
 
 
-from pyblake2 import blake2b
 from Jumpscale import j
-
-import struct
-from .BCDBDecorator import *
 
 
 # INT_BIN_EMPTY = b"\xff\xff\xff\xff"  # is the empty value for in our key containers
