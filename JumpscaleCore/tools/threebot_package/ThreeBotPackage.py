@@ -52,9 +52,9 @@ class ThreeBotPackage(JSConfigBase):
             self._package = klass(package=self)
         self._init_ = True
 
-    def prepare(self):
+    def prepare(self, *args):
         self._init_before_action()
-        self._package.prepare()
+        self._package.prepare(*args)
 
     def start(self):
         self._init_before_action()
