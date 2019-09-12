@@ -3536,7 +3536,8 @@ class MyEnv_:
         loads the configuration file which default is in {DIR_BASE}/cfg/jumpscale_config.toml
         {DIR_BASE} normally is /sandbox
         """
-        self.config = Tools.config_load(self.config_file_path)
+        config = Tools.config_load(self.config_file_path)
+        self.config = self.config_default_get(config)
 
     def config_save(self):
         Tools.config_save(self.config_file_path, self.config)
