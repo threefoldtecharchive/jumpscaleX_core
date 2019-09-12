@@ -143,7 +143,7 @@ class Schema(j.baseclasses.object):
         self._log_debug("load schema", data=text)
 
         if text.count("@url") > 1:
-            raise j.exceptions.Input("there should only be 1 url in the schema")
+            raise j.exceptions.Input("there should only be 1 url in the schema", data=text)
 
         self.text = j.core.text.strip(text)
 

@@ -39,20 +39,20 @@ rights = ""
 
 #acl's and users are std property the records being inserted in the BCDB
 
-
-@url = jumpscale.bcdb.meta.2
-schemas = (LO) !jumpscale.bcdb.meta.schema.2
-namespaces = (LO) !jumpscale.bcdb.meta.namespace.2
-nid = 0  #namespace id
-name = "" (S)
-url_to_mid = {} (DICT)
-
-@url = jumpscale.bcdb.meta.schema.2
-@sub = true
-url = ""
-text = ""
-md5 = ""
-hasdata = False (B) #if True then we know there needs to be id's in the metadata for the iterator
+#
+#url = jumpscale.bcdb.meta.2
+#schemas = (LO) !jumpscale.bcdb.meta.schema.2
+#namespaces = (LO) !jumpscale.bcdb.meta.namespace.2
+#nid = 0  #namespace id
+#name = "" (S)
+#url_to_mid = {} (DICT)
+#
+#url = jumpscale.bcdb.meta.schema.2
+#@sub = true
+#url = ""
+#text = ""
+#md5 = ""
+#hasdata = False (B) #if True then we know there needs to be id's in the metadata for the iterator
 
 @url = jumpscale.bcdb.meta.namespace.2
 name** = ""                              #chosen name needs to be unique
