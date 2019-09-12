@@ -87,6 +87,8 @@ class BCDBMeta(j.baseclasses.object):
             self._add_to_schema_factory(url=d["url"], md5=d["md5"], text=d["text"])
 
     def _add_to_schema_factory(self, md5, url, text):
+        if text.find("@url") == -1:
+            text = "@url = %s\n%s" % (url, text)
         if not j.data.schema.exists(md5=md5):
             j.data.schema._md5_to_schema[md5] = text
         j.data.schema._url_to_md5[url] = md5
