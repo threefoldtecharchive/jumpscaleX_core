@@ -2,13 +2,12 @@ import gevent
 from Jumpscale import j
 
 
-def main(self, reset=True, count=20):
+def main(self, count=20):
     """
     kosmos -p 'j.servers.myjobs.test("data_process")'
     kosmos -p 'j.servers.myjobs.test("data_process",reset=False)'
     """
-    if reset:
-        self.stop(reset=True)
+    self.stop(reset=True)
 
     def wait_1sec():
         gevent.sleep(1)
@@ -60,8 +59,12 @@ def main(self, reset=True, count=20):
     self.workers_tmux_start(4)
 
     print(ids)
-    res = self.results(ids)
-    for id in ids:
-        assert res[id] == "OK"
+    jobs = self.wait(ids)
+    self.stop()
+    print(f"XXXX {job_sch.id}")
+    for job in jobs:
+        if job.result != "OK":
+            __import__('pudb').set_trace()
+        assert job.result == "OK"
 
     print("TEST OK")

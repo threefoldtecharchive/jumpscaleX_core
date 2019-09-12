@@ -21,6 +21,7 @@
 # from importlib import import_module
 
 import gevent
+import time
 from Jumpscale.clients.stor_zdb.ZDBClientBase import ZDBClientBase
 from Jumpscale.clients.stor_rdb.RDBClient import RDBClient
 from Jumpscale.clients.stor_sqlite.DBSQLite import DBSQLite
@@ -269,6 +270,20 @@ class BCDB(j.baseclasses.object):
     def redis_server_start(self, port=6380, secret="123456"):
         self.redis_server_get(port=port, secret=secret)
         self.redis_server.start()
+
+    def redis_server_wait_up(self, port, timeout=60):
+        start = time.time()
+        client = j.clients.redis.get(port=port)
+        while start + timeout > time.time():
+            try:
+                client.ping()
+                break
+            except:
+                pass
+            gevent.sleep(0.5)
+        else:
+            raise j.exceptions.RuntimeError("Failed to wait for redisserver")
+
 
     def redis_server_get(self, port=6380, secret="123456"):
         self.redis_server = RedisServer(bcdb=self, port=port, secret=secret, addr="0.0.0.0")

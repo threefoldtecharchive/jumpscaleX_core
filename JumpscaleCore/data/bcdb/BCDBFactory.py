@@ -25,8 +25,6 @@ from .BCDBModel import BCDBModel
 
 import os
 import sys
-import redis
-import copy
 
 
 class BCDBFactory(j.baseclasses.factory_testtools):

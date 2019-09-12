@@ -31,6 +31,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self.model_action = self._bcdb.model_get(schema=schemas.action)
 
         self.scheduled_ids = []
+        self.events = {}
         self._init_pre_schedule_ = False
         self._i_am_worker = False
 
@@ -42,7 +43,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             assert self.jobs
             assert self.workers
             self._mainloop_greenlet_redis = gevent.spawn(self._bcdb.redis_server_start, port=self.BCDB_CONNECTOR_PORT)
+            self._bcdb.redis_server_wait_up(self.BCDB_CONNECTOR_PORT)
             self._init_pre_schedule_ = True
+            self.jobs._model.trigger_add(self._job_update)
 
     def action_get(self, key, return_none_if_not_exist=False):
 
@@ -273,6 +276,13 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
             gevent.time.sleep(10)
 
+    def _job_update(self, obj, action="save", **kwargs):
+        if action in ["save", "set_post", "change"]:
+            if obj.state in ["ERROR", "OK"]:
+                event = self.events.pop(obj.id, None)
+                if event:
+                    event.set()
+
     def _main_loop_subprocess(self):
         """
         gevent loop
@@ -386,11 +396,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         name=None,
         category="",
         timeout=0,
-        inprocess=False,
-        return_queues=[],
-        return_queues_reset=False,
         dependencies=None,
-        gevent=False,
         wait=False,
         die=True,
         **kwargs,
@@ -420,8 +426,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             method=method,
             kwargs=kwargs,
             dependencies=dependencies,
-            return_queues=return_queues,
-            return_queues_reset=return_queues_reset,
         )
 
         job.time_start = j.data.time.epoch
@@ -430,6 +434,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         job.category = category
         job.die = die
         self.scheduled_ids.append(job.id)
+        self.events[job.id] = gevent.event.Event()
         self.queue_jobs_start.put(job.id)
         if wait:
             return job.wait(die=die)
@@ -524,14 +529,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             raise j.exceptions.BUG("jobs to wait on should not be None, there are no jobs in scheduled ids")
 
         with gevent.Timeout(timeout, False):
-            runningjobs = jobs.copy()
-            while runningjobs:
-                gevent.time.sleep(0.3)
-                for job in runningjobs[:]:
-                    job.load()
-                    if job.check_ready(die=die):
-                        runningjobs.remove(job)
-            return jobs
+            for job in jobs:
+                job.wait(die=die)
+        return jobs
 
     def results(self, ids=None, timeout=100, die=True):
         jobs = self.wait(ids=ids, timeout=timeout, die=die)

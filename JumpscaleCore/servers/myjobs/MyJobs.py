@@ -140,6 +140,16 @@ class MyJob(j.baseclasses.object_config):
         self.check_ready()
 
     def wait(self, timeout=None, die=True):
+        event = j.servers.myjobs.events.get(self.id, None)
+        ready = self.check_ready(die=die, load=False)
+        if ready:
+            return True
+        if event:
+            event.wait(timeout)
+            ready = self.check_ready(die=die, load=True)
+            if ready:
+                return True
+
         with gevent.Timeout(timeout, False):
             while True:
                 if self.check_ready(die=die):
