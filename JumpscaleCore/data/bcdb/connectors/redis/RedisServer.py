@@ -184,21 +184,21 @@ class RedisServer(j.baseclasses.object):
         splitted = key.split(":")
         len_splitted = len(splitted)
         m = ""
-        if len_splitted == 3:
-            cat = splitted[1]
-            if cat == "schemas":
-                url = splitted[-1]
-            else:
-                url = ""
-            key = ""
-        elif len_splitted == 4:
-            cat = splitted[1]
-            url = splitted[3]
-            key = ""
-        elif len_splitted == 5:
-            cat = splitted[1]
-            url = splitted[3]
-            key = splitted[4]
+        key = ""
+        if "schemas" in splitted[:2]:
+            idx = splitted.index("schemas")
+            cat = "schemas"
+            url = splitted[idx + 1]
+        else:
+            if len_splitted == 3:
+                cat = splitted[1]
+            elif len_splitted == 4:
+                cat = splitted[1]
+                url = splitted[3]
+            elif len_splitted == 5:
+                cat = splitted[1]
+                url = splitted[3]
+                key = splitted[4]
         if url != "":
             # If we have a url we should be able to get the corresponding model if we already have seen that model
             # otherwise we leave the model to an empty string because it is tested further on to know that we have to set
@@ -206,8 +206,10 @@ class RedisServer(j.baseclasses.object):
             for schema in self.bcdb.meta.schema_dicts:
                 if url == schema["url"]:
                     m = self.bcdb.model_get(url=schema["url"])
+                    break
                 elif url == schema["md5"]:
                     m = self.bcdb.model_get(url=schema["url"])
+                    break
 
         return (cat, url, key, m)
 
@@ -295,7 +297,7 @@ class RedisServer(j.baseclasses.object):
         parse_key = key.replace(":", "/")
         vfs_objs = self.vfs.get(self.bcdb.name + "/" + parse_key)
         if isinstance(vfs_objs.get(), str):
-            response.encode("1")
+            response.encode(1)
             return
         response.encode(len(vfs_objs.items))
         return
@@ -323,7 +325,6 @@ class RedisServer(j.baseclasses.object):
         res = []
 
         if "schemas" in key:
-            key.split()
             res.append(model.mid)
             res.append(model.schema.text)
             response._array(["0", res])
