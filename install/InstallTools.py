@@ -3190,7 +3190,6 @@ class MyEnv_:
         return "%s/cfg" % self._basedir_get()
 
     def config_default_get(self, config={}):
-
         if "DIR_BASE" not in config:
             config["DIR_BASE"] = self._basedir_get()
 
@@ -3210,16 +3209,22 @@ class MyEnv_:
             config["INTERACTIVE"] = True
         if not "SECRET" in config:
             config["SECRET"] = ""
-
-        config["SSH_AGENT"] = True
-        config["SSH_KEY_DEFAULT"] = ""
-
-        config["LOGGER_INCLUDE"] = ["*"]
-        config["LOGGER_EXCLUDE"] = ["sal.fs"]
-        config["LOGGER_LEVEL"] = 15  # means std out & plus gets logged
-        config["LOGGER_CONSOLE"] = True
-        config["LOGGER_REDIS"] = False
-        config["LOGGER_PANEL_NRLINES"] = 15
+        if "SSH_AGENT" not in config:
+            config["SSH_AGENT"] = True
+        if "SSH_KEY_DEFAULT" not in config:
+            config["SSH_KEY_DEFAULT"] = ""
+        if "LOGGER_INCLUDE" not in config:
+            config["LOGGER_INCLUDE"] = ["*"]
+        if "LOGGER_EXCLUDE" not in config:
+            config["LOGGER_EXCLUDE"] = ["sal.fs"]
+        if "LOGGER_LEVEL" not in config:
+            config["LOGGER_LEVEL"] = 15  # means std out & plus gets logged
+        if "LOGGER_CONSOLE" not in config:
+            config["LOGGER_CONSOLE"] = True
+        if "LOGGER_REDIS" not in config:
+            config["LOGGER_REDIS"] = False
+        if "LOGGER_PANEL_NRLINES" not in config:
+            config["LOGGER_PANEL_NRLINES"] = 15
 
         if self.readonly:
             config["DIR_TEMP"] = "/tmp/jumpscale_installer"
