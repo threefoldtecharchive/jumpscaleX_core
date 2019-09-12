@@ -38,7 +38,7 @@ def main(self):
 
     s = j.data.schema.get_from_url("threefoldtoken.wallet")
 
-    assert len(s.properties_index_keys) == 1
+    assert len(s.properties_index_sql) == 1
     assert len(s.properties) == 5
 
     assert s.systemprops.importance == "true"
