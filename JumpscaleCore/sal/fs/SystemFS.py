@@ -1389,8 +1389,12 @@ class SystemFS(JSBASE, TESTTOOLS):
             if ignore_empty_files:
                 if self.fileSize(file) == 0:
                     continue
-            md5 = self.md5sum(file).encode("utf-8")
-            dir_hash.update(md5)
+            with open(file, "rb") as fh:
+                while True:
+                    buf = fh.read(4096)
+                    if buf == b"":
+                        break
+                    dir_hash.update(buf)
         return dir_hash.hexdigest()
 
     def getTmpDirPath(self, name="", create=True):
