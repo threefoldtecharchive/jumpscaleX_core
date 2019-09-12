@@ -1,16 +1,15 @@
-from Jumpscale import j
-
+import gevent
 import sys
 import mimetypes
 
+from gevent import monkey
+from gevent.baseserver import BaseServer
+from Jumpscale import j
 
 JSBASE = j.baseclasses.object
 
-from gevent import monkey
 
 monkey.patch_all(subprocess=False)
-import gevent
-from gevent import event
 
 
 class ServerRack(JSBASE):
@@ -25,18 +24,17 @@ class ServerRack(JSBASE):
         # self._monkeypatch_done = False
 
     def add(self, name, server, start=False):
+        """add a gevent server
+
+
+        :param name: server name
+        :type name: str
+        :param server: server instance
+        :type server: gevent.baseserver.BaseServer
+        :param start: if set, will call server.start()
+        :type start: bool, optional
         """
-        add a gevent server e.g
-
-        - gedis_server = j.servers.gedis.geventservers_get("test")
-        - web_server = j.servers.web.geventserver_get("test")
-
-        can then add them
-
-        REMARK: make sure that subprocesses are run before adding gevent servers
-
-        """
-        assert server
+        assert isinstance(server, BaseServer)
         self.servers[name] = server
         if start:
             server.start()
@@ -201,28 +199,30 @@ class ServerRack(JSBASE):
         self.add(name=name, server=server)
 
     def start(self):
-        # self._monkeypatch()
-        started = []
-        try:
-            for key, server in self.servers.items():
-                server.start()
-                started.append(server)
-                name = getattr(server, "name", None) or server.__class__.__name__ or "Server"
-                self._log_info("%s started on %s" % (name, server.address))
-        except:
-            self.stop(started)
-            raise
+        greenlets = []
+        for _, server in self.servers.items():
+            greenlets.append(gevent.spawn(server.serve_forever))
+            name = getattr(server, "name", None) or server.__class__.__name__ or "Server"
+            self._log_info("%s started on %s" % (name, server.address))
 
-        forever = event.Event()
         try:
-            forever.wait()
+            gevent.joinall(greenlets, raise_error=True)
         except KeyboardInterrupt:
             self.stop()
+        except Exception:
+            self.stop()
+            raise
 
     def stop(self, servers=None):
+        """stop all added servers
+
+        :param servers: list of servers, defaults to None
+        :type servers: [gevent.baseserver.BaseServer], optional
+        """
         self._log_info("stopping server rack")
         if servers is None:
-            servers = [item[1] for item in self.servers.items()]
+            servers = self.servers.values()
+
         for server in servers:
             try:
                 server.stop()
