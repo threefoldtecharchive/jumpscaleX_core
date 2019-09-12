@@ -42,7 +42,7 @@ rights = ""
 
 @url = jumpscale.bcdb.meta.2
 schemas = (LO) !jumpscale.bcdb.meta.schema.2
-namespaces = (LO) !jumpscale.bcdb.namespace.2
+namespaces = (LO) !jumpscale.bcdb.meta.namespace.2
 nid = 0  #namespace id
 name** = "" (S)
 url_to_mid = {} (DICT)
