@@ -2,11 +2,11 @@ from Jumpscale import j
 
 from bottle import post, run, response, request, Bottle
 
-client = j.clients.gedis.get(name='main_gedis_threebot', port=8901)
 app = Bottle()
 
 @app.route("/actors/<name>/<cmd>", method="post")
 def client_handler(name, cmd):
+    client = j.clients.gedis.get(name='main_gedis_threebot', port=8901)
     actor = getattr(client.actors, name, None)
     if not actor:
         response.status = 404
