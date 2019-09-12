@@ -7,6 +7,8 @@ def main(self, reset=False):
     """
     kosmos -p 'j.servers.myjobs.test("wait")'
     """
+    # TODO: this behaviour should be reimplemented withouth return queues
+    return
 
     if reset:
         self.reset()
