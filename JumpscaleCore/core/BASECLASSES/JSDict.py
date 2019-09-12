@@ -44,7 +44,6 @@ class JSDict(MutableMapping):
 
     def _add(self, name, value):
         name = self._name_clean(name)
-
         self._data[name] = value
 
     def __iter__(self):

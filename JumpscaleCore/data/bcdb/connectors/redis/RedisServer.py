@@ -318,8 +318,9 @@ class RedisServer(j.baseclasses.object):
         _, _, _, model = self._split(key)
         # objs = model.get_all()
         res = []
+        j.shell()
         if "schemas" in key:
-            res.append(model.sid)
+            res.append(model.mid)
             res.append(model.schema.text)
             response._array(["0", res])
             return

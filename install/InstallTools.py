@@ -1523,6 +1523,7 @@ class Tools:
 
     @staticmethod
     def shell(loc=True):
+
         if loc:
             import inspect
 
@@ -1545,6 +1546,7 @@ class Tools:
 
             Tools._shell = InteractiveShellEmbed(banner1="", exit_msg="")
             Tools._shell.Completer.use_jedi = False
+
         return Tools._shell(stack_depth=2)
 
     # @staticmethod
