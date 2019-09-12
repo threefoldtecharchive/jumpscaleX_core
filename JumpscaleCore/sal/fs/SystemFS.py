@@ -168,7 +168,7 @@ class SystemFS(JSBASE, TESTTOOLS):
         The dst directory may already exist; if not,
         it will be created as well as missing parent directories
         @param src: string (source of directory tree to be copied)
-        @param rsyncdelete will remove files on dest which are not on source (default)
+        @param rsyncdelete will remove files on dest which are not on source (default) this works with the overwriteFiles to true otherwise it will not remove any files
         @param recursive:  recursively look in all subdirs
         :param ignoredir: the following are always in, no need to specify ['.egg-info', '.dist-info', '__pycache__']
         :param ignorefiles: the following are always in, no need to specify: ["*.egg-info","*.pyc","*.bak"]
@@ -284,6 +284,8 @@ class SystemFS(JSBASE, TESTTOOLS):
             if not overwriteFiles:
                 cmd += " --ignore-existing "
             if rsyncdelete and overwriteFiles:
+                # --delete delete extraneous files from dest dirs
+                # --delete-excluded also delete excluded files from dest dirs
                 cmd += " --delete --delete-excluded "
             if ssh:
                 cmd += " -e 'ssh -o StrictHostKeyChecking=no -p %s' " % sshport
