@@ -21,9 +21,7 @@ class MyJob(j.baseclasses.object_config):
                 elif isinstance(dep, int):
                     self.dependencies.append(dep)
                 else:
-                    raise j.exceptions.Input(
-                        "only jsx obj (job) or int supported in dependencies"
-                    )
+                    raise j.exceptions.Input("only jsx obj (job) or int supported in dependencies")
 
         if args_replace:
             for key, val in args_replace.items():
@@ -129,9 +127,7 @@ class MyJob(j.baseclasses.object_config):
         return self.check_ready()
 
     def start(self):
-        self._log_debug(
-            "executing method {0} with **kwargs {1} ".format(self.name, self.kwargs)
-        )
+        self._log_debug("executing method {0} with **kwargs {1} ".format(self.name, self.kwargs))
         j.servers.myjobs.scheduled_ids.append(self.id)
         j.servers.myjobs.queue_jobs_start.put(self.id)
 
