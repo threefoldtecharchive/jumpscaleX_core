@@ -54,8 +54,8 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         return self.__code_generation_dir
 
     def reset(self):
-        self._url_to_md5 = {}  # NO LONGER A LIST
-        self._md5_to_schema = {}
+        self._url_to_md5 = j.baseclasses.dict()
+        self._md5_to_schema = j.baseclasses.dict()
 
     def exists(self, md5=None, url=None):
         if md5:
@@ -75,7 +75,6 @@ class SchemaFactory(j.baseclasses.factory_testtools):
                 if schema_text_or_obj.strip() == "":
                     raise j.exceptions.JSBUG("schema should never be empty string")
                 self._add_text_to_schema_obj(schema_text_or_obj)
-
             assert isinstance(self._md5_to_schema[md5], j.data.schema.SCHEMA_CLASS)
             return self._md5_to_schema[md5]
         else:
@@ -208,16 +207,16 @@ class SchemaFactory(j.baseclasses.factory_testtools):
 
         s = Schema(text=schema_text, md5=md5, url=url)
 
-        self._md5_to_schema[md5] = s
-        self.schemas_md5._add(md5, s)
+        # here we always update the md5 because if we are here it means
+        # that we have added a new schema
         self._url_to_md5[s.url] = md5
+
+        self._md5_to_schema._add(md5, s)
+        self.schemas_md5._add(md5, s)
 
         self.schemas._add(s.url, s)
 
         assert s.url
-        # here we always update the md5 because if we are here it means
-        # that we have added a new schema
-        self._url_to_md5[s.url] = md5
 
         return md5
 
