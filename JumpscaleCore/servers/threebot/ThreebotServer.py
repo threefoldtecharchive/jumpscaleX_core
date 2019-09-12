@@ -148,9 +148,8 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.rack_server.add("gedis", self.gedis_server.gevent_server)
 
             bcdb = j.data.bcdb.system
-            bcdb_redis = bcdb.redis_server_get(port=6380, secret="123456")
-            # bcdb_redis is not a gevent.baseserver.BaseServer, but bcdb_redis.redis_server is
-            self.rack_server.add("bcdb_system_redis", bcdb_redis.redis_server)
+            redis_server = bcdb.redis_server_get(port=6380, secret="123456")
+            self.rack_server.add("bcdb_system_redis", redis_server.gevent_server)
 
             # add user added packages
             for package in j.tools.threebot_packages.find():
