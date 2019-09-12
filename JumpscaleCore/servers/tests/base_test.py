@@ -7,10 +7,10 @@ from loguru import logger
 class BaseTest(unittest.TestCase):
     LOGGER = logger
     LOGGER.add("server_{time}.log")
+    SERVERS = servers.servers.copy()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.servers = servers.servers.copy()
 
     def info(self, message):
         BaseTest.LOGGER.info(message)
