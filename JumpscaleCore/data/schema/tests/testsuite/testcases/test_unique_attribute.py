@@ -18,7 +18,7 @@
 # LICENSE END
 
 
-from JumpscaleLibs.data.schema.tests.testsuite.testcases.base_test import BaseTest
+from Jumpscale.data.schema.tests.testsuite.testcases.base_test import BaseTest
 from Jumpscale import j
 import random
 
@@ -50,7 +50,7 @@ class Unique(BaseTest):
         #. Change test var of the first object and try to use the first test var again, should success.
         #. Change number of the first object and try to use the first number again, should success.
         #. Delete the second object and create new one.
-        #. Set the new object's attributes with the same attributes of the second object, should success. 
+        #. Set the new object's attributes with the same attributes of the second object, should success.
         """
         self.log("Create schema with unique attributes and save it")
         scm = """
