@@ -54,7 +54,7 @@ text = ""
 md5 = ""
 hasdata = False (B) #if True then we know there needs to be id's in the metadata for the iterator
 
-@url = jumpscale.bcdb.namespace.2
+@url = jumpscale.bcdb.meta.namespace.2
 name** = ""                              #chosen name needs to be unique
 acls = (LO) !jumpscale.bcdb.acl.2
 write_once = False (B)  #means in this namespace records can only be written once, no modification possible
