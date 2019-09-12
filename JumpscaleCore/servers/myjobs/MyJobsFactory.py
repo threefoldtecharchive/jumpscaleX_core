@@ -386,11 +386,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         name=None,
         category="",
         timeout=0,
-        inprocess=False,
-        return_queues=[],
-        return_queues_reset=False,
         dependencies=None,
-        gevent=False,
         wait=False,
         die=True,
         **kwargs,
@@ -398,14 +394,10 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         """
 
         :param method:
-        :param args:
+        :param name:
         :param category:
         :param timeout:
         :param inprocess:
-        :param return_queues: the result job id will be posted on the specified return_queue names (error or ok)
-        :param return_queues_reset, if True will make sure the queues are empty
-        :param gevent: means return queues will not be kept in redis, but in gevent queues
-        :param kwargs:
         :return:
         """
         self._init_pre_schedule()
@@ -420,8 +412,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             method=method,
             kwargs=kwargs,
             dependencies=dependencies,
-            return_queues=return_queues,
-            return_queues_reset=return_queues_reset,
         )
 
         job.time_start = j.data.time.epoch
