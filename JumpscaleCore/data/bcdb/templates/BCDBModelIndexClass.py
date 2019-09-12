@@ -27,8 +27,6 @@ from Jumpscale.data.bcdb.BCDBModelIndex import BCDBModelIndex
 
 class {{BASENAME}}(BCDBModelIndex):
 
-    {% if index.active %}
-
     def _sql_index_init(self,**kwargs):
         self._log_info("init index:%s"%self.model.schema.url)
 
@@ -106,20 +104,6 @@ class {{BASENAME}}(BCDBModelIndex):
     def _sql_index_delete_by_id(self,obj_id):
         self.sql.delete().where(self.sql.id == obj_id).execute()
 
-    {% else %}
-    def _init_index(self):
-        return
-
-    def _sql_index_set(self,obj):
-        return
-
-    def _sql_index_delete(self,obj):
-        return
-
-    def sql_index_destroy(self, nid=1):
-        return
-
-    {% endif %}
 
 
     {%- if index.active_keys %}

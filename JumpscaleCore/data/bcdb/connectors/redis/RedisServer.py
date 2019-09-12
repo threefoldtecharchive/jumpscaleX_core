@@ -186,7 +186,10 @@ class RedisServer(j.baseclasses.object):
         m = ""
         if len_splitted == 3:
             cat = splitted[1]
-            url = ""
+            if cat == "schemas":
+                url = splitted[-1]
+            else:
+                url = ""
             key = ""
         elif len_splitted == 4:
             cat = splitted[1]
@@ -318,15 +321,16 @@ class RedisServer(j.baseclasses.object):
         _, _, _, model = self._split(key)
         # objs = model.get_all()
         res = []
-        j.shell()
+
         if "schemas" in key:
+            key.split()
             res.append(model.mid)
             res.append(model.schema.text)
             response._array(["0", res])
             return
         else:
             key = key.replace(":", "/")
-            objs = self.vfs.get(key)
+            objs = self.vfs.get("/%s" % key)
             for obj in objs.list():
                 schema = j.data.serializers.json.loads(obj)
                 res.append(schema["id"])

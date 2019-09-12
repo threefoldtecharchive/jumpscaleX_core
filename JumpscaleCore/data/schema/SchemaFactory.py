@@ -74,7 +74,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
             if isinstance(schema_text_or_obj, str):
                 if schema_text_or_obj.strip() == "":
                     raise j.exceptions.JSBUG("schema should never be empty string")
-                self._add_text_to_schema_obj(schema_text_or_obj)
+                md5, schema = self._add_text_to_schema_obj(schema_text_or_obj)
             assert isinstance(self._md5_to_schema[md5], j.data.schema.SCHEMA_CLASS)
             return self._md5_to_schema[md5]
         else:
@@ -138,7 +138,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
             Schema
         """
         assert isinstance(schema_text, str)
-        md5 = self._add_text_to_schema_obj(schema_text=schema_text, url=url)
+        md5, schema = self._add_text_to_schema_obj(schema_text=schema_text, url=url)
         return self.get_from_md5(md5)
 
     def _md5(self, text):
@@ -218,7 +218,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
 
         assert s.url
 
-        return md5
+        return md5, s
 
     def add_from_path(self, path=None):
         """
