@@ -203,7 +203,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         """
         md5 = self._md5(schema_text)
         if md5 in self._md5_to_schema and not isinstance(self._md5_to_schema[md5], str):
-            return md5
+            return md5, self._md5_to_schema[md5]
 
         s = Schema(text=schema_text, md5=md5, url=url)
 
