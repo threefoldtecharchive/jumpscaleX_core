@@ -25,7 +25,7 @@ class TestServers(BaseTest):
         output, error = self.os_command("{} --help".format(server))
         self.assertIn(BaseTest.SERVERS[server]["install"], output.decode())
 
-    @parameterized.expand(BaseTest.SERVERS.servers.keys())
+    @parameterized.expand(BaseTest.SERVERS.keys())
     def Test02_start_stop_options(self, server):
         """
         - Start server . 
