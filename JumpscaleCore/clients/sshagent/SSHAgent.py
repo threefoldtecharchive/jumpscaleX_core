@@ -20,18 +20,30 @@ class SSHAgent(j.baseclasses.object):
 
             self.ssh_socket_path = MyEnv.sshagent.ssh_socket_path
             self.available = MyEnv.sshagent.available
-            self.keys_list = MyEnv.sshagent.keys_list
             self.key_names = MyEnv.sshagent.key_names
             self.key_paths = MyEnv.sshagent.key_paths
-            self.keypub_path_get = MyEnv.sshagent.keypub_path_get
             self.key_default_name = MyEnv.sshagent.key_default_name
-            self.profile_js_configure = MyEnv.sshagent.profile_js_configure
-            self.kill = MyEnv.sshagent.kill
-            self.start = MyEnv.sshagent.start
-            self.key_load = MyEnv.sshagent.key_load
 
         else:
             raise j.exceptions.Base("cannot use sshagent, maybe not initted?")
+
+    def profile_js_configure(self):
+        return MyEnv.sshagent.profile_js_configure()
+
+    def start(self):
+        return MyEnv.sshagent.start()
+
+    def kill(self):
+        return MyEnv.sshagent.kill()
+
+    def keypub_path_get(self):
+        return MyEnv.sshagent.keypub_path_get()
+
+    def keys_list(self):
+        return MyEnv.sshagent.keys_list()
+
+    def key_load(self):
+        return MyEnv.sshagent.key_load()
 
     @property
     def key_default(self):
