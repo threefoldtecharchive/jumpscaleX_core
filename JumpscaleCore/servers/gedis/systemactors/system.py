@@ -27,7 +27,7 @@ class system(JSBASE):
             "jumpscale.bcdb.acl.user.2",
             "jumpscale.bcdb.meta.2",
             "jumpscale.bcdb.meta.schema.2",
-            "jumpscale.bcdb.namespace.2",
+            "jumpscale.bcdb.meta.namespace.2",
             "jumpscale.gedis.server",
             "jumpscale.gedis.api",
             "jumpscale.gedis.cmd",

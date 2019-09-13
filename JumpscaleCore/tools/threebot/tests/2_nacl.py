@@ -67,4 +67,3 @@ def main(self):
 
     self._log_info("TEST NACL DONE")
     return "OK"
-

@@ -64,7 +64,7 @@ def main(self, count=20):
     print(f"XXXX {job_sch.id}")
     for job in jobs:
         if job.result != "OK":
-            __import__('pudb').set_trace()
+            __import__("pudb").set_trace()
         assert job.result == "OK"
 
     print("TEST OK")

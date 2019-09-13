@@ -16,9 +16,11 @@ Date: Thu, 12 Sep 2019 16:01:13 GMT
 ["python", "lame", "markdown", "java"]3BOTDEVEL:3bot:~: 
 
 """
+
+
 @app.route("/actors/<name>/<cmd>", method="post")
 def client_handler(name, cmd):
-    client = j.clients.gedis.get(name='main_gedis_threebot', port=8901)
+    client = j.clients.gedis.get(name="main_gedis_threebot", port=8901)
     actor = getattr(client.actors, name, None)
     if not actor:
         response.status = 404
@@ -27,12 +29,12 @@ def client_handler(name, cmd):
     if not command:
         response.status = 400
         return f"Actor {name} does not have command {cmd}"
-    data = request.json or {"args":{}}
+    data = request.json or {"args": {}}
     content_type = data.get("content_type", "json")
     if content_type not in ["json", "msgpack"]:
         response.status = 400
         return f"content_type needs to be either json or msgpack"
-    response.headers['Content-Type'] = f"application/{content_type}"
+    response.headers["Content-Type"] = f"application/{content_type}"
     result = command(**data["args"])
     if content_type:
         result = getattr(result, f"_{content_type}", result)

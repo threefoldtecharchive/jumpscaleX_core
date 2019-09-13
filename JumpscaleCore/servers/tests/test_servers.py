@@ -81,4 +81,3 @@ class TestServers(BaseTest):
         output, error = self.os_command("ps -aux | grep {}".format(server))
         self.assertIn(new_port, output.decode())
         self.assertIn(new_name, output.decode())
-
