@@ -194,9 +194,11 @@ class Jumpscale:
         # disable console logging when entering interactive debugger
         j.core.myenv.log_console = False
         import sys
+
         if j.core.myenv.debugger == "pudb":
             import pudb
             import threading
+
             dbg = pudb._get_debugger()
 
             if isinstance(threading.current_thread(), threading._MainThread):
@@ -208,9 +210,9 @@ class Jumpscale:
                 import ipdb as debugger
             except ImportError:
                 import pdb
+
                 debugger = pdb.Pdb()
             debugger.set_trace(sys._getframe().f_back)
-
 
 
 j = Jumpscale()
