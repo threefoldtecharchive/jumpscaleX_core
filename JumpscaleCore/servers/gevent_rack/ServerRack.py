@@ -25,16 +25,17 @@ class ServerRack(JSBASE):
         # self._monkeypatch_done = False
 
     def add(self, name, server, start=False):
-        """
-        add a gevent server e.g
+        """add a gevent server
 
-        - gedis_server = j.servers.gedis.geventservers_get("test")
-        - web_server = j.servers.web.geventserver_get("test")
-
-        can then add them
 
         REMARK: make sure that subprocesses are run before adding gevent servers
 
+        :param name: server name
+        :type name: str
+        :param server: gevent server
+        :type server: gevent.baseserver.BaseServer
+        :param start: do server.start() after, defaults to False
+        :type start: bool, optional
         """
         assert server
         self.servers[name] = server

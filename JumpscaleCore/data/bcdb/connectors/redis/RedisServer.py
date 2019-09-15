@@ -51,7 +51,7 @@ class RedisServer(j.baseclasses.object):
             self.ssl_priv_key_path, self.ssl_cert_path = self.sslkeys_generate()
             # Server always supports SSL
             # client can use to talk to it in SSL or not
-            self.redis_server = StreamServer(
+            self.gevent_server = StreamServer(
                 (self.host, self.port),
                 spawn=Pool(),
                 handle=self.handle_redis,
@@ -59,12 +59,12 @@ class RedisServer(j.baseclasses.object):
                 certfile=self.ssl_cert_path,
             )
         else:
-            self.redis_server = StreamServer((self.host, self.port), spawn=Pool(), handle=self.handle_redis)
+            self.gevent_server = StreamServer((self.host, self.port), spawn=Pool(), handle=self.handle_redis)
         self.vfs = j.data.bcdb._get_vfs()
 
     def start(self):
         self._log_info("RUNNING")
-        self.redis_server.serve_forever()
+        self.gevent_server.serve_forever()
 
     def stop(self):
         """
@@ -76,7 +76,7 @@ class RedisServer(j.baseclasses.object):
             h.cancel()
 
         self._log_info("stopping server")
-        self.redis_server.stop()
+        self.gevent_server.stop()
 
     def handle_redis(self, socket, address):
 

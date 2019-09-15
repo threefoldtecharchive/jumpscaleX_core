@@ -153,7 +153,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             bcdb = j.data.bcdb.system
             redis_server = bcdb.redis_server_get(port=6380, secret="123456")
-            self.rack_server.add("bcdb_system_redis", redis_server)
+            self.rack_server.add("bcdb_system_redis", redis_server.gevent_server)
 
             # add user added packages
             for package in j.tools.threebot_packages.find():
