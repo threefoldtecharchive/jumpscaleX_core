@@ -40,6 +40,7 @@ class JSBase:
     _classname = ""
     _location = ""
     _logger_min_level = 10
+    _logger_enabled = True
     _class_children = []
 
     def __init__(self, parent=None, **kwargs):
@@ -354,7 +355,7 @@ class JSBase:
                         raise j.exceptions.Base("find item can only have * at start or at end")
                 else:
                     try:
-                        if self._location == finditem:
+                        if self._location == finditem or f"j.{finditem}" == self._location:
                             return True
                     except:
                         # TODO: we need to have a better solution for this
@@ -389,7 +390,10 @@ class JSBase:
 
         :return:
         """
-        if minlevel is not None or self._logging_enable_check():
+        if not self._logging_enable_check():
+            self.__class__._logger_enabled = False
+            return
+        if minlevel is not None:
             # if minlevel specified we overrule anything
 
             # print ("%s:loginit"%self.__class__._classname)
@@ -467,7 +471,7 @@ class JSBase:
 
         """
 
-        if j.application.debug or self.__class__._logger_min_level - 1 < level:
+        if j.application.debug or (self._logger_enabled and self._logger_min_level - 1 < level):
             # now we will log
 
             frame_ = inspect.currentframe().f_back

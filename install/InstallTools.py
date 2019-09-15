@@ -1829,6 +1829,10 @@ class Tools:
 
     @staticmethod
     def log2stdout(logdict, data_show=True):
+        # in case of debug we show all logs regardless of settings
+        if not MyEnv.debug:
+            if not MyEnv.log_console:
+                return
         text = Tools.log2str(logdict, data_show=True, replace=True)
         p = print
         if MyEnv.config.get("LOGGER_PANEL_NRLINES"):
