@@ -89,8 +89,9 @@ There are a lot of use cases for triggers, in this docs we will use it to create
 
 ### Creating custom indexing example
 Let us assume we have a reservation object which has ```containers``` field which is a list of container objects.
-The container object has a signle integer field ```node_id``` to refer to the node id which hosts the container.
-and our goal is to get all the reservations which has containers hosted on a specific node
+The container object has a single integer field ```node_id``` to refer to the node id which hosts the container.
+
+Our goal is to get all the reservations which has containers hosted on a specific node
 
 ```python
 bcdb = j.data.bcdb.get(name="reservations")
