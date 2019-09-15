@@ -355,7 +355,7 @@ class JSBase:
                         raise j.exceptions.Base("find item can only have * at start or at end")
                 else:
                     try:
-                        if self._location == finditem or f"j.{finditem}" == self._location:
+                        if self._location in [finditem, f"j.{finditem}"]:
                             return True
                     except:
                         # TODO: we need to have a better solution for this
@@ -393,28 +393,21 @@ class JSBase:
         if not self._logging_enable_check():
             self.__class__._logger_enabled = False
             return
-        if minlevel is not None:
-            # if minlevel specified we overrule anything
+        if minlevel is None:
+            minlevel = int(j.core.myenv.config.get("LOGGER_LEVEL", 15))
 
-            # print ("%s:loginit"%self.__class__._classname)
-            if minlevel is None:
-                minlevel = int(j.core.myenv.config.get("LOGGER_LEVEL", 15))
+        self.__class__._logger_min_level = minlevel
 
-            if minlevel is not None or not self._logging_enable_check():
+        if parents:
+            parent = self._parent
+            while parent is not None:
+                parent._logger_set(minlevel=minlevel)
+                parent = parent._parent
 
-                self.__class__._logger_min_level = minlevel
-
-                if parents:
-                    parent = self._parent
-                    while parent is not None:
-                        parent._logger_set(minlevel=minlevel)
-                        parent = parent._parent
-
-                if children:
-
-                    for kl in self.__class__._class_children:
-                        # print("%s:minlevel:%s"%(kl,minlevel))
-                        kl._logger_min_level = minlevel
+        if children:
+            for kl in self.__class__._class_children:
+                # print("%s:minlevel:%s"%(kl,minlevel))
+                kl._logger_min_level = minlevel
 
     def _print(self, msg, cat=""):
         self._log(msg, cat=cat, level=15)
