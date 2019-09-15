@@ -69,7 +69,9 @@ if options.debug:
     j.tools.logger.debug = True
 
 
-j.core.myenv.config["LOGGER_PANEL_NRLINES"] = options.logging_panel_lines
+if j.core.myenv.config.get("LOGGER_PANEL_NRLINES") != options.logging_panel_lines:
+    j.core.myenv.config["LOGGER_PANEL_NRLINES"] = options.logging_panel_lines
+    j.core.myenv.config_save()
 
 
 def instruction_process(ddict):
