@@ -8,7 +8,7 @@ class GraphQLFactory(JSBASE):
     __jslocation__ = "j.servers.graphql"
     _SCHEMA_TEXT = """
         @url = graphql.posts.schema
-        info_id* = (I)
+        info_id** =  (I)
         title = (S) 
         author = (S)
         name = (S)

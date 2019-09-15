@@ -37,7 +37,7 @@ def main(self):
 
     schema = """
     @url = test.docsites
-    name* = (S)
+    name** = (S)
     content*** = (S)
     """
     bcdb = j.data.bcdb.get("test", reset=True)

@@ -5,7 +5,7 @@ import nacl
 from Jumpscale import j
 from redis.connection import ConnectionError
 
-JSConfigBase = j.baseclasses.object_config
+JSConfigBase = j.baseclasses.factory_data
 
 
 class GedisClientActors(j.baseclasses.object):
@@ -19,7 +19,7 @@ class GedisClientSchemas(j.baseclasses.object):
 class GedisClient(JSConfigBase):
     _SCHEMATEXT = """
     @url = jumpscale.gedis.client
-    name* = "main"
+    name** = "main"
     host = "127.0.0.1" (S)
     port = 8900 (ipport)
     namespace = "default" (S)

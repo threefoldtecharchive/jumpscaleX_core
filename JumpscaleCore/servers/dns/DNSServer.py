@@ -25,7 +25,7 @@ class DNSServer(DatagramServer, j.baseclasses.object_config):
 
     _SCHEMATEXT = """
     @url = jumpscale.dnsserver.1
-    name* = ""
+    name** = ""
     port = 53
     addr = "127.0.0.1"
     resolvername = "main"

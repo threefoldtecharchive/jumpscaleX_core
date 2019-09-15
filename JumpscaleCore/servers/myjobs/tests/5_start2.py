@@ -1,7 +1,7 @@
 import gevent
 
 
-def main(self):
+def main(self, count=40):
     """
     kosmos -p 'j.servers.myjobs.test("start2")'
     """
@@ -11,11 +11,10 @@ def main(self):
     def wait_2sec():
         gevent.sleep(2)
 
-    for x in range(40):
+    for x in range(count):
         self.schedule(wait_2sec)
 
-    gevent.joinall([self._dataloop, self._mainloop_gipc])
-
     self.stop(reset=True)
+    assert self._mainloop_gipc.ready()
 
     print("TEST OK")

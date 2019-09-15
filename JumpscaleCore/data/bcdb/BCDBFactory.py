@@ -25,11 +25,9 @@ from .BCDBModel import BCDBModel
 
 import os
 import sys
-import redis
-import copy
 
 
-class BCDBFactory(j.baseclasses.factory):
+class BCDBFactory(j.baseclasses.factory_testtools):
 
     __jslocation__ = "j.data.bcdb"
 
@@ -186,11 +184,17 @@ class BCDBFactory(j.baseclasses.factory):
         assert isinstance(name, str)
 
         if name in self._config:
-            storclient = self._get_storclient(name)
+            try:
+                storclient = self._get_storclient(name)
+            except Exception as e:
+                self._log_warning("could not create BCDB to destroy, will go without")
+                # logdict = j.core.tools.log(tb=tb, level=50, exception=e, stdout=True)
+                storclient = None
         else:
             raise RuntimeError("there should always be a storclient")
 
-        dontuse = BCDB(storclient=storclient, name=name, reset=True)
+        if storclient:
+            dontuse = BCDB(storclient=storclient, name=name, reset=True)
 
         if name in self._children:
             self._children.pop(name)
@@ -356,7 +360,7 @@ class BCDBFactory(j.baseclasses.factory):
             schema = """
             @url = despiegk.test
             llist2 = "" (LS)
-            name** = ""
+            name*** = ""
             email** = ""
             nr** = 0
             date_start** = 0 (D)
@@ -401,8 +405,7 @@ class BCDBFactory(j.baseclasses.factory):
 
         assert bcdb.name == "test"
 
-        if type == "zdb":
-            bcdb.reset()  # empty
+        bcdb.reset()  # empty
 
         assert bcdb.storclient.get(0)
         assert bcdb.storclient.count == 1
@@ -411,7 +414,8 @@ class BCDBFactory(j.baseclasses.factory):
 
         model = bcdb.model_get(schema=schema)
 
-        self._log_debug("bcdb already exists")
+        # lets check the sql index is empty
+        assert model.index.sql_index_count() == 0
 
         if type.lower() in ["zdb"]:
             # print(model.storclient.nsinfo["entries"])

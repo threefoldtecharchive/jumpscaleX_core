@@ -48,12 +48,20 @@ class JSConfigBCDB(JSConfigBCDBBase):
             self._data.name = name
 
     @property
+    def _autosave(self):
+        return self._data._autosave
+
+    @_autosave.setter
+    def _autosave(self, val):
+        self._data._autosave = val
+
+    @property
     def name(self):
         return self._data.name
 
     @property
     def _key(self):
-        return self._name + "_" + self.name
+        return self._classname + "_" + self.name
 
     @property
     def _id(self):
@@ -89,6 +97,8 @@ class JSConfigBCDB(JSConfigBCDBBase):
         if len(jsxobjects) == 0:
             raise j.exceptions.JSBUG("cannot find obj:%s for reload" % self.name)
         self._data = jsxobjects[0]
+        self._data._autosave = True
+        return self
 
     def _delete(self, recursive=None):
         self._triggers_call(self, "delete")
@@ -117,7 +127,6 @@ class JSConfigBCDB(JSConfigBCDBBase):
         mother_id = self._mother_id_get()
         if mother_id:
             # means there is a mother
-            assert self._hasattr(self._data, "mother_id")
             self._data.mother_id = mother_id
             assert self._data._model.schema._md5 == self._model.schema._md5
 
@@ -161,10 +170,10 @@ class JSConfigBCDB(JSConfigBCDBBase):
 
     def __repr__(self):
         out = "{BLUE}# JSXOBJ:{RESET}\n"
-        print(j.core.tools.text_replace(out, check_no_args_left=False).rstrip())
+        print(j.core.tools.text_replace(out, die_if_args_left=False).rstrip())
         return self._data.__repr__()
         #
-        # out = "{YELLOW}## JSXOBJ: %s{RESET}\n\n" % (self.__class__._name,)
+        # out = "{YELLOW}## JSXOBJ: %s{RESET}\n\n" % (self.__class__._classname,)
         #
         # def add(name, color, items, out):
         #     if len(items) > 0:
@@ -196,7 +205,7 @@ class JSConfigBCDB(JSConfigBCDBBase):
         #
         # out += "{RESET}"
         #
-        # out = j.core.tools.text_replace(out, check_no_args_left=False)
+        # out = j.core.tools.text_replace(out, die_if_args_left=False)
         # print(out)
         #
         # # TODO: *1 dirty hack, the ansi codes are not printed, need to check why

@@ -1,8 +1,4 @@
-import gevent
-
 from Jumpscale import j
-
-import time
 
 
 def main(self, reset=False):
@@ -17,16 +13,16 @@ def main(self, reset=False):
 
     nrworkers = 3
     self.workers_tmux_start(nrworkers)
-    assert len(self.find()) == nrworkers
+    assert len(self.workers.find()) == nrworkers
 
-    def do_ok(job=None, wait_do=0):
+    def do_ok(process=None, wait_do=0):
         import time
 
-        if wait_do:k
+        if wait_do:
             time.sleep(wait_do)
-        if job:
-            for dep in job.dependencies:
-                job = j.servers.myjobs.model_job.get(dep)
+        if process:
+            for dep in process.job.dependencies:
+                job = process.job_get(id=dep)
                 assert job.result == "OK"
             return "OK:%s" % job.id
         else:
@@ -37,19 +33,19 @@ def main(self, reset=False):
 
     job1 = self.schedule(do_ok, wait_do=1)
     job2 = self.schedule(do_ok, wait_do=1)
-    job3 = self.schedule(do_ok, wait_do=1, dependencies=[job1, job2], timeout=30, die=True)
+    job3 = self.schedule(do_ok, wait_do=1, dependencies=[job1.id, job2.id], timeout=30, die=True)
 
     job3.wait()
     assert job3.state == "OK"
 
     job1 = self.schedule(do_ok, wait_do=1)
     job2 = self.schedule(do_error)
-    job3 = self.schedule(do_ok, wait_do=1, dependencies=[job1, job2] timeout=10, die=False)
+    job3 = self.schedule(do_ok, wait_do=1, dependencies=[job1.id, job2.id], timeout=10, die=False)
 
-    job2 = self.model_job.get(job2.id)
-    job1 = self.model_job.get(job1.id)
-
-    job3.wait()
+    job3.wait(die=False)
+    job2.load()
+    # need to wait for job1 might not be done yet
+    job1.wait()
 
     assert job3.state == "ERROR"
     assert job3.error["dependency_failure"] == job2.id

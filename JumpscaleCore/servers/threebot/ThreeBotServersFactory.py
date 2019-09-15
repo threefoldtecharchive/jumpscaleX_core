@@ -63,18 +63,18 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         self.local_start_default()
 
         self.client.actors.package_manager.package_add(
-            "tfgrid_directory",
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/directory",
-        )
-
-        self.client.actors.package_manager.package_add(
             "threebot_phonebook",
             git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
         )
 
         self.client.actors.package_manager.package_add(
+            "tfgrid_directory",
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/tfgrid_directory",
+        )
+
+        self.client.actors.package_manager.package_add(
             "tfgrid_workloads",
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/workloads",
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/tfgrid_workloads",
         )
 
         if fileserver:

@@ -19,8 +19,6 @@
 
 
 from Jumpscale import j
-from .BCDBModel import BCDBModel
-from .BCDBMeta import BCDBMeta
 
 JSBASE = j.baseclasses.object
 
@@ -726,6 +724,7 @@ class BCDBVFS_Data:
 
     def get(self):
         if self.item:
+            self.item = self.item._model.get(self.item.id)
             return self.vfs._get_serialized_obj(self.item)
         else:
             raise Exception("Data has been deleted")

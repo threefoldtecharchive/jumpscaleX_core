@@ -7,7 +7,7 @@ JSConfigClient = j.baseclasses.object_config
 class RsyncServer(JSConfigClient):
     _SCHEMATEXT = """
            @url =  jumpscale.servers.rsync.1
-           name* = "default" (S)
+           name** = "default" (S)
            root =  (S)
            port = 873 (I)
            dir = "" (S)

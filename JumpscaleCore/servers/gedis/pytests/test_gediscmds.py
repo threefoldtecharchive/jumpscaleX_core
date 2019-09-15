@@ -1,7 +1,7 @@
 import os
 
 import pytest
-from DigitalMe.servers.gedis.GedisCmds import GedisCmds  # method_source_process
+from Jumpscale.servers.gedis.GedisCmds import GedisCmds  # method_source_process
 
 
 @pytest.mark.skip(

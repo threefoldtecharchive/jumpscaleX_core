@@ -7,7 +7,7 @@
 
 @url = jumpscale.bcdb.fs.dir.2
 nid = 0  #namespace id
-name = "" (S)
+name** = "" (S)
 files = (LI)
 dirs = (LI)
 links = (LO) !jumpscale.bcdb.fs.link.2
@@ -15,7 +15,7 @@ links = (LO) !jumpscale.bcdb.fs.link.2
 epoch = (T)
 
 @url = jumpscale.bcdb.fs.file.2
-name = "" (S)
+name** = "" (S)
 dir_id = (I)
 description*** = "" (S)
 content*** = "" (S)                                                             #optional e.g. for a markdown document
@@ -30,7 +30,7 @@ epoch = (T)
 
 @url = jumpscale.bcdb.fs.link.2
 @sub = true
-name* = "" (S)
+name** = "" (S)
 destination = (I)
 destination_bot_id = 0 (I)
 #posixattr = (O) !jumpscale.bcdb.meta.posixattr.2
@@ -40,7 +40,7 @@ epoch = (T)
 
 #max 1 MB
 @url = jumpscale.bcdb.fs.block.2
-md5* = ""
+md5** = ""
 size = (I)
 content = (BIN)
 epoch = (T)

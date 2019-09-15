@@ -11,8 +11,8 @@ SCHEME_UID_PAT = "(?P<schema>.+?)://(?P<id>.+)"
 j.data.schema.get_from_text(
     """
 @url = proj.todoitem
-title* = "" (S)
-done* = False (B)
+title** =  "" (S)
+done** =  False (B)
 
 """
 )
@@ -20,8 +20,8 @@ done* = False (B)
 j.data.schema.get_from_text(
     """
 @url = proj.todolist
-name* = "" (S)
-list_todos* = (LO) !proj.todoitem
+name** = "" (S)
+list_todos** =  (LO) !proj.todoitem
 
 """
 )
@@ -30,21 +30,21 @@ j.data.schema.get_from_text(
 @url = proj.simple
 attr1* = "" (S)
 attr2* = 0 (I)
-list_mychars* = (LS) 
+list_mychars** =  (LS) 
 """
 )
 
 j.data.schema.get_from_text(
     """
 @url = proj.email
-addr* = "" (S)
+addr** =  "" (S)
 """
 )
 j.data.schema.get_from_text(
     """
 @url = proj.person
-name* = "" (S)
-email* = "" !proj.email
+name** = "" (S)
+email** = "" !proj.email
 """
 )
 
@@ -52,7 +52,7 @@ email* = "" !proj.email
 j.data.schema.get_from_text(
     """
 @url = proj.os
-name* = "" (S)
+name** = "" (S)
 """
 )
 
@@ -60,15 +60,15 @@ name* = "" (S)
 j.data.schema.get_from_text(
     """
 @url = proj.phone
-model* = "" (S)
-os* = "" !proj.os
+model** =  "" (S)
+os** =  "" !proj.os
 """
 )
 
 j.data.schema.get_from_text(
     """
 @url = proj.lang
-name* = ""
+name** = ""
 """
 )
 
@@ -76,10 +76,10 @@ name* = ""
 j.data.schema.get_from_text(
     """
 @url = proj.human
-name* = "" (S)
+name** = "" (S)
 list_favcolors = (LS)
 list_langs = (LO) !proj.lang
-phone* = "" !proj.phone
+phone** =  "" !proj.phone
 """
 )
 
@@ -87,7 +87,7 @@ j.data.schema.get_from_text(
     """
 @url = proj.post
 name = "" (S)
-title* = "" (S)
+title** =  "" (S)
 body = "" (S)
 
 """
@@ -96,7 +96,7 @@ body = "" (S)
 j.data.schema.get_from_text(
     """
 @url = proj.blog
-name* = "" (S)
+name** = "" (S)
 list_posts = (LO) !proj.post
 headline = "" (S)
 

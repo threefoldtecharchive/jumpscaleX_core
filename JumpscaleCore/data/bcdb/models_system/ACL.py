@@ -46,9 +46,9 @@ class ACL(j.data.bcdb._BCDBModelClass):
         for k, v in users.items():
             user = self.bcdb.user.get(k)  # we make sure that the user exists
             model_acl_user = self.user.new()
-            acl_user = self.user.get_by_name("user_%s" % user.id)  # we retrieve the acl.user if it exists
-            if len(acl_user) > 0:
-                model_acl_user.id = acl_user[0].id
+            acl_user = self.user.get_by_name("user_%s" % user.id, die=False)  # we retrieve the acl.user if it exists
+            if acl_user:
+                model_acl_user.id = acl_user.id
             model_acl_user.name = "user_%s" % k
             model_acl_user.uid = user.id  # to make sure the user exists
             model_acl_user.rights = v
@@ -82,9 +82,9 @@ class ACL(j.data.bcdb._BCDBModelClass):
             self.add_acl_users(acl_circles_user)
             acl_circles.append(circle)
             model_acl_circle = self.circle.new()
-            acl_c = self.circle.get_by_name("circle_%s" % k)  # we retrieve the acl.user if it exists
-            if len(acl_c) > 0:
-                model_acl_circle.id = acl_c[0].id
+            acl_c = self.circle.get_by_name("circle_%s" % k, die=False)  # we retrieve the acl.user if it exists
+            if acl_c:
+                model_acl_circle.id = acl_c.id
             model_acl_circle.name = "circle_%s" % k
             model_acl_circle.cid = k
             model_acl_circle.rights = v
@@ -100,7 +100,6 @@ class ACL(j.data.bcdb._BCDBModelClass):
         :param rights:
         :return:
         """
-
         rights = j.data.types.string.unique_sort(rights).lower()  # lets make sure its sorted & unique
 
         if not j.data.types.list.check(userids):
@@ -129,7 +128,6 @@ class ACL(j.data.bcdb._BCDBModelClass):
 
         change, rdict = do(userids, rdict, "users", rights, change)
         change, rdict = do(circleids, rdict, "circles", rights, change)
-
         if change:
             for key, value in rdict.items():
                 if key == "users":
@@ -155,12 +153,12 @@ class ACL(j.data.bcdb._BCDBModelClass):
         for user in self.user.find():
 
             if user.uid == user_or_circle_id:
-                user_rights = self.user.get_by_name("user_%s" % user_or_circle_id)[0]
+                user_rights = self.user.get_by_name("user_%s" % user_or_circle_id)
                 return rights_check_user_group(rights, user_rights.rights)
 
         for circle in self.circle.find():
             if circle.cid == id:
-                circle = self.circle.get_by_name("circle_%s" % circle.cid)[0]
+                circle = self.circle.get_by_name("circle_%s" % circle.cid, die=False)
                 if circle:
                     if rights_check_user_group(rights, circle.rights):
                         return True

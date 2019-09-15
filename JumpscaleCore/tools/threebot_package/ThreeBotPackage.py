@@ -8,7 +8,7 @@ JSConfigBase = j.baseclasses.object_config
 class ThreeBotPackage(JSConfigBase):
     _SCHEMATEXT = """
         @url = jumpscale.threebot.package.1
-        name* = "main"
+        name** = "main"
         giturl = "" (S)  #if empty then local
         path = ""
         threebot_server_name = "default"
@@ -28,26 +28,42 @@ class ThreeBotPackage(JSConfigBase):
         return self.threebot_server.openresty_server
 
     def _init(self, **kwargs):
-        if self.giturl:
-            self.path = j.clients.git.getContentPathFromURLorPath(self.giturl, branch=self.branch)
+        self._init_ = False
 
-        # Parent root directory for packages needed to be in sys.path
-        # in order to be able to import file properly inside packages
-        packages_root = j.sal.fs.getParent(self.path)
-        if not packages_root in sys.path:
-            sys.path.append(packages_root)
+    def _init_before_action(self):
+        if self._init_ == False:
+            if self.giturl:
+                self.path = j.clients.git.getContentPathFromURLorPath(self.giturl, branch=self.branch)
 
-        self._path_package = "%s/package.py" % (self.path)
+            # Parent root directory for packages needed to be in sys.path
+            # in order to be able to import file properly inside packages
+            packages_root = j.sal.fs.getParent(self.path)
+            if not packages_root in sys.path:
+                sys.path.append(packages_root)
 
-        if not j.sal.fs.exists(self._path_package):
-            raise j.exceptions.Input(
-                "cannot find package.py in the package directory", data={"path": self._path_package}
-            )
+            self._path_package = "%s/package.py" % (self.path)
 
-        klass = j.tools.codeloader.load(obj_key="Package", path=self._path_package, reload=False)
-        self._package = klass(package=self)
+            if not j.sal.fs.exists(self._path_package):
+                raise j.exceptions.Input(
+                    "cannot find package.py in the package directory", data={"path": self._path_package}
+                )
 
-        self.prepare = self._package.prepare
-        self.start = self._package.start
-        self.stop = self._package.stop
-        self.uninstall = self._package.uninstall
+            klass = j.tools.codeloader.load(obj_key="Package", path=self._path_package, reload=False)
+            self._package = klass(package=self)
+        self._init_ = True
+
+    def prepare(self, *args):
+        self._init_before_action()
+        self._package.prepare(*args)
+
+    def start(self):
+        self._init_before_action()
+        self._package.start()
+
+    def stop(self):
+        self._init_before_action()
+        self._package.stop()
+
+    def uninstall(self):
+        self._init_before_action()
+        self._package.uninstall()

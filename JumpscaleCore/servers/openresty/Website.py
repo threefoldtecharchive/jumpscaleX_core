@@ -17,7 +17,7 @@ class Website(j.baseclasses.factory_data):
 
     _SCHEMATEXT = """
         @url = jumpscale.openresty.website
-        name* = (S)
+        name** = (S)
         port = 80 (I)
         ssl = True (B)
         domain = ""

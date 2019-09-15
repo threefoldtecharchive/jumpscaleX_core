@@ -304,7 +304,7 @@ class NACL(j.baseclasses.object):
         if not private_key:
             private_key = self.private_key
 
-        unseal_box = SealedBox(self.private_key)
+        unseal_box = SealedBox(private_key)
         if hex:
             data = self._hex_to_bin(data)
         return unseal_box.decrypt(data)

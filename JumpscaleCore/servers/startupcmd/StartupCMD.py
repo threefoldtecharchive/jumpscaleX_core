@@ -28,7 +28,7 @@ class StartupCMD(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
         @url = jumpscale.startupcmd.1
-        name* = ""
+        name** = ""
         cmd_start = "" (s)
         interpreter = "bash,jumpscale,jumpscale_gevent,direct,python" (E)  #direct means we will not put in bash script
         cmd_stop = ""

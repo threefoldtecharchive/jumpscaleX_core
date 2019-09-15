@@ -1,8 +1,10 @@
 import inspect
 import pudb
+import sys
 import time
 import traceback
 
+from functools import partial
 from prompt_toolkit.application import get_app
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
@@ -15,9 +17,9 @@ from prompt_toolkit.layout.controls import BufferControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.processors import HighlightIncrementalSearchProcessor, Processor, Transformation
 from prompt_toolkit.lexers import PygmentsLexer
+from prompt_toolkit.shortcuts import print_formatted_text
 from ptpython.filters import ShowDocstring, PythonInputFilter
 from ptpython.prompt_style import PromptStyle
-from ptpython.utils import get_jedi_script_from_document
 from pygments.lexers import PythonLexer
 
 
@@ -134,7 +136,7 @@ def get_completions(self, document, complete_event):
 
 
 def get_doc_string(tbc, locals_, globals_):
-    j = KosmosShellConfig.j
+    # j = KosmosShellConfig.j
 
     obj = eval_code(tbc, locals_=locals_, globals_=globals_)
     if not obj:
@@ -153,6 +155,32 @@ def get_doc_string(tbc, locals_, globals_):
     if not signature:
         return doc
     return "\n\n".join([signature, doc])
+
+
+def patched_handle_exception(self, e):
+    j = KosmosShellConfig.j
+
+    # Instead of just calling ``traceback.format_exc``, we take the
+    # traceback and skip the bottom calls of this framework.
+    t, v, tb = sys.exc_info()
+
+    output = self.app.output
+    # Required for pdb.post_mortem() to work.
+    sys.last_type, sys.last_value, sys.last_traceback = t, v, tb
+
+    # loop until getting actual traceback (without internal ptpython part)
+    last_stdin_tb = tb
+    while tb:
+        if tb.tb_frame.f_code.co_filename == "<stdin>":
+            last_stdin_tb = tb
+        tb = tb.tb_next
+
+    logdict = j.core.tools.log(tb=last_stdin_tb, level=50, exception=e, stdout=False)
+    formatted_tb = j.core.tools.log2str(logdict, data_show=True, replace=True)
+    print_formatted_text(ANSI(formatted_tb))
+
+    output.write("%s\n" % e)
+    output.flush()
 
 
 class LogPane:
@@ -409,6 +437,7 @@ def ptconfig(repl):
         def out_prompt(self):
             return []
 
+    repl._handle_exception = partial(patched_handle_exception, repl)
     repl.all_prompt_styles["custom"] = CustomPrompt()
     repl.prompt_style = "custom"
 
@@ -427,6 +456,8 @@ def ptconfig(repl):
             completions = list(get_completions(self, document, complete_event))
         except Exception:
             j.tools.logger._log_error("Error while getting completions\n" + traceback.format_exc())
+
+        # j.tools.logger._log_error(completions)
 
         if not completions:
             completions = old_get_completions(self, document, complete_event)

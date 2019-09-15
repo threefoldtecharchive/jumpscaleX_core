@@ -285,6 +285,8 @@ class SystemFS(JSBASE, TESTTOOLS):
             if not overwriteFiles:
                 cmd += " --ignore-existing "
             if rsyncdelete and overwriteFiles:
+                # --delete delete extraneous files from dest dirs
+                # --delete-excluded also delete excluded files from dest dirs
                 cmd += " --delete --delete-excluded "
             if ssh:
                 cmd += " -e 'ssh -o StrictHostKeyChecking=no -p %s' " % sshport
@@ -1352,7 +1354,7 @@ class SystemFS(JSBASE, TESTTOOLS):
         @return: object
         """
         self._log_debug("Opening file %s for reading" % filelocation, _levelup=3)
-        contents = self.fileGetContents(filelocation)
+        contents = self.readFile(filelocation, binary=True)
         self._log_debug("creating object")
         return pickle.loads(contents)
 
@@ -1388,8 +1390,12 @@ class SystemFS(JSBASE, TESTTOOLS):
             if ignore_empty_files:
                 if self.fileSize(file) == 0:
                     continue
-            md5 = self.md5sum(file).encode("utf-8")
-            dir_hash.update(md5)
+            with open(file, "rb") as fh:
+                while True:
+                    buf = fh.read(4096)
+                    if buf == b"":
+                        break
+                    dir_hash.update(buf)
         return dir_hash.hexdigest()
 
     def getTmpDirPath(self, name="", create=True):

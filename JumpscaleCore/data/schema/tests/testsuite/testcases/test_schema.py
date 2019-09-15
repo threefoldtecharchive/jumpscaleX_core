@@ -18,7 +18,7 @@
 # LICENSE END
 
 
-from JumpscaleLibs.data.schema.tests.testsuite.testcases.base_test import BaseTest
+from Jumpscale.data.schema.tests.testsuite.testcases.base_test import BaseTest
 from Jumpscale import j
 from unittest import TestCase
 from uuid import uuid4
@@ -758,7 +758,7 @@ class SchemaTest(BaseTest):
         **Test Scenario:**
 
         #. Create schema with numeric parameter[P1], should succeed.
-        #. Put one of currencies and convert it to the other currencies and Check result is same as calculated. 
+        #. Put one of currencies and convert it to the other currencies and Check result is same as calculated.
         """
         self.log("Create schema with numeric parameter[P1], should succeed.")
         scm = """

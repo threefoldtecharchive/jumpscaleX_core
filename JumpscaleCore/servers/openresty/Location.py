@@ -17,7 +17,7 @@ class Location(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
         @url = jumpscale.openresty.location
-        name* = (S)
+        name** = (S)
         path = "/sandbox/var/web/default"
         locations_static = (LO) !jumpscale.openresty.location_static
         locations_proxy = (LO) !jumpscale.openresty.location_proxy

@@ -30,12 +30,12 @@ def main(self):
 
     SCHEMA = """
     @url = threefoldtoken.wallet.test
-    name* = "wallet"
+    name** = "wallet"
     jwt = "" (S)                # JWT Token
-    addr* = ""                   # Address
-    ipaddr* = (ipaddr)           # IP Address
-    email* = "" (S)              # Email address
-    username* = "" (S)           # User name
+    addr** =  ""                   # Address
+    ipaddr** =  (ipaddr)           # IP Address
+    email** = "" (S)              # Email address
+    username** = "" (S)           # User name
     
     
     """
@@ -86,25 +86,17 @@ def main(self):
     assert len(m.find()) == 3
     o_check = m.find()[-1]
     assert o_check.id == o.id
-
-    rkey = m.index._key_index_hsetkey_get()
     o.delete()
-    for key in j.clients.credis_core.keys(rkey + ":*"):
-        for key2 in j.clients.credis_core.hkeys(key):
-            data_ = j.clients.credis_core.hget(key, key2)
-            data__ = j.data.serializers.msgpack.loads(data_)
-            if o.id in data__:
-                raise j.exceptions.Base("the id should not be in the redis index")
 
     m2 = bcdb.model_get(schema=SCHEMA)
 
     SCHEMA3 = """
     @url = threefoldtoken.wallet.test2
-    name* = "wallet3"
+    name** = "wallet3"
     jwt = "" (S)                # JWT Token
-    addr* = "aa"                   # Address
-    ipaddr* = "" (ipaddr)           # IP Address
-    email* =  (S)              # Email address 
+    addr** =  "aa"                   # Address
+    ipaddr** =  "" (ipaddr)           # IP Address
+    email** =  (S)              # Email address 
     nr = 10 (I)
     nr2 =  (I)
     nr3 =  (N)

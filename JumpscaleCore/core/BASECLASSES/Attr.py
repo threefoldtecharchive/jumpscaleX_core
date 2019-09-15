@@ -43,8 +43,8 @@ class Attr:
 
                 if (
                     name.startswith("_")
-                    or name in self._methods_names_get()
-                    or name in self._properties_names_get()
+                    or name in self._methods
+                    or name in self._properties
                     or name in self._dataprops_names_get()
                 ):
                     return self.__getattribute__(name)  # else see if we can from the factory find the child object
@@ -61,10 +61,7 @@ class Attr:
         try:
             r = self.__getattribute__(name)
         except AttributeError as e:
-            try:
-                whereami = self._key
-            except:
-                whereami = self._name
+            whereami = self._key
             msg = "could not find attribute:%s in %s (error was:%s)" % (name, whereami, e)
             raise j.exceptions.NotFound(msg)
 

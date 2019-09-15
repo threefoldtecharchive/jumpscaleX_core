@@ -5,16 +5,17 @@ def main(self):
     """
     kosmos 'j.servers.myjobs.test("simple_error")'
     """
-    self.stop(reset=True)
 
     j.tools.logger.debug = True
 
     self.reset()
 
-    def add(a, b):
+    def add(a=None, b=None):
+        assert a
+        assert b
         raise ValueError("aaa")
 
-    job = self.schedule(add, 1, 2)
+    job = self.schedule(add, a=1, b=2)
 
     error = False
 
@@ -23,24 +24,23 @@ def main(self):
     ##there should be job in errorstate
 
     try:
-        res = self.results()
+        self.results()
     except Exception as e:
         error = True
 
     assert error
 
-    job = self.schedule(add, 1, 2)
+    job = self.schedule(add, a=1, b=2)
     job_id = job.id
 
     self._log_info("job id waiting for:%s" % job_id)
 
     self.worker_inprocess_start()
 
-    res = self.results(die=False)
+    jobs = {job.id: job for job in self.wait(die=False)}
+    jobs[job_id].error["traceback"]
 
-    res[job_id].error["traceback"]
-
-    assert len(res[job_id].error["traceback"]) > 0
+    assert len(jobs[job_id].error["traceback"]) > 0
 
     # print(self.results([job]))
 

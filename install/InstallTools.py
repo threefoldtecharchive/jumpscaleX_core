@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 import getpass
 
-DEFAULT_BRANCH = "development"
+DEFAULT_BRANCH = "development_stabilize"
 GITREPOS = {}
 
 GITREPOS["builders_extra"] = [
@@ -651,6 +651,13 @@ class BaseJSException(Exception):
 
     def __init__(self, message="", level=None, cat=None, msgpub=None, context=None, data=None, exception=None):
 
+        super().__init__(message)
+
+        # exc_type, exc_value, exc_traceback = sys.exc_info()
+        # self._exc_traceback = exc_traceback
+        # self._exc_value = exc_value
+        # self._exc_type = exc_type
+
         if level:
             if isinstance(level, str):
                 level = int(level)
@@ -662,25 +669,22 @@ class BaseJSException(Exception):
             assert level > 9
             assert level < 51
 
-        super().__init__(message)
         self.message = message
         self.message_pub = msgpub
         self.level = level
         self.context = context
         self.cat = cat  # is a dot notation category, to make simple no more tags
         self.data = data
+        self._logdict = None
         self.exception = exception
-
         self._init(message=message, level=level, cat=cat, msgpub=msgpub, context=context, exception=exception)
-
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        self._tb = exc_traceback
-        self._exc_traceback = exc_traceback
-        self._exc_value = exc_value
-        self._exc_type = exc_type
 
     def _init(self, **kwargs):
         pass
+
+    @property
+    def logdict(self):
+        return self._logdict
 
     @property
     def type(self):
@@ -701,10 +705,11 @@ class BaseJSException(Exception):
         return msg.strip()
 
     def __str__(self):
-        d = Tools.log(exception=self, stdout=False, replace=True)
-        return d["message"]
+        return Tools._data_serializer_safe(self.logdict)
 
-    __repr__ = __str__
+    def __repr__(self):
+        print(Tools.log2str(self.logdict))
+        return ""
 
     # def trace_print(self):
     #     j.core.errorhandler._trace_print(self._trace)
@@ -776,6 +781,14 @@ class JSExceptions:
         self.RemoteException = RemoteException1
 
 
+from string import Formatter
+
+
+class OurTextFormatter(Formatter):
+    def check_unused_args(self, used_args, args, kwargs):
+        return used_args, args, kwargs
+
+
 class Tools:
 
     _supported_editors = ["micro", "mcedit", "joe", "vim", "vi"]  # DONT DO AS SET  OR ITS SORTED
@@ -791,8 +804,10 @@ class Tools:
 
     exceptions = JSExceptions()
 
+    formatter = OurTextFormatter()
+
     @staticmethod
-    def traceback_format(tb):
+    def traceback_list_format(tb):
         """
 
         :param tb:
@@ -801,11 +816,10 @@ class Tools:
         locals doesn't seem to be working yet, None for now
 
         """
-        if tb is None:
-            tb = sys.last_traceback
-        res = []
+
         ignore_items = [
             "click/",
+            "bin/kosmos",
             "ipython",
             "bpython",
             "loghandler",
@@ -822,6 +836,31 @@ class Tools:
                     return True
             return False
 
+        if inspect.isframe(tb):
+            #
+            frame = tb
+            res = []
+            while frame:
+                tb2 = inspect.getframeinfo(frame)
+                if tb2.code_context:
+                    if len(tb2.code_context) == 1:
+                        line = tb2.code_context[0].strip()
+                    else:
+                        Tools.shell()
+                        w
+                else:
+                    line = ""
+                if not ignore(frame.f_code.co_filename):
+                    tb_item = [frame.f_code.co_filename, frame.f_code.co_name, frame.f_lineno, line, None]
+                    res.insert(0, tb_item)
+                    print("++++++%s" % line)
+                frame = frame.f_back
+            return res
+
+        if tb is None:
+            tb = sys.last_traceback
+        res = []
+
         for item in traceback.extract_tb(tb):
             if not ignore(item.filename):
                 if item.locals:
@@ -831,18 +870,6 @@ class Tools:
                 tb_item = [item.filename, item.name, item.lineno, item.line, llocals]
                 res.append(tb_item)
         return res
-
-        # if tb.tb_next is not None:
-        #     frame_ = tb.tb_next.tb_frame
-        # else:
-        #
-        #     frame_ = tb.tb_frame
-        #
-        #     Tools.shell()
-        #     Tools.traceback_text_get(tb, stdout=True)
-        #     tb_item = ()
-        #     logdict["tb"] = [tb_item, tb_item]  # just example for now #TODO:
-        #     print()
 
     @staticmethod
     def traceback_text_get(tb=None, stdout=False):
@@ -992,26 +1019,27 @@ class Tools:
         if isinstance(msg, Exception):
             raise Tools.exceptions.JSBUG("msg cannot be an exception raise by means of exception=... in constructor")
 
-        if not frame_:
-            frame_ = inspect.currentframe().f_back
-            if _levelup > 0:
-                levelup = 0
-                while frame_ and levelup < _levelup:
-                    frame_ = frame_.f_back
-                    levelup += 1
-
         # first deal with traceback
         if exception and not tb:
             # if isinstance(exception, BaseJSException):
-            if hasattr(exception, "exception"):
-                tb = exception._tb
+            if hasattr(exception, "_exc_traceback"):
+                tb = exception._exc_traceback
             else:
                 extype_, value_, tb = sys.exc_info()
 
         if tb:
-            logdict["traceback"] = Tools.traceback_format(tb)
+            logdict["traceback"] = Tools.traceback_list_format(tb)
             fname, defname, linenr, line_, locals_ = logdict["traceback"][-1]
         else:
+
+            if not frame_:
+                frame_ = inspect.currentframe().f_back
+                if _levelup > 0:
+                    levelup = 0
+                    while frame_ and levelup < _levelup:
+                        frame_ = frame_.f_back
+                        levelup += 1
+
             fname = frame_.f_code.co_filename.split("/")[-1]
             defname = frame_.f_code.co_name
             # linenr = frame_.f_code.co_firstlineno  #this is the line nr of the def
@@ -1025,15 +1053,22 @@ class Tools:
             else:
                 msg_e = exception.__repr__()
             if msg:
-                msg = (
-                    "{RED}EXCEPTION: \n"
-                    + Tools.text_indent(msg, 4).rstrip()
-                    + "\n"
-                    + Tools.text_indent(msg_e, 4)
-                    + "{RESET}"
-                )
+                if stdout:
+                    msg = (
+                        "{RED}EXCEPTION: \n"
+                        + Tools.text_indent(msg, 4).rstrip()
+                        + "\n"
+                        + Tools.text_indent(msg_e, 4)
+                        + "{RESET}"
+                    )
+                else:
+                    msg = "EXCEPTION: \n" + Tools.text_indent(msg, 4).rstrip() + "\n" + Tools.text_indent(msg_e, 4)
+
             else:
-                msg = "{RED}EXCEPTION: \n" + Tools.text_indent(msg_e, 4).rstrip() + "{RESET}"
+                if stdout:
+                    msg = "{RED}EXCEPTION: \n" + Tools.text_indent(msg_e, 4).rstrip() + "{RESET}"
+                else:
+                    msg = "EXCEPTION: \n" + Tools.text_indent(msg_e, 4).rstrip()
             level = 50
             if cat is "":
                 cat = "exception"
@@ -1488,6 +1523,7 @@ class Tools:
 
     @staticmethod
     def shell(loc=True):
+
         if loc:
             import inspect
 
@@ -1510,6 +1546,7 @@ class Tools:
 
             Tools._shell = InteractiveShellEmbed(banner1="", exit_msg="")
             Tools._shell.Completer.use_jedi = False
+
         return Tools._shell(stack_depth=2)
 
     # @staticmethod
@@ -1534,7 +1571,7 @@ class Tools:
 
     @staticmethod
     def text_strip(
-        content, ignorecomments=False, args={}, replace=False, executor=None, colors=True, check_no_args_left=False
+        content, ignorecomments=False, args={}, replace=False, executor=None, colors=True, die_if_args_left=False
     ):
         """
         remove all spaces at beginning & end of line when relevant (this to allow easy definition of scripts)
@@ -1549,6 +1586,7 @@ class Tools:
         # find generic prepend for full file
         minchars = 9999
         prechars = 0
+        assert isinstance(content, str)
         for line in content.split("\n"):
             if line.strip() == "":
                 continue
@@ -1574,7 +1612,7 @@ class Tools:
 
         if replace:
             content = Tools.text_replace(
-                content=content, args=args, executor=executor, text_strip=False, check_no_args_left=check_no_args_left
+                content=content, args=args, executor=executor, text_strip=False, die_if_args_left=die_if_args_left
             )
         else:
             if colors and "{" in content:
@@ -1590,8 +1628,9 @@ class Tools:
         executor=None,
         ignorecomments=False,
         text_strip=True,
-        check_no_args_left=False,
+        die_if_args_left=False,
         ignorecolors=False,
+        primitives_only=False,
     ):
         """
 
@@ -1622,17 +1661,22 @@ class Tools:
         if not "{" in content:
             return content
 
-        if ignorecolors:
-            content = Tools.args_replace(content, MyEnv.MYCOLORS_IGNORE)
-
         if executor and executor.config:
-            content2 = Tools.args_replace(content, args, executor.config, MyEnv.MYCOLORS)
+            content2 = Tools.args_replace(
+                content,
+                args_list=(args, executor.config),
+                ignorecolors=ignorecolors,
+                die_if_args_left=die_if_args_left,
+                primitives_only=primitives_only,
+            )
         else:
-            content2 = Tools.args_replace(content, args, MyEnv.config, MyEnv.MYCOLORS)
-
-        if check_no_args_left:
-            if "{" in content:
-                raise Tools.exceptions.Input("{ found in %s" % content2, data=args)
+            content2 = Tools.args_replace(
+                content,
+                args_list=(args, MyEnv.config),
+                ignorecolors=ignorecolors,
+                die_if_args_left=die_if_args_left,
+                primitives_only=primitives_only,
+            )
 
         if text_strip:
             content = Tools.text_strip(content2, ignorecomments=ignorecomments, replace=False)
@@ -1640,70 +1684,130 @@ class Tools:
         return content2
 
     @staticmethod
-    def args_replace(content, *args_list):
+    def args_replace(content, args_list=None, primitives_only=False, ignorecolors=False, die_if_args_left=False):
         """
 
         :param content:
-        :param args_list: add all dicts you want to replace
+        :param args: add all dicts you want to replace in a list
         :return:
         """
+
+        # IF YOU TOUCH THIS LET KRISTOF KNOW (despiegk)
+
         assert isinstance(content, str)
+        assert args_list
+
         if content == "":
             return content
-        args_new = {}
-        for replace_args in args_list:
-            for key, val in replace_args.items():
-                if key not in args_new:
-                    if isinstance(val, list) or isinstance(val, set):
-                        out = "["
-                        for v in val:
-                            if isinstance(v, str):
-                                v = "'%s'" % v
-                            else:
-                                v = str(v)
-                            out += "%s," % v
-                        val = out.rstrip(",") + "]"
-                    elif isinstance(val, str):
-                        if val.strip().lower() == "self":
-                            val = None
-                        if val.strip().lower() == "none":
-                            val = None
-                    elif isinstance(val, int) or isinstance(val, float) or isinstance(val, bool):
-                        # val = str(val)
-                        pass
-                    elif val != None:
-                        val = Tools._data_serializer_safe(val)
-                    if val:
-                        args_new[key] = val
 
-        def process_line(line, args_new):
-            # IF YOU TOUCH THIS LET KRISTOF KNOW
-            line = line.replace("{}", ">>EMPTYDICT<<")
+        def arg_process(key, val):
+            if key in ["self"]:
+                return None
+            if val == None:
+                return ""
+            if isinstance(val, str):
+                if val.strip().lower() == "none":
+                    return None
+                return val
+            if isinstance(val, bool):
+                if val:
+                    return "1"
+                else:
+                    return "0"
+            if isinstance(val, int) or isinstance(val, float):
+                return val
+            if isinstance(val, list) or isinstance(val, set):
+                out = "["
+                for v in val:
+                    if isinstance(v, str):
+                        v = "'%s'" % v
+                    else:
+                        v = str(v)
+                    out += "%s," % v
+                val = out.rstrip(",") + "]"
+                return val
+            if primitives_only:
+                return None
+            else:
+                return Tools._data_serializer_safe(val)
+
+        def args_combine():
+            args_new = {}
+            for replace_args in args_list:
+                for key, val in replace_args.items():
+                    if key not in args_new:
+                        val = arg_process(key, val)
+                        if val:
+                            args_new[key] = val
+            return args_new
+
+        def process_line_failback(line):
+            args_new = args_combine()
+            # SLOW!!!
+            print("FALLBACK REPLACE:%s" % line)
+            for arg, val in args_new.items():
+                assert arg
+                line = line.replace("{%s}" % arg, str(val))
+            return line
+
+        def process_line(line):
+            if line.find("{") == -1:
+                return line
+            emptyone = False
+            if line.find("{}") != -1:
+                emptyone = True
+                line = line.replace("{}", ">>EMPTYDICT<<")
+
             try:
-                line = line.format_map(args_new)
+                items = [i for i in Tools.formatter.parse(line)]
+            except Exception as e:
+                return process_line_failback(line)
+
+            do = {}
+
+            for literal_text, field_name, format_spec, conversion in items:
+                if not field_name:
+                    continue
+                if field_name in MyEnv.MYCOLORS:
+                    if ignorecolors:
+                        do[field_name] = ""
+                    else:
+                        do[field_name] = MyEnv.MYCOLORS[field_name]
+                for args in args_list:
+                    if field_name in args:
+                        do[field_name] = arg_process(field_name, args[field_name])
+                if field_name not in do:
+                    if die_if_args_left:
+                        raise Tools.exceptions.Input("could not find:%s in line:%s" % (field_name, line))
+                    # put back the original
+                    if conversion and format_spec:
+                        do[field_name] = "{%s!%s:%s}" % (field_name, conversion, format_spec)
+                    elif format_spec:
+                        do[field_name] = "{%s:%s}" % (field_name, format_spec)
+                    elif conversion:
+                        do[field_name] = "{%s!%s}" % (field_name, conversion)
+                    else:
+                        do[field_name] = "{%s}" % (field_name)
+
+            try:
+                line = line.format_map(do)
             except KeyError as e:
                 # means the format map did not work,lets fall back on something more failsafe
-                for arg, val in replace_args.items():
-                    assert arg
-                    line = line.replace("{%s}" % arg, val)
+                return process_line_failback(line)
             except ValueError as e:
                 # means the format map did not work,lets fall back on something more failsafe
-                for arg, val in replace_args.items():
-                    assert arg
-                    line = line.replace("{%s}" % arg, val)
+                return process_line_failback(line)
             except Exception as e:
                 return line
-            line = line.replace(">>EMPTYDICT<<", "{}")
+            if emptyone:
+                line = line.replace(">>EMPTYDICT<<", "{}")
 
             return line
 
-        for replace_args in args_list:
-            if not isinstance(replace_args, dict):
-                raise Tools.exceptions.Input("replace args need to be dict", data=replace_args)
         out = ""
         for line in content.split("\n"):
             if "{" in line:
-                line = process_line(line, args_new)
+                line = process_line(line)
             out += "%s\n" % line
 
         out = out[:-1]  # needs to remove the last one, is because of the split there is no last \n
@@ -1725,6 +1829,9 @@ class Tools:
 
     @staticmethod
     def log2stdout(logdict, data_show=True):
+        # in case of debug we show all logs regardless of settings
+        if not MyEnv.debug and not MyEnv.log_console:
+            return
         text = Tools.log2str(logdict, data_show=True, replace=True)
         p = print
         if MyEnv.config.get("LOGGER_PANEL_NRLINES"):
@@ -1735,6 +1842,32 @@ class Tools:
         except UnicodeEncodeError as e:
             text = text.encode("ascii", "ignore")
             p(text)
+
+    @staticmethod
+    def traceback_format(tb):
+        """format traceback
+
+        :param tb: traceback
+        :type tb: traceback object or a formatted list
+        :return: formatted trackeback
+        :rtype: str
+        """
+        if not isinstance(tb, list):
+            tb = Tools.traceback_list_format(tb)
+
+        out = Tools.text_replace("{RED}--TRACEBACK------------------{RESET}\n")
+        for tb_path, tb_name, tb_lnr, tb_line, tb_locals in tb:
+            C = "{GREEN}{tb_path}{RESET} in {BLUE}{tb_name}{RESET}\n"
+            C += "    {GREEN}{tb_lnr}{RESET}    {tb_code}{RESET}"
+            if Tools.pygments_formatter:
+                tb_code = Tools.pygments.highlight(tb_line, Tools.pygments_pylexer, Tools.pygments_formatter).rstrip()
+            else:
+                tb_code = tb_line
+            tbdict = {"tb_path": tb_path, "tb_name": tb_name, "tb_lnr": tb_lnr, "tb_code": tb_code}
+            C = Tools.text_replace(C.lstrip(), args=tbdict, text_strip=True)
+            out += C.rstrip() + "\n"
+        out += Tools.text_replace("{RED}-----------------------------\n{RESET}")
+        return out
 
     @staticmethod
     def log2str(logdict, data_show=True, replace=True):
@@ -1791,24 +1924,12 @@ class Tools:
 
         out = ""
 
+        # TO SHOW WERE LOG COMES FROM e.g. from subprocess
         # if "source" in logdict:
         #     out += Tools.text_replace("{RED}--SOURCE: %s-20--{RESET}\n" % logdict["source"])
 
         if "traceback" in logdict and logdict["traceback"]:
-            out += Tools.text_replace("{RED}--TRACEBACK------------------{RESET}\n")
-            for tb_path, tb_name, tb_lnr, tb_line, tb_locals in logdict["traceback"]:
-                C = "{GREEN}{tb_path}{RESET} in {BLUE}{tb_name}{RESET}\n"
-                C += "    {GREEN}{tb_lnr}{RESET}    {tb_code}{RESET}"
-                if Tools.pygments_formatter:
-                    tb_code = Tools.pygments.highlight(
-                        tb_line, Tools.pygments_pylexer, Tools.pygments_formatter
-                    ).rstrip()
-                else:
-                    tb_code = tb_line
-                tbdict = {"tb_path": tb_path, "tb_name": tb_name, "tb_lnr": tb_lnr, "tb_code": tb_code}
-                C = Tools.text_replace(C.lstrip(), args=tbdict, text_strip=True)
-                out += C.rstrip() + "\n"
-            out += Tools.text_replace("{RED}-----------------------------\n{RESET}")
+            out += Tools.traceback_format(logdict["traceback"])
 
         if data_show:
             if logdict["data"] != None:
@@ -1824,7 +1945,7 @@ class Tools:
                 out += data.rstrip() + "\n"
                 out += Tools.text_replace("-----------------------------\n{RESET}\n")
 
-        msg = Tools.text_replace(LOGFORMAT, args=logdict, check_no_args_left=False).rstrip()
+        msg = Tools.text_replace(LOGFORMAT, args=logdict, die_if_args_left=False).rstrip()
         out += msg
 
         if logdict["level"] > 39:
@@ -1871,7 +1992,7 @@ class Tools:
             content = str(content)
         if args or colors or text_strip:
             content = Tools.text_replace(
-                content, args=args, text_strip=text_strip, ignorecomments=ignorecomments, check_no_args_left=False
+                content, args=args, text_strip=text_strip, ignorecomments=ignorecomments, die_if_args_left=False
             )
             for key, val in MyEnv.MYCOLORS.items():
                 content = content.replace("{%s}" % key, val)
@@ -1979,7 +2100,31 @@ class Tools:
         sudo_remove=False,
         retry=None,
         errormsg=None,
+        die_if_args_left=False,
     ):
+        """
+
+        :param command:
+        :param showout:
+        :param useShell:
+        :param cwd:
+        :param timeout:
+        :param die:
+        :param async_:
+        :param args:
+        :param env:
+        :param interactive:
+        :param self:
+        :param replace:
+        :param asfile:
+        :param original_command:
+        :param log:
+        :param sudo_remove:
+        :param retry:
+        :param errormsg:
+        :param die_if_args_left: it True will search for { if found after replace will die
+        :return:
+        """
 
         if env is None:
             env = {}
@@ -1988,6 +2133,8 @@ class Tools:
         if self is None:
             self = MyEnv
         command = Tools.text_strip(command, args=args, replace=replace)
+        if die_if_args_left and "{" in command:
+            raise j.exceptions.Input("Found { in %s" % command)
         if sudo_remove:
             command = command.replace("sudo ", "")
 
@@ -2578,7 +2725,7 @@ class Tools:
 
         def getbranch(args):
             cmd = "cd {REPO_DIR}; git branch | grep \* | cut -d ' ' -f2"
-            rc, stdout, err = Tools.execute(cmd, die=False, args=args, interactive=False)
+            rc, stdout, err = Tools.execute(cmd, die=False, args=args, interactive=False, die_if_args_left=True)
             if rc > 0:
                 Tools.shell()
             current_branch = stdout.strip()
@@ -2594,7 +2741,9 @@ class Tools:
                 cd {REPO_DIR}
                 git checkout {BRANCH} -f
                 """
-                rc, out, err = Tools.execute(script, die=False, args=args, showout=True, interactive=False)
+                rc, out, err = Tools.execute(
+                    script, die=False, args=args, showout=True, interactive=False, die_if_args_left=True
+                )
                 # if err:
                 #     script = """
                 #     set -ex
@@ -2669,7 +2818,7 @@ class Tools:
                 mkdir -p {ACCOUNT_DIR}
                 """
                 Tools.log("get code [git] (first time): %s" % repo)
-                Tools.execute(C, args=args, showout=False)
+                Tools.execute(C, args=args, showout=False, die_if_args_left=True)
                 C = """
                 cd {ACCOUNT_DIR}
                 # git clone  --depth 1 {URL} -b {BRANCH}
@@ -2677,7 +2826,13 @@ class Tools:
                 cd {NAME}
                 """
                 rc, out, err = Tools.execute(
-                    C, args=args, die=True, showout=False, retry=4, errormsg="Could not clone %s" % repo_url
+                    C,
+                    args=args,
+                    die=True,
+                    showout=False,
+                    retry=4,
+                    errormsg="Could not clone %s" % repo_url,
+                    die_if_args_left=True,
                 )
 
             else:
@@ -2689,14 +2844,18 @@ class Tools:
                         git checkout . --force
                         """
                         Tools.log("get code & ignore changes: %s" % repo)
-                        Tools.execute(C, args=args, retry=1, errormsg="Could not checkout %s" % repo_url)
+                        Tools.execute(
+                            C, args=args, retry=1, errormsg="Could not checkout %s" % repo_url, die_if_args_left=True
+                        )
                         C = """
                         set -x
                         cd {REPO_DIR}
                         git pull
                         """
                         Tools.log("get code & ignore changes: %s" % repo)
-                        Tools.execute(C, args=args, retry=4, errormsg="Could not pull %s" % repo_url)
+                        Tools.execute(
+                            C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, die_if_args_left=True
+                        )
 
                     elif Tools.code_changed(REPO_DIR):
                         if Tools.ask_yes_no("\n**: found changes in repo '%s', do you want to commit?" % repo):
@@ -2714,14 +2873,16 @@ class Tools:
                         git commit -m "{MESSAGE}"
                         """
                         Tools.log("get code & commit [git]: %s" % repo)
-                        Tools.execute(C, args=args)
+                        Tools.execute(C, args=args, die_if_args_left=True)
                         C = """
                         set -x
                         cd {REPO_DIR}
                         git pull
                         """
                         Tools.log("get code & commit [git]: %s" % repo)
-                        Tools.execute(C, args=args, retry=4, errormsg="Could not pull %s" % repo_url)
+                        Tools.execute(
+                            C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, die_if_args_left=True
+                        )
 
                     if not checkoutbranch(args, branch):
                         raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
@@ -2741,7 +2902,9 @@ class Tools:
             rm -f download.zip
             curl -L {URL} > download.zip
             """
-            Tools.execute(script, args=args, retry=3, errormsg="Cannot download:%s" % args["URL"])
+            Tools.execute(
+                script, args=args, retry=3, errormsg="Cannot download:%s" % args["URL"], die_if_args_left=True
+            )
             statinfo = os.stat("/tmp/jumpscale/download.zip")
             if statinfo.st_size < 100000:
                 raise Tools.exceptions.Operations("cannot download:%s resulting file was too small" % args["URL"])
@@ -2757,7 +2920,7 @@ class Tools:
                 rm -f download.zip
                 """
                 try:
-                    Tools.execute(script, args=args, die=True)
+                    Tools.execute(script, args=args, die=True, die_if_args_left=True)
                 except Exception as e:
                     Tools.shell()
 
@@ -3030,7 +3193,6 @@ class MyEnv_:
         return "%s/cfg" % self._basedir_get()
 
     def config_default_get(self, config={}):
-
         if "DIR_BASE" not in config:
             config["DIR_BASE"] = self._basedir_get()
 
@@ -3050,16 +3212,22 @@ class MyEnv_:
             config["INTERACTIVE"] = True
         if not "SECRET" in config:
             config["SECRET"] = ""
-
-        config["SSH_AGENT"] = True
-        config["SSH_KEY_DEFAULT"] = ""
-
-        config["LOGGER_INCLUDE"] = ["*"]
-        config["LOGGER_EXCLUDE"] = ["sal.fs"]
-        config["LOGGER_LEVEL"] = 15  # means std out & plus gets logged
-        config["LOGGER_CONSOLE"] = True
-        config["LOGGER_REDIS"] = False
-        config["LOGGER_PANEL_NRLINES"] = 15
+        if "SSH_AGENT" not in config:
+            config["SSH_AGENT"] = True
+        if "SSH_KEY_DEFAULT" not in config:
+            config["SSH_KEY_DEFAULT"] = ""
+        if "LOGGER_INCLUDE" not in config:
+            config["LOGGER_INCLUDE"] = ["*"]
+        if "LOGGER_EXCLUDE" not in config:
+            config["LOGGER_EXCLUDE"] = ["sal.fs"]
+        if "LOGGER_LEVEL" not in config:
+            config["LOGGER_LEVEL"] = 15  # means std out & plus gets logged
+        if "LOGGER_CONSOLE" not in config:
+            config["LOGGER_CONSOLE"] = True
+        if "LOGGER_REDIS" not in config:
+            config["LOGGER_REDIS"] = False
+        if "LOGGER_PANEL_NRLINES" not in config:
+            config["LOGGER_PANEL_NRLINES"] = 15
 
         if self.readonly:
             config["DIR_TEMP"] = "/tmp/jumpscale_installer"
@@ -3203,7 +3371,7 @@ class MyEnv_:
             st = os.stat(self.config["DIR_HOME"])
             gid = st.st_gid
             args["GROUPNAME"] = grp.getgrgid(gid)[0]
-            Tools.execute(script, interactive=True, args=args)
+            Tools.execute(script, interactive=True, args=args, die_if_args_left=True)
 
         self.config_file_path = os.path.join(config["DIR_CFG"], "jumpscale_config.toml")
 
@@ -3314,6 +3482,15 @@ class MyEnv_:
         :param level:
         :return: logdict see github/threefoldtech/jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md
         """
+        # not optimal, cannot check on type doesn't work, there is still something wrong with classes or multiple versions of it I thinkg
+        if str(exception_type).find("RemoteException1") != -1:
+            print(Tools.text_replace("{RED}*****Remote Exception*****{RESET}"))
+            logdict = exception_obj.data
+            Tools.log2stdout(logdict)
+            if die == False:
+                return logdict
+            else:
+                sys.exit(1)
         try:
             logdict = Tools.log(tb=tb, level=level, exception=exception_obj, stdout=stdout)
         except Exception as e:
@@ -3323,12 +3500,13 @@ class MyEnv_:
             traceback.print_exception(etype=ttype, tb=tb, value=msg)
             Tools.pprint("{RESET}")
             sys.exit(1)
-            Tools.shell()
 
-        if self.debug and traceback and pudb:
+        exception_obj._logdict = logdict
+
+        if self.debug and tb and pudb:
             # exception_type, exception_obj, tb = sys.exc_info()
             pudb.post_mortem(tb)
-        # Tools.pprint("{RED}CANNOT CONTINUE{RESET}")
+
         if die == False:
             return logdict
         else:
@@ -3368,7 +3546,8 @@ class MyEnv_:
         loads the configuration file which default is in {DIR_BASE}/cfg/jumpscale_config.toml
         {DIR_BASE} normally is /sandbox
         """
-        self.config = Tools.config_load(self.config_file_path)
+        config = Tools.config_load(self.config_file_path)
+        self.config = self.config_default_get(config)
 
     def config_save(self):
         Tools.config_save(self.config_file_path, self.config)
@@ -3481,7 +3660,7 @@ class BaseInstaller:
                         Tools.file_write(env_path, bashprofile)
             else:
                 # if not sandboxed need to remove old python's from bin dir
-                Tools.execute("rm -f {DIR_BASE}/bin/pyth*")
+                Tools.execute("rm -f {DIR_BASE}/bin/pyth*", die_if_args_left=True)
                 env_path = "%s/%s" % (MyEnv.config["DIR_HOME"], profile_name)
                 if not Tools.exists(env_path):
                     bashprofile = ""
@@ -3510,7 +3689,7 @@ class BaseInstaller:
             mkdir -p var
 
             """
-            Tools.execute(script, interactive=MyEnv.interactive)
+            Tools.execute(script, interactive=MyEnv.interactive, die_if_args_left=True)
 
         else:
 
@@ -3523,7 +3702,7 @@ class BaseInstaller:
             rsync -ra {DIR_BASE}/code/github/threefoldtech/sandbox_base/base/ {DIR_BASE}/
             mkdir -p root
             """
-            Tools.execute(script, interactive=MyEnv.interactive)
+            Tools.execute(script, interactive=MyEnv.interactive, die_if_args_left=True)
 
             if MyEnv.platform() == "darwin":
                 reponame = "sandbox_osx"
@@ -3544,7 +3723,7 @@ class BaseInstaller:
             args = {}
             args["REPONAME"] = reponame
 
-            Tools.execute(script, interactive=MyEnv.interactive, args=args)
+            Tools.execute(script, interactive=MyEnv.interactive, args=args, die_if_args_left=True)
 
             script = """
             set -e
@@ -3552,7 +3731,7 @@ class BaseInstaller:
             source env.sh
             python3 -c 'print("- PYTHON OK, SANDBOX USABLE")'
             """
-            Tools.execute(script, interactive=MyEnv.interactive)
+            Tools.execute(script, interactive=MyEnv.interactive, die_if_args_left=True)
 
             Tools.log("INSTALL FOR BASE OK")
 
@@ -3573,7 +3752,7 @@ class BaseInstaller:
         mkdir -p {DIR_VAR}/log
 
         """
-        Tools.execute(script, interactive=True)
+        Tools.execute(script, interactive=True, die_if_args_left=True)
 
         if MyEnv.platform_is_osx:
             OSXInstaller.base()
@@ -3636,7 +3815,7 @@ class BaseInstaller:
                 "ssh2-python",
                 "paramiko>=2.2.3",
                 "path.py>=10.3.1",
-                "peewee",
+                # "peewee", #DO NOT INSTALL PEEWEE !!!
                 "psutil>=5.4.3",
                 "pudb>=2017.1.2",
                 "pyblake2>=0.9.3",
@@ -3952,7 +4131,7 @@ class JumpscaleInstaller:
         # kosmos --instruct=/tmp/instructions.toml
         kosmos 'j.core.tools.pprint("JumpscaleX init step for nacl (encryption) OK.")'
         """
-        Tools.execute(script)
+        Tools.execute(script, die_if_args_left=True)
 
     def remove_old_parts(self):
         tofind = ["DigitalMe", "Jumpscale", "ZeroRobot"]
@@ -4037,8 +4216,15 @@ class JumpscaleInstaller:
 
             script = Tools.text_replace(script, args=locals())
             script = Tools.text_replace(script, args=locals())  # NEED TO DO THIS 2x
+            if "{" in script:
+                from pudb import set_trace
+
+                set_trace()
+                script = Tools.text_replace(script, args=locals())
+                Tools.shell()
+                raise Tools.exceptions.BUG("replace did not work")
             Tools.log(Tools.text_replace("link {GITPATH}/{PATH} {DEST}", args=locals()), data=script)
-            Tools.execute(script, args=locals())
+            Tools.execute(script, args=locals(), die_if_args_left=True)
 
     def cmds_link(self):
         _, _, _, _, loc = Tools._code_location_get(repo="jumpscaleX_core/", account="threefoldtech")
@@ -4048,7 +4234,7 @@ class JumpscaleInstaller:
             if not os.path.exists(dest):
                 Tools.link(src2, dest, chmod=770)
         Tools.link("%s/install/jsx.py" % loc, "{DIR_BASE}/bin/jsx", chmod=770)
-        Tools.execute("cd /sandbox;source env.sh;js_init generate", interactive=False)
+        Tools.execute("cd /sandbox;source env.sh;js_init generate", interactive=False, die_if_args_left=True)
 
 
 class DockerFactory:
@@ -4546,19 +4732,32 @@ class DockerContainer:
             args_txt += " --no-interactive"
 
         dirpath = os.path.dirname(inspect.getfile(Tools))
-        print("copy installers to the docker")
-        if not Tools.exists("%s/jsx" % dirpath):
-            Tools.link("%s/jsx.py" % dirpath, "%s/jsx" % dirpath)
-        for item in ["jsx", "InstallTools.py"]:
-            src1 = "%s/%s" % (dirpath, item)
-            cmd = "scp -P {} -o StrictHostKeyChecking=no \
-                -o UserKnownHostsFile=/dev/null \
-                -r {} root@localhost:/tmp/".format(
-                self.config.sshport, src1
+        if dirpath.startswith(MyEnv.config["DIR_CODE"]):
+            cmd = (
+                "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py configure --sshkey %s -s"
+                % MyEnv.sshagent.key_default_name
             )
-            Tools.execute(cmd)
-        cmd = "cd /tmp;python3 jsx configure --sshkey %s -s;python3 jsx install -s" % MyEnv.sshagent.key_default_name
-        cmd += args_txt
+            Tools.log("CONFIGURE THE CONTAINER", data=cmd)
+            self.sshexec(cmd)
+            self.sshexec("rm -f /tmp/InstallTools.py;rm -f /tmp/jsx")
+            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s"
+            cmd += args_txt
+        else:
+            print("copy installer over from where I install from")
+            for item in ["jsx", "InstallTools.py"]:
+                src1 = "%s/%s" % (dirpath, item)
+                cmd = "scp -P {} -o StrictHostKeyChecking=no \
+                    -o UserKnownHostsFile=/dev/null \
+                    -r {} root@localhost:/tmp/".format(
+                    self.config.sshport, src1
+                )
+                Tools.execute(cmd)
+
+                cmd = (
+                    "cd /tmp;python3 jsx configure --sshkey %s -s;python3 jsx install -s"
+                    % MyEnv.sshagent.key_default_name
+                )
+                cmd += args_txt
         print(" - Installing jumpscaleX ")
         self.sshexec("apt-get install python3-click -y")
         self.sshexec(cmd)
@@ -5021,7 +5220,7 @@ class WireGuard:
             AllowedIPs = 10.10.10.0/24
             """
             path = "/tmp/wg0.conf"
-            Tools.file_write(path, Tools.text_replace(C, args=config))
+            Tools.file_write(path, Tools.text_replace(C, args=config, die_if_args_left=True))
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
             cmd = "wg-quick up %s" % path
             Tools.execute(cmd)

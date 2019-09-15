@@ -25,9 +25,10 @@ class JSXObject(j.baseclasses.object):
     def _init_pre(self, capnpdata=None, datadict={}, schema=None, model=None):
         self._capnp_obj_ = None
         self.id = None
+
         if model:
             self._model = model
-            self._schema_ = None
+            self._schema_ = schema
         else:
             self._schema_ = schema
             self._model = None
@@ -36,6 +37,7 @@ class JSXObject(j.baseclasses.object):
         self._deserialized_items = {}
 
         self._autosave = False
+
         self.acl_id = None
         self._acl = None
 
@@ -49,10 +51,10 @@ class JSXObject(j.baseclasses.object):
 
     @property
     def _schema(self):
-        if self._model:
+        if self._schema_:
+            return self._schema_
+        else:
             return self._model.schema
-        assert self._schema_
-        return self._schema_
 
     @property
     def _key(self):
@@ -146,7 +148,7 @@ class JSXObject(j.baseclasses.object):
             if serialize:
                 self._deserialized_items = {}  # need to go back to smallest form
         if self._model:
-            if not self._model.__class__._name == "acl" and self._acl is not None:
+            if not self._model._classname == "acl" and self._acl is not None:
                 if self.acl.id is None:
                     self.acl.save()
                 if self.acl.id != self.acl_id:
@@ -154,11 +156,22 @@ class JSXObject(j.baseclasses.object):
 
             if self._changed:
 
+                # WE NEED UNIQUE PROPERTIES
                 for prop_u in self._model.schema.properties_unique:
+                    r = []
                     # find which properties need to be unique
                     # unique properties have to be indexed
                     args_search = {prop_u.name: getattr(self, prop_u.name)}
-                    r = self._model.find(**args_search)
+                    if "name" not in args_search:
+                        for model in self._model.find():
+                            m = getattr(model, prop_u.name)
+                            if m == args_search[prop_u.name] and model.id != self.id:
+                                msg = "could not save, was not unique.\n%s." % (args_search)
+                                # can for sure not be ok
+                                raise j.exceptions.Input(msg)
+
+                    else:
+                        r = self._model.find(**args_search)
                     if len(r) > 1:
                         msg = "could not save, was not unique.\n%s." % (args_search)
                         # can for sure not be ok

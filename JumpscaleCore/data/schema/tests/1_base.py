@@ -137,18 +137,18 @@ def main(self):
 
     dd = o1._ddict
 
-    assert dd["enum"] == 1
+    assert dd["enum"] == 0
     assert dd["llist2"][1] == "6"
     assert dd["nr"] == 4
 
     o2.llist.append("1")
 
     assert o1.enum == "RED"
-    assert o1._capnp_obj.enum == 1
+    assert o1._capnp_obj.enum == 0
 
-    o1.enum = 2
+    o1.enum = 1
     assert o1.enum == "GREEN"
-    assert o1._capnp_obj.enum == 2
+    assert o1._capnp_obj.enum == 1
     o1.enum = "  green"
     assert o1.enum == "GREEN"
     assert o1.enum == " GREEN"
@@ -162,7 +162,7 @@ def main(self):
     assert o1._data.find(b"GREEN") == -1  # needs to be stored as int
     x = len(o1._data) + 0
 
-    o1.enum = 4
+    o1.enum = 3
 
     schema3 = """
         @url = despiegk.test2

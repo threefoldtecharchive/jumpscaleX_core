@@ -1,49 +1,42 @@
-import os
 from Jumpscale import j
 from .MyWorkerProcess import MyWorkerProcess
+from . import schemas
 import gipc
 import sys
 
 
 class MyWorker(j.baseclasses.object_config):
     _name = "worker"
-    _SCHEMATEXT = """
-        @url = jumpscale.myjobs.worker
-        name*= ""
-        timeout = 3600
-        time_start = 0 (T)
-        last_update = 0 (T)
-        current_job = (I)
-        error = "" (S)
-        state* = "NEW,ERROR,BUSY,WAITING,HALTED" (E)
-        pid = 0
-        #if halt on True will stop
-        halt = false (B)
-        type = "tmux,subprocess,inprocess" (E)
-        debug = false (B)
-        nr = 0 (I)
-        """
+    _SCHEMATEXT = schemas.worker
 
     def _init(self, **kwargs):
         # important to check (at least for now)
         assert self._bcdb.storclient._check_cat == "myjobs"
         if "nr" in kwargs:
-            self.nr = nr
-            self.name = "w%s" % nr
+            self.nr = kwargs["nr"]
+            self.name = "w%s" % self.nr
         elif self.name.startswith("w"):
             try:
                 self.nr = int(self.name[1:])
             except Exception as e:
                 raise j.exceptions.JSBUG("need to be int after w")
         if not self.nr > 0 and self.nr < 20:
-            raise j.exceptions.JSBUG("worker nr is between 1 and 20")
+            raise j.exceptions.JSBUG(f"worker '{self.nr}' nr is not between 1 and 20 ")
+
+    def _state_set_new(self):
+        self.time_start = 0
+        self.last_update = 0
+        self.state = "NEW"
+        self.pid = 0
+        self.current_job = 2147483647
+        self.halt = False
 
     def start(self):
         def state_update():
-            self.state = "WAITING"
             self.time_start = j.data.time.epoch
             self.last_update = j.data.time.epoch
             self.current_job = 2147483647  # means none
+            self.state = "WAITING"
             self.save()
 
         if self.type in ["TMUX"]:
@@ -56,7 +49,6 @@ class MyWorker(j.baseclasses.object_config):
             self.stop()
         else:
             raise j.exceptions.JSBUG("did not find right type to start worker")
-        state_update()
 
     def stop(self, hard=False):
         self.halt = True
@@ -66,9 +58,13 @@ class MyWorker(j.baseclasses.object_config):
             if self.type in ["TMUX"]:
                 cmd = j.servers.startupcmd.get(name="workers_%s" % self.nr)
                 cmd.stop(force=True)
-            if self.type in ["INPROCESS"]:
+            elif self.type in ["INPROCESS"]:
                 self._log_info("INPROCESS STOP")
                 sys.exit(0)
+            elif self.type in ["SUBPROCESS"]:
+                worker = j.servers.myjobs._workers_gipc.pop(self._id, None)
+                if worker:
+                    worker.terminate()
             self.state = "HALTED"
             self.pid = 0
             self.last_update = j.data.time.epoch
@@ -87,8 +83,6 @@ class MyWorker(j.baseclasses.object_config):
         :param: nr is the nr of the tmux session workers_$nr is the name
 
         """
-        # j.builders.apps.corex.install()
-        # j.servers.corex.default.start()  # starts corex at port 1500
         if not reset:
             self.load()
             if self.state in ["WAITING", "BUSY"]:
@@ -106,9 +100,6 @@ class MyWorker(j.baseclasses.object_config):
             cmd.start(reset=True)
 
         start(self.nr)
-
-        # was attempt to start with gipc but got some weird stuff
-        # p = j.servers.gipc.schedule(start, nr=self.nr)
 
     def _worker_start_inprocess(self):
         """

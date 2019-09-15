@@ -23,7 +23,7 @@ from Jumpscale import j
 
 class NAMESPACE(j.data.bcdb._BCDBModelClass):
     def _schema_get(self):
-        return j.data.schema.get_from_url("jumpscale.bcdb.namespace.2")
+        return j.data.schema.get_from_url("jumpscale.bcdb.meta.namespace.2")
 
     @property
     def acl(self):

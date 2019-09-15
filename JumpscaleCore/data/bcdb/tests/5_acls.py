@@ -54,7 +54,7 @@ def main(self):
 
         schema = """
             @url = despiegk.test5.acl
-            name = "" 
+            name** = ""
             an_id = 0
             """
         bcdb, m = load(schema)
@@ -79,7 +79,7 @@ def main(self):
 
         assert len(bcdb.user.find()) == 10
         assert len(bcdb.circle.find()) == 10
-        assert len([i for i in bcdb.circle.index._id_iterator()]) == 10
+        assert bcdb.circle.index.sql_index_count() == 10
 
         self._log_info("ALL DATA INSERTED (DONE)")
 

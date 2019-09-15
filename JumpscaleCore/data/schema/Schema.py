@@ -143,7 +143,7 @@ class Schema(j.baseclasses.object):
         self._log_debug("load schema", data=text)
 
         if text.count("@url") > 1:
-            raise j.exceptions.Input("there should only be 1 url in the schema")
+            raise j.exceptions.Input("there should only be 1 url in the schema", data=text)
 
         self.text = j.core.text.strip(text)
 
@@ -193,6 +193,7 @@ class Schema(j.baseclasses.object):
                 name = name[:-2]
                 p.index = True
             if name.endswith("*"):
+                raise j.exceptions.Input("key based indexing (*) for now not supported use **", data=text)
                 name = name[:-1]
                 p.index_key = True
             if name.startswith("&"):
@@ -202,7 +203,7 @@ class Schema(j.baseclasses.object):
                 p.index_key = True
 
             if name in ["id"]:
-                self._error_raise("do not use 'id' in your schema, is reserved for system.", schema=text)
+                self._error_raise("do not use 'id' in your schema, is reserved for system.", data=text)
             elif name in ["name"]:
                 p.unique = True
                 # everything which is unique also needs to be indexed
@@ -255,7 +256,6 @@ class Schema(j.baseclasses.object):
             if line.startswith("#"):
                 continue
             if "=" not in line:
-                j.shell()
                 raise j.exceptions.Input(
                     "did not find =, need to be there to define field, line=%s\ntext:%s" % (line, text)
                 )
@@ -345,8 +345,9 @@ class Schema(j.baseclasses.object):
                 index_text = True
             if p.index:
                 index_sql = True
-            if p.index_key:
-                index_key = True
+            index_key = False
+            # if p.index_key:
+            #     index_key = True
         return (index_key, index_sql, index_text)
 
     def new(self, capnpdata=None, serializeddata=None, datadict=None, bcdb=None):
@@ -365,6 +366,8 @@ class Schema(j.baseclasses.object):
 
         if bcdb:
             model = bcdb.model_get(url=self.url)
+            # here the model retrieved will be linked to a schema with the same url
+            # but can be a different md5
         else:
             model = None
 

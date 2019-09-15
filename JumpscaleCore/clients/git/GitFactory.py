@@ -364,7 +364,10 @@ class GitFactory(j.baseclasses.object):
         repository_host, repository_type, repository_account, repository_name, repository_url, branch2, gitpath, relpath, port = j.clients.git.giturl_parse(
             url
         )
-        if not branch:
+        if j.sal.fs.exists(gitpath) and pull == False:
+            return (repository_url, gitpath, relpath)
+
+        if not branch and not j.sal.fs.exists(gitpath):
             branch = branch2
         if branch == "*":
             branch = None

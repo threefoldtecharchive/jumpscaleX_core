@@ -79,9 +79,10 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
 
         raise j.exceptions.Input("could not find 3bot: user_id:{user_id} name:{name}")
 
-    def _payload_check(self, name=None, email=None, ipaddr="", description="", pubkey_hex=None):
+    def _payload_check(self, id=None, name=None, email=None, ipaddr="", description="", pubkey_hex=None):
         assert name
         assert email
+        assert id
 
         if isinstance(pubkey_hex, bytes):
             pubkey_hex = pubkey_hex.decode()
@@ -93,6 +94,7 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         n = j.data.nacl.default
 
         buffer = BytesIO()
+        buffer.write(str(id).encode())
         buffer.write(name.encode())
         buffer.write(email.encode())
         buffer.write(ipaddr.encode())
@@ -109,44 +111,6 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         assert n.verify(payload, signature, verify_key=pubkey)
 
         return signature_hex
-
-    def threebot_register(self, name, email, ipaddr="", description="", pubkey=None):
-        self._log_info("register: {name} {email} {ipaddr}" % locals())
-        n = j.data.nacl.default
-        if not pubkey:
-            pubkey = n.verify_key.encode()
-        self._log(pubkey)
-
-        cl = self.explorer
-        cl.ping()
-
-        # FOR ENCRYPTION WITH PUB KEY
-        # import nacl
-        # from nacl.signing import VerifyKey
-        #
-        # vk = VerifyKey(pubkey)
-        # pubkey_obj = vk.to_curve25519_public_key()
-        # encrypted = n.encrypt(b"a", hex=False, public_key=pubkey_obj)
-        # n.decrypt(encrypted)
-
-        if not isinstance(pubkey, bytes):
-            raise j.exceptions.Input("needs to be bytes")
-
-        pubkey_hex = binascii.hexlify(pubkey)
-        signature_hex = self._payload_check(
-            name=name, email=email, ipaddr=ipaddr, description=description, pubkey_hex=pubkey_hex
-        )
-
-        res = cl.client.actors.phonebook.register(
-            name=name, email=email, ipaddr=ipaddr, description=description, pubkey=pubkey_hex, signature=signature_hex
-        )
-
-        record0 = self.threebot_record_get(tid=res.id)
-        record1 = self.threebot_record_get(name=res.name)
-
-        self._log_info("registration of threebot '{name}' done" % locals())
-
-        return record1
 
     def test(self):
         """

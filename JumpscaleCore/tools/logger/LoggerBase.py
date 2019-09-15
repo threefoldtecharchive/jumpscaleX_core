@@ -42,7 +42,7 @@ class LoggerBase(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
         @url = jumpscale.tools.logger.1
-        name* = ""
+        name** = ""
         stdout = False
         redis = False
         redis_addr = ""
