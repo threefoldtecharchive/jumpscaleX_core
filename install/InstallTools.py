@@ -3118,6 +3118,7 @@ class MyEnv_:
             self.log_console = self.config.get("LOGGER_CONSOLE", True)
             self.log_redis = self.config.get("LOGGER_REDIS", False)
             self.debug = self.config.get("DEBUG", False)
+            self.debugger = self.config.get("DEBUGGER", "pudb")
             self.interactive = self.config.get("INTERACTIVE", True)
 
             if os.path.exists(os.path.join(self.config["DIR_BASE"], "bin", "python3.6")):
@@ -3208,6 +3209,8 @@ class MyEnv_:
             config["READONLY"] = False
         if not "DEBUG" in config:
             config["DEBUG"] = False
+        if not "DEBUGGER" in config:
+            config["DEBUGGER"] = "pudb"
         if not "INTERACTIVE" in config:
             config["INTERACTIVE"] = True
         if not "SECRET" in config:
