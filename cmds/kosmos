@@ -12,7 +12,6 @@ if "-p" in sys.argv:
     # monkey.patch_time()
 
 
-import os
 import sys
 from Jumpscale import j
 
@@ -22,7 +21,6 @@ from Jumpscale import j
 
 import argparse
 import pudb
-import traceback
 
 # default is 12 lines or get from config
 LOGGER_PANEL_LINES = j.core.myenv.config.get("LOGGER_PANEL_NRLINES", 12)
