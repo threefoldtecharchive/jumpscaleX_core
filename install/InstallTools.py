@@ -3028,6 +3028,7 @@ class MyEnv_:
         self.state = None
         self.__init = False
         self.debug = False
+        self.log_console = True
 
         self.sshagent = None
         self.interactive = False
