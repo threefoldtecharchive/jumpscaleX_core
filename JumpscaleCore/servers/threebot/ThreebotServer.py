@@ -145,7 +145,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             ssl = self.ssl
 
         if not background:
-            if self.web:
+            if web:
                 self._init_web(ssl=ssl)
 
             self.zdb.start()
