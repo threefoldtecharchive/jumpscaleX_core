@@ -60,7 +60,8 @@ class AlertHandler(j.baseclasses.object):
         self.model = j.data.bcdb.system.model_get(schema=SCHEMA_ALERT)
 
     def setup(self):
-        j.errorhandler.handlers.append(self.handle)
+        if self.handle not in j.errorhandler.handlers:
+            j.errorhandler.handlers.append(self.handle)
 
     def to_alert(self, logdict):
         """convert logdict to an alert
