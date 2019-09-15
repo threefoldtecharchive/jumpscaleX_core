@@ -11,7 +11,7 @@ always do as follows:
 ```python
 try:
     print("DO SOMETHING WHICH MAYBE GIVES ERROR")
-except Exception as e:    
+except Exception as e:
     j.errorhandler.exception_handle(e,die=True) #or die =False if you don't want to stop
 ```
 
@@ -58,7 +58,7 @@ BaseJSException(message="something", level=None, cat=None, msgpub=None,context=N
 
 - context is e.g. location where something happened
 - cat is any category e.g. in dot notation
-- 
+-
 
 ## raising of errors
 
@@ -119,12 +119,12 @@ arguments
 - **level**: see above
 - **cat**: dot notation can be used, just to put your error in a good category
 - **context**: e.g. methodname, location id, ... the context (area) where the error happened (exception)
-- **data**: any data worth keeping 
+- **data**: any data worth keeping
 - **exception**: see above
 
 ```python
 class BaseJSException(Exception):
-  
+
     def __init__(self, message="", level=None, cat=None, msgpub=None, context=None, data=None, exception=None):
 
 ```
