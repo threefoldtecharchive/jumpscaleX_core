@@ -218,7 +218,7 @@ class Handler(JSBASE):
             gedis_socket.on_disconnect()
             self._log_info("connection closed", context="%s:%s" % address)
 
-    def _handle_gedis_session(self, gedis_socket, address, user_session=user_session):
+    def _handle_gedis_session(self, gedis_socket, address, user_session=None):
         """
         deal with 1 specific session
         :param socket:
