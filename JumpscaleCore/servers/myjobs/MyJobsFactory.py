@@ -83,7 +83,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         w.nr = nr
         w.start()
 
-    def worker_tmux_start(self, nr=None, debug=False):
+    def worker_tmux_start(self, nr=None, debug=False, startloop=True):
         """
         :param nr: is the nr of the worker 1 to x will be a child with name w$nr e.g. w3
         :param debug:
@@ -100,7 +100,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             w.state = "NEW"
         w.save()
         w.start()
-        if not self._mainloop_tmux:
+        if not self._mainloop_tmux and startloop:
             self._mainloop_tmux = gevent.spawn(self._main_loop_tmux)
 
     def _worker_inprocess_start_from_tmux(self, nr):
@@ -124,7 +124,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         """
         self._init_pre_schedule()
         for i in range(nr_workers):
-            self.worker_tmux_start(nr=i + 1, debug=debug)
+            self.worker_tmux_start(nr=i + 1, debug=debug, startloop=False)
+        if not self._mainloop_tmux:
+            self._mainloop_tmux = gevent.spawn(self._main_loop_tmux)
 
     def worker_subprocess_start(self, nr=None, debug=False):
         """
