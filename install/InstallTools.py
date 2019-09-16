@@ -708,6 +708,8 @@ class BaseJSException(Exception):
         return Tools._data_serializer_safe(self.logdict)
 
     def __repr__(self):
+        if not self.logdict:
+            raise Tools.exceptions.JSBUG("logdict not known (is None)")
         print(Tools.log2str(self.logdict))
         return ""
 
@@ -1134,6 +1136,8 @@ class Tools:
         :return:
         """
 
+        # assert isinstance(logdict, dict)
+
         if iserror:
             for handler in MyEnv.errorhandlers:
                 try:
@@ -1146,6 +1150,8 @@ class Tools:
                 handler(logdict)
             except Exception as e:
                 MyEnv.exception_handle(e)
+
+        # assert isinstance(logdict, dict)
 
         return logdict
 

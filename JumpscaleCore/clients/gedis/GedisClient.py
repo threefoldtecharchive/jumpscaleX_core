@@ -164,7 +164,7 @@ class GedisClient(JSConfigBase):
     def _methods(self, prefix=""):
         if prefix.startswith("_"):
             return JSConfigBase._methods(self, prefix=prefix)
-        res = self.actors._methods()
+        res = [str(i) for i in self.actors._methods()]
         for i in ["ping"]:
             if i not in res:
                 res.append(i)

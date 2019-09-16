@@ -412,6 +412,9 @@ class Handler(JSBASE):
             # we will now check if the info is in system namespace
             key = "system__%s" % actor
 
+        self._log_debug(key)
+        print(key)
+
         if key not in self.actors:
             raise j.exceptions.Input("Cannot find cmd with key:%s in actors" % key)
 

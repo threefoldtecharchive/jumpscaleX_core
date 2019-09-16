@@ -44,7 +44,7 @@ class ThreeBotServer(j.baseclasses.object_config):
     @property
     def gedis_server(self):
         if not self._gedis_server:
-            self._gedis_server = j.servers.gedis.get(name=f"{self.name}_gedis_threebot", port=8901)
+            self._gedis_server = j.servers.gedis.get(name="%s_gedis_threebot" % self.name, port=8901)
             self._gedis_server._threebot_server = self
         return self._gedis_server
 

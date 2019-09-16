@@ -15,7 +15,7 @@ def main(self):
 
     client = j.clients.gedis.get("gedis_test", port=8901, namespace="ibiza")
 
-    r = client.actors.ibiza_actor.info(something="")
+    r = client.actors.ibiza_actor.info(data="")
     assert client.ping()
 
     assert client.actors.painter.echo("s") == b"s"
