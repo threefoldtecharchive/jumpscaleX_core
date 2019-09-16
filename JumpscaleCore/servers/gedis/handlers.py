@@ -262,12 +262,12 @@ class Handler(JSBASE):
             return None, "OK"
         elif request.command.command == "ping":
             return None, "PONG"
-        elif request.command.command == "auth":
-            dm_id, epoch, signed_message = request[1:]
-            if self.dm_verify(dm_id, epoch, signed_message):
-                self.session.dmid = dm_id
-                self.session.admin = True
-                return None, True
+        # elif request.command.command == "auth":
+        #     dm_id, epoch, signed_message = request[1:]
+        #     if self.dm_verify(dm_id, epoch, signed_message):
+        #         self.session.dmid = dm_id
+        #         self.session.admin = True
+        #         return None, True
 
         self._log_debug(
             "command received %s %s %s" % (request.command.namespace, request.command.actor, request.command.command),

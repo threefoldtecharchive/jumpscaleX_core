@@ -7,10 +7,13 @@ def main(self):
     """
 
     print("[*] testing echo")
-    client = j.clients.gedis.get("gedis_test", port=8888, namespace="ibiza")
+    client = j.clients.gedis.get("gedis_test", port=8920, namespace="system")
+    client.actors.system.ping()
 
-    actors_path = "/sandbox/code/github/threefoldtech/digitalmeX/packages/extra/examples/actors"
+    actors_path = "/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/ibiza/actors"
     client.actors.system.actors_add_path(namespace="ibiza", path=actors_path)
+
+    client = j.clients.gedis.get("gedis_test", port=8920, namespace="ibiza")
 
     client.actors
     assert client.ping()
