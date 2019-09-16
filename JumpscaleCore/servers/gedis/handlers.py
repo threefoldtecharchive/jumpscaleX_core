@@ -113,7 +113,12 @@ class Request:
         :rtype: dict
         """
         if len(self._request) > 2:
-            return j.data.serializers.json.loads(self._request[2])
+            # HOW CAN WE KNOW THAT THIS IS JSON???
+            try:
+                return j.data.serializers.json.loads(self._request[2])
+            except:
+                # TODO: is not good implementation !!!
+                return {}
         return {}
 
     @property
@@ -214,7 +219,11 @@ class Handler(JSBASE):
 
         try:
             self._handle_gedis_session(gedis_socket, address, user_session=user_session)
-        finally:
+        except Exception as e:
+            logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+            from pudb import set_trace
+
+            set_trace()
             gedis_socket.on_disconnect()
             self._log_info("connection closed", context="%s:%s" % address)
 
@@ -240,7 +249,6 @@ class Handler(JSBASE):
             logdict, result = self._handle_request(request, address, user_session=user_session)
 
             if logdict:
-                j.shell()
                 gedis_socket.writer.error(logdict)
             try:
                 gedis_socket.writer.write(result)
@@ -310,6 +318,7 @@ class Handler(JSBASE):
             logdict = None
         except Exception as e:
             logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+            return (logdict, None)
 
         if isinstance(result, list):
             result = [_result_encode(cmd, request.response_type, r) for r in result]
