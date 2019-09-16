@@ -1445,9 +1445,9 @@ class SystemFS(JSBASE, TESTTOOLS):
     def isBinaryFile(self, filename, checksize=4096):
         return not self.isAsciiFile(filename, checksize)
 
-    @path_check(path={"required"})
     def isAbsolute(self, path):
-        return os.path.isabs(path)
+        path = path or ""
+        return os.path.isabs(str(path))
 
     # THERE IS A tools.lock implementation we need to use that one
     # lock = staticmethod(lock)

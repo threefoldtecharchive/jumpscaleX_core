@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 import getpass
 
-DEFAULT_BRANCH = "development_stabilize"
+DEFAULT_BRANCH = "development"
 GITREPOS = {}
 
 GITREPOS["builders_extra"] = [
@@ -1829,8 +1829,15 @@ class Tools:
 
     @staticmethod
     def log2stdout(logdict, data_show=True):
-        # in case of debug we show all logs regardless of settings
-        if not MyEnv.debug and not MyEnv.log_console:
+        def show():
+            # always show in debugmode and critical
+            if MyEnv.debug or logdict["level"] >= 50:
+                return True
+            if not MyEnv.log_console:
+                return False
+            return logdict["level"] >= MyEnv.log_loglevel
+
+        if not show():
             return
         text = Tools.log2str(logdict, data_show=True, replace=True)
         p = print
@@ -3028,6 +3035,8 @@ class MyEnv_:
         self.state = None
         self.__init = False
         self.debug = False
+        self.log_console = True
+        self.log_loglevel = 15
 
         self.sshagent = None
         self.interactive = False
@@ -3114,7 +3123,7 @@ class MyEnv_:
 
             self.log_includes = [i for i in self.config.get("LOGGER_INCLUDE", []) if i.strip().strip("''") != ""]
             self.log_excludes = [i for i in self.config.get("LOGGER_EXCLUDE", []) if i.strip().strip("''") != ""]
-            self.log_loglevel = self.config.get("LOGGER_LEVEL", 100)
+            self.log_loglevel = self.config.get("LOGGER_LEVEL", 50)
             self.log_console = self.config.get("LOGGER_CONSOLE", True)
             self.log_redis = self.config.get("LOGGER_REDIS", False)
             self.debug = self.config.get("DEBUG", False)
@@ -3225,6 +3234,8 @@ class MyEnv_:
             config["LOGGER_EXCLUDE"] = ["sal.fs"]
         if "LOGGER_LEVEL" not in config:
             config["LOGGER_LEVEL"] = 15  # means std out & plus gets logged
+        if config["LOGGER_LEVEL"] > 50:
+            config["LOGGER_LEVEL"] = 50
         if "LOGGER_CONSOLE" not in config:
             config["LOGGER_CONSOLE"] = True
         if "LOGGER_REDIS" not in config:

@@ -115,7 +115,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             self._proxy_create("gedis_proxy", 4444, 9999, ptype="websocket")
             self._proxy_create("openresty", 443, 80)
 
-    def start(self, background=False):
+    def start(self, background=False, web=None, ssl=None):
         """
 
         kosmos 'j.servers.threebot.default.start(background=True,web=False)'
@@ -138,10 +138,15 @@ class ThreeBotServer(j.baseclasses.object_config):
                 reverse proxy for gedis websocket           (port:4444) to use ssl certificate from openresty
                 reverse proxy for bottle server             (port:4442) to use ssl certificate from openresty
         """
+        if web is None:
+            web = self.web
+
+        if ssl is None:
+            ssl = self.ssl
 
         if not background:
-            if self.web:
-                self._init_web(ssl=self.ssl)
+            if web:
+                self._init_web(ssl=ssl)
 
             self.zdb.start()
             j.servers.sonic.default.start()
@@ -153,7 +158,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             bcdb = j.data.bcdb.system
             redis_server = bcdb.redis_server_get(port=6380, secret="123456")
-            self.rack_server.add("bcdb_system_redis", redis_server)
+            self.rack_server.add("bcdb_system_redis", redis_server.gevent_server)
 
             # add user added packages
             for package in j.tools.threebot_packages.find():
@@ -162,7 +167,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                 except Exception as e:
                     logdict = j.core.tools.log(level=50, exception=e, stdout=True)
 
-            if self.web:
+            if web:
                 self.openresty_server.start()
             self.rack_server.start()
 

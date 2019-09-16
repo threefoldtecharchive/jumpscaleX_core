@@ -54,4 +54,3 @@ class CorexServer(JSConfigClient):
             self._startupcmd.executor = "background"
 
         return self._startupcmd
-

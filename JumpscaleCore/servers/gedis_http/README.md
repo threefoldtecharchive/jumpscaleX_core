@@ -79,7 +79,6 @@ Date: Thu, 12 Sep 2019 16:01:13 GMT
 
         # create location `/actors` to on your website `8084` to forward
         # requests to `9201` where the bottle server is running
-        locations = website.locations.get("gedishttp")
         proxy_location = locations.locations_proxy.new()
         proxy_location.name = "gedishttp"
         proxy_location.path_url = "/actors"

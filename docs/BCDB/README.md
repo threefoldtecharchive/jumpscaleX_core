@@ -83,3 +83,70 @@ bcdb.models_add("/sandbox/code/github/threefoldtech/digitalmeX/packages/notary/m
 
 
 ```
+
+##  Add trigger
+There are a lot of use cases for triggers, in this docs we will use it to create a custom index.
+
+### Creating custom indexing example
+Let us assume we have a reservation object which has ```containers``` field which is a list of container objects.
+The container object has a single integer field ```node_id``` to refer to the node id which hosts the container.
+
+Our goal is to get all the reservations which has containers hosted on a specific node
+
+```python
+bcdb = j.data.bcdb.get(name="reservations")
+
+# defaine reservation schema
+reservation_schema = """
+@url = jumpscale.reservation.1
+containers = (LO) !jumpscale.container.1
+"""
+
+# defaine container schema
+container_schema = """
+@url = jumpscale.container.1
+node_id = (I)
+"""
+
+container = bcdb.model_get(container_schema)
+reservation = bcdb.model_get(reservation_schema)
+
+# define our new index table
+class IndexTable(j.clients.peewee.Model):
+  class Meta:
+    database = None
+
+  pw = j.clients.peewee
+  id = pw.PrimaryKeyField(unique=True)
+  reservation_id = pw.IntegerField(index=True)
+  node_id = pw.IntegerField(index=True)
+
+# define the trigger function
+def trigger_func(model, obj, action, **kwargs):
+    # Create new record in the index table after storing in BCDB
+    if action == 'set_post':
+        for container in obj.containers:
+            
+            record = model.IndexTable.create(reservation_id=obj.id, node_id=container.node_id)
+            record.save()
+
+IndexTable._meta.database = reservation.bcdb.sqlite_index_client
+IndexTable.create_table(safe=True)
+reservation.IndexTable = IndexTable
+# register the trigger function 
+reservation.trigger_add(trigger_func)
+```
+
+Now we can search for the reservations by the container's ```node_id ``` using our index table
+
+```python
+c = container.new()
+c.node_id = 1
+
+r = reservation.new()
+r.containers.append(c)
+r.save()
+
+result = reservation.IndexTable.select().where((reservation.IndexTable.node_id == 1)).execute()
+assert len(result) == 1
+```
