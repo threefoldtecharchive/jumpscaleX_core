@@ -13,4 +13,4 @@ install:
   - cp -r /opt/code/github/threefoldtech/jumpscaleX_core /sandbox/code/github/threefoldtech/jumpscaleX_core
 
 script:
-  - source /sandbox/env.sh; nosetests-3.4 -v /sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/ --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpsalceX_core
+  - source /sandbox/env.sh; nosetests-3.4 -v /sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/ --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core

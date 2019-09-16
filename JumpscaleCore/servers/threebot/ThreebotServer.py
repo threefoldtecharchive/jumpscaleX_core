@@ -16,6 +16,8 @@ class ThreeBotServer(j.baseclasses.object_config):
         name** = "main" (S)
         executor = tmux,corex (E)
         adminsecret_ = "123456"  (S)
+        ssl = (B)
+        web =  (B)
         """
 
     def _init(self, **kwargs):
@@ -25,6 +27,8 @@ class ThreeBotServer(j.baseclasses.object_config):
         self._startup_cmd = None
         self._zdb = None
         self.threebot_server = None
+        self.web = False
+        self.ssl = False
         j.servers.threebot.current = self
 
     @property
@@ -111,7 +115,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             self._proxy_create("gedis_proxy", 4444, 9999, ptype="websocket")
             self._proxy_create("openresty", 443, 80)
 
-    def start(self, background=False, web=False, ssl=False):
+    def start(self, background=False, web=None, ssl=None):
         """
 
         kosmos 'j.servers.threebot.default.start(background=True,web=False)'
@@ -134,9 +138,14 @@ class ThreeBotServer(j.baseclasses.object_config):
                 reverse proxy for gedis websocket           (port:4444) to use ssl certificate from openresty
                 reverse proxy for bottle server             (port:4442) to use ssl certificate from openresty
         """
+        if web is None:
+            web = self.web
+
+        if ssl is None:
+            ssl = self.ssl
 
         if not background:
-            if web:
+            if self.web:
                 self._init_web(ssl=ssl)
 
             self.zdb.start()
@@ -180,10 +189,10 @@ class ThreeBotServer(j.baseclasses.object_config):
             from gevent import monkey
             monkey.patch_all(subprocess=False)
             from Jumpscale import j
-            server = j.servers.threebot.get("{name}", executor='{executor}')
+            server = j.servers.threebot.get("{name}", executor='{executor}', web={web}, ssl={ssl})
             server.start(background=False)
             """.format(
-                name=self.name, executor=self.executor
+                name=self.name, executor=self.executor, web=self.web, ssl=self.ssl
             )
             cmd_start = j.core.tools.text_strip(cmd_start)
             startup = j.servers.startupcmd.get(name="threebot_{}".format(self.name), cmd_start=cmd_start)

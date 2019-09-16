@@ -1353,7 +1353,7 @@ class SystemFS(JSBASE, TESTTOOLS):
         @return: object
         """
         self._log_debug("Opening file %s for reading" % filelocation, _levelup=3)
-        contents = self.fileGetContents(filelocation)
+        contents = self.readFile(filelocation, binary=True)
         self._log_debug("creating object")
         return pickle.loads(contents)
 

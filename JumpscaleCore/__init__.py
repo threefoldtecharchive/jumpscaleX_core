@@ -1,6 +1,5 @@
 import os
 import socket
-import pytoml
 import inspect
 import sys
 from importlib import util
@@ -116,7 +115,7 @@ class Core:
         return serialized
 
 
-from .core.KosmosShell import *
+from .core.KosmosShell import KosmosShellConfig, ptconfig
 
 
 class Jumpscale:
@@ -183,8 +182,6 @@ class Jumpscale:
                 name = "SHELL:%s" % name
             self._shell = InteractiveShellEmbed(banner1=name, exit_msg="")
         if loc:
-            import inspect
-
             curframe = inspect.currentframe()
             calframe = inspect.getouterframes(curframe, 2)
             f = calframe[1]
@@ -194,12 +191,9 @@ class Jumpscale:
         return self._shell(stack_depth=stack_depth)
 
     def debug(self):
-        import urwid
-
-        urwid.set_encoding("utf8")
-        from ptdb import set_trace
-
-        set_trace()
+        # disable console logging when entering interactive debugger
+        j.core.myenv.log_console = False
+        __import__('pudb').set_trace()
 
 
 j = Jumpscale()

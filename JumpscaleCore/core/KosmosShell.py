@@ -1,6 +1,5 @@
 import inspect
 import pudb
-import six
 import sys
 import time
 import traceback
@@ -21,7 +20,6 @@ from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.shortcuts import print_formatted_text
 from ptpython.filters import ShowDocstring, PythonInputFilter
 from ptpython.prompt_style import PromptStyle
-from ptpython.utils import get_jedi_script_from_document
 from pygments.lexers import PythonLexer
 
 
