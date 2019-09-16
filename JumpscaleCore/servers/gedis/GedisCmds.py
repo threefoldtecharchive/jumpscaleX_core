@@ -184,6 +184,8 @@ class GedisCmds(JSBASE):
         if "user_session" in args:
             args.pop(args.index("user_session"))
 
+        cmd.args = args
+
         return cmd
 
     def _args_process(self, args):

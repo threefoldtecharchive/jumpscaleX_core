@@ -11,6 +11,9 @@ class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtoo
     __jslocation__ = "j.servers.gedis"
     _CHILDCLASS = GedisServer
 
+    def _init(self):
+        self.client = None
+
     def get_gevent_server(self, name="", **kwargs):
         """
         return gedis_server as gevent server
