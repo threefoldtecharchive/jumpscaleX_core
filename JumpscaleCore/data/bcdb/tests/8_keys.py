@@ -112,7 +112,7 @@ def main(self):
     assert o.ipaddr == "0.0.0.0"
     assert o.email == ""
     assert o.nr == 10
-    assert o.nr2 == 0
+    assert o.nr2 == 2147483647
     assert o.nr3 == b"\x00\x97\x00\x00\x00\x00"
     assert o.nr3_usd == 0
     assert o.nr4_usd == 5
