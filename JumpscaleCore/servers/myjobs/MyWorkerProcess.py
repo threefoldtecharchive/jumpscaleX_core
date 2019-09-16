@@ -174,7 +174,7 @@ class MyWorkerProcess(j.baseclasses.object):
                     gevent.sleep(0.1)
                     self._log_debug("jobget from queue")
             else:
-                res = self.queue_jobs_start.get(timeout=1)
+                res = self.queue_jobs_start.get(timeout=20)
 
             self.worker_obj = self._worker_get(self.id)
             if self.worker_obj.halt or res == b"halt":

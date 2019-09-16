@@ -261,10 +261,10 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 elif w.state in ["WAITING"]:
                     if w.last_update > j.data.time.epoch - 40:
                         w._log_info("no need to start worker:%s" % w.nr)
-                    # else:
-                    #     w._log_warning("worker was frozen because watchdog expired, will kill:%s" % w.nr)
-                    #     w.stop(hard=True)
-                    #     w.start()
+                    else:
+                         w._log_warning("worker was frozen because watchdog expired, will kill:%s" % w.nr)
+                         w.stop(hard=True)
+                         w.start()
                 elif w.state in ["BUSY"]:
                     if reset:
                         w.stop(hard=True)
