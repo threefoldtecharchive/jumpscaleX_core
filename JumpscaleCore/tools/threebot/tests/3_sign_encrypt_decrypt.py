@@ -96,19 +96,21 @@ def main(self):
     client_bot = "sarah.connor"
     payload = [client_bot, data_enc, signature]
     res = self.deserialize_check_decrypt(
-        payload, serialization_format="msgpack", pubkey_hex=binascii.hexlify(client_verif_k.encode())
+        payload, serialization_format="msgpack", verifykey_hex=binascii.hexlify(client_verif_k.encode())
     )
     assert len(res) == len(data_list)
     assert res[0] == data_list[0]
 
     self._log_info("decrypt a payload and verify a signature against an incorrect pubkey should fail")
+
     with test_case.assertRaises(Exception) as cm:
         res = self.deserialize_check_decrypt(
             payload,
             serialization_format="msgpack",
-            pubkey_hex=binascii.hexlify(nacl.public.PrivateKey.generate().public_key.encode()),
+            verifykey_hex=binascii.hexlify(nacl.public.PrivateKey.generate().public_key.encode()),
         )
     ex = cm.exception
+
     assert "could not verify signature" in str(ex.args[0])
 
     self._log_info("decrypt a payload encrypted with an incorrect pubkey should fail")
@@ -118,7 +120,7 @@ def main(self):
     payload = [client_bot, data_wrong_enc, signature]
     with test_case.assertRaises(Exception) as cm:
         res = self.deserialize_check_decrypt(
-            payload, serialization_format="msgpack", pubkey_hex=binascii.hexlify(client_sk.public_key.encode())
+            payload, serialization_format="msgpack", verifykey_hex=binascii.hexlify(client_sk.public_key.encode())
         )
     ex = cm.exception
     assert "An error occurred trying to decrypt the message" in str(ex.args[0])

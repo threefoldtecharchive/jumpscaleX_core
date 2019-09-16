@@ -52,7 +52,8 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
             # means is jsxobject
             _, md5, json_str = data
             schema = j.data.schema.get_from_md5(md5)
-            data = schema.new(datadict=serializer.loads(json_str))
+            datadict = self._serializer_get(serialization_format="json").loads(json_str.encode())
+            data = schema.new(datadict=datadict)
             return data
         elif isinstance(data, list) or isinstance(data, dict):
             return data
@@ -177,7 +178,7 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
             data3 = data2
         return [tid, data3, signature]
 
-    def deserialize_check_decrypt(self, data, serialization_format="json", pubkey_hex=None):
+    def deserialize_check_decrypt(self, data, serialization_format="json", verifykey_hex=None):
         """
 
         if pubkey_hex given will then check the signature (is binary encoded pub key)
@@ -197,10 +198,10 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
         # unserialize data
         data_dec = self.unserialize(data_dec_ser, serialization_format=serialization_format)
         # verify the signature against the provided pubkey and the decrypted data
-        sign_is_ok = self._nacl.verify(data_dec_ser, data[2], verify_key=binascii.unhexlify(pubkey_hex))
+        sign_is_ok = self._nacl.verify(data_dec_ser, data[2], verify_key=binascii.unhexlify(verifykey_hex))
         if not sign_is_ok:
             raise j.exceptions.Base(
-                "could not verify signature:%s, against pubkey:%s" % (data[2], binascii.unhexlify(pubkey_hex))
+                "could not verify signature:%s, against pubkey:%s" % (data[2], binascii.unhexlify(verifykey_hex))
             )
         return data_dec
 
@@ -238,10 +239,16 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
     #
     #     return signature_hex
     def get_test_data(self):
-        dico = {}
-        dico["a"] = 1
-        dico["yolo"] = "yeeh"
-        data_list = [42, 5.6, "lorem ipsum gloria dea alea jacta es", dico, ["uouo", dico]]
+        S = """
+        @url = tools.threebot.test.schema
+        name** = "aname"
+        description = "something" 
+        """
+        schema = j.data.schema.get_from_text(S)
+        jsxobject = schema.new()
+        ddict = j.baseclasses.dict()
+        ddict["a"] = 2
+        data_list = [True, 1, [1, 2, "a"], jsxobject, "astring", ddict]
         return data_list
 
     def test(self, name=""):

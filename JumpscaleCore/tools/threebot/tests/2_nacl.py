@@ -37,30 +37,36 @@ def main(self):
 
     assert data == unserialized
 
+    print("****client key:%s" % self._nacl.public_key_hex)
+
+    # it should encrypt for server_nacl.public_key_hex and sign with client_nacl
     data_send_over_wire = self.serialize_sign_encrypt(data, pubkey_hex=server_nacl.public_key_hex)
 
     # client send the above to server
 
     # now we are server
     self._nacl = server_nacl
-
+    print("****server key:%s" % self._nacl.public_key_hex)
     # server just returns the info
 
-    data_readable_on_server = self.deserialize_check_decrypt(data_send_over_wire, pubkey_hex=client_nacl.public_key_hex)
+    # it should decrypt with server_nacl.public_key_hex and verify sign against client_nacl
+    data_readable_on_server = self.deserialize_check_decrypt(
+        data_send_over_wire, verifykey_hex=client_nacl.verify_key_hex
+    )
     # data has now been verified with pubkey of client
 
-    j.shell()
-
-    assert data_readable_on_server == [True, 1, [1, 2, "a"], jsxobject, "astring"]
+    assert data_readable_on_server == [True, 1, [1, 2, "a"], jsxobject, "astring", ddict]
 
     # lets now return the data to the client
 
-    data_send_over_wire_return = self.serialize_sign_encrypt(data, pubkey_hex=client_nacl.pubkey)
+    data_send_over_wire_return = self.serialize_sign_encrypt(data, pubkey_hex=client_nacl.public_key_hex)
 
     # now we are client
     self._nacl = client_nacl
     # now on client we check
-    data_readable_on_client = self.deserialize_check_decrypt(data_send_over_wire_return, pubkey_hex=server_nacl.pubkey)
+    data_readable_on_client = self.deserialize_check_decrypt(
+        data_send_over_wire_return, verifykey_hex=server_nacl.verify_key_hex
+    )
 
     # back to normal
     self._nacl = server_nacl

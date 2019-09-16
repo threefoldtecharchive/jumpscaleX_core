@@ -57,6 +57,10 @@ class NACL(j.baseclasses.object):
         return binascii.hexlify(self.public_key.encode())
 
     @property
+    def verify_key_hex(self):
+        return binascii.hexlify(self.verify_key.encode())
+
+    @property
     def box(self):
         """
         box is a used to do symetric encryption
