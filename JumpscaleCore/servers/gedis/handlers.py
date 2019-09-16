@@ -378,6 +378,8 @@ class Handler(JSBASE):
         method_arguments = command.cmdobj.args
         if "schema_out" in method_arguments:
             raise j.exceptions.Base("schema_out should not be in arguments of method")
+        if "user_session" in method_arguments:
+            raise j.exceptions.Base("user_session should not be in arguments of method")
 
         params = {}
 

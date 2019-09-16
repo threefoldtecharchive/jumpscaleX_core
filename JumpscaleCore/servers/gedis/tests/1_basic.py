@@ -7,13 +7,13 @@ def main(self):
     """
 
     print("[*] testing echo")
-    client = j.clients.gedis.get("gedis_test", port=8920, namespace="system")
+    client = j.clients.gedis.get("gedis_test", port=8901, namespace="system")
     client.actors.system.ping()
 
     actors_path = "/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/ibiza/actors"
     client.actors.system.actors_add_path(namespace="ibiza", path=actors_path)
 
-    client = j.clients.gedis.get("gedis_test", port=8920, namespace="ibiza")
+    client = j.clients.gedis.get("gedis_test", port=8901, namespace="ibiza")
 
     client.actors
     assert client.ping()
@@ -28,7 +28,7 @@ def main(self):
     print("[1] Done")
 
     print("[2] schema_in as inline schema with url")
-    wallet_schema = j.data.schema.get_from_url(url="jumpscale.example.wallet")
+    wallet_schema = j.data.schema.get_from_url(url="jumpscale.test.ibiza.wallet")
     wallet_in = wallet_schema.new()
     wallet_in.addr = "testaddr"
     wallet_in.jwt = "testjwt"

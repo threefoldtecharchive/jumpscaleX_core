@@ -45,17 +45,17 @@ from Jumpscale.servers.gedis.GedisCmds import GedisCmds  # method_source_process
         \"""
         this is a comment
         ```in
-        a = (O) !jumpscale.example.wallet
+        a = (O) !jumpscale.test.ibiza.wallet
         ```
         ```out
-        b = (O) !jumpscale.example.wallet
+        b = (O) !jumpscale.test.ibiza.wallet
         ```
         \"""
         pass""",
             "pass\n",
             "this is a comment\n",
-            "a = (O) !jumpscale.example.wallet\n",
-            "b = (O) !jumpscale.example.wallet\n",
+            "a = (O) !jumpscale.test.ibiza.wallet\n",
+            "b = (O) !jumpscale.test.ibiza.wallet\n",
             ["a", "b"],
         ),
     ],

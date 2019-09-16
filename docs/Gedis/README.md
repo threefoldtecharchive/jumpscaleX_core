@@ -33,11 +33,11 @@ To define which schema is expected you need to write a docstring to your method.
 def foo(self, wallet, schema_out=None, user_session=None):
     """
     ```in
-    wallet = (O) !jumpscale.example.wallet
+    wallet = (O) !jumpscale.test.ibiza.wallet
     ```
 
     ```out
-    !jumpscale.example.wallet
+    !jumpscale.test.ibiza.wallet
     ```
     """
     w = schema_out.new()
@@ -48,7 +48,7 @@ def foo(self, wallet, schema_out=None, user_session=None):
     return w
 ```
 
-This actor method has 2 arguments, `wallet` and `schema_out`. With the docstring we ask gedis to validate that `wallet` is actually a valid instance of the schema named `jumpscale.example.wallet`. We also define the type of the return value with the `schema_out` argument and the docstring which specify that schema_out is also an instance of the `jumpscale.example.wallet`.
+This actor method has 2 arguments, `wallet` and `schema_out`. With the docstring we ask gedis to validate that `wallet` is actually a valid instance of the schema named `jumpscale.test.ibiza.wallet`. We also define the type of the return value with the `schema_out` argument and the docstring which specify that schema_out is also an instance of the `jumpscale.test.ibiza.wallet`.
 
 When defining docstring like this, if the data received or sent back doesn't validate the schema, an error will be raised.
 

@@ -71,7 +71,7 @@ class ServerRackFactory(JSBASE):
                 cl = admin_zdb_cl.namespace_new("test", secret="1234")
 
             if gedis:
-                gedis = j.servers.gedis.get_gevent_server("test", port=8920)
+                gedis = j.servers.gedis.get_gevent_server("test", port=8901)
 
             rack = self.get()
             rack.add("gedis", gedis)
@@ -96,7 +96,7 @@ class ServerRackFactory(JSBASE):
             ports = []
             args = {}
             if gedis:
-                ports.append(8920)
+                ports.append(8901)
                 args["gedis"] = "True"
             else:
                 args["gedis"] = "False"
@@ -159,7 +159,7 @@ class ServerRackFactory(JSBASE):
 
         namespace = "system"
         secret = "1234"
-        cl = j.clients.gedis.new(namespace, namespace=namespace, port=8920, secret=secret, host="localhost")
+        cl = j.clients.gedis.new(namespace, namespace=namespace, port=8901, secret=secret, host="localhost")
         assert cl.ping()
         cl.actors
         assert cl.actors.system.ping() == b"PONG"
