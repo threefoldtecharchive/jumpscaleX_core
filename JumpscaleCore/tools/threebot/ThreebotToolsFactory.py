@@ -34,15 +34,27 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
 
         unserialization as follows:
 
-            int,float,str,binary  -> stay in native format
-            json.dumps(list)  -> list   
-            json.dumps(dict) -> dict   
-            jsxobject.json -> jsxobject  
+            int,float,str,binary,list and dict  -> stay in native format
+            jsxobject -> jsxobject.json
+            jsxdict -> jsxdict._data which is the source dict format of our jumpscale dict representation
+
 
         """
         serializer = self._serializer_get(serialization_format)
 
         if isinstance(data, str) or isinstance(data, int) or isinstance(data, float):
+            return data
+        elif isinstance(data, list) and len(data) == 2 and data[0] == 998:
+            data2 = j.baseclasses.dict()
+            data2._data = data[1]
+            return data2
+        elif isinstance(data, list) and len(data) == 3 and data[0] == 999:
+            # means is jsxobject
+            _, md5, json_str = data
+            schema = j.data.schema.get_from_md5(md5)
+            data = schema.new(datadict=serializer.loads(json_str))
+            return data
+        elif isinstance(data, list) or isinstance(data, dict):
             return data
         else:
             try:
@@ -57,10 +69,10 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
 
         serialization as follows:
 
-            int,float,str,binary  -> stay in native format
-            list -> json.dumps(list)
-            dict -> json.dumps(dict)
+            int,float,str,binary,list and dict  -> stay in native format
             jsxobject -> jsxobject.json
+            jsxdict -> jsxdict._data which is the source dict format of our jumpscale dict representation
+
 
         """
         serializer = self._serializer_get(serialization_format)
@@ -68,26 +80,24 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
         if isinstance(data, str) or isinstance(data, int) or isinstance(data, float) or isinstance(data, bytes):
             return data
         if isinstance(data, j.data.schema._JSXObjectClass):
-            return data._json
-        if isinstance(data, list):
-            return serializer.dumps(data)
-        if isinstance(data, dict):
-            return serializer.dumps(data)
+            return [999, data._schema._md5, data._json]
         if isinstance(data, j.baseclasses.dict):
-            return serializer.dumps(data._data)
+            return [998, data._data]
+        if isinstance(data, list) or isinstance(data, dict):
+            return data
         raise j.exceptions.Input("did not find supported format")
 
     def serialize(self, data, serialization_format="json"):
         """
-        :param data: a list which needs to be serialized, can be a list of 1 item ofcourse
+        :param data: a list which needs to be serialized, or single item
         :param serialization_format: json or msgpack
 
         members of the list (if a list) or the item itself if no list
 
-            int,float,str,binary  -> stay in native format
-            list -> json.dumps(list)   (or other serialization format)
-            dict -> json.dumps(dict)
+            int,float,str,binary,list and dict  -> stay in native format
             jsxobject -> jsxobject.json
+            jsxdict -> jsxdict._data which is the source dict format of our jumpscale dict representation
+
 
         return serialized list of serialized items
         or if no list
@@ -95,25 +105,24 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
 
         """
         serializer = self._serializer_get(serialization_format)
-        if not isinstance(data, list):
-            raise j.exceptions.Input("only list supported")
-
-        res = []
-        for item in data:
-            res.append(self._serialize_item(item, serialization_format=serialization_format))
-        return serializer.dumps(res)
+        if isinstance(data, list):
+            res = []
+            for item in data:
+                res.append(self._serialize_item(item, serialization_format=serialization_format))
+            return serializer.dumps(res)
+        else:
+            return serializer.dumps(data)
 
     def unserialize(self, data, serialization_format="json"):
         """
-        :param data: a list which needs to be unserialized, can be a list of 1 item ofcourse
+        :param data: a list which needs to be unserialized, or 1 item
         :param serialization_format: json or msgpack
 
         members of the list (if a list) or the item itself if no list
 
-            int,float,str,binary  -> stay in native format
-            list -> json.dumps(list)   (or other serialization format)
-            dict -> json.dumps(dict)
+            int,float,str,binary,list and dict  -> stay in native format
             jsxobject -> jsxobject.json
+            jsxdict -> jsxdict._data which is the source dict format of our jumpscale dict representation
 
         return unserialized list of unserialized items
         or if no list
@@ -122,13 +131,13 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
         """
         serializer = self._serializer_get(serialization_format)
         data = serializer.loads(data)
-        if not isinstance(data, list):
-            raise j.exceptions.Input("only list supported")
-
-        res = []
-        for item in data:
-            res.append(self._unserialize_item(item, serialization_format=serialization_format))
-        return res
+        if isinstance(data, list):
+            res = []
+            for item in data:
+                res.append(self._unserialize_item(item, serialization_format=serialization_format))
+            return res
+        else:
+            return self._unserialize_item(data, serialization_format=serialization_format)
 
     def serialize_sign_encrypt(self, data, serialization_format="json", pubkey_hex=None):
         """
@@ -140,10 +149,10 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
 
         a list of following items
 
-            int,float,str,binary  -> stay in native format
-            list -> json.dumps(list)
-            dict -> json.dumps(dict)
+            int,float,str,binary,list and dict  -> stay in native format
             jsxobject -> jsxobject.json
+            jsxdict -> jsxdict._data which is the source dict format of our jumpscale dict representation
+
 
         this gets serialized using the chosen format
 
@@ -161,6 +170,7 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
             data2 = data2.encode()
         signature = self._nacl.sign(data2)
         if pubkey_hex:
+            assert len(pubkey_hex) == 64
             pubkey = PublicKey(binascii.unhexlify(pubkey_hex))
             data3 = self._nacl.encrypt(data2, public_key=pubkey)
         else:
@@ -246,7 +256,7 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
 
         print(name)
         if not "THREEBOT_ID" in j.core.myenv.config:
-            j.core.myenv.config["THREEBOT_ID"] = "t1000.advanced.prototype"
+            j.core.myenv.config["THREEBOT_ID"] = 999999
         self._test_run(name=name)
 
         self._log_info("All TESTS DONE")

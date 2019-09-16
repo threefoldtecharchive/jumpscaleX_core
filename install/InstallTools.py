@@ -1739,6 +1739,13 @@ class Tools:
                         val = arg_process(key, val)
                         if val:
                             args_new[key] = val
+
+            for field_name in MyEnv.MYCOLORS:
+                if ignorecolors:
+                    args_new[field_name] = ""
+                else:
+                    args_new[field_name] = MyEnv.MYCOLORS[field_name]
+
             return args_new
 
         def process_line_failback(line):
