@@ -3420,9 +3420,8 @@ class MyEnv_:
 
             """
             print(Tools.text_strip(T))
-            if self.interactive:
-                if not Tools.ask_yes_no("OK to continue?"):
-                    sys.exit(1)
+            if not Tools.ask_yes_no("OK to continue?"):
+                sys.exit(1)
 
         # defaults are now set, lets now configure the system
         if sshagent_use:
