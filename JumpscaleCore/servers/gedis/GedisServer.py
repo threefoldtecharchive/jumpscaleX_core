@@ -123,6 +123,9 @@ class GedisServer(JSBaseConfig):
         if not j.sal.fs.isDir(path):
             raise j.exceptions.Value("actor_add: path needs to point to an existing directory")
 
+        path = j.data.types.string.clean(path)
+        namespace = j.data.types.string.clean(namespace)
+
         files = j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py")
         for file_path in files:
             basepath = j.sal.fs.getBaseName(file_path)

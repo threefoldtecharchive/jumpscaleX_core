@@ -40,7 +40,6 @@ class system(JSBASE):
         return schemas
 
     def actors_add_path(self, namespace, path, user_session=None):
-        j.shell()
         self._gedis_server.actors_add(path, namespace)
 
     def api_meta_get(self, namespace, user_session=None):

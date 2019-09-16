@@ -1657,6 +1657,9 @@ class Tools:
 
         """
 
+        if isinstance(content, bytes):
+            content = content.decode()
+
         if args is None:
             args = {}
 
