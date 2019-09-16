@@ -3036,6 +3036,7 @@ class MyEnv_:
         self.__init = False
         self.debug = False
         self.log_console = True
+        self.log_loglevel = 15
 
         self.sshagent = None
         self.interactive = False
@@ -3430,9 +3431,8 @@ class MyEnv_:
 
             """
             print(Tools.text_strip(T))
-            if self.interactive:
-                if not Tools.ask_yes_no("OK to continue?"):
-                    sys.exit(1)
+            if not Tools.ask_yes_no("OK to continue?"):
+                sys.exit(1)
 
         # defaults are now set, lets now configure the system
         if sshagent_use:
@@ -5257,7 +5257,7 @@ class WireGuard:
         if MyEnv.platform() == "linux":
             Tools.file_write(path, Tools.text_replace(C, args=config_container))
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
-            cmd = "/usr/local/bin/bash /usr/local/bin/wg-quick %s" % path
+            cmd = "/usr/local/bin/bash /usr/local/bin/wg-quick up %s" % path
             Tools.execute(cmd)
             Tools.shell()
         else:
