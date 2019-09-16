@@ -5257,7 +5257,7 @@ class WireGuard:
         if MyEnv.platform() == "linux":
             Tools.file_write(path, Tools.text_replace(C, args=config_container))
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
-            cmd = "/usr/local/bin/bash /usr/local/bin/wg-quick %s" % path
+            cmd = "/usr/local/bin/bash /usr/local/bin/wg-quick up %s" % path
             Tools.execute(cmd)
             Tools.shell()
         else:
