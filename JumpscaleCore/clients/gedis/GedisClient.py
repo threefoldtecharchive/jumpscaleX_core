@@ -41,6 +41,7 @@ class GedisClient(JSConfigBase):
         j.sal.fs.touch(j.sal.fs.joinPaths(self._code_generated_dir, "__init__.py"))
         self._redis_ = None
         self._reset()
+        self.reload()
 
     def _update_trigger(self, key, val):
         self._reset()
