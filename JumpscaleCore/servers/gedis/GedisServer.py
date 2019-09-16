@@ -252,30 +252,30 @@ class GedisServer(JSBaseConfig):
             greenlet.get(block=True, timeout=timeout)
         return job
 
-    def sslkeys_generate(self):
-        if not self.ssl:
-            raise j.exceptions.Base("sslkeys_generate: gedis server is not configure to use ssl")
-
-        path = os.path.dirname(self.code_generated_dir)
-        key = j.sal.fs.joinPaths(path, "ca.key")
-        cert = j.sal.fs.joinPaths(path, "ca.crt")
-
-        if os.path.exists(key) and os.path.exists(cert):
-            return key, cert
-
-        j.sal.process.execute(
-            'openssl req -newkey rsa:2048 -nodes -keyout ca.key -x509 -days 365 -out ca.crt -subj "/C=GB/ST=London/L=London/O=Global Security/OU=IT Department/CN=localhost"'.format(
-                key, cert
-            ),
-            showout=False,
-        )
-
-        # res = j.sal.ssl.ca_cert_generate(path)
-        # if res:
-        #     self._log_info("generated sslkeys for gedis in %s" % path)
-        # else:
-        #     self._log_info("using existing key and cerificate for gedis @ %s" % path)
-        return key, cert
+    # def sslkeys_generate(self):
+    #     if not self.ssl:
+    #         raise j.exceptions.Base("sslkeys_generate: gedis server is not configure to use ssl")
+    #
+    #     path = os.path.dirname(self.code_generated_dir)
+    #     key = j.sal.fs.joinPaths(path, "ca.key")
+    #     cert = j.sal.fs.joinPaths(path, "ca.crt")
+    #
+    #     if os.path.exists(key) and os.path.exists(cert):
+    #         return key, cert
+    #
+    #     j.sal.process.execute(
+    #         'openssl req -newkey rsa:2048 -nodes -keyout ca.key -x509 -days 365 -out ca.crt -subj "/C=GB/ST=London/L=London/O=Global Security/OU=IT Department/CN=localhost"'.format(
+    #             key, cert
+    #         ),
+    #         showout=False,
+    #     )
+    #
+    #     # res = j.sal.ssl.ca_cert_generate(path)
+    #     # if res:
+    #     #     self._log_info("generated sslkeys for gedis in %s" % path)
+    #     # else:
+    #     #     self._log_info("using existing key and cerificate for gedis @ %s" % path)
+    #     return key, cert
 
     def start(self):
         """

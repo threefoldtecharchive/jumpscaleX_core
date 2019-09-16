@@ -118,8 +118,8 @@ class ThreeBotServer(j.baseclasses.object_config):
     def start(self, background=False, web=None, ssl=None):
         """
 
-        kosmos 'j.servers.threebot.default.start(background=True,web=False)'
-        kosmos 'j.servers.threebot.default.start(background=False,web=False)'
+        kosmos -p 'j.servers.threebot.default.start(background=True,web=False)'
+        kosmos -p 'j.servers.threebot.default.start(background=False,web=False)'
 
         :param background: if True will start all servers including threebot itself in the background
 

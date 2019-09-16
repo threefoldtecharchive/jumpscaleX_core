@@ -173,7 +173,7 @@ class GedisCmds(JSBASE):
         s = self._schema_process(cmd, schema_in)
         if s:
             cmd.schema_in_url = s.url
-        s = self._schema_process(cmd, schema_out)
+        s = self._schema_process(cmd, schema_out=None, user_session=None)
         if s:
             cmd.schema_out_url = s.url
 

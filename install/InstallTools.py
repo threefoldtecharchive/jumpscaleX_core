@@ -1027,11 +1027,13 @@ class Tools:
             else:
                 extype_, value_, tb = sys.exc_info()
 
+        linenr = None
         if tb:
             logdict["traceback"] = Tools.traceback_list_format(tb)
-            fname, defname, linenr, line_, locals_ = logdict["traceback"][-1]
-        else:
+            if len(logdict["traceback"]) > 0:
+                fname, defname, linenr, line_, locals_ = logdict["traceback"][-1]
 
+        if not linenr:
             if not frame_:
                 frame_ = inspect.currentframe().f_back
                 if _levelup > 0:
@@ -4786,7 +4788,7 @@ class DockerContainer:
         install succesfull:
 
         # if you use a container do:
-        /tmp/jsx container-kosmos
+        jsx container-kosmos
 
         or
 

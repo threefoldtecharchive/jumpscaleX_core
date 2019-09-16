@@ -123,7 +123,7 @@ class GedisClient(JSConfigBase):
                 if cmd.schema_in and not cmd.schema_in.url.startswith("actors."):
                     setattr(self.schemas, process_url(cmd.schema_in.url), cmd.schema_in)
                 if cmd.schema_out and not cmd.schema_out.url.startswith("actors."):
-                    setattr(self.schemas, process_url(cmd.schema_out.url), cmd.schema_out)
+                    setattr(self.schemas, process_url(cmd.schema_out.url), cmd.schema_out=None, user_session=None)
 
     @property
     def actors(self):

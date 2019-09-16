@@ -37,7 +37,7 @@ class actor(JSBASE):
         """
         return x.foo
 
-    def schema_out(self, schema_out):
+    def schema_out(self, schema_out=None, user_session=None):
         """
         ```out
         !gedis.test.out
@@ -47,7 +47,7 @@ class actor(JSBASE):
         result.bar = "test"
         return result
 
-    def schema_in_out(self, x, schema_out):
+    def schema_in_out(self, x, schema_out=None, user_session=None):
         """
         ```in
         x = (O) !gedis.test.in
@@ -61,7 +61,7 @@ class actor(JSBASE):
         result.bar = x.foo
         return result
 
-    def schema_in_list_out(self, x, schema_out):
+    def schema_in_list_out(self, x, schema_out=None, user_session=None):
         """
         ```in
         x = (O) !gedis.test.in

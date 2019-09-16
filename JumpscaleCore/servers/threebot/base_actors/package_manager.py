@@ -7,7 +7,7 @@ class package_manager(j.baseclasses.threebot_actor):
         assert gedis_server
         self._gedis_server = gedis_server
 
-    def package_add(self, name=None, git_url=None, path=None):
+    def package_add(self, name=None, git_url=None, path=None, schema_out=None, user_session=None):
         """
         ```in
         name = ""
@@ -39,7 +39,7 @@ class package_manager(j.baseclasses.threebot_actor):
         package.prepare()
         package.start()
 
-    def package_delete(self, name):
+    def package_delete(self, name, schema_out=None, user_session=None):
         """
         ```in
         name = ""
@@ -52,7 +52,7 @@ class package_manager(j.baseclasses.threebot_actor):
         package.uninstall()
         package.delete()
 
-    def package_stop(self, name):
+    def package_stop(self, name, schema_out=None, user_session=None):
         """
         ```in
         name = ""
@@ -64,7 +64,7 @@ class package_manager(j.baseclasses.threebot_actor):
         package = j.tools.threebot_packages.get(name)
         package.stop()
 
-    def package_start(self, name):
+    def package_start(self, name, schema_out=None, user_session=None):
         """
         ```in
         name = ""

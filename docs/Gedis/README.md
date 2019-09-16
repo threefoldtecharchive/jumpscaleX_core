@@ -30,7 +30,7 @@ If you want to enforce data validation automatically, you can use the [DigitalMe
 To define which schema is expected you need to write a docstring to your method. example:
 
 ```python
-def foo(self, wallet, schema_out):
+def foo(self, wallet, schema_out=None, user_session=None):
     """
     ```in
     wallet = (O) !jumpscale.example.wallet

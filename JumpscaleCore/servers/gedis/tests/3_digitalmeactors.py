@@ -25,3 +25,5 @@ def main(self):
     gedis.models_add(namespace="gedis_examples", models=bcdb)
 
     gedis.start()
+
+    # TODO: think this one is no longer working, its old code

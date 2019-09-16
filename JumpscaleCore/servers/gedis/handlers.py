@@ -1,7 +1,7 @@
 from Jumpscale import j
 from redis.exceptions import ConnectionError
 import nacl
-
+from .UserSession import UserSession
 from .protocol import RedisCommandParser, RedisResponseWriter
 
 JSBASE = j.baseclasses.object
@@ -210,13 +210,15 @@ class Handler(JSBASE):
         # raise j.exceptions.Base("d")
         gedis_socket = GedisSocket(socket)
 
+        user_session = UserSession()
+
         try:
-            self._handle_gedis_session(gedis_socket, address)
+            self._handle_gedis_session(gedis_socket, address, user_session=user_session)
         finally:
             gedis_socket.on_disconnect()
             self._log_info("connection closed", context="%s:%s" % address)
 
-    def _handle_gedis_session(self, gedis_socket, address):
+    def _handle_gedis_session(self, gedis_socket, address, user_session=user_session):
         """
         deal with 1 specific session
         :param socket:
@@ -235,9 +237,10 @@ class Handler(JSBASE):
                 # close the connection
                 return
 
-            logdict, result = self._handle_request(request, address)
+            logdict, result = self._handle_request(request, address, user_session=user_session)
 
             if logdict:
+                j.shell()
                 gedis_socket.writer.error(logdict)
             try:
                 gedis_socket.writer.write(result)
@@ -247,7 +250,7 @@ class Handler(JSBASE):
                 # close the connection
                 return
 
-    def _handle_request(self, request, address):
+    def _handle_request(self, request, address, user_session):
         """
         deal with 1 specific request
         :param request:
@@ -272,14 +275,22 @@ class Handler(JSBASE):
         )
 
         # cmd is cmd metadata + cmd.method is what needs to be executed
-        cmd = self._cmd_obj_get(
-            cmd=request.command.command, namespace=request.command.namespace, actor=request.command.actor
-        )
+        try:
+            cmd = self._cmd_obj_get(
+                cmd=request.command.command, namespace=request.command.namespace, actor=request.command.actor
+            )
+        except Exception as e:
+            logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+            return (logdict, None)
 
         params_list = []
         params_dict = {}
         if cmd.schema_in:
-            params_dict = self._read_input_args_schema(request, cmd)
+            try:
+                params_dict = self._read_input_args_schema(request, cmd)
+            except Exception as e:
+                logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+                return (logdict, None)
         else:
             params_list = request.arguments
 
@@ -295,7 +306,7 @@ class Handler(JSBASE):
 
         self._log_debug("params cmd %s %s" % (params_list, params_dict))
         try:
-            result = cmd.method(*params_list, **params_dict)
+            result = cmd.method(*params_list, user_session=user_session, **params_dict)
             logdict = None
         except Exception as e:
             logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
