@@ -337,6 +337,17 @@ class JSBase:
             return True
 
         def check(checkitems):
+            key = ""
+            location = ""
+            try:
+                key = self._key
+            except:
+                key = self._classname
+            if self._hasattr("_location"):
+                try:
+                    location = self._location
+                except:
+                    pass
             for finditem in checkitems:
                 finditem = finditem.strip().lower()
                 if finditem == "*":
@@ -346,19 +357,15 @@ class JSBase:
                 if "*" in finditem:
                     if finditem[-1] == "*":
                         # means at end
-                        if self._key.startswith(finditem[:-1]):
+                        if key.startswith(finditem[:-1]):
                             return True
                     elif finditem[0] == "*":
-                        if self._key.endswith(finditem[1:]):
+                        if key.endswith(finditem[1:]):
                             return True
                     else:
                         raise j.exceptions.Base("find item can only have * at start or at end")
                 else:
-                    try:
-                        if self._location in [finditem, f"j.{finditem}"]:
-                            return True
-                    except:
-                        # TODO: we need to have a better solution for this
+                    if location in [finditem, f"j.{finditem}"]:
                         return True
             return False
 
