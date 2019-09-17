@@ -872,6 +872,10 @@ class Tools:
         return res
 
     @staticmethod
+    def get_repos_info():
+        return GITREPOS
+
+    @staticmethod
     def traceback_text_get(tb=None, stdout=False):
         """
         format traceback to readable text
