@@ -44,5 +44,4 @@ chmod +x /tmp/jsx;
 # install
 /tmp/jsx install -s
 
-cd /sandbox/code/github/threefoldtech/jumpscaleX_core/
-tar -cpzf "/tmp/archives/JSX.tar.gz" --exclude dev --exclude sys --exclude proc  /
+tar -cpzf "/tmp/archives/JSX.tar.gz" --exclude dev --exclude sys --exclude proc --exclude tmp /
