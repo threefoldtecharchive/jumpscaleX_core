@@ -566,6 +566,7 @@ class BCDBModel(j.baseclasses.object):
         :param kwargs:
         :return:
         """
+        values = []
         if not nid:
             nid = 1
         if kwargs == {}:
@@ -581,10 +582,11 @@ class BCDBModel(j.baseclasses.object):
                         val = 1
                     else:
                         val = 0
-                query += " %s = '%s'" % (key, val)
+                query += f" {key} = ?"
+                values.append(val)
                 first = False
             query += ";"
-        cursor = self.index.db.execute_sql(query)
+        cursor = self.index.db.execute_sql(query, values)
         r = cursor.fetchone()
         while r:
             yield (r[0])
