@@ -68,6 +68,9 @@ def main(self):
         data_send_over_wire_return, verifykey_hex=server_nacl.verify_key_hex
     )
 
+    # did full roundtrip
+    assert data_readable_on_client == data
+
     # back to normal
     self._nacl = server_nacl
     j.core.myenv.config["THREEBOT_ID"] = server_tid

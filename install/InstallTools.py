@@ -1766,7 +1766,7 @@ class Tools:
         def process_line_failback(line):
             args_new = args_combine()
             # SLOW!!!
-            print("FALLBACK REPLACE:%s" % line)
+            # print("FALLBACK REPLACE:%s" % line)
             for arg, val in args_new.items():
                 assert arg
                 line = line.replace("{%s}" % arg, str(val))

@@ -32,7 +32,6 @@ class GedisClient(JSConfigBase):
 
     def _init(self, **kwargs):
         # j.clients.gedis.latest = self
-        self._namespace = self.namespace
         self._actorsmeta = {}
         self.schemas = None
         self._actors = None
@@ -67,9 +66,14 @@ class GedisClient(JSConfigBase):
         res = self._redis.execute_command(cmd)
         return res
 
-    def reload(self):
+    def reload(self, namespace=None):
         self._log_info("reload")
+        self._reset()
         assert self.ping()
+
+        if namespace:
+            self.namespace = namespace
+
         self._actorsmeta = {}
         self._actors = GedisClientActors()
         self.schemas = GedisClientSchemas()
