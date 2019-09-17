@@ -56,7 +56,16 @@ class GedisWebsocketServer(JSConfigClient):
         :param manual means the server is run manually using e.g. kosmos 'j.servers.rack.start()'
         """
 
+        self._log_info("starting server on PORT: {0}".format(self.port))
         self.server.start()
+
+    def stop(self):
+        """
+        kosmos 'j.servers.gedis_websocket.stop()'
+        stop the server
+        """
+        self._log_info("stopping server running on PORT: {0}".format(self.port))
+        self.server.stop()
 
     def test(self):
         self.default.start()
