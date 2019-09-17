@@ -1456,7 +1456,7 @@ class SystemFS(JSBASE, TESTTOOLS):
     # unlock = staticmethod(unlock)
     # unlock_ = staticmethod(unlock_)
 
-    @path_check(filename={"required", "replace"})
+    @path_check(filename={"replace"})
     def validateFilename(self, filename, platform=None):
         """Validate a filename for a given (or current) platform
 
