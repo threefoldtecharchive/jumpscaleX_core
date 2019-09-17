@@ -177,7 +177,7 @@ class FileStream:
 
     def writelines(self, stream, append=True):
         ext = self._vfile.extension or self._vfile.name.split(".")[-1]
-        if ext in self.PLAIN_TYPES or isinstance(stream, str):
+        if (ext in self.PLAIN_TYPES and getattr(stream, "readlines", None)) or isinstance(stream, str):
             self._save_plain(stream, append=append)
         else:
             self._save_blocks(stream, append=append)

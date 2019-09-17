@@ -54,9 +54,3 @@ class CorexServer(JSConfigClient):
             self._startupcmd.executor = "background"
 
         return self._startupcmd
-
-    def check(self):
-        if not j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=self.port):
-            self.start()
-        if not j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=self.port):
-            raise j.exceptions.Base("could not start corex server")

@@ -68,7 +68,7 @@ class StartupCMDFactory(j.baseclasses.object_config_collection_testtools):
 
         def http_corex():
             # make sure corex is there
-            j.servers.corex.default.check()
+            j.servers.corex.default.start()
             corex = j.servers.corex.default.client
             self.http.interpreter = "direct"
             self.http.ports = 8000

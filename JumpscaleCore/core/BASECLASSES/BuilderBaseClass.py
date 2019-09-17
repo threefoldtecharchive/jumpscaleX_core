@@ -39,7 +39,7 @@ class builder_method:
         zhub_client = kwargs.get("zhub_client")
         if not zhub_client and kwargs.get("flist_create"):
             if not j.clients.zhub.exists(name="main"):
-                raise j.exceptions.Base("cannot find main zhub client")
+                raise j.exceptions.Base("Cannot find main zhub client, please configure main instance")
 
             # verifying the client
             zhub_client = j.clients.zhub.get(name="main")

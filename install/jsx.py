@@ -9,7 +9,7 @@ import inspect
 import argparse
 import os
 
-DEFAULT_BRANCH = "development_stabilize"
+DEFAULT_BRANCH = "development"
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 

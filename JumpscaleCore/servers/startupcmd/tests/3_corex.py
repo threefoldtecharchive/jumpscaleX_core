@@ -28,7 +28,7 @@ def main(self):
     kosmos 'j.data.schema.test(name="corex")' --debug
     """
 
-    j.servers.corex.default.check()
+    j.servers.corex.default.start()
     corex = j.servers.corex.default.client
 
     self.http.executor = "corex"

@@ -168,16 +168,17 @@ class SystemFS(JSBASE, TESTTOOLS):
         The dst directory may already exist; if not,
         it will be created as well as missing parent directories
         @param src: string (source of directory tree to be copied)
-        @param rsyncdelete will remove files on dest which are not on source (default) this works with the overwriteFiles to true otherwise it will not remove any files
+        @param rsyncdelete will remove files on dest which are not on source (default) this works with the overwriteFiles to true otherwise it will not remove any files. Effective only when rsync=True
         @param recursive:  recursively look in all subdirs
-        :param ignoredir: the following are always in, no need to specify ['.egg-info', '.dist-info', '__pycache__']
-        :param ignorefiles: the following are always in, no need to specify: ["*.egg-info","*.pyc","*.bak"]
+        @param ignoredir: the following are always in, no need to specify ['.egg-info', '.dist-info', '__pycache__']
+        @param ignorefiles: the following are always in, no need to specify: ["*.egg-info","*.pyc","*.bak"]
+        @param rsync: bool. Use rsync for copying.
         @param ssh:  bool (copy to remote)
         @param sshport int (ssh port)
         @param createdir:   bool (when ssh creates parent directory)
         @param dst: string (path directory to be copied to...should not already exist)
         @param keepsymlinks: bool (True keeps symlinks instead of copying the content of the file)
-        @param deletefirst: bool (Set to True if you want to erase destination first, be carefull, this can erase directories)
+        @param deletefirst: bool (Set to True if you want to erase symlinks/folders in the destination that also exist in the source, before copying.)
         @param overwriteFiles: if True will overwrite files, otherwise will not overwrite when destination exists
         """
         default_ignore_dir = [".egg-info", ".dist-info", "__pycache__"]
@@ -479,7 +480,7 @@ class SystemFS(JSBASE, TESTTOOLS):
         if not found will return None or die
 
         Raises:
-            RuntimeError -- if die 
+            RuntimeError -- if die
 
         Returns:
             string -- the path which has the dirname or None
@@ -1441,9 +1442,9 @@ class SystemFS(JSBASE, TESTTOOLS):
     def isBinaryFile(self, filename, checksize=4096):
         return not self.isAsciiFile(filename, checksize)
 
-    @path_check(path={"required"})
     def isAbsolute(self, path):
-        return os.path.isabs(path)
+        path = path or ""
+        return os.path.isabs(str(path))
 
     # THERE IS A tools.lock implementation we need to use that one
     # lock = staticmethod(lock)

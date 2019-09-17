@@ -224,7 +224,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         res = []
         ids_done = []
-        for key, item in self._children.items():
+        for key, item in list(self._children.items()):
             match = True
             for key, val in kwargs.items():
                 if item._hasattr(key):

@@ -72,7 +72,6 @@ class {{BASENAME}}(BCDBModelIndex):
         query.append((self.sql.{{field.name}} == obj.{{field.name}}))
         {%- endif %}
         {%- endfor %}
-        dd["id"] = obj.id
         dd["nid"] = obj.nid
     
         #TODO: REEM there need to be other ways, why can peewee update when needed
@@ -82,10 +81,10 @@ class {{BASENAME}}(BCDBModelIndex):
             try:
                 z = self.sql.get_or_none(id=obj.id)
                 if z == None:
+                    dd["id"] = obj.id
                     self.sql.create(**dd)
                 else:
-                    rid = dd.pop('id')
-                    self.sql.update(**dd).where(self.sql.id==rid).execute()
+                    self.sql.update(**dd).where(self.sql.id==obj.id).execute()
                 break
             except peewee.OperationalError as e:
                 time.sleep(0.5)
