@@ -4923,11 +4923,8 @@ class SSHAgent:
                 item2 = item.lower()
                 if not (
                     item.startswith(".")
-                    or item2.endswith(".pub")
-                    or item2.endswith(".backup")
-                    or item2.endswith(".toml")
-                    or item2.endswith(".backup")
-                    or item in ["known_hosts"]
+                    or item2.endswith((".pub", ".backup", ".toml", ".old"))
+                    or item in ["known_hosts", "config", "authorized_keys"]
                 ):
                     choices.append(item)
             sshkey = ask_key(choices)
@@ -5031,7 +5028,7 @@ class SSHAgent:
                 return []
 
         if return_code:
-            return_code, out, err = Tools.execute("ssh-add", showout=False, die=False, timeout=1)
+            return_code, out, err = Tools.execute("ssh-add", showout=False, die=False, timeout=10)
             if out.find("Error connecting to agent: No such file or directory"):
                 raise SSHAgentKeyError("Error connecting to agent: No such file or directory")
             else:
