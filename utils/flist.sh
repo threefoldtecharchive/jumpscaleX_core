@@ -26,7 +26,7 @@ fi
 
 for target in /usr/local $HOME/opt $HOME/.ssh $HOME/opt/cfg $HOME/opt/bin $HOME/code $HOME/code/github $HOME/code/github/threefoldtech $HOME/code/github/threefoldtech/jumpscale_weblibs $HOME/opt/var/capnp $HOME/opt/var/log $HOME/jumpscale/cfg; do
     mkdir -p $target
-    sudo chown -R $USER:$USER $target
+    chown -R root:root $target
 done
 
 pushd $HOME/code/github/threefoldtech
@@ -44,4 +44,4 @@ chmod +x /tmp/jsx;
 # install
 /tmp/jsx install -s
 
-tar -cpzf "/tmp/archives/JSX.tar.gz" --exclude dev --exclude sys --exclude proc --exclude tmp /
+tar -cpzf "/tmp/archives/JSX.tar.gz" --exclude dev --exclude sys --exclude proc --exclude tmp/* /
