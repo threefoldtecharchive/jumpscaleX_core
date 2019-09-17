@@ -3911,6 +3911,9 @@ class BaseInstaller:
                 C = "pip3 install '%s'" % pip  # --user
                 Tools.execute(C, die=True)
                 MyEnv.state_set("pip_%s" % pip)
+        C = "pip3 install -e 'git+https://github.com/threefoldtech/0-hub#egg=zerohub&subdirectory=client'"
+        Tools.execute(C, die=True)
+        MyEnv.state_set("pip_zoos")
 
     @staticmethod
     def cleanup_script_get():
