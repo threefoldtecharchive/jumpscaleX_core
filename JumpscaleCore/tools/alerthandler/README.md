@@ -1,5 +1,5 @@
 # Alert Handler
-Alert handler tool to create alerts from errors logged by jumpscale [errror handler](../../../docs/Internals/logging_errorhandling/README.md).
+Alert handler tool to create alerts from errors logged by jumpscale [error handler](../../../docs/Internals/logging_errorhandling/README.md).
 
 
 ## Usage
