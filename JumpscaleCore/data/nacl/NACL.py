@@ -8,6 +8,7 @@ import nacl.utils
 import nacl.hash
 import nacl.encoding
 import hashlib
+
 import binascii
 
 # from .AgentWithKeyname import AgentWithName
@@ -54,11 +55,11 @@ class NACL(j.baseclasses.object):
 
     @property
     def public_key_hex(self):
-        return binascii.hexlify(self.public_key.encode())
+        return binascii.hexlify(self.public_key.encode()).decode()
 
     @property
     def verify_key_hex(self):
-        return binascii.hexlify(self.verify_key.encode())
+        return binascii.hexlify(self.verify_key.encode()).decode()
 
     @property
     def box(self):

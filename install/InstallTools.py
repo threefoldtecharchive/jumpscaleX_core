@@ -1954,8 +1954,11 @@ class Tools:
         out = ""
 
         # TO SHOW WERE LOG COMES FROM e.g. from subprocess
-        # if "source" in logdict:
-        #     out += Tools.text_replace("{RED}--SOURCE: %s-20--{RESET}\n" % logdict["source"])
+        if "source" in logdict:
+            out += Tools.text_replace("{RED}--SOURCE: %s-20--{RESET}\n" % logdict["source"])
+
+        msg = Tools.text_replace(LOGFORMAT, args=logdict, die_if_args_left=False).rstrip()
+        out += msg
 
         if "traceback" in logdict and logdict["traceback"]:
             out += Tools.traceback_format(logdict["traceback"])
@@ -1970,12 +1973,9 @@ class Tools:
                 else:
                     data = logdict["data"]
                 data = Tools.text_indent(data, 2, strip=True)
-                out += Tools.text_replace("{YELLOW}--DATA-----------------------\n")
+                out += Tools.text_replace("\n{YELLOW}--DATA-----------------------\n")
                 out += data.rstrip() + "\n"
-                out += Tools.text_replace("-----------------------------\n{RESET}\n")
-
-        msg = Tools.text_replace(LOGFORMAT, args=logdict, die_if_args_left=False).rstrip()
-        out += msg
+                out += Tools.text_replace("-----------------------------{RESET}\n")
 
         if logdict["level"] > 39:
             # means is error

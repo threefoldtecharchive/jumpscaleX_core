@@ -205,39 +205,6 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
             )
         return data_dec
 
-    #
-    # def _payload_check(self, id=None, name=None, email=None, ipaddr="", description="", pubkey_hex=None):
-    #     assert name
-    #     assert email
-    #     assert id
-    #
-    #     if isinstance(pubkey_hex, bytes):
-    #         pubkey_hex = pubkey_hex.decode()
-    #     assert isinstance(pubkey_hex, str)
-    #     assert len(pubkey_hex) == 64
-    #
-    #     pubkey = binascii.unhexlify(pubkey_hex)
-    #
-    #     n = j.data.nacl.default
-    #
-    #     buffer = BytesIO()
-    #     buffer.write(str(id).encode())
-    #     buffer.write(name.encode())
-    #     buffer.write(email.encode())
-    #     buffer.write(ipaddr.encode())
-    #     buffer.write(description.encode())
-    #     buffer.write(pubkey_hex.encode())
-    #
-    #     # payload = name + email + pubkey + ipaddr + description
-    #     payload = buffer.getvalue()
-    #     signature = n.sign(payload)
-    #
-    #     signature_hex = binascii.hexlify(signature).decode()
-    #
-    #     # need to show how to use the pubkey to verify the signature & get the data
-    #     assert n.verify(payload, signature, verify_key=pubkey)
-    #
-    #     return signature_hex
     def get_test_data(self):
         S = """
         @url = tools.threebot.test.schema

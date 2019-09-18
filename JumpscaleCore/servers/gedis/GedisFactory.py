@@ -13,6 +13,7 @@ class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtoo
 
     def _init(self):
         self.client = None
+        self.client_phonebook = None
 
     def get_gevent_server(self, name="", **kwargs):
         """
@@ -40,6 +41,7 @@ class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtoo
 
         """
         # we don't support running gevent as stdallone any longer
+        self.client_phonebook = j.threebot.package.phonebook.client_get()
         self.client = j.threebot.package.ibiza.client_get()
 
         self._test_run(name=name)

@@ -2,7 +2,6 @@ from Jumpscale import j
 import binascii
 from .ThreebotClient import ThreebotClient
 from io import BytesIO
-from nacl.signing import VerifyKey
 
 JSConfigBase = j.baseclasses.object_config_collection
 
@@ -20,30 +19,16 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
             self._explorer = self.get(name="explorer", host="localhost")
         return self._explorer
 
-    def sign_data(self, data):
-        """
-        will sign any data with private key of our local 3bot private key
-        :param payload:
-        :return:
-        """
-        n = j.data.nacl.default
-        return n.signing_key.sign(data)
-
-    def sign_jsxobject(self, jsxobject):
-        """
-        jsxobject, json, signature = j.clients.threebot.sign_jsxobject(jsxobject)
-
-        will sign a jsxobject with private key of our local 3bot private key
-        :param jsxobject:
-        :return:
-        """
-        # todo: check type
-        json = jsxobject._json
-        signature = self.sign_data(json)
-        return (jsxobject, json, signature)
+    @property
+    def explorer_redis(self):
+        cl = j.clients.redis.get(port=8901)
+        cl.execute_command("config_format", "json")
+        return cl
 
     def threebot_client_get(self, tid=None, name=None):
         """
+
+        returns a client connection to a threebot
 
         :param tid: threebot id
         :param name:
@@ -61,70 +46,152 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
             raise j.exceptions.JSBUG("should never be more than 1")
 
         r = self.threebot_record_get(tid=tid, name=name)
-        return self.new(name=r.name, tid=r.tid, host=r.ipaddr, pubkey=r.pubkey)
+        return self.get(name=r.name, tid=r.tid, host=r.ipaddr, pubkey=r.pubkey)
 
     def threebot_record_get(self, tid=None, name=None):
         # did not find locally yet lets fetch
         r = self.explorer.client.actors.phonebook.get(tid=tid, name=name)
         if r:
-
-            signature_hex = j.clients.threebot._payload_check(
-                name=r.name, email=r.email, ipaddr=r.ipaddr, description=r.description, pubkey_hex=r.pubkey
+            # this checks that the data we got is valid
+            rc = j.data.nacl.payload_verify(
+                r.id,
+                r.name,
+                r.email,
+                r.ipaddr,
+                r.description,
+                r.pubkey,
+                verifykey=r.pubkey,
+                signature=r.signature,
+                die=False,
             )
-            if not r.signature == signature_hex:
+            if not rc:
                 raise j.exceptions.Input("threebot record, not valid, signature does not match")
 
-            self.get(name=r.name, tid=r.id, host=r.ipaddr, pubkey=r.pubkey)
             return r
 
         raise j.exceptions.Input("could not find 3bot: user_id:{user_id} name:{name}")
 
-    def _payload_check(self, id=None, name=None, email=None, ipaddr="", description="", pubkey_hex=None):
+    def threebot_network_prepay_wallet(self, name):
+        """
+
+        the threebot will create a wallet for you as a user and you can leave money on there to be used for
+        paying micro payment services on the threefold network (maximum amount is 1000 TFT on the wallet)
+        THIS IS A WALLET MEANT FOR MICRO PAYMENTS ON THE NETWORK OF THE CORE NETWORK ITSELF !!!
+        ITS AN ADVANCE ON SERVICES WHICH WILL BE USED E.G. REGISTER NAMES or NAME RECORDS
+
+        if a wallet stays empty during 1 day it will be removed automatically
+
+        :param: name is the name of the 3bot like how will be used in following functions like threebot_register_name
+        :param: sender_signature_hex off the name as done by private key of the person who asks
+
+        :return: a TFT wallet address
+        """
+        self._log_info("register step0: create your wallet under the name of your main threebot: %s" % name)
+        cl = self.explorer_redis
+        data_return_json = cl.execute_command(
+            "default.phonebook.wallet_create", j.data.serializers.json.dumps({"name": name})
+        )
+        data_return = j.data.serializers.json.loads(data_return_json)
+        return data_return["wallet_addr"]
+
+    def threebot_register(self, name=None, ipaddr=None, email="", description="", wallet_name=None, nacl=None):
+        """
+
+        The cost is 20 TFT today to register a name which is valid for 1 Y.
+
+        :param: name you want to register can eg $name.$extension of $name if no extension will be $name.3bot
+                needs to correspond on the name as used in threebot_wallet_create
+        :param: wallet_name is the name of a wallet you have funded, by default the same as your name you register
+        :param email:
+        :param ipaddr:
+        :param description:
+        :param nacl is the nacl instance you use default self.default which is for the local threebot
+        :return:
+        """
         assert name
-        assert email
-        assert id
+        assert ipaddr
 
-        if isinstance(pubkey_hex, bytes):
-            pubkey_hex = pubkey_hex.decode()
-        assert isinstance(pubkey_hex, str)
-        assert len(pubkey_hex) == 64
+        if not nacl:
+            nacl = j.data.nacl.default
+        pubkey = nacl.verify_key_hex
 
-        pubkey = binascii.unhexlify(pubkey_hex)
+        self._log_info("register step1: for 3bot name: %s" % name)
+        if not wallet_name:
+            wallet_name = name
+        cl = self.explorer_redis
+        data_return_json = cl.execute_command(
+            "default.phonebook.name_register",
+            j.data.serializers.json.dumps({"name": name, "wallet_name": wallet_name, "pubkey": pubkey}),
+        )
+        data_return = j.data.serializers.json.loads(data_return_json)
 
-        n = j.data.nacl.default
+        tid = data_return["id"]
 
-        buffer = BytesIO()
-        buffer.write(str(id).encode())
-        buffer.write(name.encode())
-        buffer.write(email.encode())
-        buffer.write(ipaddr.encode())
-        buffer.write(description.encode())
-        buffer.write(pubkey_hex.encode())
+        self._log_info("register: {id}:{name} {email} {ipaddr}".format(**data_return))
 
-        # payload = name + email + pubkey + ipaddr + description
-        payload = buffer.getvalue()
-        signature = n.sign(payload)
+        # we choose to implement it low level using redis interface
+        assert name
+        assert tid
+        assert isinstance(tid, int)
 
-        signature_hex = binascii.hexlify(signature).decode()
+        data = {
+            "tid": tid,
+            "name": name,
+            "email": email,
+            "ipaddr": ipaddr,
+            "description": description,
+            "pubkey": pubkey,
+        }
 
-        # need to show how to use the pubkey to verify the signature & get the data
-        assert n.verify(payload, signature, verify_key=pubkey)
+        def sign(nacl, *args):
+            buffer = BytesIO()
+            for item in args:
+                if isinstance(item, str):
+                    item = item.encode()
+                elif isinstance(item, int):
+                    item = str(item).encode()
+                elif isinstance(item, bytes):
+                    pass
+                else:
+                    raise RuntimeError()
+                buffer.write(item)
+            payload = buffer.getvalue()
+            signature = nacl.sign(payload)
+            return binascii.hexlify(signature).decode()
 
-        return signature_hex
+        # we sign the different records to come up with the right 'sender_signature_hex'
+        sender_signature_hex = sign(
+            nacl, data["tid"], data["name"], data["email"], data["ipaddr"], data["description"], data["pubkey"]
+        )
+        data["sender_signature_hex"] = sender_signature_hex
+        data2 = j.data.serializers.json.dumps(data)
+        data_return_json = cl.execute_command("default.phonebook.record_register", data2)
+        data_return = j.data.serializers.json.loads(data_return_json)
+
+        record0 = self.threebot_record_get(tid=data_return["id"])
+        record1 = self.threebot_record_get(name=data_return["name"])
+
+        assert record0 == record1
+
+        self._log_info("registration of threebot '{%s}' done" % name)
+
+        return record1
 
     def test(self):
         """
         kosmos 'j.clients.threebot.test()'
         :return:
         """
+        nacl1 = j.data.nacl.configure(name="client_test")
+        nacl2 = j.data.nacl.configure(name="client_test2")
 
-        r = self.threebot_register("test.test", "test@incubaid.com", ipaddr="localhost")
-
-        # tid = threebotid
-        clienttomyself = self.threebot_client_get(tid=r.id)
-        # or fetch based on name
-        clienttomyself2 = self.threebot_client_get(name="test.test")
-
-        assert clienttomyself2.client.ping()
+        threebot1 = self.threebot_register(
+            name="test.test", email="test@incubaid.com", ipaddr="212.3.247.26", nacl=nacl1
+        )
+        threebot2 = self.threebot_register(
+            name="dummy.myself", email="dummy@incubaid.com", ipaddr="212.3.247.27", nacl=nacl2
+        )
 
         self._log_info("test ok")
+
+        return nacl1, nacl2, threebot1, threebot2
