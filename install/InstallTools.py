@@ -5246,7 +5246,7 @@ class WireGuard:
             raise Tools.exceptions.Base("cannot start server only supported on linux ")
 
     def connect(self):
-        config_container = Tools.config_load("/sandbox/var/containers/%s/cfg/wireguard.toml" % self.container.name)
+        config_container = Tools.config_load("%s/var/containers/%s/cfg/wireguard.toml" % (MyEnv._basedir_get(), self.container.name))
         C = """
         [Interface]
         Address = 10.10.10.2/24
