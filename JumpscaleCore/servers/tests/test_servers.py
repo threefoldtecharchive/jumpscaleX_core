@@ -17,8 +17,6 @@ class TestServers(BaseTest):
         - Make sure that server installed successfully.
 
         """
-        if "install" not in BaseTest.SERVERS[server].keys():
-            pass
         self.info("Install Server {}".format(server))
         getattr(j.servers, server).install()
 
@@ -36,9 +34,6 @@ class TestServers(BaseTest):
         - Stop server
         - Check that can't connect to server anymore.
         """
-        if "start" not in BaseTest.SERVERS[server].keys():
-            pass
-
         self.info("* Start Server {}".format(server))
         server = getattr(j.servers, server).get()
         if server in ["threebot"]:
