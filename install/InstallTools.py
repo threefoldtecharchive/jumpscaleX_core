@@ -5192,6 +5192,7 @@ class WireGuard:
         if not Tools.cmd_installed("wg"):
             if MyEnv.platform() == "linux":
                 C = """
+                apt-get install software-properties-common -y
                 add-apt-repository ppa:wireguard/wireguard
                 apt-get update
                 apt-get install wireguard -y
