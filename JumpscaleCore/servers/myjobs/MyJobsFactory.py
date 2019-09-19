@@ -381,7 +381,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             self._log_debug("nr workers:%s, queuesize:%s" % (self._workers_gipc_count, self.queue_jobs_start.qsize()))
             gevent.sleep(1)
 
-    def schedule(self, method, name=None, category="", timeout=0, dependencies=None, wait=False, die=True, **kwargs):
+    def schedule(self, method, name=None, category="", timeout=0, dependencies=None, wait=False, die=True, args_replace=None, **kwargs):
         """
 
         :param method:
@@ -402,7 +402,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             self.jobs.delete(name=name)
         if "self" in kwargs:
             kwargs.pop("self")
-        job = self.jobs.new(name=name, method=method, kwargs=kwargs, dependencies=dependencies)
+        job = self.jobs.new(name=name, method=method, kwargs=kwargs, dependencies=dependencies, args_replace=args_replace)
 
         job.time_start = j.data.time.epoch
         job.state = "NEW"
@@ -418,14 +418,12 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         return job
 
     def stop(self, graceful=True, reset=True, timeout=60):
-
         if self._mainloop_gipc != None:
             self._mainloop_gipc.kill()
 
-        if not reset:
-            for w in self.workers.find(reload=True):
-                # look for the workers and ask for halt in nice way
-                w.stop(hard=reset)
+        for w in self.workers.find(reload=True):
+            # look for the workers and ask for halt in nice way
+            w.stop(hard=reset)
 
         timeout_end = j.data.time.epoch + timeout
         while not reset and graceful and j.data.time.epoch < timeout_end:

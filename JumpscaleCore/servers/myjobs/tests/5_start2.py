@@ -1,7 +1,7 @@
 import gevent
 
 
-def main(self, count=40):
+def main(self, count=20):
     """
     kosmos -p 'j.servers.myjobs.test("start2")'
     """

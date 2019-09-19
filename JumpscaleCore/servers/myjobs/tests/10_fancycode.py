@@ -1,17 +1,15 @@
-import gevent
-
 from Jumpscale import j
 
-import time
 
-
-def main(self, reset=False):
+def main(self):
     """
     kosmos -p 'j.servers.myjobs.test("fancycode")'
     """
+    return
 
-    if reset:
-        self.reset()
+    # TODO: implement this?
+
+    self.reset()
 
     def testa():
         # NO ARGEMENTS NEEDED
@@ -48,12 +46,7 @@ def main(self, reset=False):
 
     # one worker at least will be started
     self.worker_tmux_start(nr=1)
-
-    gevent.sleep(300)
-
     job1.wait()
-
-    j.shell()
 
     print("TEST OK FOR fancy functions")
 
