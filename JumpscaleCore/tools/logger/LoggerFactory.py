@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-class LoggerFactory(j.baseclasses.object):
+class LoggerFactory(j.baseclasses.object, j.baseclasses.testtools):
 
     __jslocation__ = "j.tools.logger"
     # _CHILDCLASS = LoggerBase

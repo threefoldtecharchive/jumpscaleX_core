@@ -31,7 +31,7 @@ rack.start()
     proxy_location.ipaddr_dest = "0.0.0.0"
     proxy_location.port_dest = "4444"
     proxy_location.type = "websocket"
-    proxy_location.scheme = "ws"
+    proxy_location.scheme = "http"
     locations.configure()
     website.configure()
     server.start()

@@ -373,19 +373,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                     if w.halt == False and not job_running and self.queue_jobs_start.qsize() == 0:
                         if removed_one == False and test_workers_less():
                             self._log_debug("worker remove:%s" % wid)
-                            removed_one = True
-                            w.halt = True
-                            self.model_worker.set(w)  # mark worker to halt
-                            gproc.kill()
-                            gproc.terminate()
-                            self.model_worker.delete(wid)
-                            gproc2 = self._workers_gipc[wid]
-                            while gproc.is_alive():
-                                gevent.sleep(0.1)
-                                print("worker,killing:%s" % wid)
-                            assert gproc2.is_alive() == False
-                            self._workers_gipc.pop(wid)
-                            self.delete(wid)
+                            w.stop(True)
+                            w.delete()
 
             # print(self._workers_gipc)
 

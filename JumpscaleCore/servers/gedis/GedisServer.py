@@ -287,7 +287,13 @@ class GedisServer(JSBaseConfig):
         # WHEN USED OVER WEB, USE THE DIGITALME FRAMEWORK
         self._log_info("start Server on {0} - PORT: {1}".format(self.host, self.port))
         self._log_info("%s RUNNING", str(self))
-        self.gevent_server.serve_forever()
+        cmd = f"""
+        j.servers.gedis.get("{self.name}").gevent_server.serve_forever()
+        """
+        s = j.servers.startupcmd.get(
+            name="gevent_server", cmd_start=cmd, interpreter="jumpscale", executor="tmux", ports=[self.port]
+        )
+        s.start()
 
     def stop(self):
         """
@@ -303,7 +309,13 @@ class GedisServer(JSBaseConfig):
             h.cancel()
 
         self._log_info("stopping server")
-        self.gevent_server.stop()
+        cmd = f"""
+        j.servers.gedis.get("{self.name}").gevent_server.serve_forever()
+        """
+        s = j.servers.startupcmd.get(
+            name="gevent_server", cmd_start=cmd, interpreter="jumpscale", executor="tmux", ports=[self.port]
+        )
+        s.stop()
 
     def test(self, name=""):
         if name:

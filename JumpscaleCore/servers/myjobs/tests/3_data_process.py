@@ -5,7 +5,6 @@ from Jumpscale import j
 def main(self, count=20):
     """
     kosmos -p 'j.servers.myjobs.test("data_process")'
-    kosmos -p 'j.servers.myjobs.test("data_process",reset=False)'
     """
     self.stop(reset=True)
 
