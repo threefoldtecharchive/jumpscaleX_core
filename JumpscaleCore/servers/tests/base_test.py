@@ -38,4 +38,3 @@ class BaseTest(unittest.TestCase):
         database.name = str(uuid.uuid4()).replace("-", "")[1:10]
         database.admin_email = "{}@example.com".format(database.name)
         database.admin_passwd_ = str(uuid.uuid4()).replace("-", "")[1:10]
-
