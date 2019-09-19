@@ -4552,6 +4552,11 @@ class DockerContainer:
 
         if not self.container_exists:
 
+            # First make sure the latest docker image is present
+            run_image_update_cmd = Tools.text_replace("docker image pull {IMAGE}", args=args)
+            Tools.execute(run_image_update_cmd, interactive=False)
+
+            # Now create the container
             MOUNTS = ""
             if mount_dirs:
                 MOUNTS = """
