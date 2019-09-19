@@ -1384,7 +1384,7 @@ class SystemFS(JSBASE, TESTTOOLS):
         @param ignore_empty_files: Boolean (ignore empty files)
         @rtype: md5 of the directory
         """
-        files = sorted(self.listFilesInDir(folder, recursive=True, followSymlinks=True, listSymlinks=True))
+        files = sorted(self.listFilesInDir(folder, recursive=True, followSymlinks=False, listSymlinks=False))
         dir_hash = hashlib.md5()
 
         for file in files:
