@@ -22,6 +22,7 @@ from Jumpscale import j
 from .JSBase import JSBase
 import os
 
+
 class ThreeBotFactoryBase(JSBase):
     _web = True
     _ssl = False
