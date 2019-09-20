@@ -123,6 +123,7 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
             "default.phonebook.name_register",
             j.data.serializers.json.dumps({"name": name, "wallet_name": wallet_name, "pubkey": pubkey}),
         )
+
         data_return = j.data.serializers.json.loads(data_return_json)
 
         tid = data_return["id"]
@@ -188,6 +189,7 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         threebot1 = self.threebot_register(
             name="test.test", email="test@incubaid.com", ipaddr="212.3.247.26", nacl=nacl1
         )
+
         threebot2 = self.threebot_register(
             name="dummy.myself", email="dummy@incubaid.com", ipaddr="212.3.247.27", nacl=nacl2
         )

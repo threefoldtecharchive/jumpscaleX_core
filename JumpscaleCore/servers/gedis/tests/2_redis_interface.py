@@ -56,6 +56,8 @@ def main(self):
 
     def register_threebot_redis():
 
+        cl.execute_command("config_format", "json")
+
         # get a nacl config (to act as a virtual person)
         myname = "test.ibiza"
 
@@ -109,6 +111,8 @@ def main(self):
         return data_return
 
     def query_threebot_redis(tid):
+
+        cl.execute_command("config_format", "json")
 
         myname = "test.ibiza"
 

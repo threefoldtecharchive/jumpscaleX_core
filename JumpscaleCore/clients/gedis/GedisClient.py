@@ -158,6 +158,7 @@ class GedisClient(JSConfigBase):
             self._log_info("redisclient: %s:%s " % (addr, port))
 
             self._redis_ = j.clients.redis.get(ipaddr=addr, port=port, password=secret, ping=True, fromcache=False)
+
         return self._redis_
 
     # def __getattr__(self, name):
