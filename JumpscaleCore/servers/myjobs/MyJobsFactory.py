@@ -381,7 +381,18 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             self._log_debug("nr workers:%s, queuesize:%s" % (self._workers_gipc_count, self.queue_jobs_start.qsize()))
             gevent.sleep(1)
 
-    def schedule(self, method, name=None, category="", timeout=0, dependencies=None, wait=False, die=True, args_replace=None, **kwargs):
+    def schedule(
+        self,
+        method,
+        name=None,
+        category="",
+        timeout=0,
+        dependencies=None,
+        wait=False,
+        die=True,
+        args_replace=None,
+        **kwargs,
+    ):
         """
 
         :param method:
@@ -402,7 +413,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             self.jobs.delete(name=name)
         if "self" in kwargs:
             kwargs.pop("self")
-        job = self.jobs.new(name=name, method=method, kwargs=kwargs, dependencies=dependencies, args_replace=args_replace)
+        job = self.jobs.new(
+            name=name, method=method, kwargs=kwargs, dependencies=dependencies, args_replace=args_replace
+        )
 
         job.time_start = j.data.time.epoch
         job.state = "NEW"
