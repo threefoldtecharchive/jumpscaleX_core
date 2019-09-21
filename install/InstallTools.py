@@ -74,6 +74,13 @@ GITREPOS["kosmos"] = [
     "{DIR_BASE}/lib/jumpscale/kosmos",
 ]
 
+PREBUILT_REPO = [
+    "https://github.com/threefoldtech/threebot_prebuilt",
+    "master",
+    "",
+    "not used",
+]
+
 import socket
 import grp
 import os
@@ -4209,7 +4216,16 @@ class JumpscaleInstaller:
                             Tools.log("found old jumpscale item to remove:%s" % toremove)
                             Tools.delete(toremove)
 
-    def repos_get(self, pull=False):
+    def prebuilt_get(self):
+        self.cmds_link(generate_js=False)
+        Tools.execute("cp -a {DIR_CODE}/github/threefoldtech/threebot_prebuilt/* /")
+        # -a won't copy hidden files
+        Tools.execute("cp {DIR_CODE}/github/threefoldtech/threebot_prebuilt/.startup.toml /")
+        Tools.execute("source /sandbox/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
+
+    def repos_get(self, pull=False, prebuilt=False):
+        if prebuilt:
+            GITREPOS['prebuilt'] = PREBUILT_REPO
 
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
@@ -4264,7 +4280,7 @@ class JumpscaleInstaller:
             Tools.log(Tools.text_replace("link {GITPATH}/{PATH} {DEST}", args=locals()), data=script)
             Tools.execute(script, args=locals(), die_if_args_left=True)
 
-    def cmds_link(self):
+    def cmds_link(self, generate_js=True):
         _, _, _, _, loc = Tools._code_location_get(repo="jumpscaleX_core/", account="threefoldtech")
         for src in os.listdir("%s/cmds" % loc):
             src2 = os.path.join(loc, "cmds", src)
@@ -4272,7 +4288,8 @@ class JumpscaleInstaller:
             if not os.path.exists(dest):
                 Tools.link(src2, dest, chmod=770)
         Tools.link("%s/install/jsx.py" % loc, "{DIR_BASE}/bin/jsx", chmod=770)
-        Tools.execute("cd /sandbox;source env.sh;js_init generate", interactive=False, die_if_args_left=True)
+        if generate_js:
+            Tools.execute("cd /sandbox;source env.sh;js_init generate", interactive=False, die_if_args_left=True)
 
 
 class DockerFactory:
@@ -4756,8 +4773,13 @@ class DockerContainer:
             print("export docker:%s to %s, was already there (export skipped)" % (self.name, path))
         return version
 
-    def jumpscale_install(self, secret=None, privatekey=None, redo=False, threebot=True, pull=False, branch=None):
-
+    def jumpscale_install(self, secret=None, privatekey=None, redo=False, threebot=True, pull=False, branch=None, prebuilt=False):
+        if prebuilt:
+            cmd = (
+                "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py prebuilt"
+            )
+            self.sshexec(cmd)
+            return
         args_txt = ""
         if secret:
             args_txt += " --secret='%s'" % secret

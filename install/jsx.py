@@ -179,6 +179,7 @@ def configure(
 @click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
 @click.option("--threebot", is_flag=True, help="also install the threebot")
 @click.option("--portrange", default=1, help="portrange, leave empty unless you know what you do.")
+@click.option("--prebuilt", is_flag=True, help="if set will allow a quick start using prebuilt threebot")
 @click.option(
     "--image",
     default=None,
@@ -211,6 +212,7 @@ def container_install(
     no_interactive=False,
     pull=False,
     configdir=None,
+    prebuilt=False,
 ):
     """
     create the 3bot container and install jumpcale inside
@@ -241,7 +243,17 @@ def container_install(
 
     docker.install()
 
-    docker.jumpscale_install(branch=branch, redo=reinstall, pull=pull, threebot=threebot)
+    if prebuilt:
+        installer = IT.JumpscaleInstaller()
+        installer.repos_get(pull=True, prebuilt=prebuilt)
+    docker.jumpscale_install(branch=branch, redo=reinstall, pull=pull, threebot=threebot, prebuilt=prebuilt)
+
+
+@click.command()
+def prebuilt():
+    IT = load_install_tools()
+    js_ins = IT.JumpscaleInstaller()
+    js_ins.prebuilt_get()
 
 
 def container_get(name="3bot", existcheck=True, portrange=1, delete=False):
@@ -570,6 +582,7 @@ if __name__ == "__main__":
     cli.add_command(generate)
     cli.add_command(wireguard)
     cli.add_command(modules_install, "modules-install")
+    cli.add_command(prebuilt)
 
     # DO NOT DO THIS IN ANY OTHER WAY !!!
     if not IT.DockerFactory.indocker():
