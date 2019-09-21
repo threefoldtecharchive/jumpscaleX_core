@@ -228,10 +228,11 @@ def container_install(
 
     _configure(configdir=configdir, no_interactive=no_interactive)
 
-    if scratch:
+    if scratch or prebuilt:
         # image = "phusion/baseimage"
         image = "unilynx/phusion-baseimage-1804"
-        delete = True
+        if scratch:
+            delete = True
         reinstall = True
     if not image:
         image = "despiegk/3bot"
@@ -245,15 +246,8 @@ def container_install(
 
     if prebuilt:
         installer = IT.JumpscaleInstaller()
-        installer.repos_get(pull=True, prebuilt=prebuilt)
+        installer.repos_get(pull=True)
     docker.jumpscale_install(branch=branch, redo=reinstall, pull=pull, threebot=threebot, prebuilt=prebuilt)
-
-
-@click.command()
-def prebuilt():
-    IT = load_install_tools()
-    js_ins = IT.JumpscaleInstaller()
-    js_ins.prebuilt_get()
 
 
 def container_get(name="3bot", existcheck=True, portrange=1, delete=False):
@@ -277,6 +271,7 @@ def container_get(name="3bot", existcheck=True, portrange=1, delete=False):
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("--threebot", is_flag=True, help="also install the threebot system")
 # @click.option("--no-sshagent", is_flag=True, help="do you want to use an ssh-agent")
+@click.option("--prebuilt", is_flag=True, help="if set will allow a quick start using prebuilt threebot")
 @click.option(
     "-b", "--branch", default=None, help="jumpscale branch. default 'master' or 'development' for unstable release"
 )
@@ -292,7 +287,7 @@ def container_get(name="3bot", existcheck=True, portrange=1, delete=False):
     help="reinstall, basically means will try to re-do everything without removing the data",
 )
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
-def install(threebot=False, branch=None, reinstall=False, pull=False, no_interactive=False):
+def install(threebot=False, branch=None, reinstall=False, pull=False, no_interactive=False, prebuilt=False):
     """
     install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.
     if interactive is True then will ask questions, otherwise will go for the defaults or configured arguments
@@ -316,7 +311,7 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
         branch = IT.DEFAULT_BRANCH
 
     installer = IT.JumpscaleInstaller()
-    installer.install(sandboxed=False, force=force, gitpull=pull)
+    installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt)
     if threebot:
         IT.Tools.execute("source %s/env.sh;kosmos 'j.servers.threebot.install()'" % SANDBOX, showout=True)
         IT.Tools.execute("source %s/env.sh;kosmos 'j.servers.threebot.test()'" % SANDBOX, showout=True)

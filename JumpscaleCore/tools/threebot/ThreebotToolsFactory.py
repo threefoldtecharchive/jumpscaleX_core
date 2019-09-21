@@ -418,9 +418,11 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
 
         assert record0 == record1
 
+        res = j.clients.threebot.get(name=data_return["name"])
+
         self._log_info("registration of threebot '{%s}' done" % name)
 
-        return record1
+        return res
 
     def get_test_data(self):
         S = """
@@ -440,6 +442,9 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
         kosmos 'j.clients.threebot.test_register()'
         :return:
         """
+
+        j.servers.threebot.local_start_default()
+
         nacl1 = j.data.nacl.configure(name="client_test")
         nacl2 = j.data.nacl.configure(name="client_test2")
 

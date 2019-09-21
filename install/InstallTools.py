@@ -74,12 +74,7 @@ GITREPOS["kosmos"] = [
     "{DIR_BASE}/lib/jumpscale/kosmos",
 ]
 
-PREBUILT_REPO = [
-    "https://github.com/threefoldtech/threebot_prebuilt",
-    "master",
-    "",
-    "not used",
-]
+PREBUILT_REPO = ["https://github.com/threefoldtech/threebot_prebuilt", "master", "", "not used"]
 
 import socket
 import grp
@@ -3460,8 +3455,9 @@ class MyEnv_:
 
             """
             print(Tools.text_strip(T))
-            if not Tools.ask_yes_no("OK to continue?"):
-                sys.exit(1)
+            if self.interactive:
+                if not Tools.ask_yes_no("OK to continue?"):
+                    sys.exit(1)
 
         # defaults are now set, lets now configure the system
         if sshagent_use:
@@ -4015,16 +4011,18 @@ class OSXInstaller:
 
 class UbuntuInstaller:
     @staticmethod
-    def do_all():
+    def do_all(prebuilt=False):
         MyEnv._init()
         Tools.log("installing Ubuntu version")
 
         UbuntuInstaller.ensure_version()
         UbuntuInstaller.base()
         # UbuntuInstaller.ubuntu_base_install()
-        UbuntuInstaller.python_redis_install()
+        if not prebuilt:
+            UbuntuInstaller.python_dev_install()
         UbuntuInstaller.apts_install()
-        BaseInstaller.pips_install()
+        if not prebuilt:
+            BaseInstaller.pips_install()
 
     @staticmethod
     def ensure_version():
@@ -4059,10 +4057,15 @@ class UbuntuInstaller:
 
         script = """
         apt-get update
+        apt-get install -y mc wget python3 git tmux
+        set +ex
+        apt-get install python3-distutils -y
+        set -ex
+        apt-get install python3-psutil -y        
         apt-get install -y curl rsync unzip
         locale-gen --purge en_US.UTF-8
-
         apt-get install python3-pip -y
+        apt-get install -y redis-server
         apt-get install locales -y
 
         """
@@ -4091,29 +4094,24 @@ class UbuntuInstaller:
         MyEnv.state_set("ubuntu_docker_install")
 
     @staticmethod
-    def python_redis_install():
-        if MyEnv.state_get("python_redis_install"):
+    def python_dev_install():
+        if MyEnv.state_get("python_dev_install"):
             return
 
         Tools.log("installing jumpscale tools")
 
         script = """
         cd /tmp
-        apt-get install -y mc wget python3 git tmux
-        set +ex
-        apt-get install python3-distutils -y
-        set -ex
-        apt-get install python3-psutil -y
         apt-get install -y build-essential
         #apt-get install -y python3.6-dev
-        apt-get install -y redis-server
+        
 
         """
         rc, out, err = Tools.execute(script, interactive=True, timeout=300)
         if rc > 0:
             # lets try other time
             rc, out, err = Tools.execute(script, interactive=True, timeout=300)
-        MyEnv.state_set("python_redis_install")
+        MyEnv.state_set("python_dev_install")
 
     @staticmethod
     def apts_list():
@@ -4148,7 +4146,7 @@ class UbuntuInstaller:
 
 
 class JumpscaleInstaller:
-    def install(self, sandboxed=False, force=False, gitpull=False):
+    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False):
 
         MyEnv.check_platform()
         # will check if there's already a key loaded (forwarded) will continue installation with it
@@ -4216,8 +4214,13 @@ class JumpscaleInstaller:
                             Tools.log("found old jumpscale item to remove:%s" % toremove)
                             Tools.delete(toremove)
 
-    def prebuilt_get(self):
+    def prebuilt_copy(self):
+        """
+        copy the prebuilt files to the /sandbox location
+        :return:
+        """
         self.cmds_link(generate_js=False)
+        # why don't we use our primitives here?
         Tools.execute("cp -a {DIR_CODE}/github/threefoldtech/threebot_prebuilt/* /")
         # -a won't copy hidden files
         Tools.execute("cp {DIR_CODE}/github/threefoldtech/threebot_prebuilt/.startup.toml /")
@@ -4225,7 +4228,7 @@ class JumpscaleInstaller:
 
     def repos_get(self, pull=False, prebuilt=False):
         if prebuilt:
-            GITREPOS['prebuilt'] = PREBUILT_REPO
+            GITREPOS["prebuilt"] = PREBUILT_REPO
 
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
@@ -4245,6 +4248,9 @@ class JumpscaleInstaller:
                     Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, dest=DEST)
                 else:
                     raise Tools.exceptions.Base("\n### Please authenticate your key and try again\n")
+
+        if prebuilt:
+            self.prebuilt_copy()
 
     def repos_link(self):
         """
@@ -4773,13 +4779,10 @@ class DockerContainer:
             print("export docker:%s to %s, was already there (export skipped)" % (self.name, path))
         return version
 
-    def jumpscale_install(self, secret=None, privatekey=None, redo=False, threebot=True, pull=False, branch=None, prebuilt=False):
-        if prebuilt:
-            cmd = (
-                "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py prebuilt"
-            )
-            self.sshexec(cmd)
-            return
+    def jumpscale_install(
+        self, secret=None, privatekey=None, redo=False, threebot=True, pull=False, branch=None, prebuilt=False
+    ):
+
         args_txt = ""
         if secret:
             args_txt += " --secret='%s'" % secret
@@ -4795,6 +4798,8 @@ class DockerContainer:
             args_txt += " --branch %s" % branch
         if not MyEnv.interactive:
             args_txt += " --no-interactive"
+        if prebuilt:
+            args_txt += " --prebuilt"
 
         dirpath = os.path.dirname(inspect.getfile(Tools))
         if dirpath.startswith(MyEnv.config["DIR_CODE"]):

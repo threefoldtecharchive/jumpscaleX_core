@@ -31,7 +31,6 @@ class Application(object):
         self.appname = "unknown"
 
         self._in_autocomplete = False
-        self._interactive = None
 
         self.exception_handle = self._j.core.myenv.exception_handle
         self._log2fs_session_name = None
@@ -46,14 +45,12 @@ class Application(object):
 
     @property
     def interactive(self):
-        if self._interactive is not None:
-            return self._interactive
+
         return self._j.core.myenv.interactive
 
     @interactive.setter
     def interactive(self, val):
-        self._interactive = val
-        # self._j.core.myenv.interactive = val
+        self._j.core.myenv.interactive = val
 
     @property
     def loghandlers(self):
