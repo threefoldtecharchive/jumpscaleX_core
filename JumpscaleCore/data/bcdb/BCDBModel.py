@@ -588,9 +588,11 @@ class BCDBModel(j.baseclasses.object):
             query += ";"
         cursor = self.index.db.execute_sql(query, values)
         r = cursor.fetchone()
+        res = []
         while r:
-            yield (r[0])
+            res.append(r[0])
             r = cursor.fetchone()
+        return res
 
     def query(self, query):
         """

@@ -146,7 +146,6 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         if id:
             obj = self._model.get(id)
             name = obj.name
-            self._children[name] = obj
             return 1, self._new(name, obj)
 
         if name in self._children:

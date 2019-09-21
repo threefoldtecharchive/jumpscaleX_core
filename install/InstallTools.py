@@ -1884,7 +1884,7 @@ class Tools:
         if not isinstance(tb, list):
             tb = Tools.traceback_list_format(tb)
 
-        out = Tools.text_replace("{RED}--TRACEBACK------------------{RESET}\n")
+        out = Tools.text_replace("\n{RED}--TRACEBACK------------------{RESET}\n")
         for tb_path, tb_name, tb_lnr, tb_line, tb_locals in tb:
             C = "{GREEN}{tb_path}{RESET} in {BLUE}{tb_name}{RESET}\n"
             C += "    {GREEN}{tb_lnr}{RESET}    {tb_code}{RESET}"

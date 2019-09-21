@@ -297,8 +297,7 @@ class NACL(j.baseclasses.object):
         """
         if not public_key:
             public_key = self.public_key
-
-            data = self.tobytes(data)
+        data = self.tobytes(data)
         sealed_box = SealedBox(public_key)
         res = sealed_box.encrypt(data)
         if hex:
@@ -324,6 +323,8 @@ class NACL(j.baseclasses.object):
         sign using your private key using Ed25519 algorithm
         the result will be 64 bytes
         """
+        if isinstance(data, str):
+            data = data.encode()
         signed = self.signing_key.sign(data)
         return signed.signature
 
