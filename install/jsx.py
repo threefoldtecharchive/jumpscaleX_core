@@ -522,12 +522,24 @@ def container_delete(name="3bot", configdir=None):
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 def containers_reset(configdir=None):
     """
-    remove all docker containers
+    remove all docker containers & imagess
     :param name:
     :return:
     """
     _configure(configdir=configdir)
     IT.DockerFactory.reset()
+
+
+@click.command(name="container-list")
+# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
+def container_list(configdir=None):
+    """
+    remove all docker containers & imagess
+    :param name:
+    :return:
+    """
+    _configure(configdir=configdir)
+    IT.DockerFactory.list()
 
 
 @click.command(name="container-kosmos")
@@ -681,5 +693,6 @@ if __name__ == "__main__":
         cli.add_command(container_docker_save, "container-docker-save")
         cli.add_command(container_basebuilder, "container-basebuilder")
         cli.add_command(container_3botbuilder, "container-3botbuilder")
+        cli.add_command(container_list, "container-list")
 
     cli()

@@ -4381,6 +4381,12 @@ class DockerFactory:
         return names
 
     @staticmethod
+    def list():
+        for name in DockerFactory.containers_names():
+            d = DockerFactory.container_get(name=name)
+            print(" - %-10s : %-25s (sshport:%s)" % (name, d.config.image, d.config.sshport))
+
+    @staticmethod
     def container_name_exists(name):
         return name in DockerFactory.containers_names()
 
@@ -4411,6 +4417,8 @@ class DockerFactory:
     @staticmethod
     def reset(images=True):
         """
+        jsx containers-reset
+
         will stop/remove all containers
         if images==True will also stop/remove all images
         :return:
@@ -5354,9 +5362,7 @@ class SSHAgent:
 class WireGuard:
     def __init__(self, container=None):
         self.container = container
-        # INSTALL SHOULD ALREADY HAVE HAPPENED IN BASE UBUNTU IMAGE FOR LINUX
-        if MyEnv.platform() != "linux":
-            self.install()
+        self.install()
 
     def install(self):
         if not Tools.cmd_installed("wg"):
