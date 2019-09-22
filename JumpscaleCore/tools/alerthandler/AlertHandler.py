@@ -51,7 +51,6 @@ class AlertHandler(j.baseclasses.object):
 
     for error handling/logging docs, see jumpscaleX_core/docs/Internals/logging_errorhandling
 
-    FIXME: logdict does not contain complete info about errors, e.g. exception type...
     """
 
     __jslocation__ = "j.tools.alerthandler"
@@ -80,7 +79,7 @@ class AlertHandler(j.baseclasses.object):
                 logdict["message"],
                 j.core.tools.traceback_format(logdict["traceback"]),
             ]
-        ).replace("'", "''")
+        )
 
         alert = self.model.new()
         alert.severity = logdict["level"]
@@ -103,7 +102,6 @@ class AlertHandler(j.baseclasses.object):
         :return: original alert
         :rtype: object
         """
-        # FIXME; how to compare alerts?
         # For now, only indexing value
         res = self.model.find(value=alert.value)
         if res:
