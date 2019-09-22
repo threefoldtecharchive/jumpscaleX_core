@@ -60,7 +60,6 @@ class MyWorker(j.baseclasses.object_config):
                 cmd.stop(force=True)
             elif self.type in ["INPROCESS"]:
                 self._log_info("INPROCESS STOP")
-                sys.exit(0)
             elif self.type in ["SUBPROCESS"]:
                 worker = j.servers.myjobs._workers_gipc.pop(self._id, None)
                 if worker:
