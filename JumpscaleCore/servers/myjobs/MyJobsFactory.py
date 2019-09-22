@@ -276,7 +276,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 elif w.state in ["NEW"]:
                     w.start()
 
-            gevent.time.sleep(10)
+            time.sleep(10)
 
     def _job_update(self, obj, action="save", **kwargs):
         if action in ["save", "set_post", "change"]:
@@ -544,7 +544,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                             res.append(self.jobs.get(jobid))
                         else:
                             res.append(jobid)
-                    gevent.time.sleep(0.3)
+                    time.sleep(0.3)
                 return res
 
     def test(self, name="", **kwargs):

@@ -74,7 +74,7 @@ GITREPOS["kosmos"] = [
     "{DIR_BASE}/lib/jumpscale/kosmos",
 ]
 
-PREBUILT_REPO = ["https://github.com/threefoldtech/threebot_prebuilt", "master", "", "not used"]
+PREBUILT_REPO = ["https://github.com/threefoldtech/sandbox_threebot_linux64", "master", "", "not used"]
 
 import socket
 import grp
@@ -2227,7 +2227,7 @@ class Tools:
                         showout=showout,
                         timeout=timeout,
                     )
-                    if rc > 0 and die:
+                    if rc > 0 and retry > 1:
                         Tools.log("redo cmd", level=30)
                     counter += 1
 
@@ -2742,7 +2742,7 @@ class Tools:
         )
 
     @staticmethod
-    def code_github_get(url, rpath=None, branch=None, pull=True, reset=False):
+    def code_github_get(url, rpath=None, branch=None, pull=False, reset=False):
         """
 
         :param repo:
@@ -2958,10 +2958,12 @@ class Tools:
         return gitpath
 
     @staticmethod
-    def config_load(path="", if_not_exist_create=False, executor=None, content=""):
+    def config_load(path="", if_not_exist_create=False, executor=None, content="", keys_lower=False):
         """
         only 1 level deep toml format only for int,string,bool
         no multiline support for text fields
+
+        :param: keys_lower if True will lower the keys
 
         return dict
 
@@ -3009,15 +3011,18 @@ class Tools:
                     val = int(val)
                 except:
                     pass
+            if keys_lower:
+                key = key.lower()
             res[key] = val
 
         return res
 
     @staticmethod
-    def config_save(path, data, executor=None):
+    def config_save(path, data, upper=True, executor=None):
         out = ""
         for key, val in data.items():
-            key = key.upper()
+            if upper:
+                key = key.upper()
             if isinstance(val, list):
                 val2 = "["
                 for item in val:
@@ -3709,8 +3714,8 @@ class BaseInstaller:
                     bashprofile += "\n%s\n" % cmd
                     Tools.file_write(env_path, bashprofile)
 
-        print("- get sandbox base from git")
         ji = JumpscaleInstaller()
+        print("- get sandbox repos from git")
         ji.repos_get(pull=False)
         print("- copy files to sandbox (non binaries)")
         # will get the sandbox installed
@@ -3930,7 +3935,7 @@ class BaseInstaller:
         for pip in items:
             if not MyEnv.state_get("pip_%s" % pip):
                 C = "pip3 install '%s'" % pip  # --user
-                Tools.execute(C, die=True)
+                Tools.execute(C, die=True, retry=3)
                 MyEnv.state_set("pip_%s" % pip)
         C = "pip3 install -e 'git+https://github.com/threefoldtech/0-hub#egg=zerohub&subdirectory=client'"
         Tools.execute(C, die=True)
@@ -3938,11 +3943,12 @@ class BaseInstaller:
 
     @staticmethod
     def cleanup_script_get():
+        # ncdu is a nice tool to find disk usage
         CMD = """
         cd /
         rm -f /tmp/cleanedup
         find . -name "*.pyc" -exec rm -rf {} \;
-        find . -type d -name "__pycache__" -delete
+        find . -type d -name "__pycache__" -exec rm -rf {} \;
         find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
         find . -name "*.bak" -exec rm -rf {} \;
         rm -f /root/.jsx_history
@@ -3963,7 +3969,27 @@ class BaseInstaller:
         apt-get autoremove --purge -y
         rm -rf /sandbox/openresty/pod
         rm -rf /sandbox/openresty/site
+        find . -type d -name ".cargo" -exec rm -rf {} \;
+        find . -type d -name ".rustup" -exec rm -rf {} \;
         touch /tmp/cleanedup
+        rm -rf /var/lib/apt/lists
+        mkdir -p /var/lib/apt/lists
+        """
+        return Tools.text_strip(CMD, replace=False)
+
+    @staticmethod
+    def cleanup_script_get_development():
+        CMD = """
+        apt remove gcc -y
+        apt remove rustc -y
+        apt remove llvm -y
+        rm -rf /usr/lib/x86_64-linux-gnu/libLLVM-6.0.so.1
+        rm -rf /usr/lib/llvm-6.0
+        rm -rf /usr/lib/gcc
+        export SUDO_FORCE_REMOVE=no
+        apt autoremove -y 
+        rm -rf /var/lib/apt/lists
+        mkdir -p /var/lib/apt/lists        
         """
         return Tools.text_strip(CMD, replace=False)
 
@@ -4179,7 +4205,8 @@ class JumpscaleInstaller:
     def remove_old_parts(self):
         tofind = ["DigitalMe", "Jumpscale", "ZeroRobot"]
         for part in sys.path:
-            if Tools.exists(part):
+            if Tools.exists(part) and os.path.isdir(part):
+                # print(" - REMOVE OLD PARTS:%s" % part)
                 for item in os.listdir(part):
                     for item_tofind in tofind:
                         toremove = os.path.join(part, item)
@@ -4221,9 +4248,9 @@ class JumpscaleInstaller:
         """
         self.cmds_link(generate_js=False)
         # why don't we use our primitives here?
-        Tools.execute("cp -a {DIR_CODE}/github/threefoldtech/threebot_prebuilt/* /")
+        Tools.execute("cp -a {DIR_CODE}/github/threefoldtech/sandbox_threebot_linux64/* /")
         # -a won't copy hidden files
-        Tools.execute("cp {DIR_CODE}/github/threefoldtech/threebot_prebuilt/.startup.toml /")
+        Tools.execute("cp {DIR_CODE}/github/threefoldtech/sandbox_threebot_linux64/.startup.toml /")
         Tools.execute("source /sandbox/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
 
     def repos_get(self, pull=False, prebuilt=False):
@@ -4354,12 +4381,24 @@ class DockerFactory:
         return names
 
     @staticmethod
+    def container_name_exists(name):
+        return name in DockerFactory.containers_names()
+
+    @staticmethod
     def image_names():
         names = Tools.execute("docker images --format='{{.Repository}}:{{.Tag}}'", showout=False, replace=False)[
             1
         ].split("\n")
         names = [i.strip("\"'") for i in names if i.strip() != ""]
         return names
+
+    @staticmethod
+    def image_name_exists(name):
+
+        for name_find in DockerFactory.image_names():
+            if name_find.find(name) == 0:
+                return name_find
+        return False
 
     @staticmethod
     def image_remove(name):
@@ -4388,27 +4427,65 @@ class DockerFactory:
 
 
 class DockerConfig:
-    def __init__(self, name, portrange=None, image=None, sshport=None, startupcmd=None):
+    def __init__(self, name, portrange=None, image=None, sshport=None, startupcmd=None, delete=False):
+        """
+        port config is as follows:
+
+        start_range = 9000+portrange*10
+        ssh = start_range
+        wireguard = start_range + 1
+
+        :param name:
+        :param portrange:
+        :param image:
+        :param sshport:
+        :param startupcmd:
+        """
         self.name = name
-        if portrange:
-            self.portrange = portrange
-        else:
-            self.portrange = 1
-        if image:
-            self.image = image
-        else:
-            self.image = "despiegk/3bot"
-        if sshport:
-            self.sshport = sshport
-        else:
-            self.sshport = 9000 + int(self.portrange) * 100 + 22
-        if startupcmd:
-            self.startupcmd = startupcmd
-        else:
-            self.startupcmd = "/sbin/my_init"
 
         self.path_vardir = Tools.text_replace("{DIR_BASE}/var/containers/{NAME}", args={"NAME": name})
         self.path_config = "%s/docker_config.toml" % (self.path_vardir)
+        self.portrange = None
+        # self.wireguard_pubkey
+
+        if delete:
+            Tools.delete(self.path_vardir)
+
+        if not Tools.exists(self.path_config):
+
+            if portrange:
+                self.portrange = portrange
+                port_to_check = 9000 + portrange * 10
+                if Tools.tcp_port_connection_test(ipaddr="localhost", port=port_to_check):
+                    raise Tools.exceptions.Input("portrange already used:%s" % portrange)
+            else:
+
+                def find_port_range():
+                    for i in range(50):
+                        port_to_check = 9000 + i * 10
+                        if not Tools.tcp_port_connection_test(ipaddr="localhost", port=port_to_check):
+                            self.portrange = i
+                            print(" - SSH PORT ON: %s" % port_to_check)
+                            return
+                    if not self.portrange:
+                        raise Tools.exceptions.Input("cannot find tcp port range for docker")
+
+                find_port_range()
+
+            if image:
+                self.image = image
+            else:
+                self.image = "despiegk/3bot"
+            if sshport:
+                self.sshport = sshport
+            else:
+                self.sshport = 9000 + int(self.portrange) * 10
+            if startupcmd:
+                self.startupcmd = startupcmd
+            else:
+                self.startupcmd = "/sbin/my_init"
+
+            self.save()
 
         self.load()
 
@@ -4428,23 +4505,27 @@ class DockerConfig:
 
     def load(self):
 
-        if Tools.exists(self.path_config):
-            r = Tools.config_load(self.path_config)
-            if r != {}:
-                self.__dict__.update(r)
-        else:
-            self.save()
+        if not Tools.exists(self.path_config):
+            raise Tools.exceptions.JSBUG("could not find config path for container:%s" % self.path_config)
 
-        a = 8000 + int(self.portrange) * 10
-        b = 8004 + int(self.portrange) * 10
-        self.portrange_txt = "%s-%s:8000-8004" % (a, b)
+        r = Tools.config_load(self.path_config, keys_lower=True)
+        if r != {}:
+            self.__dict__.update(r)
+
+        a = 9005 + int(self.portrange) * 10
+        b = 9009 + int(self.portrange) * 10
+        udp = 9001 + int(self.portrange) * 10
+        ssh = 9000 + int(self.portrange) * 10
+        self.portrange_txt = "-p %s-%s:8005-8009" % (a, b)
+        self.portrange_txt += " -p %s:9001/udp" % udp
+        self.portrange_txt += " -p %s:22" % ssh
 
     def save(self):
         Tools.config_save(self.path_config, self.__dict__)
         self.load()
 
     def __str__(self):
-        return self.__dict__
+        return str(self.__dict__)
 
     __repr__ = __str__
 
@@ -4459,9 +4540,9 @@ class DockerContainer:
         DockerFactory._init()
         DockerFactory._dockers[name] = self
 
-        self.config = DockerConfig(name=name, portrange=portrange, image=image, sshport=sshport, startupcmd=startupcmd)
-        if delete:
-            Tools.delete(self._path)
+        self.config = DockerConfig(
+            name=name, portrange=portrange, image=image, sshport=sshport, startupcmd=startupcmd, delete=delete
+        )
 
         self.container_exists = name in DockerFactory.containers_names()
 
@@ -4470,12 +4551,7 @@ class DockerContainer:
         if delete:
             if self.container_exists:
                 self.delete()
-            newport = self.config._find_sshport(self.config.sshport)
-            self.config.reset()
 
-            if self.config.sshport != newport:
-                self.config.sshport = newport
-                self.config.save()
         if "SSH_Agent" in MyEnv.config and MyEnv.config["SSH_Agent"]:
             MyEnv.sshagent.key_default_name  # means we will load ssh-agent and help user to load it properly
 
@@ -4494,65 +4570,87 @@ class DockerContainer:
     def name(self):
         return self.config.name
 
-    def clean(self):
+    def clean(self, image=None, buildenv=True):
         """
         will import & launch
         we have to reimport and make sure there is nothing mapped to host, then we have to remove files, otherwise there could be leftovers
         the result will be a clean exported image and a clean operational container which can be pushed to e.g. docker hub
         :return:
         """
-        imagename = "temp/temp"
+        imagename_tmp = "temp/temp"
+        if not image:
+            image = self.image
 
-        CLEANUPCMD = BaseInstaller.cleanup_script_get()
+        def clean(container, CLEANUPCMD):
+            for line in CLEANUPCMD.split("\n"):
+                line = line.strip()
+                print(" - cleanup:%s" % line)
+                container.dexec(line, die=False)
 
-        # NO NEED TO DO HERE, takes too long
-        # for line in CLEANUPCMD.split("\n"):
-        #     line = line.strip()
-        #     print(" - cleanup:%s" % line)
-        #     self.dexec(line)
+        # do it before exporting
+        clean(self, BaseInstaller.cleanup_script_get())
+        if buildenv:
+            clean(self, BaseInstaller.cleanup_script_get_development())
 
         self.export(skip_if_exists=False)  # need to re-export to make sure
         tempcontainer = DockerContainer("temp", delete=True, portrange=2)
 
         tempcontainer.import_(
-            path=self.export_last_image_path, imagename=imagename, start=True, mount_dirs=False, portmap=False
+            path=self.export_last_image_path, imagename=imagename_tmp, start=True, mount_dirs=False, portmap=False
         )
-        # WILL CLEANUP
 
-        for line in CLEANUPCMD.split("\n"):
-            line = line.strip()
-            print(" - cleanup:%s" % line)
-            tempcontainer.dexec(line)
+        # WILL CLEANUP in the tempcontainer
+
+        # need to do it again because there could be leftovers from volume mounts
+        clean(tempcontainer, BaseInstaller.cleanup_script_get())
+        if buildenv:
+            clean(tempcontainer, BaseInstaller.cleanup_script_get_development())
+        tempcontainer.dexec("rm -rf /sandbox/code", die=True)
+
         tempcontainer.export(overwrite=True, path=self.export_last_image_path)
         tempcontainer.delete()
-        DockerFactory.image_remove(imagename)
+        DockerFactory.image_remove(imagename_tmp)
         self.delete()
-        assert self.name not in DockerFactory.containers_names()
-        self.import_()  # now should be clean
 
-    def install(self, baseinstall=True, mount_dirs=True, portmap=True):
+        assert not DockerFactory.container_name_exists(self.name)
+
+        self.import_(imagename=image)  # now should be clean
+
+    def sandbox_sync(self):
+        if Tools.exists("/tmp/package/threebot"):
+            src = "/tmp/package/threebot"
+        elif Tools.exists("/sandbox/code/.../threebot"):
+            # todo:
+            pass
+        else:
+            Tools.shell()
+            raise j.exceptions.JSBUG("can't find sandbox files")
+
+        if src[-1] != "/":
+            src += "/"
+
+        exclude = ' --exclude "etc/group"'
+        exclude += ' --exclude "etc/passwd"'
+        cmd = (
+            'rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p %s"  %s %s localhost:/'
+            % (self.config.sshport, exclude, src)
+        )
+
+        rc, out, err = Tools.execute(cmd, die=False)
+        if rc:
+            raise Tools.exceptions.Base("could not sync the sandbox src:%s\n%s" % err % src, data=cmd)
+
+    def install(self, mount_dirs=True, update=None, portmap=True):
         """
 
-        :param baseinstall: is yes will upgrade the ubuntu
-        :param cmd: execute additional command after start
+        :param update: is yes will upgrade the ubuntu
         :param mount_dirs if mounts will be done from host system
         :return:
         """
-        # portrange_txt += " -p %s:9999/udp" % (a + 9)  # udp port for wireguard
 
         args = {}
         args["NAME"] = self.config.name
-        if portmap:
-            args["PORTRANGE"] = "-p %s" % self.config.portrange_txt
-        else:
-            args["PORTRANGE"] = ""
-
-        args["PORT"] = self.config.sshport
         args["IMAGE"] = self.config.image
-
-        # NOT NEEDED
-        # if ":" not in args["IMAGE"]:
-        #     args["IMAGE"] += ":latest"
 
         if not Tools.exists(self._path + "/cfg/jumpscale_config.toml"):
             Tools.dir_ensure(self._path + "/cfg")
@@ -4574,10 +4672,12 @@ class DockerContainer:
             Tools.config_save(self._path + "/cfg/jumpscale_config.toml", CONFIG)
 
         if not self.container_exists:
+            if not DockerFactory.image_name_exists(self.config.image):
+                # First make sure the latest docker image is present if the image does not exist yet
+                run_image_update_cmd = Tools.text_replace("docker image pull {IMAGE}", args=args)
+                Tools.execute(run_image_update_cmd, interactive=False)
 
-            # First make sure the latest docker image is present
-            run_image_update_cmd = Tools.text_replace("docker image pull {IMAGE}", args=args)
-            Tools.execute(run_image_update_cmd, interactive=False)
+            self.config.image = DockerFactory.image_name_exists(self.config.image)
 
             # Now create the container
             MOUNTS = ""
@@ -4591,12 +4691,12 @@ class DockerContainer:
 
             args["MOUNTS"] = Tools.text_replace(MOUNTS.strip(), args=args)
             args["CMD"] = self.config.startupcmd
-            if self.name == "3bot":
-                args["UDP"] = "-p 7777:7777/udp"
+            if portmap:
+                args["PORTRANGE"] = self.config.portrange_txt
             else:
-                args["UDP"] = ""  # for now only name 3bot does it
+                args["PORTRANGE"] = ""
             run_cmd = (
-                "docker run --name={NAME} --hostname={NAME} -d -p {PORT}:22 {UDP} {PORTRANGE} \
+                "docker run --name={NAME} --hostname={NAME} -d {PORTRANGE} \
             --device=/dev/net/tun --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --cap-add=DAC_OVERRIDE \
             --cap-add=DAC_READ_SEARCH {MOUNTS} {IMAGE} {CMD}".strip()
                 .replace("  ", " ")
@@ -4607,6 +4707,7 @@ class DockerContainer:
             run_cmd2 = Tools.text_replace(run_cmd, args=args)
 
             print(" - Docker machine gets created: ")
+            print(run_cmd2)
             Tools.execute(run_cmd2, interactive=False)
 
             self.dexec("rm -f /root/.BASEINSTALL_OK")
@@ -4625,6 +4726,11 @@ class DockerContainer:
             installed = True
         except:
             pass
+
+        if update == None:
+            if self.image == "despiegk/base" or self.image == "despiegk/3bot":
+                update = False
+
         if not installed:
             self.dexec("rm -f /root/.BASEINSTALL_OK")
             SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
@@ -4634,28 +4740,38 @@ class DockerContainer:
             self.dexec("/usr/bin/ssh-keygen -A")
             self.dexec("/etc/init.d/ssh start")
             self.dexec("rm -f /etc/service/sshd/down")
-            if baseinstall:
+            if update:
                 print(" - Upgrade ubuntu")
+                self.dexec("add-apt-repository ppa:wireguard/wireguard -y")
                 self.dexec("apt-get update")
                 self.dexec("DEBIAN_FRONTEND=noninteractive apt-get -y upgrade --force-yes")
                 print(" - Upgrade ubuntu ended")
                 self.dexec("apt-get install mc git -y")
+                self.dexec("apt-get install python3 -y")
+                self.dexec("apt-get install wget tmux -y")
+                self.dexec("apt-get install curl rsync unzip redis-server -y")
+                self.dexec("apt-get install python3-distutils python3-psutil python3-pip python3-click -y")
+                self.dexec("locale-gen --purge en_US.UTF-8")
+                self.dexec("apt-get install software-properties-common -y")
+                self.dexec("apt-get install wireguard -y")
+                self.dexec("apt-get install locales -y")
 
             Tools.execute("mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"]))
             Tools.execute(
-                'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"' % (MyEnv.config["DIR_HOME"], args["PORT"])
+                'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"'
+                % (MyEnv.config["DIR_HOME"], self.config.sshport)
             )
 
             self.dexec("touch /root/.BASEINSTALL_OK")
 
-    def dexec(self, cmd, interactive=False):
+    def dexec(self, cmd, interactive=False, die=True):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
         if interactive:
             cmd2 = "docker exec -ti %s bash -c '%s'" % (self.name, cmd)
         else:
             cmd2 = "docker exec -t %s bash -c '%s'" % (self.name, cmd)
-        Tools.execute(cmd2, interactive=interactive, showout=True, replace=False, asfile=True)
+        Tools.execute(cmd2, interactive=interactive, showout=True, replace=False, asfile=True, die=die)
 
     def sshexec(self, cmd):
         if "'" in cmd:
@@ -4702,7 +4818,7 @@ class DockerContainer:
         path = "%s/exports/%s.tar" % (self._path, version)
         return path
 
-    def import_(self, path=None, version=None, imagename="despiegk/3bot", start=True, mount_dirs=True, portmap=True):
+    def import_(self, path=None, version=None, imagename=None, start=True, mount_dirs=True, portmap=True):
         """
 
         :param path:  if not specified will be /sandbox/var/containers/$name/exports/$version.tar
@@ -4713,6 +4829,8 @@ class DockerContainer:
         :param portmap: do you want to do the portmappings (ssh is always mapped)
         :return:
         """
+        if not imagename:
+            imagename = self.image
         if not path:
             dpath = "%s/exports/" % self._path
             if not Tools.exists(dpath):
@@ -4741,7 +4859,7 @@ class DockerContainer:
         if start:
             self.config.image = imagename
             self.delete()
-            self.install(baseinstall=False, mount_dirs=mount_dirs, portmap=portmap)
+            self.install(update=False, mount_dirs=mount_dirs, portmap=portmap)
             self.start()
 
     def export(self, path=None, overwrite=True, skip_if_exists=False):
@@ -5236,9 +5354,11 @@ class SSHAgent:
 class WireGuard:
     def __init__(self, container=None):
         self.container = container
-        self._install()
+        # INSTALL SHOULD ALREADY HAVE HAPPENED IN BASE UBUNTU IMAGE FOR LINUX
+        if MyEnv.platform() != "linux":
+            self.install()
 
-    def _install(self):
+    def install(self):
         if not Tools.cmd_installed("wg"):
             if MyEnv.platform() == "linux":
                 C = """
@@ -5253,6 +5373,7 @@ class WireGuard:
                 Tools.execute(C)
 
     def server_start(self):
+        port = 7777
         if MyEnv.platform() == "linux":
             if not Tools.exists("/sandbox/cfg/wireguard.toml"):
                 print("- GENERATE WIREGUARD KEY")
@@ -5271,7 +5392,7 @@ class WireGuard:
                 config["WIREGUARD_SERVER_PRIVKEY"] = privkey
                 config["WIREGUARD_CLIENT_PUBKEY"] = pubkey2
                 config["WIREGUARD_CLIENT_PRIVKEY"] = privkey2
-                config["WIREGUARD_PORT"] = 7777
+                config["WIREGUARD_PORT"] = port
                 Tools.config_save("/sandbox/cfg/wireguard.toml", config)
 
             config = Tools.config_load("/sandbox/cfg/wireguard.toml")
@@ -5292,10 +5413,17 @@ class WireGuard:
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
             cmd = "wg-quick up %s" % path
             Tools.execute(cmd)
+
+            self.container.config.wireguard_server_pubkey = pubkey
+
         else:
             raise Tools.exceptions.Base("cannot start server only supported on linux ")
 
-    def connect(self):
+    def connect(self, port=None):
+
+        if not port:
+            port = self.container.config.portrange + 1  # is the wireguard port
+
         config_container = Tools.config_load(
             "%s/var/containers/%s/cfg/wireguard.toml" % (MyEnv._basedir_get(), self.container.name)
         )
