@@ -146,7 +146,6 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         if id:
             obj = self._model.get(id)
             name = obj.name
-            self._children[name] = obj
             return 1, self._new(name, obj)
 
         if name in self._children:
@@ -224,7 +223,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         res = []
         ids_done = []
-        for key, item in self._children.items():
+        for key, item in list(self._children.items()):
             match = True
             for key, val in kwargs.items():
                 if item._hasattr(key):

@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 import nacl.secret
 import nacl.utils
@@ -33,7 +13,7 @@ def main(self):
     """
     to run:
 
-    kosmos 'j.data.bcdb.test(name="sign_encrypt_decrypt")'
+    kosmos 'j.tools.threebot.test(name="sign_encrypt_decrypt")'
 
     """
     # here is how the keys are used
@@ -56,16 +36,16 @@ def main(self):
     assert client_sk.public_key.encode() != server_sk.public_key.encode()
     assert client_sk.public_key.encode() != server_sk.verify_key.encode()
 
-    tid = j.core.myenv.config["THREEBOT_ID"]
+    tid = j.tools.threebot.me.tid
 
     self._log_info("sign arbitrary data should work and be verified with 3bot pub key")
-    res = self.serialize_sign_encrypt(data_list, serialization_format="json", pubkey_hex=None)
+    res = self._serialize_sign_encrypt(data_list, serialization_format="json", pubkey_hex=None)
     assert len(res) == 3
     # threebot should send its id
     assert res[0] == tid
     threebot_sign = res[2]
     # threebot sign should be valid
-    sign_data_raw = self.serialize(data_list, serialization_format="json").encode()
+    sign_data_raw = self._serialize(data_list, serialization_format="json").encode()
     assert sign_data_raw == res[1]
     assert server_sk.verify(sign_data_raw, threebot_sign)
     # make sure we are using the server_sk signing pubkey
@@ -75,10 +55,10 @@ def main(self):
     assert not server_sk.verify(sign_data_raw, threebot_sign, verify_key=client_sk.public_key.encode())
 
     self._log_info("sign and encrypt arbitrary data should work and be verified with 3bot pub key")
-    res = self.serialize_sign_encrypt(
+    res = self._serialize_sign_encrypt(
         data_list, serialization_format="msgpack", pubkey_hex=binascii.hexlify(client_sk.public_key.encode())
     )
-    # verify the econding decoding of the pubkey
+    # verify the encoding decoding of the pubkey
     assert (
         client_sk.public_key.encode()
         == nacl.public.PublicKey(binascii.unhexlify(binascii.hexlify(client_sk.public_key.encode()))).encode()
@@ -87,7 +67,7 @@ def main(self):
     assert res[0] == tid
     threebot_sign = res[2]
     # threebot sign should be valid
-    sign_data_raw = self.serialize(data_list, serialization_format="msgpack")
+    sign_data_raw = self._serialize(data_list, serialization_format="msgpack")
     assert server_sk.verify(sign_data_raw, threebot_sign)
     # client shoudl be abe to decrypt the data
     decrypted = j.data.nacl.default.decrypt(res[1], private_key=client_sk)
@@ -101,7 +81,7 @@ def main(self):
 
     self._log_info("3bot should be able to decrypt a payload and verify a signature against a pubkey")
     # create a  payload  for the 3bot from the client
-    data_raw = self.serialize(data_list, serialization_format="msgpack")
+    data_raw = self._serialize(data_list, serialization_format="msgpack")
     # as it is for the 3bot we will encrypt it with the 3bot pubkey
     data_enc = j.data.nacl.default.encrypt(data_raw, public_key=server_sk.public_key)
     # as it is from the client we sign the payload before encryption with the client priv key
@@ -115,20 +95,22 @@ def main(self):
     # let's choose an arbitrary 3bot id for the client
     client_bot = "sarah.connor"
     payload = [client_bot, data_enc, signature]
-    res = self.deserialize_check_decrypt(
-        payload, serialization_format="msgpack", pubkey_hex=binascii.hexlify(client_verif_k.encode())
+    res = self._deserialize_check_decrypt(
+        payload, serialization_format="msgpack", verifykey_hex=binascii.hexlify(client_verif_k.encode())
     )
     assert len(res) == len(data_list)
     assert res[0] == data_list[0]
 
     self._log_info("decrypt a payload and verify a signature against an incorrect pubkey should fail")
+
     with test_case.assertRaises(Exception) as cm:
-        res = self.deserialize_check_decrypt(
+        res = self._deserialize_check_decrypt(
             payload,
             serialization_format="msgpack",
-            pubkey_hex=binascii.hexlify(nacl.public.PrivateKey.generate().public_key.encode()),
+            verifykey_hex=binascii.hexlify(nacl.public.PrivateKey.generate().public_key.encode()),
         )
     ex = cm.exception
+
     assert "could not verify signature" in str(ex.args[0])
 
     self._log_info("decrypt a payload encrypted with an incorrect pubkey should fail")
@@ -137,8 +119,8 @@ def main(self):
     data_wrong_enc = j.data.nacl.default.encrypt(data_raw, public_key=tmp_sk.public_key)
     payload = [client_bot, data_wrong_enc, signature]
     with test_case.assertRaises(Exception) as cm:
-        res = self.deserialize_check_decrypt(
-            payload, serialization_format="msgpack", pubkey_hex=binascii.hexlify(client_sk.public_key.encode())
+        res = self._deserialize_check_decrypt(
+            payload, serialization_format="msgpack", verifykey_hex=binascii.hexlify(client_sk.public_key.encode())
         )
     ex = cm.exception
     assert "An error occurred trying to decrypt the message" in str(ex.args[0])

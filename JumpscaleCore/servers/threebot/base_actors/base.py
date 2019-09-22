@@ -16,7 +16,7 @@ class base(JSBASE):
             raise j.exceptions.Input("format_type needs to be either json or msgpack")
         self.format = format_type
 
-    def identify(self, seed_encrypted, schema_out):
+    def identify(self, seed_encrypted, schema_out=None, user_session=None):
         """
         :seed_encrypted: a random seed as given by the client, encrypted by private key of client
         :return: "$threebotid:$signature"
@@ -34,7 +34,7 @@ class base(JSBASE):
         out.server_id = j.core.myenv.config["THREEBOT_ID"]
         return self._return_format(out)
 
-    def phonebook_get(self, threebot_id, schema_out):
+    def phonebook_get(self, threebot_id, schema_out=None, user_session=None):
         """
         ```in
         threebot_id = (I)

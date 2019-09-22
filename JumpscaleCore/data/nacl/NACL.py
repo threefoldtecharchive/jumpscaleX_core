@@ -9,6 +9,8 @@ import nacl.hash
 import nacl.encoding
 import hashlib
 
+import binascii
+
 # from .AgentWithKeyname import AgentWithName
 import binascii
 from nacl.exceptions import BadSignatureError
@@ -50,6 +52,14 @@ class NACL(j.baseclasses.object):
     @property
     def public_key(self):
         return self.signing_key.verify_key.to_curve25519_public_key()
+
+    @property
+    def public_key_hex(self):
+        return binascii.hexlify(self.public_key.encode()).decode()
+
+    @property
+    def verify_key_hex(self):
+        return binascii.hexlify(self.verify_key.encode()).decode()
 
     @property
     def box(self):
@@ -287,8 +297,7 @@ class NACL(j.baseclasses.object):
         """
         if not public_key:
             public_key = self.public_key
-
-            data = self.tobytes(data)
+        data = self.tobytes(data)
         sealed_box = SealedBox(public_key)
         res = sealed_box.encrypt(data)
         if hex:
@@ -314,6 +323,8 @@ class NACL(j.baseclasses.object):
         sign using your private key using Ed25519 algorithm
         the result will be 64 bytes
         """
+        if isinstance(data, str):
+            data = data.encode()
         signed = self.signing_key.sign(data)
         return signed.signature
 

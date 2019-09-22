@@ -123,6 +123,9 @@ class GedisServer(JSBaseConfig):
         if not j.sal.fs.isDir(path):
             raise j.exceptions.Value("actor_add: path needs to point to an existing directory")
 
+        path = j.data.types.string.clean(path)
+        namespace = j.data.types.string.clean(namespace)
+
         files = j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py")
         for file_path in files:
             basepath = j.sal.fs.getBaseName(file_path)
@@ -252,30 +255,30 @@ class GedisServer(JSBaseConfig):
             greenlet.get(block=True, timeout=timeout)
         return job
 
-    def sslkeys_generate(self):
-        if not self.ssl:
-            raise j.exceptions.Base("sslkeys_generate: gedis server is not configure to use ssl")
-
-        path = os.path.dirname(self.code_generated_dir)
-        key = j.sal.fs.joinPaths(path, "ca.key")
-        cert = j.sal.fs.joinPaths(path, "ca.crt")
-
-        if os.path.exists(key) and os.path.exists(cert):
-            return key, cert
-
-        j.sal.process.execute(
-            'openssl req -newkey rsa:2048 -nodes -keyout ca.key -x509 -days 365 -out ca.crt -subj "/C=GB/ST=London/L=London/O=Global Security/OU=IT Department/CN=localhost"'.format(
-                key, cert
-            ),
-            showout=False,
-        )
-
-        # res = j.sal.ssl.ca_cert_generate(path)
-        # if res:
-        #     self._log_info("generated sslkeys for gedis in %s" % path)
-        # else:
-        #     self._log_info("using existing key and cerificate for gedis @ %s" % path)
-        return key, cert
+    # def sslkeys_generate(self):
+    #     if not self.ssl:
+    #         raise j.exceptions.Base("sslkeys_generate: gedis server is not configure to use ssl")
+    #
+    #     path = os.path.dirname(self.code_generated_dir)
+    #     key = j.sal.fs.joinPaths(path, "ca.key")
+    #     cert = j.sal.fs.joinPaths(path, "ca.crt")
+    #
+    #     if os.path.exists(key) and os.path.exists(cert):
+    #         return key, cert
+    #
+    #     j.sal.process.execute(
+    #         'openssl req -newkey rsa:2048 -nodes -keyout ca.key -x509 -days 365 -out ca.crt -subj "/C=GB/ST=London/L=London/O=Global Security/OU=IT Department/CN=localhost"'.format(
+    #             key, cert
+    #         ),
+    #         showout=False,
+    #     )
+    #
+    #     # res = j.sal.ssl.ca_cert_generate(path)
+    #     # if res:
+    #     #     self._log_info("generated sslkeys for gedis in %s" % path)
+    #     # else:
+    #     #     self._log_info("using existing key and cerificate for gedis @ %s" % path)
+    #     return key, cert
 
     def start(self):
         """
@@ -284,7 +287,13 @@ class GedisServer(JSBaseConfig):
         # WHEN USED OVER WEB, USE THE DIGITALME FRAMEWORK
         self._log_info("start Server on {0} - PORT: {1}".format(self.host, self.port))
         self._log_info("%s RUNNING", str(self))
-        self.gevent_server.serve_forever()
+        cmd = f"""
+        j.servers.gedis.get("{self.name}").gevent_server.serve_forever()
+        """
+        s = j.servers.startupcmd.get(
+            name="gevent_server", cmd_start=cmd, interpreter="jumpscale", executor="tmux", ports=[self.port]
+        )
+        s.start()
 
     def stop(self):
         """
@@ -300,7 +309,13 @@ class GedisServer(JSBaseConfig):
             h.cancel()
 
         self._log_info("stopping server")
-        self.gevent_server.stop()
+        cmd = f"""
+        j.servers.gedis.get("{self.name}").gevent_server.serve_forever()
+        """
+        s = j.servers.startupcmd.get(
+            name="gevent_server", cmd_start=cmd, interpreter="jumpscale", executor="tmux", ports=[self.port]
+        )
+        s.stop()
 
     def test(self, name=""):
         if name:

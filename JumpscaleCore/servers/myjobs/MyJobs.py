@@ -23,12 +23,8 @@ class MyJob(j.baseclasses.object_config):
                 else:
                     raise j.exceptions.Input("only jsx obj (job) or int supported in dependencies")
 
-        if args_replace:
-            for key, val in args_replace.items():
-                self.kwargs[key] = val
-
         if method:
-            self.process_code(method)
+            self.process_code(method, args_replace)
 
     def _children_get(self, filter=None):
         """
@@ -58,12 +54,13 @@ class MyJob(j.baseclasses.object_config):
                 x.append(item)
         return self._filter(filter=filter, llist=x, nameonly=False)
 
-    def process_code(self, method):
+    def process_code(self, method, args_replace):
         code = inspect.getsource(method)
         code = j.core.text.strip(code)
         code = code.replace("self,", "").replace("self ,", "").replace("self  ,", "")
 
-        code = j.core.tools.text_replace(code, text_strip=False, args=self.kwargs)
+        if args_replace:
+            code = j.core.tools.text_replace(code, text_strip=False, args=args_replace)
 
         methodname = ""
         for line in code.split("\n"):

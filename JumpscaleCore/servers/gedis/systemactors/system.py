@@ -8,13 +8,13 @@ class system(JSBASE):
         assert gedis_server
         self._gedis_server = gedis_server
 
-    def ping(self):
+    def ping(self, user_session=None):
         return "PONG"
 
-    def ping_bool(self):
+    def ping_bool(self, user_session=None):
         return True
 
-    def jsx_schemas_get(self):
+    def jsx_schemas_get(self, user_session=None):
         """
         return all core schemas as understood by the server, is as text, can be processed by j.data.schema
         """
@@ -39,10 +39,10 @@ class system(JSBASE):
         schemas = j.data.serializers.msgpack.dumps(schemas)
         return schemas
 
-    def actors_add_path(self, namespace, path):
+    def actors_add_path(self, namespace, path, user_session=None):
         self._gedis_server.actors_add(path, namespace)
 
-    def api_meta_get(self, namespace):
+    def api_meta_get(self, namespace, user_session=None):
         """
         return the api meta information
 
@@ -54,7 +54,7 @@ class system(JSBASE):
                 res["cmds"][key] = item.data._data
         return j.data.serializers.msgpack.dumps(res)
 
-    # def filemonitor_paths(self, schema_out):
+    # def filemonitor_paths(self, schema_out=None, user_session=None):
     #     """
     #     return all paths which should be monitored for file changes
     #     ```out

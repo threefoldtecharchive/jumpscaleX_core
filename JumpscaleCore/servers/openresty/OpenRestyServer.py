@@ -145,11 +145,12 @@ class OpenRestyServer(j.baseclasses.factory_data):
         # compile all 1 time to lua, can do this at each start
         j.sal.process.execute("cd %s;moonc ." % self._web_path)
         if reset:
-            self.startup_cmd.stop()
+            self.startup_cmd.stop(force=True)
         if self.startup_cmd.is_running():
+            self.stop()
             self.reload()
-        else:
-            self.startup_cmd.start()
+
+        self.startup_cmd.start()
 
     def stop(self):
         """

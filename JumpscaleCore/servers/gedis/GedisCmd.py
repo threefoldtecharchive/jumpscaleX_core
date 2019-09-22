@@ -51,7 +51,7 @@ class GedisCmd(JSBASE):
             d = prop.default_as_python_code
             out += "%s=%s, " % (prop.name, d)
         out = out.rstrip().rstrip(",").rstrip()
-        out += ",schema_out=None"
+        out += ",schema_out=None, user_session=None"
         return out
 
     @property
@@ -69,13 +69,14 @@ class GedisCmd(JSBASE):
 
             args = self.cmdobj.args
 
-            to_exclude = ["schema_out", ":"]
+            to_exclude = ["schema_out", ":", "user_session"]
             for item in to_exclude:
                 if item in args:
                     args.remove(item)
 
             if args:
                 return "," + ",".join(args)
+
             return ""
         else:
             if len(self.schema_in.properties) == 0:

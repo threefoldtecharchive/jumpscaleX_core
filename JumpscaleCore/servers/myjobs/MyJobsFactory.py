@@ -83,7 +83,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         w.nr = nr
         w.start()
 
-    def worker_tmux_start(self, nr=None, debug=False):
+    def worker_tmux_start(self, nr=None, debug=False, startloop=True):
         """
         :param nr: is the nr of the worker 1 to x will be a child with name w$nr e.g. w3
         :param debug:
@@ -100,7 +100,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             w.state = "NEW"
         w.save()
         w.start()
-        if not self._mainloop_tmux:
+        if not self._mainloop_tmux and startloop:
             self._mainloop_tmux = gevent.spawn(self._main_loop_tmux)
 
     def _worker_inprocess_start_from_tmux(self, nr):
@@ -124,7 +124,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         """
         self._init_pre_schedule()
         for i in range(nr_workers):
-            self.worker_tmux_start(nr=i + 1, debug=debug)
+            self.worker_tmux_start(nr=i + 1, debug=debug, startloop=False)
+        if not self._mainloop_tmux:
+            self._mainloop_tmux = gevent.spawn(self._main_loop_tmux)
 
     def worker_subprocess_start(self, nr=None, debug=False):
         """
@@ -259,10 +261,10 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 elif w.state in ["WAITING"]:
                     if w.last_update > j.data.time.epoch - 40:
                         w._log_info("no need to start worker:%s" % w.nr)
-                    # else:
-                    #     w._log_warning("worker was frozen because watchdog expired, will kill:%s" % w.nr)
-                    #     w.stop(hard=True)
-                    #     w.start()
+                    else:
+                        w._log_warning("worker was frozen because watchdog expired, will kill:%s" % w.nr)
+                        w.stop(hard=True)
+                        w.start()
                 elif w.state in ["BUSY"]:
                     if reset:
                         w.stop(hard=True)
@@ -274,7 +276,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 elif w.state in ["NEW"]:
                     w.start()
 
-            gevent.time.sleep(10)
+            time.sleep(10)
 
     def _job_update(self, obj, action="save", **kwargs):
         if action in ["save", "set_post", "change"]:
@@ -371,26 +373,26 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                     if w.halt == False and not job_running and self.queue_jobs_start.qsize() == 0:
                         if removed_one == False and test_workers_less():
                             self._log_debug("worker remove:%s" % wid)
-                            removed_one = True
-                            w.halt = True
-                            self.model_worker.set(w)  # mark worker to halt
-                            gproc.kill()
-                            gproc.terminate()
-                            self.model_worker.delete(wid)
-                            gproc2 = self._workers_gipc[wid]
-                            while gproc.is_alive():
-                                gevent.sleep(0.1)
-                                print("worker,killing:%s" % wid)
-                            assert gproc2.is_alive() == False
-                            self._workers_gipc.pop(wid)
-                            self.delete(wid)
+                            w.stop(True)
+                            w.delete()
 
             # print(self._workers_gipc)
 
             self._log_debug("nr workers:%s, queuesize:%s" % (self._workers_gipc_count, self.queue_jobs_start.qsize()))
             gevent.sleep(1)
 
-    def schedule(self, method, name=None, category="", timeout=0, dependencies=None, wait=False, die=True, **kwargs):
+    def schedule(
+        self,
+        method,
+        name=None,
+        category="",
+        timeout=0,
+        dependencies=None,
+        wait=False,
+        die=True,
+        args_replace=None,
+        **kwargs,
+    ):
         """
 
         :param method:
@@ -411,7 +413,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             self.jobs.delete(name=name)
         if "self" in kwargs:
             kwargs.pop("self")
-        job = self.jobs.new(name=name, method=method, kwargs=kwargs, dependencies=dependencies)
+        job = self.jobs.new(
+            name=name, method=method, kwargs=kwargs, dependencies=dependencies, args_replace=args_replace
+        )
 
         job.time_start = j.data.time.epoch
         job.state = "NEW"
@@ -427,14 +431,12 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         return job
 
     def stop(self, graceful=True, reset=True, timeout=60):
-
         if self._mainloop_gipc != None:
             self._mainloop_gipc.kill()
 
-        if not reset:
-            for w in self.workers.find(reload=True):
-                # look for the workers and ask for halt in nice way
-                w.stop(hard=reset)
+        for w in self.workers.find(reload=True):
+            # look for the workers and ask for halt in nice way
+            w.stop(hard=reset)
 
         timeout_end = j.data.time.epoch + timeout
         while not reset and graceful and j.data.time.epoch < timeout_end:
@@ -542,7 +544,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                             res.append(self.jobs.get(jobid))
                         else:
                             res.append(jobid)
-                    gevent.time.sleep(0.3)
+                    time.sleep(0.3)
                 return res
 
     def test(self, name="", **kwargs):

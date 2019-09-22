@@ -177,10 +177,25 @@ class GedisCmds(JSBASE):
         if s:
             cmd.schema_out_url = s.url
 
+        args = self._args_process(args)
+
         if "schema_out" in args:
             args.pop(args.index("schema_out"))
+        if "user_session" in args:
+            args.pop(args.index("user_session"))
+
         cmd.args = args
+
         return cmd
+
+    def _args_process(self, args):
+        res = []
+        for arg in args:
+            if "=" in arg:
+                arg = arg.split("=")[0].strip()
+            if arg not in res:
+                res.append(arg)
+        return res
 
     def _schema_get(self, url):
         url = url.lower().strip("!").strip()

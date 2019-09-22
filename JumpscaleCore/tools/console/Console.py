@@ -274,7 +274,7 @@ class Console(j.baseclasses.object):  #!!!CONSOLE!!!
 
     def _check_interactive(self):
         if not j.application.interactive:
-            raise j.exceptions.Input("Cannot use console in a non interactive mode.", "console.noninteractive")
+            raise j.exceptions.Input("Cannot use console in a non interactive mode, console.noninteractive")
 
     def askPassword(self, question, confirm=True, regex=None, retry=-1, validate=None):
         """Present a password input question to the user

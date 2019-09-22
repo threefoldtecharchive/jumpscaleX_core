@@ -44,7 +44,7 @@ class ThreeBotServer(j.baseclasses.object_config):
     @property
     def gedis_server(self):
         if not self._gedis_server:
-            self._gedis_server = j.servers.gedis.get(name=f"{self.name}_gedis_threebot", port=8901)
+            self._gedis_server = j.servers.gedis.get(name="%s_gedis_threebot" % self.name, port=8901)
             self._gedis_server._threebot_server = self
         return self._gedis_server
 
@@ -118,8 +118,8 @@ class ThreeBotServer(j.baseclasses.object_config):
     def start(self, background=False, web=None, ssl=None):
         """
 
-        kosmos 'j.servers.threebot.default.start(background=True,web=False)'
-        kosmos 'j.servers.threebot.default.start(background=False,web=False)'
+        kosmos -p 'j.servers.threebot.default.start(background=True,web=False)'
+        kosmos -p 'j.servers.threebot.default.start(background=False,web=False)'
 
         :param background: if True will start all servers including threebot itself in the background
 

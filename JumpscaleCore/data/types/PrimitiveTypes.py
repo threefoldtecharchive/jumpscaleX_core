@@ -272,7 +272,7 @@ class Integer(TypeBaseClass):
     def __init__(self, default=None):
         self.BASETYPE = "int"
         if not default:
-            default = 0
+            default = 2147483647
         self._default = default
 
     def checkString(self, s):

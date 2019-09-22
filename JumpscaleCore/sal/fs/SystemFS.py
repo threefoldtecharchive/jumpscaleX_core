@@ -1358,44 +1358,41 @@ class SystemFS(JSBASE, TESTTOOLS):
         self._log_debug("creating object")
         return pickle.loads(contents)
 
-    @path_check(filename={"required", "replace", "exists", "file"})
-    def md5sum(self, filename):
+    @path_check(filepath={"required", "replace", "exists", "file"})
+    def md5sum(self, filepath):
         """Return the hex digest of a file without loading it all into memory
-        @param filename: string (filename to get the hex digest of it) or list of files
+        @param filepath: string (filepath of the file we want to get the hex digest of it)
         @rtype: md5 of the file
         """
-        self._log_debug("Get the hex digest of file %s without loading it all into memory" % filename, _levelup=3)
-        if not isinstance(filename, list):
-            filename = [filename]
+        self._log_debug("Get the hex digest of file %s without loading it all into memory" % filepath, _levelup=3)
+        # we can't use a list of file because the FS decorators will break
         digest = hashlib.md5()
-        for filepath in filename:
-            with open(filepath, "rb") as fh:
-                while True:
-                    buf = fh.read(4096)
-                    if buf == b"":
-                        break
-                    digest.update(buf)
+        with open(filepath, "rb") as fh:
+            while True:
+                buf = fh.read(4096)
+                if buf == b"":
+                    break
+                digest.update(buf)
         return digest.hexdigest()
 
     @path_check(folder={"required", "replace", "exists", "dir"})
     def getFolderMD5sum(self, folder, ignore_empty_files=False):
-        """Return the hex digest of a file without loading it all into memory
+        """Return the hex digest of a folder without loading it all into memory
+        by hashing of the file contained in this folder except the empty files if the flag is true
+        and by hashing all the files hashes together
         @param folder: string (folder to get the hex digest of it)
         @param ignore_empty_files: Boolean (ignore empty files)
         @rtype: md5 of the directory
         """
+        files = sorted(self.listFilesInDir(folder, recursive=True, followSymlinks=False, listSymlinks=False))
         dir_hash = hashlib.md5()
-        files = sorted(self.listFilesInDir(folder, recursive=True, followSymlinks=True, listSymlinks=True))
+
         for file in files:
             if ignore_empty_files:
                 if self.fileSize(file) == 0:
                     continue
-            with open(file, "rb") as fh:
-                while True:
-                    buf = fh.read(4096)
-                    if buf == b"":
-                        break
-                    dir_hash.update(buf)
+            md5 = self.md5sum(file).encode("utf-8")
+            dir_hash.update(md5)
         return dir_hash.hexdigest()
 
     def getTmpDirPath(self, name="", create=True):
@@ -1445,9 +1442,9 @@ class SystemFS(JSBASE, TESTTOOLS):
     def isBinaryFile(self, filename, checksize=4096):
         return not self.isAsciiFile(filename, checksize)
 
-    @path_check(path={"required"})
     def isAbsolute(self, path):
-        return os.path.isabs(path)
+        path = path or ""
+        return os.path.isabs(str(path))
 
     # THERE IS A tools.lock implementation we need to use that one
     # lock = staticmethod(lock)
@@ -1456,7 +1453,7 @@ class SystemFS(JSBASE, TESTTOOLS):
     # unlock = staticmethod(unlock)
     # unlock_ = staticmethod(unlock_)
 
-    @path_check(filename={"required", "replace"})
+    @path_check(filename={"replace"})
     def validateFilename(self, filename, platform=None):
         """Validate a filename for a given (or current) platform
 

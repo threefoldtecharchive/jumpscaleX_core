@@ -16,9 +16,9 @@ class GedisClientCmds:
             self._client.host,
             self._client.port,
         )
-        if self._client.data.ssl:
-            # FIXME: we should probably NOT print the key. this is VERY private information
-            output += "\n(ssl=True, certificate:%s)" % self._client.sslkey
+        # if self._client.data.ssl:
+        #     # FIXME: we should probably NOT print the key. this is VERY private information
+        #     output += "\n(ssl=True, certificate:%s)" % self._client.sslkey
         return output
 
     __repr__ = __str__

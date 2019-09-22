@@ -102,7 +102,7 @@ class RedisFactory(j.baseclasses.factory_testtools):
         if key not in self._redis or not fromcache:
             if ipaddr and port:
                 self._log_debug("REDIS:%s:%s" % (ipaddr, port))
-                self._redis[key] = Redis(
+                cl = Redis(
                     ipaddr,
                     port,
                     password=password,
@@ -117,22 +117,24 @@ class RedisFactory(j.baseclasses.factory_testtools):
                 )
             else:
                 self._log_debug("REDIS:%s" % unixsocket)
-                self._redis[key] = Redis(
+                cl = Redis(
                     unix_socket_path=unixsocket,
                     # socket_timeout=timeout,
                     password=password,
                     **args,
                 )
+        else:
+            cl = self._redis[key]
 
         if ardb_patch:
-            self._ardb_patch(self._redis[key])
+            self._ardb_patch(cl)
 
         if set_patch:
-            self._set_patch(self._redis[key])
+            self._set_patch(cl)
 
         if ping:
             try:
-                res = self._redis[key].ping()
+                res = cl.ping()
             except Exception as e:
                 if "Timeout" in str(e) or "Connection refused" in str(e):
                     if die == False:
@@ -142,7 +144,11 @@ class RedisFactory(j.baseclasses.factory_testtools):
                 else:
                     raise e
 
-        return self._redis[key]
+        if not fromcache:
+            return cl
+        else:
+            self._redis[key] = cl
+            return self._redis[key]
 
     def _ardb_patch(self, client):
         client.response_callbacks["HDEL"] = lambda r: r and nativestr(r) == "OK"

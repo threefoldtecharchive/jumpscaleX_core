@@ -49,10 +49,10 @@ def main(self):
     self.workers.w1.stop()
 
     found = False
-    timeend = j.data.time.epoch + 20
+    timeend = j.data.time.epoch + 40
     while not found and j.data.time.epoch < timeend:
         found = self.workers.w1.state == "HALTED"
-        time.sleep(0.1)
+        time.sleep(5)
         self._log("waiting stop:%s" % self.workers.w1.state)
 
     assert found

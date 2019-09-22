@@ -50,7 +50,7 @@ class GIPCProcess(JSConfigClient):
     def wait(self, die=True):
         while True:
             if self.greenlet.dead == False and self.process.is_alive():
-                gevent.time.sleep(0.05)
+                time.sleep(0.05)
             else:
                 if self.greenlet.dead:
                     if self.state == "ok":
@@ -60,7 +60,7 @@ class GIPCProcess(JSConfigClient):
                     else:
                         raise j.exceptions.Base("greenlet died:%s" % self.name)
                 else:
-                    gevent.time.sleep(0.05)
+                    time.sleep(0.05)
                 if self.state == "error":
                     if die:
                         raise j.exceptions.Base("could not execute:%s" % self.name, data=self)

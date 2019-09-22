@@ -1,16 +1,19 @@
 from Jumpscale import j
 from redis.exceptions import ConnectionError
 import nacl
-
 from .protocol import RedisCommandParser, RedisResponseWriter
 
 JSBASE = j.baseclasses.object
 
 
-class Session:
-    def __init__(self):
-        self.dmid = None  # is the digital me id e.g. kristof.ibiza
+class Session(j.baseclasses.object):
+    def _init(self):
         self.admin = False
+        self.threebot_id = None
+        self.threebot_name = None
+        self.threebot_circles = []
+        self.response_type = j.data.types.get("e", default="auto,json,msgpack").clean(0)
+        self.content_type = j.data.types.get("e", default="auto,json,msgpack").clean(0)
 
 
 def _command_split(cmd, namespace="system"):
@@ -84,6 +87,8 @@ class Request:
 
     def __init__(self, request):
         self._request_ = request
+        self._content_type = None
+        self._response_type = None
 
     @property
     def _request(self):
@@ -113,7 +118,12 @@ class Request:
         :rtype: dict
         """
         if len(self._request) > 2:
-            return j.data.serializers.json.loads(self._request[2])
+            # HOW CAN WE KNOW THAT THIS IS JSON???
+            try:
+                return j.data.serializers.json.loads(self._request[2])
+            except:
+                # TODO: is not good implementation !!!
+                return {}
         return {}
 
     @property
@@ -122,6 +132,8 @@ class Request:
         :return: read the content type of the request form the headers
         :rtype: string
         """
+        if self._content_type:
+            return self._content_type
         return self.headers.get("content_type", "auto").casefold()
 
     @property
@@ -130,6 +142,8 @@ class Request:
         :return: read the response type from the headers
         :rtype: string
         """
+        if self._response_type:
+            return self._response_type
         return self.headers.get("response_type", "auto").casefold()
 
 
@@ -210,13 +224,16 @@ class Handler(JSBASE):
         # raise j.exceptions.Base("d")
         gedis_socket = GedisSocket(socket)
 
+        user_session = Session()
+
         try:
-            self._handle_gedis_session(gedis_socket, address)
-        finally:
+            self._handle_gedis_session(gedis_socket, address, user_session=user_session)
+        except Exception as e:
+            logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
             gedis_socket.on_disconnect()
             self._log_info("connection closed", context="%s:%s" % address)
 
-    def _handle_gedis_session(self, gedis_socket, address):
+    def _handle_gedis_session(self, gedis_socket, address, user_session=None):
         """
         deal with 1 specific session
         :param socket:
@@ -235,7 +252,7 @@ class Handler(JSBASE):
                 # close the connection
                 return
 
-            logdict, result = self._handle_request(request, address)
+            logdict, result = self._handle_request(request, address, user_session=user_session)
 
             if logdict:
                 gedis_socket.writer.error(logdict)
@@ -247,7 +264,7 @@ class Handler(JSBASE):
                 # close the connection
                 return
 
-    def _handle_request(self, request, address):
+    def _handle_request(self, request, address, user_session):
         """
         deal with 1 specific request
         :param request:
@@ -259,12 +276,22 @@ class Handler(JSBASE):
             return None, "OK"
         elif request.command.command == "ping":
             return None, "PONG"
-        elif request.command.command == "auth":
-            dm_id, epoch, signed_message = request[1:]
-            if self.dm_verify(dm_id, epoch, signed_message):
-                self.session.dmid = dm_id
-                self.session.admin = True
-                return None, True
+        elif request.command.command.startswith("config_"):
+            if request.command.command == "config_content_type":
+                user_session.content_type.value = request.arguments[0].decode()
+            elif request.command.command == "config_response_type":
+                user_session.response_type.value = request.arguments[0].decode()
+            elif request.command.command == "config_format":
+                user_session.content_type.value = request.arguments[0].decode()
+                user_session.response_type.value = request.arguments[0].decode()
+            return None, "OK"
+
+        # elif request.command.command == "auth":
+        #     dm_id, epoch, signed_message = request[1:]
+        #     if self.dm_verify(dm_id, epoch, signed_message):
+        #         self.session.dmid = dm_id
+        #         self.session.admin = True
+        #         return None, True
 
         self._log_debug(
             "command received %s %s %s" % (request.command.namespace, request.command.actor, request.command.command),
@@ -272,14 +299,28 @@ class Handler(JSBASE):
         )
 
         # cmd is cmd metadata + cmd.method is what needs to be executed
-        cmd = self._cmd_obj_get(
-            cmd=request.command.command, namespace=request.command.namespace, actor=request.command.actor
-        )
+        try:
+            cmd = self._cmd_obj_get(
+                cmd=request.command.command, namespace=request.command.namespace, actor=request.command.actor
+            )
+        except Exception as e:
+            logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+            return (logdict, None)
 
         params_list = []
         params_dict = {}
         if cmd.schema_in:
-            params_dict = self._read_input_args_schema(request, cmd)
+
+            if user_session.content_type == "json":
+                request._content_type = "json"
+            elif user_session.content_type == "msgpack":
+                request._content_type = "msgpack"
+
+            try:
+                params_dict = self._read_input_args_schema(request, cmd)
+            except Exception as e:
+                logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+                return (logdict, None)
         else:
             params_list = request.arguments
 
@@ -288,6 +329,11 @@ class Handler(JSBASE):
 
         # makes sure we understand which schema to use to return result from method
         if cmd.schema_out:
+            if user_session.content_type == "json":
+                request._response_type = "json"
+            elif user_session.content_type == "msgpack":
+                request._response_type = "msgpack"
+
             params_dict["schema_out"] = cmd.schema_out
 
         # now execute the method() of the cmd
@@ -295,10 +341,11 @@ class Handler(JSBASE):
 
         self._log_debug("params cmd %s %s" % (params_list, params_dict))
         try:
-            result = cmd.method(*params_list, **params_dict)
+            result = cmd.method(*params_list, user_session=user_session, **params_dict)
             logdict = None
         except Exception as e:
             logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+            return (logdict, None)
 
         if isinstance(result, list):
             result = [_result_encode(cmd, request.response_type, r) for r in result]
@@ -344,12 +391,26 @@ class Handler(JSBASE):
                     )
                 return None
 
+        def msgpack_decode(request, command, die=True):
+            try:
+                args = command.schema_in.new(datadict=j.data.serializers.msgpack.loads(request.arguments[0]))
+                return args
+            except Exception as e:
+                if die:
+                    raise j.exceptions.Value(
+                        "the content is not valid msgpack while you provided content_type=msgpack\n%s\n%s"
+                        % (str, request.arguments[0])
+                    )
+                return None
+
         if request.content_type == "auto":
             args = capnp_decode(request=request, command=command, die=False)
             if args is None:
                 args = json_decode(request=request, command=command)
         elif request.content_type == "json":
             args = json_decode(request=request, command=command)
+        elif request.content_type == "msgpack":
+            args = msgpack_decode(request=request, command=command)
         elif request.content_type == "capnp":
             args = capnp_decode(request=request, command=command)
         else:
@@ -358,6 +419,8 @@ class Handler(JSBASE):
         method_arguments = command.cmdobj.args
         if "schema_out" in method_arguments:
             raise j.exceptions.Base("schema_out should not be in arguments of method")
+        if "user_session" in method_arguments:
+            raise j.exceptions.Base("user_session should not be in arguments of method")
 
         params = {}
 
@@ -389,6 +452,9 @@ class Handler(JSBASE):
         if namespace == "default" and key not in self.actors:
             # we will now check if the info is in system namespace
             key = "system__%s" % actor
+
+        self._log_debug(key)
+        print(key)
 
         if key not in self.actors:
             raise j.exceptions.Input("Cannot find cmd with key:%s in actors" % key)
@@ -430,10 +496,11 @@ def _result_encode(cmd, response_type, item):
         else:
             return item._json
     else:
-
         if isinstance(item, j.data.schema._JSXObjectClass):
             if response_type == "json":
                 return item._json
+            if response_type == "msgpack":
+                return item._msgpack
             else:
                 return item._data
         return item

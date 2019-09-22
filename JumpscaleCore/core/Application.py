@@ -45,6 +45,7 @@ class Application(object):
 
     @property
     def interactive(self):
+
         return self._j.core.myenv.interactive
 
     @interactive.setter

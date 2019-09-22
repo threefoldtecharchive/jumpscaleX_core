@@ -6,12 +6,14 @@ from .GedisServer import GedisServer
 from .GedisCmds import GedisCmds
 from .GedisChatBot import GedisChatBotFactory
 
-JSConfigFactory = j.baseclasses.object_config_collection
 
-
-class GedisFactory(JSConfigFactory):
+class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtools):
     __jslocation__ = "j.servers.gedis"
     _CHILDCLASS = GedisServer
+
+    def _init(self):
+        self.client = None
+        self.client_phonebook = None
 
     def get_gevent_server(self, name="", **kwargs):
         """
@@ -21,8 +23,7 @@ class GedisFactory(JSConfigFactory):
 
 
         """
-        self.new(name=name, **kwargs)
-        server = self.get(name=name)
+        server = self.get(name=name, **kwargs)
 
         return server.gevent_server
 
@@ -39,7 +40,8 @@ class GedisFactory(JSConfigFactory):
         kosmos 'j.servers.gedis.test()'
 
         """
-        j.servers.rack._server_test_start()  # makes sure we have a gevent serverrack which runs a gevent service
-        # now can run the rest of the tests
+        # we don't support running gevent as stdallone any longer
+        self.client_phonebook = j.threebot.package.phonebook.client_get()
+        self.client = j.threebot.package.ibiza.client_get()
 
         self._test_run(name=name)

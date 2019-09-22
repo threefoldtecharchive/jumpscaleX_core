@@ -28,8 +28,8 @@ list_todos** =  (LO) !proj.todoitem
 j.data.schema.get_from_text(
     """
 @url = proj.simple
-attr1* = "" (S)
-attr2* = 0 (I)
+attr1** = "" (S)
+attr2** = 0 (I)
 list_mychars** =  (LS) 
 """
 )

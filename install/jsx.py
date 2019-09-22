@@ -178,7 +178,8 @@ def configure(
 )
 @click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
 @click.option("--threebot", is_flag=True, help="also install the threebot")
-@click.option("--portrange", default=1, help="portrange, leave empty unless you know what you do.")
+@click.option("--portrange", default=None, help="portrange, leave empty unless you know what you do.")
+@click.option("--prebuilt", is_flag=True, help="if set will allow a quick start using prebuilt threebot")
 @click.option(
     "--image",
     default=None,
@@ -204,13 +205,14 @@ def container_install(
     scratch=False,
     delete=True,
     threebot=False,
-    portrange=1,
+    portrange=None,
     image=None,
     branch=None,
     reinstall=False,
     no_interactive=False,
     pull=False,
     configdir=None,
+    prebuilt=False,
 ):
     """
     create the 3bot container and install jumpcale inside
@@ -226,10 +228,10 @@ def container_install(
 
     _configure(configdir=configdir, no_interactive=no_interactive)
 
-    if scratch:
-        # image = "phusion/baseimage"
-        image = "unilynx/phusion-baseimage-1804"
-        delete = True
+    if scratch or prebuilt:
+        image = "despiegk/base"
+        if scratch:
+            delete = True
         reinstall = True
     if not image:
         image = "despiegk/3bot"
@@ -241,7 +243,13 @@ def container_install(
 
     docker.install()
 
-    docker.jumpscale_install(branch=branch, redo=reinstall, pull=pull, threebot=threebot)
+    if prebuilt:
+        docker.sandbox_sync()
+
+    installer = IT.JumpscaleInstaller()
+    installer.repos_get(pull=False)
+
+    docker.jumpscale_install(branch=branch, redo=reinstall, pull=pull, threebot=threebot, prebuilt=prebuilt)
 
 
 def container_get(name="3bot", existcheck=True, portrange=1, delete=False):
@@ -252,8 +260,8 @@ def container_get(name="3bot", existcheck=True, portrange=1, delete=False):
             # means is not running yet
             if name not in IT.DockerFactory.containers_names():
                 docker.install()
-                docker.jumpscale_install(web=True)
                 # needs to stay because will make sure that the config is done properly in relation to your shared folders from the host
+                docker.jumpscale_install()
             else:
                 docker.start()
                 time.sleep(1)
@@ -265,6 +273,7 @@ def container_get(name="3bot", existcheck=True, portrange=1, delete=False):
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("--threebot", is_flag=True, help="also install the threebot system")
 # @click.option("--no-sshagent", is_flag=True, help="do you want to use an ssh-agent")
+@click.option("--prebuilt", is_flag=True, help="if set will allow a quick start using prebuilt threebot")
 @click.option(
     "-b", "--branch", default=None, help="jumpscale branch. default 'master' or 'development' for unstable release"
 )
@@ -280,7 +289,7 @@ def container_get(name="3bot", existcheck=True, portrange=1, delete=False):
     help="reinstall, basically means will try to re-do everything without removing the data",
 )
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
-def install(threebot=False, branch=None, reinstall=False, pull=False, no_interactive=False):
+def install(threebot=False, branch=None, reinstall=False, pull=False, no_interactive=False, prebuilt=False):
     """
     install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.
     if interactive is True then will ask questions, otherwise will go for the defaults or configured arguments
@@ -304,10 +313,10 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
         branch = IT.DEFAULT_BRANCH
 
     installer = IT.JumpscaleInstaller()
-    installer.install(sandboxed=False, force=force, gitpull=pull)
+    installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt)
     if threebot:
         IT.Tools.execute("source %s/env.sh;kosmos 'j.servers.threebot.install()'" % SANDBOX, showout=True)
-        IT.Tools.execute("source %s/env.sh;kosmos 'j.servers.threebot.test()'" % SANDBOX, showout=True)
+        # IT.Tools.execute("source %s/env.sh;kosmos 'j.servers.threebot.test()'" % SANDBOX, showout=True)
 
     # LETS NOT DO THE FOLinsLOWING TAKES TOO LONG
     # IT.Tools.execute("source %s/env.sh;kosmos 'j.core.tools.system_cleanup()'" % SANDBOX, showout=True)
@@ -353,16 +362,23 @@ def container_export(name="3bot", path=None, no_overwrite=False, skip_if_exists=
 @click.command(name="container-clean")
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("-n", "--name", default="3bot", help="name of container")
-def container_clean(name="3bot", configdir=None):
+@click.option("--dest", default="despiegk/3bot", help="name of container image on docker hub, default despiegk/3bot")
+@click.option("-p", "--push", is_flag=True, help="push to docker hub")
+def container_clean(name="3bot", dest=None, push=False, configdir=None):
     """
     starts from an export, if not there will do the export first
     :param name:
     :param path:
     :return:
     """
+    if not dest:
+        dest = "despiegk/3bot"
     _configure(configdir=configdir)
     docker = container_get(name=name)
-    docker.clean()
+    docker.clean(image=dest)
+    if push:
+        cmd = "docker push %s" % dest
+        IT.Tools.execute(cmd)
 
 
 @click.command(name="container-stop")
@@ -384,15 +400,93 @@ def container_stop(name="3bot", configdir=None):
 @click.option("--dest", default="3bot", help="name of container image on docker hub, default despiegk/3bot")
 def container_docker_upload(name="3bot", dest=None, configdir=None):
     """
-    stop the 3bot container
+    make an image of the docker and upload to docker hub
     :param name:
+    :param dest: e.g. despiegk/3bot or despiegk/base  the base is the base ubuntu image
     :return:
     """
     if not dest:
         dest = "despiegk/3bot"
     _configure(configdir=configdir)
     docker = container_get(name=name, existcheck=False)
+    cmd = "docker commit %s %s" % (name, dest)
     cmd = "docker push %s" % dest
+    docker.stop()
+
+
+@click.command(name="container-docker-save")
+@click.option("-n", "--name", default="3bot", help="name of container to push")
+@click.option("--dest", default="3bot", help="name of container image on docker hub, default despiegk/3bot")
+def container_docker_save(name="3bot", dest=None, configdir=None):
+    """
+    make an image of the docker to the name specified
+    :param name:
+    :param dest: e.g. despiegk/3bot or despiegk/base  the base is the base ubuntu image
+    :return:
+    """
+    if not dest:
+        dest = "despiegk/3bot"
+    _configure(configdir=configdir)
+    docker = container_get(name=name, existcheck=False)
+    cmd = "docker commit %s %s" % (name, dest)
+    docker.stop()
+
+
+@click.command(name="container-basebuilder")
+@click.option("--dest", default="despiegk/base", help="name of container image on docker hub, default despiegk/3bot")
+@click.option("-p", "--push", is_flag=True, help="push to docker hub")
+def container_basebuilder(dest=None, push=False, configdir=None):
+    """
+    create the base ubuntu docker which we can use as base for everything
+    :param dest: default despiegk/base  the base is the base ubuntu image
+    :return:
+    """
+    if not dest:
+        dest = "despiegk/base"
+
+    IT = load_install_tools(branch=DEFAULT_BRANCH)
+    _configure(configdir=configdir)
+
+    image = "phusion/baseimage:master"
+    # image = "unilynx/phusion-baseimage-1804"
+    docker = IT.DockerContainer(name="base", delete=True, image=image)
+    docker.install(update=True)
+    docker.clean(image=dest)
+    cmd = "docker commit base %s" % dest
+    IT.Tools.execute(cmd)
+    if push:
+        cmd = "docker push %s" % dest
+        IT.Tools.execute(cmd)
+    docker.stop()
+
+
+@click.command(name="container-3botbuilder")
+@click.option("--dest", default="despiegk/3bot", help="name of container image on docker hub, default despiegk/3bot")
+@click.option("-p", "--push", is_flag=True, help="push to docker hub")
+def container_3botbuilder(dest=None, push=False, configdir=None):
+    """
+    create the base for a 3bot
+    :param dest: default despiegk/base  the base is the base ubuntu image
+    :return:
+    """
+    if not dest:
+        dest = "despiegk/3bot"
+
+    IT = load_install_tools(branch=DEFAULT_BRANCH)
+    _configure(configdir=configdir)
+
+    image = "despiegk/base"
+    docker = IT.DockerContainer(name="3bot", delete=True, image=image)
+    docker.install(update=True)
+
+    installer = IT.JumpscaleInstaller()
+    installer.repos_get(pull=False)
+
+    docker.jumpscale_install(branch=DEFAULT_BRANCH, redo=True, pull=False, threebot=True)
+    docker.clean(image=dest)
+    if push:
+        cmd = "docker push %s" % dest
+        IT.Tools.execute(cmd)
     docker.stop()
 
 
@@ -428,12 +522,24 @@ def container_delete(name="3bot", configdir=None):
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 def containers_reset(configdir=None):
     """
-    remove all docker containers
+    remove all docker containers & imagess
     :param name:
     :return:
     """
     _configure(configdir=configdir)
     IT.DockerFactory.reset()
+
+
+@click.command(name="container-list")
+# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
+def container_list(configdir=None):
+    """
+    remove all docker containers & imagess
+    :param name:
+    :return:
+    """
+    _configure(configdir=configdir)
+    IT.DockerFactory.list()
 
 
 @click.command(name="container-kosmos")
@@ -495,13 +601,14 @@ def container_shell(name="3bot", configdir=None):
 
 @click.command()
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
-def wireguard(configdir=None):
+@click.option("-n", "--name", default="3bot", help="name of container")
+def wireguard(name=None, configdir=None):
     """
     jsx wireguard
     enable wireguard, can be on host or server
     :return:
     """
-    name = "3bot"
+    assert name
     if not IT.DockerFactory.indocker():
         docker = container_get(name=name)
         # remotely execute wireguard
@@ -583,5 +690,9 @@ if __name__ == "__main__":
         cli.add_command(container_import, "container-import")
         cli.add_command(container_shell, "container-shell")
         cli.add_command(container_clean, "container-clean")
+        cli.add_command(container_docker_save, "container-docker-save")
+        cli.add_command(container_basebuilder, "container-basebuilder")
+        cli.add_command(container_3botbuilder, "container-3botbuilder")
+        cli.add_command(container_list, "container-list")
 
     cli()

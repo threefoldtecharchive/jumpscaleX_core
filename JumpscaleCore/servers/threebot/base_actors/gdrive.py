@@ -4,7 +4,7 @@ STATIC_DIR = "/sandbox/var/gdrive/static"
 
 
 class gdrive(j.baseclasses.threebot_actor):
-    def file_get(self, doctype, guid1, guid2, schema_out):
+    def file_get(self, doctype, guid1, guid2, schema_out=None, user_session=None):
         """
         ```in
         doctype = "" (S)
