@@ -5415,7 +5415,8 @@ class WireGuard:
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
             cmd = "wg-quick up %s" % path
             Tools.execute(cmd)
-            self.container.config.wireguard_server_pubkey = config["WIREGUARD_SERVER_PUBKEY"]
+            if self.container:
+                self.container.config.wireguard_server_pubkey = config["WIREGUARD_SERVER_PUBKEY"]
 
         else:
             raise Tools.exceptions.Base("cannot start server only supported on linux ")
