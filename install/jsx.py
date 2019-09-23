@@ -613,12 +613,10 @@ def wireguard(name=None, configdir=None):
         docker = container_get(name=name)
         # remotely execute wireguard
         docker.sshexec("source /sandbox/env.sh;jsx wireguard")
-    wg = IT.WireGuard()
-
-    if IT.DockerFactory.indocker():
-        wg.server_start()
-    else:
         docker.wireguard.connect()
+    else:
+        wg = IT.WireGuard()
+        wg.server_start()
 
 
 @click.command(name="modules-install")
