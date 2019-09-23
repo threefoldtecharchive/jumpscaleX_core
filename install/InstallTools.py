@@ -1146,10 +1146,7 @@ class Tools:
 
         if iserror:
             for handler in MyEnv.errorhandlers:
-                try:
-                    handler(logdict)
-                except Exception as e:
-                    MyEnv.exception_handle(e)
+                handler(logdict)
 
         for handler in MyEnv.loghandlers:
             try:
