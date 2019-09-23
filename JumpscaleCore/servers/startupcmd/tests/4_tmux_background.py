@@ -33,7 +33,7 @@ START_BASH = """
         exit 1
     fi
 
-    tmux -f /sandbox/cfg/.tmux.conf has-session
+    tmux -f /sandbox/cfg/.tmux.conf has-session -t main
     if [ "$?" -eq 1 ] ; then
         echo "no server running need to start"
         tmux -f /sandbox/cfg/.tmux.conf new -s main -d 'bash --rcfile /sandbox/bin/env_tmux_detach.sh'
