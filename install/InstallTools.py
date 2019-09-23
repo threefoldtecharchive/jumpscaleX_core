@@ -3984,9 +3984,9 @@ class BaseInstaller:
         rm -rf /usr/lib/llvm-6.0
         rm -rf /usr/lib/gcc
         export SUDO_FORCE_REMOVE=no
-        apt autoremove -y 
+        apt autoremove -y
         rm -rf /var/lib/apt/lists
-        mkdir -p /var/lib/apt/lists        
+        mkdir -p /var/lib/apt/lists
         """
         return Tools.text_strip(CMD, replace=False)
 
@@ -4084,7 +4084,7 @@ class UbuntuInstaller:
         set +ex
         apt-get install python3-distutils -y
         set -ex
-        apt-get install python3-psutil -y        
+        apt-get install python3-psutil -y
         apt-get install -y curl rsync unzip
         locale-gen --purge en_US.UTF-8
         apt-get install python3-pip -y
@@ -4127,7 +4127,7 @@ class UbuntuInstaller:
         cd /tmp
         apt-get install -y build-essential
         #apt-get install -y python3.6-dev
-        
+
 
         """
         rc, out, err = Tools.execute(script, interactive=True, timeout=300)
@@ -4676,10 +4676,9 @@ class DockerContainer:
             Tools.config_save(self._path + "/cfg/jumpscale_config.toml", CONFIG)
 
         if not self.container_exists:
-            if not DockerFactory.image_name_exists(self.config.image):
-                # First make sure the latest docker image is present if the image does not exist yet
-                run_image_update_cmd = Tools.text_replace("docker image pull {IMAGE}", args=args)
-                Tools.execute(run_image_update_cmd, interactive=False)
+            # First make sure the latest docker image is present
+            image_update_cmd = Tools.text_replace("docker image pull {IMAGE}", args=args)
+            Tools.execute(image_update_cmd, interactive=False)
 
             self.config.image = DockerFactory.image_name_exists(self.config.image)
 
