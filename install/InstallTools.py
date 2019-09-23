@@ -4523,6 +4523,7 @@ class DockerConfig:
         self.portrange_txt = "-p %s-%s:8005-8009" % (a, b)
         self.portrange_txt += " -p %s:9001/udp" % udp
         self.portrange_txt += " -p %s:22" % ssh
+        self.portrange_txt += " -p 7777:7777/udp"
 
     def save(self):
         Tools.config_save(self.path_config, self.__dict__)
@@ -5414,8 +5415,7 @@ class WireGuard:
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
             cmd = "wg-quick up %s" % path
             Tools.execute(cmd)
-
-            self.container.config.wireguard_server_pubkey = pubkey
+            self.container.config.wireguard_server_pubkey = config["WIREGUARD_SERVER_PUBKEY"]
 
         else:
             raise Tools.exceptions.Base("cannot start server only supported on linux ")
