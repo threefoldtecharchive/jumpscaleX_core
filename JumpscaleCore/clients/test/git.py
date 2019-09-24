@@ -1,9 +1,8 @@
 import os
-import unittest
 import subprocess
-from parameterized import parameterized
 from Jumpscale import j
-from pylint.test.functional.invalid_exceptions_caught import EXCEPTION
+from unittest import skip
+from parameterized import parameterized
 
 
 class Gitclient:
@@ -28,7 +27,7 @@ class Gitclient:
         branch = output.decode()[output.decode().find("head") + 6: -1]
         return branch
 
-    def test001_currentDirGitRepo(self):
+    def test001_currentdir_gitrepo(self):
         """TC
         Test case for currentDirGitRepo method in git client
 
@@ -41,6 +40,7 @@ class Gitclient:
         #. check that gitclient name is jumpscaleX_core
 
         """
+        currentDirectory = os.getcwd()
         os.chdir('/sandbox/code/github/threefoldtech/jumpscaleX_core/')
         gitclient = j.clients.git.currentDirGitRepo()
         gitclient.save()
@@ -49,7 +49,7 @@ class Gitclient:
         branch_name = self.check_branch()
         self.assertEqual(branch_name, gitclient.branchName)
         self.assertEqual('jumpscaleX_core', gitclient.name)
-        os.chdir("/root")
+        os.chdir(currentDirectory)
 
     def test002_find(self):
         """
@@ -72,7 +72,7 @@ class Gitclient:
             ("/sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/clients/git/",)
         ]
     )
-    def test003_findGitPath(self, path):
+    def test003_find_gitpath(self, path):
         """
         TC
         Test case for findGitPath method in git client
@@ -95,7 +95,7 @@ class Gitclient:
             result = j.clients.git.findGitPath(path)
             self.asserEqual(result, "/sandbox/code/github/threefoldtech/jumpscaleX_core/")
 
-    def test004_getCurrentBranch(self):
+    def test004_get_currentbranch(self):
         """
         TC
         Test case for getCurrentBranch method in git client
@@ -108,7 +108,7 @@ class Gitclient:
         branch_name = self.check_branch()
         self.assertEqual(gitclient_currentbranch, branch_name)
 
-    def test005_getGitReposListLocal(self):
+    def test005_getgit_reposlist_local(self):
         """
         TC
         Test case for getGitReposListLocal method in git client
@@ -137,3 +137,5 @@ class Gitclient:
         output, error = self.os_command("git status")
         self.assertFalse(error)
         self.assertIn("nothing to commit, working tree clean", output.decode())
+
+
