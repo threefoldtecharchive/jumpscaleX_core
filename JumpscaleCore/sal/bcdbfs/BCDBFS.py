@@ -196,6 +196,11 @@ class BCDBFS(j.baseclasses.object):
         dest_file.save()
         return dest_file
 
+    def get_epoch(self, path):
+        if j.sal.bcdbfs.is_dir(path):
+            return self._dir_model.get_by_name(name=path).epoch
+        return self._file_model.get_by_name(name=path).epoch
+
     def file_copy(self, path, dest, override=False):
         """
         copies file either from the local file system or from another location in bcdbfs

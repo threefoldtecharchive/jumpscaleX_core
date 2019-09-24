@@ -27,14 +27,17 @@ class SystemFSWalker(j.baseclasses.object):
 
     @staticmethod
     def _checkContent(path, contentRegexIncludes=[], contentRegexExcludes=[]):
-        if contentRegexIncludes == [] and contentRegexExcludes == []:
+        if not (contentRegexIncludes or contentRegexExcludes):
             return True
+
         content = j.sal.fs.readFile(path)
-        if j.data.regex.matchMultiple(patterns=contentRegexIncludes, text=content) and not j.data.regex.matchMultiple(
-            patterns=contentRegexExcludes, text=content
-        ):
-            return True
-        return False
+        if contentRegexIncludes and not j.data.regex.matchMultiple(patterns=contentRegexIncludes, text=content):
+            return False
+
+        if contentRegexExcludes and j.data.regex.matchMultiple(patterns=contentRegexExcludes, text=content):
+            return False
+
+        return True
 
     @staticmethod
     def _findhelper(arg, path):
@@ -210,10 +213,13 @@ class SystemFSWalker(j.baseclasses.object):
                     followlinks,
                 )
 
-            if j.sal.fs.isFile(path2, followlinks):
+            elif j.sal.fs.isLink(path2) and not followlinks:
+                callback(arg, path2)
+
+            elif j.sal.fs.isFile(path2, followlinks):
                 if j.data.regex.matchMultiple(
                     patterns=pathRegexIncludes, text=path2
-                ) and not j.data.regex.matchMultiple(patterns=pathRegexExcludes, text=path):
+                ) and not j.data.regex.matchMultiple(patterns=pathRegexExcludes, text=path2):
                     if SystemFSWalker._checkDepth(path2, depths, path) and SystemFSWalker._checkContent(
                         path2, contentRegexIncludes, contentRegexExcludes
                     ):
