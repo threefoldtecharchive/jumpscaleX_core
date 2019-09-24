@@ -1058,6 +1058,12 @@ class Tools:
 
         if exception:
             # make sure exceptions get the right priority
+            if isinstance(exception, Tools.exceptions.Base):
+                level = exception.level
+
+            if not level:
+                level = 50
+
             if hasattr(exception, "exception"):
                 msg_e = exception.message
             else:
@@ -1079,7 +1085,6 @@ class Tools:
                     msg = "{RED}EXCEPTION: \n" + Tools.text_indent(msg_e, 4).rstrip() + "{RESET}"
                 else:
                     msg = "EXCEPTION: \n" + Tools.text_indent(msg_e, 4).rstrip()
-            level = 50
             if cat is "":
                 cat = "exception"
 
