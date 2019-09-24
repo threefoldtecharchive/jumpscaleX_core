@@ -213,7 +213,10 @@ class SystemFSWalker(j.baseclasses.object):
                     followlinks,
                 )
 
-            if j.sal.fs.isFile(path2, followlinks):
+            elif j.sal.fs.isLink(path2) and not followlinks:
+                callback(arg, path2)
+
+            elif j.sal.fs.isFile(path2, followlinks):
                 if j.data.regex.matchMultiple(
                     patterns=pathRegexIncludes, text=path2
                 ) and not j.data.regex.matchMultiple(patterns=pathRegexExcludes, text=path2):
