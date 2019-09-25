@@ -204,16 +204,22 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         self._children = j.baseclasses.dict()
 
     def _children_names_get(self, filter=None):
-        Item = self._model.index.sql
-        if filter and filter != "*":
-            res = [i.name for i in Item.select().where(Item.name.startswith(filter))]
-        else:
-            res = [i.name for i in Item.select()]
-
-        if len(res) > 50:
+        if not self.find():
             return []
+        else:
+            res = [i.name for i in self.find()]
+            return res
 
-        return res
+        # Item = self._model.index.sql
+        # if filter and filter != "*":
+        #     res = [i.name for i in Item.select().where(Item.name.startswith(filter))]
+        # else:
+        #     res = [i.name for i in Item.select()]
+
+        # if len(res) > 50:
+        #     return []
+
+        # return res
 
     def find(self, reload=False, **kwargs):
         """
