@@ -70,8 +70,8 @@ JSBASE = j.baseclasses.object
 
 class actor(JSBASE):
 
-    def __init__(self, **kwargs):
-        JSBASE.__init__(self, **kwargs)
+    def _init(self, **kwargs):
+        pass
 
     def ping(self):
         return "pong"
@@ -94,6 +94,7 @@ server.actor_add('/tmp/actor.py', namespace='demo')
 server.actors_add('/tmp/test_actor', namespace='demo')
 
 # start the server
+server.save()
 server.start()
 ```
 
