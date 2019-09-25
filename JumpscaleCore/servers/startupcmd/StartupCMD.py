@@ -60,7 +60,6 @@ class StartupCMD(j.baseclasses.object_config):
     def _init(self, **kwargs):
         self._pane_ = None
         self._corex_local_ = None
-        self._pid = None
         self._logger_enable()
         if self.path == "":
             self.path = "/tmp"
@@ -74,17 +73,18 @@ class StartupCMD(j.baseclasses.object_config):
     def _reset(self):
         self.time_start = 0
         self.time_stop = 0
-        self.pid = 0
         self.state = "init"
         self.corex_id = ""
 
     @property
     def pid(self):
         try:
-            self._pid = j.sal.process.getProcessPid("startupcmd_%s" % self.name)[0]
-        except:
-            return
-        return self._pid
+            pids = j.sal.process.getProcessPid("startupcmd_%s" % self.name)
+            if pids:
+                return pids[0]
+        except Exception:  # This is keeping with the old implementation this handling might not be needed
+            pass
+        return 0
 
     @property
     def data(self):

@@ -52,25 +52,22 @@ def main(self):
     """
     to run:
 
-    kosmos 'j.data.schema.test(name="corex")' --debug
+    kosmos 'j.servers.startupcmd.test(name="corex")' --debug
     """
-    return "OK"
 
-    self.tmuxserver.delete()
     startup_cmd = self.tmuxserver  # grab an instance
     startup_cmd.executor = "foreground"  # because detaches itself automatically
     startup_cmd.interpreter = "direct"
     startup_cmd.cmd_start = j.core.text.strip(START_BASH)
+    startup_cmd.process_strings_regex = "^tmux"
     startup_cmd.timeout = 5
 
-    startup_cmd.monitor.process_strings_regex = "^tmux"
-
     startup_cmd.start()
-    assert startup_cmd.is_running() == True
+    assert startup_cmd.is_running() is True
     assert startup_cmd.pid
 
-    r = startup_cmd.stop()
+    startup_cmd.stop()
 
-    assert startup_cmd.is_running() == False
+    assert startup_cmd.is_running() is False
 
     return "OK"
