@@ -30,6 +30,11 @@ class SystemFSWalker(j.baseclasses.object):
         if not (contentRegexIncludes or contentRegexExcludes):
             return True
 
+        if not j.sal.fs.isFile(path):
+            # in this case the link doesn't link to a file so we can't read its content
+            # add it in case of contentRegexExcludes is enabled
+            return bool(contentRegexExcludes)
+
         content = j.sal.fs.readFile(path)
         if contentRegexIncludes and not j.data.regex.matchMultiple(patterns=contentRegexIncludes, text=content):
             return False
@@ -213,8 +218,6 @@ class SystemFSWalker(j.baseclasses.object):
                     followlinks,
                 )
 
-            elif j.sal.fs.isLink(path2) and not followlinks:
-                callback(arg, path2)
 
             elif j.sal.fs.isFile(path2, followlinks):
                 if j.data.regex.matchMultiple(
