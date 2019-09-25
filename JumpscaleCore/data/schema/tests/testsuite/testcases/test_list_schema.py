@@ -159,7 +159,7 @@ class SchemaTest(BaseTest):
         scm = """
         @url = test.schema
         list_check = (LB)
-        list_bool = [1, 'yes', 'y', 'true', True, 'f'] (LB)
+        list_bool = [1, 'yes', 'y', 'true', 'f'] (LB)
         """
         schema = self.schema(scm)
         schema_obj = schema.new()
@@ -169,11 +169,12 @@ class SchemaTest(BaseTest):
         self.assertEqual(schema_obj.list_check, [False, False])
 
         self.log("Try to set parameter[P1] with True value, should be True.")
-        schema_obj.list_check = [1, "yes", "y", "true", True, "f"]
-        check = [True, True, True, True, True, False]
+        schema_obj.list_check = [1, "yes", "y", "true", "f"]
+        check = [True, True, True, True, False]
         self.assertEqual(schema_obj.list_check, check)
+        
         self.log("schema list %s" % schema_obj.list_bool)
-        self.assertEqual(schema_obj.list_bool, [True, False])
+        self.assertEqual(schema_obj.list_bool, [True, True, True, True, False])
 
     def test005_validate_list_of_mobiles(self):
         """
@@ -626,7 +627,7 @@ class SchemaTest(BaseTest):
         scm = """
         @url = test.schema
         yaml_list = (Lyaml)
-        list_yaml = ["example:\\n    -test1"] (Lyaml)
+        list_yaml = [\"example:\\n    -test1\"] (Lyaml)
         """
         schema = self.schema(scm)
         time.sleep(1)
