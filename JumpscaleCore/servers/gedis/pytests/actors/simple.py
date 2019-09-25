@@ -13,8 +13,8 @@ bar = (S)
 """
 
 
-class simple(JSBASE):
-    def __init__(self):
+class simple(JSBASE,):
+    def __init__(self, **kwargs):
         JSBASE.__init__(self)
 
     def ping(self):

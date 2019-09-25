@@ -31,6 +31,7 @@ class GedisServer(JSBaseConfig):
         secret_ = "" (S)
         ssl_keyfile = "" (S)
         ssl_certfile = "" (S)
+        actors_data = (LS)
         """
 
     def _init(self, **kwargs):
@@ -150,6 +151,8 @@ class GedisServer(JSBaseConfig):
         self._log_debug("actor_add:%s:%s", namespace, path)
         name = actor_name(path, namespace)
         key = actor_key(name, namespace)
+        if key not in self.actors.keys():
+            self.actors_data.append("%s:%s" % (namespace, path))
         self.cmds_meta[key] = GedisCmds(server=self, path=path, name=name, namespace=namespace)
 
     ####################################################################
@@ -279,6 +282,14 @@ class GedisServer(JSBaseConfig):
     #     # else:
     #     #     self._log_info("using existing key and cerificate for gedis @ %s" % path)
     #     return key, cert
+    
+    def load_actors(self):
+        for item in self.actors_data:
+            namespace, path = item.split(':')
+            name = actor_name(path, namespace)
+            key = actor_key(name, namespace)
+            if key not in self.actors.keys():
+                self.actor_add(path, namespace)
 
     def start(self):
         """
@@ -288,7 +299,7 @@ class GedisServer(JSBaseConfig):
         self._log_info("start Server on {0} - PORT: {1}".format(self.host, self.port))
         self._log_info("%s RUNNING", str(self))
         cmd = f"""
-        j.servers.gedis.get("{self.name}").gevent_server.serve_forever()
+        server = j.servers.gedis.get("{self.name}"); server.load_actors(); server.gevent_server.serve_forever()
         """
         s = j.servers.startupcmd.get(
             name="gevent_server", cmd_start=cmd, interpreter="jumpscale", executor="tmux", ports=[self.port]
