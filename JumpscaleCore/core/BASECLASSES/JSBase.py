@@ -637,10 +637,6 @@ class JSBase:
                 if obj._parent._id is None:
                     if obj._parent.name is None:
                         raise j.exceptions.JSBUG("cannot happen, there needs to be a name")
-                    else:
-                        obj._parent.save()
-                        assert obj._parent._id > 0
-                        return obj._parent._id
                 else:
                     return obj._parent._id
             obj = obj._parent

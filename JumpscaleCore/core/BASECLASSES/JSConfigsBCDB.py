@@ -83,19 +83,18 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 jsxobject = self._model.new()
             jsxobject.name = name
 
-        jsxobject._autosave = True
+        jsxobject._autosave = save
 
         # means we need to remember the parent id
         mother_id = self._mother_id_get()
         if mother_id:
             if jsxobject.mother_id != mother_id:
                 jsxobject.mother_id = mother_id
-                jsxobject.save()
 
         jsconfig_klass = self._childclass_selector(jsxobject=jsxobject)
         jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject, **kwargs_to_class)
         jsconfig._triggers_call(jsconfig, "new")
-        jsconfig._autosave = True
+        jsconfig._autosave = save
         self._children[name] = jsconfig
         if save:
             self._children[name].save()
@@ -132,12 +131,12 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                     print("CHECK WHY ERROR")
                     j.shell()
 
+            jsconfig._autosave = save
+
         # lets do some tests (maybe in future can be removed, but for now the safe bet)
         self._check(jsconfig)
 
         jsconfig._triggers_call(jsconfig, "get")
-
-        jsconfig._autosave = True
 
         return jsconfig
 
