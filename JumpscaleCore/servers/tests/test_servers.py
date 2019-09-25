@@ -58,8 +58,7 @@ class TestServers(BaseTest):
         server = getattr(j.servers, server).get()
         if server in ["threebot"]:
             server.start(background=True)
-        else:
-            server.start()
+        server.start()
 
         self.info(" * Make sure that server started successfully.")
         output, error = self.os_command(" ps -aux | grep -v grep | grep {} | awk '{print $2}'".format(server))
@@ -104,4 +103,3 @@ class TestServers(BaseTest):
         self.assertIn(new_name, output.decode())
         self.info(" Teardown the server.")
         server.stop()
-

@@ -3929,6 +3929,9 @@ class BaseInstaller:
                 C = "pip3 install '%s'" % pip  # --user
                 Tools.execute(C, die=True)
                 MyEnv.state_set("pip_%s" % pip)
+        C = "pip3 install -e 'git+https://github.com/threefoldtech/0-hub#egg=zerohub&subdirectory=client'"
+        Tools.execute(C, die=True)
+        MyEnv.state_set("pip_zoos")
 
     @staticmethod
     def cleanup_script_get():
@@ -4941,11 +4944,8 @@ class SSHAgent:
                 item2 = item.lower()
                 if not (
                     item.startswith(".")
-                    or item2.endswith(".pub")
-                    or item2.endswith(".backup")
-                    or item2.endswith(".toml")
-                    or item2.endswith(".backup")
-                    or item in ["known_hosts"]
+                    or item2.endswith((".pub", ".backup", ".toml", ".old"))
+                    or item in ["known_hosts", "config", "authorized_keys"]
                 ):
                     choices.append(item)
             sshkey = ask_key(choices)
@@ -5049,7 +5049,7 @@ class SSHAgent:
                 return []
 
         if return_code:
-            return_code, out, err = Tools.execute("ssh-add", showout=False, die=False, timeout=1)
+            return_code, out, err = Tools.execute("ssh-add", showout=False, die=False, timeout=10)
             if out.find("Error connecting to agent: No such file or directory"):
                 raise SSHAgentKeyError("Error connecting to agent: No such file or directory")
             else:
@@ -5210,6 +5210,7 @@ class WireGuard:
         if not Tools.cmd_installed("wg"):
             if MyEnv.platform() == "linux":
                 C = """
+                apt-get install software-properties-common -y
                 add-apt-repository ppa:wireguard/wireguard
                 apt-get update
                 apt-get install wireguard -y
@@ -5263,7 +5264,9 @@ class WireGuard:
             raise Tools.exceptions.Base("cannot start server only supported on linux ")
 
     def connect(self):
-        config_container = Tools.config_load("/sandbox/var/containers/%s/cfg/wireguard.toml" % self.container.name)
+        config_container = Tools.config_load(
+            "%s/var/containers/%s/cfg/wireguard.toml" % (MyEnv._basedir_get(), self.container.name)
+        )
         C = """
         [Interface]
         Address = 10.10.10.2/24

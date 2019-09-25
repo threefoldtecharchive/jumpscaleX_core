@@ -29,7 +29,7 @@ def main(self):
     locations = website.locations.get("proxied")
     proxy_location = locations.locations_proxy.new()
     proxy_location.name = "proxy1"
-    proxy_location.path_url = "proxy/"
+    proxy_location.path_url = "/"
     proxy_location.ipaddr_dest = "0.0.0.0"
     proxy_location.port_dest = "8080"
     proxy_location.scheme = "http"
@@ -38,5 +38,5 @@ def main(self):
 
     server.start()
 
-    static_content = j.clients.http.get("http://0.0.0.0/proxy/")
+    static_content = j.clients.http.get("http://0.0.0.0/")
     assert static_content == "<html>\nHello from static!\n</html>\n"

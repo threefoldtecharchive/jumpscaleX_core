@@ -24,6 +24,7 @@ from .JSConfigsBCDB import JSConfigsBCDB
 from .JSConfigBCDBBase import JSConfigBCDBBase
 from .ThreeBotActorBase import ThreeBotActorBase
 from .ThreeBotPackageBase import ThreeBotPackageBase
+from .ThreeBotFactoryBase import ThreeBotFactoryBase
 from .TestTools import TestTools
 from .JSFactory import JSFactory
 from .JSDict import JSDict
@@ -140,6 +141,15 @@ class BaseClasses(JSBase, TestTools):
         :return:
         """
         return ThreeBotPackageBase
+
+    @property
+    def threebot_factory(self):
+        """
+        the base class for a package factory
+
+        :return:
+        """
+        return ThreeBotFactoryBase
 
     @property
     def testtools(self):
