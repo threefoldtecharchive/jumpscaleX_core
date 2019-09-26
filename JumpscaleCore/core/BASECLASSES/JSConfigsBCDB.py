@@ -178,7 +178,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         return 2, jsxconfig
 
-    def reset(self, recursive=None):
+    def reset(self):
         """
         will destroy all data in the DB, be carefull
         :return:
@@ -190,20 +190,10 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             except Exception as e:
                 j.shell()
 
-        mother_id, _ = self._mother_id_get()
-        # TODO: in fact this should work without having to do this, we put it in to get to some more tests, but if deletes work well it should work without (JO)
-        if not mother_id:
-            # means we can remove all objects of the url (index)
+        _, has_mother = self._mother_id_get()
+        if not has_mother:
             self._model.index.destroy()
-        else:
-            # if we did not specify and there is a mother_id for sure we can do the recursive behaviour
-            if recursive == None:
-                recursive = True
 
-        if recursive:
-            self._children_delete(recursive=recursive)
-
-        self._children = j.baseclasses.dict()
 
     def _children_names_get(self, filter=None):
         if not self.find():
@@ -275,19 +265,15 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             if item._hasattr("save"):
                 item.save()
 
-    def delete(self, name=None, recursive=None):
+    def delete(self, name=None):
         """
-
         :param name:
-        :param recursive: None means will be True if there is a mother, otherwise will be False or True forced
         :return:
         """
-        self._delete(name=name, recursive=recursive)
+        self._delete(name=name)
 
-    def _delete(self, name=None, recursive=None):
+    def _delete(self, name=None):
         self._model
-        if recursive == None and self._mother_id_get()[1]:
-            recursive = True
         if name:
             res = self._findData(name=name)
             if len(res) == 0:
@@ -295,12 +281,10 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             elif len(res) == 1:
                 self._model.delete(res[0].id)
         else:
-            return self.reset(recursive=recursive)
+            return self.reset()
 
         if name in self._children:
-            if recursive:
-                self._children[name].delete(recursive=recursive)
-            self._children.pop(name)
+            self._children[name].delete()
 
         if not name and self._parent:
             if self._classname in self._parent._children:

@@ -188,27 +188,21 @@ class JSFactory(JSBase, Attr):
     #     #     if self._hasattr(child, "count"):
     #     #         r += child.count(name=name)
 
-    def delete(self, name=None, recursive=None):
+    def delete(self, name=None):
         """
 
         :param name:
         :param recursive: None means will be True if there is a mother, otherwise will be False or True forced
         :return:
         """
-        self._delete(name=name, recursive=recursive)
+        self._delete(name=name)
 
-    def _delete(self, name=None, recursive=None):
-
-        if recursive == None and self._mother_id_get()[1]:
-            recursive = True
-
+    def _delete(self, name=None):
         if name:
             if name in self._children:
-                if recursive:
-                    self._children[name].delete(recursive=recursive)
-                self._children.pop(name)
-
-        self._children_delete(recursive=recursive)
+                self._children[name].delete()
+        else:
+            self._children_delete()
 
         if self._parent:
             # if we exist in the parent remove us from their children

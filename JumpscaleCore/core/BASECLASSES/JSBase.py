@@ -627,9 +627,12 @@ class JSBase:
     def _mother_id_get(self):
         """
         this goes to all parents till it finds a parent which has a model attached
-        this is to find the parent which acts as the mother for the children
+        this is to find the parent which acts as the mother for the children.
         when you do a search only the children of this mother will be shown
-        :return:
+        If mother was created with save=False, it won't have id but will still exist as a parent.
+
+        :rtype: tuple
+        :return: The id of the mother and a flag indicating if the child has a mother
         """
         obj = self
         while obj and obj._parent:
@@ -661,18 +664,17 @@ class JSBase:
         else:
             return []
 
-    def _children_delete(self, recursive=True, filter=None):
+    def _children_delete(self, filter=None):
         """
         filter only applies on the first children search
-        :param recursive:
         :param filter:
         :return:
         """
         for child in self._children_get(filter=filter):
             if child._hasattr("delete"):
-                child.delete(recursive=recursive)
+                child.delete()
             else:
-                child._children_delete(recursive=recursive)
+                child._children_delete()
 
     def _child_get(self, name=None, id=None):
         """
