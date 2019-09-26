@@ -18,17 +18,14 @@ class actor(j.baseclasses.threebot_actor):
         for schema in [SCHEMA_IN, SCHEMA_OUT]:
             j.data.schema.get_from_text(schema)
 
-    def ping(self):
-        return "pong"
-
     def foo(self, user_session=None):
         return "foo"
 
     def bar(self, user_session=None):
         return "bar"
 
-    def echo(self, input, user_session=None):
-        return input
+    def echo(self, _input, user_session=None):
+        return _input
 
     def schema_in(self, x, user_session=None):
         """

@@ -85,13 +85,15 @@ class SchemaTest(BaseTest):
         """
         schema = self.schema(scm)
         schema_obj = schema.new()
-
+        
         self.log("Try to set parameter with non integer type, should fail.")
         with self.assertRaises(Exception):
             schema_obj.list_numbers = [random.randint(1, 1000), self.random_string()]
+            schema_obj.check()
 
         with self.assertRaises(Exception):
             schema_obj.list_numbers.append(self.random_string())
+            schema_obj.check()
 
         self.log("Try to set parameter with integer type, should succeed.")
         list_numbers = [random.randint(1, 1000), random.randint(1, 1000)]
@@ -620,14 +622,13 @@ class SchemaTest(BaseTest):
         **Test Scenario:**
 
         #. Create schema with list of yaml parameter, should succeed.
-        #. Try to set parameter with non yaml type, should fail.
         #. Try to set parameter with yaml type, should succeed.
         """
         self.log("Create schema with list of yaml parameter, should succeed.")
         scm = """
         @url = test.schema
         yaml_list = (Lyaml)
-        list_yaml = [\"example:\\n    -test1\"] (Lyaml)
+        list_yaml = "[{'example':'test1'}]" (Lyaml)
         """
         schema = self.schema(scm)
         time.sleep(1)
@@ -636,16 +637,18 @@ class SchemaTest(BaseTest):
         self.log("Try to set parameter with non yaml type, should fail.")
         with self.assertRaises(Exception):
             schema_obj.yaml_list = [random.randint(1, 1000), self.random_string()]
-
+            schema_obj.check()
+            
         with self.assertRaises(Exception):
             schema_obj.yaml_list.append(random.randint(1, 1000))
+            schema_obj.check()
 
         self.log("Try to set parameter with yaml type, should succeed.")
-        yaml_list = ["example:\\n    -test1"]
+        yaml_list = [{'example':'test1'}]
         schema_obj.yaml_list = yaml_list
         self.assertEqual(schema_obj.yaml_list, yaml_list)
         self.log("schema list %s" % schema_obj.list_yaml)
-        self.assertEqual(schema_obj.list_yaml[0], "example:\n    -test1")
+        self.assertEqual(schema_obj.list_yaml[0], {'example':'test1'})
 
     def test017_validate_list_of_binary(self):
         """

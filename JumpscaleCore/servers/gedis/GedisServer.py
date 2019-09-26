@@ -298,6 +298,8 @@ class GedisServer(JSBaseConfig):
         # WHEN USED OVER WEB, USE THE DIGITALME FRAMEWORK
         self._log_info("start Server on {0} - PORT: {1}".format(self.host, self.port))
         self._log_info("%s RUNNING", str(self))
+        # save object to save actors data to be able to load them later
+        self.save()
         cmd = f"""
         server = j.servers.gedis.get("{self.name}"); server.load_actors(); server.gevent_server.serve_forever()
         """
