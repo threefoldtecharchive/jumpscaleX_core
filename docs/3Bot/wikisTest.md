@@ -16,8 +16,11 @@ In case of mac you need wireguard to access the container
 
 `/tmp/jsx wiregurard;`
 
-then copy wiredgurard that it shows after running the previous command
-and add them to wiregurard app's configurations then activate untill
+copy the above wiredgurard command output, the part pertaining the configurations.
+Add these configs in the wireguard application then press activate.
+
+
+
 then access the docker via the ip that it gives
 
 `/tmp/jsx container-shell;`
