@@ -21,14 +21,14 @@ class TestSimpleEcho(TestCase):
         wait_start_server("127.0.0.1", 8889)
         cls.client = cls.server.client_get()
         cls.client.reload()
-    
+
     @classmethod
     def tearDownClass(cls):
         cls.server.stop()
         cls.server.delete()
 
     def test01_echo(self):
-        assert b"test" == self.client.actors.actor.echo('test')
+        assert b"test" == self.client.actors.actor.echo("test")
 
     def test02_schema_in(self):
         x = j.data.schema.get_from_url(url="gedis.test.in").new()

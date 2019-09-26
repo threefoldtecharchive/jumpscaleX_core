@@ -892,7 +892,6 @@ class SchemaTest(BaseTest):
         with self.assertRaises(Exception):
             schema_obj.data = self.random_string()
 
-
         with self.assertRaises(Exception):
             schema_obj.data = random.uniform(1, 100)
 
@@ -986,7 +985,7 @@ class SchemaTest(BaseTest):
         with self.assertRaises(Exception):
             schema_obj.data = [random.randint(1, 100), random.randint(1, 100)]
             schema_obj.check()
-            
+
         with self.assertRaises(Exception):
             schema_obj.data = {"number": random.randint(1, 100)}
             schema_obj.check()
@@ -996,9 +995,9 @@ class SchemaTest(BaseTest):
         schema_obj.data = data
         self.assertEqual(schema_obj.data, data)
 
-        schema_obj.data = {'example':'test1'}
-        self.assertEqual(schema_obj.data, {'example':'test1'})
-        self.assertEqual(schema_obj.init_yaml, {'example':'test1'})
+        schema_obj.data = {"example": "test1"}
+        self.assertEqual(schema_obj.data, {"example": "test1"})
+        self.assertEqual(schema_obj.init_yaml, {"example": "test1"})
 
     def test020_validate_enum_type(self):
         """

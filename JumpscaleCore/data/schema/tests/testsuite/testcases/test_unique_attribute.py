@@ -28,7 +28,7 @@ import random
 class Unique(BaseTest):
     def setUp(self):
         super().setUp()
-        if j.data.bcdb.exists('test'):
+        if j.data.bcdb.exists("test"):
             self.bcdb = j.data.bcdb.get("test")
         else:
             self.bcdb = j.data.bcdb.new("test")

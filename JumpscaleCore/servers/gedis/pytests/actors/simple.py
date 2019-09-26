@@ -13,7 +13,7 @@ bar = (S)
 """
 
 
-class simple(JSBASE,):
+class simple(JSBASE):
     def __init__(self, **kwargs):
         JSBASE.__init__(self)
 
