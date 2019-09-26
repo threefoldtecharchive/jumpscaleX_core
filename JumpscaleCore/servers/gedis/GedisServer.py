@@ -229,21 +229,6 @@ class GedisServer(JSBaseConfig):
 
         return j.clients.gedis.get(name=self.name, **data)
 
-    def client_configure(self, namespace="default"):
-        """
-        Helper method to create a gedis client instance that connect to this instance of the server
-
-        it configure a client using the same info as the server.
-
-        :param namespace: namespace to use, defaults to "default"
-        :param namespace: str, optional
-        :return: gedis client
-        :rtype: GedisClient
-        """
-
-        data = {"host": self.host, "port": self.port, "secret_": self.secret_, "ssl": self.ssl, "namespace": namespace}
-        return j.clients.gedis.get(name=self.name, configureonly=True, **data)
-
     #######################PROCESSING OF CMDS ##############
 
     def job_schedule(self, method, timeout=60, wait=False, depends_on=None, **kwargs):
