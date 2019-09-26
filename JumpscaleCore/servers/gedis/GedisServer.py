@@ -193,13 +193,13 @@ class GedisServer(JSBaseConfig):
         :return: dict of actor and they commands
         :rtype: dict
         """
-        actors = self.actors_list(namespace)
         res = {}
-        for actor in actors:
-            res[actor.name] = {
-                "schema": str(actor.schema),
-                "cmds": {cmd.name: str(cmd.args) for cmd in actor.cmds.values()},
-            }
+        for key, actor in self.cmds_meta.items():
+            if not namespace or key.startswith("%s__" % namespace):
+                res[actor.name] = {
+                    "schema": str(actor.schema),
+                    "cmds": {cmd.name: str(cmd.args) for cmd in actor.cmds.values()},
+                }
         return res
 
     ##########################CLIENT FROM SERVER #######################
@@ -282,10 +282,10 @@ class GedisServer(JSBaseConfig):
     #     # else:
     #     #     self._log_info("using existing key and cerificate for gedis @ %s" % path)
     #     return key, cert
-    
+
     def load_actors(self):
         for item in self.actors_data:
-            namespace, path = item.split(':')
+            namespace, path = item.split(":")
             name = actor_name(path, namespace)
             key = actor_key(name, namespace)
             if key not in self.actors.keys():
