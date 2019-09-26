@@ -199,7 +199,7 @@ class JSFactory(JSBase, Attr):
 
     def _delete(self, name=None, recursive=None):
 
-        if recursive == None and self._mother_id_get():
+        if recursive == None and self._mother_id_get()[1]:
             recursive = True
 
         if name:

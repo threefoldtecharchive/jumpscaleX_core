@@ -109,7 +109,7 @@ class JSConfigBCDB(JSConfigBCDBBase):
                 if not isinstance(self._parent, j.baseclasses.factory):
                     # if factory then cannot delete from the mother because its the only object
                     del self._parent._children[self._data.name]
-        mother_id = self._mother_id_get()
+        mother_id, _ = self._mother_id_get()
         if mother_id and recursive == None:
             recursive = True
         if recursive:
@@ -124,7 +124,7 @@ class JSConfigBCDB(JSConfigBCDBBase):
         assert self._model
         self._triggers_call(self, "save")
 
-        mother_id = self._mother_id_get()
+        mother_id, _ = self._mother_id_get()
         if mother_id:
             # means there is a mother
             self._data.mother_id = mother_id

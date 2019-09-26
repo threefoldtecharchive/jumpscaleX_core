@@ -56,7 +56,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         # lets do some tests (maybe in future can be removed, but for now the safe bet)
         assert jsconfig._id > 0
-        mother_id = jsconfig._mother_id_get()
+        mother_id, _ = jsconfig._mother_id_get()
         if mother_id:
             assert jsconfig.mother_id == mother_id
         assert jsconfig._model.schema._md5 == self._model.schema._md5
@@ -86,7 +86,10 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         jsxobject._autosave = save
 
         # means we need to remember the parent id
-        mother_id = self._mother_id_get()
+        mother_id, has_mother = self._mother_id_get()
+        if has_mother and not mother_id and save:
+            raise j.exceptions.Value("Save can't be True if parent is not saved")
+
         if mother_id:
             if jsxobject.mother_id != mother_id:
                 jsxobject.mother_id = mother_id
@@ -187,7 +190,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             except Exception as e:
                 j.shell()
 
-        mother_id = self._mother_id_get()
+        mother_id, _ = self._mother_id_get()
         # TODO: in fact this should work without having to do this, we put it in to get to some more tests, but if deletes work well it should work without (JO)
         if not mother_id:
             # means we can remove all objects of the url (index)
@@ -244,7 +247,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         return res
 
     def _kwargs_update(self, kwargs):
-        mother_id = self._mother_id_get()
+        mother_id, _ = self._mother_id_get()
         if mother_id:
             kwargs["mother_id"] = mother_id
         return kwargs
@@ -283,7 +286,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
     def _delete(self, name=None, recursive=None):
         self._model
-        if recursive == None and self._mother_id_get():
+        if recursive == None and self._mother_id_get()[1]:
             recursive = True
         if name:
             res = self._findData(name=name)

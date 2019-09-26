@@ -634,14 +634,11 @@ class JSBase:
         obj = self
         while obj and obj._parent:
             if isinstance(obj._parent, j.baseclasses.object_config):
-                if obj._parent._id is None:
-                    if obj._parent.name is None:
-                        raise j.exceptions.JSBUG("cannot happen, there needs to be a name")
-                else:
-                    return obj._parent._id
+                return obj._parent._id, True
             obj = obj._parent
+
         # means we did not find a parent which can act as mother
-        return None
+        return None, False
 
     def _children_names_get(self, filter=None):
         return self._filter(filter=filter, llist=self._children_get(filter=filter))
