@@ -70,8 +70,8 @@ JSBASE = j.baseclasses.object
 
 class actor(JSBASE):
 
-    def __init__(self, **kwargs):
-        JSBASE.__init__(self, **kwargs)
+    def _init(self, **kwargs):
+        pass
 
     def ping(self):
         return "pong"
@@ -81,7 +81,7 @@ Creation of the gedis service and load our actor:
 
 ```python
 # configure the server
-server = j.servers.gedis.get(name='test', port=8889, host='0.0.0.0', ssl=False, password='')
+server = j.servers.gedis.get(name='test', port=8889, host='0.0.0.0', ssl=False)
 # load a single actor
 server.actor_add('/tmp/actor.py', namespace='demo')
 # you can also load a directory that contains multiple actor files
@@ -94,6 +94,7 @@ server.actor_add('/tmp/actor.py', namespace='demo')
 server.actors_add('/tmp/test_actor', namespace='demo')
 
 # start the server
+server.save()
 server.start()
 ```
 

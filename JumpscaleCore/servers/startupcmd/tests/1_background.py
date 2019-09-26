@@ -38,5 +38,4 @@ def main(self):
     self.http_back.stop()
     assert self.http_back.is_running() == False
 
-
     return "OK"

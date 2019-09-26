@@ -13,23 +13,21 @@ bar = (S)
 """
 
 
-class actor(JSBASE):
-    def __init__(self):
-        JSBASE.__init__(self)
+class actor(j.baseclasses.threebot_actor):
+    def _init(self, **kwargs):
+        for schema in [SCHEMA_IN, SCHEMA_OUT]:
+            j.data.schema.get_from_text(schema)
 
-    def ping(self):
-        return "pong"
-
-    def foo(self):
+    def foo(self, user_session=None):
         return "foo"
 
-    def bar(self):
+    def bar(self, user_session=None):
         return "bar"
 
-    def echo(self, input):
-        return input
+    def echo(self, _input, user_session=None):
+        return _input
 
-    def schema_in(self, x):
+    def schema_in(self, x, user_session=None):
         """
         ```in
         x = (O) !gedis.test.in
@@ -75,7 +73,7 @@ class actor(JSBASE):
         result.bar = x.foo
         return [result, result]
 
-    def args_in(self, foo, bar):
+    def args_in(self, foo, bar, user_session=None):
         """
         ```in
         foo = (S)
@@ -84,5 +82,5 @@ class actor(JSBASE):
         """
         return "%s %s" % (foo, bar)
 
-    def raise_error(self):
+    def raise_error(self, user_session=None):
         raise j.exceptions.Base("woopsy daisy")
