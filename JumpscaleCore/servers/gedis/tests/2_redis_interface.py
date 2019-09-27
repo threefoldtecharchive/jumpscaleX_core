@@ -153,6 +153,8 @@ def main(self):
     # returns the 2 nacls used in this test
     nacl1, nacl2, threebot1, threebot2 = j.clients.threebot.test()
 
+    ##### NEXT STLL NEEDS TO BE DONE
+
     # to make example complete, make sure we use json on our connection
     cl.execute_command("config_format", "json")
 
