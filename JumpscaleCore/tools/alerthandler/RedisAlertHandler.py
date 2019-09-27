@@ -18,7 +18,7 @@ count = 0
 
 class AlertHandler(j.baseclasses.object):
 
-    __jslocation__ = "j.tools.alerthandler"
+    __jslocation__ = "j.tools.alerthandler_redis"
 
     def _init(self, **kwargs):
 

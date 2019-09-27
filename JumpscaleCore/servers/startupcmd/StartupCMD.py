@@ -73,9 +73,18 @@ class StartupCMD(j.baseclasses.object_config):
     def _reset(self):
         self.time_start = 0
         self.time_stop = 0
-        self.pid = 0
         self.state = "init"
         self.corex_id = ""
+
+    @property
+    def pid(self):
+        try:
+            pids = j.sal.process.getProcessPid("startupcmd_%s" % self.name)
+            if pids:
+                return pids[0]
+        except Exception:  # This is keeping with the old implementation this handling might not be needed
+            pass
+        return 0
 
     @property
     def data(self):
@@ -630,10 +639,6 @@ class StartupCMD(j.baseclasses.object_config):
 
         # if tpath:
         #     j.sal.fs.remove(tpath)
-        try:
-            self.pid = j.sal.process.getProcessPid("startupcmd_%s" % self.name)[0]
-        except:
-            pass
 
         self.save()
 

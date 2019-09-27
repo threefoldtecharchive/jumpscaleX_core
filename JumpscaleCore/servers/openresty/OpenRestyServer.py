@@ -52,6 +52,22 @@ class OpenRestyServer(j.baseclasses.factory_data):
         configtext = j.tools.jinja2.file_render(path=f"{self._dirpath}/templates/nginx.conf", obj=self)
         j.sal.fs.writeFile(self.path_cfg, configtext)
 
+    def get_from_port(self, port, domain=None):
+        """
+        will try to get a website listening on port, if it doesn't exist it will create one
+        :param port: port to search for
+        :return: website
+        """
+
+        for website in self.websites.find():
+            if website.port == port:
+                if domain and domain != website.domain:
+                    continue
+                else:
+                    return website
+
+        return self.websites.get(f"website_{port}", port=port, domain=domain)
+
     def install(self, reset=False):
         """
         kosmos 'j.servers.openresty.default.install(reset=True)'

@@ -28,7 +28,7 @@ def load_install_tools(branch=None):
 
             with urlopen(url) as resp:
                 if resp.status != 200:
-                    raise j.exceptions.Base("fail to download InstallTools.py")
+                    raise RuntimeError("fail to download InstallTools.py")
                 with open(path, "w+") as f:
                     f.write(resp.read().decode("utf-8"))
                 print("DOWNLOADED INSTALLTOOLS TO %s" % path)
@@ -98,7 +98,7 @@ def _configure(
     j = jumpscale_get(die=False)
 
     if not j and privatekey_words:
-        raise j.exceptions.Operations(
+        raise RuntimeError(
             "cannot load jumpscale, \
             can only configure private key when jumpscale is installed locally use jsx install..."
         )
@@ -613,12 +613,10 @@ def wireguard(name=None, configdir=None):
         docker = container_get(name=name)
         # remotely execute wireguard
         docker.sshexec("source /sandbox/env.sh;jsx wireguard")
-    wg = IT.WireGuard()
-
-    if IT.DockerFactory.indocker():
-        wg.server_start()
-    else:
         docker.wireguard.connect()
+    else:
+        wg = IT.WireGuard()
+        wg.server_start()
 
 
 @click.command(name="modules-install")

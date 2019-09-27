@@ -81,7 +81,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         if fileserver:
             self.client.actors.package_manager.package_add(
                 "threebot_fileserver",
-                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/fileserver",
+                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threebot/fileserver",
             )
 
         if wiki:

@@ -229,9 +229,8 @@ class Handler(JSBASE):
         try:
             self._handle_gedis_session(gedis_socket, address, user_session=user_session)
         except Exception as e:
-            logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
             gedis_socket.on_disconnect()
-            self._log_info("connection closed", context="%s:%s" % address)
+            self._log_error("connection closed: %s" % str(e), context="%s:%s" % address)
 
     def _handle_gedis_session(self, gedis_socket, address, user_session=None):
         """

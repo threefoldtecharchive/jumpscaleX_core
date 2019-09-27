@@ -1058,6 +1058,12 @@ class Tools:
 
         if exception:
             # make sure exceptions get the right priority
+            if isinstance(exception, Tools.exceptions.Base):
+                level = exception.level
+
+            if not level:
+                level = 50
+
             if hasattr(exception, "exception"):
                 msg_e = exception.message
             else:
@@ -1079,7 +1085,6 @@ class Tools:
                     msg = "{RED}EXCEPTION: \n" + Tools.text_indent(msg_e, 4).rstrip() + "{RESET}"
                 else:
                     msg = "EXCEPTION: \n" + Tools.text_indent(msg_e, 4).rstrip()
-            level = 50
             if cat is "":
                 cat = "exception"
 
@@ -1146,10 +1151,7 @@ class Tools:
 
         if iserror:
             for handler in MyEnv.errorhandlers:
-                try:
-                    handler(logdict)
-                except Exception as e:
-                    MyEnv.exception_handle(e)
+                handler(logdict)
 
         for handler in MyEnv.loghandlers:
             try:
@@ -3987,9 +3989,9 @@ class BaseInstaller:
         rm -rf /usr/lib/llvm-6.0
         rm -rf /usr/lib/gcc
         export SUDO_FORCE_REMOVE=no
-        apt autoremove -y 
+        apt autoremove -y
         rm -rf /var/lib/apt/lists
-        mkdir -p /var/lib/apt/lists        
+        mkdir -p /var/lib/apt/lists
         """
         return Tools.text_strip(CMD, replace=False)
 
@@ -4087,7 +4089,7 @@ class UbuntuInstaller:
         set +ex
         apt-get install python3-distutils -y
         set -ex
-        apt-get install python3-psutil -y        
+        apt-get install python3-psutil -y
         apt-get install -y curl rsync unzip
         locale-gen --purge en_US.UTF-8
         apt-get install python3-pip -y
@@ -4130,7 +4132,7 @@ class UbuntuInstaller:
         cd /tmp
         apt-get install -y build-essential
         #apt-get install -y python3.6-dev
-        
+
 
         """
         rc, out, err = Tools.execute(script, interactive=True, timeout=300)
@@ -4458,7 +4460,6 @@ class DockerConfig:
 
         if delete:
             Tools.delete(self.path_vardir)
-
         if not Tools.exists(self.path_config):
 
             if portrange:
@@ -4523,10 +4524,11 @@ class DockerConfig:
         a = 9005 + int(self.portrange) * 10
         b = 9009 + int(self.portrange) * 10
         udp = 9001 + int(self.portrange) * 10
-        ssh = 9000 + int(self.portrange) * 10
+        ssh = r.get("sshport", None) or 9000 + int(self.portrange) * 10
         self.portrange_txt = "-p %s-%s:8005-8009" % (a, b)
         self.portrange_txt += " -p %s:9001/udp" % udp
         self.portrange_txt += " -p %s:22" % ssh
+        self.portrange_txt += " -p 7777:7777/udp"
 
     def save(self):
         Tools.config_save(self.path_config, self.__dict__)
@@ -4680,10 +4682,9 @@ class DockerContainer:
             Tools.config_save(self._path + "/cfg/jumpscale_config.toml", CONFIG)
 
         if not self.container_exists:
-            if not DockerFactory.image_name_exists(self.config.image):
-                # First make sure the latest docker image is present if the image does not exist yet
-                run_image_update_cmd = Tools.text_replace("docker image pull {IMAGE}", args=args)
-                Tools.execute(run_image_update_cmd, interactive=False)
+            # First make sure the latest docker image is present
+            image_update_cmd = Tools.text_replace("docker image pull {IMAGE}", args=args)
+            Tools.execute(image_update_cmd, interactive=False)
 
             self.config.image = DockerFactory.image_name_exists(self.config.image)
 
@@ -5419,8 +5420,8 @@ class WireGuard:
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
             cmd = "wg-quick up %s" % path
             Tools.execute(cmd)
-
-            self.container.config.wireguard_server_pubkey = pubkey
+            if self.container:
+                self.container.config.wireguard_server_pubkey = config["WIREGUARD_SERVER_PUBKEY"]
 
         else:
             raise Tools.exceptions.Base("cannot start server only supported on linux ")

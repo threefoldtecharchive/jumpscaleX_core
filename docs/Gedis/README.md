@@ -66,12 +66,12 @@ Creation of an actor at `/tmp/actor.py`:
 ```python
 from Jumpscale import j
 
-JSBASE = j.application.JSBaseClass
+JSBASE = j.baseclasses.object
 
 class actor(JSBASE):
 
-    def __init__(self):
-        JSBASE.__init__(self)
+    def _init(self, **kwargs):
+        pass
 
     def ping(self):
         return "pong"
@@ -81,7 +81,7 @@ Creation of the gedis service and load our actor:
 
 ```python
 # configure the server
-server = j.servers.gedis.configure(name='test', port=8889, host='0.0.0.0', ssl=False, password='')
+server = j.servers.gedis.get(name='test', port=8889, host='0.0.0.0', ssl=False)
 # load a single actor
 server.actor_add('/tmp/actor.py', namespace='demo')
 # you can also load a directory that contains multiple actor files
@@ -94,6 +94,7 @@ server.actor_add('/tmp/actor.py', namespace='demo')
 server.actors_add('/tmp/test_actor', namespace='demo')
 
 # start the server
+server.save()
 server.start()
 ```
 
@@ -109,4 +110,4 @@ client.actors.actor.ping() # note if your actor name is xactor, then client.acto
 # result will be b'pong'
 ```
 
-**to see more usage examples please read the tests in [gedis_factory class](DigitalMeLib/servers/gedis/GedisFactory.py)**
+**to see more usage examples please read the tests in [gedis_factory class](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/servers/gedis/GedisFactory.py)**

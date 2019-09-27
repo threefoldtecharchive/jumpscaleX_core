@@ -6,12 +6,13 @@ from Jumpscale.core.InstallTools import BaseJSException
 class TestIConfigManager(BaseTest):
     def setUp(self):
         print("\n")
+        self.cleanup = []
         self.info("Test case: {}".format(self._testMethodName))
 
     def tearDown(self):
         self.info("Delete DataBase")
-        j.data.bcdb.destroy_all()
-        j.application.bcdb_system_destroy()
+        for idx in self.cleanup:
+            j.application.bcdb_system.storclient.delete(idx)
 
     def test01_create_new_client(self):
         """
@@ -26,7 +27,8 @@ class TestIConfigManager(BaseTest):
 
         client_name = self.generate_random_str()
         self.info("Create github client {} and save it, should success".format(client_name))
-        j.clients.github.new(client_name, token="test_create_new_client")
+        client = j.clients.github.new(client_name, token="test_create_new_client")
+        self.cleanup.append(client.id)
         self.info("Check that the client {} is created correctly".format(client_name))
         data = j.application.bcdb_system.get_all()
         self.assertEqual(client_name, data[-1].name)
@@ -43,10 +45,11 @@ class TestIConfigManager(BaseTest):
 
         client_name = self.generate_random_str()
         self.info("Update github user token")
-        c = j.clients.github.new(client_name, token="test_modify_client")
-        c.token = "test_update"
+        client = j.clients.github.new(client_name, token="test_modify_client")
+        client.token = "test_update"
         self.info("Save the changes")
-        c.save()
+        client.save()
+        self.cleanup.append(client.id)
         self.info("Check client token")
         data = j.application.bcdb_system.get_all()
         self.assertEqual("test_update", data[-1].token)
@@ -64,8 +67,8 @@ class TestIConfigManager(BaseTest):
 
         client_name = self.generate_random_str()
         self.info("Delete client {}".format(client_name))
-        c = j.clients.github.new(client_name, token="test_delete_client")
-        c.delete()
+        client = j.clients.github.new(client_name, token="test_delete_client")
+        client.delete()
         self.info("Check that the client is not existing")
         with self.assertRaises(BaseJSException):
             j.clients.github.get(client_name)

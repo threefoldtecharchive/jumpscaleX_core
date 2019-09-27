@@ -8,7 +8,7 @@ install:
   - cp /opt/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx
   - chmod +x /tmp/jsx
   - branch=$(cd /opt/code/github/threefoldtech/jumpscaleX_core/ && git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* //')
-  - /tmp/jsx configure -s --secret mysecret
+  - cd /tmp; /tmp/jsx configure -s --secret mysecret
   - /tmp/jsx install -s -b $branch
   - cp -r /opt/code/github/threefoldtech/jumpscaleX_core /sandbox/code/github/threefoldtech/jumpscaleX_core
 

@@ -89,9 +89,11 @@ class SchemaTest(BaseTest):
         self.log("Try to set parameter with non integer type, should fail.")
         with self.assertRaises(Exception):
             schema_obj.list_numbers = [random.randint(1, 1000), self.random_string()]
+            schema_obj.check()
 
         with self.assertRaises(Exception):
             schema_obj.list_numbers.append(self.random_string())
+            schema_obj.check()
 
         self.log("Try to set parameter with integer type, should succeed.")
         list_numbers = [random.randint(1, 1000), random.randint(1, 1000)]
@@ -159,7 +161,7 @@ class SchemaTest(BaseTest):
         scm = """
         @url = test.schema
         list_check = (LB)
-        list_bool = [1, 'yes', 'y', 'true', True, 'f'] (LB)
+        list_bool = [1, 'yes', 'y', 'true', 'f'] (LB)
         """
         schema = self.schema(scm)
         schema_obj = schema.new()
@@ -169,11 +171,12 @@ class SchemaTest(BaseTest):
         self.assertEqual(schema_obj.list_check, [False, False])
 
         self.log("Try to set parameter[P1] with True value, should be True.")
-        schema_obj.list_check = [1, "yes", "y", "true", True, "f"]
-        check = [True, True, True, True, True, False]
+        schema_obj.list_check = [1, "yes", "y", "true", "f"]
+        check = [True, True, True, True, False]
         self.assertEqual(schema_obj.list_check, check)
+
         self.log("schema list %s" % schema_obj.list_bool)
-        self.assertEqual(schema_obj.list_bool, [True, False])
+        self.assertEqual(schema_obj.list_bool, [True, True, True, True, False])
 
     def test005_validate_list_of_mobiles(self):
         """
@@ -619,14 +622,13 @@ class SchemaTest(BaseTest):
         **Test Scenario:**
 
         #. Create schema with list of yaml parameter, should succeed.
-        #. Try to set parameter with non yaml type, should fail.
         #. Try to set parameter with yaml type, should succeed.
         """
         self.log("Create schema with list of yaml parameter, should succeed.")
         scm = """
         @url = test.schema
         yaml_list = (Lyaml)
-        list_yaml = ["example:\\n    -test1"] (Lyaml)
+        list_yaml = "[{'example':'test1'}]" (Lyaml)
         """
         schema = self.schema(scm)
         time.sleep(1)
@@ -635,16 +637,18 @@ class SchemaTest(BaseTest):
         self.log("Try to set parameter with non yaml type, should fail.")
         with self.assertRaises(Exception):
             schema_obj.yaml_list = [random.randint(1, 1000), self.random_string()]
+            schema_obj.check()
 
         with self.assertRaises(Exception):
             schema_obj.yaml_list.append(random.randint(1, 1000))
+            schema_obj.check()
 
         self.log("Try to set parameter with yaml type, should succeed.")
-        yaml_list = ["example:\\n    -test1"]
+        yaml_list = [{"example": "test1"}]
         schema_obj.yaml_list = yaml_list
         self.assertEqual(schema_obj.yaml_list, yaml_list)
         self.log("schema list %s" % schema_obj.list_yaml)
-        self.assertEqual(schema_obj.list_yaml[0], "example:\n    -test1")
+        self.assertEqual(schema_obj.list_yaml[0], {"example": "test1"})
 
     def test017_validate_list_of_binary(self):
         """
