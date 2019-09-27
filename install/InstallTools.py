@@ -4524,11 +4524,10 @@ class DockerConfig:
         a = 9005 + int(self.portrange) * 10
         b = 9009 + int(self.portrange) * 10
         udp = 9001 + int(self.portrange) * 10
-        ssh = r.get("sshport", None) or 9000 + int(self.portrange) * 10
+        ssh = 9000 + int(self.portrange) * 10
         self.portrange_txt = "-p %s-%s:8005-8009" % (a, b)
         self.portrange_txt += " -p %s:9001/udp" % udp
         self.portrange_txt += " -p %s:22" % ssh
-        self.portrange_txt += " -p 7777:7777/udp"
 
     def save(self):
         Tools.config_save(self.path_config, self.__dict__)
@@ -4682,9 +4681,10 @@ class DockerContainer:
             Tools.config_save(self._path + "/cfg/jumpscale_config.toml", CONFIG)
 
         if not self.container_exists:
-            # First make sure the latest docker image is present
-            image_update_cmd = Tools.text_replace("docker image pull {IMAGE}", args=args)
-            Tools.execute(image_update_cmd, interactive=False)
+            if not DockerFactory.image_name_exists(self.config.image):
+                # First make sure the latest docker image is present if the image does not exist yet
+                run_image_update_cmd = Tools.text_replace("docker image pull {IMAGE}", args=args)
+                Tools.execute(run_image_update_cmd, interactive=False)
 
             self.config.image = DockerFactory.image_name_exists(self.config.image)
 
