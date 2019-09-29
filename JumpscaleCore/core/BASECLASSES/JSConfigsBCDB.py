@@ -187,7 +187,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             except Exception as e:
                 j.shell()
 
-        if self._mother_id_get():
+        if not self._mother_id_get():
             self._model.index.destroy()
 
     def _children_names_get(self, filter=None):
