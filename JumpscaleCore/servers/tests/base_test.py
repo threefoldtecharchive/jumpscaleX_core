@@ -18,9 +18,11 @@ class BaseTest(unittest.TestCase):
         "flask",
         "errbot",
         "gedis_websocket",
+        "gedis",
         "sockexec",
+        "threebot",
     ]
-    INSTALLED_SERVER = ["mail_forwarder"]
+    INSTALLED_SERVER = ["mail_forwarder", "gedis"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

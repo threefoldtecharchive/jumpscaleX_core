@@ -84,7 +84,7 @@ class TestServers(BaseTest):
         """
         - install server with default port and get server.
         - Make sure that server started successfully.
-        - Teardown the server.
+        - Stop the server.
         """
         self.info("Install server with default port and get server.")
         getattr(j.servers, server).install()
@@ -101,5 +101,5 @@ class TestServers(BaseTest):
         output, error = self.os_command("ps -aux | grep {}".format(server))
         self.assertIn(new_port, output.decode())
         self.assertIn(new_name, output.decode())
-        self.info(" Teardown the server.")
+        self.info(" Stop the server.")
         server.stop()

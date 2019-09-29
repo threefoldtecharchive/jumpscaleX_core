@@ -3,7 +3,7 @@ from base_test import BaseTest
 import random, requests, uuid, unittest
 
 
-class TestOdooServer(BaseTest):
+class TestTmuxServer(BaseTest):
     def setUp(self):
         self.info("​Install tmux server.")
         j.servers.tmux.install()
