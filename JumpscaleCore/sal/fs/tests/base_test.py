@@ -21,3 +21,8 @@ class BaseTest(TestCase):
     @staticmethod
     def info(message):
         BaseTest.LOGGER.info(message)
+
+
+class Testadd:
+    def add(self, a, b):
+        return a + b

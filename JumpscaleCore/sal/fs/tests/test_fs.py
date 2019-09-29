@@ -5,13 +5,15 @@ import unittest
 import time
 from datetime import datetime
 from pwd import getpwuid
+from subprocess import run, PIPE
+from string import punctuation
 
 from Jumpscale import j
 from parameterized import parameterized
 from checksumdir import dirhash
 import pickle
 
-from .base_test import BaseTest
+from .base_test import BaseTest, Testadd
 
 
 class FS(BaseTest):
@@ -1639,3 +1641,490 @@ class FS(BaseTest):
 
         self.info("Check that both md5sum are the same.")
         self.assertEquals(copied_md5sum, orignal_md5sum)
+
+    def test034_write_read_obj_to_from_file(self):
+        """
+        Test case for writing/reading object to/from file.
+
+        **Test scenario**
+        #. Write object to file.
+        #. Check that file has been created.
+        #. Read this object from the file.
+        #. Check that this object can be used.
+        """
+        self.info("Write object to file.")
+        test_obj = Testadd()
+        file_name = self.random_string()
+        file_path = os.path.join(self.temp_path, file_name)
+        j.sal.fs.writeObjectToFile(file_path, test_obj)
+
+        self.info("Check that file has been created.")
+        self.assertTrue(os.path.exists(file_path))
+
+        self.info("Read this object from the file.")
+        obj = j.sal.fs.readObjectFromFile(file_path)
+
+        self.info("Check that this object can be used.")
+        a = random.randint(1, 100)
+        b = random.randint(1, 100)
+        result = obj.add(a, b)
+        self.assertEquals(result, a + b)
+
+    def test035_zip_files(self):
+        """
+        Test case for compressing files using zip.
+        
+        **Test scenario**
+        #. Create a file F1.
+        #. Compress a file F1 using gzip.
+        #. Check that a zip file has been created.
+        #. Uncompress the output zip file.
+        #. Check that the result file is the same as the original file F1.
+        """
+        self.info("Create a file F1")
+        file_name = self.random_string()
+        file_path = os.path.join(self.temp_path, file_name)
+        content = self.random_string()
+        j.sal.fs.writeFile(file_path, content)
+        orignal_md5sum = self.md5sum(file_path)
+
+        self.info("Compress a file F1 using gzip.")
+        comp_name = self.random_string()
+        comp_path = os.path.join(self.temp_path, comp_name)
+        j.sal.fs.gzip(file_path, comp_path)
+
+        self.info("Check that a zip file has been created.")
+        self.assertTrue(os.path.exists(comp_path))
+
+        self.info("Uncompress the output zip file.")
+        dest_path = os.path.join(self.temp_path, self.random_string())
+        j.sal.fs.gunzip(comp_path, dest_path)
+
+        self.info("Check that the result file is the same as the original file F1.")
+        self.assertTrue(os.path.exists(dest_path))
+        dest_md5sum = self.md5sum(dest_path)
+        self.assertEquals(dest_md5sum, orignal_md5sum)
+
+    def test036_clean_up_string(self):
+        """
+        Test case for cleaning up a string.
+
+        **Test scenario**
+        #. Clean a string with special characters, should replace these characters with '_'.
+        #. Clean a string without special characters, should be that same.
+        """
+        self.info("Clean a string with special characters, should replace these characters with '_'.")
+        special_characters = list(punctuation)
+        special_character = random.choice(special_characters)
+        name = self.random_string().replace("-", "") + special_character
+        result = j.sal.fs.cleanupString(name)
+        self.assertEquals(result, name.replace(special_character, "_"))
+
+        self.info("Clean a string without special characters, should be that same.")
+        name = self.random_string().replace("-", "")
+        result = j.sal.fs.cleanupString(name)
+        self.assertEquals(result, name)
+
+    def test037_find(self):
+        """
+        Test case for finding a file with a regex in a tree.
+        
+        **Test scenario**
+        #. Create a tree with many files.
+        #. Create a file with specific regex (R1) under this tree.
+        #. Find in this tree what is matched with regex (R1), should return only this file.
+        """
+        self.info("Create a tree with many files.")
+        base_dir = self.create_tree()
+
+        self.info("Create a file with specific regex (R1) under this tree.")
+        file_name = "1t2"
+        file_path = os.path.join(base_dir, file_name)
+        j.sal.fs.touch(file_path)
+
+        self.info("Find in this tree what is matched with regex (R1), should return only this file.")
+        result_path = j.sal.fs.find(base_dir, "[0-9][a-z][0-9]")
+        self.assertEquals(result_path, [file_path])
+
+    def test038_grep(self):
+        """
+        Test case for finding a line in a file with a regex.
+        
+        **Test scenario**
+        #. Create a file with some lines.
+        #. Find in this file what is matched with regex (R1), should not found.
+        #. Append to this file a line with specific regex(R1).
+        #. Find in this file what is matched with regex (R1), should only this line.
+        """
+        self.info("Create a file with some lines.")
+        file_name = self.random_string()
+        file_path = os.path.join(self.temp_path, file_name)
+        content = "\n".join([self.random_string(), self.random_string()])
+        j.sal.fs.writeFile(file_path, content)
+
+        self.info("Find in this file what is matched with regex (R1), should not found.")
+        line = "1_2"
+        cmd = f'kosmos "j.tools.logger.debug=True; j.sal.fs.grep(\\"{file_path}\\", \\"[0-9][_][0-9]\\")"'
+        response = run(cmd, shell=True, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        self.assertNotIn(file_path, response.stdout)
+        self.assertNotIn(line, response.stdout)
+
+        self.info("Append to this file a line with specific regex(R1).")
+        content = f"\n{line}"
+        j.sal.fs.writeFile(file_path, content, append=True)
+
+        self.info("Find in this file what is matched with regex (R1), should only this line.")
+        cmd = f'kosmos "j.tools.logger.debug=True; j.sal.fs.grep(\\"{file_path}\\", \\"[0-9][_][0-9]\\")"'
+        response = run(cmd, shell=True, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        self.assertIn(file_path, response.stdout)
+        self.assertIn(line, response.stdout)
+
+    def test039_is_mount_absolute(self):
+        """
+        Test case for checking if the directory is mounted and absolute.
+
+        **Test scenario**
+        #. Check "/tmp" directory is mounted, should return False.
+        #. Check "/dev" directory is mounted, should return True. 
+        #. Check a random name is absolute, should return False.
+        #. Check a full path is absolute, should return True.
+        """
+        self.info('Check "/tmp" directory is mounted, should return False.')
+        self.assertFalse(j.sal.fs.isMount("/tmp"))
+
+        self.info('Check "/dev" directory is mounted, should return True.')
+        self.assertTrue(j.sal.fs.isMount("/dev"))
+
+        self.info("Check a random name is absolute, should return False.")
+        name = self.random_string()
+        self.assertFalse(j.sal.fs.isAbsolute(name))
+
+        self.info("Check a full path is absolute, should return True.")
+        path = os.path.join(self.temp_path, name)
+        self.assertTrue(j.sal.fs.isAbsolute(path))
+
+    def test040_ascii(self):
+        """
+        Test case for writting, reading and checking ascii file.
+
+        **Test scenario**
+        #. Write ascii to a file.
+        #. Check that file has been created and it is a ascii file.
+        #. Read this file and check that its content.
+        """
+        self.info(" Write ascii to a file.")
+        ascii_content = self.random_string().encode("ascii")
+        file_name = self.random_string()
+        file_path = os.path.join(self.temp_path, file_name)
+        j.sal.fs.writeFile(file_path, ascii_content)
+
+        self.info("Check that file has been created and it is a binary file.")
+        os.path.exists(file_path)
+        self.assertTrue(j.sal.fs.isAsciiFile(file_path))
+        with open(file_path, "rb") as f:
+            content = f.read()
+        self.assertEquals(content, ascii_content)
+
+        self.info("Read this file and check that its content.")
+        content = j.sal.fs.readFile(file_path, binary=True)
+        self.assertEquals(content, ascii_content)
+
+    def test041_hard_link(self):
+        """
+        Test case for making a hard link for a file.
+
+        **Test scenario**
+        #. Create a file.
+        #. Create a hard link to this file.
+        #. Check that the link file has been created.
+        #. Change the content of the linked file.
+        #. Check the original file is changed too.
+        """
+        self.info("Create a file.")
+        file_name = self.random_string()
+        file_path = os.path.join(self.temp_path, file_name)
+        content = self.random_string()
+        j.sal.fs.writeFile(file_path, content)
+
+        self.info("Create a hard link to this file.")
+        dest_path = os.path.join(self.temp_path, self.random_string())
+        j.sal.fs.hardlinkFile(file_path, dest_path)
+
+        self.info("Check that the link file has been created.")
+        self.assertTrue(os.path.exists(dest_path))
+        hard_links_number = os.stat(file_path).st_nlink
+        self.assertEquals(hard_links_number, 2)
+
+        self.info("Change the content of the linked file.")
+        new_content = self.random_string()
+        j.sal.fs.writeFile(dest_path, new_content, append=True)
+        dest_content = j.sal.fs.readFile(dest_path)
+        self.assertEquals(dest_content, content + new_content)
+
+        self.info("Check the original file is changed too.")
+        file_content = j.sal.fs.readFile(file_path)
+        self.assertEquals(file_content, content + new_content)
+
+    @parameterized.expand(["include", "exclude"])
+    def test042_compress_include_exclude_path_regex(self, path_option):
+        """
+        Test case for compressing files with including/excluding path regex.
+
+        **Test scenario**
+        #. Create a tree with some files and directories.
+        #. Create a file with specific regex (R1) under this tree.
+        #. Compress this tree with path include/exclude = (R1).
+        #. Uncompress this output file, should /not find file only this file.
+        """
+        self.info("Create a tree with some files and directories.")
+        base_dir = self.create_tree()
+        before_md5sum = self.md5sum(base_dir)
+
+        self.info("Create a file with specific regex (R1) under this tree.")
+        file_name = "1_2"
+        file_path = os.path.join(base_dir, file_name)
+        j.sal.fs.touch(file_path)
+
+        self.info(f"Compress this tree with path {path_option} = (R1).")
+        tar_dest = f"{self.random_string()}.tar.gz"
+        tar_dest_path = os.path.join(self.temp_path, tar_dest)
+        if path_option == "include":
+            j.sal.fs.targzCompress(
+                sourcepath=base_dir, destinationpath=tar_dest_path, pathRegexIncludes=["[0-9][_][0-9]"]
+            )
+        else:
+            j.sal.fs.targzCompress(
+                sourcepath=base_dir, destinationpath=tar_dest_path, pathRegexExcludes=["[0-9][_][0-9]"]
+            )
+
+        self.info("Uncompress this output file")
+        untar_dest = self.random_string()
+        untar_dest_path = os.path.join(self.temp_path, untar_dest)
+        j.sal.fs.targzUncompress(sourceFile=tar_dest_path, destinationdir=untar_dest_path, removeDestinationdir=False)
+
+        self.info("Check the result files")
+        if path_option == "include":
+            include_file = os.path.join(untar_dest_path, file_name)
+            dirs_files_list = self.list_files_dirs_in_dir(untar_dest_path)
+            self.assertEquals(dirs_files_list, [include_file])
+        else:
+            after_md5sum = self.md5sum(untar_dest_path)
+            self.assertEquals(before_md5sum, after_md5sum)
+
+    @parameterized.expand(["include", "exclude"])
+    def test043_compress_include_exclude_content_regex(self, content_option):
+        """
+        Test case for compressing files with including/excluding content regex.
+
+        **Test scenario**
+        #. Create a tree with some files and directories.
+        #. Create a file with specific regex in it's content (R1) under this tree.
+        #. Compress this tree with content include/exclude = (R1).
+        #. Uncompress this output file, should /not find file only this file.
+        """
+        self.info("Create a tree with some files and directories.")
+        base_dir = self.create_tree()
+        before_md5sum = self.md5sum(base_dir)
+
+        self.info("Create a file with specific regex (R1) under this tree.")
+        file_name = self.random_string()
+        file_path = os.path.join(base_dir, file_name)
+        content = "1_2"
+        j.sal.fs.writeFile(file_path, content)
+
+        self.info(f"Compress this tree with content {content_option} = (R1).")
+        tar_dest = f"{self.random_string()}.tar.gz"
+        tar_dest_path = os.path.join(self.temp_path, tar_dest)
+
+        if content_option == "include":
+            j.sal.fs.targzCompress(
+                sourcepath=base_dir, destinationpath=tar_dest_path, contentRegexIncludes=["[0-9][_][0-9]"]
+            )
+        else:
+            j.sal.fs.targzCompress(
+                sourcepath=base_dir, destinationpath=tar_dest_path, contentRegexExcludes=["[0-9][_][0-9]"]
+            )
+
+        self.info("Uncompress this output file")
+        untar_dest = self.random_string()
+        untar_dest_path = os.path.join(self.temp_path, untar_dest)
+        j.sal.fs.targzUncompress(sourceFile=tar_dest_path, destinationdir=untar_dest_path, removeDestinationdir=False)
+
+        self.info("Check the result files")
+        if content_option == "include":
+            include_file = os.path.join(untar_dest_path, file_name)
+            dirs_files_list = self.list_files_dirs_in_dir(untar_dest_path)
+            self.assertEquals(dirs_files_list, [include_file])
+        else:
+            after_md5sum = self.md5sum(untar_dest_path)
+            self.assertEquals(before_md5sum, after_md5sum)
+
+    @parameterized.expand([(0,), (1,)])
+    def test044_compress_depth(self, depth):
+        """
+        Test case for compressing files with directories depth.
+
+        **Test scenario**
+        #. Create a tree with some files and directories.
+        #. Compress this tree with depths=[0].
+        #. Uncompress this output file, should find all files.
+        #. Compress this tree with depths=[1].
+        #. Uncompress this output file, should find sub directories with thier files.
+        """
+        self.info("Create a tree with some files and directories.")
+        base_dir = self.create_tree()
+        before_md5sum = self.md5sum(base_dir)
+
+        self.info(f"Compress this tree with depths=[{depth}].")
+        tar_dest = f"{self.random_string()}.tar.gz"
+        tar_dest_path = os.path.join(self.temp_path, tar_dest)
+        j.sal.fs.targzCompress(sourcepath=base_dir, destinationpath=tar_dest_path, depths=[depth])
+
+        self.info("Uncompress this output file")
+        untar_dest = self.random_string()
+        untar_dest_path = os.path.join(self.temp_path, untar_dest)
+        j.sal.fs.targzUncompress(sourceFile=tar_dest_path, destinationdir=untar_dest_path, removeDestinationdir=False)
+
+        self.info("Check the result files")
+        if depth:
+            files = [
+                os.path.join(base_dir, x) for x in os.listdir(base_dir) if os.path.isfile(os.path.join(base_dir, x))
+            ]
+            for file in files:
+                j.sal.fs.remove(file)
+            before_md5sum = self.md5sum(base_dir)
+
+        after_md5sum = self.md5sum(untar_dest_path)
+        self.assertEquals(before_md5sum, after_md5sum)
+
+    def test045_compress_with_extra_files(self):
+        """
+        Test case for compressing files with extra files.
+
+        **Test scenario**
+        #. Create two tree with some files and directories.
+        #. Compress the first tree with extrafiles using the second tree.
+        #. Uncompress this output file.
+        #. Check that second tree under the result directory.
+        #. Remove the second tree, should the first tree remain.
+        """
+        self.info("Create two tree with some files and directories.")
+        base_dir = self.create_tree()
+        second_tree = self.create_tree()
+        first_tree_md5sum = self.md5sum(base_dir)
+        second_tree_md5sum = self.md5sum(second_tree)
+
+        self.info(f"Compress the first tree with extrafiles using the second tree.")
+        tar_dest = f"{self.random_string()}.tar.gz"
+        tar_dest_path = os.path.join(self.temp_path, tar_dest)
+        j.sal.fs.targzCompress(
+            sourcepath=base_dir, destinationpath=tar_dest_path, extrafiles=[[second_tree, "second_tree"]]
+        )
+
+        self.info("Uncompress this output file.")
+        untar_dest = self.random_string()
+        untar_dest_path = os.path.join(self.temp_path, untar_dest)
+        j.sal.fs.targzUncompress(sourceFile=tar_dest_path, destinationdir=untar_dest_path, removeDestinationdir=False)
+
+        self.info("Check that second tree under the result directory.")
+        second_tree_path = os.path.join(untar_dest_path, "second_tree")
+        second_tree_md5sum_after = self.md5sum(second_tree_path)
+        self.assertEquals(second_tree_md5sum_after, second_tree_md5sum)
+
+        self.info("Remove the second tree, should the first tree remain.")
+        j.sal.fs.remove(second_tree_path)
+        first_tree_md5sum_after = self.md5sum(untar_dest_path)
+        self.assertEquals(first_tree_md5sum_after, first_tree_md5sum)
+
+    def test046_compress_with_dest(self):
+        """
+        Test case for compressing files with specify the destination in tar.
+
+        **Test scenario**
+        #. Create a tree with some files and directories.
+        #. Compress this tree with specify the destination (D1) in tar.
+        #. Uncompress this output file, should find this tree under (D1).
+        """
+        self.info("Create a tree with some files and directories.")
+        base_dir = self.create_tree()
+        before_md5sum = self.md5sum(base_dir)
+
+        self.info(f"Compress this tree with specify the destination (D1) in tar")
+        tar_dest = f"{self.random_string()}.tar.gz"
+        tar_dest_path = os.path.join(self.temp_path, tar_dest)
+        dest = self.random_string()
+        j.sal.fs.targzCompress(sourcepath=base_dir, destinationpath=tar_dest_path, destInTar=dest)
+
+        self.info("Uncompress this output file")
+        untar_dest = self.random_string()
+        untar_dest_path = os.path.join(self.temp_path, untar_dest)
+        j.sal.fs.targzUncompress(sourceFile=tar_dest_path, destinationdir=untar_dest_path, removeDestinationdir=False)
+
+        self.info("Uncompress this output file, should find this tree under (D1).")
+        list_dest = os.listdir(untar_dest_path)
+        self.assertEquals(list_dest, [dest])
+
+        dest_path = os.path.join(untar_dest_path, dest)
+        after_md5sum = self.md5sum(dest_path)
+        self.assertEquals(before_md5sum, after_md5sum)
+
+    def test047_remove_irrelevant_files(self):
+        """
+        Test case for removing irrelevant files in a directory.
+
+        **Test scenario**
+        #. Create a tree with some directories and files.
+        #. Create a file with extention bak and pyc.
+        #. Remove the irrelevant files, should only remove files with extention bak and pyc.
+        """
+        self.info("Create a tree with some directories and files.")
+        base_dir = self.create_tree()
+
+        self.info("Create a file with extention bak and pyc.")
+        bak_file = self.random_string() + ".bak"
+        bak_path = os.path.join(base_dir, bak_file)
+        j.sal.fs.touch(bak_path)
+        pyc_file = self.random_string() + ".pyc"
+        pyc_path = os.path.join(base_dir, pyc_file)
+        j.sal.fs.touch(pyc_path)
+        dirs_files_list = self.list_files_dirs_in_dir(base_dir)
+
+        self.assertIn(bak_path, dirs_files_list)
+        self.assertIn(pyc_path, dirs_files_list)
+
+        self.info("Remove the irrelevant files, should only remove files with extention bak and pyc.")
+        j.sal.fs.removeIrrelevantFiles(base_dir)
+        dirs_files_list = self.list_files_dirs_in_dir(base_dir)
+        self.assertNotIn(bak_path, dirs_files_list)
+        self.assertNotIn(pyc_path, dirs_files_list)
+
+    def test048_validate_files_names(self):
+        """
+        Test case for validate files names.
+
+        **Test scenario**
+        #. Check file name with special charater is valid.
+        #. Check file name with "/" is not valid.
+        #. Check file name with more than 255 charater is not valid.
+        #. Check file name with 0x00 is not vaild.
+        """
+        self.info("Check file name with special charater is valid.")
+        special_characters = list(punctuation)
+        special_characters.remove("/")
+        special_character = random.choice(special_characters)
+        name = self.random_string() + special_character
+        self.assertTrue(j.sal.fs.validateFilename(name))
+
+        self.info("Check file name with '/' is not valid.")
+        name = self.random_string() + "/"
+        self.assertFalse(j.sal.fs.validateFilename(name))
+
+        self.info("Check file name with more than 255 charater is not valid.")
+        name = ""
+        for i in range(256):
+            name += str(i)
+        self.assertFalse(j.sal.fs.validateFilename(name))
+
+        self.info("Check file name with 0x00 is not vaild.")
+        name = self.random_string() + "\0x00"
+        self.assertFalse(j.sal.fs.validateFilename(name))
