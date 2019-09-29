@@ -28,7 +28,7 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         cl.execute_command("config_format", "json")
         return cl
 
-    def get(self, threebot):
+    def client_get(self, threebot=None):
         """
 
         returns a client connection to a threebot
@@ -38,6 +38,9 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         :return:
         """
         # path to get a threebot client needs to be as fast as possible
+        if id:
+            assert threebot == None
+            threebot = id
         if threebot in self._cache:
             return self._cache
         if isinstance(threebot, int):

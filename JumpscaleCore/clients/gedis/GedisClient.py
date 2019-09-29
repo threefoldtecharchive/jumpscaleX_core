@@ -162,14 +162,14 @@ class GedisClient(JSConfigBase):
         return self._redis_
 
     # def __getattr__(self, name):
-    #     if name.startswith("_") or name in self._methods() or name in self._properties():
+    #     if name.startswith("_") or name in self._methods_gedis() or name in self._properties():
     #         return self.__getattribute__(name)
     #     return self.cmds.__getattribute__(name)
 
-    def _methods(self, prefix=""):
+    def _methods_gedis(self, prefix=""):
         if prefix.startswith("_"):
-            return JSConfigBase._methods(self, prefix=prefix)
-        res = [str(i) for i in self.actors._methods()]
+            return JSConfigBase._methods_gedis(self, prefix=prefix)
+        res = [str(i) for i in self.actors._methods_gedis()]
         for i in ["ping"]:
             if i not in res:
                 res.append(i)

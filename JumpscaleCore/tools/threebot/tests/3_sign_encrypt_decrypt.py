@@ -25,7 +25,7 @@ def main(self):
     #
 
     test_case = TestCase()
-    data_list = self.get_test_data()
+    data_list = self._get_test_data()
     # seed = j.data.encryption.mnemonic_to_seed(j.data.encryption.mnemonic_generate())
     server_sk = j.data.nacl.default
     # test asymetric encryptoin between 2 users
@@ -36,7 +36,7 @@ def main(self):
     assert client_sk.public_key.encode() != server_sk.public_key.encode()
     assert client_sk.public_key.encode() != server_sk.verify_key.encode()
 
-    tid = j.tools.threebot.me.tid
+    tid = j.tools.threebot.me.default.tid
 
     self._log_info("sign arbitrary data should work and be verified with 3bot pub key")
     res = self._serialize_sign_encrypt(data_list, serialization_format="json", pubkey_hex=None)

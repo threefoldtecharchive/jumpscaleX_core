@@ -19,7 +19,7 @@ class ThreebotClient(JSConfigBase):
     """
 
     def _init(self, **kwargs):
-        self._gedis = None
+        self._gedis_ = None
         self._pubkey_obj = None
         self._verifykey_obj = None
         self._sealedbox_ = None
@@ -27,10 +27,14 @@ class ThreebotClient(JSConfigBase):
 
     @property
     def _gedis(self):
-        if not self._gedis:
-            self._gedis = j.clients.gedis.get(name=self.name, host=self.host, port=self.port)
-        return self._gedis
+        if not self._gedis_:
+            self._gedis_ = j.clients.gedis.get(name=self.name, host=self.host, port=self.port)
+        return self._gedis_
 
+    def reload(self):
+        self._gedis.reload()
+
+    @property
     def actors(self):
         return self._gedis.actors
 
@@ -79,7 +83,9 @@ class ThreebotClient(JSConfigBase):
     @property
     def verifykey_obj(self):
         if not self._verifykey_obj:
+            assert self.pubkey
             verifykey = binascii.unhexlify(self.pubkey)
+            assert len(verifykey) == 32
             self._verifykey_obj = VerifyKey(verifykey)
         return self._verifykey_obj
 

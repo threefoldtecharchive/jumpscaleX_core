@@ -23,13 +23,16 @@ MyEnv = j.core.myenv
 
 
 class NACL(j.baseclasses.object):
-    def _init(self, name=None, **kwargs):
+    def _init(self, name=None, configure_if_needed=False, **kwargs):
         assert name
         self.name = name
         self._signingkey = None
         self._box = None
         if not Tools.exists(self._path):
             Tools.dir_ensure(self._path)
+        if not Tools.exists(self._path_seed):
+            if configure_if_needed:
+                self.configure(privkey_words=None, generate=True)
 
     def reset(self):
         self._signingkey = None
@@ -183,10 +186,10 @@ class NACL(j.baseclasses.object):
                     assert self._signingkey
                     return
                 # means we did not find the seed yet
-                if interactive:
-                    self._ask_privkey_words()
-                elif generate:
+                if generate:
                     self._keys_generate()
+                elif interactive:
+                    self._ask_privkey_words()
                 else:
                     self._error_raise("cannot generate private key, was not allowed")
 

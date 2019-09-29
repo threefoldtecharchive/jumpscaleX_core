@@ -3,10 +3,7 @@ from Jumpscale import j
 from .Attr import Attr
 from .JSBase import JSBase
 
-
 from .TestTools import TestTools
-
-# from .JSConfigBCDB import JSConfigBCDB
 
 
 class JSFactory(JSBase, Attr):
@@ -60,79 +57,6 @@ class JSFactory(JSBase, Attr):
                     item.save()
             else:
                 raise j.exceptions.JSBUG("only suport j.baseclasses.object")
-
-        # if self._object_config:
-        #     self._object_config.save()
-
-    # def _dataprops_names_get(self, filter=None):
-    #     # means there is an object attached to it
-    #     if self._object_config:
-    #         self._object_config._dataprops_names_get()
-    #     return []
-
-    # def _children_names_get(self, filter=None):
-    #     """
-    #     :param filter: is '' then will show all, if None will ignore _
-    #             when * at end it will be considered a prefix
-    #             when * at start it will be considered a end of line filter (endswith)
-    #             when R as first char its considered to be a regex
-    #             everything else is a full match
-    #
-    #     :param self:
-    #     :param filter:
-    #     :return:
-    #     """
-    #
-    #     def do():
-    #         x = []
-    #         for key, item in self._children.items():
-    #             x.append(key)
-    #         return x
-    #
-    #     x = self._cache.get(key="_children_names_get", method=do, expire=10)  # will redo every 10 sec
-    #     return self._filter(filter=filter, llist=x, nameonly=True)
-
-    # def _children_get(self, filter=None):
-    #     """
-    #     :param filter: is '' then will show all, if None will ignore _
-    #             when * at end it will be considered a prefix
-    #             when * at start it will be considered a end of line filter (endswith)
-    #             when R as first char its considered to be a regex
-    #             everything else is a full match
-    #
-    #     :return:
-    #     """
-    #     x = []
-    #     for key, item in self._children.items():
-    #         x.append(item)
-    #     return self._filter(filter=filter, llist=x, nameonly=False)
-
-    # def _new(self, name, save=False, **kwargs):
-    #     """
-    #     it it exists will delete if first when delete == True
-    #     :param name:
-    #     :param jsxobject:
-    #     :param save:
-    #     :param kwargs:
-    #     :return:
-    #     """
-    #     if self.exists(name=name):
-    #         raise j.exceptions.Base("cannot do new object, exists")
-    #     return self._new2(name=name, save=save, **kwargs)
-    #
-    # def _new2(self, name, save=False, **kwargs):
-    #     """
-    #     :param name: for the CONFIG item (is a unique name for the service, client, ...)
-    #     :return: the service
-    #     """
-    #     klass = self._childclass_selector(**kwargs)
-    #     child = klass(parent=self, **kwargs)
-    #     assert child._name
-    #     assert child._parent
-    #     self._children[name] = child
-    #     if save:
-    #         self._children[child].save()
-    #     return self._children[name]
 
     def get(self, name="main", needexist=False, save=False, reload=False, **kwargs):
         """

@@ -3,7 +3,7 @@ from Jumpscale import j
 
 def main(self):
     """
-    kosmos 'j.servers.gedis.test("basic")'
+    kosmos -p 'j.servers.gedis.test("basic")'
     """
 
     print("[*] testing echo")

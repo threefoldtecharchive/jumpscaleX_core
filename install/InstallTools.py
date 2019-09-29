@@ -2119,7 +2119,7 @@ class Tools:
         showout=True,
         useShell=True,
         cwd=None,
-        timeout=800,
+        timeout=1800,
         die=True,
         async_=False,
         args=None,

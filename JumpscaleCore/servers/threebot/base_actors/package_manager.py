@@ -7,12 +7,13 @@ class package_manager(j.baseclasses.threebot_actor):
         assert gedis_server
         self._gedis_server = gedis_server
 
-    def package_add(self, name=None, git_url=None, path=None, schema_out=None, user_session=None):
+    def package_add(self, name=None, git_url=None, path=None, reload=True, schema_out=None, user_session=None):
         """
         ```in
         name = ""
         git_url = ""
         path = ""
+        reload = true (B)
         ```
         """
 
@@ -25,8 +26,10 @@ class package_manager(j.baseclasses.threebot_actor):
         assert j.servers.threebot.current
         threebot_server_name = j.servers.threebot.current.name
 
-        if git_url:
+        if reload == False and j.tools.threebot_packages.exists(name):
+            return
 
+        if git_url:
             package = j.tools.threebot_packages.get(
                 name=name, giturl=git_url, threebot_server_name=threebot_server_name
             )

@@ -10,11 +10,10 @@ def main(self):
     """
 
     # simulate I am remote threebot
-    j.data.nacl.configure(name="client_test", generate=True, interactive=False)
     client_nacl = j.data.nacl.get(name="client_test")
     server_nacl = j.data.nacl.default  # (the one we have)
 
-    server_tid = j.tools.threebot.me.tid
+    server_tid = j.tools.threebot.me.default.tid
     client_tid = 99
 
     S = """
@@ -73,7 +72,7 @@ def main(self):
 
     # back to normal
     self._nacl = server_nacl
-    j.tools.threebot.me.tid = server_tid
+    j.tools.threebot.me.default.tid = server_tid
 
     self._log_info("TEST NACL DONE")
     return "OK"

@@ -61,7 +61,13 @@ class JSConfigBCDB(JSConfigBCDBBase):
 
     @property
     def _key(self):
+        assert self.name
         return self._classname + "_" + self.name
+
+    @property
+    def _name(self):
+        assert self._classname
+        return self._classname
 
     @property
     def _id(self):

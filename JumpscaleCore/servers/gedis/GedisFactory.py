@@ -11,10 +11,6 @@ class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtoo
     __jslocation__ = "j.servers.gedis"
     _CHILDCLASS = GedisServer
 
-    def _init(self):
-        self.client = None
-        self.client_phonebook = None
-
     def get_gevent_server(self, name="", **kwargs):
         """
         return gedis_server as gevent server
@@ -41,7 +37,15 @@ class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtoo
 
         """
         # we don't support running gevent as stdallone any longer
-        self.client_phonebook = j.threebot.package.phonebook.client_get()
-        self.client = j.threebot.package.ibiza.client_get()
+
+        # make sure we have a threebot life
+        cl = j.servers.threebot.local_start_default()
+
+        cl.actors.package_manager.package_add(
+            "threebot_phonebook",
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
+        )
+
+        self._threebot_client_default = cl
 
         self._test_run(name=name)
