@@ -30,18 +30,18 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         return self.__class__._CHILDCLASS
 
-    def new(self, name, jsxobject=None, save=True, **kwargs):
+    def new(self, name, jsxobject=None, autosave=True, **kwargs):
         """
         it it exists will delete if first when delete == True
         :param name:
         :param jsxobject:
-        :param save:
+        :param autosave: sets the autosave argument on the data and also saves the object before the function returns. If set to False, you need to explicitly save the object.
         :param kwargs:
         :return:
         """
         if self.exists(name=name):
             raise j.exceptions.Base("cannot do new object, exists")
-        jsconfig = self._new(name=name, jsxobject=jsxobject, save=save, **kwargs)
+        jsconfig = self._new(name=name, jsxobject=jsxobject, autosave=autosave, **kwargs)
         self._check(jsconfig)
         return jsconfig
 
@@ -56,12 +56,12 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         # lets do some tests (maybe in future can be removed, but for now the safe bet)
         assert jsconfig._id > 0
-        mother_id, _ = jsconfig._mother_id_get()
+        mother_id = jsconfig._mother_id_get()
         if mother_id:
             assert jsconfig.mother_id == mother_id
         assert jsconfig._model.schema._md5 == self._model.schema._md5
 
-    def _new(self, name, jsxobject=None, save=True, **kwargs):
+    def _new(self, name, jsxobject=None, autosave=True, **kwargs):
         """
         :param name: for the CONFIG item (is a unique name for the service, client, ...)
         :param jsxobject: you can right away specify the jsxobject
@@ -83,13 +83,10 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 jsxobject = self._model.new()
             jsxobject.name = name
 
-        jsxobject._autosave = save
+        jsxobject._autosave = autosave
 
         # means we need to remember the parent id
-        mother_id, has_mother = self._mother_id_get()
-        if has_mother and not mother_id and save:
-            raise j.exceptions.Value("Save can't be True if parent is not saved")
-
+        mother_id = self._mother_id_get()
         if mother_id:
             if jsxobject.mother_id != mother_id:
                 jsxobject.mother_id = mother_id
@@ -97,24 +94,24 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         jsconfig_klass = self._childclass_selector(jsxobject=jsxobject)
         jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject, **kwargs_to_class)
         jsconfig._triggers_call(jsconfig, "new")
-        jsconfig._autosave = save
+        jsconfig._autosave = autosave
         self._children[name] = jsconfig
-        if save:
+        if autosave:
             self._children[name].save()
 
         return self._children[name]
 
-    def get(self, name="main", id=None, needexist=False, save=True, reload=False, **kwargs):
+    def get(self, name="main", id=None, needexist=False, autosave=True, reload=False, **kwargs):
         """
         :param name: of the object
         """
 
         # will reload if needed (not in self._children)
-        rc, jsconfig = self._get(name=name, id=id, die=needexist, reload=reload)
+        rc, jsconfig = self._get(name=name, id=id, die=needexist, reload=reload, )
 
         if not jsconfig:
             self._log_debug("NEW OBJ:%s:%s" % (name, self._classname))
-            jsconfig = self._new(name=name, save=save, **kwargs)
+            jsconfig = self._new(name=name, autosave=autosave, **kwargs)
         else:
             # check that the stored values correspond with kwargs given
             # means comes from the database
@@ -127,14 +124,14 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 if not getattr(jsconfig, key) == val:
                     changed = True
                     setattr(jsconfig, key, val)
-            if changed and save:
+            if changed and autosave:
                 try:
                     jsconfig.save()
                 except Exception as e:
                     print("CHECK WHY ERROR")
                     j.shell()
 
-            jsconfig._autosave = save
+            jsconfig._autosave = autosave
 
         # lets do some tests (maybe in future can be removed, but for now the safe bet)
         self._check(jsconfig)
@@ -143,7 +140,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         return jsconfig
 
-    def _get(self, name="main", id=None, die=True, reload=False):
+    def _get(self, name="main", id=None, die=True, reload=False, autosave=True):
 
         if id:
             obj = self._model.get(id)
@@ -174,7 +171,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         else:
             jsxconfig = res[0]
 
-        jsxconfig._autosave = True
+        jsxconfig._autosave = autosave
 
         return 2, jsxconfig
 
@@ -190,10 +187,8 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             except Exception as e:
                 j.shell()
 
-        _, has_mother = self._mother_id_get()
-        if not has_mother:
+        if self._mother_id_get():
             self._model.index.destroy()
-
 
     def _children_names_get(self, filter=None):
         if not self.find():
@@ -231,13 +226,13 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         ids = self._model.find_ids(**kwargs)
         for id in ids:
             if id not in ids_done:
-                item = self.get(id=id, reload=reload, save=False)
+                item = self.get(id=id, reload=reload, autosave=False)
                 res.append(item)
 
         return res
 
     def _kwargs_update(self, kwargs):
-        mother_id, _ = self._mother_id_get()
+        mother_id = self._mother_id_get()
         if mother_id:
             kwargs["mother_id"] = mother_id
         return kwargs

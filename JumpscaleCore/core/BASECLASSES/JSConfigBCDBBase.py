@@ -119,8 +119,7 @@ class JSConfigBCDBBase(JSBase, Attr):
             if "\n" != schematext[-1]:
                 schematext += "\n"
             schematext += 'name** = ""\n'
-        _, has_mother = self._mother_id_get()
-        if has_mother:
+        if self._mother_id_get():
             if schematext.find("mother_id") == -1:
                 if "\n" != schematext[-1]:
                     schematext += "\n"

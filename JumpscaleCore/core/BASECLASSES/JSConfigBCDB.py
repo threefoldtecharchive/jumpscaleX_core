@@ -120,7 +120,7 @@ class JSConfigBCDB(JSConfigBCDBBase):
         assert self._model
         self._triggers_call(self, "save")
 
-        mother_id, _ = self._mother_id_get()
+        mother_id = self._mother_id_get()
         if mother_id:
             # means there is a mother
             self._data.mother_id = mother_id

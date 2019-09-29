@@ -629,19 +629,24 @@ class JSBase:
         this goes to all parents till it finds a parent which has a model attached
         this is to find the parent which acts as the mother for the children.
         when you do a search only the children of this mother will be shown
-        If mother was created with save=False, it won't have id but will still exist as a parent.
 
-        :rtype: tuple
-        :return: The id of the mother and a flag indicating if the child has a mother
+        :return: The id of the mother if there is a mother
         """
         obj = self
         while obj and obj._parent:
             if isinstance(obj._parent, j.baseclasses.object_config):
-                return obj._parent._id, True
+                if obj._parent._id is None:
+                    if obj._parent.name is None:
+                        raise j.exceptions.JSBUG("cannot happen, there needs to be a name")
+                    else:
+                        obj._parent.save()
+                        assert obj._parent._id > 0
+                        return obj._parent._id
+                else:
+                    return obj._parent._id
             obj = obj._parent
-
         # means we did not find a parent which can act as mother
-        return None, False
+        return None
 
     def _children_names_get(self, filter=None):
         return self._filter(filter=filter, llist=self._children_get(filter=filter))
