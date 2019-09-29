@@ -82,7 +82,7 @@ class JSBase:
 
     def _hasattr(self, key):
         """
-        will only returh the properties, methods & children (will not lookin jsconfig data)
+        will only return the properties, methods & children (will not lookin jsconfig data)
         :param name:
         :return:
         """

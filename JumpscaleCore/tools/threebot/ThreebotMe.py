@@ -20,20 +20,13 @@ class ThreebotMe(JSConfigBase):
     """
 
     def _init(self, **kwargs):
+        # the threebot config name always corresponds with the config name of nacl, is by design
         self.nacl = j.data.nacl.get(name=self.name)
         self.serialization_format = "json"
-
-    def data_received_unserialize(self, threebot, data):
-        """
-        data which came from a threebot needs to be unserialized and verified
-        the data comes in encrypted
-        :param threebot:
-        :param data:
-        :return:
-        """
-        return j.tools.threebot._deserialize_check_decrypt(
-            data=data, serialization_format=self.serialization_format, threebot=threebot, nacl=self.nacl
-        )
+        if not self.name:
+            raise j.exceptions.Input(
+                "threebot.me not filled in, please do j.tools.threebot.init_my_threebot(interactive=True)"
+            )
 
     def data_send_serialize(self, threebot, data):
         """
@@ -45,4 +38,21 @@ class ThreebotMe(JSConfigBase):
         """
         return j.tools.threebot._serialize_sign_encrypt(
             data=data, serialization_format=self.serialization_format, threebot=threebot, nacl=self.nacl
+        )
+
+    def data_received_unserialize(self, threebot, data, signature):
+        """
+        data which came from a threebot needs to be unserialized and verified
+        the data comes in encrypted
+        :param threebot:
+        :param data:
+        :param signature: is the verification key in hex
+        :return:
+        """
+        return j.tools.threebot._deserialize_check_decrypt(
+            data=data,
+            serialization_format=self.serialization_format,
+            threebot=threebot,
+            verifykey_hex=signature,
+            nacl=self.nacl,
         )

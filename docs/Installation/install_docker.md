@@ -33,9 +33,9 @@ If you edit the code you can then test it inside the container. So no need to ed
 
 ```bash
 #to get container kosmos shell (JSX)
-python3 /tmp/jsx.py container-kosmos
+/tmp/jsx container-kosmos
 #to get shell of the ubuntu base os underneath in the container
-python3 /tmp/jsx.py container-shell
+/tmp/jsx container-shell
 ``` 
 
 ## to install multiple containers
@@ -52,9 +52,9 @@ to show the containers
 ```
 /tmp/jsx container-list
 
- - t2         : despiegk/3bot             (sshport:9020)
- - t1         : despiegk/3bot             (sshport:9010)
- - 3bot       : despiegk/3bot             (sshport:9000)
+ - t2         : threefoldtech/3bot             (sshport:9020)
+ - t1         : threefoldtech/3bot             (sshport:9010)
+ - 3bot       : threefoldtech/3bot             (sshport:9000)
 
 ```
 
@@ -74,3 +74,11 @@ ssh -A root@localhost -p 9020
 
 the containers typically have ipaddresses in  172.17.0.0/16 and can reach each other
 
+## how to build your own base images
+
+```bash
+jsx container-basebuilder
+jsx container-3botbuilder
+ ```
+ 
+ this will result in threefoldtech/base & threefoldtech/3bot on your system, you can use other names but if this name then will be used by the container installer as base which will win a lot of time.

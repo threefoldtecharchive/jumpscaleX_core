@@ -34,7 +34,7 @@ class GedisClientGenerated():
         try:
             res = self._redis.execute_command(cmd_name,data)
         except Exception as e:
-            self.handle_error(e,1)
+            self.handle_error(e,1,cmd_name=cmd_name)
 
         {% else %}  #is for non schema based
 
@@ -44,7 +44,7 @@ class GedisClientGenerated():
         try:
             res =  self._redis.execute_command(cmd_name)
         except Exception as e:
-            self.handle_error(e,2)
+            self.handle_error(e,2,cmd_name=cmd_name)
 
         {% else %}
         # send multi args with no prior knowledge of schema
@@ -72,18 +72,20 @@ class GedisClientGenerated():
     {% endfor %}
 
 
-    def handle_error(self, e, source=None):
+    def handle_error(self, e, source=None,cmd_name=None):
         try:
             logdict = j.data.serializers.json.loads(str(e))
         except Exception:
-            logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+            logdict = j.core.myenv.exception_handle(e, die=False, stdout=False)
 
         addr = self._redis.connection_pool.connection_kwargs["host"]
         port = self._redis.connection_pool.connection_kwargs["port"]
         msg = "GEDIS SERVER %s:%s" % (addr,port)
+        if cmd_name:
+            msg+=" SOURCE METHOD: %s"% cmd_name
         logdict["source"] = msg
  
-        j.core.tools.log2stdout(logdict=logdict, data_show=True)
+        # j.core.tools.log2stdout(logdict=logdict, data_show=True)
         j.core.tools.process_logdict_for_handlers(logdict=logdict, iserror=True)
 
         raise j.exceptions.RemoteException(message=msg, data=logdict, exception=e)

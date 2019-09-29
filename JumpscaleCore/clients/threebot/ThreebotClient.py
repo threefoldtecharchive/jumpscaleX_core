@@ -19,20 +19,30 @@ class ThreebotClient(JSConfigBase):
     """
 
     def _init(self, **kwargs):
-        self._gedis = None
         self._pubkey_obj = None
         self._verifykey_obj = None
         self._sealedbox_ = None
+        self._gedis_connections = {}
         assert self.name != ""
+
+    def actors_get(self, namespace="default"):
+        if not namespace in self._gedis_connections:
+            g = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, namespace=namespace)
+            self._gedis_connections[namespace] = g
+        return self._gedis_connections[namespace].actors
+
+    def reload(self):
+        for key, g in self._gedis_connections.items():
+            g.reload()
 
     @property
     def _gedis(self):
-        if not self._gedis:
-            self._gedis = j.clients.gedis.get(name=self.name, host=self.host, port=self.port)
-        return self._gedis
+        a = self.actors_get("default")
+        return self._gedis_connections["default"]
 
-    def actors(self):
-        return self._gedis.actors
+    @property
+    def actors_default(self):
+        return self.actors_get("default")
 
     def ping(self):
         return self.client.ping()
@@ -52,17 +62,17 @@ class ThreebotClient(JSConfigBase):
             res = binascii.hexlify(res)
         return res
 
-    def verify_from_threebot(self, data, signature, hex=False, die=True):
+    def verify_from_threebot(self, data, signature, data_is_hex=False):
         """
         :param data, if string will unhexlify else binary data to verify against verification key of the threebot who send us the data
 
         :return:
         """
-        if isinstance(data, str) or hex:
+        if isinstance(data, str) or data_is_hex:
             data = binascii.unhexlify(data)
         if len(signature) == 128:
             signature = binascii.unhexlify(signature)
-        self.verifykey_obj.verify(data, signature=signature)
+        return self.verifykey_obj.verify(data, signature=signature)
 
     @property
     def _sealedbox(self):
@@ -79,7 +89,9 @@ class ThreebotClient(JSConfigBase):
     @property
     def verifykey_obj(self):
         if not self._verifykey_obj:
+            assert self.pubkey
             verifykey = binascii.unhexlify(self.pubkey)
+            assert len(verifykey) == 32
             self._verifykey_obj = VerifyKey(verifykey)
         return self._verifykey_obj
 

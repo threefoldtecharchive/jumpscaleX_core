@@ -191,11 +191,16 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             self._model.index.destroy()
 
     def _children_names_get(self, filter=None):
-        if not self.find():
-            return []
+        Item = self._model.index.sql
+        if filter and filter != "*":
+            res = [i.name for i in Item.select().where(Item.name.startswith(filter))]
         else:
-            res = [i.name for i in self.find()]
-            return res
+            res = [i.name for i in Item.select()]
+
+        if len(res) > 50:
+            return []
+
+        return res
 
     def find(self, reload=False, **kwargs):
         """

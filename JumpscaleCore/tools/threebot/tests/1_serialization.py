@@ -9,7 +9,7 @@ def main(self):
 
     """
 
-    data_list = self.get_test_data()
+    data_list = self._get_test_data()
     res_j = self._serialize(data_list, serialization_format="json")
     print(res_j)
     p = '[true, 1, [1, 2, "a"], [999, "090f7be0270b7ec77fbc8ac448c516e6", "{\\"name\\": \\"aname\\", \\"description\\": \\"something\\"}"], "astring", [998, {"a": 2}]]'

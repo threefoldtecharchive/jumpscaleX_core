@@ -1,36 +1,32 @@
 from Jumpscale import j
 import binascii
 from .ThreebotMe import ThreebotMe
+from .ThreebotMeCollection import ThreebotMeCollection
+from .ThreebotExplorer import ThreebotExplorer
 from io import BytesIO
 from nacl.signing import VerifyKey
 from nacl.public import PrivateKey, PublicKey, SealedBox
 
-JSConfigBase = j.baseclasses.object_config_collection
 
-
-class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
+class ThreebotToolsFactory(j.baseclasses.factory_testtools):
     __jslocation__ = "j.tools.threebot"
-    _CHILDCLASS = ThreebotMe
+    _CHILDCLASSES = [ThreebotMeCollection]
 
     def _init(self):
         self._nacl = j.data.nacl.default
+        self.explorer = ThreebotExplorer()
 
-    @property
-    def me(self):
-        """
-        your default threebot data
-        :return:
-        """
-        return self.get(name="default")
-
-    def init(self, myidentity="default", name=None, email=None, description=None, ipaddr="", interactive=True):
+    def init_my_threebot(
+        self, myidentity="default", name=None, email=None, description=None, ipaddr="", interactive=True
+    ):
         """
 
-        kosmos 'j.tools.threebot.init(name="test2.ibiza",interactive=False)'
+        initialize your threebot
+
+        kosmos 'j.tools.threebot.init_my_threebot(name="test2.ibiza",interactive=False)'
 
         :param myidentity is the name of the nacl to use, std default, is your private/public key pair
 
-        initialize your threebot connection
         :return:
         """
         j.application.interactive = interactive
@@ -44,44 +40,50 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
             else:
                 raise j.exceptions.Input("please specify name")
 
-        r = j.tools.threebot.threebot_record_get(name=name, die=False)
+        r = j.tools.threebot.explorer.threebot_record_get(name=name, die=False)
         if not r:
             # means record did not exist yet
             if not email:
                 if interactive:
+                    j.application.interactive = interactive
+                    # TODO: this should not have to be set, issue is that the interactive was changed since start of method
+                    assert j.application.interactive
                     email = j.tools.console.askString("your threebot email (optional)")
                 else:
                     email = ""
             if not description:
                 if interactive:
+                    j.application.interactive = interactive
                     description = j.tools.console.askString("your threebot description (optional)")
                 else:
                     description = ""
             if not ipaddr:
                 if interactive:
+                    j.application.interactive = interactive
                     ipaddr = j.tools.console.askString("your threebot ipaddr (optional if used e.g. locally)")
                 else:
-                    ipaddr = ""
+                    ipaddr = "localhost"
 
             if interactive:
                 if not j.tools.console.askYesNo("ok to use your local private key as basis for your threebot?", True):
                     raise j.exceptions.Input("cannot continue, need to register a threebot using j.clients.threebot")
 
-            j.clients.threebot.threebot_register(
+            self.explorer.threebot_register(
                 name=name, ipaddr=ipaddr, email=email, description=description, wallet_name=name, nacl=nacl
             )
-            r = j.tools.threebot.threebot_record_get(name=name, die=True)
+            r = self.explorer.threebot_record_get(name=name, die=True)
 
         if not nacl.verify_key_hex == r.pubkey:
             raise j.exceptions.Input("your identity needs to be same pubkey as local configured nacl")
 
-        o = self.get(name=myidentity, tid=r.id, tname=r.name, email=r.email, pubkey=r.pubkey)
+        assert r.id
+        assert r.name
+
+        o = self.me.get(name=myidentity, tid=r.id, tname=r.name, email=r.email, pubkey=r.pubkey)
+
+        print(o)
 
         return o
-
-    @property
-    def explorer(self):
-        return j.clients.threebot.explorer
 
     def _serializer_get(self, serialization_format="json"):
         if not serialization_format in ["json", "msgpack"]:
@@ -232,21 +234,24 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
         if not nacl:
             nacl = self._nacl
         data2 = self._serialize(data, serialization_format=serialization_format)
-        tid = j.tools.threebot.me.tid
+
         if isinstance(data2, str):
             data2 = data2.encode()
         signature = nacl.sign(data2)
+        signature_hex = binascii.hexlify(signature)
         if threebot:
-            threebot_client = j.clients.threebot.get(threebot)
+            threebot_client = j.clients.threebot.client_get(threebot)
             data3 = threebot_client.encrypt_for_threebot(data2)
+            tid = threebot_client.tid
         else:
+            tid = j.tools.threebot.me.default.tid
             if pubkey_hex:
                 assert len(pubkey_hex) == 64
                 pubkey = PublicKey(binascii.unhexlify(pubkey_hex))
                 data3 = nacl.encrypt(data2, public_key=pubkey)
             else:
                 data3 = data2
-        return [tid, data3, signature]
+        return [tid, data3, signature_hex]
 
     def _deserialize_check_decrypt(
         self, data, serialization_format="json", verifykey_hex=None, nacl=None, threebot=None
@@ -264,167 +269,26 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
         raises exceptions if decryption or signature fails
 
         """
+        assert len(verifykey_hex) == 128
         if not nacl:
             nacl = self._nacl
         # decrypt data
-        data_dec_ser = nacl.decrypt(data[1])
+        data_dec_ser = nacl.decrypt(data)
         # unserialize data
         data_dec = self._unserialize(data_dec_ser, serialization_format=serialization_format)
         # verify the signature against the provided pubkey and the decrypted data
         if threebot:
-            threebot_client = j.clients.threebot.get(threebot)
+            threebot_client = j.clients.threebot.client_get(threebot)
             threebot_client.verify_from_threebot(data=data_dec_ser, signature=verifykey_hex)
         else:
             sign_is_ok = nacl.verify(data_dec_ser, data[2], verify_key=binascii.unhexlify(verifykey_hex))
-        if not sign_is_ok:
-            raise j.exceptions.Base(
-                "could not verify signature:%s, against pubkey:%s" % (data[2], binascii.unhexlify(verifykey_hex))
-            )
+            if not sign_is_ok:
+                raise j.exceptions.Base(
+                    "could not verify signature:%s, against pubkey:%s" % (data[2], binascii.unhexlify(verifykey_hex))
+                )
         return data_dec
 
-    def threebot_record_get(self, tid=None, name=None, die=True):
-        """
-        j.tools.threebot.threebot_record_get(name="something.something",die=False)
-        :param tid: threebot id
-        :param name: name of your threebot
-        :param die:
-
-        if data found will be verified on validity
-
-        :return:
-        """
-        # did not find locally yet lets fetch
-        r = self.explorer.client.actors.phonebook.get(tid=tid, name=name, die=die)
-        if r and r.name != "":
-            # this checks that the data we got is valid
-            rc = j.data.nacl.payload_verify(
-                r.id,
-                r.name,
-                r.email,
-                r.ipaddr,
-                r.description,
-                r.pubkey,
-                verifykey=r.pubkey,
-                signature=r.signature,
-                die=False,
-            )
-            if not rc:
-                raise j.exceptions.Input("threebot record, not valid, signature does not match")
-
-            return r
-
-        if die:
-            raise j.exceptions.Input("could not find 3bot: user_id:{user_id} name:{name}")
-
-    def threebot_network_prepay_wallet(self, name):
-        """
-
-        the threebot will create a wallet for you as a user and you can leave money on there to be used for
-        paying micro payment services on the threefold network (maximum amount is 1000 TFT on the wallet)
-        THIS IS A WALLET MEANT FOR MICRO PAYMENTS ON THE NETWORK OF THE CORE NETWORK ITSELF !!!
-        ITS AN ADVANCE ON SERVICES WHICH WILL BE USED E.G. REGISTER NAMES or NAME RECORDS
-
-        if a wallet stays empty during 1 day it will be removed automatically
-
-        :param: name is the name of the 3bot like how will be used in following functions like threebot_register_name
-        :param: sender_signature_hex off the name as done by private key of the person who asks
-
-        :return: a TFT wallet address
-        """
-        self._log_info("register step0: create your wallet under the name of your main threebot: %s" % name)
-        cl = self.explorer_redis
-        data_return_json = cl.execute_command(
-            "default.phonebook.wallet_create", j.data.serializers.json.dumps({"name": name})
-        )
-        data_return = j.data.serializers.json.loads(data_return_json)
-        return data_return["wallet_addr"]
-
-    def threebot_register(self, name=None, ipaddr=None, email="", description="", wallet_name=None, nacl=None):
-        """
-
-        The cost is 20 TFT today to register a name which is valid for 1 Y.
-
-        :param: name you want to register can eg $name.$extension of $name if no extension will be $name.3bot
-                needs to correspond on the name as used in threebot_wallet_create
-        :param: wallet_name is the name of a wallet you have funded, by default the same as your name you register
-        :param email:
-        :param ipaddr:
-        :param description:
-        :param nacl is the nacl instance you use default self.default which is for the local threebot
-        :return:
-        """
-        assert name
-
-        if not nacl:
-            nacl = j.data.nacl.default
-        pubkey = nacl.verify_key_hex
-
-        self._log_info("register step1: for 3bot name: %s" % name)
-        if not wallet_name:
-            wallet_name = name
-        cl = self.explorer_redis
-        data_return_json = cl.execute_command(
-            "default.phonebook.name_register",
-            j.data.serializers.json.dumps({"name": name, "wallet_name": wallet_name, "pubkey": pubkey}),
-        )
-
-        data_return = j.data.serializers.json.loads(data_return_json)
-
-        tid = data_return["id"]
-
-        self._log_info("register: {id}:{name} {email} {ipaddr}".format(**data_return))
-
-        # we choose to implement it low level using redis interface
-        assert name
-        assert tid
-        assert isinstance(tid, int)
-
-        data = {
-            "tid": tid,
-            "name": name,
-            "email": email,
-            "ipaddr": ipaddr,
-            "description": description,
-            "pubkey": pubkey,
-        }
-
-        def sign(nacl, *args):
-            buffer = BytesIO()
-            for item in args:
-                if isinstance(item, str):
-                    item = item.encode()
-                elif isinstance(item, int):
-                    item = str(item).encode()
-                elif isinstance(item, bytes):
-                    pass
-                else:
-                    raise RuntimeError()
-                buffer.write(item)
-            payload = buffer.getvalue()
-            signature = nacl.sign(payload)
-            return binascii.hexlify(signature).decode()
-
-        # we sign the different records to come up with the right 'sender_signature_hex'
-        sender_signature_hex = sign(
-            nacl, data["tid"], data["name"], data["email"], data["ipaddr"], data["description"], data["pubkey"]
-        )
-        data["sender_signature_hex"] = sender_signature_hex
-        data2 = j.data.serializers.json.dumps(data)
-        data_return_json = cl.execute_command("default.phonebook.record_register", data2)
-        data_return = j.data.serializers.json.loads(data_return_json)
-
-        record0 = self.threebot_record_get(tid=data_return["id"])
-        record1 = self.threebot_record_get(name=data_return["name"])
-
-        assert record0 == record1
-
-        res = j.clients.threebot.get(name=data_return["name"])
-
-        self._log_info("registration of threebot '{%s}' done" % name)
-
-        return res
-
-    def get_test_data(self):
+    def _get_test_data(self):
         S = """
         @url = tools.threebot.test.schema
         name** = "aname"
@@ -443,10 +307,15 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
         :return:
         """
 
+        self.explorer.actors.package_manager.package_add(
+            "threebot_phonebook",
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
+        )
+
         j.servers.threebot.local_start_default()
 
-        nacl1 = j.data.nacl.configure(name="client_test")
-        nacl2 = j.data.nacl.configure(name="client_test2")
+        nacl1 = j.data.nacl.configure(name="test_client")
+        nacl2 = j.data.nacl.configure(name="test_server")
 
         threebot1 = self.threebot_register(
             name="test.test", email="test@incubaid.com", ipaddr="212.3.247.26", nacl=nacl1
@@ -456,9 +325,39 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
             name="dummy.myself", email="dummy@incubaid.com", ipaddr="212.3.247.27", nacl=nacl2
         )
 
-        self._log_info("test ok")
-
         return nacl1, nacl2, threebot1, threebot2
+
+    def test_register_nacl_threebots(self):
+        self.explorer.actors.package_manager.package_add(
+            "threebot_phonebook",
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
+        )
+
+        # need to make sure to reload the client, because we added a package
+        self.explorer._client.reload()
+
+        nacl1 = j.data.nacl.get(name="test_client")
+        nacl2 = j.data.nacl.get(name="test_server")
+
+        # name needs to correspond with the nacl name, this is your pub/priv key pair
+        threebot_me_client = j.tools.threebot.init_my_threebot(
+            myidentity="test_client",
+            name="test_client",
+            email=None,
+            description=None,
+            ipaddr="localhost",
+            interactive=False,
+        )
+        threebot_me_server = j.tools.threebot.init_my_threebot(
+            myidentity="test_server",
+            name="test_server",
+            email=None,
+            description=None,
+            ipaddr="localhost",
+            interactive=False,
+        )
+
+        return nacl1, nacl2, threebot_me_client, threebot_me_server
 
     def test(self, name=""):
         """
@@ -472,6 +371,17 @@ class ThreebotToolsFactory(j.baseclasses.object_config_collection_testtools):
 
 
         """
+
+        cl = j.servers.threebot.local_start_default()
+
+        cl.actors.package_manager.package_add(
+            "threebot_phonebook",
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
+        )
+
+        self._threebot_client_default = cl
+
+        self.me
 
         self._test_run(name=name)
 
