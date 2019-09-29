@@ -229,12 +229,12 @@ def container_install(
     _configure(configdir=configdir, no_interactive=no_interactive)
 
     if scratch or prebuilt:
-        image = "despiegk/base"
+        image = "threefoldtech/base_runtime"
         if scratch:
             delete = True
         reinstall = True
     if not image:
-        image = "despiegk/3bot"
+        image = "threefoldtech/3bot"
 
     if not branch:
         branch = IT.DEFAULT_BRANCH
@@ -326,10 +326,10 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
 @click.command(name="container-import")
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/saendbox/cfg")
 @click.option("-n", "--name", default="3bot", help="name of container")
-@click.option("-i", "--imagename", default="despiegk/3bot", help="name of image where we will import to")
+@click.option("-i", "--imagename", default="threefoldtech/3bot", help="name of image where we will import to")
 @click.option("-p", "--path", default=None, help="image location")
 @click.option("--no-start", is_flag=True, help="container will start auto")
-def container_import(name="3bot", path=None, imagename="despiegk/3bot", no_start=False, configdir=None):
+def container_import(name="3bot", path=None, imagename="threefoldtech/3bot", no_start=False, configdir=None):
     """
     import container from image file, if not specified will be /tmp/3bot.tar
     :param args:
@@ -362,7 +362,9 @@ def container_export(name="3bot", path=None, no_overwrite=False, skip_if_exists=
 @click.command(name="container-clean")
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("-n", "--name", default="3bot", help="name of container")
-@click.option("--dest", default="despiegk/3bot", help="name of container image on docker hub, default despiegk/3bot")
+@click.option(
+    "--dest", default="threefoldtech/3bot", help="name of container image on docker hub, default threefoldtech/3bot"
+)
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 def container_clean(name="3bot", dest=None, push=False, configdir=None):
     """
@@ -372,7 +374,7 @@ def container_clean(name="3bot", dest=None, push=False, configdir=None):
     :return:
     """
     if not dest:
-        dest = "despiegk/3bot"
+        dest = "threefoldtech/3bot"
     _configure(configdir=configdir)
     docker = container_get(name=name)
     docker.clean(image=dest)
@@ -397,16 +399,16 @@ def container_stop(name="3bot", configdir=None):
 
 @click.command(name="container-docker-upload")
 @click.option("-n", "--name", default="3bot", help="name of container to push")
-@click.option("--dest", default="3bot", help="name of container image on docker hub, default despiegk/3bot")
+@click.option("--dest", default="3bot", help="name of container image on docker hub, default threefoldtech/3bot")
 def container_docker_upload(name="3bot", dest=None, configdir=None):
     """
     make an image of the docker and upload to docker hub
     :param name:
-    :param dest: e.g. despiegk/3bot or despiegk/base  the base is the base ubuntu image
+    :param dest: e.g. threefoldtech/3bot or threefoldtech/base_runtime  the base is the base ubuntu image
     :return:
     """
     if not dest:
-        dest = "despiegk/3bot"
+        dest = "threefoldtech/3bot"
     _configure(configdir=configdir)
     docker = container_get(name=name, existcheck=False)
     cmd = "docker commit %s %s" % (name, dest)
@@ -416,16 +418,16 @@ def container_docker_upload(name="3bot", dest=None, configdir=None):
 
 @click.command(name="container-docker-save")
 @click.option("-n", "--name", default="3bot", help="name of container to push")
-@click.option("--dest", default="3bot", help="name of container image on docker hub, default despiegk/3bot")
+@click.option("--dest", default="3bot", help="name of container image on docker hub, default threefoldtech/3bot")
 def container_docker_save(name="3bot", dest=None, configdir=None):
     """
     make an image of the docker to the name specified
     :param name:
-    :param dest: e.g. despiegk/3bot or despiegk/base  the base is the base ubuntu image
+    :param dest: e.g. threefoldtech/3bot or threefoldtech/base_runtime  the base is the base ubuntu image
     :return:
     """
     if not dest:
-        dest = "despiegk/3bot"
+        dest = "threefoldtech/3bot"
     _configure(configdir=configdir)
     docker = container_get(name=name, existcheck=False)
     cmd = "docker commit %s %s" % (name, dest)
@@ -433,16 +435,20 @@ def container_docker_save(name="3bot", dest=None, configdir=None):
 
 
 @click.command(name="container-basebuilder")
-@click.option("--dest", default="despiegk/base", help="name of container image on docker hub, default despiegk/3bot")
+@click.option(
+    "--dest",
+    default="threefoldtech/base_runtime",
+    help="name of container image on docker hub, default threefoldtech/3bot",
+)
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 def container_basebuilder(dest=None, push=False, configdir=None):
     """
     create the base ubuntu docker which we can use as base for everything
-    :param dest: default despiegk/base  the base is the base ubuntu image
+    :param dest: default threefoldtech/base_runtime  the base is the base ubuntu image
     :return:
     """
     if not dest:
-        dest = "despiegk/base"
+        dest = "threefoldtech/base"
 
     IT = load_install_tools(branch=DEFAULT_BRANCH)
     _configure(configdir=configdir)
@@ -452,30 +458,32 @@ def container_basebuilder(dest=None, push=False, configdir=None):
     docker = IT.DockerContainer(name="base", delete=True, image=image)
     docker.install(update=True)
     docker.clean(image=dest)
-    cmd = "docker commit base %s" % dest
-    IT.Tools.execute(cmd)
+    docker.save()
     if push:
-        cmd = "docker push %s" % dest
-        IT.Tools.execute(cmd)
+        docker.push()
     docker.stop()
 
 
 @click.command(name="container-3botbuilder")
-@click.option("--dest", default="despiegk/3bot", help="name of container image on docker hub, default despiegk/3bot")
+@click.option(
+    "--dest", default="threefoldtech/3bot", help="name of container image on docker hub, default threefoldtech/3bot"
+)
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
-def container_3botbuilder(dest=None, push=False, configdir=None):
+@click.option("-r", "--rebuild_base", is_flag=True, help="also rebuild the base image")
+def container_3botbuilder(dest=None, push=False, configdir=None, rebuild_base=False):
     """
     create the base for a 3bot
-    :param dest: default despiegk/base  the base is the base ubuntu image
+    if 3bot then will also create a 3botdevel which is with the development tools inside
+    :param dest: default threefoldtech/base  the base is the base ubuntu image
     :return:
     """
     if not dest:
-        dest = "despiegk/3bot"
+        dest = "threefoldtech/3bot"
 
     IT = load_install_tools(branch=DEFAULT_BRANCH)
     _configure(configdir=configdir)
 
-    image = "despiegk/base"
+    image = "threefoldtech/base"
     docker = IT.DockerContainer(name="3bot", delete=True, image=image)
     docker.install(update=True)
 
@@ -483,11 +491,9 @@ def container_3botbuilder(dest=None, push=False, configdir=None):
     installer.repos_get(pull=False)
 
     docker.jumpscale_install(branch=DEFAULT_BRANCH, redo=True, pull=False, threebot=True)
-    docker.clean(image=dest)
+    docker.clean(remove_build_env=True)
     if push:
-        cmd = "docker push %s" % dest
-        IT.Tools.execute(cmd)
-    docker.stop()
+        docker.push()
 
 
 @click.command(name="container-start")

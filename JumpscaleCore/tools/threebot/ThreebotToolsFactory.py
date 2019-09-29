@@ -23,7 +23,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
 
         initialize your threebot
 
-        kosmos 'j.tools.threebot.init_me(name="test2.ibiza",interactive=False)'
+        kosmos 'j.tools.threebot.init_my_threebot(name="test2.ibiza",interactive=False)'
 
         :param myidentity is the name of the nacl to use, std default, is your private/public key pair
 

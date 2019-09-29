@@ -52,9 +52,9 @@ to show the containers
 ```
 /tmp/jsx container-list
 
- - t2         : despiegk/3bot             (sshport:9020)
- - t1         : despiegk/3bot             (sshport:9010)
- - 3bot       : despiegk/3bot             (sshport:9000)
+ - t2         : threefoldtech/3bot             (sshport:9020)
+ - t1         : threefoldtech/3bot             (sshport:9010)
+ - 3bot       : threefoldtech/3bot             (sshport:9000)
 
 ```
 
@@ -81,4 +81,4 @@ jsx container-basebuilder
 jsx container-3botbuilder
  ```
  
- this will result in despiegk/base & despiegk/3bot on your system, you can use other names but if this name then will be used by the container installer as base which will win a lot of time.
+ this will result in threefoldtech/base & threefoldtech/3bot on your system, you can use other names but if this name then will be used by the container installer as base which will win a lot of time.

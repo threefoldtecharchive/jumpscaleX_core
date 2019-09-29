@@ -3980,7 +3980,7 @@ class BaseInstaller:
         return Tools.text_strip(CMD, replace=False)
 
     @staticmethod
-    def cleanup_script_get_development():
+    def cleanup_script_developmentenv_get():
         CMD = """
         apt remove gcc -y
         apt remove rustc -y
@@ -4362,7 +4362,7 @@ class DockerFactory:
                 raise Tools.exceptions.Operations("Could not find Docker installed")
 
     @staticmethod
-    def container_get(name, portrange=1, image="despiegk/3bot"):
+    def container_get(name, portrange=1, image="threefoldtech/3bot"):
         if name in DockerFactory._dockers:
             return DockerFactory._dockers[name]
         else:
@@ -4484,7 +4484,7 @@ class DockerConfig:
             if image:
                 self.image = image
             else:
-                self.image = "despiegk/3bot"
+                self.image = "threefoldtech/3bot"
             if sshport:
                 self.sshport = sshport
             else:
@@ -4579,14 +4579,13 @@ class DockerContainer:
     def name(self):
         return self.config.name
 
-    def clean(self, image=None, buildenv=True):
+    def clean(self, image=None, remove_build_env=False):
         """
         will import & launch
         we have to reimport and make sure there is nothing mapped to host, then we have to remove files, otherwise there could be leftovers
         the result will be a clean exported image and a clean operational container which can be pushed to e.g. docker hub
         :return:
         """
-        imagename_tmp = "temp/temp"
         if not image:
             image = self.image
 
@@ -4596,58 +4595,40 @@ class DockerContainer:
                 print(" - cleanup:%s" % line)
                 container.dexec(line, die=False)
 
-        # do it before exporting
         clean(self, BaseInstaller.cleanup_script_get())
-        if buildenv:
-            clean(self, BaseInstaller.cleanup_script_get_development())
-
-        self.export(skip_if_exists=False)  # need to re-export to make sure
-        tempcontainer = DockerContainer("temp", delete=True, portrange=2)
-
-        tempcontainer.import_(
-            path=self.export_last_image_path, imagename=imagename_tmp, start=True, mount_dirs=False, portmap=False
-        )
-
-        # WILL CLEANUP in the tempcontainer
-
-        # need to do it again because there could be leftovers from volume mounts
-        clean(tempcontainer, BaseInstaller.cleanup_script_get())
-        if buildenv:
-            clean(tempcontainer, BaseInstaller.cleanup_script_get_development())
-        tempcontainer.dexec("rm -rf /sandbox/code", die=True)
-
-        tempcontainer.export(overwrite=True, path=self.export_last_image_path)
-        tempcontainer.delete()
-        DockerFactory.image_remove(imagename_tmp)
-        self.delete()
-
-        assert not DockerFactory.container_name_exists(self.name)
-
-        self.import_(imagename=image)  # now should be clean
-
-    def sandbox_sync(self):
-        if Tools.exists("/tmp/package/threebot"):
-            src = "/tmp/package/threebot"
-        elif Tools.exists("/sandbox/code/.../threebot"):
-            # todo:
-            pass
+        if remove_build_env:
+            path_devel = self.export(name="development")
+            clean(self, BaseInstaller.cleanup_script_developmentenv_get())
+            path_runtime = self.export(name="runtime")
+            self.import_(path=path_runtime, imagename=image, start=False, mount_dirs=False, portmap=False)
+            self.import_(path=path_devel, imagename=image + "devel", start=True)
         else:
-            Tools.shell()
-            raise j.exceptions.JSBUG("can't find sandbox files")
+            path_main = self.export(name="main")
+            self.import_(path=path_main, imagename=image, start=True)
 
-        if src[-1] != "/":
-            src += "/"
-
-        exclude = ' --exclude "etc/group"'
-        exclude += ' --exclude "etc/passwd"'
-        cmd = (
-            'rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p %s"  %s %s localhost:/'
-            % (self.config.sshport, exclude, src)
-        )
-
-        rc, out, err = Tools.execute(cmd, die=False)
-        if rc:
-            raise Tools.exceptions.Base("could not sync the sandbox src:%s\n%s" % err % src, data=cmd)
+    # def sandbox_sync(self):
+    #     if Tools.exists("/tmp/package/threebot"):
+    #         src = "/tmp/package/threebot"
+    #     elif Tools.exists("/sandbox/code/.../threebot"):
+    #         # todo:
+    #         pass
+    #     else:
+    #         Tools.shell()
+    #         raise j.exceptions.JSBUG("can't find sandbox files")
+    #
+    #     if src[-1] != "/":
+    #         src += "/"
+    #
+    #     exclude = ' --exclude "etc/group"'
+    #     exclude += ' --exclude "etc/passwd"'
+    #     cmd = (
+    #         'rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p %s"  %s %s localhost:/'
+    #         % (self.config.sshport, exclude, src)
+    #     )
+    #
+    #     rc, out, err = Tools.execute(cmd, die=False)
+    #     if rc:
+    #         raise Tools.exceptions.Base("could not sync the sandbox src:%s\n%s" % err % src, data=cmd)
 
     def install(self, mount_dirs=True, update=None, portmap=True):
         """
@@ -4737,7 +4718,7 @@ class DockerContainer:
             pass
 
         if update == None:
-            if self.image == "despiegk/base" or self.image == "despiegk/3bot":
+            if self.image == "threefoldtech/base_runtime" or self.image == "threefoldtech/3bot":
                 update = False
 
         if not installed:
@@ -4810,29 +4791,32 @@ class DockerContainer:
 
     @property
     def export_last_image_path(self):
-        dpath = "%s/exports/" % self._path
-        if not Tools.exists(dpath):
-            return None
-        items = os.listdir(dpath)
-        if items != []:
-            items.sort()
-            last = items[-1]
-            try:
-                version = int(last.replace(".tar", ""))
-            except:
-                Tools.delete("%s/%s" % (dpath, last))
-                return self.export_last_image_path
-        else:
-            return None
-        path = "%s/exports/%s.tar" % (self._path, version)
+        """
+        readonly returns the last image created
+        :return:
+        """
+        path = "%s/exports/%s.tar" % (self._path, self._export_image_last_version)
         return path
 
-    def import_(self, path=None, version=None, imagename=None, start=True, mount_dirs=True, portmap=True):
+    @property
+    def _export_image_last_version(self):
+        dpath = "%s/exports/" % self._path
+        highest = 0
+        for item in os.listdir(dpath):
+            try:
+                version = int(item.replace(".tar", ""))
+            except:
+                Tools.delete("%s/%s" % (dpath, item))
+            if version > highest:
+                highest = version
+        return highest
+
+    def import_(self, path=None, name=None, version=None, imagename=None, start=True, mount_dirs=True, portmap=True):
         """
 
         :param path:  if not specified will be /sandbox/var/containers/$name/exports/$version.tar
         :param version: version of the export, if not specified & path not specified will be last in the path
-        :param imagename: docker image name as used by docker
+        :param imagename: docker image name as used by docker to import to
         :param start: start the container after import
         :param mount_dirs: do you want to mount the dirs to host
         :param portmap: do you want to do the portmappings (ssh is always mapped)
@@ -4840,20 +4824,14 @@ class DockerContainer:
         """
         if not imagename:
             imagename = self.image
-        if not path:
-            dpath = "%s/exports/" % self._path
-            if not Tools.exists(dpath):
-                raise Tools.exceptions.Base("no exports found in:%s" % dpath)
-            if not version:
-                items = os.listdir(dpath)
-                if items != []:
-                    items.sort()
-                    last = items[-1]
-                    version = int(last.replace(".tar", ""))
-                else:
-                    raise Tools.exceptions.Base("no exports found in:%s" % dpath)
-            path = "%s/exports/%s.tar" % (self._path, version)
 
+        if not path:
+            if not name:
+                if not version:
+                    version = self._export_image_last_version
+                path = "%s/exports/%s.tar" % (self._path, version)
+            else:
+                path = "%s/exports/%s.tar" % (self._path, name)
         if not Tools.exists(path):
             raise Tools.exceptions.Operations("could not find import file:%s" % path)
 
@@ -4871,40 +4849,41 @@ class DockerContainer:
             self.install(update=False, mount_dirs=mount_dirs, portmap=portmap)
             self.start()
 
-    def export(self, path=None, overwrite=True, skip_if_exists=False):
+    def export(self, path=None, name=None, version=None):
         """
         :param path:  if not specified will be /sandbox/var/containers/$name/exports/$version.tar
         :param version:
         :param overwrite: will remove the version if it exists
-        :param skip_if_exists, if True will not export if image found
         :return:
         """
-        version = None
-        self.export_last_image_path  # to have auto fix for badly expored files
+        dpath = "%s/exports/" % self._path
+        if not Tools.exists(dpath):
+            Tools.dir_ensure(dpath)
+
         if not path:
-            dpath = "%s/exports/" % self._path
-            if not Tools.exists(dpath):
-                Tools.dir_ensure(dpath)
-            items = os.listdir(dpath)
-            if items != []:
-                items.sort()
-                last = items[-1]
-                version = int(last.replace(".tar", ""))
-                if not overwrite:
-                    version += 1
+            if not name:
+                if not version:
+                    version = self._export_image_last_version + 1
+                path = "%s/exports/%s.tar" % (self._path, version)
             else:
-                version = 1
-            path = "%s/exports/%s.tar" % (self._path, version)
-        elif not path.endswith(".tar"):
-            raise Tools.exceptions.Operations("export file needs to end with .tar")
-        if Tools.exists(path) and overwrite and not skip_if_exists:
+                path = "%s/exports/%s.tar" % (self._path, name)
+        if Tools.exists(path):
             Tools.delete(path)
-        if not Tools.exists(path):
-            print("export docker:%s to %s, will take a while" % (self.name, path))
-            Tools.execute("docker export %s -o %s" % (self.name, path))
-        else:
-            print("export docker:%s to %s, was already there (export skipped)" % (self.name, path))
-        return version
+        print("export docker:%s to %s, will take a while" % (self.name, path))
+        Tools.execute("docker export %s -o %s" % (self.name, path))
+        return path
+
+    def save(self, image=None):
+        if not image:
+            image = self.image
+        cmd = "docker commit base %s" % image
+        Tools.execute(cmd)
+
+    def push(self, image=None):
+        if not image:
+            image = self.image
+        cmd = "docker push %s" % image
+        Tools.execute(cmd)
 
     def jumpscale_install(
         self, secret=None, privatekey=None, redo=False, threebot=True, pull=False, branch=None, prebuilt=False
