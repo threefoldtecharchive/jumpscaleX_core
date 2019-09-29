@@ -3527,15 +3527,15 @@ class MyEnv_:
         :param level:
         :return: logdict see github/threefoldtech/jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md
         """
-        # not optimal, cannot check on type doesn't work, there is still something wrong with classes or multiple versions of it I thinkg
-        if str(exception_type).find("RemoteException1") != -1:
+        if isinstance(exception_obj, Tools.exceptions.RemoteException):
+
             print(Tools.text_replace("{RED}*****Remote Exception*****{RESET}"))
             logdict = exception_obj.data
             Tools.log2stdout(logdict)
-            if die == False:
-                return logdict
-            else:
-                sys.exit(1)
+
+            exception_obj.data = None
+            exception_obj.exception = None
+
         try:
             logdict = Tools.log(tb=tb, level=level, exception=exception_obj, stdout=stdout)
         except Exception as e:

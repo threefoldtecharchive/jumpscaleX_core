@@ -15,6 +15,17 @@ class Session(j.baseclasses.object):
         self.response_type = j.data.types.get("e", default="auto,json,msgpack").clean(0)
         self.content_type = j.data.types.get("e", default="auto,json,msgpack").clean(0)
 
+    @property
+    def threebot_client(self):
+        if not self.threebot_name:
+            return
+        return j.clients.threebot.client_get(threebot=self.threebot_id)
+
+    def admin_check(self):
+        return True
+        if not self.admin:
+            raise j.exceptions.Permission("only admin user can access this method")
+
 
 def _command_split(cmd, namespace="system"):
     """
@@ -285,12 +296,25 @@ class Handler(JSBASE):
                 user_session.response_type.value = request.arguments[0].decode()
             return None, "OK"
 
-        # elif request.command.command == "auth":
-        #     dm_id, epoch, signed_message = request[1:]
-        #     if self.dm_verify(dm_id, epoch, signed_message):
-        #         self.session.dmid = dm_id
-        #         self.session.admin = True
-        #         return None, True
+        elif request.command.command == "auth":
+            tid, seed, signature = request.arguments
+            tid = int(tid)
+            try:
+                tclient = j.clients.threebot.client_get(threebot=tid)
+            except Exception as e:
+                logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+                return (logdict, None)
+            try:
+                verification = tclient.verify_from_threebot(seed, signature)
+            except Exception as e:
+                logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+                return (logdict, None)
+            # if we get here we know that the user has been authenticated properly
+            user_session.threebot_id = tclient.tid
+            user_session.threebot_name = tclient.name
+            j.shell()
+
+            return None, "OK"
 
         self._log_debug(
             "command received %s %s %s" % (request.command.namespace, request.command.actor, request.command.command),

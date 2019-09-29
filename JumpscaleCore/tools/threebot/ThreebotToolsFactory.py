@@ -45,19 +45,24 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
             # means record did not exist yet
             if not email:
                 if interactive:
+                    j.application.interactive = interactive
+                    # TODO: this should not have to be set, issue is that the interactive was changed since start of method
+                    assert j.application.interactive
                     email = j.tools.console.askString("your threebot email (optional)")
                 else:
                     email = ""
             if not description:
                 if interactive:
+                    j.application.interactive = interactive
                     description = j.tools.console.askString("your threebot description (optional)")
                 else:
                     description = ""
             if not ipaddr:
                 if interactive:
+                    j.application.interactive = interactive
                     ipaddr = j.tools.console.askString("your threebot ipaddr (optional if used e.g. locally)")
                 else:
-                    ipaddr = ""
+                    ipaddr = "localhost"
 
             if interactive:
                 if not j.tools.console.askYesNo("ok to use your local private key as basis for your threebot?", True):
@@ -71,7 +76,12 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         if not nacl.verify_key_hex == r.pubkey:
             raise j.exceptions.Input("your identity needs to be same pubkey as local configured nacl")
 
+        assert r.id
+        assert r.name
+
         o = self.me.get(name=myidentity, tid=r.id, tname=r.name, email=r.email, pubkey=r.pubkey)
+
+        print(o)
 
         return o
 
@@ -224,21 +234,24 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         if not nacl:
             nacl = self._nacl
         data2 = self._serialize(data, serialization_format=serialization_format)
-        tid = j.tools.threebot.me.default.tid
+
         if isinstance(data2, str):
             data2 = data2.encode()
         signature = nacl.sign(data2)
+        signature_hex = binascii.hexlify(signature)
         if threebot:
-            threebot_client = j.clients.threebot.get(threebot)
+            threebot_client = j.clients.threebot.client_get(threebot)
             data3 = threebot_client.encrypt_for_threebot(data2)
+            tid = threebot_client.tid
         else:
+            tid = j.tools.threebot.me.default.tid
             if pubkey_hex:
                 assert len(pubkey_hex) == 64
                 pubkey = PublicKey(binascii.unhexlify(pubkey_hex))
                 data3 = nacl.encrypt(data2, public_key=pubkey)
             else:
                 data3 = data2
-        return [tid, data3, signature]
+        return [tid, data3, signature_hex]
 
     def _deserialize_check_decrypt(
         self, data, serialization_format="json", verifykey_hex=None, nacl=None, threebot=None
@@ -256,22 +269,23 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         raises exceptions if decryption or signature fails
 
         """
+        assert len(verifykey_hex) == 128
         if not nacl:
             nacl = self._nacl
         # decrypt data
-        data_dec_ser = nacl.decrypt(data[1])
+        data_dec_ser = nacl.decrypt(data)
         # unserialize data
         data_dec = self._unserialize(data_dec_ser, serialization_format=serialization_format)
         # verify the signature against the provided pubkey and the decrypted data
         if threebot:
-            threebot_client = j.clients.threebot.get(threebot)
+            threebot_client = j.clients.threebot.client_get(threebot)
             threebot_client.verify_from_threebot(data=data_dec_ser, signature=verifykey_hex)
         else:
             sign_is_ok = nacl.verify(data_dec_ser, data[2], verify_key=binascii.unhexlify(verifykey_hex))
-        if not sign_is_ok:
-            raise j.exceptions.Base(
-                "could not verify signature:%s, against pubkey:%s" % (data[2], binascii.unhexlify(verifykey_hex))
-            )
+            if not sign_is_ok:
+                raise j.exceptions.Base(
+                    "could not verify signature:%s, against pubkey:%s" % (data[2], binascii.unhexlify(verifykey_hex))
+                )
         return data_dec
 
     def _get_test_data(self):
@@ -293,10 +307,15 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         :return:
         """
 
+        self.explorer.actors.package_manager.package_add(
+            "threebot_phonebook",
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
+        )
+
         j.servers.threebot.local_start_default()
 
-        nacl1 = j.data.nacl.configure(name="client_test")
-        nacl2 = j.data.nacl.configure(name="client_test2")
+        nacl1 = j.data.nacl.configure(name="test_client")
+        nacl2 = j.data.nacl.configure(name="test_server")
 
         threebot1 = self.threebot_register(
             name="test.test", email="test@incubaid.com", ipaddr="212.3.247.26", nacl=nacl1
@@ -306,9 +325,39 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
             name="dummy.myself", email="dummy@incubaid.com", ipaddr="212.3.247.27", nacl=nacl2
         )
 
-        self._log_info("test ok")
-
         return nacl1, nacl2, threebot1, threebot2
+
+    def test_register_nacl_threebots(self):
+        self.explorer.actors.package_manager.package_add(
+            "threebot_phonebook",
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
+        )
+
+        # need to make sure to reload the client, because we added a package
+        self.explorer._client.reload()
+
+        nacl1 = j.data.nacl.get(name="test_client")
+        nacl2 = j.data.nacl.get(name="test_server")
+
+        # name needs to correspond with the nacl name, this is your pub/priv key pair
+        threebot_me_client = j.tools.threebot.init_my_threebot(
+            myidentity="test_client",
+            name="test_client",
+            email=None,
+            description=None,
+            ipaddr="localhost",
+            interactive=False,
+        )
+        threebot_me_server = j.tools.threebot.init_my_threebot(
+            myidentity="test_server",
+            name="test_server",
+            email=None,
+            description=None,
+            ipaddr="localhost",
+            interactive=False,
+        )
+
+        return nacl1, nacl2, threebot_me_client, threebot_me_server
 
     def test(self, name=""):
         """
@@ -322,6 +371,15 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
 
 
         """
+
+        cl = j.servers.threebot.local_start_default()
+
+        cl.actors.package_manager.package_add(
+            "threebot_phonebook",
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
+        )
+
+        self._threebot_client_default = cl
 
         self.me
 

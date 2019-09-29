@@ -12,7 +12,7 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
 
     def _init(self, **kwargs):
         self._explorer = None
-        self._cache = {}
+        self._id2client_cache = {}
 
     @property
     def explorer(self):
@@ -38,30 +38,28 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         :return:
         """
         # path to get a threebot client needs to be as fast as possible
-        if id:
-            assert threebot == None
-            threebot = id
-        if threebot in self._cache:
-            return self._cache
         if isinstance(threebot, int):
+            assert threebot > 0
+            if threebot in self._id2client_cache:
+                return self._id2client_cache[threebot]
             res = self.find(tid=threebot)
             tid = threebot
             tname = None
         elif isinstance(threebot, str):
-            res = self.find(name=threebot)
+            res = self.get(name=threebot)
             tid = None
             tname = threebot
         else:
             raise j.exceptions.Input("threebot needs to be int or str")
 
-        if len(res) == 1:
-            return res[0]
-        elif len(res) > 1:
+        if len(res) > 1:
+            j.shell()
             raise j.exceptions.JSBUG("should never be more than 1")
 
-        r = self.threebot_record_get(tid=tid, name=tname)
+        r = j.tools.threebot.explorer.threebot_record_get(tid=tid, name=tname)
+        assert r.id > 0
         r2 = j.baseclasses.object_config_collection_testtools.get(
-            self, name=r.name, tid=r.tid, host=r.ipaddr, pubkey=r.pubkey
+            self, name=r.name, tid=r.id, host=r.ipaddr, pubkey=r.pubkey
         )
-        self._cache[threebot] = r2
-        return self._cache[threebot]
+        self._id2client_cache[r2.tid] = r2
+        return self._id2client_cache[r2.tid]

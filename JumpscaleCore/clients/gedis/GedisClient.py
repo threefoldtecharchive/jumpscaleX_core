@@ -57,6 +57,7 @@ class GedisClient(JSConfigBase):
         return False
 
     def auth(self, bot_id):
+        j.shell()
         nacl_cl = j.data.nacl.get()
         nacl_cl._load_privatekey()
         signing_key = nacl.signing.SigningKey(nacl_cl.privkey.encode())
@@ -158,6 +159,8 @@ class GedisClient(JSConfigBase):
             self._log_info("redisclient: %s:%s " % (addr, port))
 
             self._redis_ = j.clients.redis.get(ipaddr=addr, port=port, password=secret, ping=True, fromcache=False)
+
+            # self._redis_
 
         return self._redis_
 

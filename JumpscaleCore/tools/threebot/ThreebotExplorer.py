@@ -18,7 +18,7 @@ class ThreebotExplorer(j.baseclasses.object):
 
     @property
     def actors(self):
-        return self._client.actors
+        return self._client.actors_default
 
     def threebot_record_get(self, tid=None, name=None, die=True):
         """

@@ -11,6 +11,7 @@ import hashlib
 
 import binascii
 
+
 # from .AgentWithKeyname import AgentWithName
 import binascii
 from nacl.exceptions import BadSignatureError
@@ -330,6 +331,17 @@ class NACL(j.baseclasses.object):
             data = data.encode()
         signed = self.signing_key.sign(data)
         return signed.signature
+
+    def sign_hex(self, data):
+        """
+        sign using your private key using Ed25519 algorithm
+        the result will be 128 bytes
+        """
+        if isinstance(data, str):
+            data = data.encode()
+        signed = self.signing_key.sign(data)
+        signedhex = binascii.hexlify(signed.signature)
+        return signedhex
 
     def verify(self, data, signature, verify_key=""):
         """ data is the original data we have to verify with signature

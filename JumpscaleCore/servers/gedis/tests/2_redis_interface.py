@@ -12,7 +12,7 @@ def main(self):
     package_path = "/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/ibiza"
     cl = self._threebot_client_default
     # if reload==False then the package will not be reloaded if its already there
-    cl.actors.package_manager.package_add("threebot_phonebook", path=package_path, reload=False)
+    cl.actors.package_manager.package_add("ibiza_test", path=package_path, reload=False)
     cl.reload()
 
     ibiza_client = j.threebot.package.ibiza.client_get()
