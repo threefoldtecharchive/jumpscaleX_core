@@ -181,6 +181,7 @@ def configure(
 @click.option("--portrange", default=None, help="portrange, leave empty unless you know what you do.")
 @click.option("--prebuilt", is_flag=True, help="if set will allow a quick start using prebuilt threebot")
 @click.option(
+    "-i",
     "--image",
     default=None,
     help="select the container image to use to create the container, leave empty unless you know what you do (-:",
@@ -229,7 +230,7 @@ def container_install(
     _configure(configdir=configdir, no_interactive=no_interactive)
 
     if scratch or prebuilt:
-        image = "threefoldtech/base_runtime"
+        image = "threefoldtech/base"
         if scratch:
             delete = True
         reinstall = True
@@ -252,19 +253,14 @@ def container_install(
     docker.jumpscale_install(branch=branch, redo=reinstall, pull=pull, threebot=threebot, prebuilt=prebuilt)
 
 
-def container_get(name="3bot", existcheck=True, portrange=1, delete=False):
+def container_get(name="3bot", delete=False, jumpscale=False):
     IT.MyEnv.sshagent.key_default_name
-    docker = IT.DockerContainer(name=name, delete=delete, portrange=portrange)
-    if existcheck:
-        if name not in IT.DockerFactory.containers_running():
-            # means is not running yet
-            if name not in IT.DockerFactory.containers_names():
-                docker.install()
-                # needs to stay because will make sure that the config is done properly in relation to your shared folders from the host
-                docker.jumpscale_install()
-            else:
-                docker.start()
-                time.sleep(1)
+    docker = IT.DockerContainer(name=name, delete=delete)
+    # means is not running yet
+    docker.start()
+    if jumpscale:
+        # needs to stay because will make sure that the config is done properly in relation to your shared folders from the host
+        docker.jumpscale_install()
     return docker
 
 
@@ -336,7 +332,7 @@ def container_import(name="3bot", path=None, imagename="threefoldtech/3bot", no_
     :return:
     """
     start = not no_start
-    docker = container_get(existcheck=False, name=name)
+    docker = container_get(delete=True, name=name)
     docker.import_(path=path, imagename=imagename, start=start)
 
 
@@ -344,19 +340,17 @@ def container_import(name="3bot", path=None, imagename="threefoldtech/3bot", no_
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("-n", "--name", default="3bot", help="name of container")
 @click.option("-p", "--path", default=None, help="image location")
-@click.option("--no-overwrite", is_flag=True, help="std container will overwrite the existing one")
-@click.option("--skip-if-exists", is_flag=True, help="std container will overwrite the existing one")
-def container_export(name="3bot", path=None, no_overwrite=False, skip_if_exists=False, configdir=None):
+@click.option("-v", "--version", default=None, help="image location")
+def container_export(name="3bot", path=None, version=None, configdir=None):
     """
     export the 3bot to image file, if not specified will be /tmp/3bot.tar
     :param name:
     :param path:
     :return:
     """
-    overwrite = not no_overwrite
     _configure(configdir=configdir)
     docker = container_get(name=name)
-    docker.export(path=path, skip_if_exists=skip_if_exists, overwrite=overwrite)
+    docker.export(path=path, version=version)
 
 
 @click.command(name="container-clean")
@@ -379,8 +373,7 @@ def container_clean(name="3bot", dest=None, push=False, configdir=None):
     docker = container_get(name=name)
     docker.clean(image=dest)
     if push:
-        cmd = "docker push %s" % dest
-        IT.Tools.execute(cmd)
+        docker.push()
 
 
 @click.command(name="container-stop")
@@ -404,7 +397,7 @@ def container_docker_upload(name="3bot", dest=None, configdir=None):
     """
     make an image of the docker and upload to docker hub
     :param name:
-    :param dest: e.g. threefoldtech/3bot or threefoldtech/base_runtime  the base is the base ubuntu image
+    :param dest: e.g. threefoldtech/3bot or threefoldtech/base  the base is the base ubuntu image
     :return:
     """
     if not dest:
@@ -423,7 +416,7 @@ def container_docker_save(name="3bot", dest=None, configdir=None):
     """
     make an image of the docker to the name specified
     :param name:
-    :param dest: e.g. threefoldtech/3bot or threefoldtech/base_runtime  the base is the base ubuntu image
+    :param dest: e.g. threefoldtech/3bot or threefoldtech/base  the base is the base ubuntu image
     :return:
     """
     if not dest:
@@ -436,15 +429,13 @@ def container_docker_save(name="3bot", dest=None, configdir=None):
 
 @click.command(name="container-basebuilder")
 @click.option(
-    "--dest",
-    default="threefoldtech/base_runtime",
-    help="name of container image on docker hub, default threefoldtech/3bot",
+    "--dest", default="threefoldtech/base", help="name of container image on docker hub, default threefoldtech/3bot"
 )
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 def container_basebuilder(dest=None, push=False, configdir=None):
     """
     create the base ubuntu docker which we can use as base for everything
-    :param dest: default threefoldtech/base_runtime  the base is the base ubuntu image
+    :param dest: default threefoldtech/base  the base is the base ubuntu image
     :return:
     """
     if not dest:
@@ -455,13 +446,13 @@ def container_basebuilder(dest=None, push=False, configdir=None):
 
     image = "phusion/baseimage:master"
     # image = "unilynx/phusion-baseimage-1804"
-    docker = IT.DockerContainer(name="base", delete=True, image=image)
+    docker = IT.DockerContainer(name="base", delete=False, image=image)
     docker.install(update=True)
-    docker.clean(image=dest)
-    docker.save()
+    docker.clean(image=dest, remove_build_env=False)
     if push:
         docker.push()
     docker.stop()
+    print("- *OK* base has been built, as image & exported")
 
 
 @click.command(name="container-3botbuilder")
@@ -469,8 +460,7 @@ def container_basebuilder(dest=None, push=False, configdir=None):
     "--dest", default="threefoldtech/3bot", help="name of container image on docker hub, default threefoldtech/3bot"
 )
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
-@click.option("-r", "--rebuild_base", is_flag=True, help="also rebuild the base image")
-def container_3botbuilder(dest=None, push=False, configdir=None, rebuild_base=False):
+def container_3botbuilder(dest=None, push=False, configdir=None):
     """
     create the base for a 3bot
     if 3bot then will also create a 3botdevel which is with the development tools inside
@@ -494,6 +484,7 @@ def container_3botbuilder(dest=None, push=False, configdir=None, rebuild_base=Fa
     docker.clean(remove_build_env=True)
     if push:
         docker.push()
+    print("- *OK* threebot container has been built, as image & exported")
 
 
 @click.command(name="container-start")
@@ -506,7 +497,7 @@ def container_start(name="3bot", configdir=None):
     :return:
     """
     _configure(configdir=configdir)
-    docker = container_get(name=name, existcheck=False)
+    docker = container_get(name=name)
     docker.start()
 
 
@@ -520,6 +511,8 @@ def container_delete(name="3bot", configdir=None):
     :return:
     """
     _configure(configdir=configdir)
+    if not IT.DockerFactory.container_name_exists(name):
+        return None
     docker = container_get(name=name, existcheck=False)
     docker.delete()
 
@@ -596,9 +589,12 @@ def container_shell(name="3bot", configdir=None):
     :param name: name of container if not the default
     :return:
     """
-    IT.MyEnv
     docker = container_get(name=name)
-    IT.Tools.execute('ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:9122"' % IT.MyEnv.config["DIR_HOME"])
+    if not docker.isrunning():
+        docker.install()
+    IT.Tools.execute(
+        'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"' % (IT.MyEnv.config["DIR_HOME"], docker.config.sshport)
+    )
     os.execv(
         shutil.which("ssh"),
         ["ssh", "root@localhost", "-A", "-t", "-oStrictHostKeyChecking=no", "-p", str(docker.config.sshport)],

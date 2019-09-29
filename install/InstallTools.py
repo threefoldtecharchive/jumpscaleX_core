@@ -3949,10 +3949,6 @@ class BaseInstaller:
         CMD = """
         cd /
         rm -f /tmp/cleanedup
-        find . -name "*.pyc" -exec rm -rf {} \;
-        find . -type d -name "__pycache__" -exec rm -rf {} \;
-        find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
-        find . -name "*.bak" -exec rm -rf {} \;
         rm -f /root/.jsx_history
         rm -f /root/.ssh/*
         rm -rf /root/.cache
@@ -3966,16 +3962,14 @@ class BaseInstaller:
         mkdir -p /tmp
         chmod -R 0777 /tmp
         rm -rf /var/backups
-        find . -name "*.bak" -exec rm -rf {} \;
         apt-get clean -y
         apt-get autoremove --purge -y
         rm -rf /sandbox/openresty/pod
         rm -rf /sandbox/openresty/site
-        find . -type d -name ".cargo" -exec rm -rf {} \;
-        find . -type d -name ".rustup" -exec rm -rf {} \;
         touch /tmp/cleanedup
         rm -rf /var/lib/apt/lists
         mkdir -p /var/lib/apt/lists
+        find . | grep -E "(__pycache__|\.bak$|\.pyc$|\.pyo$|\.rustup|\.cargo)" | xargs rm -rf
         """
         return Tools.text_strip(CMD, replace=False)
 
@@ -4600,11 +4594,20 @@ class DockerContainer:
             path_devel = self.export(name="development")
             clean(self, BaseInstaller.cleanup_script_developmentenv_get())
             path_runtime = self.export(name="runtime")
+            self.config.image = "threefoldtech/base"
+            self.config.save()
             self.import_(path=path_runtime, imagename=image, start=False, mount_dirs=False, portmap=False)
+            self.config.image = "threefoldtech/basedevel"
+            self.config.save()
+            self.save()
             self.import_(path=path_devel, imagename=image + "devel", start=True)
+            self.save()
         else:
             path_main = self.export(name="main")
             self.import_(path=path_main, imagename=image, start=True)
+            self.config.image = "threefoldtech/base"
+            self.config.save()
+            self.save()
 
     # def sandbox_sync(self):
     #     if Tools.exists("/tmp/package/threebot"):
@@ -4718,7 +4721,7 @@ class DockerContainer:
             pass
 
         if update == None:
-            if self.image == "threefoldtech/base_runtime" or self.image == "threefoldtech/3bot":
+            if self.image == "threefoldtech/base" or self.image == "threefoldtech/3bot":
                 update = False
 
         if not installed:
@@ -4778,7 +4781,12 @@ class DockerContainer:
             raise Tools.exceptions.Operations("ERROR: cannot find docker with name:%s, cannot start" % self.name)
         if not self.name in DockerFactory.containers_running():
             Tools.execute("docker start %s" % self.name, showout=False)
-        assert self.name in DockerFactory.containers_running()
+        self.install()
+
+    def isrunning(self):
+        if self.name in DockerFactory.containers_running():
+            return True
+        return False
 
     def restart(self):
         self.stop()
@@ -4876,6 +4884,9 @@ class DockerContainer:
     def save(self, image=None):
         if not image:
             image = self.image
+        else:
+            self.config.image = image
+            self.config.save()
         cmd = "docker commit base %s" % image
         Tools.execute(cmd)
 
@@ -4884,6 +4895,7 @@ class DockerContainer:
             image = self.image
         cmd = "docker push %s" % image
         Tools.execute(cmd)
+        j.shell()
 
     def jumpscale_install(
         self, secret=None, privatekey=None, redo=False, threebot=True, pull=False, branch=None, prebuilt=False
