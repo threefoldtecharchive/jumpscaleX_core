@@ -7,7 +7,7 @@ class TestSshkeyClient(BaseTest):
 
     @classmethod
     def setUpClass(cls):
-        cls.info("create sshkey client")
+        BaseTest.info("create sshkey client")
         cls.sshkey_client = j.clients.sshkey.get(name="sshkey_client")
 
     def setUp(self):
