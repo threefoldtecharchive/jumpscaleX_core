@@ -5371,7 +5371,7 @@ class WireGuard:
                 Tools.execute(C)
 
     def server_start(self):
-        port = 7777
+        port = 9001
         if MyEnv.platform() == "linux":
             if not Tools.exists("/sandbox/cfg/wireguard.toml"):
                 print("- GENERATE WIREGUARD KEY")
@@ -5418,7 +5418,6 @@ class WireGuard:
             raise Tools.exceptions.Base("cannot start server only supported on linux ")
 
     def connect(self, port=None):
-
         if not port:
             port = self.container.config.portrange + 1  # is the wireguard port
 

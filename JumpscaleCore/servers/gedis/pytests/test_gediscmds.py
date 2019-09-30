@@ -65,7 +65,7 @@ from Jumpscale.servers.gedis.GedisCmds import GedisCmds  # method_source_process
 
 
 def test_GedisCmds_init():
-    path = os.path.join(os.path.dirname(__file__), "actors/simple.py")
+    path = os.path.join(os.path.dirname(__file__), "test_package/actors/simple.py")
     cmds = GedisCmds(server=FakeServer(), namespace="default", name="test", path=path, data=None)
     assert cmds.name == "test"
     assert cmds.namespace == "default"

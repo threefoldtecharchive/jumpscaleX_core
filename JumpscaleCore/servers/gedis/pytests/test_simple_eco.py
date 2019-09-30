@@ -8,24 +8,18 @@ import pytest
 from Jumpscale import j
 import redis
 
-from .actors.actor import SCHEMA_IN, SCHEMA_OUT
-
 
 class TestSimpleEcho(TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.server = j.servers.gedis.get(name="test", port=8889, host="0.0.0.0", ssl=False)
-        actor_path = os.path.join(os.path.dirname(__file__), "actors/actor.py")
-        cls.server.actor_add(actor_path)
-        cls.server.start()
-        wait_start_server("127.0.0.1", 8889)
-        cls.client = cls.server.client_get()
+        cls.client = j.servers.threebot.local_start_default()
+        package_path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), 'test_package') 
+        cls.client.actors.package_manager.package_add('test_package', path=package_path)
         cls.client.reload()
 
     @classmethod
     def tearDownClass(cls):
-        cls.server.stop()
-        cls.server.delete()
+        cls.client.reset()
 
     def test01_echo(self):
         assert b"test" == self.client.actors.actor.echo("test")
