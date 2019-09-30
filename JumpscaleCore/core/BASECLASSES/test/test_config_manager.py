@@ -61,7 +61,9 @@ class TestIConfigManager(BaseTest):
         with self.assertRaises(j.exceptions.NotFound):
             j.clients.tfchain._model.get_by_name(self.client_one.name)
 
+        self.info("Check that the other client was not affected")
         j.clients.tfchain._model.get_by_name(self.client_two.name)
+        assert "unittest_two" in self.client_two.wallets._children_names_get()
 
         self.info("Create a new wallet with the deleted client's wallet's name")
         assert self.client_two.wallets.new("unittest_one")
@@ -82,7 +84,9 @@ class TestIConfigManager(BaseTest):
         with self.assertRaises(j.exceptions.NotFound):
             j.clients.tfchain._model.get_by_name(self.client_one.name)
 
-        j.clients.tfchain._model.get_by_name(self.client_two.name)
+        self.info("Check that the other client was not affected")
+        assert j.clients.tfchain._model.get_by_name(self.client_two.name)
+        assert "unittest_two" in self.client_two.wallets._children_names_get()
 
         self.info("Create a new wallet with the deleted client's wallet's name")
         assert self.client_two.wallets.new("unittest_one")
@@ -110,10 +114,10 @@ class TestIConfigManager(BaseTest):
         self.info("Delete wallet unittest_one")
         self.client_one.wallets.unittest_one.delete()
         self.info("Check that the wallet doesn't exist")
-        assert "unittest_one" not in self.client_one._children_names_get()
+        assert "unittest_one" not in self.client_one.wallets._children_names_get()
 
         self.info("Check that the other client's wallet was not affected")
-        assert "unittest_two" in self.client_two._children_names_get()
+        assert "unittest_two" in self.client_two.wallets._children_names_get()
 
         self.info("Create a new wallet with the deleted wallet's name")
         assert self.client_one.wallets.new("unittest_one")
@@ -130,10 +134,10 @@ class TestIConfigManager(BaseTest):
         self.info("Delete wallet unittest_one")
         self.client_one.wallets.delete("unittest_one")
         self.info("Check that the wallet doesn't exist")
-        assert "unittest_one" not in self.client_one._children_names_get()
+        assert "unittest_one" not in self.client_one.wallets._children_names_get()
 
         self.info("Check that the other client's wallet was not affected")
-        assert "unittest_two" in self.client_two._children_names_get()
+        assert "unittest_two" in self.client_two.wallets._children_names_get()
 
         self.info("Create a new wallet with the deleted wallet's name")
         assert self.client_one.wallets.new("unittest_one")
