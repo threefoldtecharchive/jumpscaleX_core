@@ -925,10 +925,12 @@ class NetTools(JSBASE):
             if filename != "-":
                 urlopener.retrieve(url, filename, None, None)
                 self._log_debug("URL %s is downloaded to local path %s" % (url, filename))
-                return
+                return filename
             else:
                 return urlopener.open(url).read()
+
         print("!!! File already exists did not overwrite")
+        return filename
 
     def getDomainName(self):
         """
