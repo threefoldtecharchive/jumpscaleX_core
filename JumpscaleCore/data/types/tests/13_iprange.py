@@ -7,9 +7,7 @@ def main(self):
 
     kosmos 'j.data.types.test(name="iprange")'
     """
-    import ipdb
 
-    ipdb.set_trace()
     ipv4 = j.data.types.get("iprange", default="192.168.0.0/28")
     assert ipv4.default_get() == "192.168.0.0/28"
     assert ipv4.check("192.168.23.255/28") == False
