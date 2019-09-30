@@ -388,13 +388,8 @@ class Handler(JSBASE):
 
         def capnp_decode(request, command, die=True):
             try:
-                # Try capnp which is combination of msgpack of a list of id/capnpdata
                 id, data = j.data.serializers.msgpack.loads(request.arguments[0])
-                args = command.schema_in.new(serializeddata=data)
-                if id:
-                    args.id = id
-                return args
-            except Exception as e:
+            except:
                 if die:
                     raise j.exceptions.Value(
                         "the content is not valid capnp while you provided content_type=capnp\n%s\n%s"
@@ -402,11 +397,21 @@ class Handler(JSBASE):
                     )
                 return None
 
-        def json_decode(request, command, die=True):
             try:
-                args = command.schema_in.new(datadict=j.data.serializers.json.loads(request.arguments[0]))
+                # Try capnp which is combination of msgpack of a list of id/capnpdata
+                args = command.schema_in.new(serializeddata=data)
+                if id:
+                    args.id = id
                 return args
             except Exception as e:
+                if die:
+                    raise e
+                return None
+
+        def json_decode(request, command, die=True):
+            try:
+                parsed = j.data.serializers.json.loads(request.arguments[0])
+            except:
                 if die:
                     raise j.exceptions.Value(
                         "the content is not valid json while you provided content_type=json\n%s\n%s"
@@ -414,16 +419,31 @@ class Handler(JSBASE):
                     )
                 return None
 
-        def msgpack_decode(request, command, die=True):
             try:
-                args = command.schema_in.new(datadict=j.data.serializers.msgpack.loads(request.arguments[0]))
+                args = command.schema_in.new(datadict=parsed)
                 return args
             except Exception as e:
+                if die:
+                    raise
+                return None
+
+        def msgpack_decode(request, command, die=True):
+            try:
+                parsed = j.data.serializers.msgpack.loads(request.arguments[0])
+            except:
                 if die:
                     raise j.exceptions.Value(
                         "the content is not valid msgpack while you provided content_type=msgpack\n%s\n%s"
                         % (str, request.arguments[0])
                     )
+                return None
+
+            try:
+                args = command.schema_in.new(datadict=parsed)
+                return args
+            except Exception as e:
+                if die:
+                    raise
                 return None
 
         if request.content_type == "auto":
