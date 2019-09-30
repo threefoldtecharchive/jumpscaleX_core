@@ -116,7 +116,6 @@ class JSFactory(JSBase, Attr):
         """
 
         :param name:
-        :param recursive: None means will be True if there is a mother, otherwise will be False or True forced
         :return:
         """
         self._delete(name=name)
