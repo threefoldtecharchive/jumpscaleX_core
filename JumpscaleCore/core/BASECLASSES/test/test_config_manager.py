@@ -28,7 +28,7 @@ class TestIConfigManager(BaseTest):
         """
         assert j.clients.tfchain._model.get_by_name(self.client_one.name)
 
-    @skip("Until update bug is resolved")
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/115")
     def test02_modify_exists_client(self):
         """
         ** Test update client data, should succeed **
