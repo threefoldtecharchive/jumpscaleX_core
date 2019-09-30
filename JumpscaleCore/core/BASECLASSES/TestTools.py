@@ -131,7 +131,7 @@ class TestTools:
             bname = j.sal.fs.getBaseName(item)
             bname2 = get_shortname(bname)
             self._log_debug("%s:%s" % (bname2, name))
-            
+
             if bname2 == get_shortname(name, underscoreprocess=False):
                 return item
             if bname2 == get_shortname(name, underscoreprocess=True):
@@ -161,6 +161,7 @@ class TestTools:
 
             natsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split("(\d+)", s)]
             items.sort(key=natsort)
+
             for name in items:
                 self.__test_run(name=name, obj_key=obj_key, **kwargs)
 

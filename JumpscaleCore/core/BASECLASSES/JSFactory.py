@@ -58,7 +58,7 @@ class JSFactory(JSBase, Attr):
             else:
                 raise j.exceptions.JSBUG("only suport j.baseclasses.object")
 
-    def get(self, name="main", needexist=False, save=False, reload=False, **kwargs):
+    def get(self, name="main", needexist=False, autosave=False, reload=False, **kwargs):
         """
 
         :param name: of the child to get, if it doesn't need to exist then will try to create new
@@ -68,7 +68,7 @@ class JSFactory(JSBase, Attr):
         """
         if not name in self._children:
             if hasattr(self.__class__, "_CHILDCLASS") and needexist == False:
-                self.new(name=name, save=save, **kwargs)
+                self.new(name=name, autosave=save, **kwargs)
             else:
                 raise j.exceptions.Value("cannot get child with name:%s" % name)
         if reload:
@@ -112,27 +112,20 @@ class JSFactory(JSBase, Attr):
     #     #     if self._hasattr(child, "count"):
     #     #         r += child.count(name=name)
 
-    def delete(self, name=None, recursive=None):
+    def delete(self, name=None):
         """
 
         :param name:
-        :param recursive: None means will be True if there is a mother, otherwise will be False or True forced
         :return:
         """
-        self._delete(name=name, recursive=recursive)
+        self._delete(name=name)
 
-    def _delete(self, name=None, recursive=None):
-
-        if recursive == None and self._mother_id_get():
-            recursive = True
-
+    def _delete(self, name=None):
         if name:
             if name in self._children:
-                if recursive:
-                    self._children[name].delete(recursive=recursive)
-                self._children.pop(name)
-
-        self._children_delete(recursive=recursive)
+                self._children[name].delete()
+        else:
+            self._children_delete()
 
         if self._parent:
             # if we exist in the parent remove us from their children

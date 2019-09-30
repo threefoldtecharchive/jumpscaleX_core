@@ -44,7 +44,7 @@ class ZDBServers(JSConfigs):
         """
         if not namespaces:
             namespaces = []
-        zdb = self.get(name="test", port=9901, save=True)
+        zdb = self.get(name="test", port=9901, autosave=True)
 
         if destroydata:
             zdb.destroy()
