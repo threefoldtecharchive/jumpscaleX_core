@@ -194,7 +194,7 @@ class IPRange(String):
     def __init__(self, default=None):
         self.BASETYPE = "string"
         if not default:
-            default = "::"
+            default = "::/128"
         self._default = default
 
     def check(self, value):
