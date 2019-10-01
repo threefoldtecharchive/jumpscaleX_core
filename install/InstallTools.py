@@ -3037,10 +3037,11 @@ class Tools:
                 val = val2
             elif isinstance(val, str):
                 val = "'%s'" % val
-
-            if val == True:
+            elif isinstance(val, int) or isinstance(val, float):
+                val = str(val)
+            elif val == True:
                 val = "true"
-            if val == False:
+            elif val == False:
                 val = "false"
             out += "%s = %s\n" % (key, val)
 
@@ -4534,8 +4535,8 @@ class DockerConfig:
         self.portrange_txt += " -p %s:22" % ssh
 
     def save(self):
-        assert isinstance(self.portrange, int)
         Tools.config_save(self.path_config, self.__dict__)
+        assert isinstance(self.portrange, int)
         self.load()
 
     def __str__(self):
@@ -4972,12 +4973,13 @@ class DockerContainer:
             image = image.split(":")[0]
         self.image = image
 
+        self.config.save()
+
     def push(self, image=None):
         if not image:
             image = self.image
         cmd = "docker push %s" % image
         Tools.execute(cmd)
-        j.shell()
 
     def jumpscale_install(
         self, secret=None, privatekey=None, redo=False, threebot=True, pull=False, branch=None, prebuilt=False
