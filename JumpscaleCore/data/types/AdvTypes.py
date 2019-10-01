@@ -12,6 +12,7 @@ from uuid import UUID
 from Jumpscale import j
 from datetime import datetime, timedelta
 from .TypeBaseClasses import *
+from ipaddress import IPv4Interface, IPv6Interface
 
 
 class Guid(String):
@@ -192,16 +193,33 @@ class IPRange(String):
 
     def __init__(self, default=None):
         self.BASETYPE = "string"
-        self._RE = re.compile("[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,2}")
         if not default:
-            default = "192.168.1.1/24"
+            default = "::/128"
         self._default = default
 
     def check(self, value):
         """
         Check whether provided value is a valid
         """
-        return self._RE.fullmatch(value) is not None
+        return self.is_valid_ipv6_range(value) or self.is_valid_ipv4_range(value)
+
+    def is_valid_ipv6_range(self, ip):
+        """
+        Validate if the ipv6 range is valid while using CIDR.
+        """
+        try:
+            return IPv6Interface(ip) and True
+        except (ValueError):
+            return False
+
+    def is_valid_ipv4_range(self, ip):
+        """
+        Validate if the ipv4 range is valid while using CIDR.
+        """
+        try:
+            return IPv4Interface(ip) and True
+        except (ValueError):
+            return False
 
     def clean(self, value):
 

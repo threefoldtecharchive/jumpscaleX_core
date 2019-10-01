@@ -22,7 +22,7 @@ class gdrive(j.baseclasses.threebot_actor):
         """
 
         doctypes_map = {"doc": "drive", "sheet": "drive", "slide": "slides"}
-        cl = j.clients.gdrive.main
+        cl = j.clients.gdrive.get("gdrive_macro_client", credfile="/sandbox/var/cred.json")
 
         if not doctype in doctypes_map:
             raise j.exceptions.Base("invalid type")

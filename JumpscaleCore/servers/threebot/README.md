@@ -1,7 +1,7 @@
-# Threebot server 
+# Threebot server
 Threebot server is designed to be your own digital self, you can host content, sites and even complex applications very easily
 
-## how to start 
+## how to start
 ### Basic threebot
 ```bash
 kosmos 'j.servers.threebot.get("3bot_name").start(web=False, ssl=False)'
@@ -16,8 +16,8 @@ this will start the basic threebot server which will have:
 kosmos 'j.servers.threebot.get("3bot_name").start(web=True, ssl=False)'
 ```
 this will start the basic servers in addition to servers that will be needed to host a web application
-- [openresty server](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/servers/openresty/README.md) 
-- [threebot bottle server]() a bottle server to serve the content of [bcdbfs](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/sal/bcdbfs/README.md) as static files 
+- [openresty server](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/servers/openresty/README.md)
+- [threebot bottle server]() a bottle server to serve the content of [bcdbfs](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/sal/bcdbfs/README.md) as static files
 - websocket proxy server for gedis server
 
 ### threebot for web with ssl
@@ -50,7 +50,7 @@ class Package(j.baseclasses.threebot_package):
         :return:
         """
         pass
-        
+
     def stop(self):
         """
         called when the 3bot stops
@@ -70,8 +70,8 @@ class Package(j.baseclasses.threebot_package):
 ## How to load a package
 after creating your package you can load it so it can be started when your threebot start
 ```python
-j.tools.threebot_packages.get("package_name", 
-                            git_url="{git url if it's not local}", 
+j.tools.threebot_packages.get("package_name",
+                            giturl="{git url if it's not local}",
                             path="{path to your local package}" ,
                             threebotserver_name="{threebot server name}")
 ```

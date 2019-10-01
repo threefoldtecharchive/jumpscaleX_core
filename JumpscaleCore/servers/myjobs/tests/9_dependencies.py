@@ -1,15 +1,10 @@
-from Jumpscale import j
-
-
-def main(self, reset=False):
+def main(self):
     """
     kosmos -p 'j.servers.myjobs.test("dependencies")'
-    kosmos -p 'j.servers.myjobs.test("dependencies",reset=True)'
     """
 
-    if reset:
-        self.stop(reset=True)  # will make sure all tmux are gone
-        assert len(self.find()) == 0
+    self.stop(reset=True)  # will make sure all tmux are gone
+    assert len(self.workers.find()) == 0
 
     nrworkers = 3
     self.workers_tmux_start(nrworkers)
@@ -53,5 +48,3 @@ def main(self, reset=False):
     assert job1.state == "OK"
 
     print("TEST OK FOR dependencies")
-
-    # j.application.stop()

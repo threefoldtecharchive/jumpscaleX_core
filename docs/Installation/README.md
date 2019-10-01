@@ -24,6 +24,11 @@ apt install -y openssh-server locales curl git rsync unzip lsb python3
 
 ```bash
 # for macOS 10.7 or newer
+
+#to install brew:
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+
+# install requirements
 brew install curl python3 git rsync
 ```
 
@@ -34,10 +39,6 @@ brew install curl python3 git rsync
 Make sure the pip3 package is installed
 ```bash
 apt install python3-pip
-```
-If so, or after installing please do:
-
-```bash
 pip3 install click
 ```
 
@@ -57,7 +58,7 @@ Make sure to check whether **this** ssh key is stored in your github account. If
 #### Download the installer file, change its permission to make it executable
 
 ```bash
-curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx;
+curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx;
 chmod +x /tmp/jsx;
 ```
 

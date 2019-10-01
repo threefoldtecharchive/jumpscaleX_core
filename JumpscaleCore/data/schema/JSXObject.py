@@ -102,7 +102,7 @@ class JSXObject(j.baseclasses.object):
         """
 
         if isinstance(capnpdata, bytes):
-            self._capnp_obj_ = self._capnp_schema.from_bytes_packed(capnpdata)
+            self._capnp_obj_ = self._capnp_schema.from_bytes_packed(capnpdata, traversal_limit_in_words=1.8446744e19)
             set_default = False
         else:
             self._capnp_obj_ = self._capnp_schema.new_message()

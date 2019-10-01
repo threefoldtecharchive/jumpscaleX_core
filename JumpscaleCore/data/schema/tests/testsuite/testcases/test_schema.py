@@ -879,8 +879,8 @@ class SchemaTest(BaseTest):
         self.log("Create schema with hash parameter[P1], should succeed.")
         scm = """
         @url = test.schema
-        data = (hash)
-        init_hash = 46:682 (hash)
+        data = (h)
+        init_hash = 46:682 (h)
         """
         schema = self.schema(scm)
         schema_obj = schema.new()
@@ -891,9 +891,6 @@ class SchemaTest(BaseTest):
 
         with self.assertRaises(Exception):
             schema_obj.data = self.random_string()
-
-        with self.assertRaises(Exception):
-            schema_obj.data = random.randint(1, 1000)
 
         with self.assertRaises(Exception):
             schema_obj.data = random.uniform(1, 100)
@@ -968,33 +965,39 @@ class SchemaTest(BaseTest):
         self.log("Create schema with yaml parameter[P1], should succeed.")
         scm = """
         @url = test.schema
-        data = "example2:     test1"(yaml)
-        init_yaml = "example:     test1" (yaml)
+        data = {'example':'test2'} (yaml)
+        init_yaml = {'example':'test1'} (yaml)
         """
         schema = self.schema(scm)
         schema_obj = schema.new()
 
         self.log("Try to set parameter[P1] with non yaml type, should fail.")
+
+        self.log("Try to set parameter[P1] with non yaml type, should fail.")
         with self.assertRaises(Exception):
             schema_obj.data = random.randint(1, 1000)
+            schema_obj.check()
 
         with self.assertRaises(Exception):
             schema_obj.data = random.uniform(1, 100)
+            schema_obj.check()
 
         with self.assertRaises(Exception):
             schema_obj.data = [random.randint(1, 100), random.randint(1, 100)]
+            schema_obj.check()
 
         with self.assertRaises(Exception):
             schema_obj.data = {"number": random.randint(1, 100)}
+            schema_obj.check()
 
         self.log("Try to set parameter[P1] with yaml type, should succeed.")
         data = self.random_string()
         schema_obj.data = data
         self.assertEqual(schema_obj.data, data)
 
-        schema_obj.data = "example:     test1"
-        self.assertEqual(schema_obj.data, "example:     test1")
-        self.assertEqual(schema_obj.init_yaml, "example:     test1")
+        schema_obj.data = {"example": "test1"}
+        self.assertEqual(schema_obj.data, {"example": "test1"})
+        self.assertEqual(schema_obj.init_yaml, {"example": "test1"})
 
     def test020_validate_enum_type(self):
         """
@@ -1010,7 +1013,7 @@ class SchemaTest(BaseTest):
         self.log("Create schema with enum parameter[P1], should succeed.")
         scm = """
         @url = test.schema
-        colors = 'red, green, blue, black' (e)
+        colors = 'red, green, blue, black' (E)
         """
         schema = self.schema(scm)
         schema_obj = schema.new()
@@ -1037,7 +1040,7 @@ class SchemaTest(BaseTest):
         self.assertEqual(schema_obj.colors, color)
 
         index = random.randint(0, 3)
-        schema_obj.colors = index + 1
+        schema_obj.colors = index
         self.assertEqual(schema_obj.colors, colors[index])
 
     def test021_validate_binary_type(self):

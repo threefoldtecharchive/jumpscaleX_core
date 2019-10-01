@@ -61,7 +61,13 @@ class JSConfigBCDB(JSConfigBCDBBase):
 
     @property
     def _key(self):
+        assert self.name
         return self._classname + "_" + self.name
+
+    @property
+    def _name(self):
+        assert self._classname
+        return self._classname
 
     @property
     def _id(self):
@@ -81,12 +87,11 @@ class JSConfigBCDB(JSConfigBCDBBase):
         # ddict = self._data._ddict  # why was this needed? (kristof)
         self._data._data_update(datadict=datadict)
 
-    def delete(self, recursive=None):
+    def delete(self):
         """
-        :param recursive: None means will be True if there is a mother, otherwise will be False or True forced
         :return:
         """
-        self._delete(recursive=recursive)
+        self._delete()
 
     def load(self):
         """
@@ -100,7 +105,7 @@ class JSConfigBCDB(JSConfigBCDBBase):
         self._data._autosave = True
         return self
 
-    def _delete(self, recursive=None):
+    def _delete(self):
         self._triggers_call(self, "delete")
         assert self._model
         self._model.delete(self._data)
@@ -109,11 +114,8 @@ class JSConfigBCDB(JSConfigBCDBBase):
                 if not isinstance(self._parent, j.baseclasses.factory):
                     # if factory then cannot delete from the mother because its the only object
                     del self._parent._children[self._data.name]
-        mother_id = self._mother_id_get()
-        if mother_id and recursive == None:
-            recursive = True
-        if recursive:
-            self._children_delete(recursive=recursive)
+
+        self._children_delete()
 
         self._triggers_call(self, "delete_post")
 

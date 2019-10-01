@@ -7,14 +7,17 @@ class package_manager(j.baseclasses.threebot_actor):
         assert gedis_server
         self._gedis_server = gedis_server
 
-    def package_add(self, name=None, git_url=None, path=None, schema_out=None, user_session=None):
+    def package_add(self, name=None, git_url=None, path=None, reload=True, schema_out=None, user_session=None):
         """
         ```in
         name = ""
         git_url = ""
         path = ""
+        reload = true (B)
         ```
         """
+
+        user_session.admin_check()  # means will give error when not an admin user
 
         if name is None or name == "":
             raise j.exceptions.Input("actor name cannot be None or empty")
@@ -25,8 +28,10 @@ class package_manager(j.baseclasses.threebot_actor):
         assert j.servers.threebot.current
         threebot_server_name = j.servers.threebot.current.name
 
-        if git_url:
+        if reload == False and j.tools.threebot_packages.exists(name):
+            return "OK"
 
+        if git_url:
             package = j.tools.threebot_packages.get(
                 name=name, giturl=git_url, threebot_server_name=threebot_server_name
             )
@@ -39,12 +44,15 @@ class package_manager(j.baseclasses.threebot_actor):
         package.prepare()
         package.start()
 
+        return "OK"
+
     def package_delete(self, name, schema_out=None, user_session=None):
         """
         ```in
         name = ""
         ```
         """
+        user_session.admin_check()
         if not j.tools.threebot_packages.exists(name):
             return
 
@@ -58,6 +66,7 @@ class package_manager(j.baseclasses.threebot_actor):
         name = ""
         ```
         """
+        user_session.admin_check()
         if not j.tools.threebot_packages.exists(name):
             raise j.exceptions.NotFound("package not found", data={"name": name})
 
@@ -70,6 +79,7 @@ class package_manager(j.baseclasses.threebot_actor):
         name = ""
         ```
         """
+        user_session.admin_check()
         if not j.tools.threebot_packages.exists(name):
             raise j.exceptions.NotFound("package not found", data={"name": name})
 

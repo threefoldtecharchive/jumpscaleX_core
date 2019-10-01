@@ -18,16 +18,12 @@ class Tmux(j.baseclasses.object):
     @property
     def session(self):
         """
-        we only want to allow 1 tmux session, its already complex enough
+        Always returns session `main`
         :return:
         """
         if self._session is None:
-            try:
-                sessions = self.server.list_sessions()
-                self._session = Session(session=sessions[0])
-            except Exception as e:
-                session1 = self.server.new_session("main")
-                self._session = Session(session=session1)
+            session = self.server.find_where({"session_name": "main"})
+            self._session = Session(session=session)
         return self._session
 
     def _find_procs_by_name(self, name, startswith_is_ok=True):
@@ -55,30 +51,10 @@ class Tmux(j.baseclasses.object):
             time.sleep(0.1)
 
         if self._server is None:
-            rc, out, err = j.core.tools.execute("tmux ls", die=False)
-            if rc > 0:
-                if err.find("No such file or directory") != -1:
-                    start()
-                    rc, out, err = j.core.tools.execute("tmux ls", die=False)
-                if err.find("no server running") != -1:
-                    start()
-                    rc, out, err = j.core.tools.execute("tmux ls", die=False)
-
-            if rc > 0:
-                raise j.exceptions.Base("could not execute tmux ls\n%s" % err)
-
-            if out.strip().count("\n") > 0:
-                j.shell()
-                raise j.exceptions.Base("found too many tmux sessions, there should only be 1")
-
-            rc, out, err = j.sal.process.execute("tmux -f /sandbox/cfg/.tmux.conf has-session -t main", die=False)
-            if rc > 0:
-                j.shell()
-                raise j.exceptions.Base("did not find tmux session -t main")
-
             self._server = tmuxp.Server()
-            time.sleep(1)
 
+        if not self._server.has_session("main"):
+            start()
             self._log_info("tmux server is running")
 
         return self._server
@@ -87,14 +63,7 @@ class Tmux(j.baseclasses.object):
         """
         kosmos 'j.servers.tmux.kill()'
         """
-        if (
-            len(j.sal.process.getPidsByFilter("tmux")) == 1
-            and len(j.sal.process.getPidsByFilter("tmux -f /sandbox/cfg/.tmux.conf")) == 1
-        ):
-            # means is only our tmux running so can stop cleanly
-            self.session.kill()
-        # kill remaining processes
-        j.sal.process.killProcessByName("tmux")
+        self.session.kill()
 
     def pane_get(self, window="main", pane="main", reset=False):
         w = self.window_get(window=window)
@@ -297,16 +266,3 @@ class Tmux(j.baseclasses.object):
         p = self.pane_get("test2", "test2", reset=True)
 
         self._log_info("tests ok for tmux")
-
-    def test_multi(self):
-        """
-        kosmos 'j.servers.tmux.test_multi()'
-
-        :return:
-        """
-        j.servers.tmux.panes_multi_get()
-
-        cmd = self.cmd_get(name="htop", window="multi", pane="p11", cmd="htop")
-        cmd.start()
-
-        j.shell()

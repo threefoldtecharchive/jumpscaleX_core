@@ -1,4 +1,6 @@
 from Jumpscale import j
+from unittest import TestCase
+import re
 
 JSBASE = j.baseclasses.object
 
@@ -21,13 +23,44 @@ class BCDBFS(j.baseclasses.object):
         self._dir_model = self._bcdb.model_get_from_file("{}/models_threebot/DIR.py".format(self._bcdb._dirpath))
         self.dir_create("/")
 
+        """ def _is_filename_correct(self, filename):
+            if filename.startswith("/") and len(filename) > 1:
+                filename_to_test = filename[1:]
+            else:
+                filename_to_test = filename
+            if not re.match(r"^[\w\-. ]+$", filename_to_test):
+                return False
+                # raise j.exceptions.Base("the filename %s is not a correct file name"%filename)
+            return True
+
+            def _is_directoryname_correct(self, dirname):
+            if dirname.startswith("/") and len(dirname) > 1:
+                dirname_to_test = dirname[1:]
+            else:
+                dirname_to_test = dirname
+            if not re.match(r"^(\w+\.?)*\w+$", dirname_to_test):
+                return False
+                # raise j.exceptions.Base("the path %s is not a correct directory path"%dirname)
+            return True """
+
+    def _sanitize(self, path, isFile=None):
+        """remove trailing slash.
+        Preserve potential leading slash.
+        """
+        if path.endswith("/"):
+            if isFile:
+                raise j.exceptions.Base("filename path :%s should not end with a /" % path)
+            if len(path) > 1:
+                path = path[:-1]
+        return j.sal.fs.pathClean(path)
+
     def exists(self, path):
         """
         checks is the path exists, it can be a directory or a file
         :param path: the path to be checked
         :return: bool
         """
-        return self.dir_exists(path) or self.file_exists(path)
+        return self.dir_exists(self._sanitize(path)) or self.file_exists(self._sanitize(path))
 
     def is_dir(self, path):
         """
@@ -35,7 +68,7 @@ class BCDBFS(j.baseclasses.object):
         :param path: the path to checked
         :return: bool
         """
-        return self.dir_exists(path)
+        return self.dir_exists(self._sanitize(path))
 
     def is_file(self, path):
         """
@@ -43,7 +76,7 @@ class BCDBFS(j.baseclasses.object):
         :param path: the path to checked
         :return: bool
         """
-        return self.file_exists(path)
+        return self.file_exists(self._sanitize(path))
 
     #############################
     ######  DIR OPERATIONS ######
@@ -54,7 +87,8 @@ class BCDBFS(j.baseclasses.object):
         :param path: full path of the directory
         :return: Directory object
         """
-        return self._dir_model.create_empty_dir(path)
+        if not self.dir_exists(self._sanitize(path, isFile=False)):
+            return self._dir_model.create_empty_dir(self._sanitize(path, isFile=False))
 
     def dir_remove(self, path, recursive=True):
         """
@@ -63,11 +97,11 @@ class BCDBFS(j.baseclasses.object):
         :param recursive: if true will perform recursive delete by deleting all sub directorie
         :return: None
         """
-        dir = self._dir_model.get_by_name(name=path)
+        dir = self._dir_model.get_by_name(name=self._sanitize(path, isFile=False))
         if not recursive and dir.dirs:
             raise j.exceptions.Base("this dir contains other dirs you must pass recursive = True")
         elif recursive:
-            self._dir_model.delete_recursive(path)
+            self._dir_model.delete_recursive(self._sanitize(path, isFile=False))
 
     def dir_exists(self, path):
         """
@@ -75,7 +109,7 @@ class BCDBFS(j.baseclasses.object):
         :param path: path to be checked
         :return: bool
         """
-        return self._dir_model.get_by_name(name=path, die=False) is not None
+        return self._dir_model.get_by_name(name=self._sanitize(path, isFile=False), die=False) is not None
 
     def dir_copy_from_local(self, path, dest, recursive=True):
         """
@@ -85,7 +119,8 @@ class BCDBFS(j.baseclasses.object):
         :param recursive: copy subdirs
         :return:
         """
-        source_files = j.sal.fs.listFilesInDir(path)
+        path = self._sanitize(path, isFile=False)
+        source_files = j.sal.fs.listFilesInDir(path, True)
         for file in source_files:
             basename = j.sal.getBaseName(file)
             self.file_copy_from_local(file, j.sal.fs.joinPaths(path, basename))
@@ -104,6 +139,7 @@ class BCDBFS(j.baseclasses.object):
         :param recursive: copy subdirs
         :return:
         """
+        path = self._sanitize(path, isFile=False)
         if path == j.sal.fs.getParent(dest):
             raise j.exceptions.Base("{} can not copy directory into itself".format(path))
         dir_source = self._dir_model.get_by_name(name=path)
@@ -132,6 +168,7 @@ class BCDBFS(j.baseclasses.object):
         :param recursive: copy subdirs
         :return:
         """
+        path = self._sanitize(path, isFile=False)
         if j.sal.fs.exists(path):
             self.dir_copy_from_local(path, dest, recursive=recursive)
         else:
@@ -146,7 +183,9 @@ class BCDBFS(j.baseclasses.object):
         :param filename: full file path
         :return: file object
         """
-        return self._file_model.file_create_empty(filename)
+        filename = self._sanitize(filename, isFile=True)
+        if not self.file_exists(filename):
+            return self._file_model.file_create_empty(filename)
 
     def file_write(self, filename, contents, append=True, create=True):
         """
@@ -157,7 +196,9 @@ class BCDBFS(j.baseclasses.object):
         :param create: create new if true and the file doesn't exist
         :return: file object
         """
-        return self._file_model.file_write(filename, contents, append=append, create=create)
+        return self._file_model.file_write(
+            self._sanitize(filename, isFile=True), contents, append=append, create=create
+        )
 
     def file_copy_from_local(self, path, dest):
         """
@@ -166,6 +207,7 @@ class BCDBFS(j.baseclasses.object):
         :param dest: destination on bcdbfs
         :return: file object
         """
+        path = self._sanitize(path, isFile=True)
         if not j.sal.fs.exists(path):
             raise j.exceptions.Base("{} doesn't exist on local file system".format(path))
 
@@ -180,6 +222,7 @@ class BCDBFS(j.baseclasses.object):
         :param dest: destination path
         :return: file object
         """
+        path = self._sanitize(path, isFile=True)
         source_file = self._file_model.get_by_name(name=path)
         if self.is_dir(dest):
             dest = j.sal.fs.joinPaths(dest, j.sal.fs.getBaseName(path))
@@ -196,6 +239,12 @@ class BCDBFS(j.baseclasses.object):
         dest_file.save()
         return dest_file
 
+    def get_epoch(self, path):
+        path = self._sanitize(path)
+        if j.sal.bcdbfs.is_dir(path):
+            return self._dir_model.get_by_name(name=path).epoch
+        return self._file_model.get_by_name(name=path).epoch
+
     def file_copy(self, path, dest, override=False):
         """
         copies file either from the local file system or from another location in bcdbfs
@@ -203,6 +252,7 @@ class BCDBFS(j.baseclasses.object):
         :param dest: destination path
         :return: file object
         """
+        path = self._sanitize(path, isFile=True)
         # first check if path exists on the file system
         if self.exists(dest) and not override:
             return
@@ -217,6 +267,7 @@ class BCDBFS(j.baseclasses.object):
         :param path: a path of the file to be deleted
         :return: None
         """
+        path = self._sanitize(path, isFile=True)
         self._file_model.file_delete(path)
 
     def file_exists(self, path):
@@ -225,6 +276,7 @@ class BCDBFS(j.baseclasses.object):
         :param path: path for a file to be checked
         :return: bool
         """
+        path = self._sanitize(path, isFile=True)
         return self._file_model.get_by_name(name=path, die=False) is not None
 
     def file_read(self, path):
@@ -233,7 +285,7 @@ class BCDBFS(j.baseclasses.object):
         :param path: the path to the file to read
         :return: Bytes stream
         """
-        path = j.sal.fs.pathClean(path)
+        path = self._sanitize(path, isFile=True)
         return self._file_model.file_read(path)
 
     #############################
@@ -246,7 +298,7 @@ class BCDBFS(j.baseclasses.object):
         :param path: path to an existing directory
         :return: List[str] full paths
         """
-        path = j.sal.fs.pathClean(path)
+        path = self._sanitize(path, isFile=False)
         dir_obj = self._dir_model.get_by_name(path)
         res = [self._dir_model.get(item).name for item in dir_obj.dirs]
         return res
@@ -257,7 +309,7 @@ class BCDBFS(j.baseclasses.object):
         :param path: path to an existing directory
         :return: List[str] full paths
         """
-        path = j.sal.fs.pathClean(path)
+        path = self._sanitize(path, isFile=False)
         dir_obj = self._dir_model.get_by_name(path)
         res = [self._file_model.get(item).name for item in dir_obj.files]
         return res
@@ -268,6 +320,7 @@ class BCDBFS(j.baseclasses.object):
         :param path: path to an existing directory
         :return: List[str] full paths
         """
+        path = self._sanitize(path)
         dirs = self.list_dirs(path)
         files = self.list_files(path)
         return dirs + files
@@ -291,8 +344,49 @@ class BCDBFS(j.baseclasses.object):
         ]
 
     def test(self):
+        # add test for / fikes and folders
         cl = j.clients.sonic.get_client_bcdb()
+        test_case = TestCase()
         cl.flush("bcdbfs")
+        j.sal.bcdbfs.dir_create("/yolo/")
+        assert j.sal.bcdbfs.dir_exists("/yolo")
+        assert j.sal.bcdbfs.dir_exists("/yolo/")
+        j.sal.bcdbfs.dir_remove("/yolo/")
+        assert j.sal.bcdbfs.dir_exists("/yolo") == False
+        assert j.sal.bcdbfs.dir_exists("/yolo/") == False
+        with test_case.assertRaises(Exception) as cm:
+            j.sal.bcdbfs.file_create_empty("/yolofile/")
+        ex = cm.exception
+        assert "filename path :%s should not end with a /" % "/yolofile/" in str(ex.args[0])
+        j.sal.bcdbfs.file_create_empty("/yolofile")
+
+        assert j.sal.bcdbfs.file_exists("/yolofile")
+        with test_case.assertRaises(Exception) as cm:
+            j.sal.bcdbfs.file_exists("/yolofile/")
+        ex = cm.exception
+        assert "filename path :%s should not end with a /" % "/yolofile/" in str(ex.args[0])
+
+        with test_case.assertRaises(Exception) as cm:
+            j.sal.bcdbfs.file_delete("/yolofile/")
+        ex = cm.exception
+        assert "filename path :%s should not end with a /" % "/yolofile/" in str(ex.args[0])
+
+        j.sal.bcdbfs.file_delete("/yolofile")
+        assert j.sal.bcdbfs.file_exists("/yolofile") == False
+
+        j.sal.fs.createDir("/tmp/test_bcdbfs")
+        j.sal.fs.writeFile("/tmp/test_bcdbfs/yolofile", "yolo content")
+        with test_case.assertRaises(Exception) as cm:
+            j.sal.bcdbfs.file_copy_from_local("/tmp/test_bcdbfs/yolofile", "/test/yolofile/")
+        ex = cm.exception
+        assert "filename path :%s should not end with a /" % "/test/yolofile/" in str(ex.args[0])
+        j.sal.bcdbfs.file_copy_from_local("/tmp/test_bcdbfs/yolofile", "/test/yolofile")
+        j.sal.fs.remove("/tmp/test_bcdbfs")
+        assert j.sal.bcdbfs.file_read("/test/yolofile") == b"yolo content"
+        j.sal.bcdbfs.file_delete("/test/yolofile")
+
+        assert j.sal.bcdbfs.file_exists("/tmp/test_bcdbfs/yolofile") == False
+
         j.sal.bcdbfs.dir_create("/test")
         for i in range(5):
             j.sal.bcdbfs.dir_create("/test/dir_{}".format(i))
@@ -336,6 +430,7 @@ class BCDBFS(j.baseclasses.object):
 
         j.sal.bcdbfs.file_copy_form_bcdbfs("/test/test_0", "/test/test_copied")
         j.sal.fs.createEmptyFile("/tmp/test_bcdbfs")
+
         j.sal.bcdbfs.file_copy_from_local("/tmp/test_bcdbfs", "/test/test_from_local")
 
         assert j.sal.bcdbfs.file_exists("/test/test_from_local")
@@ -346,5 +441,7 @@ class BCDBFS(j.baseclasses.object):
         j.sal.fs.writeFile("/tmp/test_bcdbfs", "\ntest content\n\n\n")
         j.sal.bcdbfs.file_copy_from_local("/tmp/test_bcdbfs", "/test/test_with_content")
         assert j.sal.bcdbfs.file_read("/test/test_with_content") == b"\ntest content\n\n\n"
+
         j.sal.bcdbfs.dir_remove("/test")
+
         print("TESTS PASSED")

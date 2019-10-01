@@ -43,10 +43,15 @@ class NACLFactory(j.baseclasses.object):
         n.configure(privkey_words=privkey_words, sshagent_use=sshagent_use, generate=generate, interactive=interactive)
         return n
 
-    def get(self, name="default", load=True):
+    def get(self, name="default", load=True, configure_if_needed=True):
         """
+
+        :param name: name of the nacl config
+        :param load: if the keys need to be loaded
+        :param configure_if_needed: if key path does not exist will generate a key automatically
+        :return:
         """
-        n = NACL(name=name)
+        n = NACL(name=name, configure_if_needed=configure_if_needed)
         if load:
             n.load()
         return n

@@ -1,7 +1,8 @@
 from Jumpscale import j
 import os
 import gevent
-from .OpenPublish import OpenPublish
+
+# from .OpenPublish import OpenPublish
 
 JSConfigs = j.baseclasses.object_config_collection
 

@@ -80,6 +80,7 @@ class SystemProcess(JSBASE):
         interactive=False,
         replace=False,
         args={},
+        retry=None,
     ):
         """
 
@@ -106,6 +107,7 @@ class SystemProcess(JSBASE):
             env=env,
             interactive=interactive,
             replace=replace,
+            retry=retry,
         )
 
     def executeAsyncIO(

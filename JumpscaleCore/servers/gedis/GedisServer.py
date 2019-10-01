@@ -31,6 +31,7 @@ class GedisServer(JSBaseConfig):
         secret_ = "" (S)
         ssl_keyfile = "" (S)
         ssl_certfile = "" (S)
+        # actors_data = (LS)
         """
 
     def _init(self, **kwargs):
@@ -150,6 +151,8 @@ class GedisServer(JSBaseConfig):
         self._log_debug("actor_add:%s:%s", namespace, path)
         name = actor_name(path, namespace)
         key = actor_key(name, namespace)
+        # if key not in self.actors.keys():
+        #     self.actors_data.append("%s:%s" % (namespace, path))
         self.cmds_meta[key] = GedisCmds(server=self, path=path, name=name, namespace=namespace)
 
     ####################################################################
@@ -190,13 +193,13 @@ class GedisServer(JSBaseConfig):
         :return: dict of actor and they commands
         :rtype: dict
         """
-        actors = self.actors_list(namespace)
         res = {}
-        for actor in actors:
-            res[actor.name] = {
-                "schema": str(actor.schema),
-                "cmds": {cmd.name: str(cmd.args) for cmd in actor.cmds.values()},
-            }
+        for key, actor in self.cmds_meta.items():
+            if not namespace or key.startswith("%s__" % namespace):
+                res[actor.name] = {
+                    "schema": str(actor.schema),
+                    "cmds": {cmd.name: str(cmd.args) for cmd in actor.cmds.values()},
+                }
         return res
 
     ##########################CLIENT FROM SERVER #######################
@@ -243,18 +246,6 @@ class GedisServer(JSBaseConfig):
 
     #######################PROCESSING OF CMDS ##############
 
-    def job_schedule(self, method, timeout=60, wait=False, depends_on=None, **kwargs):
-        """
-        @return job, waiter_greenlet
-        """
-        job = self.workers_queue.enqueue_call(func=method, kwargs=kwargs, timeout=timeout, depends_on=depends_on)
-        greenlet = gevent.spawn(waiter, job)
-        job.greenlet = greenlet
-        self.workers_jobs[job.id] = job
-        if wait:
-            greenlet.get(block=True, timeout=timeout)
-        return job
-
     # def sslkeys_generate(self):
     #     if not self.ssl:
     #         raise j.exceptions.Base("sslkeys_generate: gedis server is not configure to use ssl")
@@ -280,6 +271,14 @@ class GedisServer(JSBaseConfig):
     #     #     self._log_info("using existing key and cerificate for gedis @ %s" % path)
     #     return key, cert
 
+    # def load_actors(self):
+    #     for item in self.actors_data:
+    #         namespace, path = item.split(":")
+    #         name = actor_name(path, namespace)
+    #         key = actor_key(name, namespace)
+    #         if key not in self.actors.keys():
+    #             self.actor_add(path, namespace)
+
     def start(self):
         """
         this method is only used when not used in digitalme
@@ -287,13 +286,7 @@ class GedisServer(JSBaseConfig):
         # WHEN USED OVER WEB, USE THE DIGITALME FRAMEWORK
         self._log_info("start Server on {0} - PORT: {1}".format(self.host, self.port))
         self._log_info("%s RUNNING", str(self))
-        cmd = f"""
-        j.servers.gedis.get("{self.name}").gevent_server.serve_forever()
-        """
-        s = j.servers.startupcmd.get(
-            name="gevent_server", cmd_start=cmd, interpreter="jumpscale", executor="tmux", ports=[self.port]
-        )
-        s.start()
+        self.gevent_server.serve_forever()
 
     def stop(self):
         """
@@ -309,19 +302,7 @@ class GedisServer(JSBaseConfig):
             h.cancel()
 
         self._log_info("stopping server")
-        cmd = f"""
-        j.servers.gedis.get("{self.name}").gevent_server.serve_forever()
-        """
-        s = j.servers.startupcmd.get(
-            name="gevent_server", cmd_start=cmd, interpreter="jumpscale", executor="tmux", ports=[self.port]
-        )
-        s.stop()
-
-    def test(self, name=""):
-        if name:
-            self._test_run(name=name)
-        else:
-            self._test_run(name="basic")
+        self.gevent_server.stop()
 
     def __repr__(self):
         return "<Gedis Server address=%s  generated_code_dir=%s)" % (self.address, self.code_generated_dir)
@@ -360,35 +341,3 @@ def actor_key(name, namespace):
     :rtype: str
     """
     return "%s__%s" % (namespace, name)
-
-    ########################POPULATION OF SERVER#########################
-    #
-    # def models_add(self, models, namespace="default"):
-    #     """
-    #     :param models:  e.g. bcdb.models.values() or bcdb itself
-    #     :param namespace:
-    #     :return:
-    #     """
-    #     if namespace not in self.namespaces:
-    #         self.namespaces.append(namespace)
-    #
-    #     reset = True  # FIXME: this mean we always reset, why ?
-    #
-    #     # FIXME: what is models is not a list or have no models attribute ?
-    #     if not j.data.types.list.check(models):
-    #         if hasattr(models, "models"):
-    #             models = models.models.values()
-    #
-    #     for model in models:
-    #         model_name = "model_%s.py" % (model.schema.key)
-    #         dest = j.sal.fs.joinPaths(self.code_generated_dir, model_name)
-    #         self._log_info("generate model: %s at %s", model_name, dest)
-    #         if reset or not j.sal.fs.exists(dest):
-    #             j.tools.jinja2.template_render(
-    #                 path=j.sal.fs.joinPaths(j.servers.gedis._dirpath, "templates/actor_model_server.py"),
-    #                 dest=dest,
-    #                 bcdb=model.bcdb,
-    #                 schema=model.schema,
-    #                 model=model)
-    #             self.actor_add(path=dest, namespace=namespace)
-    #         self.schema_urls.append(model.schema.url)

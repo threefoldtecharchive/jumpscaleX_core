@@ -559,20 +559,15 @@ class BCDBModel(j.baseclasses.object):
         """
         return property_name, val, obj_id, nid
 
-    def find_ids(self, nid=None, **kwargs):
-        """
-        is an iterator !!!
-        :param nid:
-        :param kwargs:
-        :return:
-        """
+    def _find_query(self, nid, _count=False, **kwargs):
         values = []
-        if not nid:
-            nid = 1
+        field = "id"
+        if _count:
+            field = 'count("id")'
         if kwargs == {}:
-            query = "SELECT id FROM %s; " % self.index.sql_table_name
+            query = f"SELECT {field} FROM {self.index.sql_table_name};"
         else:
-            query = "SELECT id FROM %s WHERE " % self.index.sql_table_name
+            query = f"SELECT {field} FROM {self.index.sql_table_name} WHERE "
             first = True
             for key, val in kwargs.items():
                 if not first:
@@ -586,13 +581,26 @@ class BCDBModel(j.baseclasses.object):
                 values.append(val)
                 first = False
             query += ";"
-        cursor = self.index.db.execute_sql(query, values)
-        r = cursor.fetchone()
-        while r:
-            yield (r[0])
-            r = cursor.fetchone()
+        return self.index.db.execute_sql(query, values)
 
-    def query(self, query):
+    def find_ids(self, nid=None, **kwargs):
+        """
+        is an iterator !!!
+        :param nid:
+        :param kwargs:
+        :return:
+        """
+        if not nid:
+            nid = 1
+        cursor = self._find_query(nid, **kwargs)
+        r = cursor.fetchone()
+        res = []
+        while r:
+            res.append(r[0])
+            r = cursor.fetchone()
+        return res
+
+    def query(self, query, values=None):
         """
         returns id's
 
@@ -605,13 +613,17 @@ class BCDBModel(j.baseclasses.object):
         :param sqlquery:
         :return: sqlite cursor
         """
-        return self.index.db.execute_sql(query)
+        return self.index.db.execute_sql(query, values)
 
     def find(self, nid=None, **kwargs):
         res = []
         for id in self.find_ids(nid=nid, **kwargs):
             res.append(self.get(id))
         return res
+
+    def count(self, nid=None, **kwargs):
+        res = self._find_query(nid, True, **kwargs).fetchone()
+        return res[0]
 
     def __str__(self):
         out = "model:%s\n" % self._schema_url

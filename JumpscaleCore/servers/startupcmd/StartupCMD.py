@@ -63,6 +63,7 @@ class StartupCMD(j.baseclasses.object_config):
         self._logger_enable()
         if self.path == "":
             self.path = "/tmp"
+        self._pid = 0
 
         self.cmd_start = j.core.tools.text_strip(self.cmd_start)
 
@@ -73,9 +74,31 @@ class StartupCMD(j.baseclasses.object_config):
     def _reset(self):
         self.time_start = 0
         self.time_stop = 0
-        self.pid = 0
         self.state = "init"
         self.corex_id = ""
+        self._pid = 0
+
+    @property
+    def pid(self):
+        if self._pid:
+            return self._pid
+        try:
+            pids = j.sal.process.getProcessPid("startupcmd_%s" % self.name)
+            if pids:
+                return pids[0]
+        except Exception:  # This is keeping with the old implementation this handling might not be needed
+            pass
+        return 0
+
+    @pid.setter
+    def pid(self, pid):
+        self._pid = pid
+
+    def __setattr__(self, name, value):
+        if name == "pid":
+            self._pid = value
+        else:
+            j.baseclasses.object_config.__setattr__(self, name=name, value=value)
 
     @property
     def data(self):
@@ -104,7 +127,8 @@ class StartupCMD(j.baseclasses.object_config):
 
         def notify_p(p):
             if p.status().casefold() in ["running", "sleeping", "idle"]:
-                self._notify_state("running")
+                if self.state not in ["stopped", "stopping"]:
+                    self._notify_state("running")
                 if p.pid != self.pid:
                     self.pid = p.pid
                     self.save()
@@ -193,6 +217,8 @@ class StartupCMD(j.baseclasses.object_config):
                 if not self.corex_id:
                     raise j.exceptions.Base("corexid cannot be empty")
             r = self._corex_client.process_stop(self.corex_id)
+            if r["status"] == "success":
+                j.sal.process.killProcessByName("startupcmd_%s" % self.name)
             return True
         if self._local:
             if self.cmd_stop:
@@ -497,7 +523,7 @@ class StartupCMD(j.baseclasses.object_config):
                     self.stop(force=True)
                 # self._hardkill()
 
-        if not reset and self.is_running() == True:
+        if not reset and self.pid and self.is_running() == True:
             self._log_info("no need to start was already started:%s" % self.name)
             return
 
@@ -506,7 +532,8 @@ class StartupCMD(j.baseclasses.object_config):
 
         self.cmd_start = j.core.tools.text_strip(self.cmd_start)
 
-        self._hardkill()
+        if self.state in ["init", "running", "error"]:
+            self._hardkill()
 
         if "\n" in self.cmd_start.strip():
             C = self.cmd_start
@@ -630,10 +657,6 @@ class StartupCMD(j.baseclasses.object_config):
 
         # if tpath:
         #     j.sal.fs.remove(tpath)
-        try:
-            self.pid = j.sal.process.getProcessPid("startupcmd_%s" % self.name)[0]
-        except:
-            pass
 
         self.save()
 

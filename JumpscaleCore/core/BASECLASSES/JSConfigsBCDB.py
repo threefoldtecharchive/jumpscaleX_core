@@ -30,18 +30,18 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         return self.__class__._CHILDCLASS
 
-    def new(self, name, jsxobject=None, save=True, **kwargs):
+    def new(self, name, jsxobject=None, autosave=True, **kwargs):
         """
         it it exists will delete if first when delete == True
         :param name:
         :param jsxobject:
-        :param save:
+        :param autosave: sets the autosave argument on the data and also saves the object before the function returns. If set to False, you need to explicitly save the object.
         :param kwargs:
         :return:
         """
         if self.exists(name=name):
             raise j.exceptions.Base("cannot do new object, exists")
-        jsconfig = self._new(name=name, jsxobject=jsxobject, save=save, **kwargs)
+        jsconfig = self._new(name=name, jsxobject=jsxobject, autosave=autosave, **kwargs)
         self._check(jsconfig)
         return jsconfig
 
@@ -61,7 +61,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             assert jsconfig.mother_id == mother_id
         assert jsconfig._model.schema._md5 == self._model.schema._md5
 
-    def _new(self, name, jsxobject=None, save=True, **kwargs):
+    def _new(self, name, jsxobject=None, autosave=True, **kwargs):
         """
         :param name: for the CONFIG item (is a unique name for the service, client, ...)
         :param jsxobject: you can right away specify the jsxobject
@@ -83,26 +83,25 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 jsxobject = self._model.new()
             jsxobject.name = name
 
-        jsxobject._autosave = True
+        jsxobject._autosave = autosave
 
         # means we need to remember the parent id
         mother_id = self._mother_id_get()
         if mother_id:
             if jsxobject.mother_id != mother_id:
                 jsxobject.mother_id = mother_id
-                jsxobject.save()
 
         jsconfig_klass = self._childclass_selector(jsxobject=jsxobject)
         jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject, **kwargs_to_class)
         jsconfig._triggers_call(jsconfig, "new")
-        jsconfig._autosave = True
+        jsconfig._autosave = autosave
         self._children[name] = jsconfig
-        if save:
+        if autosave:
             self._children[name].save()
 
         return self._children[name]
 
-    def get(self, name="main", id=None, needexist=False, save=True, reload=False, **kwargs):
+    def get(self, name="main", id=None, needexist=False, autosave=True, reload=False, **kwargs):
         """
         :param name: of the object
         """
@@ -112,7 +111,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         if not jsconfig:
             self._log_debug("NEW OBJ:%s:%s" % (name, self._classname))
-            jsconfig = self._new(name=name, save=save, **kwargs)
+            jsconfig = self._new(name=name, autosave=autosave, **kwargs)
         else:
             # check that the stored values correspond with kwargs given
             # means comes from the database
@@ -125,28 +124,27 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 if not getattr(jsconfig, key) == val:
                     changed = True
                     setattr(jsconfig, key, val)
-            if changed and save:
+            if changed and autosave:
                 try:
                     jsconfig.save()
                 except Exception as e:
                     print("CHECK WHY ERROR")
                     j.shell()
 
+            jsconfig._autosave = autosave
+
         # lets do some tests (maybe in future can be removed, but for now the safe bet)
         self._check(jsconfig)
 
         jsconfig._triggers_call(jsconfig, "get")
 
-        jsconfig._autosave = True
-
         return jsconfig
 
-    def _get(self, name="main", id=None, die=True, reload=False):
+    def _get(self, name="main", id=None, die=True, reload=False, autosave=True):
 
         if id:
             obj = self._model.get(id)
             name = obj.name
-            self._children[name] = obj
             return 1, self._new(name, obj)
 
         if name in self._children:
@@ -173,11 +171,11 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         else:
             jsxconfig = res[0]
 
-        jsxconfig._autosave = True
+        jsxconfig._autosave = autosave
 
         return 2, jsxconfig
 
-    def reset(self, recursive=None):
+    def reset(self):
         """
         will destroy all data in the DB, be carefull
         :return:
@@ -189,25 +187,21 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             except Exception as e:
                 j.shell()
 
-        mother_id = self._mother_id_get()
-        # TODO: in fact this should work without having to do this, we put it in to get to some more tests, but if deletes work well it should work without (JO)
-        if not mother_id:
-            # means we can remove all objects of the url (index)
+        if not self._mother_id_get():
             self._model.index.destroy()
-        else:
-            # if we did not specify and there is a mother_id for sure we can do the recursive behaviour
-            if recursive == None:
-                recursive = True
-
-        if recursive:
-            self._children_delete(recursive=recursive)
-
-        self._children = j.baseclasses.dict()
 
     def _children_names_get(self, filter=None):
+        condition = False
         Item = self._model.index.sql
+        mother_id = self._mother_id_get()
+
+        if mother_id:
+            condition = Item.mother_id == mother_id
         if filter and filter != "*":
-            res = [i.name for i in Item.select().where(Item.name.startswith(filter))]
+            condition = Item.name.startswith(filter) and condition if condition else Item.name.startswith(filter)
+
+        if condition:
+            res = [i.name for i in Item.select().where(condition)]
         else:
             res = [i.name for i in Item.select()]
 
@@ -245,7 +239,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         ids = self._model.find_ids(**kwargs)
         for id in ids:
             if id not in ids_done:
-                item = self.get(id=id, reload=reload, save=False)
+                item = self.get(id=id, reload=reload, autosave=False)
                 res.append(item)
 
         return res
@@ -279,19 +273,15 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             if item._hasattr("save"):
                 item.save()
 
-    def delete(self, name=None, recursive=None):
+    def delete(self, name=None):
         """
-
         :param name:
-        :param recursive: None means will be True if there is a mother, otherwise will be False or True forced
         :return:
         """
-        self._delete(name=name, recursive=recursive)
+        self._delete(name=name)
 
-    def _delete(self, name=None, recursive=None):
+    def _delete(self, name=None):
         self._model
-        if recursive == None and self._mother_id_get():
-            recursive = True
         if name:
             res = self._findData(name=name)
             if len(res) == 0:
@@ -299,12 +289,10 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             elif len(res) == 1:
                 self._model.delete(res[0].id)
         else:
-            return self.reset(recursive=recursive)
+            return self.reset()
 
         if name in self._children:
-            if recursive:
-                self._children[name].delete(recursive=recursive)
-            self._children.pop(name)
+            self._children[name].delete()
 
         if not name and self._parent:
             if self._classname in self._parent._children:

@@ -346,7 +346,7 @@ class BuilderBaseClass(JSBase):
         res = j.core.tools.text_replace(content=txt, args=args, text_strip=True)
         return res
 
-    def _execute(self, cmd, die=True, args={}, timeout=600, replace=True, showout=True, interactive=False):
+    def _execute(self, cmd, die=True, args={}, timeout=3600, replace=True, showout=True, interactive=False, retry=None):
         """
 
         :param cmd:
@@ -384,6 +384,7 @@ class BuilderBaseClass(JSBase):
             interactive=interactive,
             replace=False,
             showout=showout,
+            retry=retry,
         )
         j.sal.fs.remove(path)
         return (rc, res, out)

@@ -15,6 +15,17 @@ class Session(j.baseclasses.object):
         self.response_type = j.data.types.get("e", default="auto,json,msgpack").clean(0)
         self.content_type = j.data.types.get("e", default="auto,json,msgpack").clean(0)
 
+    @property
+    def threebot_client(self):
+        if not self.threebot_name:
+            return
+        return j.clients.threebot.client_get(threebot=self.threebot_id)
+
+    def admin_check(self):
+        return True
+        if not self.admin:
+            raise j.exceptions.Permission("only admin user can access this method")
+
 
 def _command_split(cmd, namespace="system"):
     """
@@ -229,9 +240,8 @@ class Handler(JSBASE):
         try:
             self._handle_gedis_session(gedis_socket, address, user_session=user_session)
         except Exception as e:
-            logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
             gedis_socket.on_disconnect()
-            self._log_info("connection closed", context="%s:%s" % address)
+            self._log_error("connection closed: %s" % str(e), context="%s:%s" % address)
 
     def _handle_gedis_session(self, gedis_socket, address, user_session=None):
         """
@@ -286,12 +296,25 @@ class Handler(JSBASE):
                 user_session.response_type.value = request.arguments[0].decode()
             return None, "OK"
 
-        # elif request.command.command == "auth":
-        #     dm_id, epoch, signed_message = request[1:]
-        #     if self.dm_verify(dm_id, epoch, signed_message):
-        #         self.session.dmid = dm_id
-        #         self.session.admin = True
-        #         return None, True
+        elif request.command.command == "auth":
+            tid, seed, signature = request.arguments
+            tid = int(tid)
+            try:
+                tclient = j.clients.threebot.client_get(threebot=tid)
+            except Exception as e:
+                logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+                return (logdict, None)
+            try:
+                verification = tclient.verify_from_threebot(seed, signature)
+            except Exception as e:
+                logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+                return (logdict, None)
+            # if we get here we know that the user has been authenticated properly
+            user_session.threebot_id = tclient.tid
+            user_session.threebot_name = tclient.name
+            j.shell()
+
+            return None, "OK"
 
         self._log_debug(
             "command received %s %s %s" % (request.command.namespace, request.command.actor, request.command.command),
@@ -365,13 +388,8 @@ class Handler(JSBASE):
 
         def capnp_decode(request, command, die=True):
             try:
-                # Try capnp which is combination of msgpack of a list of id/capnpdata
                 id, data = j.data.serializers.msgpack.loads(request.arguments[0])
-                args = command.schema_in.new(serializeddata=data)
-                if id:
-                    args.id = id
-                return args
-            except Exception as e:
+            except:
                 if die:
                     raise j.exceptions.Value(
                         "the content is not valid capnp while you provided content_type=capnp\n%s\n%s"
@@ -379,11 +397,21 @@ class Handler(JSBASE):
                     )
                 return None
 
-        def json_decode(request, command, die=True):
             try:
-                args = command.schema_in.new(datadict=j.data.serializers.json.loads(request.arguments[0]))
+                # Try capnp which is combination of msgpack of a list of id/capnpdata
+                args = command.schema_in.new(serializeddata=data)
+                if id:
+                    args.id = id
                 return args
             except Exception as e:
+                if die:
+                    raise e
+                return None
+
+        def json_decode(request, command, die=True):
+            try:
+                parsed = j.data.serializers.json.loads(request.arguments[0])
+            except:
                 if die:
                     raise j.exceptions.Value(
                         "the content is not valid json while you provided content_type=json\n%s\n%s"
@@ -391,16 +419,31 @@ class Handler(JSBASE):
                     )
                 return None
 
-        def msgpack_decode(request, command, die=True):
             try:
-                args = command.schema_in.new(datadict=j.data.serializers.msgpack.loads(request.arguments[0]))
+                args = command.schema_in.new(datadict=parsed)
                 return args
             except Exception as e:
+                if die:
+                    raise
+                return None
+
+        def msgpack_decode(request, command, die=True):
+            try:
+                parsed = j.data.serializers.msgpack.loads(request.arguments[0])
+            except:
                 if die:
                     raise j.exceptions.Value(
                         "the content is not valid msgpack while you provided content_type=msgpack\n%s\n%s"
                         % (str, request.arguments[0])
                     )
+                return None
+
+            try:
+                args = command.schema_in.new(datadict=parsed)
+                return args
+            except Exception as e:
+                if die:
+                    raise
                 return None
 
         if request.content_type == "auto":

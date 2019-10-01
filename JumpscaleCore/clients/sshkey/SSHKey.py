@@ -6,7 +6,7 @@ class SSHKey(j.baseclasses.object_config):
     _SCHEMATEXT = """
         @url = jumpscale.sshkey.client
         name** = "" (S)
-        pubkey = "" (S) 
+        pubkey = "" (S)
         allow_agent = True (B)
         passphrase_ = "" (S)
         privkey = "" (S)
@@ -134,15 +134,12 @@ class SSHKey(j.baseclasses.object_config):
     #     return self.agent.sign_ssh_data(data)
     #     # TODO: does not work, property needs to be implemented
 
-    def load(self, duration=3600 * 24):
+    def load(self):
         """
         load ssh key in ssh-agent, if no ssh-agent is found, new ssh-agent will be started
-
-        :param duration: duration, defaults to 3600*24
-        :type duration: int, optional
         """
-        self._log_debug("load sshkey: %s for duration:%s" % (self.name, duration))
-        j.clients.sshagent.key_load(self.path, passphrase=self.passphrase_, duration=duration)
+        self._log_debug("load sshkey: %s for duration:%s" % (self.name, self.duration))
+        j.core.myenv.sshagent.key_load(self.path, passphrase=self.passphrase_, duration=self.duration)
 
     def unload(self):
         cmd = "ssh-add -d %s " % (self.path)

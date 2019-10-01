@@ -63,10 +63,11 @@ class BCDB(j.baseclasses.object):
         self._data_dir = j.sal.fs.joinPaths(j.dirs.VARDIR, "bcdb", self.name)
         self.storclient = storclient
 
+        j.sal.fs.createDir(self._data_dir)
+
         self._sqlite_index_dbpath = "%s/sqlite_index.db" % self._data_dir
 
         self._init_props()
-        j.sal.fs.createDir(self._data_dir)
 
         if reset:
             self.meta = None

@@ -1,6 +1,7 @@
 from .ThreebotServer import ThreeBotServer
 from Jumpscale import j
-from .OpenPublish import OpenPublish
+
+# from .OpenPublish import OpenPublish
 
 
 class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
@@ -23,17 +24,26 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         return self._default
 
     def install(self):
-        j.builders.web.openresty.install()
-        j.builders.runtimes.lua.install()
-        j.builders.db.zdb.install()
-        j.builders.apps.sonic.install()
-        self._log_info("install done for threebot server.")
+        def need_install():
+            for cmd in ["resty", "lua", "sonic", "zdb"]:
+                if not j.core.tools.cmd_installed(cmd):
+                    return True
+            return False
+
+        if need_install():
+            j.builders.web.openresty.install()
+            j.builders.runtimes.lua.install()
+            j.builders.db.zdb.install()
+            j.builders.apps.sonic.install()
+            self._log_info("install done for threebot server.")
 
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
     def local_start_default(self, web=False):
         """
+
+        kosmos 'j.servers.threebot.local_start_default()'
 
         tbot_client = j.servers.threebot.local_start_default()
 
@@ -47,13 +57,16 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             self.default.stop()
             self.default.start(background=True, web=web)
 
+        if web:
+            raise RuntimeError("implement, need to check if webport is there if not start")
+
         self.client = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
         self.client.reload()
         assert self.client.ping()
 
         return self.client
 
-    def test(self, name="basic", wiki=False, web=False, fileserver=False):
+    def test(self, name="threebot_phonebook", wiki=False, web=False, fileserver=False):
         """
 
         kosmos 'j.servers.threebot.test(name="basic")'
@@ -68,20 +81,20 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
         )
 
-        self.client.actors.package_manager.package_add(
-            "tfgrid_directory",
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/tfgrid_directory",
-        )
+        # self.client.actors.package_manager.package_add(
+        #     "tfgrid_directory",
+        #     git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/tfgrid_directory",
+        # )
 
-        self.client.actors.package_manager.package_add(
-            "tfgrid_workloads",
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/tfgrid_workloads",
-        )
+        # self.client.actors.package_manager.package_add(
+        #     "tfgrid_workloads",
+        #     git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/tfgrid_workloads",
+        # )
 
         if fileserver:
             self.client.actors.package_manager.package_add(
                 "threebot_fileserver",
-                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/fileserver",
+                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threebot/fileserver",
             )
 
         if wiki:

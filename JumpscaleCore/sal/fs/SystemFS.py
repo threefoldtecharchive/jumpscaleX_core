@@ -1384,7 +1384,7 @@ class SystemFS(JSBASE, TESTTOOLS):
         @param ignore_empty_files: Boolean (ignore empty files)
         @rtype: md5 of the directory
         """
-        files = sorted(self.listFilesInDir(folder, recursive=True, followSymlinks=True, listSymlinks=True))
+        files = sorted(self.listFilesInDir(folder, recursive=True, followSymlinks=False, listSymlinks=False))
         dir_hash = hashlib.md5()
 
         for file in files:
@@ -1682,8 +1682,6 @@ class SystemFS(JSBASE, TESTTOOLS):
                 tarfile = params["t"]
                 destInTar = params["destintar"]
                 destpath = self.joinPaths(destInTar, self.pathRemoveDirPart(path, sourcepath))
-                if self.isLink(path) and followlinks:
-                    path = self.readLink(path)
                 self._log_debug("fs.tar: add file %s to tar" % path)
                 # print "fstar: add file %s to tar" % path
                 if not (j.core.platformtype.myplatform.platform_is_windows and j.sal.windows.checkFileToIgnore(path)):
@@ -1703,7 +1701,7 @@ class SystemFS(JSBASE, TESTTOOLS):
                 contentRegexIncludes=contentRegexIncludes,
                 contentRegexExcludes=contentRegexExcludes,
                 depths=depths,
-                followlinks=False,
+                followlinks=followlinks,
             )
 
             if extrafiles != []:

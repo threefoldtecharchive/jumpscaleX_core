@@ -4,7 +4,7 @@ import gevent
 
 def main(self):
     """
-    kosmos 'j.servers.myjobs.test("timeout")'
+    kosmos -p 'j.servers.myjobs.test("timeout")'
     """
 
     j.tools.logger.debug = True

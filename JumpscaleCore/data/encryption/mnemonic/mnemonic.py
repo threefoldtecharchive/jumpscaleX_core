@@ -32,6 +32,8 @@ import hashlib, re
 from binascii import hexlify, unhexlify
 from pbkdf2 import PBKDF2
 
+from Jumpscale import j
+
 PBKDF2_ROUNDS = 2048
 
 

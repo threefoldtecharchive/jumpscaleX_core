@@ -3,8 +3,7 @@ import time
 from watchdog.observers import Observer
 from .MyFileSystemEventHandler import MyFileSystemEventHandler
 import gevent
-
-import gevent
+from gevent import time
 
 
 class Syncer(j.baseclasses.object_config):
@@ -134,7 +133,10 @@ class Syncer(j.baseclasses.object_config):
         #     j.servers.rack.current.greenlets["fs_sync_monitor"] = self.monitor_greenlet
 
         self._monitor.start()
-        gevent.time.sleep(3600)
+        print(111)
+        j.shell()
+
+        time.sleep(3600)
 
     def handler(self, event, action="copy"):
         self._log_debug("%s:%s" % (event, action))
