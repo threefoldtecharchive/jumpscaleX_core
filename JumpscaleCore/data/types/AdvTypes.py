@@ -12,7 +12,7 @@ from uuid import UUID
 from Jumpscale import j
 from datetime import datetime, timedelta
 from .TypeBaseClasses import *
-from ipaddress import IPv4Network, IPv6Network
+from ipaddress import IPv4Interface, IPv6Interface
 
 
 class Guid(String):
@@ -208,7 +208,7 @@ class IPRange(String):
         Validate if the ipv6 range is valid while using CIDR.
         """
         try:
-            return IPv6Network(ip) and True
+            return IPv6Interface(ip) and True
         except (ValueError):
             return False
 
@@ -217,7 +217,7 @@ class IPRange(String):
         Validate if the ipv4 range is valid while using CIDR.
         """
         try:
-            return IPv4Network(ip) and True
+            return IPv4Interface(ip) and True
         except (ValueError):
             return False
 
