@@ -519,7 +519,7 @@ class NetTools(JSBASE):
         :rtype: list or dict if device is specified
         """
         _, output, _ = j.sal.process.execute("ip a", showout=False)
-        result = self.network_info_parse_ip(output)
+        result = self.networkinfo_parse_ip(output)
         if device:
             for nic in result:
                 if nic["name"] == device:
@@ -527,7 +527,7 @@ class NetTools(JSBASE):
             raise j.exceptions.RuntimeError("could not find device")
         return result
 
-    def network_info_parse_ip(self, output):
+    def networkinfo_parse_ip(self, output):
         IPBLOCKS = re.compile("(^|\n)(?P<block>\d+:.*?)(?=(\n\d+)|$)", re.S)
         IPMAC = re.compile("^\s+link/\w+\s+(?P<mac>(\w+:){5}\w{2})", re.M)
         IPIP = re.compile(r"\s+?inet\s(?P<ip>(\d+\.){3}\d+)/(?P<cidr>\d+)", re.M)
