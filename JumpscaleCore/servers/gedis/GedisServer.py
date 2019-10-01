@@ -246,18 +246,6 @@ class GedisServer(JSBaseConfig):
 
     #######################PROCESSING OF CMDS ##############
 
-    def job_schedule(self, method, timeout=60, wait=False, depends_on=None, **kwargs):
-        """
-        @return job, waiter_greenlet
-        """
-        job = self.workers_queue.enqueue_call(func=method, kwargs=kwargs, timeout=timeout, depends_on=depends_on)
-        greenlet = gevent.spawn(waiter, job)
-        job.greenlet = greenlet
-        self.workers_jobs[job.id] = job
-        if wait:
-            greenlet.get(block=True, timeout=timeout)
-        return job
-
     # def sslkeys_generate(self):
     #     if not self.ssl:
     #         raise j.exceptions.Base("sslkeys_generate: gedis server is not configure to use ssl")

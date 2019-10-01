@@ -5472,17 +5472,17 @@ class WireGuard:
                 Tools.config_save("/sandbox/cfg/wireguard.toml", config)
 
             config = Tools.config_load("/sandbox/cfg/wireguard.toml")
-
+            config["SUBNET"] = int((port - config["WIREGUARD_PORT"]) / 10)
             C = """
             [Interface]
-            Address = 10.10.10.1/24
+            Address = 10.10.{SUBNET}.1/24
             SaveConfig = true
             PrivateKey = {WIREGUARD_SERVER_PRIVKEY}
             ListenPort = {WIREGUARD_PORT}
 
             [Peer]
             PublicKey = {WIREGUARD_CLIENT_PUBKEY}
-            AllowedIPs = 10.10.10.0/24
+            AllowedIPs = 10.10.{SUBNET}.0/24
             """
             path = "/tmp/wg0.conf"
             Tools.file_write(path, Tools.text_replace(C, args=config, die_if_args_left=True))
@@ -5504,16 +5504,17 @@ class WireGuard:
         )
         C = """
         [Interface]
-        Address = 10.10.10.2/24
+        Address = 10.10.{SUBNET}.2/24
         PrivateKey = {WIREGUARD_CLIENT_PRIVKEY}
 
         [Peer]
         PublicKey = {WIREGUARD_SERVER_PUBKEY}
         Endpoint = localhost:{WIREGUARD_PORT}
-        AllowedIPs = 10.10.10.0/24
+        AllowedIPs = 10.10.{SUBNET}.0/24
         PersistentKeepalive = 25
         """
         path = "/tmp/wg0.conf"
+        config_container["SUBNET"] = self.container.config.portrange
         if MyEnv.platform() == "linux":
             Tools.file_write(path, Tools.text_replace(C, args=config_container))
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
