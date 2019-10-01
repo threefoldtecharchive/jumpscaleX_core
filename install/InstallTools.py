@@ -2119,11 +2119,10 @@ class Tools:
     @staticmethod
     def get_envars():
         envars = dict()
-        code, stdout, _ = Tools.execute("cat /proc/1/environ", showout=False)
-        if not code:
-            for item in stdout.strip("\x00").split("\x00"):
-                k, v = item.split("=")
-                envars[k] = v
+        content = j.tools.executor.local.file_read("/proc/1/environ").strip("\x00").split("\x00")
+        for item in content:
+            k, v = item.split("=")
+            envars[k] = v
         return envars
 
     @staticmethod
