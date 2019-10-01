@@ -217,7 +217,7 @@ class StartupCMD(j.baseclasses.object_config):
                 if not self.corex_id:
                     raise j.exceptions.Base("corexid cannot be empty")
             r = self._corex_client.process_stop(self.corex_id)
-            if  (r['status']=='success'):
+            if r["status"] == "success":
                 j.sal.process.killProcessByName("startupcmd_%s" % self.name)
             return True
         if self._local:

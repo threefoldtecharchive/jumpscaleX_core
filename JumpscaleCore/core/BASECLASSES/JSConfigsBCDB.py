@@ -107,7 +107,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
 
         # will reload if needed (not in self._children)
-        rc, jsconfig = self._get(name=name, id=id, die=needexist, reload=reload, )
+        rc, jsconfig = self._get(name=name, id=id, die=needexist, reload=reload)
 
         if not jsconfig:
             self._log_debug("NEW OBJ:%s:%s" % (name, self._classname))

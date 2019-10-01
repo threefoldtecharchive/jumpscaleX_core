@@ -179,7 +179,6 @@ def configure(
 @click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
 @click.option("--threebot", is_flag=True, help="also install the threebot")
 @click.option("--portrange", default=None, help="portrange, leave empty unless you know what you do.")
-@click.option("--prebuilt", is_flag=True, help="if set will allow a quick start using prebuilt threebot")
 @click.option(
     "-i",
     "--image",
@@ -200,6 +199,7 @@ def configure(
     is_flag=True,
     help="reinstall, basically means will try to re-do everything without removing the data",
 )
+@click.option("--develop", is_flag=True, help="will use the development docker image to start from.")
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
 def container_install(
     name="3bot",
@@ -213,7 +213,7 @@ def container_install(
     no_interactive=False,
     pull=False,
     configdir=None,
-    prebuilt=False,
+    develop=False,
 ):
     """
     create the 3bot container and install jumpcale inside
@@ -229,13 +229,16 @@ def container_install(
 
     _configure(configdir=configdir, no_interactive=no_interactive)
 
-    if scratch or prebuilt:
+    if scratch:
         image = "threefoldtech/base"
         if scratch:
             delete = True
         reinstall = True
     if not image:
-        image = "threefoldtech/3bot"
+        if not develop:
+            image = "threefoldtech/3bot"
+        else:
+            image = "threefoldtech/3botdevel"
 
     if not branch:
         branch = IT.DEFAULT_BRANCH
@@ -244,13 +247,13 @@ def container_install(
 
     docker.install()
 
-    if prebuilt:
-        docker.sandbox_sync()
+    # if prebuilt:
+    #     docker.sandbox_sync()
 
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False)
 
-    docker.jumpscale_install(branch=branch, redo=reinstall, pull=pull, threebot=threebot, prebuilt=prebuilt)
+    docker.jumpscale_install(branch=branch, redo=reinstall, pull=pull, threebot=threebot)  # , prebuilt=prebuilt)
 
 
 def container_get(name="3bot", delete=False, jumpscale=False):
@@ -311,10 +314,12 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
     installer = IT.JumpscaleInstaller()
     installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt)
     if threebot:
-        IT.Tools.execute("source %s/env.sh;kosmos 'j.servers.threebot.install()'" % SANDBOX, showout=True)
+        IT.Tools.execute(
+            "source %s/env.sh;kosmos 'j.servers.threebot.install()'" % SANDBOX, showout=True, timeout=3600 * 2
+        )
         # IT.Tools.execute("source %s/env.sh;kosmos 'j.servers.threebot.test()'" % SANDBOX, showout=True)
 
-    # LETS NOT DO THE FOLinsLOWING TAKES TOO LONG
+    # LETS NOT DO THE FOLLOWING TAKES TOO LONG
     # IT.Tools.execute("source %s/env.sh;kosmos 'j.core.tools.system_cleanup()'" % SANDBOX, showout=True)
     print("Jumpscale X installed successfully")
 
@@ -353,14 +358,16 @@ def container_export(name="3bot", path=None, version=None, configdir=None):
     docker.export(path=path, version=version)
 
 
-@click.command(name="container-clean")
+@click.command(name="container-save")
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("-n", "--name", default="3bot", help="name of container")
 @click.option(
     "--dest", default="threefoldtech/3bot", help="name of container image on docker hub, default threefoldtech/3bot"
 )
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
-def container_clean(name="3bot", dest=None, push=False, configdir=None):
+@click.option("-c", "--clean", is_flag=True, help="clean runtime")
+@click.option("-cd", "--cleandevel", is_flag=True, help="clean development env")
+def container_save(name="3bot", dest=None, push=False, clean=False, cleandevel=False, configdir=None):
     """
     starts from an export, if not there will do the export first
     :param name:
@@ -371,7 +378,7 @@ def container_clean(name="3bot", dest=None, push=False, configdir=None):
         dest = "threefoldtech/3bot"
     _configure(configdir=configdir)
     docker = container_get(name=name)
-    docker.clean(image=dest)
+    docker.save(image=dest, clean_runtime=clean, clean_devel=cleandevel)
     if push:
         docker.push()
 
@@ -386,104 +393,84 @@ def container_stop(name="3bot", configdir=None):
     :return:
     """
     _configure(configdir=configdir)
-    docker = container_get(name=name, existcheck=False)
-    docker.stop()
+    if name in IT.DockerFactory.containers_running():
+        docker = container_get(name=name)
+        docker.stop()
 
 
-@click.command(name="container-docker-upload")
-@click.option("-n", "--name", default="3bot", help="name of container to push")
-@click.option("--dest", default="3bot", help="name of container image on docker hub, default threefoldtech/3bot")
-def container_docker_upload(name="3bot", dest=None, configdir=None):
-    """
-    make an image of the docker and upload to docker hub
-    :param name:
-    :param dest: e.g. threefoldtech/3bot or threefoldtech/base  the base is the base ubuntu image
-    :return:
-    """
-    if not dest:
-        dest = "threefoldtech/3bot"
-    _configure(configdir=configdir)
-    docker = container_get(name=name, existcheck=False)
-    cmd = "docker commit %s %s" % (name, dest)
-    cmd = "docker push %s" % dest
-    docker.stop()
-
-
-@click.command(name="container-docker-save")
-@click.option("-n", "--name", default="3bot", help="name of container to push")
-@click.option("--dest", default="3bot", help="name of container image on docker hub, default threefoldtech/3bot")
-def container_docker_save(name="3bot", dest=None, configdir=None):
-    """
-    make an image of the docker to the name specified
-    :param name:
-    :param dest: e.g. threefoldtech/3bot or threefoldtech/base  the base is the base ubuntu image
-    :return:
-    """
-    if not dest:
-        dest = "threefoldtech/3bot"
-    _configure(configdir=configdir)
-    docker = container_get(name=name, existcheck=False)
-    cmd = "docker commit %s %s" % (name, dest)
-    docker.stop()
-
-
-@click.command(name="container-basebuilder")
+@click.command(name="basebuilder")
 @click.option(
     "--dest", default="threefoldtech/base", help="name of container image on docker hub, default threefoldtech/3bot"
 )
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
-def container_basebuilder(dest=None, push=False, configdir=None):
+def basebuilder(dest=None, push=False, configdir=None):
     """
     create the base ubuntu docker which we can use as base for everything
     :param dest: default threefoldtech/base  the base is the base ubuntu image
     :return:
     """
+    basebuilder_(dest=dest, push=push, configdir=configdir)
+
+
+def basebuilder_(dest=None, push=False, configdir=None):
+    redo = True  # for debug you can put on False, easier to see where it fails
     if not dest:
         dest = "threefoldtech/base"
-
     IT = load_install_tools(branch=DEFAULT_BRANCH)
     _configure(configdir=configdir)
 
     image = "phusion/baseimage:master"
     # image = "unilynx/phusion-baseimage-1804"
-    docker = IT.DockerContainer(name="base", delete=False, image=image)
-    docker.install(update=True)
-    docker.clean(image=dest, remove_build_env=False)
+    docker = IT.DockerContainer(name="base", delete=redo, image=image)
+    docker.install(update=True, stop=redo)
+    docker.save(image=dest, clean_runtime=True)
     if push:
         docker.push()
-    docker.stop()
+    if redo:
+        docker.stop()
     print("- *OK* base has been built, as image & exported")
 
 
-@click.command(name="container-3botbuilder")
+@click.command(name="threebotbuilder")
 @click.option(
     "--dest", default="threefoldtech/3bot", help="name of container image on docker hub, default threefoldtech/3bot"
 )
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
-def container_3botbuilder(dest=None, push=False, configdir=None):
+@click.option("-b", "--base", is_flag=True, help="build base image as well")
+def threebotbuilder(dest=None, push=False, configdir=None, base=False):
     """
     create the base for a 3bot
     if 3bot then will also create a 3botdevel which is with the development tools inside
     :param dest: default threefoldtech/base  the base is the base ubuntu image
     :return:
     """
+    redo = False  # for debug you can put on False, easier to see where it fails
+    if base:
+        basebuilder_(push=push, configdir=configdir)
     if not dest:
         dest = "threefoldtech/3bot"
 
     IT = load_install_tools(branch=DEFAULT_BRANCH)
     _configure(configdir=configdir)
 
-    image = "threefoldtech/base"
-    docker = IT.DockerContainer(name="3bot", delete=True, image=image)
-    docker.install(update=True)
+    docker = IT.DockerContainer(name="3bot", delete=redo, image="threefoldtech/base")
+
+    docker.install(update=redo, stop=redo)
 
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False)
 
-    docker.jumpscale_install(branch=DEFAULT_BRANCH, redo=True, pull=False, threebot=True)
-    docker.clean(remove_build_env=True)
+    docker.jumpscale_install(branch=DEFAULT_BRANCH, redo=redo, pull=False, threebot=True)
+
+    docker.save(clean_runtime=True, image=dest + "dev")
     if push:
         docker.push()
+    docker.save(image=dest, clean_devel=True)
+    if push:
+        docker.push()
+
+    docker.image = dest
+
     print("- *OK* threebot container has been built, as image & exported")
 
 
@@ -590,15 +577,7 @@ def container_shell(name="3bot", configdir=None):
     :return:
     """
     docker = container_get(name=name)
-    if not docker.isrunning():
-        docker.install()
-    IT.Tools.execute(
-        'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"' % (IT.MyEnv.config["DIR_HOME"], docker.config.sshport)
-    )
-    os.execv(
-        shutil.which("ssh"),
-        ["ssh", "root@localhost", "-A", "-t", "-oStrictHostKeyChecking=no", "-p", str(docker.config.sshport)],
-    )
+    docker.sshshell()
 
 
 @click.command()
@@ -689,10 +668,9 @@ if __name__ == "__main__":
         cli.add_command(container_export, "container-export")
         cli.add_command(container_import, "container-import")
         cli.add_command(container_shell, "container-shell")
-        cli.add_command(container_clean, "container-clean")
-        cli.add_command(container_docker_save, "container-docker-save")
-        cli.add_command(container_basebuilder, "container-basebuilder")
-        cli.add_command(container_3botbuilder, "container-3botbuilder")
+        cli.add_command(container_save, "container-save")
+        cli.add_command(basebuilder, "basebuilder")
+        cli.add_command(threebotbuilder, "threebotbuilder")
         cli.add_command(container_list, "container-list")
 
     cli()

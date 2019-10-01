@@ -77,8 +77,8 @@ the containers typically have ipaddresses in  172.17.0.0/16 and can reach each o
 ## how to build your own base images
 
 ```bash
-jsx container-basebuilder
-jsx container-3botbuilder
+jsx basebuilder
+jsx threebotbuilder
  ```
  
  this will result in threefoldtech/base & threefoldtech/3bot on your system, you can use other names but if this name then will be used by the container installer as base which will win a lot of time.
