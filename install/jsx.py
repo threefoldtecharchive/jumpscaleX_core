@@ -238,7 +238,7 @@ def container_install(
         if not develop:
             image = "threefoldtech/3bot"
         else:
-            image = "threefoldtech/3botdevel"
+            image = "threefoldtech/3botdev"
 
     if not branch:
         branch = IT.DEFAULT_BRANCH
