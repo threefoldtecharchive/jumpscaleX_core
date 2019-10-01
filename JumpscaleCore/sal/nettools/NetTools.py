@@ -244,7 +244,7 @@ class NetTools(JSBASE):
     def getIpAddresses(self, up=False):
         if j.core.platformtype.myplatform.platform_is_linux or j.core.platformtype.myplatform.platform_is_osx:
             result = {"ip": [], "ip6": []}
-            for ipinfo in self.getNetworkInfo():
+            for ipinfo in self.networkinfo_get():
                 if ipinfo != []:  # if empty array skip
                     result["ip"].extend(ipinfo["ip"])
                     result["ip6"].extend(ipinfo["ip6"])
@@ -269,7 +269,7 @@ class NetTools(JSBASE):
         regex = ""
         output = ""
         if j.core.platformtype.myplatform.platform_is_linux or j.core.platformtype.myplatform.platform_is_osx:
-            return [nic["name"] for nic in self.getNetworkInfo()]
+            return [nic["name"] for nic in self.networkinfo_get()]
         # elif j.core.platformtype.myplatform.isSolaris():
         #     exitcode, output, err = j.sal.process.execute(
         #         "ifconfig -a", showout=False)
@@ -443,7 +443,7 @@ class NetTools(JSBASE):
 
     def getDefaultIPConfig(self):
         ipaddr = self.getReachableIpAddress("8.8.8.8", 22)
-        for item in j.sal.nettools.getNetworkInfo():
+        for item in j.sal.nettools.networkinfo_get():
             for ipaddr2 in item["ip"]:
                 # print "%s %s"%(ipaddr2,ipaddr)
                 if str(ipaddr) == str(ipaddr2):
@@ -518,11 +518,21 @@ class NetTools(JSBASE):
         :return: network info
         :rtype: list or dict if device is specified
         """
+        _, output, _ = j.sal.process.execute("ip a", showout=False)
+        result = self.network_info_parse_ip(output)
+        if device:
+            for nic in result:
+                if nic["name"] == device:
+                    return nic
+            raise j.exceptions.RuntimeError("could not find device")
+        return result
 
+    def network_info_parse_ip(self, output):
         IPBLOCKS = re.compile("(^|\n)(?P<block>\d+:.*?)(?=(\n\d+)|$)", re.S)
         IPMAC = re.compile("^\s+link/\w+\s+(?P<mac>(\w+:){5}\w{2})", re.M)
         IPIP = re.compile(r"\s+?inet\s(?P<ip>(\d+\.){3}\d+)/(?P<cidr>\d+)", re.M)
-        IPNAME = re.compile("^\d+: (?P<name>.*?)(?=:)", re.M)
+        IP6IP = re.compile(r"\s+?inet6\s(?P<ip6>[^/]+)/(?P<cidr>\d+)", re.M)
+        IPNAME = re.compile("^\d+: (?P<name>.*?)(?=[@:])", re.M)
 
         def block_parse(block):
             result = {"ip": [], "ip6": [], "cidr": [], "mac": "", "name": ""}
@@ -530,13 +540,10 @@ class NetTools(JSBASE):
                 match = rec.search(block)
                 if match:
                     result.update(match.groupdict())
-            for mrec in (IPIP,):
+            for mrec in (IPIP, IP6IP):
                 for m in mrec.finditer(block):
                     for key, value in list(m.groupdict().items()):
                         result[key].append(value)
-            _, IPV6, _ = j.sal.process.execute("ifconfig %s |  awk '/inet6/{print $2}'" % result["name"], showout=False)
-            for ipv6 in IPV6.split("\n"):
-                result["ip6"].append(ipv6)
             if j.data.types.list.check(result["cidr"]):
                 if len(result["cidr"]) == 0:
                     result["cidr"] = 0
@@ -544,20 +551,14 @@ class NetTools(JSBASE):
                     result["cidr"] = int(result["cidr"][0])
             return result
 
-        def networkinfo_get():
-            _, output, _ = j.sal.process.execute("ip a", showout=False)
+        def networkinfo_get(output):
             for m in IPBLOCKS.finditer(output):
                 block = m.group("block")
                 yield block_parse(block)
 
         res = []
-        for nic in networkinfo_get():
-            if nic["name"] == device:
-                return nic
+        for nic in networkinfo_get(output):
             res.append(nic)
-
-        if device is not None:
-            raise j.exceptions.RuntimeError("could not find device")
         return res
 
     def networkinfo_get(self, device=None):
@@ -594,7 +595,6 @@ class NetTools(JSBASE):
     def getIpAddress(self, interface):
         """Return a list of ip addresses and netmasks assigned to this interface"""
 
-        # TODO: use getNetworkInfo to return info
         if j.core.platformtype.myplatform.platform_is_linux or j.core.platformtype.myplatform.platform_is_osx:
             output = list()
             output = j.builders.system.net.getInfo()
@@ -680,7 +680,7 @@ class NetTools(JSBASE):
         return ipaddress in self.getIpAddresses()["ip"]
 
     def isIpInDifferentNetwork(self, ipaddress):
-        for netinfo in self.getNetworkInfo():
+        for netinfo in self.networkinfo_get():
             if netinfo["ip"]:
                 if j.core.platformtype.myplatform.platform_is_linux:
                     if ipaddress in netaddr.IPNetwork("{}/{}".format(netinfo["ip"][0], netinfo["cidr"])):

@@ -71,7 +71,8 @@ class WireGuard(j.baseclasses.object_config):
             rc, out, err = self.executor.execute("wg", die=False)
             if rc != 0:
                 C = """
-                add-apt-repository ppa:wireguard/wireguard
+                export DEBIAN_FRONTEND=noninteractive
+                add-apt-repository -y ppa:wireguard/wireguard
                 apt-get update
                 apt-get upgrade -y --force-yes
                 apt-get install wireguard -y
