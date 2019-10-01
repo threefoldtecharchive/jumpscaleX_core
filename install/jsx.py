@@ -243,7 +243,7 @@ def container_install(
     if not branch:
         branch = IT.DEFAULT_BRANCH
 
-    docker = IT.DockerContainer(name=name, delete=delete, portrange=portrange, image=image)
+    docker = IT.DockerContainer(name=name, delete=delete,  image=image)
 
     docker.install()
 
