@@ -43,7 +43,7 @@ class package_manager(j.baseclasses.threebot_actor):
                 if "name" in meta:
                     name = meta["name"]
             if not name:
-                name = j.sal.fs.getBaseName(name).lower().strip()
+                name = j.sal.fs.getBaseName(path).lower().strip()
             return name
 
         name = getname(p)

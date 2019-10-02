@@ -13,7 +13,7 @@ class ThreeBotPackage(JSConfigBase):
         path = ""
         threebot_server_name = "default"
         branch = ""
-        state = "init,running,halted,disabled,error" (E)
+        status = "init,running,halted,disabled,error" (E)
         """
 
     @property
@@ -52,17 +52,21 @@ class ThreeBotPackage(JSConfigBase):
             klass = j.tools.codeloader.load(obj_key="Package", path=self._path_package, reload=False)
             self._package_author = klass(package=self)
 
-            path = self.package_root + "/models"
+            path = self.path + "/models"
             if j.sal.fs.exists(path):
                 self.bcdb.models_add(path)
 
-            path = self.package_root + "/actors"
+            path = self.path + "/actors"
             if j.sal.fs.exists(path):
                 self.gedis_server.actors_add(path, namespace=self._package_author.actors_namespace)
 
             # TODO: for loading wiki's & macros's (REEM TO PLAN)
 
         self._init_ = True
+
+    @property
+    def bcdb(self):
+        return self._package_author.bcdb
 
     def prepare(self, *args):
         self._init_before_action()
@@ -81,5 +85,5 @@ class ThreeBotPackage(JSConfigBase):
         self._package_author.uninstall()
 
     def disable(self):
-        self.state = "disabled"
+        self.status = "disabled"
         self.save()

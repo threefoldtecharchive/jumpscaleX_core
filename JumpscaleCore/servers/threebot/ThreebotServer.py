@@ -30,6 +30,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.threebot_server = None
         self.web = False
         self.ssl = False
+        self.client = None
         j.servers.threebot.current = self
 
     @property

@@ -1677,6 +1677,9 @@ class Tools:
         if isinstance(content, bytes):
             content = content.decode()
 
+        if not isinstance(content, str):
+            raise Tools.exceptions.Input("content needs to be str")
+
         if args is None:
             args = {}
 
