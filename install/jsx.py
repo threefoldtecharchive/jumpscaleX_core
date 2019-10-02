@@ -245,7 +245,7 @@ def container_install(
     if not branch:
         branch = IT.DEFAULT_BRANCH
 
-    docker = IT.DockerContainer(name=name, delete=delete, portrange=portrange, image=image)
+    docker = IT.DockerContainer(name=name, delete=delete, image=image)
 
     docker.install()
 
@@ -439,7 +439,7 @@ def basebuilder_(dest=None, push=False, configdir=None, delete=True):
 def threebotbuilder(push=False, configdir=None, base=False, cont=False):
     """
     create the base for a 3bot
-    if 3bot then will also create a 3botdevel which is with the development tools inside
+    if 3bot then will also create a 3botdev which is with the development tools inside
     :param dest: default threefoldtech/base  the base is the base ubuntu image
     :return:
     """

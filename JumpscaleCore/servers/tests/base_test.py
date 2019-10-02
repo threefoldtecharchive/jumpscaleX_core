@@ -43,4 +43,3 @@ class BaseTest(unittest.TestCase):
 
     def rand_string(self):
         return str(uuid.uuid4()).replace("-", "")[1:10]
-

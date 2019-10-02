@@ -92,4 +92,3 @@ class TestTmuxServer(BaseTest):
         self.assertFalse(output.decode())
         self.assertEqual(sessions_list, j.servers.tmux.server.list_sessions())
         j.servers.tmux.server.kill_server()
-

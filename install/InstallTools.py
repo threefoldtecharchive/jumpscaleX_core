@@ -2117,15 +2117,6 @@ class Tools:
         return str(random.getrandbits(16))
 
     @staticmethod
-    def get_envars():
-        envars = dict()
-        content = j.tools.executor.local.file_read("/proc/1/environ").strip("\x00").split("\x00")
-        for item in content:
-            k, v = item.split("=")
-            envars[k] = v
-        return envars
-
-    @staticmethod
     def execute(
         command,
         showout=True,
@@ -4701,7 +4692,7 @@ class DockerContainer:
             # means is a new one
             new = True
             if update == None:
-                if image2 in ["threefoldtech/base", "threefoldtech/3bot", "threefoldtech/3botdevel"]:
+                if image2 in ["threefoldtech/base", "threefoldtech/3bot", "threefoldtech/3botdev"]:
                     update = False
             if not update:
                 try:
@@ -4759,13 +4750,12 @@ class DockerContainer:
 
             args["MOUNTS"] = Tools.text_replace(MOUNTS.strip(), args=args)
             args["CMD"] = self.config.startupcmd
-            args["PORTRANGE_VALUE"] = self.config.portrange
             if portmap:
                 args["PORTRANGE"] = self.config.portrange_txt
             else:
                 args["PORTRANGE"] = ""
             run_cmd = (
-                "docker run --name={NAME} --hostname={NAME} -d {PORTRANGE} -e PORTRANGE={PORTRANGE_VALUE}\
+                "docker run --name={NAME} --hostname={NAME} -d {PORTRANGE} \
             --device=/dev/net/tun --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --cap-add=DAC_OVERRIDE \
             --cap-add=DAC_READ_SEARCH {MOUNTS} {IMAGE} {CMD}".strip()
                 .replace("  ", " ")
@@ -5521,7 +5511,7 @@ class WireGuard:
                 Tools.config_save("/sandbox/cfg/wireguard.toml", config)
 
             config = Tools.config_load("/sandbox/cfg/wireguard.toml")
-            config["SUBNET"] = Tools.get_envars().get("PORTRANGE", 0)
+            config["SUBNET"] = int((port - config["WIREGUARD_PORT"]) / 10)
             C = """
             [Interface]
             Address = 10.10.{SUBNET}.1/24

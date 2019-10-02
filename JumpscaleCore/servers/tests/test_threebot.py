@@ -31,4 +31,3 @@ class TestThreebotServer(BaseTest):
         self.threebot_server.bcdb_get(name=bcdb_name)
         output, error = self.os_command(" ls /sandbox/var/bcdb")
         self.assertNotIn(bcdb_name, output.decode())
-
