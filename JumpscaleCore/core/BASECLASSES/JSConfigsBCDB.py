@@ -147,10 +147,11 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             name = obj.name
             return 1, self._new(name, obj)
 
-        if name in self._children:
+        obj = self._validate_child(name)
+        if obj:
             if reload:
-                self._children[name].load()
-            return 1, self._children[name]
+                obj.load()
+            return 1, obj
 
         self._log_debug("get child:'%s'from '%s'" % (name, self._classname))
 
@@ -281,18 +282,12 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         self._delete(name=name)
 
     def _delete(self, name=None):
-        self._model
         if name:
-            res = self._findData(name=name)
-            if len(res) == 0:
-                return
-            elif len(res) == 1:
-                self._model.delete(res[0].id)
+            _, child = self._get(name=name)
+            if child:
+                return child.delete()
         else:
             return self.reset()
-
-        if name in self._children:
-            self._children[name].delete()
 
         if not name and self._parent:
             if self._classname in self._parent._children:
@@ -304,8 +299,10 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         :param name: of the object
         """
-        if name in self._children:
+        obj = self._validate_child(name)
+        if obj:
             return True
+
         # will only use the index
         return self.count(name=name) == 1
 
@@ -320,7 +317,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         # TODO implement filter properly
         x = []
-        for key, item in self._children.items():
+        for _, item in self._children.items():
             x.append(item)
         x = self._filter(filter=filter, llist=x, nameonly=False)
         # be smarter in how we use the index

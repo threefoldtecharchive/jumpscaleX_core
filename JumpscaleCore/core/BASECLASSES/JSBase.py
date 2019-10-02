@@ -246,7 +246,7 @@ class JSBase:
         self._cache_ = None
         self._objid_ = None
 
-        for key, obj in self._children.items():
+        for _, obj in self._children.items():
             obj._obj_cache_reset()
 
     def _obj_reset(self):
@@ -700,6 +700,24 @@ class JSBase:
             else:
                 raise j.exceptions.Base("need to specify name or id")
         return None
+
+    def _validate_child(self, name):
+        """Check if name is in self._children. If it exists, validate that the name on the object equals to the key in self._children.
+        If not, it updates the key in the self._children dict and deletes the old key <name> and returns False,
+        otherwise returns the object.
+        """
+        if name not in self._children:
+            return False
+
+        child = self._children[name]
+        if not isinstance(child, j.baseclasses.object_config) or child.name == name:
+            return child
+        else:
+            child.save() # save it in case autosave was False, to update the name in the database too
+            del self._children[name]
+            self._children[child.name] = child
+
+        return False
 
     def _dataprops_names_get(self, filter=None):
         """

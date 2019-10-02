@@ -66,15 +66,15 @@ class JSFactory(JSBase, Attr):
 
 
         """
-        if not name in self._children:
+        child = self._validate_child(name)
+        if not child:
             if hasattr(self.__class__, "_CHILDCLASS") and needexist == False:
                 self.new(name=name, autosave=save, **kwargs)
             else:
                 raise j.exceptions.Value("cannot get child with name:%s" % name)
         if reload:
-            self._children[name].load()
-        return self._children[name]
-
+            child.load()
+        return child
     def find(self, **kwargs):
         """
         :param kwargs: e.g. color="red",...
@@ -122,8 +122,9 @@ class JSFactory(JSBase, Attr):
 
     def _delete(self, name=None):
         if name:
-            if name in self._children:
-                self._children[name].delete()
+            child = self._validate_child(name)
+            if child:
+                child.delete()
         else:
             self._children_delete()
 
@@ -136,5 +137,6 @@ class JSFactory(JSBase, Attr):
         """
         :param name: of the object
         """
-        if name in self._children:
+        child = self._validate_child(name)
+        if child:
             return True
