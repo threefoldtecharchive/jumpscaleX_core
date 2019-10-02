@@ -42,6 +42,6 @@ curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development
 chmod +x /tmp/jsx; 
 /tmp/jsx configure -s --secret mysecret;
 # install
-/tmp/jsx install -s
+/tmp/jsx install -s --threebot;
 
 tar -cpzf "/tmp/archives/JSX.tar.gz" --exclude dev --exclude sys --exclude proc --exclude tmp/* /
