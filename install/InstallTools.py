@@ -3181,14 +3181,17 @@ class MyEnv_:
             else:
                 self.sandbox_python_active = False
 
-            self._state_load()
+        else:
+            self.config = self.config_default_get()
 
-            if self.config["SSH_AGENT"]:
-                self.sshagent = SSHAgent()
+        self._state_load()
 
-            sys.excepthook = self.excepthook
+        if self.config["SSH_AGENT"]:
+            self.sshagent = SSHAgent()
 
-            self.__init = True
+        sys.excepthook = self.excepthook
+
+        self.__init = True
 
     def _init(self, **kwargs):
         if not self.__init:
@@ -4372,13 +4375,15 @@ class DockerFactory:
                 raise Tools.exceptions.Operations("Could not find Docker installed")
 
             DockerFactory._init = True
-            for name_found in os.listdir(Tools.text_replace("{DIR_BASE}/var/containers")):
+            cdir = Tools.text_replace("{DIR_BASE}/var/containers")
+            Tools.dir_ensure(cdir)
+            for name_found in os.listdir(cdir):
                 # to make sure there is no recursive behaviour if called from a docker container
                 if name_found != name and name_found.strip().lower() not in ["shared"]:
                     DockerContainer(name_found)
 
     @staticmethod
-    def container_get(name, image="threefoldtech/3bot", start=True, delete=False):
+    def container_get(name, image="threefoldtech/3bot", start=False, delete=False):
         DockerFactory.init()
         if name in DockerFactory._dockers:
             docker = DockerFactory._dockers[name]
@@ -4588,9 +4593,10 @@ class DockerContainer:
         if not self.config.ipaddr:
             # get ipaddr when not known yet
             cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % name
-            rc, out, err = Tools.execute(cmd, replace=False, showout=False)
-            self.config.ipaddr = out.strip()
-            self.config.save()
+            rc, out, err = Tools.execute(cmd, replace=False, showout=False, die=False)
+            if rc == 0:
+                self.config.ipaddr = out.strip()
+                self.config.save()
 
         if delete:
             self.delete()
@@ -5533,7 +5539,7 @@ class WireGuard:
             PublicKey = {WIREGUARD_CLIENT_PUBKEY}
             AllowedIPs = 10.10.{SUBNET}.0/24
             """
-            path = "/tmp/wg0.conf"
+            path = "/sandbox/cfg/wg0.conf"
             Tools.file_write(path, Tools.text_replace(C, args=config, die_if_args_left=True))
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
             cmd = "wg-quick up %s" % path

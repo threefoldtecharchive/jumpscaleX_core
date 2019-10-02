@@ -56,10 +56,21 @@ def load_install_tools(branch=None):
 
 IT = load_install_tools()
 IT.MyEnv.interactive = True  # std is interactive
+IT.MyEnv.init()
 
-# get Docker factory inited
-DF = IT.DockerFactory
-DF.init()
+
+class JSXEnv:
+    def __init__(self):
+        self._DF = IT.DockerFactory
+
+    @property
+    def DF(self):
+        if not self._DF:
+            self._DF.init()
+        return self._DF
+
+
+e = JSXEnv()
 
 
 def jumpscale_get(die=True):
@@ -245,7 +256,7 @@ def container_install(
     if not branch:
         branch = IT.DEFAULT_BRANCH
 
-    docker = IT.DockerContainer(name=name, delete=delete, image=image)
+    docker = e.DF.container_get(name=name, delete=delete, image=image)
 
     docker.install()
 
@@ -260,7 +271,7 @@ def container_install(
 
 def container_get(name="3bot", delete=False, jumpscale=False):
     IT.MyEnv.sshagent.key_default_name
-    docker = DF.container_get(name=name, image="threefoldtech/3bot", start=True, delete=delete)
+    docker = e.DF.container_get(name=name, image="threefoldtech/3bot", start=True, delete=delete)
     if jumpscale:
         # needs to stay because will make sure that the config is done properly in relation to your shared folders from the host
         docker.jumpscale_install()
@@ -393,7 +404,7 @@ def container_stop(name="3bot", configdir=None):
     :return:
     """
     _configure(configdir=configdir)
-    if name in DF.containers_running():
+    if name in e.DF.containers_running():
         docker = container_get(name=name)
         docker.stop()
 
@@ -422,7 +433,7 @@ def basebuilder_(dest=None, push=False, configdir=None, delete=True):
 
     image = "phusion/baseimage:master"
     # image = "unilynx/phusion-baseimage-1804"
-    docker = IT.DockerContainer(name="base", delete=delete, image=image)
+    docker = e.DF.container_get(name="base", delete=delete, image=image)
     docker.install(update=True, stop=delete)
     docker.save(image=dest, clean_runtime=True)
     if push:
@@ -451,7 +462,7 @@ def threebotbuilder(push=False, configdir=None, base=False, cont=False):
     IT = load_install_tools(branch=DEFAULT_BRANCH)
     _configure(configdir=configdir)
 
-    docker = IT.DockerContainer(name="3botdev", delete=delete, image="threefoldtech/base")
+    docker = e.DF.container_get(name="3botdev", delete=delete, image="threefoldtech/base")
 
     docker.install(update=delete, stop=delete)
 
@@ -467,7 +478,7 @@ def threebotbuilder(push=False, configdir=None, base=False, cont=False):
     if push:
         docker.push()
 
-    docker = IT.DockerContainer(name="3bot", delete=True, image=dest + "dev")
+    docker = e.DF.container_get(name="3bot", delete=True, image=dest + "dev")
     docker.install(update=False)
     from pudb import set_trace
 
@@ -507,11 +518,11 @@ def container_delete(name="3bot", all=None, configdir=None):
     """
     _configure(configdir=configdir)
     if all:
-        for name in DF.containers_names():
+        for name in e.DF.containers_names():
             docker = container_get(name=name)
             docker.delete()
     else:
-        if not DF.container_name_exists(name):
+        if not e.DF.container_name_exists(name):
             return None
         docker = container_get(name=name)
         docker.delete()
@@ -526,7 +537,7 @@ def containers_reset(configdir=None):
     :return:
     """
     _configure(configdir=configdir)
-    DF.reset()
+    e.DF.reset()
 
 
 @click.command(name="containers")
@@ -538,7 +549,7 @@ def containers(configdir=None):
     :return:
     """
     _configure(configdir=configdir)
-    DF.list()
+    e.DF.list()
 
 
 @click.command(name="container-kosmos")
@@ -603,13 +614,14 @@ def wireguard(name=None, configdir=None):
     :return:
     """
     assert name
-    if not DF.indocker():
+    if not e._DF.indocker():
         docker = container_get(name=name)
         # remotely execute wireguard
         docker.sshexec("source /sandbox/env.sh;jsx wireguard")
         docker.wireguard.connect()
     else:
         wg = IT.WireGuard()
+        wg.install()
         wg.server_start()
 
 
@@ -671,7 +683,7 @@ if __name__ == "__main__":
     cli.add_command(modules_install, "modules-install")
 
     # DO NOT DO THIS IN ANY OTHER WAY !!!
-    if not DF.indocker():
+    if not e._DF.indocker():
         cli.add_command(container_kosmos, "container-kosmos")
         cli.add_command(container_install, "container-install")
         cli.add_command(container_stop, "container-stop")
