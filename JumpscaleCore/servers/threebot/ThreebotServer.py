@@ -132,8 +132,9 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         if web:
             openresty                                   (port:80 and 443 for ssl)
-            gedis websocket                             (port:4444 or 9999 if ssl=True)
-            bottle server                               (port:44442 or 4443 if ssl=True) serves the bcdbfs content
+            gedis websocket                             (port:4444)
+            bottle server for bcdfs ????                (port:44442 or 4443 if ssl=True) serves the bcdbfs content
+            bottle server for webinterface              (port:4445)
 
             if ssl=True:
                 reverse proxy for gedis websocket           (port:4444) to use ssl certificate from openresty
@@ -142,6 +143,21 @@ class ThreeBotServer(j.baseclasses.object_config):
         if web is None:
             web = self.web
 
+        def check_active(web):
+            if web:
+                for i in [9900, 1491, 8901, 80, 4444, 4445]:
+                    if not j.sal.nettools.tcpPortConnectionTest("localhost", i):
+                        return False
+            else:
+                for i in [9900, 1491, 8901]:
+                    if not j.sal.nettools.tcpPortConnectionTest("localhost", i):
+                        return False
+            return True
+
+        if check_active(web):
+            return
+
+        assert ssl == None  # not supported for now
         if ssl is None:
             ssl = self.ssl
 
@@ -163,10 +179,12 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             # add user added packages
             for package in j.tools.threebot_packages.find():
-                try:
-                    package.start()
-                except Exception as e:
-                    logdict = j.core.tools.log(level=50, exception=e, stdout=True)
+                if package.status not in ["disabled"]:
+                    try:
+                        package.start()
+                    except Exception as e:
+                        logdict = j.core.tools.log(level=50, exception=e, stdout=True)
+                        package.status = "error"
 
             if web:
                 self.openresty_server.start()
@@ -176,6 +194,16 @@ class ThreeBotServer(j.baseclasses.object_config):
             if self.startup_cmd.is_running():
                 self.startup_cmd.stop()
             self.startup_cmd.start()
+
+        self.client = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
+        # TODO: will have to authenticate myself
+
+        self.client.reload()
+        assert self.client.ping()
+
+        # load all the default packages
+        self.client.actors.package_manager.package_add(path=j.threebot.package.webinterface._dirpath)
+        self.client.actors.package_manager.package_add(path=j.threebot.package.phonebook._dirpath)
 
     def stop(self):
         """

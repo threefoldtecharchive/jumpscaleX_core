@@ -472,17 +472,11 @@ def threebotbuilder(push=False, configdir=None, base=False, cont=False):
     docker.jumpscale_install(branch=DEFAULT_BRANCH, redo=delete, pull=False, threebot=True)
 
     docker.save(clean_runtime=True, image=dest + "dev")
-    from pudb import set_trace
-
-    set_trace()
     if push:
         docker.push()
 
     docker = e.DF.container_get(name="3bot", delete=True, image=dest + "dev")
     docker.install(update=False)
-    from pudb import set_trace
-
-    set_trace()
     docker.save(image=dest, clean_devel=True)
     if push:
         docker.push()

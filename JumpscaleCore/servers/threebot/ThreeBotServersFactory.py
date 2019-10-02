@@ -52,19 +52,10 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         :return:
         """
         if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
-            # means needs to be started
             self.install()
             self.default.stop()
-            self.default.start(background=True, web=web)
 
-        if web:
-            raise RuntimeError("implement, need to check if webport is there if not start")
-
-        self.client = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
-        self.client.reload()
-        assert self.client.ping()
-
-        return self.client
+        return self.default.start(background=True, web=web)
 
     def test(self, name="threebot_phonebook", wiki=False, web=False, fileserver=False):
         """
@@ -74,7 +65,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         :return:
         """
 
-        self.local_start_default()
+        gedis_client = j.servers.threebot.local_start_default()
 
         self.client.actors.package_manager.package_add(
             "threebot_phonebook",

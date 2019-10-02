@@ -31,6 +31,9 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
     def client_get(self, threebot=None):
         """
 
+        cl=j.clients.threebot.client_get(threebot="kristof.ibiza")
+        cl=j.clients.threebot.client_get(threebot=10)
+
         returns a client connection to a threebot
 
         :param tid: threebot id

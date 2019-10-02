@@ -15,12 +15,15 @@ def main(self):
     cl.actors.package_manager.package_add("ibiza_test", path=package_path, reload=False)
     cl.reload()
 
+    # next only works because the test is running in the threebot itself, so I can use the installed package code
     ibiza_client = j.threebot.package.ibiza.client_get()
 
     r0 = ibiza_client.actors.ibiza_actor.info("aaa")
     assert r0 == b"aaa"
 
-    cl = j.clients.redis.get(port=8901)
+    ### HOW TO REDIS
+
+    cl = j.clients.redis.get(port=8901)  # towards gevent
 
     assert cl.ping()
 
