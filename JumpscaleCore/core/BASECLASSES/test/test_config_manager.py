@@ -34,14 +34,20 @@ class TestIConfigManager(BaseTest):
 
         #. Update client's name.
         #. Check the updated name, should succeed.
+        #. Check that you can't retrieve it using old name
+        #. Check that deleting using the old name doesn't affect the new instance
         """
-
-        client_name = self.generate_random_str()
         self.info("Update tfchain client name")
+        client_name = "unittest_one_new"
         self.client_one.name = client_name
-        self.info("Save the changes")
         self.client_one.save()
+
+        j.clients.tfchain.delete("unittest_one")
+        with self.assertRaises(j.exceptions.NotFound):
+            j.clients.tfchain.unittest_one
+
         self.info("Get client with new name")
+        assert j.clients.tfchain.unittest_one_new
         assert j.clients.tfchain._model.get_by_name(client_name)
 
     def test03_delete_existing_client_from_factory(self):
@@ -140,3 +146,22 @@ class TestIConfigManager(BaseTest):
 
         self.info("Create a new wallet with the deleted wallet's name")
         assert self.client_one.wallets.new("unittest_one")
+
+    def test08_delete_existing_clients_from_factory(self):
+        """
+        ** Test delete tfchain client for all existing clients, should succeed. **
+
+        #. Delete all clients using factory delete.
+        #. Check that all clients are deleted.
+
+        """
+        self.info("Delete all clients")
+        j.clients.tfchain.delete()
+        self.info("Check that the client doesn't exist")
+        with self.assertRaises(j.exceptions.NotFound):
+            j.clients.tfchain._model.get_by_name(self.client_one.name)
+
+        with self.assertRaises(j.exceptions.NotFound):
+            j.clients.tfchain._model.get_by_name(self.client_two.name)
+
+        assert j.clients.tfchain.find() == []
