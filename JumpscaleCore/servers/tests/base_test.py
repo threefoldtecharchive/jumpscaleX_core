@@ -14,13 +14,15 @@ class BaseTest(unittest.TestCase):
         "odoo",
         "sonic",
         "sanic",
-        "startupcmd",
         "capacity",
         "flask",
         "errbot",
         "gedis_websocket",
+        "gedis",
         "sockexec",
+        "threebot",
     ]
+    INSTALLED_SERVER = ["mail_forwarder", "gedis"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -37,4 +39,8 @@ class BaseTest(unittest.TestCase):
     def set_database_data(self, database):
         database.name = str(uuid.uuid4()).replace("-", "")[1:10]
         database.admin_email = "{}@example.com".format(database.name)
-        database.admin_passwd_ = str(uuid.uuid4()).replace("-", "")[1:10]
+        database.admin_passwd_ = self.rand_string()
+
+    def rand_string(self):
+        return str(uuid.uuid4()).replace("-", "")[1:10]
+

@@ -240,12 +240,12 @@ def container_install(
         if not develop:
             image = "threefoldtech/3bot"
         else:
-            image = "threefoldtech/3botdevel"
+            image = "threefoldtech/3botdev"
 
     if not branch:
         branch = IT.DEFAULT_BRANCH
 
-    docker = IT.DockerContainer(name=name, delete=delete, image=image)
+    docker = IT.DockerContainer(name=name, delete=delete, portrange=portrange, image=image)
 
     docker.install()
 
@@ -498,11 +498,11 @@ def container_start(name="3bot", configdir=None):
 @click.command(name="container-delete")
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("-a", "--all", is_flag=True, help="delete all")
+@click.option("-n", "--name", default="3bot", help="name of container")
 def container_delete(name="3bot", all=None, configdir=None):
     """
     delete the 3bot container
     :param name:
-@click.option("-n", "--name", default="3bot", help="name of container")
     :return:
     """
     _configure(configdir=configdir)

@@ -18,32 +18,6 @@ count = 1 (I)
 occurrences = (LI)
 """
 
-"""logdict format
-
-filepath = fname     #path of the file where the log came from
-linenr = linenr
-processid =          #the process id if known
-message = msg
-public = msg         #optional public message
-level = level        #10-50
-context =            #e.g. name of a definition or class
-cat =                #a freely chosen category can be in dot notation e.g. performance.cpu.high
-data =               #data can be attached to a log e.g. a data object
-tbline =
-traceback = [tbline1,tbline2]        #list of traceback elements
-
-
-
-## log (error) levels
-
-- CRITICAL 	50
-- ERROR 	40
-- WARNING 	30
-- INFO 	    20
-- STDOUT 	15
-- DEBUG 	10
-"""
-
 
 class AlertHandler(j.baseclasses.object):
     """alert handler uses error handler (which give a logdict)
@@ -51,6 +25,30 @@ class AlertHandler(j.baseclasses.object):
 
     for error handling/logging docs, see jumpscaleX_core/docs/Internals/logging_errorhandling
 
+    logdict format:
+
+    filepath = fname     #path of the file where the log came from
+    linenr = linenr
+    processid =          #the process id if known
+    message = msg
+    public = msg         #optional public message
+    level = level        #10-50
+    context =            #e.g. name of a definition or class
+    cat =                #a freely chosen category can be in dot notation e.g. performance.cpu.high
+    data =               #data can be attached to a log e.g. a data object
+    tbline =
+    traceback = [tbline1,tbline2]        #list of traceback elements
+
+
+
+    ## log (error) levels
+
+    - CRITICAL 	50
+    - ERROR 	40
+    - WARNING 	30
+    - INFO 	    20
+    - STDOUT 	15
+    - DEBUG 	10
     """
 
     __jslocation__ = "j.tools.alerthandler"

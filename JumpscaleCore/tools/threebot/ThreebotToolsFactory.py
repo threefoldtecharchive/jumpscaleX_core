@@ -45,21 +45,17 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
             # means record did not exist yet
             if not email:
                 if interactive:
-                    j.application.interactive = interactive
-                    # TODO: this should not have to be set, issue is that the interactive was changed since start of method
                     assert j.application.interactive
                     email = j.tools.console.askString("your threebot email (optional)")
                 else:
                     email = ""
             if not description:
                 if interactive:
-                    j.application.interactive = interactive
                     description = j.tools.console.askString("your threebot description (optional)")
                 else:
                     description = ""
             if not ipaddr:
                 if interactive:
-                    j.application.interactive = interactive
                     ipaddr = j.tools.console.askString("your threebot ipaddr (optional if used e.g. locally)")
                 else:
                     ipaddr = "localhost"
