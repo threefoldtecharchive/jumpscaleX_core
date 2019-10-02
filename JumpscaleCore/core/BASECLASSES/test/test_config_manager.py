@@ -28,7 +28,6 @@ class TestIConfigManager(BaseTest):
         """
         assert j.clients.tfchain._model.get_by_name(self.client_one.name)
 
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/115")
     def test02_modify_exists_client(self):
         """
         ** Test update client data, should succeed **
@@ -47,7 +46,7 @@ class TestIConfigManager(BaseTest):
 
     def test03_delete_existing_client_from_factory(self):
         """
-        ** Test delete tfchain client for existing client, should success. **
+        ** Test delete tfchain client for existing client, should succeed. **
 
         #. Delete "unittest_one" client using factory delete.
         #. Check that the client is deleted successfully.
@@ -70,7 +69,7 @@ class TestIConfigManager(BaseTest):
 
     def test04_delete_existing_client_from_instance_delete(self):
         """
-        ** Test delete tfchain client for existing client, should success. **
+        ** Test delete tfchain client for existing client, should succeed. **
 
         #. Delete "unittest_one" client using instance delete.
         #. Check that the client is deleted successfully.

@@ -283,7 +283,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
     def _delete(self, name=None):
         if name:
-            _, child = self._get(name=name)
+            _, child = self._get(name=name, die=False)
             if child:
                 return child.delete()
         else:
