@@ -18,7 +18,24 @@ Date: Thu, 12 Sep 2019 16:01:13 GMT
 """
 
 
+def enable_cors(fn):
+    def _enable_cors(*args, **kwargs):
+        # set CORS headers
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, OPTIONS"
+        response.headers[
+            "Access-Control-Allow-Headers"
+        ] = "Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token"
+
+        if request.method != "OPTIONS":
+            # actual request; reply with the actual response
+            return fn(*args, **kwargs)
+
+    return _enable_cors
+
+
 @app.route("/actors/<name>/<cmd>", method="post")
+@enable_cors
 def client_handler(name, cmd):
     client = j.clients.gedis.get(name="main_gedis_threebot", port=8901)
     actor = getattr(client.actors, name, None)
