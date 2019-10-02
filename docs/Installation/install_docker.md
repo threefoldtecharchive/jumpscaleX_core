@@ -50,7 +50,7 @@ following will install 2 additional containers t1 & t2
 to show the containers
 
 ```
-/tmp/jsx container-list
+/tmp/jsx containers
 
  - t2         : threefoldtech/3bot             (sshport:9020)
  - t1         : threefoldtech/3bot             (sshport:9010)

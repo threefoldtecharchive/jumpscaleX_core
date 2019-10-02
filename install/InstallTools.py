@@ -1590,7 +1590,7 @@ class Tools:
 
     @staticmethod
     def text_strip(
-        content, ignorecomments=False, args={}, replace=False, executor=None, colors=True, die_if_args_left=False
+        content, ignorecomments=False, args={}, replace=False, executor=None, colors=False, die_if_args_left=False
     ):
         """
         remove all spaces at beginning & end of line when relevant (this to allow easy definition of scripts)
@@ -1613,7 +1613,7 @@ class Tools:
                 if line.strip().startswith("#") and not line.strip().startswith("#!"):
                     continue
             prechars = len(line) - len(line.lstrip())
-            # Tools.log ("'%s':%s:%s"%(line,prechars,minchars))
+            # print("'%s':%s:%s" % (line, prechars, minchars))
             if prechars < minchars:
                 minchars = prechars
 
@@ -1701,7 +1701,7 @@ class Tools:
             )
 
         if text_strip:
-            content = Tools.text_strip(content2, ignorecomments=ignorecomments, replace=False)
+            content2 = Tools.text_strip(content2, ignorecomments=ignorecomments, replace=False)
 
         return content2
 
@@ -2997,6 +2997,8 @@ class Tools:
                 continue
             if line.startswith("#"):
                 continue
+            if "=" not in line:
+                raise Tools.exceptions.Input("Cannot process config: did not find = in line '%s'" % line)
             key, val = line.split("=", 1)
             if "#" in val:
                 val = val.split("#", 1)[0]
@@ -3957,7 +3959,6 @@ class BaseInstaller:
         rm -f /root/.jsx_history
         rm -f /root/.ssh/*
         rm -rf /root/.cache
-        rm -rf /root/src
         mkdir -p /root/.cache
         rm -rf /bd_build
         rm -rf /var/log
@@ -4330,7 +4331,7 @@ class JumpscaleInstaller:
 
 class DockerFactory:
 
-    __init = False
+    _init = False
     _dockers = {}
 
     @staticmethod
@@ -4345,13 +4346,12 @@ class DockerFactory:
         return False
 
     @staticmethod
-    def _init():
-        if not DockerFactory.__init:
+    def init(name=None):
+        if not DockerFactory._init:
             rc, out, _ = Tools.execute("cat /proc/1/cgroup", die=False, showout=False)
             if rc == 0 and out.find("/docker/") != -1:
-                raise Tools.exceptions.Operations(
-                    "Cannot continue, trying to use docker tools while we are already in a docker"
-                )
+                # nothing to do we are in docker already
+                return
 
             MyEnv._init()
 
@@ -4362,12 +4362,24 @@ class DockerFactory:
             if not Tools.cmd_installed("docker"):
                 raise Tools.exceptions.Operations("Could not find Docker installed")
 
+            DockerFactory._init = True
+            for name_found in os.listdir(Tools.text_replace("{DIR_BASE}/var/containers")):
+                # to make sure there is no recursive behaviour if called from a docker container
+                if name_found != name and name_found.strip().lower() not in ["shared"]:
+                    DockerContainer(name_found)
+
     @staticmethod
-    def container_get(name, portrange=1, image="threefoldtech/3bot"):
+    def container_get(name, image="threefoldtech/3bot", start=True, delete=False):
+        DockerFactory.init()
         if name in DockerFactory._dockers:
-            return DockerFactory._dockers[name]
+            docker = DockerFactory._dockers[name]
+            if delete:
+                docker.delete()
         else:
-            return DockerContainer(name=name, portrange=portrange, image=image)
+            docker = DockerContainer(name=name, image=image, delete=delete)
+        if start:
+            docker.start()
+        return docker
 
     @staticmethod
     def containers_running():
@@ -4384,10 +4396,14 @@ class DockerFactory:
         return names
 
     @staticmethod
+    def containers():
+        DockerFactory.init()
+        return DockerFactory._dockers.values()
+
+    @staticmethod
     def list():
-        for name in DockerFactory.containers_names():
-            d = DockerFactory.container_get(name=name)
-            print(" - %-10s : %-25s (sshport:%s)" % (name, d.config.image, d.config.sshport))
+        for d in DockerFactory.containers():
+            print(" - %-10s : %-15s : %-25s (sshport:%s)" % (d.name, d.config.ipaddr, d.config.image, d.config.sshport))
 
     @staticmethod
     def container_name_exists(name):
@@ -4459,13 +4475,14 @@ class DockerConfig:
         Tools.dir_ensure(self.path_vardir)
         self.path_config = "%s/docker_config.toml" % (self.path_vardir)
         # self.wireguard_pubkey
+        self.ipaddr = ""
 
         if delete:
             Tools.delete(self.path_vardir)
 
         if not Tools.exists(self.path_config):
 
-            self._find_port_range()
+            self.portrange = None
 
             if image:
                 self.image = image
@@ -4477,22 +4494,16 @@ class DockerConfig:
             else:
                 self.startupcmd = "/sbin/my_init"
 
-            self.save()
-
-        self.load()
+        else:
+            self.load()
 
     def _find_port_range(self):
         existingports = []
-        for name in os.listdir(Tools.text_replace("{DIR_BASE}/var/containers")):
-            if name == self.name:
+        for container in DockerFactory.containers():
+            if container.name == self.name:
                 continue
-            path = Tools.text_replace("{DIR_BASE}/var/containers/{NAME}", args={"NAME": name})
-            path_config = "%s/docker_config.toml" % (path)
-            r = Tools.config_load(path_config, keys_lower=True)
-            if "portrange" in r:
-                if not isinstance(r["portrange"], int):
-                    raise Tools.exceptions.Input("portrange:'%s' should be int" % r["portrange"])
-                existingports.append(r["portrange"])
+            if not container.config.portrange in existingports:
+                existingports.append(container.config.portrange)
 
         for i in range(50):
             if i in existingports:
@@ -4552,12 +4563,25 @@ class DockerContainer:
 
         if codedir not specified will use /sandbox/code if exists otherwise ~/code
         """
-        DockerFactory._init()
+        if name == "shared":
+            raise Tools.exceptions.JSBUG("should never be the shared obj")
+        if not DockerFactory._init:
+            raise Tools.exceptions.JSBUG("make sure to call DockerFactory.init() bedore getting a container")
+
         DockerFactory._dockers[name] = self
 
         self.config = DockerConfig(name=name, image=image, startupcmd=startupcmd, delete=delete)
 
-        self._wireguard = None
+        if self.config.portrange == None:
+            self.config._find_port_range()
+            self.config.save()
+
+        if not self.config.ipaddr:
+            # get ipaddr when not known yet
+            cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % name
+            rc, out, err = Tools.execute(cmd, replace=False, showout=False)
+            self.config.ipaddr = out.strip()
+            self.config.save()
 
         if delete:
             self.delete()
@@ -4567,6 +4591,8 @@ class DockerContainer:
 
         if len(MyEnv.sshagent.keys_list()) == 0:
             raise Tools.exceptions.Base("Please load your ssh-agent with a key!")
+
+        self._wireguard = None
 
     @property
     def container_exists_config(self):
@@ -4742,9 +4768,6 @@ class DockerContainer:
             print(" - Docker machine gets created: ")
             print(run_cmd2)
             Tools.execute(run_cmd2, interactive=False)
-
-            print(" - Start SSH server")
-
             new = True
 
         if update:
@@ -4766,6 +4789,7 @@ class DockerContainer:
             self.dexec("touch /root/.BASEINSTALL_OK")
 
         if update or new:
+            print(" - Configure / Start SSH server")
             self.dexec("rm -f /root/.ssh/authorized_keys;/etc/init.d/ssh stop 2>&1 > /dev/null", die=False)
             self.dexec("/usr/bin/ssh-keygen -A")
             self.dexec("/etc/init.d/ssh start")
@@ -4780,6 +4804,10 @@ class DockerContainer:
                 'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"'
                 % (MyEnv.config["DIR_HOME"], self.config.sshport)
             )
+
+        print(" - Create route to main 3bot container")
+
+        cm = "ip route add 10.10.0.0/16 via 172.17.0.2"
 
         print(" - CONTAINER STARTED")
 
@@ -4945,6 +4973,10 @@ class DockerContainer:
             image = self.image
             if ":" in image:
                 image = image.split(":")[0]
+            cmd = "docker rmi -f %s" % image
+            Tools.execute(cmd, die=False)
+            cmd = "docker rmi -f %s:latest" % image
+            Tools.execute(cmd, die=False)
             cmd = "docker commit -p %s %s" % (self.name, image)
             print(" - %s" % cmd)
             Tools.execute(cmd)
@@ -5057,6 +5089,11 @@ class DockerContainer:
         args = {}
         args["port"] = self.config.sshport
         print(Tools.text_replace(k, args=args))
+
+    def __repr__(self):
+        return "# CONTAINER: \n %s" % Tools._data_serializer_safe(self.config.__dict__)
+
+    __str__ = __repr__
 
     @property
     def wireguard(self):
@@ -5434,7 +5471,7 @@ class SSHAgent:
 class WireGuard:
     def __init__(self, container=None):
         self.container = container
-        self.install()
+        # NO NEED TO INSTALL, IS ALREADY ON THE CONTAINER
 
     def install(self):
         if not Tools.cmd_installed("wg"):
@@ -5513,15 +5550,23 @@ class WireGuard:
         PublicKey = {WIREGUARD_SERVER_PUBKEY}
         Endpoint = localhost:{WIREGUARD_PORT}
         AllowedIPs = 10.10.{SUBNET}.0/24
+        AllowedIPs = 172.17.0.0/16
         PersistentKeepalive = 25
         """
-        path = "/tmp/wg0.conf"
+        path = "%s/wg0.conf" % self.container.config.path_vardir
         config_container["SUBNET"] = self.container.config.portrange
+        config = Tools.text_replace(C, args=config_container)
+        Tools.file_write(path, config)
+        print("WIREGUARD CONFIFURATION:\n\n%s" % config)
+        print("WIREGUARD CONFIG PATH:%s" % path)
         if MyEnv.platform() == "linux":
-            Tools.file_write(path, Tools.text_replace(C, args=config_container))
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
             cmd = "/usr/local/bin/bash /usr/local/bin/wg-quick up %s" % path
             Tools.execute(cmd)
             Tools.shell()
         else:
-            print("WIREGUARD CONFIFURATION:\n\n%s" % Tools.text_replace(C, args=config_container))
+            cmd = "/usr/local/bin/bash /usr/local/bin/wg-quick down %s" % path
+            Tools.execute(cmd, die=False)
+            cmd = "/usr/local/bin/bash /usr/local/bin/wg-quick up %s" % path
+            print(cmd)
+            Tools.execute(cmd)

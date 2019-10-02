@@ -132,10 +132,14 @@ class Syncer(j.baseclasses.object_config):
         # if j.servers.rack.current:
         #     j.servers.rack.current.greenlets["fs_sync_monitor"] = self.monitor_greenlet
 
+        print("the only way how it works today, don't ask me why:")
+        print("if your ssh connection is called 'master'")
+        print("kosmos -p")
+        print("then in shell do: 'j.clients.ssh.master.syncer.sync()'")
         self._monitor.start()
-        print(111)
-        j.shell()
+        print("monitor started, are out of loop")
 
+        j.shell()
         time.sleep(3600)
 
     def handler(self, event, action="copy"):

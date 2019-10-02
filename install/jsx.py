@@ -57,6 +57,10 @@ def load_install_tools(branch=None):
 IT = load_install_tools()
 IT.MyEnv.interactive = True  # std is interactive
 
+# get Docker factory inited
+DF = IT.DockerFactory
+DF.init()
+
 
 def jumpscale_get(die=True):
     # jumpscale need to be available otherwise cannot do
@@ -178,7 +182,6 @@ def configure(
 )
 @click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
 @click.option("--threebot", is_flag=True, help="also install the threebot")
-@click.option("--portrange", default=None, help="portrange, leave empty unless you know what you do.")
 @click.option(
     "-i",
     "--image",
@@ -206,7 +209,6 @@ def container_install(
     scratch=False,
     delete=True,
     threebot=False,
-    portrange=None,
     image=None,
     branch=None,
     reinstall=False,
@@ -243,7 +245,7 @@ def container_install(
     if not branch:
         branch = IT.DEFAULT_BRANCH
 
-    docker = IT.DockerContainer(name=name, delete=delete, portrange=portrange, image=image)
+    docker = IT.DockerContainer(name=name, delete=delete, image=image)
 
     docker.install()
 
@@ -258,9 +260,7 @@ def container_install(
 
 def container_get(name="3bot", delete=False, jumpscale=False):
     IT.MyEnv.sshagent.key_default_name
-    docker = IT.DockerContainer(name=name, delete=delete)
-    # means is not running yet
-    docker.start()
+    docker = DF.container_get(name=name, image="threefoldtech/3bot", start=True, delete=delete)
     if jumpscale:
         # needs to stay because will make sure that the config is done properly in relation to your shared folders from the host
         docker.jumpscale_install()
@@ -393,7 +393,7 @@ def container_stop(name="3bot", configdir=None):
     :return:
     """
     _configure(configdir=configdir)
-    if name in IT.DockerFactory.containers_running():
+    if name in DF.containers_running():
         docker = container_get(name=name)
         docker.stop()
 
@@ -403,17 +403,18 @@ def container_stop(name="3bot", configdir=None):
     "--dest", default="threefoldtech/base", help="name of container image on docker hub, default threefoldtech/3bot"
 )
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
-def basebuilder(dest=None, push=False, configdir=None):
+@click.option("-c", "--cont", is_flag=True, help="don't delete continue a previously stopped run")
+def basebuilder(dest=None, push=False, configdir=None, cont=False):
     """
     create the base ubuntu docker which we can use as base for everything
     :param dest: default threefoldtech/base  the base is the base ubuntu image
     :return:
     """
-    basebuilder_(dest=dest, push=push, configdir=configdir)
+    delete = not cont
+    basebuilder_(dest=dest, push=push, configdir=configdir, delete=delete)
 
 
-def basebuilder_(dest=None, push=False, configdir=None):
-    redo = True  # for debug you can put on False, easier to see where it fails
+def basebuilder_(dest=None, push=False, configdir=None, delete=True):
     if not dest:
         dest = "threefoldtech/base"
     IT = load_install_tools(branch=DEFAULT_BRANCH)
@@ -421,50 +422,56 @@ def basebuilder_(dest=None, push=False, configdir=None):
 
     image = "phusion/baseimage:master"
     # image = "unilynx/phusion-baseimage-1804"
-    docker = IT.DockerContainer(name="base", delete=redo, image=image)
-    docker.install(update=True, stop=redo)
+    docker = IT.DockerContainer(name="base", delete=delete, image=image)
+    docker.install(update=True, stop=delete)
     docker.save(image=dest, clean_runtime=True)
     if push:
         docker.push()
-    if redo:
+    if delete:
         docker.stop()
     print("- *OK* base has been built, as image & exported")
 
 
 @click.command(name="threebotbuilder")
-@click.option(
-    "--dest", default="threefoldtech/3bot", help="name of container image on docker hub, default threefoldtech/3bot"
-)
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 @click.option("-b", "--base", is_flag=True, help="build base image as well")
-def threebotbuilder(dest=None, push=False, configdir=None, base=False):
+@click.option("-c", "--cont", is_flag=True, help="don't delete continue a previously stopped run")
+def threebotbuilder(push=False, configdir=None, base=False, cont=False):
     """
     create the base for a 3bot
     if 3bot then will also create a 3botdevel which is with the development tools inside
     :param dest: default threefoldtech/base  the base is the base ubuntu image
     :return:
     """
-    redo = False  # for debug you can put on False, easier to see where it fails
+    delete = not cont
     if base:
         basebuilder_(push=push, configdir=configdir)
-    if not dest:
-        dest = "threefoldtech/3bot"
+    dest = "threefoldtech/3bot"
 
     IT = load_install_tools(branch=DEFAULT_BRANCH)
     _configure(configdir=configdir)
 
-    docker = IT.DockerContainer(name="3bot", delete=redo, image="threefoldtech/base")
+    docker = IT.DockerContainer(name="3botdev", delete=delete, image="threefoldtech/base")
 
-    docker.install(update=redo, stop=redo)
+    docker.install(update=delete, stop=delete)
 
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False)
 
-    docker.jumpscale_install(branch=DEFAULT_BRANCH, redo=redo, pull=False, threebot=True)
+    docker.jumpscale_install(branch=DEFAULT_BRANCH, redo=delete, pull=False, threebot=True)
 
     docker.save(clean_runtime=True, image=dest + "dev")
+    from pudb import set_trace
+
+    set_trace()
     if push:
         docker.push()
+
+    docker = IT.DockerContainer(name="3bot", delete=True, image=dest + "dev")
+    docker.install(update=False)
+    from pudb import set_trace
+
+    set_trace()
     docker.save(image=dest, clean_devel=True)
     if push:
         docker.push()
@@ -490,42 +497,48 @@ def container_start(name="3bot", configdir=None):
 
 @click.command(name="container-delete")
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
-@click.option("-n", "--name", default="3bot", help="name of container")
-def container_delete(name="3bot", configdir=None):
+@click.option("-a", "--all", is_flag=True, help="delete all")
+def container_delete(name="3bot", all=None, configdir=None):
     """
     delete the 3bot container
     :param name:
+@click.option("-n", "--name", default="3bot", help="name of container")
     :return:
     """
     _configure(configdir=configdir)
-    if not IT.DockerFactory.container_name_exists(name):
-        return None
-    docker = container_get(name=name, existcheck=False)
-    docker.delete()
+    if all:
+        for name in DF.containers_names():
+            docker = container_get(name=name)
+            docker.delete()
+    else:
+        if not DF.container_name_exists(name):
+            return None
+        docker = container_get(name=name)
+        docker.delete()
 
 
 @click.command(name="container-reset")
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 def containers_reset(configdir=None):
     """
-    remove all docker containers & imagess
+    remove all docker containers & images
     :param name:
     :return:
     """
     _configure(configdir=configdir)
-    IT.DockerFactory.reset()
+    DF.reset()
 
 
-@click.command(name="container-list")
+@click.command(name="containers")
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
-def container_list(configdir=None):
+def containers(configdir=None):
     """
     remove all docker containers & imagess
     :param name:
     :return:
     """
     _configure(configdir=configdir)
-    IT.DockerFactory.list()
+    DF.list()
 
 
 @click.command(name="container-kosmos")
@@ -590,7 +603,7 @@ def wireguard(name=None, configdir=None):
     :return:
     """
     assert name
-    if not IT.DockerFactory.indocker():
+    if not DF.indocker():
         docker = container_get(name=name)
         # remotely execute wireguard
         docker.sshexec("source /sandbox/env.sh;jsx wireguard")
@@ -658,7 +671,7 @@ if __name__ == "__main__":
     cli.add_command(modules_install, "modules-install")
 
     # DO NOT DO THIS IN ANY OTHER WAY !!!
-    if not IT.DockerFactory.indocker():
+    if not DF.indocker():
         cli.add_command(container_kosmos, "container-kosmos")
         cli.add_command(container_install, "container-install")
         cli.add_command(container_stop, "container-stop")
@@ -671,6 +684,6 @@ if __name__ == "__main__":
         cli.add_command(container_save, "container-save")
         cli.add_command(basebuilder, "basebuilder")
         cli.add_command(threebotbuilder, "threebotbuilder")
-        cli.add_command(container_list, "container-list")
+        cli.add_command(containers, "containers")
 
     cli()
