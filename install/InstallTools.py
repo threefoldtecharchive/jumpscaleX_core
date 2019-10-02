@@ -2117,6 +2117,15 @@ class Tools:
         return str(random.getrandbits(16))
 
     @staticmethod
+    def get_envars():
+        envars = dict()
+        content = j.tools.executor.local.file_read("/proc/1/environ").strip("\x00").split("\x00")
+        for item in content:
+            k, v = item.split("=")
+            envars[k] = v
+        return envars
+
+    @staticmethod
     def execute(
         command,
         showout=True,
@@ -5511,6 +5520,7 @@ class WireGuard:
                 Tools.config_save("/sandbox/cfg/wireguard.toml", config)
 
             config = Tools.config_load("/sandbox/cfg/wireguard.toml")
+            # config["SUBNET"] = Tools.get_envars().get("PORTRANGE", 0)
             config["SUBNET"] = int((port - config["WIREGUARD_PORT"]) / 10)
             C = """
             [Interface]
