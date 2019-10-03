@@ -35,6 +35,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
         name = "" (S)
         ipaddr_dest = (S)
         port_dest = (I)
+        path_dest = ""
         type = "http,websocket" (E)
         scheme = "http,https,ws,wss" (E)
 
