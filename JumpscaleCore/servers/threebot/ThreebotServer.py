@@ -155,8 +155,13 @@ class ThreeBotServer(j.baseclasses.object_config):
             if not cmd.is_running():
                 cmd.start()
                 time.sleep(2)
-            r = j.sal.nettools.tcpPortConnectionTest("127.0.0.1", 8901, timeout=120)
 
+        # FIXME: wait for the connection properly
+        trials = 0
+        while not j.sal.nettools.tcpPortConnectionTest("127.0.0.1", 8901, timeout=120) and trials < 20:
+            gevent.sleep(1)
+            trials += 1
+            
         self.client = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
         # TODO: will have to authenticate myself
 
