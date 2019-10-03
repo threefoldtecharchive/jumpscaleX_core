@@ -60,6 +60,7 @@ class package_manager(j.baseclasses.threebot_actor):
         if j.tools.threebot_packages.exists(name):
             package2 = j.tools.threebot_packages.get(name)
             if not package.path == package2.path:
+                j.shell()
                 raise j.exceptions.Input("package name is not unique:%s for %s" % (name, p))
 
         if reload == False and j.tools.threebot_packages.exists(name):

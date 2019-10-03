@@ -83,8 +83,6 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 jsxobject = self._model.new()
             jsxobject.name = name
 
-        jsxobject._autosave = autosave
-
         # means we need to remember the parent id
         mother_id = self._mother_id_get()
         if mother_id:
@@ -98,6 +96,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         self._children[name] = jsconfig
         if autosave:
             self._children[name].save()
+            jsxobject._autosave = autosave
 
         return self._children[name]
 

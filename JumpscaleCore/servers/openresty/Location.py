@@ -4,7 +4,7 @@ from Jumpscale import j
 JSConfigs = j.baseclasses.object_config_collection
 
 
-class Location(j.baseclasses.object_config):
+class LocationsConfiguration(j.baseclasses.object_config):
     """
     Website hosted in openresty
     This is port / hostname combination
@@ -122,4 +122,8 @@ class Location(j.baseclasses.object_config):
 
 class Locations(j.baseclasses.object_config_collection):
 
-    _CHILDCLASS = Location
+    _CHILDCLASS = LocationsConfiguration
+
+    def configure(self):
+        for item in self.find():
+            item.configure()

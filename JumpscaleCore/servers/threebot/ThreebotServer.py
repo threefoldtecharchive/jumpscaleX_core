@@ -98,25 +98,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         locations.configure()
         website.configure()
 
-    def _init_web(self, ssl=False):
-        if ssl:
-            bottle_port = 4443
-            websocket_port = 9999
-        else:
-            bottle_port = 4442
-            websocket_port = 4444
-        # start bottle server
-        self.rack_server.bottle_server_add(port=bottle_port)
-        # start gedis websocket
-        gedis_websocket_server = j.servers.gedis_websocket.default.app
-        self.rack_server.websocket_server_add("websocket", websocket_port, gedis_websocket_server)
-
-        if ssl:
-            # create reverse proxies for websocket and bottle
-            self._proxy_create("bottle_proxy", 4442, 4443)
-            self._proxy_create("gedis_proxy", 4444, 9999, ptype="websocket")
-            self._proxy_create("openresty", 443, 80)
-
     def start(self, background=False, web=None, ssl=None):
         """
 
@@ -125,46 +106,21 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         :param background: if True will start all servers including threebot itself in the background
 
-        Threebot will start the following servers by default
+        ports & paths used for threebotserver
+        see: /sandbox/code/github/threefoldtech/jumpscaleX_core/docs/3Bot/web_environment.md
 
-        zdb                                         (port:9900)
-        sonic                                       (port:1491)
-        gedis                                       (port:8901)
-
-        if web:
-            openresty                                   (port:80 and 443 for ssl)
-            gedis websocket                             (port:4444)
-            bottle server for bcdfs ????                (port:44442 or 4443 if ssl=True) serves the bcdbfs content
-            bottle server for webinterface              (port:4445)
-
-            if ssl=True:
-                reverse proxy for gedis websocket           (port:4444) to use ssl certificate from openresty
-                reverse proxy for bottle server             (port:4442) to use ssl certificate from openresty
         """
         if web is None:
             web = self.web
 
-        def check_active(web):
-            if web:
-                for i in [9900, 1491, 8901, 80, 4444, 4445]:
-                    if not j.sal.nettools.tcpPortConnectionTest("localhost", i):
-                        return False
-            else:
-                for i in [9900, 1491, 8901]:
-                    if not j.sal.nettools.tcpPortConnectionTest("localhost", i):
-                        return False
-            return True
+        assert ssl is not True
 
-        if check_active(web):
-            return
-
-        assert ssl == None  # not supported for now
         if ssl is None:
             ssl = self.ssl
 
         if not background:
             if web:
-                self._init_web(ssl=ssl)
+                self.client.actors.package_manager.package_add(path=j.threebot.package.webinterface._dirpath)
 
             self.zdb.start()
             j.servers.sonic.default.start()
@@ -202,9 +158,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.client.reload()
         assert self.client.ping()
 
-        # load all the default packages
-        self.client.actors.package_manager.package_add(path=j.threebot.package.webinterface._dirpath)
-        self.client.actors.package_manager.package_add(path=j.threebot.package.phonebook._dirpath)
+        return self.client
 
     def stop(self):
         """
@@ -219,16 +173,37 @@ class ThreeBotServer(j.baseclasses.object_config):
             from gevent import monkey
             monkey.patch_all(subprocess=False)
             from Jumpscale import j
-            server = j.servers.threebot.get("{name}", executor='{executor}', web={web}, ssl={ssl})
+            server = j.servers.threebot.get("{name}", executor='{executor}', web=False)
             server.start(background=False)
             """.format(
-                name=self.name, executor=self.executor, web=self.web, ssl=self.ssl
+                name=self.name, executor=self.executor
             )
             cmd_start = j.core.tools.text_strip(cmd_start)
             startup = j.servers.startupcmd.get(name="threebot_{}".format(self.name), cmd_start=cmd_start)
             startup.executor = self.executor
             startup.interpreter = "python"
             startup.timeout = 60
-            startup.ports = [8901, 4444, 8090]
+            startup.ports = [9900, 1491, 8901]
+            self._startup_cmd = startup
+        return self._startup_cmd
+
+    @property
+    def startup_cmd_web(self):
+        if not self._startup_cmd:
+            cmd_start = """
+            from gevent import monkey
+            monkey.patch_all(subprocess=False)
+            from Jumpscale import j
+            server = j.servers.threebot.get("{name}", executor='{executor}', web=True)
+            server.start(background=False)
+            """.format(
+                name=self.name, executor=self.executor
+            )
+            cmd_start = j.core.tools.text_strip(cmd_start)
+            startup = j.servers.startupcmd.get(name="threebot_{}".format(self.name), cmd_start=cmd_start)
+            startup.executor = self.executor
+            startup.interpreter = "python"
+            startup.timeout = 60
+            startup.ports = [9900, 1491, 8901, 80, 4444, 4445]
             self._startup_cmd = startup
         return self._startup_cmd

@@ -55,7 +55,12 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             self.install()
             self.default.stop()
 
-        return self.default.start(background=True, web=web)
+        # will return client
+        client = self.default.start(background=True, web=web)
+
+        client.actors.package_manager.package_add(path=j.threebot.package.phonebook._dirpath)
+
+        return client()
 
     def test(self, name="threebot_phonebook", wiki=False, web=False, fileserver=False):
         """
