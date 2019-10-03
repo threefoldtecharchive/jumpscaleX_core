@@ -62,8 +62,8 @@ class ThreeBotServer(j.baseclasses.object_config):
         return self._openresty_server
 
     def bcdb_get(self, name):
-        zdb_admin = j.clients.zdb.client_admin_get()
         if j.data.bcdb.exists(name=name):
+            zdb_admin = j.clients.zdb.client_admin_get()
             if not zdb_admin.namespace_exists(name):
                 j.data.bcdb.destroy(name=name)
         if j.data.bcdb.exists(name=name):
@@ -118,8 +118,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             ssl = self.ssl
 
         if not background:
-            if web:
-                self.client.actors.package_manager.package_add(path=j.threebot.package.webinterface._dirpath)
 
             self.zdb.start()
             j.servers.sonic.default.start()
@@ -132,6 +130,12 @@ class ThreeBotServer(j.baseclasses.object_config):
             bcdb = j.data.bcdb.system
             redis_server = bcdb.redis_server_get(port=6380, secret="123456")
             self.rack_server.add("bcdb_system_redis", redis_server.gevent_server)
+            # FIXME: the package_manager actor doesn't properly load the package (web interface)
+
+            j.tools.threebot_packages.get(
+                "webinterface",
+                path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot/webinterface/",
+            )
 
             # add user added packages
             for package in j.tools.threebot_packages.find():
@@ -161,7 +165,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         while not j.sal.nettools.tcpPortConnectionTest("127.0.0.1", 8901, timeout=120) and trials < 20:
             gevent.sleep(1)
             trials += 1
-            
+
         self.client = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
         # TODO: will have to authenticate myself
 
