@@ -42,7 +42,10 @@ class ServerRack(JSBASE):
         if start:
             server.start()
 
-    def bottle_server_add(self, name="bottle", port=4442, app=None, websocket=False):
+    def bottle_server_add(self, name="bottle", port=4442, app=None, websocket=False, force_override=False):
+        # TODO: improve the check for name+port combo
+        if name in self.servers and not force_override:
+            return True
 
         from gevent.pywsgi import WSGIServer
         from geventwebsocket.handler import WebSocketHandler

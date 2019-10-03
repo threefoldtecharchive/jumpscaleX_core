@@ -52,7 +52,7 @@ def main(self):
     """
     to run:
 
-    kosmos 'j.servers.startupcmd.test(name="corex")' --debug
+    kosmos 'j.servers.startupcmd.test(name="tmux_background")' --debug
     """
 
     startup_cmd = self.tmuxserver  # grab an instance

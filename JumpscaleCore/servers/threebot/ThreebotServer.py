@@ -113,8 +113,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         if web is None:
             web = self.web
 
-        assert ssl is not True
-
         if ssl is None:
             ssl = self.ssl
 

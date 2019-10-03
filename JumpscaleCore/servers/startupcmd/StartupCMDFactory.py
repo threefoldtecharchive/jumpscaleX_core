@@ -43,6 +43,7 @@ class StartupCMDFactory(j.baseclasses.object_config_collection_testtools):
 
         j.servers.startupcmd.get("http")
         j.servers.startupcmd.get("tmuxserver")
+        j.servers.startupcmd.get("http_corex")
         j.servers.startupcmd.get("http_back")
 
         self._test_run(name=name)
