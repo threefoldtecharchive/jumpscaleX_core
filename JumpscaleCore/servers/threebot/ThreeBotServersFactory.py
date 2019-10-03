@@ -43,7 +43,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def local_start_default(self, web=False):
         """
 
-        kosmos 'j.servers.threebot.local_start_default()'
+        kosmos -p 'j.servers.threebot.local_start_default()'
 
         tbot_client = j.servers.threebot.local_start_default()
 

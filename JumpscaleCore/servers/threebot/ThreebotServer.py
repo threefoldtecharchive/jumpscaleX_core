@@ -1,6 +1,7 @@
 from Jumpscale import j
 import os
 import gevent
+import time
 
 # from .OpenPublish import OpenPublish
 
@@ -147,9 +148,14 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         else:
             if web:
-                self.startup_cmd_web.start()
+                cmd = self.startup_cmd_web
             else:
-                self.startup_cmd.start()
+                cmd = self.startup_cmd
+
+            if not cmd.is_running():
+                cmd.start()
+                time.sleep(2)
+            r = j.sal.nettools.tcpPortConnectionTest("127.0.0.1", 8901, timeout=120)
 
         self.client = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
         # TODO: will have to authenticate myself

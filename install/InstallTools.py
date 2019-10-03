@@ -2438,19 +2438,29 @@ class Tools:
 
     @staticmethod
     def tcp_port_connection_test(ipaddr, port, timeout=None):
-        conn = None
-        try:
-            conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            if timeout:
-                conn.settimeout(timeout)
+        start = time.time()
+
+        def check():
             try:
-                conn.connect((ipaddr, port))
-            except BaseException:
-                return False
-        finally:
-            if conn:
-                conn.close()
-        return True
+                conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                if timeout:
+                    conn.settimeout(timeout)
+                try:
+                    conn.connect((ipaddr, port))
+                except BaseException:
+                    return False
+            finally:
+                if conn:
+                    conn.close()
+            return True
+
+        if timeout and timeout > 0:
+            while time.time() < start + timeout:
+                if check():
+                    return True
+            return False
+        else:
+            return check()
 
     @staticmethod
     def _code_location_get(account, repo):
