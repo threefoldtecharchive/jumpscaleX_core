@@ -34,7 +34,7 @@ def enable_cors(fn):
     return _enable_cors
 
 
-@app.route("/actors/<name>/<cmd>", method="post")
+@app.route("/<name>/<cmd>", method="post")
 @enable_cors
 def client_handler(name, cmd):
     client = j.clients.gedis.get(name="main_gedis_threebot", port=8901)
