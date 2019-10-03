@@ -523,7 +523,7 @@ class StartupCMD(j.baseclasses.object_config):
                     self.stop(force=True)
                 # self._hardkill()
 
-        if not reset and self.pid and self.is_running() == True:
+        if not reset and self.is_running() == True:
             self._log_info("no need to start was already started:%s" % self.name)
             return
 
@@ -532,6 +532,8 @@ class StartupCMD(j.baseclasses.object_config):
 
         self.cmd_start = j.core.tools.text_strip(self.cmd_start)
 
+        if self.state in ["running"]:
+            raise RuntimeError()
         if self.state in ["init", "running", "error"]:
             self._hardkill()
 

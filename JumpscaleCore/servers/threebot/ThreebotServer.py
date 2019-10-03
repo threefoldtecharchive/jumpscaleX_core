@@ -146,9 +146,10 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.rack_server.start()
 
         else:
-            if self.startup_cmd.is_running():
-                self.startup_cmd.stop()
-            self.startup_cmd.start()
+            if web:
+                self.startup_cmd_web.start()
+            else:
+                self.startup_cmd.start()
 
         self.client = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
         # TODO: will have to authenticate myself
@@ -180,7 +181,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             startup = j.servers.startupcmd.get(name="threebot_{}".format(self.name), cmd_start=cmd_start)
             startup.executor = self.executor
             startup.interpreter = "python"
-            startup.timeout = 60
+            startup.timeout = 120
             startup.ports = [9900, 1491, 8901]
             self._startup_cmd = startup
         return self._startup_cmd
