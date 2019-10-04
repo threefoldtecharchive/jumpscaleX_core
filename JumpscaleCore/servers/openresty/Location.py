@@ -23,6 +23,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
         locations_proxy = (LO) !jumpscale.openresty.location_proxy
         locations_lapis = (LO) !jumpscale.openresty.location_lapis
         locations_custom = (LO) !jumpscale.openresty.location_custom
+        locations_spa = (LO) !jumpscale.openresty.location_static
 
         @url = jumpscale.openresty.location_static
         name = "" (S)
@@ -79,6 +80,16 @@ class LocationsConfiguration(j.baseclasses.object_config):
                 location.path_location += "/"
             content = j.tools.jinja2.file_render(
                 path=f"{self._dirpath}/templates/location_static.conf", write=False, obj=location
+            )
+            j.sal.fs.writeFile(self.path_cfg_get(location.name), content)
+            if location.use_jumpscale_weblibs:
+                self._add_weblibs(location.path_location)
+
+        for location in self.locations_spa:
+            if not location.path_location.endswith("/"):
+                location.path_location += "/"
+            content = j.tools.jinja2.file_render(
+                path=f"{self._dirpath}/templates/location_spa.conf", write=False, obj=location
             )
             j.sal.fs.writeFile(self.path_cfg_get(location.name), content)
             if location.use_jumpscale_weblibs:
