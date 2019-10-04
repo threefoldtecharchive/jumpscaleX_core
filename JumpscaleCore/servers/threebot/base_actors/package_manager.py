@@ -70,6 +70,10 @@ class package_manager(j.baseclasses.threebot_actor):
         package.prepare()
         package.start()
 
+        if j.servers.threebot.current.web:
+            # reload openresty configuration if web is enabled for this threebot server
+            j.servers.threebot.current.openresty_server.reload()
+
         return "OK"
 
     def package_delete(self, name, schema_out=None, user_session=None):
