@@ -63,13 +63,13 @@ class ThreeBotServer(j.baseclasses.object_config):
 
     def bcdb_get(self, name):
         zdb_admin = j.clients.zdb.client_admin_get()
+        zdb_namespace_exists = zdb_admin.namespace_exists(name)
         zdb = zdb_admin.namespace_new(name, secret=self.secret)
 
         if j.data.bcdb.exists(name=name):
-            if not zdb_admin.namespace_exists(name):
+            if not zdb_namespace_exists:
                 j.data.bcdb.destroy(name=name)
-                return j.data.bcdb.new(name=name, storclient=zdb)
-            return j.data.bcdb.get(name=name)
+            return j.data.bcdb.get(name=name, storclient=zdb)
         return j.data.bcdb.new(name=name, storclient=zdb)
 
     @property
