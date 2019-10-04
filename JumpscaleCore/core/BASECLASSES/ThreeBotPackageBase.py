@@ -18,7 +18,7 @@
 # LICENSE END
 
 
-# from Jumpscale import j
+from Jumpscale import j
 from .JSBase import JSBase
 
 
@@ -36,7 +36,8 @@ class ThreeBotPackageBase(JSBase):
 
     @property
     def bcdb(self):
-        return self.threebot_server.bcdb_get("system")
+        # return system by default
+        return j.data.bcdb.system
 
     def prepare(self):
         """
