@@ -155,7 +155,6 @@ class ThreeBotServer(j.baseclasses.object_config):
                     except Exception as e:
                         j.core.tools.log(level=50, exception=e, stdout=True)
                         package.status = "error"
-
             if web:
                 self.openresty_server.start()
             self.rack_server.start()
@@ -163,7 +162,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         else:
             if not self.startup_cmd.is_running():
                 self.startup_cmd.start()
-                time.sleep(2)
+                time.sleep(1)
 
         # FIXME: wait for the connection properly
         trials = 0
@@ -188,6 +187,10 @@ class ThreeBotServer(j.baseclasses.object_config):
 
     @property
     def startup_cmd(self):
+        if self.web:
+            web = "True"
+        else:
+            web = "False"
         cmd_start = """
         from gevent import monkey
         monkey.patch_all(subprocess=False)
@@ -195,7 +198,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         server = j.servers.threebot.get("{name}", executor='{executor}', web={web})
         server.start(background=False)
         """.format(
-            name=self.name, executor=self.executor, web=self.web
+            name=self.name, executor=self.executor, web=web
         )
         cmd_start = j.core.tools.text_strip(cmd_start)
         startup = j.servers.startupcmd.get(name="threebot_{}".format(self.name), cmd_start=cmd_start)
