@@ -70,11 +70,13 @@ class ThreeBotServer(j.baseclasses.object_config):
                 # can't we put logic into the bcdb-new to use existing namespace if its there and recreate the index
                 raise j.exceptions.Base("serious issue bcdb exists, zdb namespace does not")
             return j.data.bcdb.get(name=name)
+
+        if not zdb_namespace_exists:
+            zdb_cl = zdb_admin.namespace_new(name, secret=self.secret)
+            # can't we put logic into the bcdb-new to use existing namespace if its there and recreate the index
         else:
-            if not zdb_namespace_exists:
-                zdb = zdb_admin.namespace_new(name, secret=self.secret)
-                # can't we put logic into the bcdb-new to use existing namespace if its there and recreate the index
-        return j.data.bcdb.new(name=name, storclient=zdb)
+            zdb_cl = zdb_admin.namespace_get(name, secret=self.secret)
+        return j.data.bcdb.new(name=name, storclient=zdb_cl)
 
     @property
     def zdb(self):
