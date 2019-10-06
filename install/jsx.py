@@ -627,19 +627,23 @@ def wireguard(name=None, configdir=None):
     "-d", "--delete", is_flag=True, help="if set will delete the test container for threebot if it already exists"
 )
 @click.option("-w", "--web", is_flag=True, help="if set will install the webcomponents")
-def threebot_test(delete=True, name="3bot", count=1, net="172.0.0.0/16", web=False):
+def threebot_test(delete=False, name="3bot", count=1, net="172.0.0.0/16", web=False):
+    """
+
+    :param delete:  delete the containers you want to use in this test
+    :param name:    base name, if more than 1 container then will name+nr e.g. 3bot2  the first one always is 3bot
+    :param count:   nr of containers to create in test, they will all be able to talk to each other
+    :param net:     the network to use for the containers
+    :param web:     if the webinterface needs to be started
+    :return:
+    """
+
     def docker_jumpscale_get(name=name, delete=True):
         docker = e._DF.container_get(name=name, delete=delete)
         docker.install()
         docker.jumpscale_install()
         # now we can access it over 172.0.0.2 normally
         return docker
-
-    docker = docker_jumpscale_get(name=name, delete=delete)
-    if IT.MyEnv.platform() != "linux":
-        # only need to use wireguard if on osx or windows (windows not implemented)
-        docker.sshexec("source /sandbox/env.sh;jsx wireguard")  # get the wireguard started
-        docker.wireguard.connect()
 
     # tcp_port_connection_test(ipaddr, port, timeout=None
 
@@ -648,6 +652,13 @@ def threebot_test(delete=True, name="3bot", count=1, net="172.0.0.0/16", web=Fal
     else:
         web2 = "False"
     for i in range(count):
+        docker = docker_jumpscale_get(name=name, delete=delete)
+        if IT.MyEnv.platform() != "linux" and i == 0:
+            # only need to use wireguard if on osx or windows (windows not implemented)
+            # only do it on the first container
+            docker.sshexec("source /sandbox/env.sh;jsx wireguard")  # get the wireguard started
+            docker.wireguard.connect()
+
         if i > 0:
             name = name + str(i)
         docker.sshexec(
