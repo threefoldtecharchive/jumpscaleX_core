@@ -619,6 +619,27 @@ def wireguard(name=None, configdir=None):
         wg.server_start()
 
 
+@click.command()
+@click.option(
+    "-d", "--delete", is_flag=True, help="if set will delete the test container for threebot if it already exists"
+)
+def threebot_test(delete=True):
+    def docker_jumpscale_get(name="3bot", delete=True):
+        docker = e._DF.container_get(name=name, delete=delete)
+        docker.install()
+        docker.jumpscale_install()
+        # now we can access it over 172.0.0.2
+        return docker
+
+    docker = docker_jumpscale_get(name="3bot", delete=delete)
+    if IT.MyEnv.platform() != "linux":
+        # only need to use wireguard if on osx or windows (windows not implemented)
+        docker.sshexec("source /sandbox/env.sh;jsx wireguard")  # get the wireguard started
+        docker.wireguard.connect()
+
+    docker.sshexec("source /sandbox/env.sh;kosmos 'j.servers.threebot.local_start_default(web=True,packages_add=True)'")
+
+
 @click.command(name="modules-install")
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("--url", default="3bot", help="git url e.g. https://github.com/myfreeflow/kosmos")
@@ -690,6 +711,7 @@ if __name__ == "__main__":
         cli.add_command(container_save, "container-save")
         cli.add_command(basebuilder, "basebuilder")
         cli.add_command(threebotbuilder, "threebotbuilder")
-        cli.add_command(containers, "containers")
+        cli.add_command(containers)
+        cli.add_command(threebot_test, "threebot-test")
 
     cli()
