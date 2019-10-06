@@ -652,6 +652,8 @@ def threebot_test(delete=False, name="3bot", count=1, net="172.0.0.0/16", web=Fa
     else:
         web2 = "False"
     for i in range(count):
+        if i > 0:
+            name = name + str(i)
         docker = docker_jumpscale_get(name=name, delete=delete)
         if IT.MyEnv.platform() != "linux" and i == 0:
             # only need to use wireguard if on osx or windows (windows not implemented)
@@ -659,8 +661,6 @@ def threebot_test(delete=False, name="3bot", count=1, net="172.0.0.0/16", web=Fa
             docker.sshexec("source /sandbox/env.sh;jsx wireguard")  # get the wireguard started
             docker.wireguard.connect()
 
-        if i > 0:
-            name = name + str(i)
         docker.sshexec(
             "source /sandbox/env.sh;kosmos 'j.servers.threebot.local_start_default(web=%s,packages_add=True)'" % web2
         )
