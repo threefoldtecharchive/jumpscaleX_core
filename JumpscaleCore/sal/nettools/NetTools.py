@@ -61,7 +61,7 @@ class NetTools(JSBASE):
         """
         return int(netaddr.IPAddress(ip))
 
-    def waitConnectionTest(self, ipaddr, port, timeoutTotal=5):
+    def waitConnectionTest(self, ipaddr, port, timeout=5):
         """
         will return false if not successfull (timeout in sec)
 
@@ -70,7 +70,7 @@ class NetTools(JSBASE):
         if ipaddr.strip() == "localhost":
             ipaddr = "127.0.0.1"
         port = int(port)
-        end = j.data.time.getTimeEpoch() + timeoutTotal
+        end = j.data.time.getTimeEpoch() + timeout
         while True:
             if j.data.time.getTimeEpoch() > end:
                 return False

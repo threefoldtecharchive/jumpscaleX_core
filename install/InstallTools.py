@@ -4402,6 +4402,8 @@ class DockerFactory:
             docker = DockerFactory._dockers[name]
             if delete:
                 docker.delete()
+                # needed because docker object is being retained
+                docker.config.save()
         else:
             docker = DockerContainer(name=name, image=image, delete=delete)
         if start:
@@ -4613,6 +4615,7 @@ class DockerContainer:
 
         if delete:
             self.delete()
+            self.config.save()
 
         if "SSH_Agent" in MyEnv.config and MyEnv.config["SSH_Agent"]:
             MyEnv.sshagent.key_default_name  # means we will load ssh-agent and help user to load it properly
@@ -5076,6 +5079,7 @@ class DockerContainer:
             cmd += args_txt
         else:
             print("copy installer over from where I install from")
+            dirpath = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/"
             for item in ["jsx", "InstallTools.py"]:
                 src1 = "%s/%s" % (dirpath, item)
                 cmd = "scp -P {} -o StrictHostKeyChecking=no \

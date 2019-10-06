@@ -64,12 +64,16 @@ class ThreeBotServer(j.baseclasses.object_config):
     def bcdb_get(self, name):
         zdb_admin = j.clients.zdb.client_admin_get()
         zdb_namespace_exists = zdb_admin.namespace_exists(name)
-        zdb = zdb_admin.namespace_new(name, secret=self.secret)
 
         if j.data.bcdb.exists(name=name):
             if not zdb_namespace_exists:
-                j.data.bcdb.destroy(name=name)
-            return j.data.bcdb.get(name=name, storclient=zdb)
+                # can't we put logic into the bcdb-new to use existing namespace if its there and recreate the index
+                raise j.exceptions.Base("serious issue bcdb exists, zdb namespace does not")
+            return j.data.bcdb.get(name=name)
+        else:
+            if not zdb_namespace_exists:
+                zdb = zdb_admin.namespace_new(name, secret=self.secret)
+                # can't we put logic into the bcdb-new to use existing namespace if its there and recreate the index
         return j.data.bcdb.new(name=name, storclient=zdb)
 
     @property
