@@ -620,18 +620,19 @@ def wireguard(name=None, configdir=None):
 
 
 @click.command()
+@click.option("-n", "--name", default="3bot", help="name of container")
 @click.option(
     "-d", "--delete", is_flag=True, help="if set will delete the test container for threebot if it already exists"
 )
-def threebot_test(delete=True):
-    def docker_jumpscale_get(name="3bot", delete=True):
-        docker = e._DF.container_get(name=name, delete=delete)
+def threebot_test(delete=True, name="3bot"):
+    def docker_jumpscale_get(name=name, delete=True):
+        docker = e._DF.container_get(name="3bot", delete=delete)
         docker.install()
         docker.jumpscale_install()
         # now we can access it over 172.0.0.2
         return docker
 
-    docker = docker_jumpscale_get(name="3bot", delete=delete)
+    docker = docker_jumpscale_get(name=name, delete=delete)
     if IT.MyEnv.platform() != "linux":
         # only need to use wireguard if on osx or windows (windows not implemented)
         docker.sshexec("source /sandbox/env.sh;jsx wireguard")  # get the wireguard started
