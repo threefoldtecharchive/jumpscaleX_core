@@ -64,17 +64,13 @@ class ThreeBotServer(j.baseclasses.object_config):
     def bcdb_get(self, name):
         zdb_admin = j.clients.zdb.client_admin_get()
         zdb_namespace_exists = zdb_admin.namespace_exists(name)
+        zdb = zdb_admin.namespace_new(name, secret=self.secret)
 
         if j.data.bcdb.exists(name=name):
             if not zdb_namespace_exists:
-                # can't we put logic into the bcdb-new to use existing namespace if its there and recreate the index
-                raise j.exceptions.Base("serious issue bcdb exists, zdb namespace does not")
-            return j.data.bcdb.get(name=name)
-        else:
-            if not zdb_namespace_exists:
-                zdb = zdb_admin.namespace_new(name, secret=self.secret)
-                # can't we put logic into the bcdb-new to use existing namespace if its there and recreate the index
-            return j.data.bcdb.new(name=name, storclient=zdb)
+                j.data.bcdb.destroy(name=name)
+            return j.data.bcdb.get(name=name, storclient=zdb)
+        return j.data.bcdb.new(name=name, storclient=zdb)
 
     @property
     def zdb(self):
@@ -117,13 +113,17 @@ class ThreeBotServer(j.baseclasses.object_config):
         """
         if web is None:
             web = self.web
+        else:
+            self.web = web
 
         if ssl is None:
             ssl = self.ssl
+        else:
+            self.ssl = ssl
+
+        self.save()
 
         if not background:
-            if web:
-                self.client.actors.package_manager.package_add(path=j.threebot.package.webinterface._dirpath)
 
             self.zdb.start()
             j.servers.sonic.default.start()
@@ -136,6 +136,12 @@ class ThreeBotServer(j.baseclasses.object_config):
             bcdb = j.data.bcdb.system
             redis_server = bcdb.redis_server_get(port=6380, secret="123456")
             self.rack_server.add("bcdb_system_redis", redis_server.gevent_server)
+            # FIXME: the package_manager actor doesn't properly load the package (web interface)
+
+            j.tools.threebot_packages.get(
+                "webinterface",
+                path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot/webinterface/",
+            )
 
             # add user added packages
             for package in j.tools.threebot_packages.find():
@@ -143,7 +149,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                     try:
                         package.start()
                     except Exception as e:
-                        logdict = j.core.tools.log(level=50, exception=e, stdout=True)
+                        j.core.tools.log(level=50, exception=e, stdout=True)
                         package.status = "error"
 
             if web:
@@ -151,15 +157,15 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.rack_server.start()
 
         else:
-            if web:
-                cmd = self.startup_cmd_web
-            else:
-                cmd = self.startup_cmd
-
-            if not cmd.is_running():
-                cmd.start()
+            if not self.startup_cmd.is_running():
+                self.startup_cmd.start()
                 time.sleep(2)
-            r = j.sal.nettools.tcpPortConnectionTest("127.0.0.1", 8901, timeout=120)
+
+        # FIXME: wait for the connection properly
+        trials = 0
+        while not j.sal.nettools.tcpPortConnectionTest("127.0.0.1", 8901, timeout=120) and trials < 20:
+            gevent.sleep(1)
+            trials += 1
 
         self.client = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
         # TODO: will have to authenticate myself
@@ -174,45 +180,25 @@ class ThreeBotServer(j.baseclasses.object_config):
         :return:
         """
         self.startup_cmd.stop(waitstop=False, force=True)
+        self.openresty_server.stop()
 
     @property
     def startup_cmd(self):
-        if not self._startup_cmd:
-            cmd_start = """
-            from gevent import monkey
-            monkey.patch_all(subprocess=False)
-            from Jumpscale import j
-            server = j.servers.threebot.get("{name}", executor='{executor}', web=False)
-            server.start(background=False)
-            """.format(
-                name=self.name, executor=self.executor
-            )
-            cmd_start = j.core.tools.text_strip(cmd_start)
-            startup = j.servers.startupcmd.get(name="threebot_{}".format(self.name), cmd_start=cmd_start)
-            startup.executor = self.executor
-            startup.interpreter = "python"
-            startup.timeout = 120
-            startup.ports = [9900, 1491, 8901]
-            self._startup_cmd = startup
-        return self._startup_cmd
-
-    @property
-    def startup_cmd_web(self):
-        if not self._startup_cmd:
-            cmd_start = """
-            from gevent import monkey
-            monkey.patch_all(subprocess=False)
-            from Jumpscale import j
-            server = j.servers.threebot.get("{name}", executor='{executor}', web=True)
-            server.start(background=False)
-            """.format(
-                name=self.name, executor=self.executor
-            )
-            cmd_start = j.core.tools.text_strip(cmd_start)
-            startup = j.servers.startupcmd.get(name="threebot_{}".format(self.name), cmd_start=cmd_start)
-            startup.executor = self.executor
-            startup.interpreter = "python"
-            startup.timeout = 60
-            startup.ports = [9900, 1491, 8901, 80, 4444, 4445]
-            self._startup_cmd = startup
-        return self._startup_cmd
+        cmd_start = """
+        from gevent import monkey
+        monkey.patch_all(subprocess=False)
+        from Jumpscale import j
+        server = j.servers.threebot.get("{name}", executor='{executor}', web={web})
+        server.start(background=False)
+        """.format(
+            name=self.name, executor=self.executor, web=self.web
+        )
+        cmd_start = j.core.tools.text_strip(cmd_start)
+        startup = j.servers.startupcmd.get(name="threebot_{}".format(self.name), cmd_start=cmd_start)
+        startup.executor = self.executor
+        startup.interpreter = "python"
+        startup.timeout = 120
+        startup.ports = [9900, 1491, 8901]
+        if self.web:
+            startup.ports += [80, 443, 4444, 4445]
+        return startup

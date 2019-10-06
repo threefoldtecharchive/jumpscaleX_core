@@ -1,6 +1,5 @@
 import json
 from Jumpscale import j
-
 # from JumpscaleLibs.servers.mail.smtp import app
 # from JumpscaleLibs.servers.mail.bcdbmailbox import BCDBMailboxdir
 
@@ -8,7 +7,6 @@ from Jumpscale import j
 class mail(j.baseclasses.threebot_actor):
     """
     """
-
     pass
     # def _init(self, **kwargs):
     #     models = j.servers.imap.get_models()
