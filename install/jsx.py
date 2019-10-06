@@ -621,15 +621,18 @@ def wireguard(name=None, configdir=None):
 
 @click.command()
 @click.option("-n", "--name", default="3bot", help="name of container")
+@click.option("-c", "--count", default=1, help="nr of containers")
+@click.option("-n", "--net", default="172.0.0.0/16", help="network range for docker")
 @click.option(
     "-d", "--delete", is_flag=True, help="if set will delete the test container for threebot if it already exists"
 )
-def threebot_test(delete=True, name="3bot"):
+@click.option("-w", "--web", is_flag=True, help="if set will install the webcomponents")
+def threebot_test(delete=True, name="3bot", count=1, net="172.0.0.0/16", web=False):
     def docker_jumpscale_get(name=name, delete=True):
-        docker = e._DF.container_get(name="3bot", delete=delete)
+        docker = e._DF.container_get(name=name, delete=delete)
         docker.install()
         docker.jumpscale_install()
-        # now we can access it over 172.0.0.2
+        # now we can access it over 172.0.0.2 normally
         return docker
 
     docker = docker_jumpscale_get(name=name, delete=delete)
@@ -638,7 +641,18 @@ def threebot_test(delete=True, name="3bot"):
         docker.sshexec("source /sandbox/env.sh;jsx wireguard")  # get the wireguard started
         docker.wireguard.connect()
 
-    docker.sshexec("source /sandbox/env.sh;kosmos 'j.servers.threebot.local_start_default(web=True,packages_add=True)'")
+    # tcp_port_connection_test(ipaddr, port, timeout=None
+
+    if web:
+        web2 = "True"
+    else:
+        web2 = "False"
+    for i in range(count):
+        if i > 0:
+            name = name + str(i)
+        docker.sshexec(
+            "source /sandbox/env.sh;kosmos 'j.servers.threebot.local_start_default(web=%s,packages_add=True)'" % web2
+        )
 
 
 @click.command(name="modules-install")
