@@ -122,8 +122,6 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         docker.install()
         docker.jumpscale_install()
         # now we can access it over 172.0.0.2
-        self._log_info("check we can reach the container")
-        assert j.sal.nettools.waitConnectionTest(docker.config.ipaddr, 22, timeout=30)
         return docker
 
     def docker_environment(self, delete=True):
@@ -143,8 +141,13 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             docker.sshexec("source /sandbox/env.sh;jsx wireguard")  # get the wireguard started
             docker.wireguard.connect()
 
+        self._log_info("check we can reach the container")
+        assert j.sal.nettools.waitConnectionTest(docker.config.ipaddr, 22, timeout=30)
+
         self._log_info("start the threebot server")
-        docker.sshexec("source /sandbox/env.sh;kosmos 'j.servers.threebot.local_start_default(packages_add=True)'")
+        docker.sshexec(
+            "source /sandbox/env.sh;kosmos 'j.servers.threebot.local_start_default(web=True,packages_add=True)'"
+        )
         j.shell()
 
     def docker_environment_multi(self):
