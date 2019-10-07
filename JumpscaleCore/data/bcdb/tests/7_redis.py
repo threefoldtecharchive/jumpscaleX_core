@@ -51,7 +51,7 @@ def main(self):
 
         self._cmd = j.servers.startupcmd.get(name="redis_6380", cmd_start=cmd, ports=[6380], executor="tmux")
         self._cmd.start()
-        j.sal.nettools.waitConnectionTest("127.0.0.1", port=6380, timeoutTotal=15)
+        j.sal.nettools.waitConnectionTest("127.0.0.1", port=6380, timeout=15)
 
         if zdb:
             cl = j.clients.zdb.client_get(name="test", namespace="test_zdb", port=9901)

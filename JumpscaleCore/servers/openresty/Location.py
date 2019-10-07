@@ -4,7 +4,7 @@ from Jumpscale import j
 JSConfigs = j.baseclasses.object_config_collection
 
 
-class Location(j.baseclasses.object_config):
+class LocationsConfiguration(j.baseclasses.object_config):
     """
     Website hosted in openresty
     This is port / hostname combination
@@ -23,6 +23,7 @@ class Location(j.baseclasses.object_config):
         locations_proxy = (LO) !jumpscale.openresty.location_proxy
         locations_lapis = (LO) !jumpscale.openresty.location_lapis
         locations_custom = (LO) !jumpscale.openresty.location_custom
+        locations_spa = (LO) !jumpscale.openresty.location_static
 
         @url = jumpscale.openresty.location_static
         name = "" (S)
@@ -35,6 +36,7 @@ class Location(j.baseclasses.object_config):
         name = "" (S)
         ipaddr_dest = (S)
         port_dest = (I)
+        path_dest = "" (S)
         type = "http,websocket" (E)
         scheme = "http,https,ws,wss" (E)
 
@@ -83,6 +85,16 @@ class Location(j.baseclasses.object_config):
             if location.use_jumpscale_weblibs:
                 self._add_weblibs(location.path_location)
 
+        for location in self.locations_spa:
+            if not location.path_location.endswith("/"):
+                location.path_location += "/"
+            content = j.tools.jinja2.file_render(
+                path=f"{self._dirpath}/templates/location_spa.conf", write=False, obj=location
+            )
+            j.sal.fs.writeFile(self.path_cfg_get(location.name), content)
+            if location.use_jumpscale_weblibs:
+                self._add_weblibs(location.path_location)
+
         for location in self.locations_proxy:
             content = j.tools.jinja2.file_render(
                 path=f"{self._dirpath}/templates/location_proxy.conf", write=False, obj=location
@@ -122,4 +134,8 @@ class Location(j.baseclasses.object_config):
 
 class Locations(j.baseclasses.object_config_collection):
 
-    _CHILDCLASS = Location
+    _CHILDCLASS = LocationsConfiguration
+
+    def configure(self):
+        for item in self.find():
+            item.configure()

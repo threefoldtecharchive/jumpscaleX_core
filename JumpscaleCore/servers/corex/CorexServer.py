@@ -30,9 +30,10 @@ class CorexServer(JSConfigClient):
 
     @property
     def client(self):
-        j.clients.corex.default.addr = "localhost"
-        j.clients.corex.default.port = self.port
-        return j.clients.corex.default
+        default_client = j.clients.corex.get("default")
+        default_client.addr = "localhost"
+        default_client.port = self.port
+        return default_client
 
     def stop(self):
         self._log_info("stop corex server")

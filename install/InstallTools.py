@@ -1275,7 +1275,7 @@ class Tools:
                             # Give the process some time to settle
                             time.sleep(0.2)
                             p.kill()
-                            raise Tools.exceptions.Timeout(f"command: {command} timed out after {timeout} seconds")
+                            raise Tools.exceptions.Timeout(f"command: '{command}' timed out after {timeout} seconds")
                         except OSError:
                             pass
                     else:
@@ -1676,6 +1676,9 @@ class Tools:
 
         if isinstance(content, bytes):
             content = content.decode()
+
+        if not isinstance(content, str):
+            raise Tools.exceptions.Input("content needs to be str")
 
         if args is None:
             args = {}
@@ -2435,19 +2438,29 @@ class Tools:
 
     @staticmethod
     def tcp_port_connection_test(ipaddr, port, timeout=None):
-        conn = None
-        try:
-            conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            if timeout:
-                conn.settimeout(timeout)
+        start = time.time()
+
+        def check():
             try:
-                conn.connect((ipaddr, port))
-            except BaseException:
-                return False
-        finally:
-            if conn:
-                conn.close()
-        return True
+                conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                if timeout:
+                    conn.settimeout(timeout)
+                try:
+                    conn.connect((ipaddr, port))
+                except BaseException:
+                    return False
+            finally:
+                if conn:
+                    conn.close()
+            return True
+
+        if timeout and timeout > 0:
+            while time.time() < start + timeout:
+                if check():
+                    return True
+            return False
+        else:
+            return check()
 
     @staticmethod
     def _code_location_get(account, repo):
@@ -3314,23 +3327,6 @@ class MyEnv_:
 
         return config
 
-    # def configure_help(self):
-    #     C = """
-    #     Configuration for JSX initialisation:
-    #
-    #     --basedir=                      default ~/sandbox or /sandbox whatever exists first
-    #     --configdir=                    default $BASEDIR/cfg
-    #     --codedir=                     default $BASEDIR/code
-    #
-    #     --sshkey=                       key to use for ssh-agent if any
-    #     --sshagent-no                   default is to use the sshagent, if you want to disable use this flag
-    #
-    #     --readonly                      default is false
-    #     --no-interactive                default is interactive, means will ask questions
-    #     --debug_configure               default debug_configure is False, will configure in debug mode
-    #     """
-    #     return Tools.text_strip(C)
-
     def configure(
         self,
         configdir=None,
@@ -3342,7 +3338,7 @@ class MyEnv_:
         sshagent_use=None,
         debug_configure=None,
         secret=None,
-        interactive=True,
+        interactive=False,
     ):
         """
 
@@ -3470,14 +3466,12 @@ class MyEnv_:
         for key, val in config.items():
             self.config[key] = val
 
-        if sshagent_use and self.interactive:  # just a warning when interactive
+        if not sshagent_use and self.interactive:  # just a warning when interactive
             T = """
-            Is it ok to continue with SSH-Agent, are you sure?
+            Did not find an ssh agent, is this ok?
             It's recommended to have a SSH key as used on github loaded in your ssh-agent
-            If the SSH key is not found, repositories will be cloned using https
-
-            if you never used an ssh-agent or github, just say "y"
-
+            If the SSH key is not found, repositories will be cloned using https.
+            Is better to stop now and to load an ssh-agent with 1 key.
             """
             print(Tools.text_strip(T))
             if self.interactive:
@@ -4389,6 +4383,8 @@ class DockerFactory:
             docker = DockerFactory._dockers[name]
             if delete:
                 docker.delete()
+                # needed because docker object is being retained
+                docker.config.save()
         else:
             docker = DockerContainer(name=name, image=image, delete=delete)
         if start:
@@ -4600,6 +4596,7 @@ class DockerContainer:
 
         if delete:
             self.delete()
+            self.config.save()
 
         if "SSH_Agent" in MyEnv.config and MyEnv.config["SSH_Agent"]:
             MyEnv.sshagent.key_default_name  # means we will load ssh-agent and help user to load it properly
@@ -5062,9 +5059,12 @@ class DockerContainer:
             cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s"
             cmd += args_txt
         else:
-            print("copy installer over from where I install from")
+            print(" - copy installer over from where I install from")
+            dirpath2 = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/"
+            if not Tools.exists(dirpath2):
+                dirpath2 = dirpath
             for item in ["jsx", "InstallTools.py"]:
-                src1 = "%s/%s" % (dirpath, item)
+                src1 = "%s/%s" % (dirpath2, item)
                 cmd = "scp -P {} -o StrictHostKeyChecking=no \
                     -o UserKnownHostsFile=/dev/null \
                     -r {} root@localhost:/tmp/".format(
@@ -5193,9 +5193,9 @@ class SSHAgent:
 
         def ask_key(key_names):
             if len(key_names) == 1:
-                if MyEnv.interactive:
-                    if not Tools.ask_yes_no("Ok to use key: '%s' as your default key?" % key_names[0]):
-                        return None
+                # if MyEnv.interactive:
+                #     if not Tools.ask_yes_no("Ok to use key: '%s' as your default key?" % key_names[0]):
+                #         return None
                 name = key_names[0]
             elif len(key_names) == 0:
                 raise Tools.exceptions.Operations(
@@ -5320,12 +5320,12 @@ class SSHAgent:
                 if Tools.exists(self.ssh_socket_path):
                     Tools.delete(self.ssh_socket_path)
                     # did not work first time, lets try again
-                    return_code, out, err = Tools.execute("ssh-add -L", showout=False, die=False, timeout=1)
+                    return_code, out, err = Tools.execute("ssh-add -L", showout=False, die=False, timeout=10)
 
         if return_code and self.autostart:
             # ok still issue, lets try to start the ssh-agent if that could be done
             self.start()
-            return_code, out, err = Tools.execute("ssh-add -L", showout=False, die=False, timeout=1)
+            return_code, out, err = Tools.execute("ssh-add -L", showout=False, die=False, timeout=10)
             if return_code == 1 and out.find("The agent has no identities") != -1:
                 self.__keys = []
                 return []

@@ -61,12 +61,18 @@ class OpenRestyServer(j.baseclasses.factory_data):
 
         for website in self.websites.find():
             if website.port == port:
-                if domain and domain != website.domain:
-                    continue
-                else:
-                    return website
+                return website
+        ssl = None
+        if port == 80:
+            ssl = False
+        elif port == 443:
+            ssl = True
 
-        return self.websites.get(f"website_{port}", port=port, domain=domain)
+        ws = self.websites.get(f"website_{port}", port=port, domain=domain)
+        if ssl != None:
+            ws.ssl = ssl
+
+        return ws
 
     def install(self, reset=False):
         """

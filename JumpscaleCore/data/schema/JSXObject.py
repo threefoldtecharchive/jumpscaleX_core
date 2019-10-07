@@ -180,16 +180,14 @@ class JSXObject(j.baseclasses.object):
                         msg = "could not save, was not unique.\n%s." % (args_search)
                         if self.id:
                             if not self.id == r[0].id:
-                                # j.shell()
                                 raise j.exceptions.Input(msg)
                         else:
                             self.id = r[0].id
                             self._ddict_hr  # to trigger right serialization
                             if self._data == r[0]._data:
                                 return self  # means data was not changed
-                            else:  # means data is not the same
-                                self.id = None
-                                raise j.exceptions.Input(msg)
+                            else:  # means data is not the same and id not known yet
+                                self.id = r[0].id
 
                 if not self._nosave:
                     o = self._model.set(self)

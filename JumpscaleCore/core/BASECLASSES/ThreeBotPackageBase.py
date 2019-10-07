@@ -18,7 +18,7 @@
 # LICENSE END
 
 
-# from Jumpscale import j
+from Jumpscale import j
 from .JSBase import JSBase
 
 
@@ -27,7 +27,51 @@ class ThreeBotPackageBase(JSBase):
 
         assert "package" in kwargs
         self._package = kwargs["package"]
-
         self.package_root = self._package.path
         self.gedis_server = self._package.gedis_server
+        self.rack_server = self._package.threebot_server.rack_server
         self.openresty = self._package.openresty
+        self.threebot_server = self._package.threebot_server
+        self.actors_namespace = "default"
+
+    @property
+    def bcdb(self):
+        # return system by default
+        return j.data.bcdb.system
+
+    def prepare(self):
+        """
+        is called at install time
+        :return:
+        """
+        pass
+
+    def upgrade(self):
+        """
+        used to upgrade
+        """
+        return self.prepare()
+
+    def start(self):
+        """
+        called when the 3bot starts
+        :return:
+        """
+
+        self.bcdb.models_add(path=self.package_root + "/models")
+        self.gedis_server.actors_add(self.package_root + "/actors", namespace="default")
+
+    def stop(self):
+        """
+        called when the 3bot stops
+        :return:
+        """
+        pass
+
+    def uninstall(self):
+        """
+        called when the package is no longer needed and will be removed from the threebot
+        :return:
+        """
+        # TODO: clean up bcdb ?
+        pass

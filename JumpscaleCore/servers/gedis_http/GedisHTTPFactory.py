@@ -4,7 +4,7 @@ from bottle import post, run, response, request, Bottle
 
 app = Bottle()
 """
-~> curl -i -XPOST localhost:9201/actors/blog/get_metadata --data '{"args":{"blog":"xmon"}}' -H "Content-Type: application/json"
+~> curl -i -XPOST localhost:8903/actors/blog/get_metadata --data '{"args":{"blog":"xmon"}}' -H "Content-Type: application/json"
 HTTP/1.1 200 OK
 Content-Type: application/json
 Content-Length: 376
@@ -12,13 +12,30 @@ Date: Thu, 12 Sep 2019 16:01:13 GMT
 
 {"blog_name": "xmon", "blog_title": "xmonader weblog", "blog_description": "let there be posts", "author_name": "ahmed", "author_email": "ahmed@there.com", "author_image_filename": "", "base_url": "", "url": "", "posts_dir": "/sandbox/code/gitlab/xmonader/sample-blog-jsx/posts", "github_username": "xmonader", "github_repo_url": "git@gitlab.com:xmonader/sample-blog-jsx.git"}3BOTDEVEL:3bot:~: 
 
-~> curl -XPOST localhost:9201/actors/blog/get_tags
+~> curl -XPOST localhost:8903/actors/blog/get_tags
 ["python", "lame", "markdown", "java"]3BOTDEVEL:3bot:~: 
 
 """
 
 
-@app.route("/actors/<name>/<cmd>", method="post")
+def enable_cors(fn):
+    def _enable_cors(*args, **kwargs):
+        # set CORS headers
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, OPTIONS"
+        response.headers[
+            "Access-Control-Allow-Headers"
+        ] = "Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token"
+
+        if request.method != "OPTIONS":
+            # actual request; reply with the actual response
+            return fn(*args, **kwargs)
+
+    return _enable_cors
+
+
+@app.route("/<name>/<cmd>", method="post")
+@enable_cors
 def client_handler(name, cmd):
     client = j.clients.gedis.get(name="main_gedis_threebot", port=8901)
     actor = getattr(client.actors, name, None)

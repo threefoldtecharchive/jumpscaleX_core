@@ -44,4 +44,4 @@ chmod +x /tmp/jsx;
 # install
 /tmp/jsx install -s --threebot;
 
-tar -cpzf "/tmp/archives/JSX.tar.gz" --exclude dev --exclude sys --exclude proc --exclude tmp/* /
+tar -cpzf "/tmp/archives/JSX.tar.gz" --exclude dev --exclude sys --exclude proc --exclude tmp/archives/ /

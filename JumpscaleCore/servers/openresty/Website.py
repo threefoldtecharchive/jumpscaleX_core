@@ -94,6 +94,9 @@ class Website(j.baseclasses.factory_data):
         r = j.tools.jinja2.template_render(text=self.CONFIG, website=self)
         j.sal.fs.writeFile(self.path_cfg, r)
 
+        for locationsconfigs in self.locations.find():
+            locationsconfigs.configure()
+
 
 class Websites(j.baseclasses.object_config_collection):
 

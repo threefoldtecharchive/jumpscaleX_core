@@ -23,7 +23,7 @@ def load_install_tools(branch=None):
         rootdir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(rootdir, "InstallTools.py")
         # now check on path next to jsx
-        if not os.path.exists(path) or path.find("/code/") == -1:
+        if not os.path.exists(path):  # or path.find("/code/") == -1:
             url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py" % branch
 
             with urlopen(url) as resp:
@@ -52,7 +52,6 @@ def load_install_tools(branch=None):
 #                 print("WARNING the branch of jumpscale in %s needs to be %s" % (path, DEFAULT_BRANCH))
 #                 if not IT.Tools.ask_yes_no("OK to work with branch above?"):
 #                     sys.exit(1)
-
 
 IT = load_install_tools()
 IT.MyEnv.interactive = True  # std is interactive
@@ -472,17 +471,11 @@ def threebotbuilder(push=False, configdir=None, base=False, cont=False):
     docker.jumpscale_install(branch=DEFAULT_BRANCH, redo=delete, pull=False, threebot=True)
 
     docker.save(clean_runtime=True, image=dest + "dev")
-    from pudb import set_trace
-
-    set_trace()
     if push:
         docker.push()
 
     docker = e.DF.container_get(name="3bot", delete=True, image=dest + "dev")
     docker.install(update=False)
-    from pudb import set_trace
-
-    set_trace()
     docker.save(image=dest, clean_devel=True)
     if push:
         docker.push()
@@ -625,6 +618,55 @@ def wireguard(name=None, configdir=None):
         wg.server_start()
 
 
+@click.command()
+@click.option("-n", "--name", default="3bot", help="name of container")
+@click.option("-c", "--count", default=1, help="nr of containers")
+@click.option("-n", "--net", default="172.0.0.0/16", help="network range for docker")
+@click.option(
+    "-d", "--delete", is_flag=True, help="if set will delete the test container for threebot if it already exists"
+)
+@click.option("-w", "--web", is_flag=True, help="if set will install the webcomponents")
+def threebot_test(delete=False, name="3bot", count=1, net="172.0.0.0/16", web=False):
+    """
+
+    :param delete:  delete the containers you want to use in this test
+    :param name:    base name, if more than 1 container then will name+nr e.g. 3bot2  the first one always is 3bot
+    :param count:   nr of containers to create in test, they will all be able to talk to each other
+    :param net:     the network to use for the containers
+    :param web:     if the webinterface needs to be started
+    :return:
+    """
+
+    def docker_jumpscale_get(name=name, delete=True):
+        docker = e._DF.container_get(name=name, delete=delete)
+        docker.install()
+        docker.jumpscale_install()
+        # now we can access it over 172.0.0.2 normally
+        return docker
+
+    # tcp_port_connection_test(ipaddr, port, timeout=None
+
+    if web:
+        web2 = "True"
+    else:
+        web2 = "False"
+    for i in range(count):
+        if i > 0:
+            name1 = name + str(i)
+        else:
+            name1 = name
+        docker = docker_jumpscale_get(name=name1, delete=delete)
+        if IT.MyEnv.platform() != "linux" and i == 0:
+            # only need to use wireguard if on osx or windows (windows not implemented)
+            # only do it on the first container
+            docker.sshexec("source /sandbox/env.sh;jsx wireguard")  # get the wireguard started
+            docker.wireguard.connect()
+
+        docker.sshexec(
+            "source /sandbox/env.sh;kosmos 'j.servers.threebot.local_start_default(web=%s,packages_add=True)'" % web2
+        )
+
+
 @click.command(name="modules-install")
 # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("--url", default="3bot", help="git url e.g. https://github.com/myfreeflow/kosmos")
@@ -696,6 +738,7 @@ if __name__ == "__main__":
         cli.add_command(container_save, "container-save")
         cli.add_command(basebuilder, "basebuilder")
         cli.add_command(threebotbuilder, "threebotbuilder")
-        cli.add_command(containers, "containers")
+        cli.add_command(containers)
+        cli.add_command(threebot_test, "threebot-test")
 
     cli()
