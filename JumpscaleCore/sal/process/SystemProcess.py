@@ -652,7 +652,7 @@ class SystemProcess(JSBASE):
 
         result = []
         for process in psutil.process_iter():
-            if process.username == user:
+            if process.username() == user:
                 result.append(process.pid)
         return result
 
@@ -955,13 +955,13 @@ class SystemProcess(JSBASE):
     #                 # Returning the pid, analogous to the windows implementation where we
     #                 # don't have a Popen object to return.
     #                 retVal = proc.pid
-    #         else:
-    #             # Not possible, only the shell is able to parse command line arguments form a space-separated string.
-    #             if argsInCommand:
-    #                 raise j.exceptions.RuntimeError(
-    #                     "On Unix, either use the shell to execute a command, or split your command in an argument list")
-    #             if redirectStreams:
-    #                 retVal = subprocess.Popen([command] + args, shell=False, stdin=subprocess.PIPE,
+    #         else:pids
+    #             # Not possible, only the shell is able to parse commpidsand line arguments form a space-separated string.
+    #             if argsInCommand:pids
+    #                 raise j.exceptions.RuntimeError(pids
+    #                     "On Unix, either use the shell to execute a pidscommand, or split your command in an argument list")
+    #             if redirectStreams:pids
+    #                 retVal = subprocess.Popen([command] + args, shelpidsl=False, stdin=subprocess.PIPE,
     #                                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=os.environ)
     #             else:
     #                 if showout:
