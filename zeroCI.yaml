@@ -1,16 +1,18 @@
 prequisties:
-  - docker
+  - jsx
 
 install:
-  - apt-get update; apt-get install -y python3 curl locales language-pack-en rsync unzip python3-pip lsb  
-  - pip3 install click nose nose-progressive nose-testconfig loguru parameterized requests checksumdir
-  - eval `ssh-agent -s`; ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa ; ssh-add
-  - cp /opt/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx
-  - chmod +x /tmp/jsx
-  - branch=$(cd /opt/code/github/threefoldtech/jumpscaleX_core/ && git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* //')
-  - cd /tmp; /tmp/jsx configure -s --secret mysecret
-  - /tmp/jsx install -s -b $branch
+  - apt-get update
+  - pip3 install click nose nose-progressive nose-testconfig nose-exclude loguru parameterized requests checksumdir 
+  - eval `ssh-agent -s`; ssh-add
+  - rm -rf /sandbox/code/github/threefoldtech/jumpscaleX*
+  - cd /sandbox/code/github/threefoldtech/
+  - declare strs=('libs' 'libs_extra' 'builders' 'threebot') && for s in ${strs[@]}; do git clone https://github.com/threefoldtech/jumpscaleX_$s.git --branch development; done
   - cp -r /opt/code/github/threefoldtech/jumpscaleX_core /sandbox/code/github/threefoldtech/jumpscaleX_core
+  - source /sandbox/env.sh; js_init generate
 
 script:
-  - source /sandbox/env.sh; nosetests-3.4 -v /sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/ --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
+  - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v --with-noseexclude 
+   --exclude-dir=JumpscaleCore/servers/ JumpscaleCore/ --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
+  - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v test_loader.py:CoreTests 
+   --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
