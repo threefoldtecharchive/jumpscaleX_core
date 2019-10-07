@@ -55,10 +55,10 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
                 else:
                     description = ""
             if not ipaddr:
-                if interactive:
-                    ipaddr = j.tools.console.askString("your threebot ipaddr (optional if used e.g. locally)")
-                else:
+                if str(j.core.platformtype.myplatform).startswith("darwin"):
                     ipaddr = "localhost"
+                else:
+                    ipaddr = j.sal.nettools.getIpAddress()["ip"][0]
 
             if interactive:
                 if not j.tools.console.askYesNo("ok to use your local private key as basis for your threebot?", True):

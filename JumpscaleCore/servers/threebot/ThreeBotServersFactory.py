@@ -23,14 +23,16 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             self._default = self.get("default")
         return self._default
 
-    def install(self):
+    def install(self, force=True):
         def need_install():
             for cmd in ["resty", "lua", "sonic", "zdb"]:
                 if not j.core.tools.cmd_installed(cmd):
                     return True
             return False
 
-        if need_install():
+        fallback_ssl_key_path = "/sandbox/cfg/ss/resty-auto-ssl-fallback.crt"
+        if force or need_install() or not j.sal.fs.exists(fallback_ssl_key_path):
+            j.servers.openresty.install()
             j.builders.web.openresty.install()
             j.builders.runtimes.lua.install()
             j.builders.db.zdb.install()

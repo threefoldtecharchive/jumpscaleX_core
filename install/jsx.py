@@ -325,7 +325,7 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
     installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt)
     if threebot:
         IT.Tools.execute(
-            "source %s/env.sh;kosmos 'j.servers.threebot.install()'" % SANDBOX, showout=True, timeout=3600 * 2
+            "source %s/env.sh;kosmos 'j.servers.threebot.install(force=True)'" % SANDBOX, showout=True, timeout=3600 * 2
         )
         # IT.Tools.execute("source %s/env.sh;kosmos 'j.servers.threebot.test()'" % SANDBOX, showout=True)
 
@@ -437,8 +437,8 @@ def basebuilder_(dest=None, push=False, configdir=None, delete=True):
     docker.save(image=dest, clean_runtime=True)
     if push:
         docker.push()
-    if delete:
-        docker.stop()
+    # if delete:
+    #     docker.stop()
     print("- *OK* base has been built, as image & exported")
 
 
@@ -619,14 +619,13 @@ def wireguard(name=None, configdir=None):
 
 
 @click.command()
-@click.option("-n", "--name", default="3bot", help="name of container")
 @click.option("-c", "--count", default=1, help="nr of containers")
 @click.option("-n", "--net", default="172.0.0.0/16", help="network range for docker")
 @click.option(
     "-d", "--delete", is_flag=True, help="if set will delete the test container for threebot if it already exists"
 )
 @click.option("-w", "--web", is_flag=True, help="if set will install the webcomponents")
-def threebot_test(delete=False, name="3bot", count=1, net="172.0.0.0/16", web=False):
+def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False):
     """
 
     :param delete:  delete the containers you want to use in this test
@@ -637,34 +636,77 @@ def threebot_test(delete=False, name="3bot", count=1, net="172.0.0.0/16", web=Fa
     :return:
     """
 
+    name = "3bot"
+
     def docker_jumpscale_get(name=name, delete=True):
         docker = e._DF.container_get(name=name, delete=delete)
-        docker.install()
-        docker.jumpscale_install()
-        # now we can access it over 172.0.0.2 normally
+        if docker.config.done_get("jumpscale") == False:
+            # means we have not installed jumpscale yet
+            docker.install()
+            docker.jumpscale_install()
+            # now we can access it over 172.0.0.x normally
+            docker.config.done_set("jumpscale")
+            docker.config.save()
         return docker
 
-    # tcp_port_connection_test(ipaddr, port, timeout=None
+    def configure():
+        """
+        will be executed in each container
+        :return:
+        """
+        j.clients.threebot.explorer_addr_set("{explorer_addr}")
+        docker_name = "{docker_name}"
+        j.tools.threebot.init_my_threebot(name="{docker_name}.3bot", interactive=False)
+        j.clients.threebot.explorer.reload()  # make sure we have the actors loaded
+        # lets low level talk to the phonebook actor
+        print(j.clients.threebot.explorer.actors_default.phonebook.get(name="{docker_name}.3bot"))
+        cl = j.clients.threebot.client_get("{docker_name}.3bot")
+
+        r1 = j.tools.threebot.explorer.threebot_record_get(name="{docker_name}.3bot")
+        print(r1)
+        r2 = j.tools.threebot.explorer.threebot_record_get(tid=cl.tid)
+        assert r2 == r1
+
+    def test():
+        docker_name = "{docker_name}"
+        nr_containers = int("{count}")
+        cl = j.clients.threebot.client_get("3bot.3bot")
+        cl2 = j.clients.threebot.client_get("3bot2.3bot")
+        # TODO: can now do more stuff here
+        # adding packages, get them to talk to each other, ...
 
     if web:
         web2 = "True"
     else:
         web2 = "False"
+    explorer_addr = None
     for i in range(count):
         if i > 0:
-            name1 = name + str(i)
+            name1 = name + str(i + 1)
         else:
             name1 = name
         docker = docker_jumpscale_get(name=name1, delete=delete)
-        if IT.MyEnv.platform() != "linux" and i == 0:
-            # only need to use wireguard if on osx or windows (windows not implemented)
-            # only do it on the first container
-            docker.sshexec("source /sandbox/env.sh;jsx wireguard")  # get the wireguard started
-            docker.wireguard.connect()
+        if i == 0:
+            # the master 3bot
+            explorer_addr = docker.config.ipaddr
+            if IT.MyEnv.platform() != "linux":
+                if docker.config.done_get("wireguard") == False:
+                    # only need to use wireguard if on osx or windows (windows not implemented)
+                    # only do it on the first container
+                    docker.sshexec("source /sandbox/env.sh;jsx wireguard")  # get the wireguard started
+                    docker.wireguard.connect()
+                    docker.config.done_set("wireguard")
 
-        docker.sshexec(
-            "source /sandbox/env.sh;kosmos 'j.servers.threebot.local_start_default(web=%s,packages_add=True)'" % web2
-        )
+        start_cmd = "j.servers.threebot.local_start_default(web=%s,packages_add=True)" % web2
+        if not docker.config.done_get("start_cmd"):
+            docker.jsxexec(start_cmd)
+        docker.config.done_set("start_cmd")
+        if not docker.config.done_get("config"):
+            docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
+        docker.config.done_set("config")
+    if count > 1:
+        # on last docker do the test
+        docker.jsxexec(test, docker_name=docker.name, count=count)
 
 
 @click.command(name="modules-install")

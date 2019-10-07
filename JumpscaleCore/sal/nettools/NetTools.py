@@ -261,6 +261,14 @@ class NetTools(JSBASE):
         else:
             return False
 
+    def getNicMain(self):
+        nics = j.sal.nettools.getNics(up=True)
+        nics.sort()
+        for x in nics:
+            if x.startswith("eth"):
+                return x
+        raise j.exceptions.Base("cannot find nic starting with name 'eth'")
+
     def getNics(self, up=False):
         """ Get Nics on this machine
         Works only for Linux/Solaris systems
@@ -592,17 +600,19 @@ class NetTools(JSBASE):
         else:
             raise j.exceptions.Base("not implemented")
 
-    def getIpAddress(self, interface):
+    def getIpAddress(self, interface=None):
         """Return a list of ip addresses and netmasks assigned to this interface"""
 
+        if not interface:
+            interface = self.getNicMain()
         if j.core.platformtype.myplatform.platform_is_linux or j.core.platformtype.myplatform.platform_is_osx:
             output = list()
-            output = j.builders.system.net.getInfo()
+            output = self.networkinfo_get()
             result = {"ip": [], "ip6": []}
             for nic in output:
                 if nic["name"] == interface:
-                    result["ip"].append(nic["ip"])
-                    result["ip6"].append(nic["ip6"])
+                    result["ip"].extend(nic["ip"])
+                    result["ip6"].extend(nic["ip6"])
                     return result
         elif j.core.platformtype.myplatform.platform_is_windows:
             import wmi

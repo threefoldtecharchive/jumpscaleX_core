@@ -1164,6 +1164,32 @@ class Tools:
         return logdict
 
     @staticmethod
+    def method_code_get(method, **kwargs):
+        """
+
+        :param method: the method to get the code from 
+        :param kwargs: will be replaced in {} template args in the method
+        :return:   (methodname,code)
+        """
+        assert callable(method)
+        code = inspect.getsource(method)
+        code2 = Tools.text_strip(code)
+        code3 = code2.replace("self,", "").replace("self ,", "").replace("self  ,", "")
+
+        if kwargs:
+            code3 = Tools.text_replace(code3, text_strip=False, args=kwargs)
+
+        methodname = ""
+        for line in code3.split("\n"):
+            if line.startswith("def "):
+                methodname = line.split("(", 1)[0].strip().replace("def ", "")
+
+        if methodname == "":
+            raise j.exceptions.Base("defname cannot be empty")
+
+        return methodname, code3
+
+    @staticmethod
     def _execute(command, die=True, env=None, cwd=None, useShell=True, async_=False, showout=True, timeout=3600):
 
         os.environ["PYTHONUNBUFFERED"] = "1"  # WHY THIS???
@@ -3984,6 +4010,8 @@ class BaseInstaller:
         rm -rf /usr/src
         mkdir -p /var/lib/apt/lists
         find . | grep -E "(__pycache__|\.bak$|\.pyc$|\.pyo$|\.rustup|\.cargo)" | xargs rm -rf
+        sed -i -r 's/^SECRET =.*/SECRET =/' /sandbox/cfg/jumpscale_config.toml
+        rm -f /sandbox/cfg/keys/default/*
         """
         return Tools.text_strip(CMD, replace=False)
 
@@ -3997,7 +4025,9 @@ class BaseInstaller:
         rm -rf /usr/lib/llvm-6.0
         rm -rf /usr/lib/gcc
         export SUDO_FORCE_REMOVE=no
-        apt autoremove -y
+        apt-mark manual wireguard-tools
+        apt-mark manual sudo
+        apt-get autoremove --purge -y
         rm -rf /var/lib/apt/lists
         mkdir -p /var/lib/apt/lists
         """
@@ -4535,6 +4565,33 @@ class DockerConfig:
         Tools.delete(self.path_vardir)
         self.load()
 
+    def done_get(self, name):
+        name2 = "done_%s" % name
+        if name2 not in self.__dict__:
+            self.__dict__[name2] = False
+            self.save()
+        return self.__dict__[name2]
+
+    def done_set(self, name):
+        name2 = "done_%s" % name
+        self.__dict__[name2] = True
+        self.save()
+
+    def done_reset(self, name):
+        name2 = "done_%s" % name
+        self.__dict__[name2] = False
+        self.save()
+
+    def val_get(self, name):
+        if name not in self.__dict__:
+            self.__dict__[name] = None
+            self.save()
+        return self.__dict__[name]
+
+    def val_set(self, name, val=None):
+        self.__dict__[name] = val
+        self.save()
+
     def load(self):
 
         if not Tools.exists(self.path_config):
@@ -4585,14 +4642,6 @@ class DockerContainer:
         if self.config.portrange == None:
             self.config._find_port_range()
             self.config.save()
-
-        if not self.config.ipaddr:
-            # get ipaddr when not known yet
-            cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % name
-            rc, out, err = Tools.execute(cmd, replace=False, showout=False, die=False)
-            if rc == 0:
-                self.config.ipaddr = out.strip()
-                self.config.save()
 
         if delete:
             self.delete()
@@ -4755,10 +4804,10 @@ class DockerContainer:
             if mount_dirs:
                 MOUNTS = """
                 -v {DIR_CODE}:/sandbox/code \
-                -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
-                -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
                 -v {DIR_BASE}/var/containers/shared:/sandbox/myhost \
                 """
+                # -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
+                # -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
 
             args["MOUNTS"] = Tools.text_replace(MOUNTS.strip(), args=args)
             args["CMD"] = self.config.startupcmd
@@ -4802,6 +4851,7 @@ class DockerContainer:
 
         if update or new:
             print(" - Configure / Start SSH server")
+            self.dexec("rm -rf /sandbox/cfg/keys")
             self.dexec("rm -f /root/.ssh/authorized_keys;/etc/init.d/ssh stop 2>&1 > /dev/null", die=False)
             self.dexec("/usr/bin/ssh-keygen -A")
             self.dexec("/etc/init.d/ssh start")
@@ -4819,7 +4869,15 @@ class DockerContainer:
 
         print(" - Create route to main 3bot container")
 
-        cm = "ip route add 10.10.0.0/16 via 172.17.0.2"
+        cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % self.name
+        rc, out, err = Tools.execute(cmd, replace=False, showout=False, die=False)
+        if rc == 0:
+            self.config.ipaddr = out.strip()
+            self.config.save()
+
+        if DockerFactory.container_name_exists("3bot") and self.name != "3bot":
+            d = DockerFactory.container_get("3bot")
+            cmd = "ip route add 10.10.0.0/16 via %s" % d.config.ipaddr
 
         print(" - CONTAINER STARTED")
 
@@ -4854,11 +4912,34 @@ class DockerContainer:
         """
         self.dexec("apt update;apt install ncdu -y;ncdu", interactive=True)
 
-    def sshexec(self, cmd, retry=None):
+    def sshexec(self, cmd, retry=None, asfile=True):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
         cmd2 = "ssh -oStrictHostKeyChecking=no -t root@localhost -A -p %s '%s'" % (self.config.sshport, cmd)
-        Tools.execute(cmd2, interactive=True, showout=False, replace=False, asfile=True, timeout=3600 * 2, retry=retry)
+        Tools.execute(
+            cmd2, interactive=True, showout=False, replace=False, asfile=asfile, timeout=3600 * 2, retry=retry
+        )
+
+    def jsxexec(self, cmd, **kwargs):
+        """
+        execute a jumpscale command in container, can be multiline
+        :param cmd:
+        :return:
+        """
+        if callable(cmd):
+            method_name, cmd = Tools.method_code_get(cmd, **kwargs)
+            cmd += "%s()" % method_name
+        name = self.config.name
+        sshport = self.config.sshport
+        cmd = "from Jumpscale import j\n%s" % cmd
+        Tools.file_write(f"/tmp/{name}.py", cmd)
+        cmd = f"scp -P {sshport} /tmp/{name}.py root@localhost:/tmp/{name}.py"
+        Tools.execute(cmd, showout=False, replace=False)
+        cmd = f"source /sandbox/env.sh;kosmos -p /tmp/{name}.py"
+        self.sshexec(cmd, asfile=True)
+
+    def kosmos(self):
+        self.jsxexec("j.shell()")
 
     def stop(self):
         if self.container_running:
@@ -5005,8 +5086,10 @@ class DockerContainer:
             self.stop()
             self.start(mount_dirs=False)
             clean(self, BaseInstaller.cleanup_script_get())
-            if clean_devel:
-                clean(self, BaseInstaller.cleanup_script_developmentenv_get())
+            ##LETS FOR NOW NOT DO IT YET, THERE SEEM TO BE SOME ISSUES
+            ##TODO: needs to be fixed to allow the base 3bot image to be smaller
+            # if clean_devel:
+            #     clean(self, BaseInstaller.cleanup_script_developmentenv_get())
             ename = image.replace("/", "_")
             if ":" in ename:
                 ename = ename.split(":")[0]
