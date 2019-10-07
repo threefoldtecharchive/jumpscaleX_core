@@ -738,13 +738,10 @@ class SystemProcess(JSBASE):
         """
         Returns pid of the process that is listening on the given port
         """
-        name = self.getProcessByPort(port)
-        if name is None:
+        process = self.getProcessByPort(port)
+        if process is None:
             return []
-        # print "found name:'%s'"%name
-        pids = j.sal.process.getProcessPid(name)
-        # print pids
-        return pids
+        return [process.pid]
 
     def killProcessByName(self, name, sig=None, match_predicate=None):
         """Kill all processes for a given command
@@ -778,67 +775,18 @@ class SystemProcess(JSBASE):
         """
         if port == 0:
             return None
-        if False and j.core.platformtype.myplatform.platform_is_linux:
-            command = "netstat -ntulp | grep ':%s '" % port
-            (exitcode, output, err) = j.sal.process.execute(command, die=False, showout=False)
-
-            # Not found if grep's exitcode  > 0
-            if not exitcode == 0:
-                return None
-
-            # Note: we can have multiline output. For example:
-            #   tcp        0      0 0.0.0.0:5432            0.0.0.0:*               LISTEN      28419/postgres
-            #   tcp6       0      0 :::5432                 :::*                    LISTEN      28419/postgres
-
-            regex = "^.+\s(\d+)/.+\s*$"
-            pid = -1
-            for line in output.splitlines():
-                match = re.match(regex, line)
-                if not match:
-                    raise j.exceptions.RuntimeError("Unexpected output from netstat -tanup: [%s]" % line)
-                pid_of_line = match.groups()[0]
-                if pid == -1:
-                    pid = pid_of_line
-                else:
-                    if pid != pid_of_line:
-
-                        raise j.exceptions.RuntimeError("Found multiple pids listening to port [%s]. Error." % port)
-            if pid == -1:
-                # No process found listening on this port
-                return None
-
-            # Need to set $COLUMNS such that we can grep full commandline
-            # Note: apparently this does not work on solaris
-            command = "bash -c 'env COLUMNS=300 ps -ef'"
-            (exitcode, output, err) = j.sal.process.execute(command, die=False, showout=False)
-            co = re.compile(
-                "\s*(?P<uid>[a-z]+)\s+(?P<pid>[0-9]+)\s+(?P<ppid>[0-9]+)\s+(?P<cpu>[0-9]+)\s+(?P<stime>\S+)\s+(?P<tty>\S+)\s+(?P<time>\S+)\s+(?P<cmd>.+)"
-            )
-            for line in output.splitlines():
-                match = co.search(line)
-                if not match:
-                    continue
-                gd = match.groupdict()
-                if gd["pid"] == pid:
-                    return gd["cmd"].strip()
-            return None
-        else:
-            # TODO: needs to be validated on mac & windows
-
-            for process in psutil.process_iter():
-                try:
-                    cc = [x for x in process.connections() if x.status == psutil.CONN_LISTEN]
-                except Exception as e:
-                    if str(e).find("psutil.AccessDenied") == -1:
-                        raise j.exceptions.RuntimeError(str(e))
-                    continue
-                if cc != []:
-                    for conn in cc:
-                        portfound = conn.laddr[1]
-                        if port == portfound:
-                            return process
-            return None
-            # raise j.exceptions.RuntimeError("This platform is not supported in j.sal.process.getProcessByPort()")
+        for process in psutil.process_iter():
+            try:
+                cc = [x for x in process.connections() if x.status == psutil.CONN_LISTEN]
+            except Exception as e:
+                if str(e).find("psutil.AccessDenied") == -1:
+                    raise j.exceptions.RuntimeError(str(e))
+                continue
+            if cc != []:
+                for conn in cc:
+                    if port == conn.laddr.port:
+                        return process
+        return None
 
     # IS NOW IN SYSTEMPPROCESS OLD no idea why we have all of this double
     # run = staticmethod(run)
