@@ -13,7 +13,7 @@ class ThreeBotPackage(JSConfigBase):
         path = ""
         threebot_server_name = "default"
         branch = ""
-        status = "init,running,halted,disabled,error" (E)
+        status = "init,installed,running,halted,disabled,error" (E)
         """
 
     @property

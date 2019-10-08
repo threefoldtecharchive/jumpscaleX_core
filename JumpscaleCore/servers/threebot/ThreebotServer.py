@@ -148,17 +148,29 @@ class ThreeBotServer(j.baseclasses.object_config):
                 "webinterface",
                 path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot/webinterface/",
             )
-
             # add user added packages
             for package in j.tools.threebot_packages.find():
+                if package.status == "INIT":
+                    self._log_warning("PREPARE:%s" % package.name)
+                    package.prepare()
+                    package.status = "INSTALLED"
+                    package.save()
                 if package.status not in ["disabled"]:
-                    try:
-                        package.start()
-                    except Exception as e:
-                        j.core.tools.log(level=50, exception=e, stdout=True)
-                        package.status = "error"
+                    self._log_warning("START:%s" % package.name)
+                    package.start()
+                    package.status = "RUNNING"
+                    package.save()
+                    # try:
+                    #     package.start()
+                    # except Exception as e:
+                    #     j.core.tools.log(level=50, exception=e, stdout=True)
+                    #     package.status = "error"
             if web:
+                self._log_info("OPENRESTY START")
                 self.openresty_server.start()
+                # for in case was already loaded
+                j.servers.threebot.current.openresty_server.reload()
+
             self.rack_server.start()
 
         else:

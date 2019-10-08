@@ -68,7 +68,11 @@ class package_manager(j.baseclasses.threebot_actor):
 
         package.save()
         package.prepare()
+        package.status = "INSTALLED"
+        package.save()
         package.start()
+        package.status = "RUNNING"
+        package.save()
 
         if j.servers.threebot.current.web:
             # reload openresty configuration if web is enabled for this threebot server

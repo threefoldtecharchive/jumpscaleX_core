@@ -42,7 +42,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def local_start_default(self, web=False, packages_add=False):
+    def local_start_default(self, web=True, packages_add=False):
         """
 
         kosmos -p 'j.servers.threebot.local_start_default()'
@@ -79,7 +79,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         return client
 
-    def test(self, name="threebot_phonebook", wiki=False, web=False, fileserver=False):
+    def test(self, name="threebot_phonebook", wiki=True, web=False, fileserver=False):
         """
 
         kosmos 'j.servers.threebot.test(name="basic")'
@@ -110,7 +110,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         if wiki:
             gedis_client.actors.package_manager.package_add(
-                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/wiki"
+                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/threebot/wiki"
             )
 
         gedis_client.reload()
