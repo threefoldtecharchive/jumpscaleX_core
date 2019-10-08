@@ -270,6 +270,7 @@ def container_install(
 
 def container_get(name="3bot", delete=False, jumpscale=False):
     IT.MyEnv.sshagent.key_default_name
+    e.DF.init()
     docker = e.DF.container_get(name=name, image="threefoldtech/3bot", start=True, delete=delete)
     if jumpscale:
         # needs to stay because will make sure that the config is done properly in relation to your shared folders from the host
@@ -606,16 +607,10 @@ def wireguard(name=None, configdir=None):
     enable wireguard, can be on host or server
     :return:
     """
-    assert name
-    if not e._DF.indocker():
-        docker = container_get(name=name)
-        # remotely execute wireguard
-        docker.sshexec("source /sandbox/env.sh;jsx wireguard")
-        docker.wireguard.connect()
-    else:
-        wg = IT.WireGuard()
-        wg.install()
-        wg.server_start()
+    docker = container_get(name=name)
+    wg = docker.wireguard
+    wg.server_start()
+    wg.connect()
 
 
 @click.command()
@@ -693,7 +688,7 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False):
                 if docker.config.done_get("wireguard") == False:
                     # only need to use wireguard if on osx or windows (windows not implemented)
                     # only do it on the first container
-                    docker.sshexec("source /sandbox/env.sh;jsx wireguard")  # get the wireguard started
+                    docker.wireguard.server_start()
                     docker.wireguard.connect()
                     docker.config.done_set("wireguard")
 
