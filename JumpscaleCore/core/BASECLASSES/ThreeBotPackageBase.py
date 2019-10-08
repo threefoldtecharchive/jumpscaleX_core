@@ -60,6 +60,16 @@ class ThreeBotPackageBase(JSBase):
 
         self.bcdb.models_add(path=self.package_root + "/models")
         self.gedis_server.actors_add(self.package_root + "/actors", namespace="default")
+        self.gedis_server.chatbot.chatflows_load(self.package_root + "/chatflows")
+
+        def load_wiki(path=None, name=None):
+            wiki = j.tools.markdowndocs.load(path=path, name=name, pull=False)
+            wiki.write()
+
+        path = self.package_root + "%s/wiki"
+        if j.sal.fs.exists(path):
+            name = self._package.name
+            j.servers.myjobs.schedule(load_wiki, name=name, path=path)
 
     def stop(self):
         """
