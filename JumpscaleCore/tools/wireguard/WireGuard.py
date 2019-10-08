@@ -135,7 +135,6 @@ class WireGuard(j.baseclasses.object_config):
         else:
             up = True
 
-
         if up:
             # interface is not up let's bring it up
             self.executor.execute(f"wg-quick up {configpath}")
