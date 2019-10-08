@@ -443,6 +443,41 @@ def basebuilder_(dest=None, push=False, configdir=None, delete=True):
     print("- *OK* base has been built, as image & exported")
 
 
+@click.command()
+@click.option("-n", "--name", default=None, help="name of the wiki, you're given name")
+@click.option("-u", "--url", default=None, help="url of the github wiki")
+@click.option("-f", "--foreground", is_flag=True, help="if you don't want to use the job manager (background jobs)")
+@click.option("-p", "--pull", is_flag=True, help="pull content from github")
+@click.option("--download", is_flag=True, help="download the images")
+def wiki_load(name=None, url=None, foreground=False, pull=False, download=False):
+    from Jumpscale import j
+
+    def load_wiki(url=None, repo=None, pull=False, download=False):
+        wiki = j.tools.markdowndocs.load(path=url, name=repo, pull=pull)
+        wiki.write()
+
+    if not name or not url:
+        r = []
+        r.append(("tokens", "https://github.com/threefoldfoundation/info_tokens/tree/development/docs"))
+        r.append(("foundation", "https://github.com/threefoldfoundation/info_foundation/tree/development/docs"))
+        r.append(("grid", "https://github.com/threefoldfoundation/info_grid/tree/development/docs"))
+        r.append(("freeflowevents", "https://github.com/freeflownation/info_freeflowevents/tree/development/docs"))
+        r.append(("testwikis", "https://github.com/waleedhammam/test_custom_md/tree/master/docs"))
+
+        for repo, url in r:
+            if name and name != repo:
+                continue
+            if foreground:
+                load_wiki(repo=repo, url=url, download=download, pull=pull)
+            else:
+                j.servers.myjobs.schedule(load_wiki, repo=repo, url=url, download=download, pull=pull)
+    else:
+        if foreground:
+            load_wiki(name, url, download=download, pull=pull)
+        else:
+            j.servers.myjobs.schedule(load_wiki, repo=name, url=url, download=download, pull=pull)
+
+
 @click.command(name="threebotbuilder")
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 @click.option("-b", "--base", is_flag=True, help="build base image as well")
@@ -760,6 +795,7 @@ if __name__ == "__main__":
     cli.add_command(generate)
     cli.add_command(wireguard)
     cli.add_command(modules_install, "modules-install")
+    cli.add_command(wiki_load, "wiki-load")
 
     # DO NOT DO THIS IN ANY OTHER WAY !!!
     if not e._DF.indocker():
