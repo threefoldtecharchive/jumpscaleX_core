@@ -15,7 +15,7 @@ os.environ["LC_ALL"] = "en_US.UTF-8"
 
 def load_install_tools(branch=None):
     # get current install.py directory
-    path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py"
+    path = os.path.expanduser("~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py")
     if not branch:
         branch = DEFAULT_BRANCH
     # first check on code tools
