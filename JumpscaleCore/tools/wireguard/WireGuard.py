@@ -125,8 +125,18 @@ class WireGuard(j.baseclasses.object_config):
 
         configpath = f"/tmp/{self.interface_name}.conf"
         self.executor.file_write(configpath, config)
-        rc, _, _ = self.executor.execute(f"wg show {self.interface_name}", die=False)
-        if rc != 0:
+        rc, output, _ = self.executor.execute(f"ip a s dev {self.interface_name}", die=False)
+        up = False
+        if rc == 0:
+            info = j.sal.nettools.networkinfo_parse_ip(output)[0]
+            if info["ip"][0] != self.network_private.split("/")[0]:
+                self.executor.execute(f"ip l d {self.interface_name}")
+                up = True
+        else:
+            up = True
+
+
+        if up:
             # interface is not up let's bring it up
             self.executor.execute(f"wg-quick up {configpath}")
         else:

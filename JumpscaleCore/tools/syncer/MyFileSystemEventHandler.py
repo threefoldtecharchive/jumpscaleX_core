@@ -7,8 +7,7 @@ from watchdog.events import FileSystemEventHandler
 
 # from watchdog.events import LoggingEventHandler
 from watchdog.observers import Observer
-from watchdog.observers.fsevents import *
-import time
+from watchdog.events import FileModifiedEvent, DirModifiedEvent
 
 # from gevent import Greenlet
 # import gevent
@@ -98,6 +97,7 @@ class MyFileSystemEventHandler(FileSystemEventHandler, JSBASE):
         :param action:
         :return:
         """
+        print("event:%s" % event)
         self._log_info("event:%s" % event)
         if self._period != 0 and action == "copy":
             self._cleanup_done()
