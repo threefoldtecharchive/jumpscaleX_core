@@ -34,18 +34,6 @@ def enable_cors(fn):
     return _enable_cors
 
 
-    @property
-    def _json(self):
-        return j.data.serializers.json.dumps(self._ddict)  # DO NOT USE THE HR ONE
-
-    @property
-    def _toml(self):
-        return j.data.serializers.toml.dumps(self._ddict)
-
-    @property
-    def _msgpack(self):
-        return j.data.serializers.msgpack.dumps(self._ddict)
-
 @app.route("/<name>/<cmd>", method="post")
 @enable_cors
 def client_handler(name, cmd):
