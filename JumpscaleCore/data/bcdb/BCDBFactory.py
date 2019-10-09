@@ -109,12 +109,30 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             res.append(bcdb)
         return res
 
-    def index_rebuild(self):
+    def index_rebuild(self, name=None, storclient=None):
         """
-        kosmos 'j.data.bcdb.index_rebuild()'
+        kosmos 'j.data.bcdb.index_rebuild(name="system")'
+
+        can get a stor client by e.g.
+            storclient = j.clients.sqlitedb.client_get(namespace="system")
+            storclient = j.clients.zdb.client_get...
+
+        if you use a stor client then the metadata for BCDB will not be used
+
+
         :return:
         """
-        for bcdb in self.instances:
+        if not name:
+            for bcdb in self.instances:
+                bcdb.index_rebuild()
+        elif storclient:
+            bcdb = self._get(name, storclient=storclient)
+            bcdb.index_rebuild()
+        elif name == "system":
+            bcdb = self.get_system()
+            bcdb.index_rebuild()
+        else:
+            bcdb = self.get(name=name)
             bcdb.index_rebuild()
 
     def check(self):
