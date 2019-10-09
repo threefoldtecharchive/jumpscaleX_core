@@ -1,5 +1,5 @@
 from Jumpscale import j
-
+import traceback
 from bottle import post, run, response, request, Bottle
 
 app = Bottle()
@@ -34,6 +34,18 @@ def enable_cors(fn):
     return _enable_cors
 
 
+    @property
+    def _json(self):
+        return j.data.serializers.json.dumps(self._ddict)  # DO NOT USE THE HR ONE
+
+    @property
+    def _toml(self):
+        return j.data.serializers.toml.dumps(self._ddict)
+
+    @property
+    def _msgpack(self):
+        return j.data.serializers.msgpack.dumps(self._ddict)
+
 @app.route("/<name>/<cmd>", method="post")
 @enable_cors
 def client_handler(name, cmd):
@@ -51,10 +63,22 @@ def client_handler(name, cmd):
     if content_type not in ["json", "msgpack"]:
         response.status = 400
         return f"content_type needs to be either json or msgpack"
+
     response.headers["Content-Type"] = f"application/{content_type}"
-    result = command(**data["args"])
-    if content_type:
-        result = getattr(result, f"_{content_type}", result)
+    try:
+
+        result = command(**data["args"])
+    except Exception as ex:
+        err = "".join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__))
+        response.status = 400
+        result = {"error": err}
+        if content_type == "json":
+            result = j.data.serializers.json.dumps(result)
+        else: #msgpack
+            result = j.data.serializers.msgpack.dumps(result)
+    else:
+        if content_type:
+            result = getattr(result, f"_{content_type}", result)
     return result
 
 
