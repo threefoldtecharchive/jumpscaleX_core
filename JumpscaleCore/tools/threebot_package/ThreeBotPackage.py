@@ -68,9 +68,9 @@ class ThreeBotPackage(JSConfigBase):
     def bcdb(self):
         return self._package_author.bcdb
 
-    def prepare(self, *args):
+    def prepare(self):
         self._init_before_action()
-        self._package_author.prepare(*args)
+        self._package_author.prepare()
 
     def start(self):
         self._init_before_action()
