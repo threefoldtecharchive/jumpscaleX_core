@@ -170,7 +170,8 @@ class ThreeBotServer(j.baseclasses.object_config):
                 self.openresty_server.start()
                 # for in case was already loaded
                 j.servers.threebot.current.openresty_server.reload()
-
+            app = j.servers.bottle_web.get_app()
+            j.servers.threebot.default.rack_server.bottle_server_add(name="test", port=9999, app=app, websocket=True)
             self.rack_server.start()
 
         else:
