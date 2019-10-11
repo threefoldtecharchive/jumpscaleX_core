@@ -380,6 +380,8 @@ class BCDBModel(j.baseclasses.object):
                     raise
 
         if index:
+            # self._log_debug(obj)
+            # print(obj)
             try:
                 self.index.set(obj)
             except j.clients.peewee.IntegrityError as e:
@@ -389,7 +391,9 @@ class BCDBModel(j.baseclasses.object):
                     # never ever delete when object exists, so only when new
                     self.storclient.delete(obj.id)
                 else:
-                    j.shell()
+                    # j.shell()
+                    raise j.exceptions.Input("Could not insert object, unique constraint failed:%s" % e, data=obj)
+
                 obj.id = None
                 if str(e).find("UNIQUE") != -1:
                     raise j.exceptions.Input("Could not insert object, unique constraint failed:%s" % e, data=obj)
