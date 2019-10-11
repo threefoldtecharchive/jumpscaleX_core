@@ -240,7 +240,7 @@ class StartupCMD(j.baseclasses.object_config):
             if self.pid and self.pid > 0:
                 self._log_info("found process to stop:%s" % self.pid)
                 p = self.process
-                if p and self.state == "running":
+                if p and self.state in ["running","stopping"]:
                     p.kill()
                     time.sleep(0.2)
 
@@ -248,6 +248,8 @@ class StartupCMD(j.baseclasses.object_config):
 
         if self.executor == "background":
             # only process mechanism above can have worked
+            if not self.pid and self.state == "stopping":
+                self._notify_state("stopped")
             return False
         elif self.executor == "corex":
             if not self.corex_id:
@@ -370,6 +372,9 @@ class StartupCMD(j.baseclasses.object_config):
                 # we found a process so can take decision now
                 if self.state == "running":
                     # self process sets the state
+                    return True
+                elif j.sal.process.psfind("startupcmd_%s" % self.name):
+                    self._notify_state("running")
                     return True
                 else:
                     return False
