@@ -14,7 +14,6 @@ class TestOdooServer(BaseTest):
         self.info(" Stop odoo server.")
         self.odoo_server.stop()
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/92")
     def test01_create_database(self):
         """
         - ​Install and start odoo server , and get new instance of it . 
@@ -23,7 +22,6 @@ class TestOdooServer(BaseTest):
         - Check that new data base created successfully.
         - stop odoo server.
         """
-
         self.info("Create new database ")
         database = self.odoo_server.databases.new()
         self.set_database_data(database)
@@ -35,7 +33,7 @@ class TestOdooServer(BaseTest):
         self.assertIn(database.name, databases)
 
         self.info("Check that new database created successfully.")
-        database_client = self.odoo_server.get_client(database.name)
+        database_client = self.odoo_server.client_get(database.name)
         user_name = self.rand_string()
         user_password = self.rand_string()
         database_client.user_add(user_name, user_password)
@@ -114,7 +112,7 @@ class TestOdooServer(BaseTest):
         self.odoo_server.save()
 
         self.info("Export created database, check that zip file exist.")
-        export_dir = "/root/exports"
+        export_dir = "/root/exports/"
         output, error = self.os_command("mkdir {}".format(export_dir))
         self.odoo_server.database_export(db.name, export_dir)
         output, error = self.os_command(" ls /root/exports")
@@ -122,9 +120,8 @@ class TestOdooServer(BaseTest):
 
         self.info("Import database, check that imported database exist in database list")
         self.odoo_server.databases_reset()
-        database_name = str(uuid.uuid4()).replace("-", "")[1:10]
-        self.odoo_server.database_import(database_name, export_dir)
-        self.assertIn(database_name, self.odoo_server.databases_list())
+        self.odoo_server.database_import(db.name, export_dir)
+        self.assertIn(db.name, self.odoo_server.databases_list())
 
     @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/92")
     def test05_write_and_read(self):

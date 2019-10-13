@@ -44,18 +44,3 @@ class TestZdbServer(BaseTest):
         output, error = self.os_command(" ls /sandbox/var/zdb")
         self.assertNotIn(self.zdb.name, output.decode())
 
-
-    def test02_destroy_zdb(self):
-        """
-        - ​Install zdb server.
-        - Start zdb server .
-        - Destroy .
-        - Get zdb client and make sure it works correctly .
-        """
-        self.info("Create namespace using client_admin_get.")
-        admin_client = self.zdb.client_admin_get()
-        namespace = self.rand_string()
-        result = admin_client.namespace_new(namespace)
-        self.assertEqual(result.nsname, namespace)
-
-        self.info("Get zdb client and make sure i
