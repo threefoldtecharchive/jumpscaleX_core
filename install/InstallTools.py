@@ -3956,6 +3956,7 @@ class BaseInstaller:
                 "ujson",
                 "Pillow>=4.1.1",
                 "bottle==0.12.17",
+                "bottle-websocket==0.2.9",
             ],
             # level 2: full install
             2: [

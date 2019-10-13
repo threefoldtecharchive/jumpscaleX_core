@@ -61,6 +61,9 @@ class Syncer(j.baseclasses.object_config):
 
         if cl.name not in self.sshclients:
             self.sshclients[cl.name] = cl
+            if not cl.name in self.sshclient_names:
+                self.sshclient_names.append(cl.name)
+                self.save()
 
     def _init(self, **kwargs):
 
@@ -76,14 +79,11 @@ class Syncer(j.baseclasses.object_config):
         self._log_info("syncer started")
 
         # self.paths = []
+
+        # TODO I have intialized the paths manually to be able to trace the code
+        self.paths = []
         if self.paths == []:
-            for item in [
-                "jumpscaleX_builders",
-                "jumpscaleX_core/",
-                "jumpscaleX_libs",
-                "jumpscaleX_libs_extra",
-                "jumpscaleX_threebot",
-            ]:
+            for item in ["jumpscaleX_core/JumpscaleCore/tools/syncer"]:
                 self.paths.append("{DIR_CODE}/github/threefoldtech/%s" % item)
             self.save()
 
@@ -143,12 +143,17 @@ class Syncer(j.baseclasses.object_config):
         time.sleep(3600)
 
     def handler(self, event, action="copy"):
+        self._log_info("syncer handle")
+        self._log_info("event:%s" % event)
+        self._log_info("action:%s" % action)
+
         self._log_debug("%s:%s" % (event, action))
         for key, sshclient in self.sshclients.items():
             if sshclient.executor.isContainer:
                 continue
-            self._log_debug("open sftp to sshclient '%s'" % key)
-            ftp = sshclient.sftp
+            # self._log_debug("open sftp to sshclient '%s'" % key)
+            # # ftp = sshclient.sftp
+            # j.shell()
             changedfile = event.src_path
             if event.src_path.endswith((".swp", ".swx")):
                 return
@@ -190,6 +195,7 @@ class Syncer(j.baseclasses.object_config):
                             rc = 0
                             self._log_info("OK")
                         except Exception as e:
+                            j.shell()
                             if str(e).find("SocketSendError") != -1:
                                 rc = 1
                                 continue
@@ -235,10 +241,10 @@ class Syncer(j.baseclasses.object_config):
         sync all code to the remote destinations, uses config as set in jumpscale.toml
 
         """
+
         for key, sshclient in self.sshclients.items():
 
             if sshclient.executor.isContainer:
-
                 continue
 
             for item in self._get_paths(executor=sshclient.executor):
