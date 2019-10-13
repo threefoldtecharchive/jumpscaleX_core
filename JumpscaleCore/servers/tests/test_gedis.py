@@ -3,11 +3,14 @@ from base_test import BaseTest
 import random, requests, uuid, unittest
 
 
-ACTORS_PATH = "/sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/servers/gedis/pytests/actors"
+ACTORS_PATH = (
+    "/sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/servers/gedis/pytests/test_package/actors"
+)
 ACTOR_FILE_1 = "simple"
 ACTOR_FILE_2 = "actor"
 
-
+#
+@unittest.SkipTest
 class TestGedisServer(BaseTest):
     def setUp(self):
         self.info("​Get gedis server instance.")
@@ -17,13 +20,19 @@ class TestGedisServer(BaseTest):
 
         self.info("Add new actor,Start server ")
         self.namespace = self.rand_string()
-        self.gedis_server.add_actor(path="{}/{}.py".format(ACTORS_PATH, ACTOR_FILE_1), namespace=self.namespace)
+        self.gedis_server.actor_add(path="{}/{}.py".format(ACTORS_PATH, ACTOR_FILE_1), namespace=self.namespace)
         self.gedis_server.save()
-        self.gedis_server.start()
+        self.os_command(
+            'tmux new -d -s {} \' kosmos -p "j.servers.gedis.get(name=\\"{}\\").start() "\' '.format(
+                self.rand_string(), self.instance_name
+            )
+        )
 
     def tearDown(self):
         self.gedis_server.stop()
+        output, error = self.os_command("netstat -nltp | grep '{}' ".format(self.port))
         self.gedis_server.delete()
+        self.assertFalse(output.decode())
 
     @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/92")
     def test01_actor_add(self):
@@ -44,8 +53,12 @@ class TestGedisServer(BaseTest):
         """
         self.info("Add two actors ,Start server.")
         self.gedis_server.stop()
-        self.gedis_server.add_actor(path="{}/{}.py".format(ACTORS_PATH, ACTOR_FILE_2), namespace=self.namespace)
-        self.gedis_server.start()
+        self.gedis_server.actor_add(path="{}/{}.py".format(ACTORS_PATH, ACTOR_FILE_2), namespace=self.namespace)
+        self.os_command(
+            'tmux new -d -s {} \' kosmos -p "j.servers.gedis.get(name=\\"{}\\").start() "\' '.format(
+                self.rand_string(), self.instance_name
+            )
+        )
 
         self.info(" Check that actors methods list works correctly.")
         methods_list = self.gedis_server.actors_methods_list(name=self.namespace)
@@ -76,8 +89,12 @@ class TestGedisServer(BaseTest):
         - check that actors added and client can get from both of them .
         """
         self.gedis_server.stop()
-        self.gedis_server.add_actors(path=ACTORS_PATH, namespace=self.namespace)
-        self.gedis_server.start()
+        self.gedis_server.actors_add(path=ACTORS_PATH, namespace=self.namespace)
+        self.os_command(
+            'tmux new -d -s {} \' kosmos -p "j.servers.gedis.get(name=\\"{}\\").start() "\' '.format(
+                self.rand_string(), self.instance_name
+            )
+        )
 
         self.assertIn(ACTOR_FILE_2, self.gedis_server.actors_list(self.namespace))
         cl = self.gedis_server.client_get(namespace=self.namespace)
@@ -97,7 +114,11 @@ class TestGedisServer(BaseTest):
         self.gedis_server.actors_data = "{}:{}/{}.py".format(self.namespace, ACTORS_PATH, ACTOR_FILE_2)
         self.gedis_server.load_actors()
 
-        self.gedis_server.start()
+        self.os_command(
+            'tmux new -d -s {} \' kosmos -p "j.servers.gedis.get(name=\\"{}\\").start() "\' '.format(
+                self.rand_string(), self.instance_name
+            )
+        )
         self.assertIn(ACTOR_FILE_2, self.gedis_server.actors_list(self.namespace))
         cl = self.gedis_server.client_get(namespace=self.namespace)
         arg_1 = random.randint(11, 55)

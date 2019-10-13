@@ -6,32 +6,19 @@ from loguru import logger
 class BaseTest(unittest.TestCase):
     LOGGER = logger
     LOGGER.add("server_{time}.log")
-    SERVERS = [
-        "corex",
-        "mail_forwarder",
-        "etcd",
-        "zdb",
-        "odoo",
-        "sonic",
-        "sanic",
-        "capacity",
-        "flask",
-        "errbot",
-        "gedis_websocket",
-        "gedis",
-        "sockexec",
-        "threebot",
-    ]
-    INSTALLED_SERVER = ["mail_forwarder", "gedis"]
+    SERVERS = ["corex", "etcd", "zdb", "odoo", "sonic", "sanic", "capacity", "flask", "gedis_websocket", "sockexec"]
+    INSTALLED_SERVER = ["gedis", "gedis_websocket"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def info(self, message):
+    @staticmethod
+    def info(message):
         BaseTest.LOGGER.info(message)
 
-    def os_command(self, command):
-        self.info("Execute : {} ".format(command))
+    @staticmethod
+    def os_command(command):
+        BaseTest.info("Execute : {} ".format(command))
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         output, error = process.communicate()
         return output, error
@@ -41,5 +28,5 @@ class BaseTest(unittest.TestCase):
         database.admin_email = "{}@example.com".format(database.name)
         database.admin_passwd_ = self.rand_string()
 
-    def rand_string(self):
+    def rand_string(self, size=10):
         return str(uuid.uuid4()).replace("-", "")[1:10]
