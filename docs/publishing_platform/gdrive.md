@@ -21,3 +21,9 @@ cl.save()
 ```bash
 mkdir -p /sandbox/var/gdrive/static/{doc,slide,sheet} 
 ```
+
+## more info 
+
+see https://github.com/threefoldtech/jumpscaleX_core/blob/development/docs/tools/wiki/docsites/macros/slideshow.md
+
+

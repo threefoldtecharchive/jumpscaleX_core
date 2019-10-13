@@ -36,7 +36,7 @@ class ExecutorSSH(ExecutorBase):
         @RETURN rc, out, err
         """
         if env or sudo or script:
-            raise j.exceptions.NotFound("Not implemented for ssh execuor")
+            raise j.exceptions.NotFound("Not implemented for ssh executor")
         return self.sshclient.execute(cmd, interactive, showout, replace, die, timeout)
 
     @property

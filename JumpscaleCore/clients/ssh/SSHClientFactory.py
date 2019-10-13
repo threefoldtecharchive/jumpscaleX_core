@@ -31,6 +31,21 @@ class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
         """
         kosmos 'j.clients.ssh.test()'
         """
+        wg = self.master.wireguard_server
+        # wg.executor.file_write("/var/test", "test")
+        # r = wg.executor.file_read("/var/test")
+        # assert r == "test"
+        #
+        # wg.executor.file_write("/var/test", b"test")
+        # r = wg.executor.file_read("/var/test")
+        # assert r == "test" or r == b"test"
+        # wg.config["test"] = ["bb"]
+        # wg.save()
+
+        wg.server_start()
+
+        j.shell()
+        w
 
         # TODO:*1 create docker make sure default key is used in the docker
         # d = j.sal.docker.create(name='test', ports='22:8022', vols='', volsro='', stdout=True, base='phusion/baseimage',

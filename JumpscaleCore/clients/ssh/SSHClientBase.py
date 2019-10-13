@@ -30,12 +30,20 @@ class SSHClientBase(j.baseclasses.object_config):
         meta = {} (DICT)
         """
 
+    @property
+    def wireguard_server(self):
+        if not self._wireguard:
+            from Jumpscale.core.InstallTools import WireGuardServer
+
+            self._wireguard = WireGuardServer(self.addr, port=self.port)
+        return self._wireguard
+
     def _init(self, **kwargs):
         self._client_ = None
         self._env_on_system = None
         self._uid = None
         self.executor = j.tools.executor.ssh_get(self)
-
+        self._wireguard = None
         self._init3()
 
     def state_reset(self):
