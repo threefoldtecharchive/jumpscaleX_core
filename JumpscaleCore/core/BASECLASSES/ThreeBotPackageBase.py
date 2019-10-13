@@ -57,16 +57,23 @@ class ThreeBotPackageBase(JSBase):
         called when the 3bot starts
         :return:
         """
+        models_path = self.package_root + "/models"
+        if j.sal.fs.exists(models_path):
+            self.bcdb.models_add(path=models_path)
 
-        self.bcdb.models_add(path=self.package_root + "/models")
-        self.gedis_server.actors_add(self.package_root + "/actors", namespace="default")
-        self.gedis_server.chatbot.chatflows_load(self.package_root + "/chatflows")
+        actors_path  = self.package_root + "/actors"
+        if j.sal.fs.exists(actors_path):
+            self.gedis_server.actors_add(actors_path, namespace="default")
+
+        chatflows_path = self.package_root + "/chatflows"
+        if j.sal.fs.exists(chatflows_path):
+            self.gedis_server.chatbot.chatflows_load(chatflows_path)
 
         def load_wiki(path=None, name=None):
             wiki = j.tools.markdowndocs.load(path=path, name=name, pull=False)
             wiki.write()
 
-        path = self.package_root + "%s/wiki"
+        path = self.package_root + "/wiki"
         if j.sal.fs.exists(path):
             name = self._package.name
             j.servers.myjobs.schedule(load_wiki, name=name, path=path)
