@@ -3,7 +3,7 @@ from Jumpscale import j
 JSBASE = j.baseclasses.object
 
 
-from watchdog.events import FileSystemEventHandler
+from watchdog.events import FileSystemEventHandler, FileModifiedEvent, DirModifiedEvent
 
 # from watchdog.events import LoggingEventHandler
 from watchdog.observers import Observer
@@ -102,8 +102,10 @@ class MyFileSystemEventHandler(FileSystemEventHandler, JSBASE):
         if self._period != 0 and action == "copy":
             self._cleanup_done()
             if event.src_path in self._done:
+                self._log_info("the handles returned and didn't excute")
                 return
             self._done[event.src_path] = j.data.time.epoch
+        self._log_info("the handles is going to excute")
         self.syncer.handler(event, action=action)
 
     def _on_modified(self, event):
