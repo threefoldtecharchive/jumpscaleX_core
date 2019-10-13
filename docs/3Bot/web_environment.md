@@ -16,7 +16,7 @@ if web:
         bottle server for webinterface (gedis to http)          (port:8903)
         bottle server for bcdfs (filemanager)                   (port:8904) serves the bcdbfs content
     map on openresty: on port 80 and 443
-        $addr/api/actors_websocket
-        $addr/api/actors
+        $addr/web/gedis/http_websocket
+        $addr/web/gedis/http
         $addr/api/filemanager
 ```
