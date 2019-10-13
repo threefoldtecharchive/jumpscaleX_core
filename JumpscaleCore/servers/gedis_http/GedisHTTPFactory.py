@@ -62,7 +62,7 @@ def client_handler(name, cmd):
         result = {"error": err}
         if content_type == "json":
             result = j.data.serializers.json.dumps(result)
-        else: #msgpack
+        else:  # msgpack
             result = j.data.serializers.msgpack.dumps(result)
     else:
         if content_type:

@@ -240,7 +240,7 @@ class StartupCMD(j.baseclasses.object_config):
             if self.pid and self.pid > 0:
                 self._log_info("found process to stop:%s" % self.pid)
                 p = self.process
-                if p and self.state in ["running","stopping"]:
+                if p and self.state in ["running", "stopping"]:
                     p.kill()
                     time.sleep(0.2)
 
