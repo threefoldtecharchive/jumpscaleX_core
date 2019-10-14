@@ -12,8 +12,8 @@ class TestSMTPIMAP(BaseTest):
 
         steps:
             - Start SMTP server in tmux
-            - Connect to the server, should success.
-            - Send a message to the server, should success.
+            - Connect to the server, should succeed.
+            - Send a message to the server, should succeed.
             - Check the database, Should have the message.
         :return:
         """
@@ -51,9 +51,9 @@ class TestSMTPIMAP(BaseTest):
         Client can create folders in his mail.
 
         Steps:
-        - Start imap server, should success.
+        - Start imap server, should succeed.
         - List default folder, inbox should be there.
-        - Create new folder, should success.
+        - Create new folder, should succeed.
         """
         cmd = "kosmos 'j.servers.imap.start()'"
         self.info('Execute {} in tmux main session'.format(cmd))
@@ -86,7 +86,7 @@ class TestSMTPIMAP(BaseTest):
            Steps:
            - Start smtp server, shoud success.
            - Send message to smtp server.
-           - Start imap server, should success.
+           - Start imap server, should succeed.
            - List default folder, inbox should be there.
            - Client should get the message from the database.
         """
