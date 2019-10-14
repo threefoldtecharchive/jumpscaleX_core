@@ -1,5 +1,6 @@
 from Jumpscale import j
 from .Syncer import Syncer
+import gevent
 
 
 class SyncerFactory(j.baseclasses.object_config_collection_testtools):
@@ -13,17 +14,9 @@ class SyncerFactory(j.baseclasses.object_config_collection_testtools):
         will push default code directories to remove ssh host
         """
 
-        # for name in self._children:
-        #     self.syncers[name].sync()
         syncs = j.tools.syncer.find()
-        for syncer in syncs:
-            syncer.sync()
-
-        if monitor:
-            # start monitor in worker
-            syncer.monitor()
-        # if monitor:
-        #     self.monitor()
+        threads = [gevent.spawn(syncer.sync()) for syncer in syncs]
+        gevent.joinall(threads)
 
     def test(self):
         """
