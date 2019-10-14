@@ -35,6 +35,6 @@ check in web browser ip that wireguard give it to you
 check in web browser ip of docker container
 
 #### to check slides and macros
-How to use gslides: https://github.com/threefoldtech/jumpscaleX_core/blob/d8ab86c405144f7b6811827991f2b97f7a933ccc/docs/tools/wiki/docsites/macros/gslide.md
+See how to setup a [service account](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/docs/wikis/tech/service_account.md) and use [gslide macro](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/docs/wikis/macro/gslide.md).
 
-then via browser: your-ip/wiki/testwikis
+Then open your browser at `https://your-ip/wiki/testwikis`.
