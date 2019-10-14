@@ -143,6 +143,7 @@ class Syncer(j.baseclasses.object_config):
         time.sleep(3600)
 
     def handler(self, event, action="copy"):
+        self._log_info("......................new event........................")
         self._log_info("syncer handle")
         self._log_info("event:%s" % event)
         self._log_info("action:%s" % action)
@@ -169,6 +170,7 @@ class Syncer(j.baseclasses.object_config):
                 self._log_info("directory changed")
                 return self.sync(monitor=False)  # no need to continue
             else:
+                self._log_info("changed file name: %s" % changedfile)
                 if changedfile.find("/.git") != -1:
                     return
                 elif changedfile.find("/__pycache__/") != -1:
@@ -180,6 +182,7 @@ class Syncer(j.baseclasses.object_config):
                 elif changedfile.endswith("___"):
                     return
                 dest = self._path_dest_get(executor=sshclient.executor, src=changedfile)
+                self._log_info("destination file name: %s" % dest)
 
                 e = ""
                 self._log_debug("action:%s for %s" % (action, changedfile))
@@ -219,6 +222,8 @@ class Syncer(j.baseclasses.object_config):
                             else:
                                 rc = 1
                                 continue
+                    elif action == "moved":
+                        self._log_debug("moving event : %s:%s" % (changedfile, dest))
                     else:
                         raise j.exceptions.JSBUG("action not understood in filesystemhandler on sync:%s" % action)
 
