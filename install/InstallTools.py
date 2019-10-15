@@ -1168,7 +1168,7 @@ class Tools:
     def method_code_get(method, **kwargs):
         """
 
-        :param method: the method to get the code from 
+        :param method: the method to get the code from
         :param kwargs: will be replaced in {} template args in the method
         :return:   (methodname,code)
         """
@@ -3956,6 +3956,7 @@ class BaseInstaller:
                 "ujson",
                 "Pillow>=4.1.1",
                 "bottle==0.12.17",
+                "bottle-websocket==0.2.9",
             ],
             # level 2: full install
             2: [
@@ -4814,12 +4815,9 @@ class DockerContainer:
             new = False
 
         if new or delete or not self.container_running:
-
-            # lets make sure we pull the image from the hub, in case the image is not here yet
-            if not DockerFactory.image_name_exists(self.config.image):
-                # First make sure the latest docker image is present if the image does not exist yet
-                run_image_update_cmd = Tools.text_replace("docker image pull {IMAGE}", args=args)
-                Tools.execute(run_image_update_cmd, interactive=False)
+            # lets make sure we have the latest image
+            run_image_update_cmd = Tools.text_replace("docker image pull {IMAGE}", args=args)
+            Tools.execute(run_image_update_cmd, interactive=False)
 
             # Now create the container
             MOUNTS = ""
@@ -5881,7 +5879,7 @@ class ExecutorSSH:
         set +ex
         ls "/sandbox"  > /dev/null 2>&1 && echo 'ISSANDBOX = 1' || echo 'ISSANDBOX = 0'
 
-        ls "/sandbox/bin/python3"  > /dev/null 2>&1 && echo 'ISSANDBOX_BIN = 1' || echo 'ISSANDBOX_BIN = 0'                        
+        ls "/sandbox/bin/python3"  > /dev/null 2>&1 && echo 'ISSANDBOX_BIN = 1' || echo 'ISSANDBOX_BIN = 0'
         echo UNAME = \""$(uname -mnprs)"\"
         echo "HOME = $HOME"
         echo HOSTNAME = "$(hostname)"
@@ -6245,7 +6243,7 @@ class WireGuardServer:
         for client_id, client in self.config["clients"].items():
 
             C2 = """
-            
+
             [Peer]
             PublicKey = {WIREGUARD_CLIENT_PUBKEY}
             AllowedIPs = 10.{SUBNET}.0/24
@@ -6271,7 +6269,7 @@ class WireGuardServer:
         self.config_local["SUBNET"] = self._subnet_calc(self.myid)
         C = Tools.text_replace(C, args=self.config_local)
         C2 = """
-        
+
         [Peer]
         PublicKey = {WIREGUARD_SERVER_PUBKEY}
         Endpoint = {WIREGUARD_ADDR}:{WIREGUARD_PORT}

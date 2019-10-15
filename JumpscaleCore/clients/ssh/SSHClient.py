@@ -32,7 +32,7 @@ class SSHClient(SSHClientBase):
 
             passwd = None
 
-            from pssh.clients import SSHClient as PSSHCLIENT
+            from pssh.clients import ParallelSSHClient as PSSHCLIENT
 
             # SSHClient = functools.partial(PSSHClient, retry_delay=1)
 
@@ -45,14 +45,15 @@ class SSHClient(SSHClientBase):
                 "ssh connection: %s@%s:%s (passwd:%s,key:%s)"
                 % (self.login, self.addr_variable, self.port_variable, passwd, pkey)
             )
-
+            hosts = []
+            hosts.append(self.addr_variable)
             try:
                 self._client_ = PSSHCLIENT(
-                    self.addr_variable,
+                    hosts,
                     user=self.login,
                     password=passwd,
                     port=self.port_variable,
-                    pkey=pkey,
+                    proxy_pkey=pkey,
                     num_retries=10,
                     allow_agent=self.allow_agent,
                     timeout=self.timeout,
@@ -66,8 +67,20 @@ class SSHClient(SSHClientBase):
         return self._client_
 
     def _execute(self, cmd, showout=True, die=True, timeout=None):
+
         # print ("execute", cmd, showout, die, timeout)
-        channel, _, stdout, stderr, _ = self._client.run_command(cmd, timeout=timeout, use_pty=True)
+        # channel, _, stdout, stderr, _ = self._client.run_command(cmd, timeout=timeout, use_pty=True)
+
+        output = self._client.run_command(cmd)
+        client = output[self.addr_variable]
+        channel = client.channel
+        stdout = client.stdout
+        stderr = client.stderr
+
+        # for host, host_output in output.items():
+        #     for line in host_output.stdout:
+        #         print(line)
+
         # self._client.wait_finished(channel)
 
         def _consume_stream(stream, printer, buf=None):
@@ -80,7 +93,7 @@ class SSHClient(SSHClientBase):
 
         out = _consume_stream(stdout, self._log_debug)
         err = _consume_stream(stderr, self._log_error)
-        self._client.wait_finished(channel)
+        # self._client.wait_finished(channel)
         _consume_stream(stdout, self._log_debug, out)
         _consume_stream(stderr, self._log_error, err)
 

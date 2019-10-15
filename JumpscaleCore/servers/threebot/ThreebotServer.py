@@ -170,7 +170,6 @@ class ThreeBotServer(j.baseclasses.object_config):
                 self.openresty_server.start()
                 # for in case was already loaded
                 j.servers.threebot.current.openresty_server.reload()
-
             self.rack_server.start()
 
         else:

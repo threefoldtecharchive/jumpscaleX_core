@@ -124,8 +124,9 @@ class SSHClientBase(j.baseclasses.object_config):
             raise j.exceptions.Value("Local file cannot be a dir")
         destination = j.sal.fs.getDirName(remote_file)
         self.executor.dir_ensure(destination)
-        self._client.scp_send(local_file, remote_file, recurse=False, sftp=None)
+        self._client.scp_send(local_file, remote_file, recurse=False)
         self._log_debug("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
+        self._log_info("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
 
     def _replace(self, txt, paths_executor=True):
         if "{" in txt:
@@ -291,6 +292,7 @@ class SSHClientBase(j.baseclasses.object_config):
         :param showout:
         :return:
         """
+
         source = self._replace(source)
         if not dest:
             dest = source
