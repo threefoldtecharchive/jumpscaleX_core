@@ -487,7 +487,7 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
         else:
             j.servers.myjobs.schedule(load_wiki, repo=name, url=url, download=download, pull=pull)
 
-    print("You'll find the wiki loaded at https://<container or 3bot hostname>/wiki")
+    print("You'll find the wiki(s) loaded at https://<container or 3bot hostname>/wiki")
 
 
 @click.command(name="threebotbuilder")
