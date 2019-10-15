@@ -477,7 +477,7 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
                 j.servers.myjobs.schedule(load_wiki, repo=repo, url=url, download=download, pull=pull)
     else:
         if foreground:
-            load_wiki(name, url, download=download, pull=pull)
+            load_wiki(url, name, download=download, pull=pull)
         else:
             j.servers.myjobs.schedule(load_wiki, repo=name, url=url, download=download, pull=pull)
 
