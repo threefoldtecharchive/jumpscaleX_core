@@ -145,15 +145,6 @@ class Syncer(j.baseclasses.object_config):
         # j.shell()
         time.sleep(3600)
 
-    def ignore_file(self, file_name):
-        file_extension = j.sal.fs.getFileExtension(file_name)
-        if file_extension is "":
-            return True
-        result = file_name.split(".")
-        if result.count(file_extension) > 1:
-            return True
-        return False
-
     def handler(self, event, action="copy"):
         # TODO Remove logging and log file after fixing all the issues
         path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/tools/log.txt"
@@ -212,9 +203,6 @@ class Syncer(j.baseclasses.object_config):
                 e = ""
                 self._log_debug("action:%s for %s" % (action, changedfile))
 
-                # handle ignored file
-                is_ignored = self.ignore_file(changedfile)
-
                 rc = 1
                 counter = 0
                 while rc == 1 and counter < 10:
@@ -246,10 +234,9 @@ class Syncer(j.baseclasses.object_config):
                     elif action == "delete":
                         logs_file.write("delete action will excute : %s:%s \n" % (changedfile, dest))
                         self._log_debug("delete: %s:%s" % (changedfile, dest))
-                        if is_ignored:
-                            return
+
                         try:
-                            cmd = "rm %s" % dest
+                            cmd = "rm -f %s" % dest
                             logs_file.write("The CMD command : %s \n" % (cmd))
                             sshclient.execute(cmd)
                             rc = 0
