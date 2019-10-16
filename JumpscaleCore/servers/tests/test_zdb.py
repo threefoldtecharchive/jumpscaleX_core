@@ -43,4 +43,3 @@ class TestZdbServer(BaseTest):
 
         output, error = self.os_command(" ls /sandbox/var/zdb")
         self.assertNotIn(self.zdb.name, output.decode())
-

@@ -35,4 +35,3 @@ class SyncerFactory(j.baseclasses.object_config_collection_testtools):
         s.sshclients_add([cl, cl2])
 
         s.sync(monitor=True)
-

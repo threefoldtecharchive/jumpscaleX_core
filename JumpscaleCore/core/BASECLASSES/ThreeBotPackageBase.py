@@ -61,7 +61,7 @@ class ThreeBotPackageBase(JSBase):
         if j.sal.fs.exists(models_path):
             self.bcdb.models_add(path=models_path)
 
-        actors_path  = self.package_root + "/actors"
+        actors_path = self.package_root + "/actors"
         if j.sal.fs.exists(actors_path):
             self.gedis_server.actors_add(actors_path, namespace="default")
 
