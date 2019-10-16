@@ -467,7 +467,7 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
     wikis = []
 
     if not name or not url:
-        wikis.append(("testwikis", "https://github.com/waleedhammam/test_custom_md/tree/master/docs"))
+        wikis.append(("testwikis", "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/docs/wikis/examples/docs"))
         wikis.append(("tokens", "https://github.com/threefoldfoundation/info_tokens/tree/development/docs"))
         wikis.append(("foundation", "https://github.com/threefoldfoundation/info_foundation/tree/development/docs"))
         wikis.append(("grid", "https://github.com/threefoldfoundation/info_grid/tree/development/docs"))
@@ -483,7 +483,8 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
             ).id
             for wiki_name, wiki_url in wikis
         ]
-        j.servers.myjobs.wait(job_ids, timeout=None)
+
+        j.servers.myjobs.wait(job_ids, timeout=None, die=False)
         # FIXME: myjobs stop does not work properly
         # j.servers.myjobs.stop()
 
