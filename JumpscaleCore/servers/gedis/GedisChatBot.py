@@ -70,6 +70,12 @@ class GedisChatBotFactory(JSBASE):
             # Each chatflow file must have `chat` method which contains all logic/questions
             self.chat_flows[module_name] = loaded_chatflow.chat
 
+    def chatflows_list(self):
+        """
+        lists all loaded chatflows
+        """
+        return list(self.chat_flows.keys())
+
 
 class GedisChatBotSession(JSBASE):
     """
