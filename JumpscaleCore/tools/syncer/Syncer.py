@@ -81,12 +81,14 @@ class Syncer(j.baseclasses.object_config):
 
         self._log_info("syncer started")
 
-        # self.paths = []
-
-        # TODO I have intialized the paths manually to be able to trace the code
-        self.paths = []
         if self.paths == []:
-            for item in ["jumpscaleX_core/JumpscaleCore/tools/syncer"]:
+            for item in [
+                "jumpscaleX_builders",
+                "jumpscaleX_core/",
+                "jumpscaleX_libs",
+                "jumpscaleX_libs_extra",
+                "jumpscaleX_threebot",
+            ]:
                 self.paths.append("{DIR_CODE}/github/threefoldtech/%s" % item)
             self.save()
 
