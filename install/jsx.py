@@ -454,11 +454,17 @@ def basebuilder_(dest=None, push=False, configdir=None, delete=True):
 @click.option("-p", "--pull", is_flag=True, help="pull content from github")
 @click.option("--download", is_flag=True, help="download the images")
 def wiki_load(name=None, url=None, foreground=False, pull=False, download=False):
+    # monkey patch for myjobs to start/work properly
+    from gevent import monkey
+    monkey.patch_all(subprocess=False)
     from Jumpscale import j
 
     def load_wiki(url=None, repo=None, pull=False, download=False):
         wiki = j.tools.markdowndocs.load(path=url, name=repo, pull=pull)
         wiki.write()
+
+    if not foreground:
+        j.servers.myjobs.workers_tmux_start()
 
     if not name or not url:
         r = []
@@ -477,9 +483,11 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
                 j.servers.myjobs.schedule(load_wiki, repo=repo, url=url, download=download, pull=pull)
     else:
         if foreground:
-            load_wiki(name, url, download=download, pull=pull)
+            load_wiki(url, name, download=download, pull=pull)
         else:
             j.servers.myjobs.schedule(load_wiki, repo=name, url=url, download=download, pull=pull)
+
+    print("You'll find the wiki(s) loaded at https://<container or 3bot hostname>/wiki")
 
 
 @click.command(name="threebotbuilder")
