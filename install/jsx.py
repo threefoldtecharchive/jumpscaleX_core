@@ -460,33 +460,36 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
     monkey.patch_all(subprocess=False)
     from Jumpscale import j
 
-    def load_wiki(url=None, repo=None, pull=False, download=False):
-        wiki = j.tools.markdowndocs.load(path=url, name=repo, pull=pull)
+    def load_wiki(wiki_name, wiki_url, pull=False, download=False):
+        wiki = j.tools.markdowndocs.load(path=wiki_url, name=wiki_name, pull=pull)
         wiki.write()
 
-    if not foreground:
-        j.servers.myjobs.workers_tmux_start()
+    wikis = []
 
     if not name or not url:
-        r = []
-        r.append(("tokens", "https://github.com/threefoldfoundation/info_tokens/tree/development/docs"))
-        r.append(("foundation", "https://github.com/threefoldfoundation/info_foundation/tree/development/docs"))
-        r.append(("grid", "https://github.com/threefoldfoundation/info_grid/tree/development/docs"))
-        r.append(("freeflowevents", "https://github.com/freeflownation/info_freeflowevents/tree/development/docs"))
-        r.append(("testwikis", "https://github.com/waleedhammam/test_custom_md/tree/master/docs"))
-
-        for repo, url in r:
-            if name and name != repo:
-                continue
-            if foreground:
-                load_wiki(repo=repo, url=url, download=download, pull=pull)
-            else:
-                j.servers.myjobs.schedule(load_wiki, repo=repo, url=url, download=download, pull=pull)
+        wikis.append(("testwikis", "https://github.com/waleedhammam/test_custom_md/tree/master/docs"))
+        wikis.append(("tokens", "https://github.com/threefoldfoundation/info_tokens/tree/development/docs"))
+        wikis.append(("foundation", "https://github.com/threefoldfoundation/info_foundation/tree/development/docs"))
+        wikis.append(("grid", "https://github.com/threefoldfoundation/info_grid/tree/development/docs"))
+        wikis.append(("freeflowevents", "https://github.com/freeflownation/info_freeflowevents/tree/development/docs"))
     else:
-        if foreground:
-            load_wiki(url, name, download=download, pull=pull)
-        else:
-            j.servers.myjobs.schedule(load_wiki, repo=name, url=url, download=download, pull=pull)
+        wikis.append((name, url))
+
+    if not foreground:
+        j.servers.myjobs.workers_tmux_start(nr_workers=len(wikis))
+        job_ids = [
+            j.servers.myjobs.schedule(
+                load_wiki, wiki_name=wiki_name, wiki_url=wiki_url, download=download, pull=pull
+            ).id
+            for wiki_name, wiki_url in wikis
+        ]
+        j.servers.myjobs.wait(job_ids, timeout=None)
+        # FIXME: myjobs stop does not work properly
+        # j.servers.myjobs.stop()
+
+    else:
+        for wiki_name, wiki_url in wikis:
+            load_wiki(wiki_name, wiki_url, download=download, pull=pull)
 
     print("You'll find the wiki(s) loaded at https://<container or 3bot hostname>/wiki")
 

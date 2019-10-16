@@ -246,6 +246,8 @@ class FileStream:
             content = content + stream
         else:
             for line in stream.readlines():
+                if isinstance(line, bytes):
+                    line = line.decode()
                 content = content + line + "\n"
         self._vfile.content = content
         self._vfile.size_bytes = len(self._vfile.content.encode())
