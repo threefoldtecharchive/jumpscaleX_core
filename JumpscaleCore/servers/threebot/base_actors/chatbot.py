@@ -45,3 +45,6 @@ class chatbot(j.baseclasses.threebot_actor):
         ```
         """
         return json.dumps(self.chatbot.session_new(topic))
+
+    def chatflows_list(self, user_session=None):
+        return self.chatbot.chatflows_list()
