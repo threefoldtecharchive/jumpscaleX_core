@@ -747,13 +747,18 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
                     docker.wireguard.connect()
                     docker.config.done_set("wireguard")
 
-        start_cmd = "j.servers.threebot.local_start_default(web=%s,packages_add=True)" % web2
         if not docker.config.done_get("start_cmd"):
-            docker.jsxexec(start_cmd)
+            if web:
+                docker.sshexec(
+                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_default()';jsx wiki-load")
+            else:
+                start_cmd = "j.servers.threebot.local_start_default(web=False,packages_add=True)"
+                docker.jsxexec(start_cmd)
         docker.config.done_set("start_cmd")
         if not docker.config.done_get("config"):
             docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
         docker.config.done_set("config")
+
     if count > 1:
         # on last docker do the test
         docker.jsxexec(test, docker_name=docker.name, count=count)
