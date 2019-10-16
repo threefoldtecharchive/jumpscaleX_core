@@ -456,6 +456,7 @@ def basebuilder_(dest=None, push=False, configdir=None, delete=True):
 def wiki_load(name=None, url=None, foreground=False, pull=False, download=False):
     # monkey patch for myjobs to start/work properly
     from gevent import monkey
+
     monkey.patch_all(subprocess=False)
     from Jumpscale import j
 
@@ -667,7 +668,8 @@ def wireguard(name=None, configdir=None):
     "-d", "--delete", is_flag=True, help="if set will delete the test container for threebot if it already exists"
 )
 @click.option("-w", "--web", is_flag=True, help="if set will install the webcomponents")
-def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False):
+@click.option("-p", "--pull", is_flag=True, help="pull the docker image")
+def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
     """
 
     :param delete:  delete the containers you want to use in this test
@@ -679,6 +681,9 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False):
     """
 
     name = "3bot"
+    if pull:
+        cmd = "docker pull threefoldtech/3bot"
+        IT.Tools.execute(cmd, interactive=True)
 
     def docker_jumpscale_get(name=name, delete=True):
         docker = e._DF.container_get(name=name, delete=delete)

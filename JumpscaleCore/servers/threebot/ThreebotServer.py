@@ -149,8 +149,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                 path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot/webinterface/",
             )
             j.tools.threebot_packages.get(
-                "wiki",
-                path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot/wiki/",
+                "wiki", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot/wiki/"
             )
             # add user added packages
             for package in j.tools.threebot_packages.find():
