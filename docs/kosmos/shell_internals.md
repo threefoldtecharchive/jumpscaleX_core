@@ -58,7 +58,7 @@ See [more about prompt-toolit key bindings](https://python-prompt-toolkit.readth
 
 
 ## Custom filters
-We define some custom fitlers that we use inside layouts and key bindings, filters are just prompt-toolkit [filters](https://python-prompt-toolkit.readthedocs.io/en/master/pages/advanced_topics/filters.html), but we inherit from the custom `PythonInputFilter` defined in [ptpython.filters](https://github.com/prompt-toolkit/ptpython/blob/master/ptpython/filters.py#L13).
+We define some custom fitlers that we use inside layouts and key bindings, filters are just prompt-toolkit [filters](https://python-prompt-toolkit.readthedocs.io/en/stable/pages/advanced_topics/filters.html), but we inherit from the custom `PythonInputFilter` defined in [ptpython.filters](https://github.com/prompt-toolkit/ptpython/blob/master/ptpython/filters.py#L13).
 
 
 ```python
@@ -89,7 +89,7 @@ You can check [KosmosShell.py](https://github.com/threefoldtech/jumpscaleX_core/
 
 
 ## Updating layout
-[ptpython](https://github.com/prompt-toolkit/ptpython) creates a [prompt-toolkit](https://python-prompt-toolkit.readthedocs.io/en/stable/) application, [and setup the layout](https://github.com/threefoldtech/jumpscaleX_core/blob/d3b46156ac2f8f2724b3c78177930a2c4a22017a/JumpscaleCore/core/KosmosShell.py#L204-L216), we get the main container of this layout and add our custom containers to it.
+[ptpython](https://github.com/prompt-toolkit/ptpython) creates a [prompt-toolkit](https://python-prompt-toolkit.readthedocs.io/en/stable/) application, [and setup the layout](https://github.com/prompt-toolkit/ptpython/blob/master/ptpython/layout.py#L495), we get the main container of this layout and add our custom containers to it.
 
 ```python
 def get_ptpython_parent_container(repl):
