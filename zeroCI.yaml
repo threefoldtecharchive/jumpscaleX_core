@@ -10,9 +10,12 @@ install:
   - declare strs=('libs' 'libs_extra' 'builders' 'threebot') && for s in ${strs[@]}; do git clone https://github.com/threefoldtech/jumpscaleX_$s.git --branch development; done
   - cp -r /opt/code/github/threefoldtech/jumpscaleX_core /sandbox/code/github/threefoldtech/jumpscaleX_core
   - source /sandbox/env.sh; js_init generate
+  - source /sandbox/env.sh; kosmos "j.builders.runtimes.lua.install(reset=True)"
 
 script:
   - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v --with-noseexclude 
    --exclude-dir=JumpscaleCore/servers/ JumpscaleCore/ --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
   - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v test_loader.py:CoreTests 
    --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
+  - source /sandbox/env.sh; nosetests-3.4 -v /sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot/wiki/tests/ 
+   --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=Test_wikis
