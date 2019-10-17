@@ -568,23 +568,26 @@ class BCDBModel(j.baseclasses.object):
         field = "id"
         if _count:
             field = 'count("id")'
-        if kwargs == {}:
-            query = f"SELECT {field} FROM {self.index.sql_table_name};"
-        else:
-            query = f"SELECT {field} FROM {self.index.sql_table_name} WHERE "
-            first = True
+        whereclause = ""
+        if kwargs:
             for key, val in kwargs.items():
-                if not first:
-                    query += " AND"
+                if whereclause:
+                    whereclause += " AND"
                 if isinstance(val, bool):
                     if val:
                         val = 1
                     else:
                         val = 0
-                query += f" {key} = ?"
+                whereclause += f" {key} = ?"
                 values.append(val)
-                first = False
-            query += ";"
+            whereclause += ";"
+        return self.query_model([field], whereclause, values)
+
+    def query_model(self, fields, whereclause=None, values=None):
+        fieldstring = ", ".join(fields)
+        query = f"select {fieldstring} FROM {self.index.sql_table_name} "
+        if whereclause:
+            query += f"where {whereclause}"
         return self.index.db.execute_sql(query, values)
 
     def find_ids(self, nid=None, **kwargs):
