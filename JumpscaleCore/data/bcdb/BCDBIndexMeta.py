@@ -28,6 +28,7 @@ JSBASE = j.baseclasses.object
 class IndexField:
     def __init__(self, property):
         self.name = property.name
+        self.attr = property.attr
         self.jumpscaletype = property.jumpscaletype
         self.unique = property.unique
         if self.jumpscaletype.NAME == "string":

@@ -26,12 +26,13 @@ JSBASE = j.baseclasses.object
 class SchemaProperty(j.baseclasses.object):
     def _init(self, **kwargs):
 
-        self.name = ""
-        self.jumpscaletype = None
-        self.comment = ""
-        self.nr = 0
+        self.name = kwargs.get("name", "")
+        self.attr = kwargs.get("attr", "")
+        self.jumpscaletype = kwargs.get("jumpscaletype", None)
+        self.comment = kwargs.get("comments", "")
+        self.nr = kwargs.get("nr", 0)
         self._default = None
-        self.index = False  # as used in sqlite
+        self.index = kwargs.get("index", False)  # as used in sqlite
         self.index_key = False  # is for indexing the keys
         self.index_text = False  # is for full text index
         self.unique = False  # to check if type is unique or not
