@@ -3,7 +3,7 @@ You'll find a description on how every part of our custom shell was implemented.
 
 [ptpython](https://github.com/prompt-toolkit/ptpython) uses [prompt-toolkit](https://python-prompt-toolkit.readthedocs.io/en/stable/), so, when we mention internals, it's mostly related to the prompt-toolkit application (like containers, layout...etc) and it's better to explore this docs before going through this document.
 
-The start point for our modifications the configration function of [ptpython],  we use `embed()` of ptpython repl, which can take a configure function that takes `repl` as a [PythonRepl](https://github.com/prompt-toolkit/ptpython/blob/master/ptpython/repl.py#L42) object:
+The start point for our modifications is the configration function of `ptpython`,  we use `embed()` of `ptpython.repl`, which can take a configure function that takes `repl` as a [PythonRepl](https://github.com/prompt-toolkit/ptpython/blob/master/ptpython/repl.py#L42) object:
 
 
 ```python
