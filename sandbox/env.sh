@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-
-export PBASE=/sandbox
+if [ -e /sandbox ]; then
+    export PBASE=/sandbox
+else
+    export PBASE=~/sandbox
+fi
 
 export PATH=$PBASE/bin:/bin:/usr/local/bin:/usr/bin:/bin:$PATH
 

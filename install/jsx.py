@@ -89,7 +89,6 @@ def jumpscale_get(die=True):
 
 # have to do like this, did not manage to call the click enabled function (don't know why)
 def _configure(
-    basedir=None,
     codedir=None,
     debug=False,
     sshkey=None,
@@ -97,13 +96,12 @@ def _configure(
     no_interactive=False,
     privatekey_words=None,
     secret=None,
-    configdir=None,
+    
 ):
     interactive = not no_interactive
     sshagent_use = not no_sshagent
 
     IT.MyEnv.configure(
-        basedir=basedir,
         readonly=None,
         codedir=codedir,
         sshkey=sshkey,
@@ -111,7 +109,7 @@ def _configure(
         debug_configure=debug,
         interactive=interactive,
         secret=secret,
-        configdir=configdir,
+        
     )
     j = jumpscale_get(die=False)
 
@@ -141,13 +139,7 @@ def cli():
 
 # CONFIGURATION (INIT) OF JUMPSCALE ENVIRONMENT
 @click.command()
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if /sandbox exists otherwise ~/sandbox")
 @click.option("--codedir", default=None, help="path where the github code will be checked out, default sandbox/code")
-@click.option(
-    "--basedir",
-    default=None,
-    help="path where JSX will be installed default /sandbox if /sandbox exists otherwise ~/sandbox",
-)
 @click.option("--no-sshagent", is_flag=True, help="do you want to use an ssh-agent")
 @click.option("--sshkey", default=None, help="if more than 1 ssh-key in ssh-agent, specify here")
 @click.option("--debug", is_flag=True, help="do you want to put kosmos in debug mode?")
@@ -161,7 +153,6 @@ def cli():
     "--secret", default=None, help="secret for the private key (to keep secret), default will get from ssh-key"
 )
 def configure(
-    basedir=None,
     codedir=None,
     debug=False,
     sshkey=None,
@@ -169,14 +160,13 @@ def configure(
     no_interactive=False,
     privatekey=None,
     secret=None,
-    configdir=None,
+    
 ):
     """
     initialize 3bot (JSX) environment
     """
 
     return _configure(
-        basedir=basedir,
         codedir=codedir,
         debug=debug,
         sshkey=sshkey,
@@ -189,7 +179,6 @@ def configure(
 
 # INSTALL OF JUMPSCALE IN CONTAINER ENVIRONMENT
 @click.command(name="container-install")
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("-n", "--name", default="3bot", help="name of container")
 @click.option(
     "--scratch", is_flag=True, help="from scratch, means will start from empty ubuntu and re-install everything"
@@ -228,7 +217,7 @@ def container_install(
     reinstall=False,
     no_interactive=False,
     pull=False,
-    configdir=None,
+    
     develop=False,
 ):
     """
@@ -243,7 +232,7 @@ def container_install(
     # IT.MyEnv.interactive = True
     # interactive = not no_interactive
 
-    _configure(configdir=configdir, no_interactive=no_interactive)
+    _configure( no_interactive=no_interactive)
 
     if scratch:
         image = "threefoldtech/base"
@@ -284,7 +273,6 @@ def container_get(name="3bot", delete=False, jumpscale=False):
 
 # INSTALL OF JUMPSCALE IN CONTAINER ENVIRONMENT
 @click.command()
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("--threebot", is_flag=True, help="also install the threebot system")
 # @click.option("--no-sshagent", is_flag=True, help="do you want to use an ssh-agent")
 @click.option("--prebuilt", is_flag=True, help="if set will allow a quick start using prebuilt threebot")
@@ -314,7 +302,7 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
     # print("DEBUG:: no_sshagent", no_sshagent, "configdir", configdir)  #no_sshagent=no_sshagent
     IT = load_install_tools(branch=branch)
     # IT.MyEnv.interactive = True
-    _configure(configdir="/sandbox/cfg", basedir="/sandbox", no_interactive=no_interactive)
+    _configure( no_interactive=no_interactive)
     SANDBOX = IT.MyEnv.config["DIR_BASE"]
     if reinstall:
         # remove the state
@@ -340,12 +328,11 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
 
 
 @click.command(name="container-import")
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/saendbox/cfg")
 @click.option("-n", "--name", default="3bot", help="name of container")
 @click.option("-i", "--imagename", default="threefoldtech/3bot", help="name of image where we will import to")
 @click.option("-p", "--path", default=None, help="image location")
 @click.option("--no-start", is_flag=True, help="container will start auto")
-def container_import(name="3bot", path=None, imagename="threefoldtech/3bot", no_start=False, configdir=None):
+def container_import(name="3bot", path=None, imagename="threefoldtech/3bot", no_start=False):
     """
     import container from image file, if not specified will be /tmp/3bot.tar
     :param args:
@@ -357,24 +344,22 @@ def container_import(name="3bot", path=None, imagename="threefoldtech/3bot", no_
 
 
 @click.command(name="container-export")
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("-n", "--name", default="3bot", help="name of container")
 @click.option("-p", "--path", default=None, help="image location")
 @click.option("-v", "--version", default=None, help="image location")
-def container_export(name="3bot", path=None, version=None, configdir=None):
+def container_export(name="3bot", path=None, version=None):
     """
     export the 3bot to image file, if not specified will be /tmp/3bot.tar
     :param name:
     :param path:
     :return:
     """
-    _configure(configdir=configdir)
+    _configure()
     docker = container_get(name=name)
     docker.export(path=path, version=version)
 
 
 @click.command(name="container-save")
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("-n", "--name", default="3bot", help="name of container")
 @click.option(
     "--dest", default="threefoldtech/3bot", help="name of container image on docker hub, default threefoldtech/3bot"
@@ -382,7 +367,7 @@ def container_export(name="3bot", path=None, version=None, configdir=None):
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 @click.option("-c", "--clean", is_flag=True, help="clean runtime")
 @click.option("-cd", "--cleandevel", is_flag=True, help="clean development env")
-def container_save(name="3bot", dest=None, push=False, clean=False, cleandevel=False, configdir=None):
+def container_save(name="3bot", dest=None, push=False, clean=False, cleandevel=False):
     """
     starts from an export, if not there will do the export first
     :param name:
@@ -391,7 +376,7 @@ def container_save(name="3bot", dest=None, push=False, clean=False, cleandevel=F
     """
     if not dest:
         dest = "threefoldtech/3bot"
-    _configure(configdir=configdir)
+    _configure()
     docker = container_get(name=name)
     docker.save(image=dest, clean_runtime=clean, clean_devel=cleandevel)
     if push:
@@ -399,15 +384,14 @@ def container_save(name="3bot", dest=None, push=False, clean=False, cleandevel=F
 
 
 @click.command(name="container-stop")
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("-n", "--name", default="3bot", help="name of container")
-def container_stop(name="3bot", configdir=None):
+def container_stop(name="3bot"):
     """
     stop the 3bot container
     :param name:
     :return:
     """
-    _configure(configdir=configdir)
+    _configure()
     if name in e.DF.containers_running():
         docker = container_get(name=name)
         docker.stop()
@@ -419,21 +403,21 @@ def container_stop(name="3bot", configdir=None):
 )
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 @click.option("-c", "--cont", is_flag=True, help="don't delete continue a previously stopped run")
-def basebuilder(dest=None, push=False, configdir=None, cont=False):
+def basebuilder(dest=None, push=False,  cont=False):
     """
     create the base ubuntu docker which we can use as base for everything
     :param dest: default threefoldtech/base  the base is the base ubuntu image
     :return:
     """
     delete = not cont
-    basebuilder_(dest=dest, push=push, configdir=configdir, delete=delete)
+    basebuilder_(dest=dest, push=push,  delete=delete)
 
 
-def basebuilder_(dest=None, push=False, configdir=None, delete=True):
+def basebuilder_(dest=None, push=False,  delete=True):
     if not dest:
         dest = "threefoldtech/base"
     IT = load_install_tools(branch=DEFAULT_BRANCH)
-    _configure(configdir=configdir)
+    _configure()
 
     image = "phusion/baseimage:master"
     # image = "unilynx/phusion-baseimage-1804"
@@ -499,7 +483,7 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 @click.option("-b", "--base", is_flag=True, help="build base image as well")
 @click.option("-c", "--cont", is_flag=True, help="don't delete continue a previously stopped run")
-def threebotbuilder(push=False, configdir=None, base=False, cont=False):
+def threebotbuilder(push=False,  base=False, cont=False):
     """
     create the base for a 3bot
     if 3bot then will also create a 3botdev which is with the development tools inside
@@ -508,11 +492,11 @@ def threebotbuilder(push=False, configdir=None, base=False, cont=False):
     """
     delete = not cont
     if base:
-        basebuilder_(push=push, configdir=configdir)
+        basebuilder_(push=push)
     dest = "threefoldtech/3bot"
 
     IT = load_install_tools(branch=DEFAULT_BRANCH)
-    _configure(configdir=configdir)
+    _configure()
 
     docker = e.DF.container_get(name="3botdev", delete=delete, image="threefoldtech/base")
 
@@ -539,30 +523,28 @@ def threebotbuilder(push=False, configdir=None, base=False, cont=False):
 
 
 @click.command(name="container-start")
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("-n", "--name", default="3bot", help="name of container")
-def container_start(name="3bot", configdir=None):
+def container_start(name="3bot"):
     """
     start the 3bot container
     :param name:
     :return:
     """
-    _configure(configdir=configdir)
+    _configure()
     docker = container_get(name=name)
     docker.start()
 
 
 @click.command(name="container-delete")
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("-a", "--all", is_flag=True, help="delete all")
 @click.option("-n", "--name", default="3bot", help="name of container")
-def container_delete(name="3bot", all=None, configdir=None):
+def container_delete(name="3bot", all=None):
     """
     delete the 3bot container
     :param name:
     :return:
     """
-    _configure(configdir=configdir)
+    _configure()
     if all:
         for name in e.DF.containers_names():
             docker = container_get(name=name)
@@ -575,33 +557,30 @@ def container_delete(name="3bot", all=None, configdir=None):
 
 
 @click.command(name="container-reset")
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 def containers_reset(configdir=None):
     """
     remove all docker containers & images
     :param name:
     :return:
     """
-    _configure(configdir=configdir)
+    _configure()
     e.DF.reset()
 
 
 @click.command(name="containers")
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 def containers(configdir=None):
     """
     remove all docker containers & imagess
     :param name:
     :return:
     """
-    _configure(configdir=configdir)
+    _configure()
     e.DF.list()
 
 
 @click.command(name="container-kosmos")
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("-n", "--name", default="3bot", help="name of container")
-def container_kosmos(name="3bot", configdir=None):
+def container_kosmos(name="3bot"):
     """
     open a kosmos shell in container
     :param name: name of container if not the default =  3bot
@@ -618,16 +597,15 @@ def container_kosmos(name="3bot", configdir=None):
             "-oStrictHostKeyChecking=no",
             "-p",
             str(docker.config.sshport),
-            "source /sandbox/env.sh;kosmos",
+            "source %s/env.sh;kosmos"%IT.MyEnv._basedir_get(),
         ],
     )
 
 
 @click.command()
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("-n", "--name", default="3bot", help="name of container")
 @click.option("-t", "--target", default="auto", help="auto,local,container, default is auto will try container first")
-def kosmos(name="3bot", target="auto", configdir=None):
+def kosmos(name="3bot", target="auto"):
     j = jumpscale_get(die=True)
     j.application.interactive = True
     n = j.data.nacl.get(load=False)  # important to make sure private key is loaded
@@ -638,9 +616,8 @@ def kosmos(name="3bot", target="auto", configdir=None):
 
 
 @click.command(name="container-shell")
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("-n", "--name", default="3bot", help="name of container")
-def container_shell(name="3bot", configdir=None):
+def container_shell(name="3bot"):
     """
     open a  shell to the container for 3bot
     :param name: name of container if not the default
@@ -651,9 +628,8 @@ def container_shell(name="3bot", configdir=None):
 
 
 @click.command()
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
 @click.option("-n", "--name", default="3bot", help="name of container")
-def wireguard(name=None, configdir=None):
+def wireguard(name=None):
     """
     jsx wireguard
     enable wireguard, can be on host or server
@@ -751,7 +727,7 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         if not docker.config.done_get("start_cmd"):
             if web:
                 docker.sshexec(
-                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_default()';jsx wiki-load")
+                    "source {DIR_BASE}/env.sh; kosmos -p 'j.servers.threebot.local_start_default()';jsx wiki-load")
             else:
                 start_cmd = "j.servers.threebot.local_start_default(web=False,packages_add=True)"
                 docker.jsxexec(start_cmd)
@@ -766,9 +742,9 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
 
 
 @click.command(name="modules-install")
-# @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
+# @click.option("--configdir", default=None, help="default {DIR_BASE}/cfg if it exists otherwise ~{DIR_BASE}/cfg")
 @click.option("--url", default="3bot", help="git url e.g. https://github.com/myfreeflow/kosmos")
-def modules_install(url=None, configdir=None):
+def modules_install(url=None):
     """
     install jumpscale module in local system
     :return:
@@ -777,21 +753,6 @@ def modules_install(url=None, configdir=None):
 
     path = j.clients.git.getContentPathFromURLorPath(url)
     _generate(path=path)
-
-
-# @click.command()
-# # @click.option("--configdir", default=None, help="default /sandbox/cfg if it exists otherwise ~/sandbox/cfg")
-# # @click.option("-n", "--name", default="3bot", help="name of container")
-# def bcdb_indexrebuild(configdir=None):
-#     """
-#     rebuilds the index for all BCDB or a chosen one (with name),
-#     use this to fix corruption issues with index
-#     if name is not given then will walk over all known BCDB's and rebuild index
-#     :return:
-#     """
-#     from Jumpscale import j
-#
-#     j.data.bcdb.index_rebuild()
 
 
 @click.command()
