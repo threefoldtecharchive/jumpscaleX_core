@@ -186,7 +186,7 @@ except:
 class RedisTools:
     @staticmethod
     def client_core_get(
-        addr="localhost", port=6379, unix_socket_path="/sandbox/var/redis.sock", die=True, fake_ok=True
+        addr="localhost", port=6379, unix_socket_path="{DIR_BASE}/var/redis.sock", die=True, fake_ok=True
     ):
         """
 
@@ -337,7 +337,7 @@ class RedisTools:
         when not in sandbox:
                 standard on {DIR_TEMP}/redis.sock
         in sandbox will run in:
-            /sandbox/var/redis.sock
+            {DIR_BASE}/var/redis.sock
 
         :param timeout:  defaults to 20
         :type timeout: int, optional
@@ -378,14 +378,14 @@ class RedisTools:
             RedisTools.core_stop()
 
         cmd = (
-            "mkdir -p /sandbox/var;redis-server --unixsocket $UNIXSOCKET "
+            "mkdir -p {DIR_BASE}/var;redis-server --unixsocket $UNIXSOCKET "
             "--port 6379 "
             "--maxmemory 100000000 --daemonize yes"
         )
         cmd = cmd.replace("$UNIXSOCKET", RedisTools.unix_socket_path)
 
         Tools.log(cmd)
-        Tools.execute(cmd)
+        Tools.execute(cmd, replace=True)
         limit_timeout = time.time() + timeout
         while time.time() < limit_timeout:
             if RedisTools.core_running():
@@ -3034,6 +3034,7 @@ class Tools:
         return dict
 
         """
+        path = Tools.text_replace(path)
         res = {}
         if content == "":
             if executor is None:
@@ -3087,6 +3088,7 @@ class Tools:
 
     @staticmethod
     def config_save(path, data, upper=True, executor=None):
+        path = Tools.text_replace(path)
         out = ""
         for key, val in data.items():
             if upper:
@@ -3369,7 +3371,6 @@ class MyEnv_:
     def configure(
         self,
         configdir=None,
-        basedir=None,
         codedir=None,
         config={},
         readonly=None,
@@ -3383,7 +3384,6 @@ class MyEnv_:
 
         the args of the command line will also be parsed, will check for
 
-        --basedir=                      default ~/sandbox or /sandbox whatever exists first
         --configdir=                    default $BASEDIR/cfg
         --codedir=                      default $BASEDIR/code
 
@@ -3404,6 +3404,8 @@ class MyEnv_:
         :return:
         """
 
+        basedir = self._basedir_get()
+
         if not os.path.exists(self.config_file_path):
             self.config = self.config_default_get(config=config)
         else:
@@ -3417,8 +3419,6 @@ class MyEnv_:
             configdir = args["configdir"]
         if codedir is None and "codedir" in args:
             codedir = args["codedir"]
-        if basedir is None and "basedir" in args:
-            basedir = args["basedir"]
         if sshkey is None and "sshkey" in args:
             sshkey = args["sshkey"]
 
@@ -3445,12 +3445,6 @@ class MyEnv_:
         # # MEI means we are pyexe BaseInstaller
         # if installpath.find("/_MEI") != -1 or installpath.endswith("dist/install"):
         #     pass  # dont need yet but keep here
-
-        if not basedir:
-            if "DIR_BASE" in config:
-                basedir = config["DIR_BASE"]
-            else:
-                basedir = self._basedir_get()
 
         config["DIR_BASE"] = basedir
 
@@ -3750,7 +3744,7 @@ class BaseInstaller:
                 env_path = "%s/%s" % (MyEnv.config["DIR_HOME"], profile_name)
                 if Tools.exists(env_path):
                     bashprofile = Tools.file_text_read(env_path)
-                    cmd = "source /sandbox/env.sh"
+                    cmd = "source %s/env.sh" % MyEnv._basedir_get()
                     if bashprofile.find(cmd) != -1:
                         bashprofile = bashprofile.replace(cmd, "")
                         Tools.file_write(env_path, bashprofile)
@@ -3762,7 +3756,7 @@ class BaseInstaller:
                     bashprofile = ""
                 else:
                     bashprofile = Tools.file_text_read(env_path)
-                cmd = "source /sandbox/env.sh"
+                cmd = "source %s/env.sh" % MyEnv._basedir_get()
                 if bashprofile.find(cmd) == -1:
                     bashprofile += "\n%s\n" % cmd
                     Tools.file_write(env_path, bashprofile)
@@ -4017,15 +4011,15 @@ class BaseInstaller:
         rm -rf /var/backups
         apt-get clean -y
         apt-get autoremove --purge -y
-        rm -rf /sandbox/openresty/pod
-        rm -rf /sandbox/openresty/site
+        rm -rf {DIR_BASE}/openresty/pod
+        rm -rf {DIR_BASE}/openresty/site
         touch /tmp/cleanedup
         rm -rf /var/lib/apt/lists
         rm -rf /usr/src
         mkdir -p /var/lib/apt/lists
         find . | grep -E "(__pycache__|\.bak$|\.pyc$|\.pyo$|\.rustup|\.cargo)" | xargs rm -rf
-        sed -i -r 's/^SECRET =.*/SECRET =/' /sandbox/cfg/jumpscale_config.toml
-        rm -f /sandbox/cfg/keys/default/*
+        sed -i -r 's/^SECRET =.*/SECRET =/' {DIR_BASE}/cfg/jumpscale_config.toml
+        rm -f {DIR_BASE}/cfg/keys/default/*
         """
         return Tools.text_strip(CMD, replace=False)
 
@@ -4247,8 +4241,8 @@ class JumpscaleInstaller:
         set -e
         cd {DIR_BASE}
         source env.sh
-        mkdir -p /sandbox/openresty/nginx/logs
-        mkdir -p /sandbox/var/log
+        mkdir -p {DIR_BASE}/openresty/nginx/logs
+        mkdir -p {DIR_BASE}/var/log
         kosmos 'j.data.nacl.configure(generate=True,interactive=False)'
         kosmos 'j.core.installer_jumpscale.remove_old_parts()'
         # kosmos --instruct=/tmp/instructions.toml
@@ -4297,7 +4291,7 @@ class JumpscaleInstaller:
 
     def prebuilt_copy(self):
         """
-        copy the prebuilt files to the /sandbox location
+        copy the prebuilt files to the {DIR_BASE} location
         :return:
         """
         self.cmds_link(generate_js=False)
@@ -4305,7 +4299,7 @@ class JumpscaleInstaller:
         Tools.execute("cp -a {DIR_CODE}/github/threefoldtech/sandbox_threebot_linux64/* /")
         # -a won't copy hidden files
         Tools.execute("cp {DIR_CODE}/github/threefoldtech/sandbox_threebot_linux64/.startup.toml /")
-        Tools.execute("source /sandbox/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
+        Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
 
     def repos_get(self, pull=False, prebuilt=False):
         if prebuilt:
@@ -4376,7 +4370,7 @@ class JumpscaleInstaller:
                 Tools.link(src2, dest, chmod=770)
         Tools.link("%s/install/jsx.py" % loc, "{DIR_BASE}/bin/jsx", chmod=770)
         if generate_js:
-            Tools.execute("cd /sandbox;source env.sh;js_init generate", interactive=False, die_if_args_left=True)
+            Tools.execute("cd {DIR_BASE};source env.sh;js_init generate", interactive=False, die_if_args_left=True)
 
 
 class DockerFactory:
@@ -4650,7 +4644,7 @@ class DockerContainer:
         """
         if you want to start from scratch use: "phusion/baseimage:master"
 
-        if codedir not specified will use /sandbox/code if exists otherwise ~/code
+        if codedir not specified will use {DIR_BASE}/code if exists otherwise ~/code
         """
         if name == "shared":
             raise Tools.exceptions.JSBUG("should never be the shared obj")
@@ -4716,7 +4710,7 @@ class DockerContainer:
     # def sandbox_sync(self):
     #     if Tools.exists("/tmp/package/threebot"):
     #         src = "/tmp/package/threebot"
-    #     elif Tools.exists("/sandbox/code/.../threebot"):
+    #     elif Tools.exists("{DIR_BASE}/code/.../threebot"):
     #         # todo:
     #         pass
     #     else:
@@ -4823,11 +4817,11 @@ class DockerContainer:
             MOUNTS = ""
             if mount_dirs:
                 MOUNTS = """
-                -v {DIR_CODE}:/sandbox/code \
-                -v {DIR_BASE}/var/containers/shared:/sandbox/myhost \
+                -v {DIR_CODE}:{DIR_BASE}/code \
+                -v {DIR_BASE}/var/containers/shared:{DIR_BASE}/myhost \
                 """
-                # -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
-                # -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
+                # -v {DIR_BASE}/var/containers/{NAME}/var:{DIR_BASE}/var \
+                # -v {DIR_BASE}/var/containers/{NAME}/cfg:{DIR_BASE}/cfg \
 
             args["MOUNTS"] = Tools.text_replace(MOUNTS.strip(), args=args)
             args["CMD"] = self.config.startupcmd
@@ -4871,7 +4865,7 @@ class DockerContainer:
 
         if update or new:
             print(" - Configure / Start SSH server")
-            self.dexec("rm -rf /sandbox/cfg/keys")
+            self.dexec("rm -rf {DIR_BASE}/cfg/keys")
             self.dexec("rm -f /root/.ssh/authorized_keys;/etc/init.d/ssh stop 2>&1 > /dev/null", die=False)
             self.dexec("/usr/bin/ssh-keygen -A")
             self.dexec("/etc/init.d/ssh start")
@@ -4904,6 +4898,8 @@ class DockerContainer:
     def dexec(self, cmd, interactive=False, die=True):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
+        if "{" in cmd:
+            cmd = Tools.text_replace(cmd)
         if interactive:
             cmd2 = "docker exec -ti %s bash -c '%s'" % (self.name, cmd)
         else:
@@ -4935,6 +4931,8 @@ class DockerContainer:
     def sshexec(self, cmd, retry=None, asfile=True):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
+        if "{" in cmd:
+            cmd = Tools.text_replace(cmd)
         cmd2 = "ssh -oStrictHostKeyChecking=no -t root@localhost -A -p %s '%s'" % (self.config.sshport, cmd)
         Tools.execute(
             cmd2, interactive=True, showout=False, replace=False, asfile=asfile, timeout=3600 * 2, retry=retry
@@ -4955,7 +4953,7 @@ class DockerContainer:
         Tools.file_write(f"/tmp/{name}.py", cmd)
         cmd = f"scp -P {sshport} /tmp/{name}.py root@localhost:/tmp/{name}.py"
         Tools.execute(cmd, showout=False, replace=False)
-        cmd = f"source /sandbox/env.sh;kosmos -p /tmp/{name}.py"
+        cmd = f"source {DIR_BASE}/env.sh;kosmos -p /tmp/{name}.py"
         self.sshexec(cmd, asfile=True)
 
     def kosmos(self):
@@ -5012,7 +5010,7 @@ class DockerContainer:
     def import_(self, path=None, name=None, version=None, imagename=None, start=True, mount_dirs=True, portmap=True):
         """
 
-        :param path:  if not specified will be /sandbox/var/containers/$name/exports/$version.tar
+        :param path:  if not specified will be {DIR_BASE}/var/containers/$name/exports/$version.tar
         :param version: version of the export, if not specified & path not specified will be last in the path
         :param imagename: docker image name as used by docker to import to
         :param start: start the container after import
@@ -5050,7 +5048,7 @@ class DockerContainer:
 
     def export(self, path=None, name=None, version=None):
         """
-        :param path:  if not specified will be /sandbox/var/containers/$name/exports/$version.tar
+        :param path:  if not specified will be {DIR_BASE}/var/containers/$name/exports/$version.tar
         :param version:
         :param overwrite: will remove the version if it exists
         :return:
@@ -5154,17 +5152,17 @@ class DockerContainer:
         dirpath = os.path.dirname(inspect.getfile(Tools))
         if dirpath.startswith(MyEnv.config["DIR_CODE"]):
             cmd = (
-                "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py configure --sshkey %s -s"
+                "python3 {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/install/jsx.py configure --sshkey %s -s"
                 % MyEnv.sshagent.key_default_name
             )
             Tools.log("CONFIGURE THE CONTAINER", data=cmd)
             self.sshexec(cmd)
             self.sshexec("rm -f /tmp/InstallTools.py;rm -f /tmp/jsx")
-            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s"
+            cmd = "python3 {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s"
             cmd += args_txt
         else:
             print(" - copy installer over from where I install from")
-            dirpath2 = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/"
+            dirpath2 = "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/install/"
             if not Tools.exists(dirpath2):
                 dirpath2 = dirpath
             for item in ["jsx", "InstallTools.py"]:
@@ -5877,9 +5875,9 @@ class ExecutorSSH:
         """
         C = """
         set +ex
-        ls "/sandbox"  > /dev/null 2>&1 && echo 'ISSANDBOX = 1' || echo 'ISSANDBOX = 0'
+        ls "{DIR_BASE}"  > /dev/null 2>&1 && echo 'ISSANDBOX = 1' || echo 'ISSANDBOX = 0'
 
-        ls "/sandbox/bin/python3"  > /dev/null 2>&1 && echo 'ISSANDBOX_BIN = 1' || echo 'ISSANDBOX_BIN = 0'
+        ls "{DIR_BASE}/bin/python3"  > /dev/null 2>&1 && echo 'ISSANDBOX_BIN = 1' || echo 'ISSANDBOX_BIN = 0'
         echo UNAME = \""$(uname -mnprs)"\"
         echo "HOME = $HOME"
         echo HOSTNAME = "$(hostname)"
@@ -5890,7 +5888,7 @@ class ExecutorSSH:
         fi
 
         echo "CFG_JUMPSCALE = --TEXT--"
-        cat /sandbox/cfg/jumpscale_config.msgpack 2>/dev/null || echo ""
+        cat {DIR_BASE}/cfg/jumpscale_config.msgpack 2>/dev/null || echo ""
         echo --TEXT--
 
         echo "BASHPROFILE = --TEXT--"
@@ -5964,10 +5962,10 @@ class ExecutorSSH:
 
         get_cfg("DIR_HOME", res["ENV"]["HOME"])
         get_cfg("DIR_BASE", "/sandbox")
-        get_cfg("DIR_CFG", "/sandbox/cfg")
+        get_cfg("DIR_CFG", "%s/cfg" % self.config[name])
         get_cfg("DIR_TEMP", "/tmp")
-        get_cfg("DIR_VAR", "/sandbox/var")
-        get_cfg("DIR_CODE", "/sandbox/code")
+        get_cfg("DIR_VAR", "%s/var" % self.config[name])
+        get_cfg("DIR_CODE", "%s/code" % self.config[name])
         get_cfg("DIR_BIN", "/usr/local/bin")
 
     def execute(
@@ -6099,7 +6097,7 @@ class ExecutorSSH:
         # cmd = f"scp -P {sshport} /tmp/{name}.py root@localhost:/tmp/{name}.py"
         # Tools.execute(cmd, showout=False, replace=False)
         self.file_write(f"/tmp/{name}.py", cmd)
-        cmd = f"source /sandbox/env.sh;kosmos -p /tmp/{name}.py"
+        cmd = f"source {DIR_BASE}/env.sh;kosmos -p /tmp/{name}.py"
         self.execute(cmd)
 
     def kosmos(self):
@@ -6185,17 +6183,17 @@ class WireGuardServer:
     @property
     def config_local(self):
         if not self._config_local:
-            self._config_local = Tools.config_load("/sandbox/cfg/wireguard.toml")
+            self._config_local = Tools.config_load("{DIR_BASE}/cfg/wireguard.toml")
             if "WIREGUARD_CLIENT_PRIVKEY" not in self._config_local:
                 privkey, pubkey = self.generate_key_pair()
                 self._config_local["WIREGUARD_CLIENT_PUBKEY"] = pubkey
                 self._config_local["WIREGUARD_CLIENT_PRIVKEY"] = privkey
-                Tools.config_save("/sandbox/cfg/wireguard.toml", self._config_local)
+                Tools.config_save("{DIR_BASE}/cfg/wireguard.toml", self._config_local)
         return self._config_local
 
     def save(self):
         self.executor.save()
-        Tools.config_save("/sandbox/cfg/wireguard.toml", self.config_local)
+        Tools.config_save("{DIR_BASE}/cfg/wireguard.toml", self.config_local)
 
     def generate_key_pair(self):
         print("- GENERATE WIREGUARD KEY")
@@ -6279,7 +6277,7 @@ class WireGuardServer:
         """
         C2 = Tools.text_replace(C2, args=self.config_server)
         C += C2
-        path = "/sandbox/cfg/wireguard/%s/wg0.conf" % self.serverid
+        path = "{DIR_BASE}/cfg/wireguard/%s/wg0.conf" % self.serverid
         Tools.dir_ensure(os.path.dirname(path))
         Tools.file_write(path, C)
         # print("WIREGUARD CONFIFURATION:\n\n%s" % config)

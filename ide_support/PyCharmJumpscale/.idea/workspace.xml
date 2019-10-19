@@ -232,15 +232,15 @@
     </dirStrings>
   </component>
   <component name="Git.Settings">
+    <option name="PREVIEW_PUSH_PROTECTED_ONLY" value="true" />
     <option name="PREVIOUS_COMMIT_AUTHORS">
       <list>
         <option value="despiegk" />
       </list>
     </option>
     <option name="PUSH_AUTO_UPDATE" value="true" />
-    <option name="ROOT_SYNC" value="DONT_SYNC" />
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../../../jumpscaleX_builders" />
-    <option name="PREVIEW_PUSH_PROTECTED_ONLY" value="true" />
+    <option name="ROOT_SYNC" value="DONT_SYNC" />
   </component>
   <component name="GotoClassSymbolConfiguration">
     <file-type-list>
@@ -321,6 +321,7 @@
     <option name="width" value="1680" />
     <option name="height" value="1050" />
   </component>
+  <component name="ProjectId" id="1SOB12X8jgwWX29HcfWDpe739yX" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <ConfirmationsSetting value="2" id="Add" />
   </component>
@@ -529,7 +530,7 @@
     <property name="NewWatcherDialog.advanced.open" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="full.screen.before.presentation.mode" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../../jumpscaleX_builders" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
     <property name="settings.editor.selected.configurable" value="PyConsoleConfigurable.Python Console" />
     <property name="two.files.diff.last.used.folder" value="$USER_HOME$/code/github6/jumpscaleX/Jumpscale" />
