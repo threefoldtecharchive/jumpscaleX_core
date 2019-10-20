@@ -509,7 +509,7 @@ def wiki_reload(name=None):
 
         docsite = DocSite.DocSite(name=repo_data["name"], path=f"/docsites/{name}")
         for ch_file in changed_files:
-            file_name = ch_file.split("/")[1].rstrip(".md")
+            file_name = j.sal.fs.getBaseName(ch_file).rstrip(".md")
             doc = Doc.Doc(name=file_name, path=f"{repo_dest}/{ch_file}", docsite=docsite)
             doc.path_dir_rel = ""
             doc.write()
