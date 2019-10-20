@@ -89,14 +89,7 @@ def jumpscale_get(die=True):
 
 # have to do like this, did not manage to call the click enabled function (don't know why)
 def _configure(
-    codedir=None,
-    debug=False,
-    sshkey=None,
-    no_sshagent=False,
-    no_interactive=False,
-    privatekey_words=None,
-    secret=None,
-    
+    codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey_words=None, secret=None
 ):
     interactive = not no_interactive
     sshagent_use = not no_sshagent
@@ -109,7 +102,6 @@ def _configure(
         debug_configure=debug,
         interactive=interactive,
         secret=secret,
-        
     )
     j = jumpscale_get(die=False)
 
@@ -153,14 +145,7 @@ def cli():
     "--secret", default=None, help="secret for the private key (to keep secret), default will get from ssh-key"
 )
 def configure(
-    codedir=None,
-    debug=False,
-    sshkey=None,
-    no_sshagent=False,
-    no_interactive=False,
-    privatekey=None,
-    secret=None,
-    
+    codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey=None, secret=None
 ):
     """
     initialize 3bot (JSX) environment
@@ -217,7 +202,6 @@ def container_install(
     reinstall=False,
     no_interactive=False,
     pull=False,
-    
     develop=False,
 ):
     """
@@ -232,7 +216,7 @@ def container_install(
     # IT.MyEnv.interactive = True
     # interactive = not no_interactive
 
-    _configure( no_interactive=no_interactive)
+    _configure(no_interactive=no_interactive)
 
     if scratch:
         image = "threefoldtech/base"
@@ -302,7 +286,7 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
     # print("DEBUG:: no_sshagent", no_sshagent, "configdir", configdir)  #no_sshagent=no_sshagent
     IT = load_install_tools(branch=branch)
     # IT.MyEnv.interactive = True
-    _configure( no_interactive=no_interactive)
+    _configure(no_interactive=no_interactive)
     SANDBOX = IT.MyEnv.config["DIR_BASE"]
     if reinstall:
         # remove the state
@@ -403,17 +387,17 @@ def container_stop(name="3bot"):
 )
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 @click.option("-c", "--cont", is_flag=True, help="don't delete continue a previously stopped run")
-def basebuilder(dest=None, push=False,  cont=False):
+def basebuilder(dest=None, push=False, cont=False):
     """
     create the base ubuntu docker which we can use as base for everything
     :param dest: default threefoldtech/base  the base is the base ubuntu image
     :return:
     """
     delete = not cont
-    basebuilder_(dest=dest, push=push,  delete=delete)
+    basebuilder_(dest=dest, push=push, delete=delete)
 
 
-def basebuilder_(dest=None, push=False,  delete=True):
+def basebuilder_(dest=None, push=False, delete=True):
     if not dest:
         dest = "threefoldtech/base"
     IT = load_install_tools(branch=DEFAULT_BRANCH)
@@ -451,7 +435,12 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
     wikis = []
 
     if not name or not url:
-        wikis.append(("testwikis", "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/docs/wikis/examples/docs"))
+        wikis.append(
+            (
+                "testwikis",
+                "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/docs/wikis/examples/docs",
+            )
+        )
         wikis.append(("tokens", "https://github.com/threefoldfoundation/info_tokens/tree/development/docs"))
         wikis.append(("foundation", "https://github.com/threefoldfoundation/info_foundation/tree/development/docs"))
         wikis.append(("grid", "https://github.com/threefoldfoundation/info_grid/tree/development/docs"))
@@ -479,11 +468,63 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
     print("You'll find the wiki(s) loaded at https://<container or 3bot hostname>/wiki")
 
 
+@click.command(name="wiki-reload")
+@click.option("-n", "--name", default=None, help="name of the wiki, you're given name")
+def wiki_reload(name=None):
+    """
+    reload the changed files from wikis repo
+    ex: jsx wiki-reload -n foundation
+    """
+    from Jumpscale import j
+
+    if not name:
+        raise RuntimeError("Please Enter wiki name.")
+    # get and parse the wikis metadata. name and location
+    changed_files = []
+    repo_meta = j.sal.bcdbfs.file_read(f"/docsites/{name}/.data").decode()
+    repo_data = j.data.serializers.json.loads(repo_meta)
+    repo_args = j.clients.git.getGitRepoArgs(repo_data["repo"])
+    repo_dest = repo_args[-3]
+
+    # check for changed files in the repo dir
+    import git
+
+    repo = git.repo.Repo(repo_dest)
+    changed_files = [item.a_path for item in repo.index.diff(None)]
+
+    # if no local changes, check the remote changes on github
+    if not changed_files:
+        changed_files = repo.git.diff("origin/master..HEAD", name_only=True).split("\n")
+        j.clients.git.pullGitRepo(dest=repo_dest, url=repo_data["repo_data"])
+
+    # remove unused files
+    for ch_file in changed_files:
+        if not ch_file.endswith(".md"):
+            changed_files.remove(ch_file)
+
+    def render_changes():
+        """
+        - get the wiki's docsite
+        - for each changed file this will create a doc for it to write its changes
+        """
+        from JumpscaleLibs.tools.markdowndocs import Doc, DocSite
+
+        docsite = DocSite.DocSite(name=repo_data["name"], path=f"/docsites/{name}")
+        for ch_file in changed_files:
+            file_name = ch_file.split("/")[1].rstrip(".md")
+            doc = Doc.Doc(name=file_name, path=f"{repo_dest}/{ch_file}", docsite=docsite)
+            doc.path_dir_rel = ""
+            doc.write()
+            print(f"wiki: {name}, file: {ch_file}. Reloaded Success")
+
+    render_changes()
+
+
 @click.command(name="threebotbuilder")
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 @click.option("-b", "--base", is_flag=True, help="build base image as well")
 @click.option("-c", "--cont", is_flag=True, help="don't delete continue a previously stopped run")
-def threebotbuilder(push=False,  base=False, cont=False):
+def threebotbuilder(push=False, base=False, cont=False):
     """
     create the base for a 3bot
     if 3bot then will also create a 3botdev which is with the development tools inside
@@ -597,7 +638,7 @@ def container_kosmos(name="3bot"):
             "-oStrictHostKeyChecking=no",
             "-p",
             str(docker.config.sshport),
-            "source %s/env.sh;kosmos"%IT.MyEnv._basedir_get(),
+            "source %s/env.sh;kosmos" % IT.MyEnv._basedir_get(),
         ],
     )
 
@@ -727,7 +768,8 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         if not docker.config.done_get("start_cmd"):
             if web:
                 docker.sshexec(
-                    "source {DIR_BASE}/env.sh; kosmos -p 'j.servers.threebot.local_start_default()';jsx wiki-load")
+                    "source {DIR_BASE}/env.sh; kosmos -p 'j.servers.threebot.local_start_default()';jsx wiki-load"
+                )
             else:
                 start_cmd = "j.servers.threebot.local_start_default(web=False,packages_add=True)"
                 docker.jsxexec(start_cmd)
@@ -783,6 +825,7 @@ if __name__ == "__main__":
     cli.add_command(wireguard)
     cli.add_command(modules_install, "modules-install")
     cli.add_command(wiki_load, "wiki-load")
+    cli.add_command(wiki_reload)
 
     # DO NOT DO THIS IN ANY OTHER WAY !!!
     if not e._DF.indocker():
