@@ -1,18 +1,13 @@
-import urllib.request
-import urllib.error
 import urllib.parse
 import urllib.request
-import urllib.parse
 import urllib.error
 import base64
+import ssl
 
 # import sys
 
 
 from urllib.parse import urlencode, urlparse, urlunparse
-import urllib.parse
-import urllib.request
-import urllib.error
 from Jumpscale import j
 
 JSBASE = j.baseclasses.object
@@ -50,7 +45,7 @@ class HTTPError(Exception):
 
 
 class Connection(JSBASE):
-    def simpleAuth(self, url, username, password):
+    def simpleAuth(self, url, username, password, verify=True):
         """
         authorize with the given username and password on url
         :param url:
@@ -67,22 +62,32 @@ class Connection(JSBASE):
         auth = "%s:%s" % (username, password)
         base64string = base64.encodebytes(auth.encode())[:-1]
         req.add_header("Authorization", "Basic %s" % base64string)
-
+        ctx = None
+        if not verify:
+            ctx = self._get_unverified_context()
         try:
-            handle = urllib.request.urlopen(req)
+            handle = urllib.request.urlopen(req, context=ctx)
             return handle
         except IOError as e:
             raise j.exceptions.Base("could not do simple auth.\n%s" % e)
 
-    def get_reponse(self, url, data=None, headers=None, **params):
+    def get_reponse(self, url, data=None, headers=None, verify=True, **params):
         """
         @params is parameters as used in get e.g. name="kds",color="red"
         @headers e.g. headers={'content-type':'text/plain'}  (this is the default)
         """
-        response = self._http_request(url, headers=headers, method="GET", **params)  # TODO: P1 fix & check
+        response = self._http_request(
+            url, headers=headers, method="GET", verify=verify, **params
+        )  # TODO: P1 fix & check
         return response
 
-    def get(self, url, data=None, headers=None, die=True, **params):
+    def _get_unverified_context(self):
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        return ctx
+
+    def get(self, url, data=None, headers=None, die=True, verify=True, **params):
         """
 
         :param url:
@@ -90,7 +95,7 @@ class Connection(JSBASE):
         :param die:
         :return:  status   if there is an error and die==False,   otherwise the result
         """
-        r = self._http_request(url=url, data=data, headers=headers, **params)
+        r = self._http_request(url=url, data=data, headers=headers, verify=verify, **params)
         if r.status != 200:
             if die:
                 raise j.exceptions.Base("could not retrieve:%s, status of response:%s" % (url, r.status))
@@ -99,18 +104,18 @@ class Connection(JSBASE):
         out = b"".join(r.readlines())
         return out.decode()
 
-    def get_head(self, url):
+    def get_head(self, url, verify=True):
         """
         get head only, this to make sure you don't have to download everything
         """
-        response = self._http_request(url, method="HEAD")
+        response = self._http_request(url, method="HEAD", verify=verify)
         return response
 
-    def ping(self, url):
+    def ping(self, url, verify=True):
         """
         """
         try:
-            r = self.get_head(url)
+            r = self.get_head(url, verify=verify)
         except Exception as e:
             # check=[401,402,403,404,405]
             # for tocheck in check:
@@ -122,7 +127,7 @@ class Connection(JSBASE):
             return False
         return r.status == 200
 
-    def post(self, url, data=None, headers=None, **params):
+    def post(self, url, data=None, headers=None, verify=True, **params):
         """
         @data is the raw aata which will be posted, if not params will be converted to json
         @params @question what are the params for?
@@ -131,26 +136,26 @@ class Connection(JSBASE):
         if headers is None:
             headers = {"content-type": "text/plain"}
 
-        response = self._http_request(url, data=data, headers=headers, method="POST", **params)
+        response = self._http_request(url, data=data, headers=headers, method="POST", verify=verify, **params)
         return response
 
-    def put(self, url, data=None, headers=None, **params):
+    def put(self, url, data=None, headers=None, verify=True, **params):
         """
         @data is the raw data which will be sent
         @headers e.g. headers={'content-type':'text/plain'}  (this is the default)
         """
-        response = self._http_request(url, data=data, headers=headers, method="PUT", **params)
+        response = self._http_request(url, data=data, headers=headers, method="PUT", verify=verify ** params)
         return response
 
-    def delete(self, url, data=None, headers=None, **params):
+    def delete(self, url, data=None, headers=None, verify=True, **params):
         """
         @data is the raw data which will be sent
         @headers e.g. headers={'content-type':'text/plain'}  (this is the default)
         """
-        response = self._http_request(url, data=data, headers=headers, method="DELETE", **params)
+        response = self._http_request(url, data=data, headers=headers, method="DELETE", verify=verify, **params)
         return response
 
-    def download(self, fileUrl, downloadPath, customHeaders=None, report=False):
+    def download(self, fileUrl, downloadPath, customHeaders=None, report=False, verify=True):
         """
         Download a file from server to a local path
 
@@ -169,7 +174,11 @@ class Connection(JSBASE):
         # return True
 
         url = fileUrl
-        u = urllib.request.urlopen(url)
+        ctx = None
+        if not verify:
+            ctx = self._get_unverified_context()
+
+        u = urllib.request.urlopen(url, context=ctx)
 
         scheme, netloc, path, query, fragment = urllib.parse.urlsplit(url)
 
@@ -215,7 +224,7 @@ class Connection(JSBASE):
         _query = urllib.parse.urlencode(params)
         return urlunparse((_scheme, _netloc, _url, _params, _query, _fragment))
 
-    def _http_request(self, url, data=None, headers=None, method=None, **kwargs):
+    def _http_request(self, url, data=None, headers=None, method=None, verify=True, **kwargs):
         """
         utility function for sending an http request
 
@@ -241,8 +250,11 @@ class Connection(JSBASE):
         if not method:
             method = "POST" if data else "GET"
         request.get_method = lambda: method
+        ctx = None
+        if not verify:
+            ctx = self._get_unverified_context()
         try:
-            resp = urllib.request.urlopen(request)
+            resp = urllib.request.urlopen(request, context=ctx)
         except Exception as e:
             raise HTTPError(e, url)
 
@@ -264,8 +276,6 @@ class HttpClient(j.baseclasses.object):
 
     def ping(self, url):
         # Use unverified ssl context for pinging websites
-        import ssl
-
         ssl._create_default_https_context = ssl._create_unverified_context
         c = self.connection_get()
         res = c.ping(url)
@@ -276,7 +286,7 @@ class HttpClient(j.baseclasses.object):
         c = self.connection_get()
         return c.download(url, dest)
 
-    def get_response(self, url, headers=None):
+    def get_response(self, url, headers=None, verify=True):
         """
 
         :param url:
@@ -284,9 +294,9 @@ class HttpClient(j.baseclasses.object):
         :return: full blown
         """
         c = self.connection_get()
-        return c.get_reponse(url, headers=headers)
+        return c.get_reponse(url, headers=headers, verify=verify)
 
-    def get(self, url, headers=None, die=True, decode=True):
+    def get(self, url, headers=None, die=True, decode=True, verify=True):
         """
         gets the result in bytes or string from a get request
         :param url:
@@ -295,7 +305,7 @@ class HttpClient(j.baseclasses.object):
         :param decode: means bytes will be converted to string
         :return:  status   if there is an error and die==False,   otherwise the result
         """
-        r = self.get_response(url=url, headers=headers)
+        r = self.get_response(url=url, headers=headers, verify=verify)
         if r.status != 200:
             if die:
                 raise j.exceptions.Base("could not retrieve:%s, status of response:%s" % (url, r.status))
@@ -307,13 +317,13 @@ class HttpClient(j.baseclasses.object):
         else:
             return out
 
-    def post(self, url, data=None, headers=None):
+    def post(self, url, data=None, headers=None, verify=True):
         c = self.connection_get()
-        return c.post(url, data=data, headers=headers)
+        return c.post(url, data=data, headers=headers, verify=verify)
 
-    def put(self, url, data=None, headers=None):
+    def put(self, url, data=None, headers=None, verify=True):
         c = self.connection_get()
-        return c.put(url, data=data, headers=headers)
+        return c.put(url, data=data, headers=headers, verify=verify)
 
     def test(self):
         """
