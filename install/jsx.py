@@ -493,7 +493,7 @@ def wiki_reload(name=None):
     # if no local changes, check the remote changes on github
     if not changed_files:
         changed_files = repo.git.diff("origin/master..HEAD", name_only=True).split("\n")
-        j.clients.git.pullGitRepo(dest=repo_dest, url=repo_data["repo_data"])
+        j.clients.git.pullGitRepo(dest=repo_dest, url=repo_data["repo"])
 
     # remove unused files
     for ch_file in changed_files:
