@@ -151,6 +151,10 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.tools.threebot_packages.get(
                 "wiki", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot/wiki/"
             )
+            j.tools.threebot_packages.get(
+                "chat", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot/chat/"
+            )
+
             # add user added packages
             for package in j.tools.threebot_packages.find():
                 if package.status == "INIT":
