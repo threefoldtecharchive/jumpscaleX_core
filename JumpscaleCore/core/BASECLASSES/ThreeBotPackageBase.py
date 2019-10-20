@@ -69,14 +69,17 @@ class ThreeBotPackageBase(JSBase):
         if j.sal.fs.exists(chatflows_path):
             self.gedis_server.chatbot.chatflows_load(chatflows_path)
 
-        def load_wiki(path=None, name=None):
-            wiki = j.tools.markdowndocs.load(path=path, name=name, pull=False)
-            wiki.write()
+        # FIXME or should it be removed? it'll only work if u call package.start manually.
+        # def load_wiki(path=None, name=None):
+        #     wiki = j.tools.markdowndocs.load(path=path, name=name, pull=False)
+        #     wiki.write()
 
-        path = self.package_root + "/wiki"
-        if j.sal.fs.exists(path):
-            name = self._package.name
-            j.servers.myjobs.schedule(load_wiki, name=name, path=path)
+        # path = self.package_root + "/wiki"
+        # if j.sal.fs.exists(path):
+        #     j.servers.myjobs.workers_tmux_start(nr_workers=1)
+        #     name = self._package.name
+        #     job = j.servers.myjobs.schedule(load_wiki, name=name, path=path)
+        #     j.servers.myjobs.wait([job.id], timeout=None, die=False)
 
     def stop(self):
         """

@@ -60,6 +60,25 @@ class ThreeBotPackage(JSConfigBase):
             if j.sal.fs.exists(path):
                 self.gedis_server.actors_add(path, namespace=self._package_author.actors_namespace)
 
+            path = self.path + "/chatflows"
+            if j.sal.fs.exists(path):
+                self.gedis_server.chatbot.chatflows_load(path)
+
+            def load_wiki(path=None, name=None):
+                wiki = j.tools.markdowndocs.load(path=path, name=name, pull=False)
+                wiki.write()
+
+            # FIXME: need to work against myjobs and breaks due to some worker error.
+            # Works fine in the foreground, but slows the server a lot.
+            # path = self.path + "/wiki"
+            # if j.sal.fs.exists(path):
+
+            #     # j.servers.myjobs.workers_tmux_start(nr_workers=1)
+            #     name = self.name
+            #     load_wiki(name=name, path=path)
+            #     # job = j.servers.myjobs.schedule(load_wiki, name=name, path=path)
+            #     # j.servers.myjobs.wait([job.id], timeout=None, die=False)
+
             # TODO: for loading wiki's & macros's (REEM TO PLAN)
 
         self._init_ = True
