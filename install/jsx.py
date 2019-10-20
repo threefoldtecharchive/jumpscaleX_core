@@ -487,9 +487,7 @@ def wiki_reload(name=None):
     repo_dest = repo_args[-3]
 
     # check for changed files in the repo dir
-    import git
-
-    repo = git.repo.Repo(repo_dest)
+    repo = j.clients.git.get(repo_dest).repo
     changed_files = [item.a_path for item in repo.index.diff(None)]
 
     # if no local changes, check the remote changes on github
