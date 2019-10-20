@@ -525,11 +525,12 @@ def wiki_reload(name=None):
         # clean up deleted files
         for del_file in deleted_files:
             path = f"/docsites/{name}"
-            file_name = j.sal.fs.getBaseName(del_file).rstrip(".md")
-            file_path = f"{path}/{file_name}"
-            if j.sal.bcdbfs.file_exists(file_path):
-                j.sal.bcdbfs.file_delete(file_path)
-                print(f"wiki: {name}, file: {del_file}. Deletion Success")
+            if del_file != "":
+                file_name = j.sal.fs.getBaseName(del_file).rstrip(".md")
+                file_path = f"{path}/{file_name}"
+                if j.sal.bcdbfs.file_exists(file_path):
+                    j.sal.bcdbfs.file_delete(file_path)
+                    print(f"wiki: {name}, file: {del_file}. Deletion Success")
 
         print("Reload Success")
 
