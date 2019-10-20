@@ -481,6 +481,7 @@ def wiki_reload(name=None):
         raise RuntimeError("Please Enter wiki name.")
     # get and parse the wikis metadata. name and location
     changed_files = []
+    deleted_files = []
     repo_meta = j.sal.bcdbfs.file_read(f"/docsites/{name}/.data").decode()
     repo_data = j.data.serializers.json.loads(repo_meta)
     repo_args = j.clients.git.getGitRepoArgs(repo_data["repo"])
@@ -488,12 +489,17 @@ def wiki_reload(name=None):
 
     # check for changed files in the repo dir
     repo = j.clients.git.get(repo_dest).repo
-    changed_files = [item.a_path for item in repo.index.diff(None)]
+    for item in repo.index.diff(None):
+        if item.change_type == "D":
+            deleted_files.append(item.a_path)
+        else:
+            changed_files.append(item.a_path)
 
     # if no local changes, check the remote changes on github
-    if not changed_files:
+    if not changed_files and not deleted_files:
         branch = repo.active_branch.name
-        changed_files = repo.git.diff(f"origin/{branch}..HEAD", name_only=True).split("\n")
+        changed_files = repo.git.diff(f"origin/{branch}..HEAD", name_only=True, diff_filter=["AM"]).split("\n")
+        deleted_files = repo.git.diff(f"origin/{branch}..HEAD", name_only=True, diff_filter=["D"]).split("\n")
         j.clients.git.pullGitRepo(dest=repo_dest, url=repo_data["repo"])
 
     # remove unused files
@@ -514,7 +520,18 @@ def wiki_reload(name=None):
             doc = Doc.Doc(name=file_name, path=f"{repo_dest}/{ch_file}", docsite=docsite)
             doc.path_dir_rel = ""
             doc.write()
-            print(f"wiki: {name}, file: {ch_file}. Reloaded Success")
+            print(f"wiki: {name}, file: {ch_file}. Reloaded Successfuly")
+
+        # clean up deleted files
+        for del_file in deleted_files:
+            path = f"/docsites/{name}"
+            file_name = j.sal.fs.getBaseName(del_file).rstrip(".md")
+            file_path = f"{path}/{file_name}"
+            if j.sal.bcdbfs.file_exists(file_path):
+                j.sal.bcdbfs.file_delete(file_path)
+                print(f"wiki: {name}, file: {del_file}. Deletion Success")
+
+        print("Reload Success")
 
     render_changes()
 
