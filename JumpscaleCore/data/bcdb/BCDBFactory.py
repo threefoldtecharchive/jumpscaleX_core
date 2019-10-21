@@ -235,16 +235,13 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             bcdb = self._children[name]
             assert name in self._config
             return bcdb
-        elif storclient:
-            if not self.exists(name=name):
-                return self.new(name=name, storclient=storclient, reset=reset)
-            else:
-                return self._get(name=name, storclient=storclient, reset=reset)
-        elif name in self._config:
+
+        if name in self._config and not storclient:
             storclient = self._get_storclient(name)
-            return self._get(name=name, storclient=storclient, reset=reset)
+        if not self.exists(name=name):
+            return self.new(name=name, storclient=storclient, reset=reset)
         else:
-            raise j.exceptions.Input("could not find bcdb with name:%s" % name)
+            return self._get(name=name, storclient=storclient, reset=reset)
 
     def _get_vfs(self):
         from .BCDBVFS import BCDBVFS
