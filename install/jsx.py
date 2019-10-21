@@ -2,11 +2,7 @@
 import click
 from urllib.request import urlopen
 from importlib import util
-import sys
 import shutil
-import time
-import inspect
-import argparse
 import os
 
 DEFAULT_BRANCH = "development"
@@ -40,22 +36,8 @@ def load_install_tools(branch=None):
     spec = util.spec_from_file_location("IT", path)
     IT = spec.loader.load_module()
     IT.MyEnv.init()
-    # if path.find("/code/") != -1:  # means we are getting the installtools from code dir
-    #     check_branch(IT)
     return IT
 
-
-# def check_branch(IT):
-#     HOMEDIR = os.environ["HOME"]
-#     paths = ["/sandbox/code/github/threefoldtech/jumpscaleX", "%s/code/github/threefoldtech/jumpscaleX" % HOMEDIR]
-#     for path in paths:
-#         if os.path.exists(path):
-#             cmd = "cd %s; git branch | grep \* | cut -d ' ' -f2" % path
-#             rc, out, err = IT.Tools.execute(cmd)
-#             if out.strip() != DEFAULT_BRANCH:
-#                 print("WARNING the branch of jumpscale in %s needs to be %s" % (path, DEFAULT_BRANCH))
-#                 if not IT.Tools.ask_yes_no("OK to work with branch above?"):
-#                     sys.exit(1)
 
 IT = load_install_tools()
 IT.MyEnv.interactive = True  # std is interactive
@@ -80,7 +62,7 @@ def jumpscale_get(die=True):
     # jumpscale need to be available otherwise cannot do
     try:
         from Jumpscale import j
-    except Exception as e:
+    except Exception:
         if die:
             raise RuntimeError("ERROR: cannot use jumpscale yet, has not been installed")
         return None
@@ -191,6 +173,7 @@ def configure(
     help="reinstall, basically means will try to re-do everything without removing the data",
 )
 @click.option("--develop", is_flag=True, help="will use the development docker image to start from.")
+@click.option("--ports", help="Expose extra ports repeat for multiple eg. 80:80", multiple=True)
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
 def container_install(
     name="3bot",
@@ -203,6 +186,7 @@ def container_install(
     no_interactive=False,
     pull=False,
     develop=False,
+    ports=None,
 ):
     """
     create the 3bot container and install jumpcale inside
@@ -232,7 +216,14 @@ def container_install(
     if not branch:
         branch = IT.DEFAULT_BRANCH
 
-    docker = e.DF.container_get(name=name, delete=delete, image=image)
+    portmap = None
+    if ports:
+        portmap = dict()
+        for port in ports:
+            src, dst = port.split(":", 1)
+            portmap[src] = dst
+
+    docker = e.DF.container_get(name=name, delete=delete, image=image, ports=portmap)
 
     docker.install()
 

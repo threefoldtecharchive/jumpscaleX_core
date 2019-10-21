@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 import getpass
 import pickle
+import re
 
 DEFAULT_BRANCH = "development"
 GITREPOS = {}
@@ -81,7 +82,6 @@ import socket
 import grp
 import os
 import random
-import select
 import shutil
 import stat
 import subprocess
@@ -89,16 +89,12 @@ import sys
 import textwrap
 import time
 import re
-from fcntl import F_GETFL, F_SETFL, fcntl
-from os import O_NONBLOCK, read
-from pathlib import Path
-from subprocess import Popen, check_output
 import inspect
-
-try:
-    import json
-except:
-    pass
+import json
+from fcntl import F_GETFL, F_SETFL, fcntl
+from os import O_NONBLOCK
+from pathlib import Path
+from subprocess import Popen
 
 try:
     import traceback
@@ -142,7 +138,6 @@ class InputError(Exception):
     pass
 
 
-import inspect
 
 try:
     import yaml
@@ -163,8 +158,6 @@ try:
 
 except:
     try:
-        import json
-
         def serializer(data):
             if hasattr(data, "_data"):
                 return str(data._data)
@@ -4415,7 +4408,7 @@ class DockerFactory:
                     DockerContainer(name_found)
 
     @staticmethod
-    def container_get(name, image="threefoldtech/3bot", start=False, delete=False):
+    def container_get(name, image="threefoldtech/3bot", start=False, delete=False, ports=None):
         DockerFactory.init()
         if name in DockerFactory._dockers:
             docker = DockerFactory._dockers[name]
@@ -4424,7 +4417,7 @@ class DockerFactory:
                 # needed because docker object is being retained
                 docker.config.save()
         else:
-            docker = DockerContainer(name=name, image=image, delete=delete)
+            docker = DockerContainer(name=name, image=image, delete=delete, ports=ports)
         if start:
             docker.start()
         return docker
@@ -4503,7 +4496,7 @@ class DockerFactory:
 
 
 class DockerConfig:
-    def __init__(self, name, image=None, startupcmd=None, delete=False):
+    def __init__(self, name, image=None, startupcmd=None, delete=False, ports=None):
         """
         port config is as follows:
 
@@ -4514,10 +4507,10 @@ class DockerConfig:
         :param name:
         :param portrange:
         :param image:
-        :param sshport:
         :param startupcmd:
         """
         self.name = name
+        self.ports = ports
 
         self.path_vardir = Tools.text_replace("{DIR_BASE}/var/containers/{NAME}", args={"NAME": name})
         Tools.dir_ensure(self.path_vardir)
@@ -4609,11 +4602,13 @@ class DockerConfig:
         self.save()
 
     def load(self):
-
         if not Tools.exists(self.path_config):
             raise Tools.exceptions.JSBUG("could not find config path for container:%s" % self.path_config)
 
         r = Tools.config_load(self.path_config, keys_lower=True)
+        ports = r.pop("ports", None)
+        if ports:
+            self.ports = json.loads(ports)
         if r != {}:
             self.__dict__.update(r)
 
@@ -4628,8 +4623,21 @@ class DockerConfig:
         self.portrange_txt += " -p %s:9001/udp" % udp
         self.portrange_txt += " -p %s:22" % ssh
 
+
+    @property
+    def ports_txt(self):
+        txt = ""
+        if self.portrange_txt:
+            txt = self.portrange_txt
+        if self.ports:
+            for key, value in self.ports.items():
+                txt += f" -p {key}:{value}"
+        return txt
+
     def save(self):
-        Tools.config_save(self.path_config, self.__dict__)
+        data = self.__dict__.copy()
+        data["ports"] = json.dumps(data["ports"])
+        Tools.config_save(self.path_config, data)
         assert isinstance(self.portrange, int)
         self.load()
 
@@ -4640,7 +4648,7 @@ class DockerConfig:
 
 
 class DockerContainer:
-    def __init__(self, name="default", delete=False, image=None, startupcmd=None):
+    def __init__(self, name="default", delete=False, image=None, startupcmd=None, ports=None):
         """
         if you want to start from scratch use: "phusion/baseimage:master"
 
@@ -4653,7 +4661,7 @@ class DockerContainer:
 
         DockerFactory._dockers[name] = self
 
-        self.config = DockerConfig(name=name, image=image, startupcmd=startupcmd, delete=delete)
+        self.config = DockerConfig(name=name, image=image, startupcmd=startupcmd, delete=delete, ports=ports)
 
         if self.config.portrange == None:
             self.config._find_port_range()
@@ -4707,30 +4715,6 @@ class DockerContainer:
     def name(self):
         return self.config.name
 
-    # def sandbox_sync(self):
-    #     if Tools.exists("/tmp/package/threebot"):
-    #         src = "/tmp/package/threebot"
-    #     elif Tools.exists("{DIR_BASE}/code/.../threebot"):
-    #         # todo:
-    #         pass
-    #     else:
-    #         Tools.shell()
-    #         raise j.exceptions.JSBUG("can't find sandbox files")
-    #
-    #     if src[-1] != "/":
-    #         src += "/"
-    #
-    #     exclude = ' --exclude "etc/group"'
-    #     exclude += ' --exclude "etc/passwd"'
-    #     cmd = (
-    #         'rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p %s"  %s %s localhost:/'
-    #         % (self.config.sshport, exclude, src)
-    #     )
-    #
-    #     rc, out, err = Tools.execute(cmd, die=False)
-    #     if rc:
-    #         raise Tools.exceptions.Base("could not sync the sandbox src:%s\n%s" % err % src, data=cmd)
-
     def start(self, mount_dirs=True, stop=False):
         if not self.container_exists_config:
             raise Tools.exceptions.Operations("ERROR: cannot find docker with name:%s, cannot start" % self.name)
@@ -4755,7 +4739,6 @@ class DockerContainer:
         if not image2:
             image2 = self.config.image
         args["IMAGE"] = image2
-        image = image2
 
         if ":" in image2:
             image2 = image2.split(":")[0]
@@ -4826,19 +4809,15 @@ class DockerContainer:
             args["MOUNTS"] = Tools.text_replace(MOUNTS.strip(), args=args)
             args["CMD"] = self.config.startupcmd
             if portmap:
-                args["PORTRANGE"] = self.config.portrange_txt
+                args["PORTRANGE"] = self.config.ports_txt
             else:
                 args["PORTRANGE"] = ""
             run_cmd = (
                 "docker run --name={NAME} --hostname={NAME} -d {PORTRANGE} \
             --device=/dev/net/tun --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --cap-add=DAC_OVERRIDE \
             --cap-add=DAC_READ_SEARCH {MOUNTS} {IMAGE} {CMD}".strip()
-                .replace("  ", " ")
-                .replace("  ", " ")
-                .replace("  ", " ")
-                .replace("  ", " ")
             )
-            run_cmd2 = Tools.text_replace(run_cmd, args=args)
+            run_cmd2 = Tools.text_replace(re.sub("\s+", " ", run_cmd), args=args)
 
             print(" - Docker machine gets created: ")
             print(run_cmd2)
