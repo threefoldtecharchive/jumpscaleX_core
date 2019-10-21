@@ -40,7 +40,8 @@ class OpenRestyServer(j.baseclasses.factory_data):
         self.path_cfg = "%s/nginx.conf" % self.path_cfg_dir
         j.sal.fs.createDir(self.path_web)
         j.sal.fs.createDir(self.path_cfg_dir)
-
+        # clean old websites config
+        j.sal.fs.remove("%s/servers" % self.path_cfg_dir)
         self.executor = "tmux"  # only tmux for now
 
         self.install()
