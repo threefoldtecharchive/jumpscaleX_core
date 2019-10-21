@@ -4817,11 +4817,11 @@ class DockerContainer:
             MOUNTS = ""
             if mount_dirs:
                 MOUNTS = """
-                -v {DIR_CODE}:{DIR_BASE}/code \
-                -v {DIR_BASE}/var/containers/shared:{DIR_BASE}/myhost \
+                -v {DIR_CODE}:/sandbox/code \
+                -v {DIR_BASE}/var/containers/shared:/sandbox/myhost \
                 """
-                # -v {DIR_BASE}/var/containers/{NAME}/var:{DIR_BASE}/var \
-                # -v {DIR_BASE}/var/containers/{NAME}/cfg:{DIR_BASE}/cfg \
+                # -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
+                # -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
 
             args["MOUNTS"] = Tools.text_replace(MOUNTS.strip(), args=args)
             args["CMD"] = self.config.startupcmd
@@ -4865,7 +4865,7 @@ class DockerContainer:
 
         if update or new:
             print(" - Configure / Start SSH server")
-            self.dexec("rm -rf {DIR_BASE}/cfg/keys")
+            self.dexec("rm -rf /sandbox/cfg/keys")
             self.dexec("rm -f /root/.ssh/authorized_keys;/etc/init.d/ssh stop 2>&1 > /dev/null", die=False)
             self.dexec("/usr/bin/ssh-keygen -A")
             self.dexec("/etc/init.d/ssh start")
@@ -4898,8 +4898,6 @@ class DockerContainer:
     def dexec(self, cmd, interactive=False, die=True):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
-        if "{" in cmd:
-            cmd = Tools.text_replace(cmd)
         if interactive:
             cmd2 = "docker exec -ti %s bash -c '%s'" % (self.name, cmd)
         else:
@@ -4931,8 +4929,6 @@ class DockerContainer:
     def sshexec(self, cmd, retry=None, asfile=True):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
-        if "{" in cmd:
-            cmd = Tools.text_replace(cmd)
         cmd2 = "ssh -oStrictHostKeyChecking=no -t root@localhost -A -p %s '%s'" % (self.config.sshport, cmd)
         Tools.execute(
             cmd2, interactive=True, showout=False, replace=False, asfile=asfile, timeout=3600 * 2, retry=retry
@@ -4953,7 +4949,7 @@ class DockerContainer:
         Tools.file_write(f"/tmp/{name}.py", cmd)
         cmd = f"scp -P {sshport} /tmp/{name}.py root@localhost:/tmp/{name}.py"
         Tools.execute(cmd, showout=False, replace=False)
-        cmd = f"source {DIR_BASE}/env.sh;kosmos -p /tmp/{name}.py"
+        cmd = f"source /sandbox/env.sh;kosmos -p /tmp/{name}.py"
         self.sshexec(cmd, asfile=True)
 
     def kosmos(self):
@@ -5152,17 +5148,17 @@ class DockerContainer:
         dirpath = os.path.dirname(inspect.getfile(Tools))
         if dirpath.startswith(MyEnv.config["DIR_CODE"]):
             cmd = (
-                "python3 {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/install/jsx.py configure --sshkey %s -s"
+                "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py configure --sshkey %s -s"
                 % MyEnv.sshagent.key_default_name
             )
             Tools.log("CONFIGURE THE CONTAINER", data=cmd)
             self.sshexec(cmd)
             self.sshexec("rm -f /tmp/InstallTools.py;rm -f /tmp/jsx")
-            cmd = "python3 {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s"
+            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s"
             cmd += args_txt
         else:
             print(" - copy installer over from where I install from")
-            dirpath2 = "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/install/"
+            dirpath2 = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/"
             if not Tools.exists(dirpath2):
                 dirpath2 = dirpath
             for item in ["jsx", "InstallTools.py"]:
@@ -5875,9 +5871,16 @@ class ExecutorSSH:
         """
         C = """
         set +ex
-        ls "{DIR_BASE}"  > /dev/null 2>&1 && echo 'ISSANDBOX = 1' || echo 'ISSANDBOX = 0'
+        
+        if [ -e /sandbox ]; then
+            export PBASE=/sandbox
+        else
+            export PBASE=~/sandbox
+        fi
+        
+        ls $PBASE  > /dev/null 2>&1 && echo 'ISSANDBOX = 1' || echo 'ISSANDBOX = 0'
 
-        ls "{DIR_BASE}/bin/python3"  > /dev/null 2>&1 && echo 'ISSANDBOX_BIN = 1' || echo 'ISSANDBOX_BIN = 0'
+        ls "$PBASE/bin/python3"  > /dev/null 2>&1 && echo 'ISSANDBOX_BIN = 1' || echo 'ISSANDBOX_BIN = 0'
         echo UNAME = \""$(uname -mnprs)"\"
         echo "HOME = $HOME"
         echo HOSTNAME = "$(hostname)"
@@ -5888,7 +5891,7 @@ class ExecutorSSH:
         fi
 
         echo "CFG_JUMPSCALE = --TEXT--"
-        cat {DIR_BASE}/cfg/jumpscale_config.msgpack 2>/dev/null || echo ""
+        cat $PBASE/cfg/jumpscale_config.msgpack 2>/dev/null || echo ""
         echo --TEXT--
 
         echo "BASHPROFILE = --TEXT--"
@@ -6097,7 +6100,7 @@ class ExecutorSSH:
         # cmd = f"scp -P {sshport} /tmp/{name}.py root@localhost:/tmp/{name}.py"
         # Tools.execute(cmd, showout=False, replace=False)
         self.file_write(f"/tmp/{name}.py", cmd)
-        cmd = f"source {DIR_BASE}/env.sh;kosmos -p /tmp/{name}.py"
+        cmd = f"source /sandbox/env.sh;kosmos -p /tmp/{name}.py"
         self.execute(cmd)
 
     def kosmos(self):
@@ -6278,6 +6281,7 @@ class WireGuardServer:
         C2 = Tools.text_replace(C2, args=self.config_server)
         C += C2
         path = "{DIR_BASE}/cfg/wireguard/%s/wg0.conf" % self.serverid
+        path = Tools.text_replace(path)
         Tools.dir_ensure(os.path.dirname(path))
         Tools.file_write(path, C)
         # print("WIREGUARD CONFIFURATION:\n\n%s" % config)
