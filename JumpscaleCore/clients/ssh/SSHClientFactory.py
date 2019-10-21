@@ -25,7 +25,7 @@ class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
             # return SSHClientParamiko
             return SSHClient
         else:
-            return SSHClient
+            return SSHClientParamiko
 
     def test(self):
         """
