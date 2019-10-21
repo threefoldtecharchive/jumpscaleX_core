@@ -263,8 +263,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         elif data["type"] == "rdb":
             storclient = j.clients.rdb.client_get(namespace=data["namespace"], redisconfig_name="core")
         elif data["type"] == "sdb":
-            if "type" in data:
-                data.pop("type")
             storclient = j.clients.sqlitedb.client_get(namespace=data["namespace"])
         else:
             raise j.exceptions.Input("type storclient not found:%s" % data["type"])

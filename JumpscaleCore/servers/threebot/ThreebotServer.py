@@ -62,21 +62,18 @@ class ThreeBotServer(j.baseclasses.object_config):
         return self._openresty_server
 
     def bcdb_get(self, name):
-        zdb_admin = j.clients.zdb.client_admin_get()
-        zdb_namespace_exists = zdb_admin.namespace_exists(name)
 
         if j.data.bcdb.exists(name=name):
-            if not zdb_namespace_exists:
-                # can't we put logic into the bcdb-new to use existing namespace if its there and recreate the index
-                raise j.exceptions.Base("serious issue bcdb exists, zdb namespace does not")
-            return j.data.bcdb.get(name=name)
+            bcdb = j.data.bcdb.get(name=name)
+            if bcdb.storclient.type == 'zdb':
+                zdb_admin = j.clients.zdb.client_admin_get()
+                zdb_namespace_exists = zdb_admin.namespace_exists(name)
+                if not zdb_namespace_exists:
+                    # can't we put logic into the bcdb-new to use existing namespace if its there and recreate the index
+                    raise j.exceptions.Base("serious issue bcdb exists, zdb namespace does not")
+            return bcdb
 
-        if not zdb_namespace_exists:
-            zdb_cl = zdb_admin.namespace_new(name, secret=self.secret)
-            # can't we put logic into the bcdb-new to use existing namespace if its there and recreate the index
-        else:
-            zdb_cl = zdb_admin.namespace_get(name, secret=self.secret)
-        return j.data.bcdb.new(name=name, storclient=zdb_cl)
+        return j.data.bcdb.new(name=name)
 
     @property
     def zdb(self):
