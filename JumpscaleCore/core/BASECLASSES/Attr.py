@@ -32,8 +32,9 @@ class Attr:
 
         if not name.startswith("_"):
 
-            if name in self._children:
-                return self._children[name]
+            child = self._validate_child(name)
+            if child:
+                return child
 
             if isinstance(self, j.baseclasses.object_config):
                 if name in self._model.schema.propertynames:
