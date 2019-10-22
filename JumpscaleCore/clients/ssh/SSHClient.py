@@ -144,7 +144,6 @@ class SSHClient(SSHClientBase):
         self.executor.dir_ensure(destination)
         res = self._client.scp_send(local_file, remote_file, recurse=False)
         gevent.joinall(res)
-        self._log_debug("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
         self._log_info("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
 
     def sftp_stat(self, path):

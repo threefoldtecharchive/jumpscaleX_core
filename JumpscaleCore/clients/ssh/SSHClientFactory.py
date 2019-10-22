@@ -14,12 +14,12 @@ class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
         self._clients = {}
         self._SSHClientBaseClass = SSHClientBase
 
-    def _childclass_selector(self, **kwargs):
+    def _childclass_selector(self, jsxobject):
         """
         gives a creator of a factory the ability to change the type of child to be returned
         :return:
         """
-        if "client_type" in kwargs and kwargs["client_type"] == "pssh":
+        if jsxobject.client_type == "pssh":
             return SSHClient
         elif j.core.platformtype.myplatform.platform_is_osx:
             # return SSHClientParamiko
