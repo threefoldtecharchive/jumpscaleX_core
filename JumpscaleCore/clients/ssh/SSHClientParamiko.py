@@ -57,6 +57,32 @@ class SSHClientParamiko(SSHClientBase):
 
         return self._ftp
 
+    def file_copy(self, local_file, remote_file):
+        """Copy local file to host via SFTP/SCP
+
+        Copy is done natively using SFTP/SCP version 2 protocol, no scp command
+        is used or required.
+
+        :param local_file: Local filepath to copy to remote host
+        :type local_file: str
+        :param remote_file: Remote filepath on remote host to copy file to
+        :type remote_file: str
+        :raises: :py:class:`ValueError` when a directory is supplied to
+          ``local_file`` and ``recurse`` is not set
+        :raises: :py:class:`IOError` on I/O errors writing files
+        :raises: :py:class:`OSError` on OS errors like permission denied
+        """
+        local_file = self._replace(local_file, paths_executor=False)
+        remote_file = self._replace(remote_file)
+        if os.path.isdir(local_file):
+            raise j.exceptions.Value("Local file cannot be a dir")
+        destination = j.sal.fs.getDirName(remote_file)
+        self.executor.dir_ensure(destination)
+        with open(local_file) as fd:
+            self.sftp.putfo(fd, remote_file)
+        self._log_debug("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
+        self._log_info("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
+
     def _parent_paths_split(self, file_path, sep=None):
         sep = os.path.sep if sep is None else sep
         try:
