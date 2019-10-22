@@ -18,7 +18,7 @@ class GridnetworkClient(j.baseclasses.object):
         return self._network.networks_find()
 
     def network_connect(self, networkname, doublename=None, sshclient_name=None, port=7777, interface_name="wg0"):
-        wg = j.tools.wireguard.new(f"{networkname}_{sshclient_name}", autosave=False)
+        wg = j.tools.wireguard.get(f"{networkname}_{sshclient_name}", autosave=False)
         wg.sshclient_name = sshclient_name
         try:
             wg.install()
