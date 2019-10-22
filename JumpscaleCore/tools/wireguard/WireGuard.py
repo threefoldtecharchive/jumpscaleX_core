@@ -128,8 +128,8 @@ class WireGuard(j.baseclasses.object_config):
         rc, output, _ = self.executor.execute(f"ip a s dev {self.interface_name}", die=False)
         up = False
         if rc == 0:
-            info = j.sal.nettools.networkinfo_parse_ip(output)[0]
-            if info["ip"][0] != self.network_private.split("/")[0]:
+            info = j.sal.nettools.networkinfo_parse_ip(output)
+            if not info or info[0]["ip"][0] != self.network_private.split("/")[0]:
                 self.executor.execute(f"ip l d {self.interface_name}")
                 up = True
         else:
