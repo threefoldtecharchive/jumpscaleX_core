@@ -65,7 +65,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         if j.data.bcdb.exists(name=name):
             bcdb = j.data.bcdb.get(name=name)
-            if bcdb.storclient.type == 'zdb':
+            if bcdb.storclient.type == "zdb":
                 zdb_admin = j.clients.zdb.client_admin_get()
                 zdb_namespace_exists = zdb_admin.namespace_exists(name)
                 if not zdb_namespace_exists:
@@ -102,7 +102,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         locations.configure()
         website.configure()
 
-    def start(self, background=False, web=None, ssl=None):
+    def start(self, background=False, web=None, ssl=None, timeout=120):
         """
 
         kosmos -p 'j.servers.threebot.default.start(background=True,web=False)'
@@ -181,7 +181,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                 self.startup_cmd.start()
                 time.sleep(1)
 
-        if not j.sal.nettools.waitConnectionTest("127.0.0.1", 8901, timeout=120):
+        if not j.sal.nettools.waitConnectionTest("127.0.0.1", 8901, timeout=timeout):
             raise j.exceptions.Timeout("Could not start threebot server")
 
         self.client = j.clients.gedis.get(name="threebot", port=8901, namespace="default")

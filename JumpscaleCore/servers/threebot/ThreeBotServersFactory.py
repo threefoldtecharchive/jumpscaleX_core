@@ -42,7 +42,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def local_start_default(self, web=True, packages_add=False):
+    def local_start_default(self, web=True, packages_add=False, timeout=120):
         """
 
         kosmos -p 'j.servers.threebot.local_start_default()'
@@ -51,6 +51,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         will check if there is already one running, will create client to localhost & return
         gedis client
+        :param timeout: you can increase the timeout to make sure you server runs on slow machines
         :return:
         """
         if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
@@ -58,7 +59,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             self.default.stop()
 
         # will return client
-        client = self.default.start(background=True, web=web)
+        client = self.default.start(background=True, web=web, timeout=timeout)
 
         client.actors.package_manager.package_add(path=j.threebot.package.phonebook._dirpath)
 
