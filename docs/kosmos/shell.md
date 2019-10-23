@@ -13,6 +13,7 @@ To enter the shell, just execute `kosmos`, you will find `j` object available di
 - [Logging](#logging)
 - [Exceptions](#exceptions-and-debugging)
 - [Running instructions directly](#running-instructions-or-scripts-directly)
+- [Known issues](#known-issues)
 - [Internals](#internals)
 
 
@@ -106,6 +107,9 @@ Then run it:
 
 `kosmos -p start_jq.py`
 
+## Known issues
+* Using any debugger that's based on prompt-toolkit (like `ipdb`) will cause some [concurrency problems](https://github.com/threefoldtech/jumpscaleX_core/issues/49#issuecomment-530411221), as prompt-toolkit only allow one running app, as a solution you can use `pudb` or try running the [instuction directly](#running-instructions-or-scripts-directly), not from a shell session.
+* Logs overwrite debugger interface. To solve this problem, try using `j.debug()` as this will stop logging while debugging, also setting `debug=False` in jumpscale configuratio would help as `debug` forces writing logs.
 ## Internals
 
 You'll find [here](shell_internals.md) a list of internal details about the shell.
