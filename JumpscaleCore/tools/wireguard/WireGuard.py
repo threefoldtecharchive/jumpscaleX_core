@@ -118,7 +118,7 @@ class WireGuard(j.baseclasses.object_config):
             if peerobject.network_public:
                 peer["EndPoint"] = f"{peerobject.network_public}:{peerobject.port}"
                 peer["PersistentKeepalive"] = "25"
-                peer["AllowedIPs"] = f"{subnet.network}/{subnet.prefixlen}"
+                peer["AllowedIPs"] = f"{subnet.network}/{subnet.prefixlen},{subnet.ip}/32"
             else:
                 peer["AllowedIPs"] = f"{subnet.ip}"
             config += to_section("Peer", peer)
