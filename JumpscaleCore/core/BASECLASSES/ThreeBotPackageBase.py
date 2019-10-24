@@ -34,6 +34,8 @@ class ThreeBotPackageBase(JSBase):
         self.threebot_server = self._package.threebot_server
         self.actors_namespace = "default"
 
+    ###DO NOT DO ANYTHING IN THE BASECLASSES BELOW PLEASE
+
     @property
     def bcdb(self):
         # return system by default
@@ -57,29 +59,7 @@ class ThreeBotPackageBase(JSBase):
         called when the 3bot starts
         :return:
         """
-        models_path = self.package_root + "/models"
-        if j.sal.fs.exists(models_path):
-            self.bcdb.models_add(path=models_path)
-
-        actors_path = self.package_root + "/actors"
-        if j.sal.fs.exists(actors_path):
-            self.gedis_server.actors_add(actors_path, namespace="default")
-
-        chatflows_path = self.package_root + "/chatflows"
-        if j.sal.fs.exists(chatflows_path):
-            self.gedis_server.chatbot.chatflows_load(chatflows_path)
-
-        # FIXME or should it be removed? it'll only work if u call package.start manually.
-        # def load_wiki(path=None, name=None):
-        #     wiki = j.tools.markdowndocs.load(path=path, name=name, pull=False)
-        #     wiki.write()
-
-        # path = self.package_root + "/wiki"
-        # if j.sal.fs.exists(path):
-        #     j.servers.myjobs.workers_tmux_start(nr_workers=1)
-        #     name = self._package.name
-        #     job = j.servers.myjobs.schedule(load_wiki, name=name, path=path)
-        #     j.servers.myjobs.wait([job.id], timeout=None, die=False)
+        pass
 
     def stop(self):
         """
@@ -93,5 +73,4 @@ class ThreeBotPackageBase(JSBase):
         called when the package is no longer needed and will be removed from the threebot
         :return:
         """
-        # TODO: clean up bcdb ?
         pass
