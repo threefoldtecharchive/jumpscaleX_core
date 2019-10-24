@@ -38,7 +38,11 @@ class GedisChatBotFactory(JSBASE):
         :param session_id: user session id
         :return: new question dict
         """
-        bot = self.sessions[session_id]
+        bot = self.sessions.get(session_id)
+        if not bot or bot.greenlet.ready():
+            if bot:
+                self.sessions.pop(session_id)
+            return {"cat": "md_show", "msg": "Chat has ended", "kwargs": {}}
         return bot.q_out.get(block=True)
 
     def session_work_set(self, session_id, result):
@@ -49,6 +53,8 @@ class GedisChatBotFactory(JSBASE):
         :param result: answer sent by the user
         :return:
         """
+        if session_id not in self.sessions:
+            return
         bot = self.sessions[session_id]
         bot.q_in.put(result)
         return
@@ -95,7 +101,18 @@ class GedisChatBotSession(JSBASE):
         self.q_out = gevent.queue.Queue()  # to browser
         self.q_in = gevent.queue.Queue()  # from browser
         self.kwargs = kwargs
-        gevent.spawn(topic_method, bot=self)
+        self.topic_method = topic_method
+        self.greenlet = None
+        self.launch()
+
+    def launch(self):
+        def wrapper():
+            try:
+                self.topic_method(bot=self)
+            except Exception as e:
+                j.errorhandler.exception_handle(e, die=False)
+                return self.md_show("Something went wrong please contact support")
+        self.greenlet = gevent.spawn(wrapper)
 
     # ###################################
     # Helper methods for asking questions
