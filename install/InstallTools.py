@@ -379,6 +379,8 @@ class RedisTools:
         )
         cmd = cmd.replace("$UNIXSOCKET", RedisTools.unix_socket_path)
 
+        assert "{" not in cmd
+
         Tools.log(cmd)
         Tools.execute(cmd, replace=True)
         limit_timeout = time.time() + timeout
@@ -3447,13 +3449,12 @@ class MyEnv_:
             script = """
             set -ex
             cd /
-            sudo mkdir -p {DIR_BASE}/cfg
-            sudo chown -R {USERNAME}:{GROUPNAME} {DIR_BASE}
+            sudo mkdir -p /sandbox/cfg
+            sudo chown -R {USERNAME}:{GROUPNAME} /sandbox
             mkdir -p /usr/local/EGG-INFO
             sudo chown -R {USERNAME}:{GROUPNAME} /usr/local/EGG-INFO
             """
             args = {}
-            args["DIR_BASE"] = basedir
             args["USERNAME"] = getpass.getuser()
             st = os.stat(self.config["DIR_HOME"])
             gid = st.st_gid
@@ -3774,7 +3775,7 @@ class BaseInstaller:
             mkdir -p var
 
             """
-            Tools.execute(script, interactive=MyEnv.interactive, die_if_args_left=True)
+            Tools.execute(script, interactive=MyEnv.interactive, die_if_args_left=True,replace=True)
 
         else:
 
@@ -4006,15 +4007,15 @@ class BaseInstaller:
         rm -rf /var/backups
         apt-get clean -y
         apt-get autoremove --purge -y
-        rm -rf {DIR_BASE}/openresty/pod
-        rm -rf {DIR_BASE}/openresty/site
+        rm -rf /sandbox/openresty/pod
+        rm -rf /sandbox/openresty/site
         touch /tmp/cleanedup
         rm -rf /var/lib/apt/lists
         rm -rf /usr/src
         mkdir -p /var/lib/apt/lists
         find . | grep -E "(__pycache__|\.bak$|\.pyc$|\.pyo$|\.rustup|\.cargo)" | xargs rm -rf
         sed -i -r 's/^SECRET =.*/SECRET =/' {DIR_BASE}/cfg/jumpscale_config.toml
-        rm -f {DIR_BASE}/cfg/keys/default/*
+        rm -f /sandbox/cfg/keys/default/*
         """
         return Tools.text_strip(CMD, replace=False)
 
