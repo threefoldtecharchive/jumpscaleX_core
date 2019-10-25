@@ -89,7 +89,9 @@ class Syncer(j.baseclasses.object_config):
                 "jumpscaleX_libs_extra",
                 "jumpscaleX_threebot",
             ]:
-                self.paths.append("{DIR_CODE}/github/threefoldtech/%s" % item)
+                self.paths.append(
+                    "{DIR_CODE}/github/threefoldtech/%s:/sandbox/code/github/threefoldtech/%s" % (item, item)
+                )
             self.save()
 
     def _get_paths(self, executor=None):
@@ -134,12 +136,11 @@ class Syncer(j.baseclasses.object_config):
         from .MyFileSystemEventHandler import FileSystemMonitor
 
         self._monitor = FileSystemMonitor(syncer=self)
-        print("the only way how it works today, don't ask me why:")
-        print("if your ssh connection is called 'master'")
+        print("## INSTRUCTIONS HOW TO USE")
         print("kosmos -p")
-        print("then in shell do: 'j.clients.ssh.master.syncer.sync()'")
+        print("do (if your client is called master): \n    j.clients.ssh.master.syncer.sync()")
         self._monitor.start()
-        print("monitor started, are out of loop")
+        print("monitor started, are now waiting for changes")
         time.sleep(3600)
 
     def handler(self, event, action="copy"):
@@ -199,7 +200,6 @@ class Syncer(j.baseclasses.object_config):
                             rc = 0
                             self._log_info("OK")
                         except Exception as e:
-                            j.shell()
                             if str(e).find("SocketSendError") != -1:
                                 rc = 1
                                 continue

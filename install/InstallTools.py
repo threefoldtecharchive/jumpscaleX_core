@@ -140,7 +140,6 @@ class InputError(Exception):
     pass
 
 
-
 try:
     import yaml
 
@@ -160,6 +159,7 @@ try:
 
 except:
     try:
+
         def serializer(data):
             if hasattr(data, "_data"):
                 return str(data._data)
@@ -3775,7 +3775,7 @@ class BaseInstaller:
             mkdir -p var
 
             """
-            Tools.execute(script, interactive=MyEnv.interactive, die_if_args_left=True,replace=True)
+            Tools.execute(script, interactive=MyEnv.interactive, die_if_args_left=True, replace=True)
 
         else:
 
@@ -4009,13 +4009,20 @@ class BaseInstaller:
         apt-get autoremove --purge -y
         rm -rf /sandbox/openresty/pod
         rm -rf /sandbox/openresty/site
+        rm -rf /sandbox/var
+        rm -rf /sandbox/root
+        rm -rf /sandbox/code
+        rm -rf /sandbox/myhost
+        mkdir -p /sandbox/var
         touch /tmp/cleanedup
         rm -rf /var/lib/apt/lists
         rm -rf /usr/src
         mkdir -p /var/lib/apt/lists
         find . | grep -E "(__pycache__|\.bak$|\.pyc$|\.pyo$|\.rustup|\.cargo)" | xargs rm -rf
-        sed -i -r 's/^SECRET =.*/SECRET =/' {DIR_BASE}/cfg/jumpscale_config.toml
+        sed -i -r 's/^SECRET =.*/SECRET =/' /sandbox/cfg/jumpscale_config.toml
         rm -f /sandbox/cfg/keys/default/*
+        rm -rf /root/src
+        rm -rf /var/cache/luarocks
         """
         return Tools.text_strip(CMD, replace=False)
 
@@ -4626,7 +4633,6 @@ class DockerConfig:
         self.portrange_txt += " -p %s:9001/udp" % udp
         self.portrange_txt += " -p %s:22" % ssh
 
-
     @property
     def ports_txt(self):
         txt = ""
@@ -4727,12 +4733,13 @@ class DockerContainer:
             return
         self.install(mount_dirs=mount_dirs, stop=stop)
 
-    def install(self, mount_dirs=True, update=None, portmap=True, stop=False, delete=False):
+    def install(self, mount_dirs=True, update=None, portmap=True, stop=False, delete=False, pull=False):
         """
 
         :param update: is yes will upgrade the ubuntu
         :param mount_dirs if mounts will be done from host system
         :return:
+
         """
 
         args = {}
@@ -4795,9 +4802,10 @@ class DockerContainer:
             new = False
 
         if new or delete or not self.container_running:
-            # lets make sure we have the latest image
-            run_image_update_cmd = Tools.text_replace("docker image pull {IMAGE}", args=args)
-            Tools.execute(run_image_update_cmd, interactive=False)
+            if pull:
+                # lets make sure we have the latest image, ONLY DO WHEN FORCED, NOT STD
+                run_image_update_cmd = Tools.text_replace("docker image pull {IMAGE}", args=args)
+                Tools.execute(run_image_update_cmd, interactive=False)
 
             # Now create the container
             MOUNTS = ""
@@ -4815,11 +4823,9 @@ class DockerContainer:
                 args["PORTRANGE"] = self.config.ports_txt
             else:
                 args["PORTRANGE"] = ""
-            run_cmd = (
-                "docker run --name={NAME} --hostname={NAME} -d {PORTRANGE} \
+            run_cmd = "docker run --name={NAME} --hostname={NAME} -d {PORTRANGE} \
             --device=/dev/net/tun --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --cap-add=DAC_OVERRIDE \
             --cap-add=DAC_READ_SEARCH {MOUNTS} {IMAGE} {CMD}".strip()
-            )
             run_cmd2 = Tools.text_replace(re.sub("\s+", " ", run_cmd), args=args)
 
             print(" - Docker machine gets created: ")
@@ -5021,7 +5027,7 @@ class DockerContainer:
             self.config.image = imagename
             self.config.save()
             self.delete()
-            self.install(update=False, mount_dirs=mount_dirs)
+            self.install(update=False, mount_dirs=mount_dirs, pull=False)
             self.start()
 
     def export(self, path=None, name=None, version=None):
@@ -5069,6 +5075,7 @@ class DockerContainer:
             Tools.execute(cmd, die=False)
             cmd = "docker commit -p %s %s" % (self.name, image)
             print(" - %s" % cmd)
+
             Tools.execute(cmd)
 
         save_internal()
@@ -5082,6 +5089,7 @@ class DockerContainer:
         if clean_runtime or clean_devel:
             self.stop()
             self.start(mount_dirs=False)
+
             clean(self, BaseInstaller.cleanup_script_get())
             ##LETS FOR NOW NOT DO IT YET, THERE SEEM TO BE SOME ISSUES
             ##TODO: needs to be fixed to allow the base 3bot image to be smaller
