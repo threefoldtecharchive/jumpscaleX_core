@@ -39,10 +39,15 @@ class GedisChatBotFactory(JSBASE):
         :return: new question dict
         """
         bot = self.sessions.get(session_id)
-        if not bot or bot.greenlet.ready():
-            if bot:
-                self.sessions.pop(session_id)
+        if not bot:
             return {"cat": "md_show", "msg": "Chat has ended", "kwargs": {}}
+        elif bot.greenlet.ready():
+            self.sessions.pop(session_id)
+            msg = "Chat had ended"
+            if bot.greenlet.exception:
+                j.errorhandler.exception_handle(bot.greenlet.exception, die=False)
+                msg = "Something went wrong please contact support"
+            return {"cat": "md_show", "msg": msg, "kwargs": {}}
         return bot.q_out.get(block=True)
 
     def session_work_set(self, session_id, result):
