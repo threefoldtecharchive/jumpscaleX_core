@@ -378,6 +378,7 @@ class RedisTools:
             "--maxmemory 100000000 --daemonize yes"
         )
         cmd = cmd.replace("$UNIXSOCKET", RedisTools.unix_socket_path)
+        cmd = Tools.text_replace(cmd)
 
         assert "{" not in cmd
 
@@ -4021,7 +4022,6 @@ class BaseInstaller:
         find . | grep -E "(__pycache__|\.bak$|\.pyc$|\.pyo$|\.rustup|\.cargo)" | xargs rm -rf
         sed -i -r 's/^SECRET =.*/SECRET =/' /sandbox/cfg/jumpscale_config.toml
         rm -f /sandbox/cfg/keys/default/*
-        rm -rf /root/src
         rm -rf /var/cache/luarocks
         """
         return Tools.text_strip(CMD, replace=False)
@@ -5091,6 +5091,9 @@ class DockerContainer:
             self.start(mount_dirs=False)
 
             clean(self, BaseInstaller.cleanup_script_get())
+            from pudb import set_trace
+
+            set_trace()
             ##LETS FOR NOW NOT DO IT YET, THERE SEEM TO BE SOME ISSUES
             ##TODO: needs to be fixed to allow the base 3bot image to be smaller
             # if clean_devel:
