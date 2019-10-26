@@ -212,6 +212,18 @@ class GedisChatBotSession(JSBASE):
         self.q_out.put({"cat": "md_show", "msg": msg, "kwargs": kwargs})
         return self.q_in.get()
 
+    def md_show_update(self, msg, **kwargs):
+        """
+        a special helper method to send markdown content to the bot instead of questions.
+        usually used for sending info messages to the bot.
+        html generated in the client side will use javascript markdown library to convert it
+        :param msg: the question message
+        :param kwargs: dict of possible extra options like (reset)
+        :return:
+        """
+        self.q_out.put({"cat": "md_show_update", "msg": msg, "kwargs": kwargs})
+        return self.q_in.get()
+
     def redirect(self, msg, **kwargs):
         """
         a special helper method to redirect the user to a specific url.
