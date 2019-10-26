@@ -1,10 +1,20 @@
-
 from Jumpscale import j
+import sys
+import os
+import gevent
 
 THREEBOT_DOMAIN = "3bot.grid.tf"
 PHONEBOOK_DOMAIN = f"phonebook.{THREEBOT_DOMAIN}"
 NAME_MANAGER_DOMAIN = f"namemanager.{THREEBOT_DOMAIN}"
 GRID_MANAGER_DOMAIN = f"gridmanager.{THREEBOT_DOMAIN}"
+
+
+def restart_program():
+    """Restarts the current program.
+    Note: this function does not return. Any cleanup action (like
+    saving data) must be done before calling this function."""
+    python = sys.executable
+    os.execl(python, python, * sys.argv)
 
 
 class registration(j.baseclasses.object):
@@ -61,3 +71,12 @@ class registration(j.baseclasses.object):
 
         print(f"Done, your url is: {doublename}.{THREEBOT_DOMAIN}")
 
+    def reseed(self, newseed, user_session):
+        exportpath = j.sal.fs.getTmpDirPath()
+        j.data.bcdb.system.export(exportpath, False)
+        j.data.nacl.configure(privkey_words=newseed)
+        j.sal.process.execute(
+            f"kosmos -p 'j.data.bcdb.system.destroy(); system = j.data.bcdb.get_system(); system.import(\"{exportpath}\")'"
+        )
+        # restart myself
+        gevent.spawn_later(restart_program, 5)
