@@ -72,7 +72,7 @@ class NACL(j.baseclasses.object):
         it uses the local private key
         """
         if not self._box:
-            self.load()
+            self.load(die=False)
         return self._box
 
     @property
@@ -151,9 +151,9 @@ class NACL(j.baseclasses.object):
         # build in verification
         assert encrypted_seed == self._file_read_hex(self._path_seed)
 
-        self._load_singing_key()
+        self._load_singing_key(die=False)
 
-    def configure(self, privkey_words=None, sshagent_use=None, interactive=None, generate=True):
+    def configure(self, privkey_words=None, sshagent_use=None, interactive=None, generate=True, reset=False):
         """
 
         secret is used to encrypt/decrypt the private key when stored on local filesystem
@@ -175,6 +175,10 @@ class NACL(j.baseclasses.object):
         if sshagent_use:
             raise j.exceptions.Base("does not work yet")
 
+        if reset:
+            self.reset()
+            j.sal.fs.remove(self._path_seed)
+            self._keys_generate(privkey_words)
         self.load(die=False)
 
         if self._signingkey is None:

@@ -9,14 +9,6 @@ NAME_MANAGER_DOMAIN = f"namemanager.{THREEBOT_DOMAIN}"
 GRID_MANAGER_DOMAIN = f"gridmanager.{THREEBOT_DOMAIN}"
 
 
-def restart_program():
-    """Restarts the current program.
-    Note: this function does not return. Any cleanup action (like
-    saving data) must be done before calling this function."""
-    python = sys.executable
-    os.execl(python, python, * sys.argv)
-
-
 class registration(j.baseclasses.object):
     def _init(self, **kwargs):
         self.server = kwargs["gedis_server"]
@@ -72,11 +64,20 @@ class registration(j.baseclasses.object):
         print(f"Done, your url is: {doublename}.{THREEBOT_DOMAIN}")
 
     def reseed(self, newseed, user_session):
+        """
+        ```in
+        newseed = (S)
+        ```
+        :param newseed:
+        :param user_session:
+        :return:
+        """
         exportpath = j.sal.fs.getTmpDirPath()
         j.data.bcdb.system.export(exportpath, False)
-        j.data.nacl.configure(privkey_words=newseed)
+        j.data.nacl.configure(privkey_words=newseed, reset=True)
         j.sal.process.execute(
-            f"kosmos -p 'j.data.bcdb.system.destroy(); system = j.data.bcdb.get_system(); system.import(\"{exportpath}\")'"
+            f"kosmos -p 'system = j.data.bcdb.get_system(); system.import_(\"{exportpath}\")'"
         )
+        j.sal.fs.remove(exportpath)
         # restart myself
-        gevent.spawn_later(restart_program, 5)
+        gevent.spawn_later(5, j.sal.process.restart_program)
