@@ -64,10 +64,6 @@ class ThreeBotPackage(JSConfigBase):
             if j.sal.fs.exists(path):
                 self.gedis_server.chatbot.chatflows_load(path)
 
-            def load_wiki(path=None, name=None):
-                wiki = j.tools.markdowndocs.load(path=path, name=name, pull=False)
-                wiki.write()
-
             # TODO: load macros's (THABET TO PLAN)
 
             chatflows_path = self.path + "/chatflows"
@@ -80,7 +76,7 @@ class ThreeBotPackage(JSConfigBase):
 
             path = self.path + "/wiki"
             if j.sal.fs.exists(path):
-                name = self._package.name
+                name = self.name
                 j.servers.myjobs.schedule(load_wiki, name=name, path=path)
 
 
