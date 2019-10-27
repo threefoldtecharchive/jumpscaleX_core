@@ -143,7 +143,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             j.tools.threebot_packages.get(
                 "webinterface",
-                path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot/webinterface/",
+                path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webinterface/",
             )
             j.tools.threebot_packages.get(
                 "wiki", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot/wiki/"
