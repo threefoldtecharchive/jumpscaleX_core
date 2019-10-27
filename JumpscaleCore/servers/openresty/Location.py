@@ -115,8 +115,8 @@ class LocationsConfiguration(j.baseclasses.object_config):
 
     def _add_weblibs(self, path):
         """
-        copy jumpscale_weblibs repo to the {path}/static
-        :param path: path to copy to (will copy to {path}/static
+        link jumpscale_weblibs repo to the {path}/static
+        :param path: path to link to (will copy to {path}/static
         """
         url = "https://github.com/threefoldtech/jumpscale_weblibs"
         weblibs_path = j.clients.git.getContentPathFromURLorPath(url, pull=False)
@@ -127,9 +127,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
 
         static_dir = j.sal.fs.joinPaths(path, "weblibs")
 
-        if not j.sal.fs.exists(static_dir):
-            j.sal.fs.createDir(static_dir)
-            j.sal.fs.copyDirTree(j.sal.fs.joinPaths(weblibs_path, "static/"), static_dir)
+        j.sal.fs.symlink(j.sal.fs.joinPaths(weblibs_path, "static/"), static_dir, True)
 
 
 class Locations(j.baseclasses.object_config_collection):
