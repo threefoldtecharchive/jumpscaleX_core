@@ -3999,6 +3999,7 @@ class BaseInstaller:
         mkdir -p /root/.cache
         rm -rf /bd_build
         rm -rf /var/log
+        rm -f /sandbox/cfg/bcdb_config
         mkdir -p /var/log
         rm -rf /var/mail
         mkdir -p /var/mail
@@ -5091,9 +5092,7 @@ class DockerContainer:
             self.start(mount_dirs=False)
 
             clean(self, BaseInstaller.cleanup_script_get())
-            from pudb import set_trace
 
-            set_trace()
             ##LETS FOR NOW NOT DO IT YET, THERE SEEM TO BE SOME ISSUES
             ##TODO: needs to be fixed to allow the base 3bot image to be smaller
             # if clean_devel:
