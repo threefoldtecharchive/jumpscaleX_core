@@ -466,6 +466,7 @@ def wiki_reload(name=None):
     reload the changed files from wikis repo
     ex: jsx wiki-reload -n foundation
     """
+    j = jumpscale_get()
     j.tools.markdowndocs.reload(name)
 
 
