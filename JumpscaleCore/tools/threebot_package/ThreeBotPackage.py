@@ -80,9 +80,7 @@ class ThreeBotPackage(JSConfigBase):
 
             path = self.path + "/wiki"
             if j.sal.fs.exists(path):
-                name = self._package.name
-                j.servers.myjobs.schedule(load_wiki, name=name, path=path)
-
+                j.servers.myjobs.schedule(load_wiki, name=self.name, path=path)
 
         self._init_ = True
 
