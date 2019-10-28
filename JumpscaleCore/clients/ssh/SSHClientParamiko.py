@@ -1,16 +1,14 @@
 import io
-from io import StringIO
 import paramiko
-import functools
-import threading
 import queue
+import gevent
 import socket
 import time
 import os
 from Jumpscale import j
 from paramiko.ssh_exception import AuthenticationException, BadHostKeyException, SSHException, BadAuthenticationType
 from .SSHClientBase import SSHClientBase
-from .StreamReader import StreamReader
+from .StreamReader import StreamReaderGevent, StreamReaderThreading
 
 
 class SSHClientParamiko(SSHClientBase):
@@ -210,9 +208,14 @@ class SSHClientParamiko(SSHClientBase):
         stderr = ch.makefile_stderr("r")
 
         # Start stream reader thread that will read strout and strerr
-        inp = queue.Queue()
-        outReader = StreamReader(stdout, ch, inp, "O")
-        errReader = StreamReader(stderr, ch, inp, "E")
+        if j.core.is_gevent_monkey_patched():
+            inp = gevent.queue.Queue()
+            outReader = StreamReaderGevent(stdout, ch, inp, "O")
+            errReader = StreamReaderGevent(stderr, ch, inp, "E")
+        else:
+            inp = queue.Queue()
+            outReader = StreamReaderThreading(stdout, ch, inp, "O")
+            errReader = StreamReaderThreading(stderr, ch, inp, "E")
         outReader.start()
         errReader.start()
 
