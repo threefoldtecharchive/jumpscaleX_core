@@ -26,34 +26,6 @@ class MyJob(j.baseclasses.object_config):
         if method:
             self.process_code(method, args_replace)
 
-    def _children_get(self, filter=None):
-        """
-        :param filter: is '' then will show all, if None will ignore _
-                when * at end it will be considered a prefix
-                when * at start it will be considered a end of line filter (endswith)
-                when R as first char its considered to be a regex
-                everything else is a full match
-        :return:
-        """
-        x = []
-        for key, item in self._children.items():
-            x.append(item)
-        if len(x) > 49:
-            return x
-        for item in self.find(state="OK"):
-            if item not in x:
-                x.append(item)
-        for item in self.find(state="NEW"):
-            if item not in x:
-                x.append(item)
-        for item in self.find(state="ERROR"):
-            if item not in x:
-                x.append(item)
-        for item in self.find(state="RUNNING"):
-            if item not in x:
-                x.append(item)
-        return self._filter(filter=filter, llist=x, nameonly=False)
-
     def process_code(self, method, args_replace):
         code = inspect.getsource(method)
         code = j.core.text.strip(code)
