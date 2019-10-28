@@ -222,7 +222,7 @@ class GedisChatBotSession(JSBASE):
         :return:
         """
         self.q_out.put({"cat": "md_show_update", "msg": msg, "kwargs": kwargs})
-        return self.q_in.get()
+        return
 
     def redirect(self, msg, **kwargs):
         """
