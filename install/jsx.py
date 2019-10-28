@@ -588,7 +588,7 @@ def container_kosmos(name="3bot"):
             "-oStrictHostKeyChecking=no",
             "-p",
             str(docker.config.sshport),
-            "source %s/env.sh;kosmos" % IT.MyEnv._basedir_get(),
+            "source /sandbox/env.sh;kosmos",
         ],
     )
 
