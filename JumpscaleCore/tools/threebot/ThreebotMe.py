@@ -28,6 +28,10 @@ class ThreebotMe(JSConfigBase):
                 "threebot.me not filled in, please do j.tools.threebot.init_my_threebot(interactive=True)"
             )
 
+    def sign(self, data):
+        raise
+        # TODO: implement
+
     def data_send_serialize(self, threebot, data):
         """
         data to send to a threebot needs to be encrypted with pub key of the threebot
