@@ -6,6 +6,7 @@ class package_manager(j.baseclasses.threebot_actor):
     def _init(self, gedis_server=None):
         assert gedis_server
         self._gedis_server = gedis_server
+        j.data.schema.get_from_text(j.tools.threebot_packages._model.schema.text)
 
     def package_add(self, git_url=None, path=None, reload=True, schema_out=None, user_session=None):
         """
@@ -136,3 +137,27 @@ class package_manager(j.baseclasses.threebot_actor):
 
         package = j.tools.threebot_packages.get(name)
         package.disable()
+
+    def package_enable(self, name, schema_out=None, user_session=None):
+        """
+        ```in
+        name = ""
+        ```
+        """
+        user_session.admin_check()
+        if not j.tools.threebot_packages.exists(name):
+            raise j.exceptions.NotFound("package not found", data={"name": name})
+
+        package = j.tools.threebot_packages.get(name)
+        package.enable()
+
+    def packages_list(self, schema_out=None, user_session=None):
+        """
+        ```out
+        packages = (LO) !jumpscale.threebot.package.1
+        ```
+        """
+        packages = j.tools.threebot_packages.find()
+        output = schema_out.new()
+        output.packages = packages
+        return output

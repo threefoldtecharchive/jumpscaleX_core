@@ -93,10 +93,14 @@ class ThreeBotPackage(JSConfigBase):
     def start(self):
         self._init_before_action()
         self._package_author.start()
+        self.status = "running"
+        self.save()
 
     def stop(self):
         self._init_before_action()
         self._package_author.stop()
+        self.status = "halted"
+        self.save()
 
     def uninstall(self):
         self._init_before_action()
@@ -104,4 +108,8 @@ class ThreeBotPackage(JSConfigBase):
 
     def disable(self):
         self.status = "disabled"
+        self.save()
+
+    def enable(self):
+        self.status = "installed"
         self.save()
