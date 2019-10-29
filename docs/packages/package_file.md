@@ -17,7 +17,7 @@ class Package(j.baseclasses.threebot_package):
     @property
     def bcdb(self):
         #is the default implementation, if you want to overrule, provide this method
-        return self.threebot_server.bcdb_get("system")
+        return self.threebot_server.bcdb_get("$packagename")
 
     def prepare(self):
         """
@@ -66,6 +66,8 @@ class Package(j.baseclasses.threebot_package):
 what will the package loader in 3bot automatically do?
 
 - every time a threebot starts it will walk over all known packages and start them
+- it will add wiki, actors, models, chatflows, wiki all automatically 
+     - **DO NOT CODE THIS AGAIN ON PACKAGE LEVEL**
 
 ## properties available in the package object
 

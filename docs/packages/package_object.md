@@ -86,3 +86,5 @@ class ThreeBotPackage(JSConfigBase):
   - docmacros
       - macro's as used in docsite(s)
       - each file inside is a docmacro (can be in subdirs)
+  - wiki
+  - html

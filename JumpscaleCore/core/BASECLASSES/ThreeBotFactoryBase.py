@@ -20,10 +20,11 @@
 
 from Jumpscale import j
 from .JSBase import JSBase
+from .TestTools import TestTools
 import os
 
 
-class ThreeBotFactoryBase(JSBase):
+class ThreeBotFactoryBase(JSBase, TestTools):
     _web = True
     _ssl = False
 
@@ -32,6 +33,8 @@ class ThreeBotFactoryBase(JSBase):
         server.save()
 
         packagename = os.path.basename(self._dirpath)
+        # TODO: need to call the package_manager actor on the threebot, and ask to load the package there
+        # should not be done manually
         package = j.tools.threebot_packages.get(packagename, path=self._dirpath, threebot_server_name=server.name)
         package.prepare()
         package.save()

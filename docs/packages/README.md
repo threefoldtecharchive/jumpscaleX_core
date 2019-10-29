@@ -16,6 +16,7 @@ are subdirs of a package
     - also published in gedis under namespace $packagename
     - each file inside is an actor
 - chatflows
+    - adds chatflow to http(s)://$threeboturl/$packagename/chatflow/$name
     - interactive communication, implemented as chat bots
     - each file inside is a chat bot
 - models
@@ -27,8 +28,15 @@ are subdirs of a package
 - docmacros
     - macro's as used in docsite(s)
     - each file inside is a docmacro (can be in subdirs)
+- wiki
+    - adds wiki to http(s)://$threeboturl/$packagename/wiki
+    - how to use wiki see ...jumpscaleX_threebot/docs
+- html
+    - adds html in http(s)://$threeboturl/$packagename/ so there could be an index
+    - how to use wiki see ...jumpscaleX_threebot/docs     
 
 all of these are optional and other loading logic can be used
+they will be automatically loaded, do not do manually
 
 
 

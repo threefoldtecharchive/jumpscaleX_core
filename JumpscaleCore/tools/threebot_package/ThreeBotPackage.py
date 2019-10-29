@@ -32,6 +32,9 @@ class ThreeBotPackage(JSConfigBase):
         self._init_ = False
 
     def _init_before_action(self):
+
+        # TODO: put check back that when used not from a running threebotserver, you don't continue
+
         if self._init_ == False:
             if self.giturl:
                 self.path = j.clients.git.getContentPathFromURLorPath(self.giturl, branch=self.branch)
@@ -64,16 +67,7 @@ class ThreeBotPackage(JSConfigBase):
             if j.sal.fs.exists(path):
                 self.gedis_server.chatbot.chatflows_load(path)
 
-            def load_wiki(path=None, name=None):
-                wiki = j.tools.markdowndocs.load(path=path, name=name, pull=False)
-                wiki.write()
-
-            # TODO: load macros's (THABET TO PLAN)
-
-            chatflows_path = self.path + "/chatflows"
-            if j.sal.fs.exists(chatflows_path):
-                self.gedis_server.chatbot.chatflows_load(chatflows_path)
-
+            # load wiki
             def load_wiki(path=None, name=None):
                 wiki = j.tools.markdowndocs.load(path=path, name=name, pull=False)
                 wiki.write()
@@ -81,6 +75,9 @@ class ThreeBotPackage(JSConfigBase):
             path = self.path + "/wiki"
             if j.sal.fs.exists(path):
                 j.servers.myjobs.schedule(load_wiki, name=self.name, path=path)
+
+            # TODO: add html autoload (using nginx openresty...),
+            # TODO: load macros's (THABET TO PLAN)
 
         self._init_ = True
 
