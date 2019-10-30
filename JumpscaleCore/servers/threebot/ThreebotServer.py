@@ -152,7 +152,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                 "chat", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/chat/"
             )
             j.tools.threebot_packages.get(
-                "myjobs", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/myjobs"
+                "myjobs", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/myjobs"
             )
 
             # add user added packages
