@@ -117,6 +117,7 @@ class GedisChatBotSession(JSBASE):
             except Exception as e:
                 j.errorhandler.exception_handle(e, die=False)
                 return self.md_show("Something went wrong please contact support")
+
         self.greenlet = gevent.spawn(wrapper)
 
     # ###################################
@@ -270,6 +271,13 @@ class GedisChatBotSession(JSBASE):
         :return: the user answer for the question
         """
         self.q_out.put({"cat": "drop_down_choice", "msg": msg, "options": options, "kwargs": kwargs})
+        return self.q_in.get()
+
+    def user_info(self, **kwargs):
+        """
+        helper method to retrieve the info of a logged user
+        """
+        self.q_out.put({"cat": "user_info", "kwargs": kwargs})
         return self.q_in.get()
 
 
