@@ -151,13 +151,29 @@ class package_manager(j.baseclasses.threebot_actor):
         package = j.tools.threebot_packages.get(name)
         package.enable()
 
-    def packages_list(self, schema_out=None, user_session=None):
+    def packages_list(self, frontend=False, schema_out=None, user_session=None):
         """
+        ```in
+        frontend = (B) false  # list only frontend packages
+        ```
+
         ```out
         packages = (LO) !jumpscale.threebot.package.1
         ```
         """
-        packages = j.tools.threebot_packages.find()
-        output = schema_out.new()
-        output.packages = packages
-        return output
+        packages = []
+        for package in j.tools.threebot_packages.find():
+            if frontend:
+                mdp = j.sal.fs.joinPaths(package.path, "meta.toml")
+                if j.sal.fs.exists(mdp):
+                    metadata = j.data.serializers.toml.loads(j.sal.fs.readFile(mdp))
+                    if not metadata.get("frontend", False):
+                        continue
+                else:
+                    continue
+
+            packages.append(package)
+
+        out = schema_out.new()
+        out.packages = packages
+        return out
