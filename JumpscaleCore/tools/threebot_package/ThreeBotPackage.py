@@ -70,15 +70,15 @@ class ThreeBotPackage(JSConfigBase):
             if j.sal.fs.exists(chatflows_path):
                 self.gedis_server.chatbot.chatflows_load(chatflows_path)
 
-            def load_wiki(path=None, name=None):
-                wiki = j.tools.markdowndocs.load(path=path, name=name, pull=False)
+            def load_wiki(wiki_name=None, wiki_path=None):
+                """we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
+                wiki = j.tools.markdowndocs.load(name=wiki_name, path=wiki_path, pull=False)
                 wiki.write()
 
             path = self.path + "/wiki"
             if j.sal.fs.exists(path):
                 name = self.name
-                j.servers.myjobs.schedule(load_wiki, name=name, path=path)
-
+                j.servers.myjobs.schedule(load_wiki, wiki_name=name, wiki_path=path)
 
         self._init_ = True
 
@@ -93,10 +93,14 @@ class ThreeBotPackage(JSConfigBase):
     def start(self):
         self._init_before_action()
         self._package_author.start()
+        self.status = "running"
+        self.save()
 
     def stop(self):
         self._init_before_action()
         self._package_author.stop()
+        self.status = "halted"
+        self.save()
 
     def uninstall(self):
         self._init_before_action()
@@ -104,4 +108,8 @@ class ThreeBotPackage(JSConfigBase):
 
     def disable(self):
         self.status = "disabled"
+        self.save()
+
+    def enable(self):
+        self.status = "installed"
         self.save()

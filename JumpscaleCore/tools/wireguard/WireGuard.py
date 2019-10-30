@@ -81,8 +81,15 @@ class WireGuard(j.baseclasses.object_config):
 
     @property
     def peers_objects(self):
-        for peer in self.peers:
-            yield j.tools.wireguard.get_by_id(peer)
+        changes = False
+        for peer in self.peers[:]:
+            try:
+                yield j.tools.wireguard.get_by_id(peer)
+            except:
+                changes = True
+                self.peers.remove(peer)
+        if changes:
+            self.save()
 
     @property
     def wid(self):

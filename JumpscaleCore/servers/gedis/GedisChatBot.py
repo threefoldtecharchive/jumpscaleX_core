@@ -4,6 +4,7 @@ import uuid
 from captcha.image import ImageCaptcha
 from importlib import import_module
 
+import json
 import gevent
 
 from Jumpscale import j
@@ -88,6 +89,54 @@ class GedisChatBotFactory(JSBASE):
         return list(self.chat_flows.keys())
 
 
+class Result:
+    def __init__(self, loader=str):
+        self._value = None
+        self._loader = loader
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        self._value = self._loader(value)
+
+
+class Form:
+    def __init__(self, session):
+        self._session = session
+        self.messages = []
+        self.results = []
+
+    def ask(self):
+        self._session.q_out.put({"cat": "form", "msg": self.messages})
+        results = j.data.serializers.json.loads(self._session.q_in.get())
+        for result, resobject in zip(results, self.results):
+            resobject.value = result
+
+    def _append(self, msg, loader=str):
+        self.messages.append(msg)
+        result = Result()
+        self.results.append(result)
+        return result
+
+    def string_ask(self, msg, **kwargs):
+        return self._append(self._session.string_msg(msg, **kwargs))
+
+    def int_ask(self, msg, **kwargs):
+        return self._append(self._session.int_msg(msg, **kwargs), int)
+
+    def secret_ask(self, msg, **kwargs):
+        return self._append(self._session.secret_msg(msg, **kwargs))
+
+    def multi_choice(self, msg, options, **kwargs):
+        return self._append(self._session.multi_msg(msg, options, **kwargs), j.data.serializers.json.loads)
+
+    def single_choice(self, msg, options, **kwargs):
+        return self._append(self._session.single_msg(msg, options, **kwargs))
+
+
 class GedisChatBotSession(JSBASE):
     """
     Contains the basic helper methods for asking questions
@@ -123,6 +172,8 @@ class GedisChatBotSession(JSBASE):
     # ###################################
     # Helper methods for asking questions
     # ###################################
+    def new_form(self):
+        return Form(self)
 
     def string_ask(self, msg, **kwargs):
         """
@@ -132,8 +183,10 @@ class GedisChatBotSession(JSBASE):
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        self.q_out.put({"cat": "string_ask", "msg": msg, "kwargs": kwargs})
-        return self.q_in.get()
+        return self.ask(self.string_msg(msg, **kwargs))
+
+    def string_msg(self, msg, **kwargs):
+        return {"cat": "string_ask", "msg": msg, "kwargs": kwargs}
 
     def secret_ask(self, msg, **kwargs):
         """
@@ -143,8 +196,10 @@ class GedisChatBotSession(JSBASE):
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        self.q_out.put({"cat": "secret_ask", "msg": msg, "kwargs": kwargs})
-        return self.q_in.get()
+        return self.ask(self.secret_msg(msg, **kwargs))
+
+    def secret_msg(self, msg, **kwargs):
+        return {"cat": "secret_ask", "msg": msg, "kwargs": kwargs}
 
     def text_ask(self, msg, **kwargs):
         """
@@ -154,8 +209,14 @@ class GedisChatBotSession(JSBASE):
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        self.q_out.put({"cat": "text_ask", "msg": msg, "kwargs": kwargs})
+        return self.ask(self.text_msg(msg, **kwargs))
+
+    def ask(self, data):
+        self.q_out.put(data)
         return self.q_in.get()
+
+    def text_msg(self, msg, **kwargs):
+        return {"cat": "text_ask", "msg": msg, "kwargs": kwargs}
 
     def int_ask(self, msg, **kwargs):
         """
@@ -165,8 +226,10 @@ class GedisChatBotSession(JSBASE):
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        self.q_out.put({"cat": "int_ask", "msg": msg, "kwargs": kwargs})
-        return self.q_in.get()
+        return int(self.ask(self.int_msg(msg, **kwargs)))
+
+    def int_msg(self, msg, **kwargs):
+        return {"cat": "int_ask", "msg": msg, "kwargs": kwargs}
 
     def captcha_ask(self, error=False, **kwargs):
         """
@@ -174,21 +237,25 @@ class GedisChatBotSession(JSBASE):
         :param error: if True indicates that the previous captcha attempt failed
         :return: a bool indicating if the user entered the right answer or not
         """
+        captcha, message = self.captcha_msg(error, **kwargs)
+        return self.ask(message) == captcha
+
+    def captcha_msg(self, error=False, **kwargs):
         image = ImageCaptcha()
         captcha = j.data.idgenerator.generateXCharID(4)
         # this log is for development purposes so we can use the redis client
         self._log_info("generated captcha:%s" % captcha)
         data = image.generate(captcha)
-        self.q_out.put(
+        return (
+            captcha,
             {
                 "cat": "captcha_ask",
                 "captcha": base64.b64encode(data.read()).decode(),
                 "msg": "Are you human?",
                 "label": "Please enter a valid captcha" if error else "",
                 "kwargs": kwargs,
-            }
+            },
         )
-        return self.q_in.get() == captcha
 
     def location_ask(self, msg, **kwargs):
         """
@@ -198,8 +265,10 @@ class GedisChatBotSession(JSBASE):
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        self.q_out.put({"cat": "location_ask", "msg": msg, "kwargs": kwargs})
-        return self.q_in.get()
+        return self.ask(self.location_msg(msg, **kwargs))
+
+    def location_msg(self, msg, **kwargs):
+        return {"cat": "location_ask", "msg": msg, "kwargs": kwargs}
 
     def md_show(self, msg, **kwargs):
         """
@@ -210,8 +279,10 @@ class GedisChatBotSession(JSBASE):
         :param kwargs: dict of possible extra options like (reset)
         :return:
         """
-        self.q_out.put({"cat": "md_show", "msg": msg, "kwargs": kwargs})
-        return self.q_in.get()
+        return self.ask(self.md_msg(msg, **kwargs))
+
+    def md_msg(self, msg, **kwargs):
+        return {"cat": "md_show", "msg": msg, "kwargs": kwargs}
 
     def md_show_update(self, msg, **kwargs):
         """
@@ -222,9 +293,9 @@ class GedisChatBotSession(JSBASE):
         :param kwargs: dict of possible extra options like (reset)
         :return:
         """
-        self.q_out.put({"cat": "md_show_update", "msg": msg, "kwargs": kwargs})
-        if not self.q_in.empty():
-            return self.q_in.get()
+        message = self.md_msg(msg, **kwargs)
+        message["cat"] = "md_show_update"
+        self.q_out.put(message)
 
     def html_show(self, msg, **kwargs):
         """
@@ -265,8 +336,10 @@ class GedisChatBotSession(JSBASE):
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answers for the question
         """
-        self.q_out.put({"cat": "multi_choice", "msg": msg, "options": options, "kwargs": kwargs})
-        return self.q_in.get()
+        return j.data.serializers.json.loads(self.ask(self.multi_msg(msg, options, **kwargs)))
+
+    def multi_msg(self, msg, options, **kwargs):
+        return {"cat": "multi_choice", "msg": msg, "options": options, "kwargs": kwargs}
 
     def single_choice(self, msg, options, **kwargs):
         """
@@ -278,8 +351,10 @@ class GedisChatBotSession(JSBASE):
         :return: the user answer for the question
         """
 
-        self.q_out.put({"cat": "single_choice", "msg": msg, "options": options, "kwargs": kwargs})
-        return self.q_in.get()
+        return self.ask(self.single_ms(msg, options, **kwargs))
+
+    def single_msg(self, msg, options, **kwargs):
+        return {"cat": "single_choice", "msg": msg, "options": options, "kwargs": kwargs}
 
     def drop_down_choice(self, msg, options, **kwargs):
         """
@@ -291,8 +366,10 @@ class GedisChatBotSession(JSBASE):
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        self.q_out.put({"cat": "drop_down_choice", "msg": msg, "options": options, "kwargs": kwargs})
-        return self.q_in.get()
+        return self.ask(self.drop_down_msg(msg, options, **kwargs))
+
+    def drop_down_msg(self, msg, options, **kwargs):
+        return {"cat": "drop_down_choice", "msg": msg, "options": options, "kwargs": kwargs}
 
 
 def test(factory):
