@@ -222,7 +222,7 @@ class SSHAgent(j.baseclasses.object):
         # lets generate an sshkey with a passphrase
         passphrase = "12345"
         path = "/tmp/.ssh/test_key"
-        skey = j.clients.sshkey.get(name="test", path=path, passphrase=passphrase)
+        skey = j.clients.sshkey.get(name="test", path=path, passphrase_=passphrase)
         skey.save()
 
         # this will reload the key from the db
