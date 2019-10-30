@@ -87,6 +87,17 @@ class Core:
                 self._isSandbox = False
         return self._isSandbox
 
+    def is_gevent_monkey_patched(self):
+        try:
+            from gevent import monkey
+        except ImportError:
+            return False
+        else:
+            if hasattr(monkey, "is_module_patched"):
+                return monkey.is_module_patched("threading")
+            else:
+                return bool(monkey.saved)
+
     @staticmethod
     def _data_serializer_safe(data):
         if isinstance(data, dict):
