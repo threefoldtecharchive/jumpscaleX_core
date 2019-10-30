@@ -12,6 +12,7 @@ class Session(j.baseclasses.object):
         self.threebot_id = None
         self.threebot_name = None
         self.threebot_circles = []
+        self.kwargs = []
         self.response_type = j.data.types.get("e", default="auto,json,msgpack").clean(0)
         self.content_type = j.data.types.get("e", default="auto,json,msgpack").clean(0)
 

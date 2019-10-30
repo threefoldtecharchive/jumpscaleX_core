@@ -6,7 +6,7 @@ from importlib import import_module
 
 import json
 import gevent
-
+import html
 from Jumpscale import j
 
 JSBASE = j.baseclasses.object
@@ -18,7 +18,7 @@ class GedisChatBotFactory(JSBASE):
         self.sessions = {}  # all chat sessions
         self.chat_flows = {}  # are the flows to run, code being executed to interact with user
 
-    def session_new(self, topic, **kwargs):
+    def session_new(self, topic, query_params=None, **kwargs):
         """
         creates new user session with the specified topic (chatflow)
         :param topic: the topic of chat bot session (chatflow)
@@ -26,6 +26,11 @@ class GedisChatBotFactory(JSBASE):
                        (i.e. can be used for passing any query parameters)
         :return: created session id
         """
+
+        query_params = html.unescape(query_params)
+        query_params = query_params.replace("'", '"')
+        query_params = j.data.serializers.json.loads(query_params)
+        kwargs.update(query_params)
         session_id = str(uuid.uuid4())
         topic_method = self.chat_flows[topic]
         session = GedisChatBotSession(session_id, topic_method, **kwargs)
@@ -297,26 +302,6 @@ class GedisChatBotSession(JSBASE):
         message["cat"] = "md_show_update"
         self.q_out.put(message)
 
-    def html_show(self, msg, **kwargs):
-        """
-        a special helper method to send markdown content to the bot instead of questions.
-        usually used for sending info messages to the bot.
-        html generated in the client side will use javascript markdown library to convert it
-        :param msg: the question message
-        :param kwargs: dict of possible extra options like (reset)
-        :return:
-        """
-        html = """\
-# Loading {1}...
- <div class="progress">
-  <div class="progress-bar active" role="progressbar" aria-valuenow="{0}"
-  aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
-    {0}%
-  </div>
-</div> 
-"""
-        return html
-
     def redirect(self, msg, **kwargs):
         """
         a special helper method to redirect the user to a specific url.
@@ -371,7 +356,7 @@ class GedisChatBotSession(JSBASE):
         :return: the user answer for the question
         """
 
-        return self.ask(self.single_ms(msg, options, **kwargs))
+        return self.ask(self.single_msg(msg, options, **kwargs))
 
     def single_msg(self, msg, options, **kwargs):
         return {"cat": "single_choice", "msg": msg, "options": options, "kwargs": kwargs}

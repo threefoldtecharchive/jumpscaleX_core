@@ -38,13 +38,14 @@ class chatbot(j.baseclasses.threebot_actor):
     def ping(self, user_session=None):
         return "PONG"
 
-    def session_new(self, topic, user_session=None):
+    def session_new(self, topic, query_params, user_session=None):
         """
         ```in
         topic = "" (S)
+        query_params = "" (S)
         ```
         """
-        return json.dumps(self.chatbot.session_new(topic))
+        return json.dumps(self.chatbot.session_new(topic, query_params))
 
     def chatflows_list(self, user_session=None):
         return self.chatbot.chatflows_list()
