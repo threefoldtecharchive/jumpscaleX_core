@@ -117,6 +117,7 @@ class GedisChatBotSession(JSBASE):
             except Exception as e:
                 j.errorhandler.exception_handle(e, die=False)
                 return self.md_show("Something went wrong please contact support")
+
         self.greenlet = gevent.spawn(wrapper)
 
     # ###################################
@@ -222,7 +223,28 @@ class GedisChatBotSession(JSBASE):
         :return:
         """
         self.q_out.put({"cat": "md_show_update", "msg": msg, "kwargs": kwargs})
-        return self.q_in.get()
+        if not self.q_in.empty():
+            return self.q_in.get()
+
+    def html_show(self, msg, **kwargs):
+        """
+        a special helper method to send markdown content to the bot instead of questions.
+        usually used for sending info messages to the bot.
+        html generated in the client side will use javascript markdown library to convert it
+        :param msg: the question message
+        :param kwargs: dict of possible extra options like (reset)
+        :return:
+        """
+        html = """\
+# Loading {1}...
+ <div class="progress">
+  <div class="progress-bar active" role="progressbar" aria-valuenow="{0}"
+  aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
+    {0}%
+  </div>
+</div> 
+"""
+        return html
 
     def redirect(self, msg, **kwargs):
         """
