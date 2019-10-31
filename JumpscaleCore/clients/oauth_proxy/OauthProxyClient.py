@@ -12,7 +12,7 @@ class OauthProxyClient(j.baseclasses.object_config):
     """
 
     def providers_list(self):
-        return list(self.providers.keys())
+        return list(self.providers)
 
     def provider_add(self, name):
         self.providers.append(name)
