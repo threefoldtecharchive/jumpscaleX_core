@@ -29,6 +29,7 @@ class StreamReaderBase:
                 break
         self.queue.put(("T", self.flag))
 
+
 class StreamReaderThreading(StreamReaderBase, threading.Thread):
     def __init__(self, stream, channel, queue, flag):
         threading.Thread.__init__(self)

@@ -19,9 +19,8 @@ def chat(bot):
     res = {}
     waittime = bot.int_ask("Wait time")
     for x in range(waittime):
-        bot.md_show_update(html.format((x/waittime) * 100))
+        bot.md_show_update(html.format((x / waittime) * 100))
         gevent.sleep(1)
-
 
     form = bot.new_form()
     food = form.string_ask("What do you need to eat?")
