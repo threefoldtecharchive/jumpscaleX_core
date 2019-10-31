@@ -3,9 +3,9 @@ import requests
 from urllib.parse import urlencode
 
 
-class Oauth2ProviderClient(j.baseclasses.object_config):
+class OauthProviderClient(j.baseclasses.object_config):
     _SCHEMATEXT = """
-    @url = jumpscale.oauth2_provider.client
+    @url = jumpscale.oauth_provider.client
     name** = "main" (S)
     client_id = "" (S)
     client_secret = "" (S)
@@ -41,20 +41,13 @@ class Oauth2ProviderClient(j.baseclasses.object_config):
         headers = {"Accept": "application/json"}
         response = requests.post(self.access_token_url, params=params, headers=headers)
         response.raise_for_status()
-        return response.json()
+        return response.json()["access_token"]
 
-    def authorize(self, code, state):
-        access_token_data = self.get_access_token(code, state)
-        if "access_token" not in access_token_data:
-            raise j.exceptions.Value("User is not authorized")
-
-        access_token = access_token_data.get("access_token")
+    def get_user_info(self, access_token):
         self.session.headers["Authorization"] = f"bearer {access_token}"
-
         response = self.session.get(self.user_info_url)
         response.raise_for_status()
         data = response.json()
-
         userinfo = {}
         for field in self.user_info_fields:
             userinfo[field] = data.get(field, None)
