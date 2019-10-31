@@ -764,6 +764,100 @@ def _generate(path=None):
     j = jumpscale_get(die=True)
     j.application.generate(path)
 
+@click.command(name="package-new", help="scaffold a new package tree structure")
+@click.option("--name", help="new package name")
+@click.option("--dest", default="", help="new package destination (current dir if not specified)")
+def package_new(name, dest=None):
+    j = jumpscale_get(die=True)
+    if not dest:
+        dest = j.sal.fs.getcwd()
+    capitalized_name = name.capitalize()
+    dirs = ["wiki", "models", "actors", "chatflows"]
+    package_py_path =  j.sal.fs.joinPaths(dest, f"{name}/package.py")
+    factory_py_path =  j.sal.fs.joinPaths(dest, f"{name}/{capitalized_name}Factory.py")
+
+    for d in dirs:
+        j.sal.fs.createDir(j.sal.fs.joinPaths(dest, name, d))
+    
+
+    package_py_content = f"""
+from Jumpscale import j
+
+
+class Package(j.baseclasses.threebot_package):
+    def start(self):
+        server = self.openresty
+        server.install(reset=False)
+        server.configure()
+
+        # for port in (443, 80):
+        #     website = server.get_from_port(port)
+
+        #     locations = website.locations.get()
+
+        #     website_location = locations.locations_spa.new()
+        #     website_location.name = "{name}"
+        #     website_location.path_url = "/{name}"
+
+
+        #     locations.configure()
+        #     website.configure()
+
+    """   
+    
+
+    with open(package_py_path, "w") as f:
+        f.write(package_py_content)
+
+
+    factory_py_content = f"""
+from Jumpscale import j
+
+
+class {capitalized_name}Factory(j.baseclasses.threebot_factory):
+    __jslocation__ = "j.threebot.package.{name}"
+
+    """
+    with open(factory_py_path, "w") as f:
+        f.write(factory_py_content)
+
+    
+    actor_py_path = j.sal.fs.joinPaths(dest, name, "actors", f"{name}.py")
+    actor_py_content = f"""
+from Jumpscale import j
+
+
+class {name}(j.baseclasses.threebot_actor):
+    pass
+    """
+    with open(actor_py_path, "w") as f:
+        f.write(actor_py_content) 
+
+
+    chat_py_path = j.sal.fs.joinPaths(dest, name, "chatflows", f"{name}.py")
+    chat_py_content = f"""
+from Jumpscale import j
+import gevent
+
+
+def chat(bot):
+
+    # form = bot.new_form()
+    # food = form.string_ask("What do you need to eat?")
+    # amount = form.int_ask("Enter the amount you need to eat from %s in grams:" % food)
+    # sides = form.multi_choice("Choose your side dishes: ", ["rice", "fries", "saute", "mashed potato"])
+    # drink = form.single_choice("Choose your Drink: ", ["tea", "coffee", "lemon"])
+    # form.ask()
+
+    # bot.md_show(res)
+    # bot.redirect("https://threefold.me")
+    pass
+
+    """
+    with open(chat_py_path, "w") as f:
+        f.write(chat_py_content)
+    
+
 
 if __name__ == "__main__":
 
@@ -776,6 +870,7 @@ if __name__ == "__main__":
     cli.add_command(modules_install, "modules-install")
     cli.add_command(wiki_load, "wiki-load")
     cli.add_command(wiki_reload)
+    cli.add_command(package_new, "package-new")
 
     # DO NOT DO THIS IN ANY OTHER WAY !!!
     if not e._DF.indocker():
