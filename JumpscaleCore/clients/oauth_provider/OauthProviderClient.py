@@ -47,8 +47,5 @@ class OauthProviderClient(j.baseclasses.object_config):
         self.session.headers["Authorization"] = f"bearer {access_token}"
         response = self.session.get(self.user_info_url)
         response.raise_for_status()
-        data = response.json()
-        userinfo = {}
-        for field in self.user_info_fields:
-            userinfo[field] = data.get(field, None)
-        return userinfo
+        data = {k: v for k, v in response.json().items() if (k in self.user_info_fields and v)}
+        return data
