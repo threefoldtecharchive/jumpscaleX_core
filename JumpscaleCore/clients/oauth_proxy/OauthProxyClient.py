@@ -8,6 +8,7 @@ class OauthProxyClient(j.baseclasses.object_config):
     @url = jumpscale.oauth_proxy.client
     name** = "main" (S)
     url = "" (S)
+    verify_key = (S)
     providers = (LS)
     """
 
