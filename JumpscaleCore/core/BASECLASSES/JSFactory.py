@@ -75,6 +75,7 @@ class JSFactory(JSBase, Attr):
         if reload:
             child.load()
         return child
+
     def find(self, **kwargs):
         """
         :param kwargs: e.g. color="red",...

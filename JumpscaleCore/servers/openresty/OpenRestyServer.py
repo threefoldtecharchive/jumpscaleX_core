@@ -85,8 +85,8 @@ class OpenRestyServer(j.baseclasses.factory_data):
         if reset or self.status not in ["ok", "installed"]:
 
             # get weblib
-            url = "https://github.com/threefoldtech/jumpscale_weblibs"
-            weblibs_path = j.clients.git.getContentPathFromURLorPath(url, pull=False)
+            url = "https://github.com/threefoldtech/jumpscaleX_weblibs"
+            weblibs_path = j.clients.git.getContentPathFromURLorPath(url, pull=False, branch="master")
 
             # copy the templates to the right location
             j.sal.fs.copyDirTree("%s/web_resources/" % self._dirpath, self.path_cfg_dir)
