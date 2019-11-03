@@ -183,7 +183,7 @@ class GitFactory(j.baseclasses.object):
             # checkedout branch
             currentBranch = self.getCurrentBranch(dest)
             if not currentBranch:
-                raise j.exceptions.Base("Cannot retrieve branch:\n%s\n" % cmd)
+                raise j.exceptions.Base("Cannot retrieve the current branch:\n\n")
             if branch is not None and branch.find(currentBranch) == -1 and ignorelocalchanges is False:
                 raise j.exceptions.Base(
                     "Cannot pull repo '%s', branch on filesystem is not same as branch asked for.\n"
