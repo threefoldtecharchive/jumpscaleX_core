@@ -19,6 +19,7 @@ comment = ""
 schema_in_url = ""
 schema_out_url = ""
 args = (ls)
+auth_data = ""
 
 @url = jumpscale.gedis.schema
 md5 = ""
@@ -120,7 +121,19 @@ class GedisCmds(JSBASE):
 
         state = "START"
 
+        is_auth_decorator = txt.startswith("@auth")
+        auth_decorator = ""
+        auth_data = ""
+        if is_auth_decorator:
+            auth_decorator = txt.split("\n")[0]
+            auth_data = auth_decorator.replace("@auth", "dict")
+            auth_data = eval(auth_data)
+            cmd.auth_data = j.data.serializers.json.dumps(auth_data)
+
         for line in txt.split("\n"):
+            if is_auth_decorator:
+                if line == auth_decorator:
+                    continue
             lstrip = line.strip().lower()
             if state == "START" and lstrip.startswith("def"):
                 state = "DEF"

@@ -98,10 +98,22 @@ class GedisClient(JSConfigBase):
             self._actorsmeta[actor_name] = j.servers.gedis._cmds_get(key, data)
 
         # at this point the schema's are loaded only for the namespace identified (is all part of metadata)
+        unauthorized_methods = []
         for actorname, actormeta in self._actorsmeta.items():
             tpath = "%s/templates/GedisClientGenerated.py" % (j.clients.gedis._dirpath)
             actorname_ = actormeta.namespace + "_" + actorname
             dest = "/sandbox/var/codegen/gedis/%s/client/%s.py" % (self.name, actorname_)
+            for method_name, method in actormeta.cmds.items():
+                if method.cmdobj.auth_data:
+                    method_permission = j.data.serializers.json.loads(method.cmdobj.auth_data)
+                    if not method_permission["public"]:
+                        allowed_members = method_permission["admins"]
+                        if not self._threebot_me.tid in allowed_members:
+                            unauthorized_methods.append(method_name)
+
+            for unauth_method in unauthorized_methods:
+                actormeta.cmds.pop(unauth_method)
+
             cl = j.tools.jinja2.code_python_render(
                 obj_key="GedisClientGenerated",
                 path=tpath,
