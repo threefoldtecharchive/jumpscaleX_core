@@ -165,7 +165,7 @@ class BCDBModelIndex(j.baseclasses.object):
         if not isinstance(text, str) or not text or text.startswith("{") or text.startswith("`"):
             return None
         else:
-            return text.replace("\n", " ")
+            return text.replace("\n", " ").replace("\\", " ")
 
     def _text_index_keys_get_(self, property_name, val, obj_id, nid=1):
         """
@@ -194,7 +194,10 @@ class BCDBModelIndex(j.baseclasses.object):
         args = self.model._text_index_content_pre_(property_name, val, obj_id, nid)
         bucket, collection, object_tag, text = self._text_index_keys_get_(*args)
         for chunk in self._chunks(text, int(self.sonic.bufsize) // 2):
-            self.sonic.push(bucket, collection, object_tag, chunk)
+            try:
+                self.sonic.push(bucket, collection, object_tag, chunk)
+            except Exception:
+                self._log_debug(f"bucket: {bucket}, collection: {collection}, object_tag: {object_tag}, chunk: {chunk}")
 
     def _text_index_delete_(self, property_name, obj_id=None, nid=1):
         if not nid:
