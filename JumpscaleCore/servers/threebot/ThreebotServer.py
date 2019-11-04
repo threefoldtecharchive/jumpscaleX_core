@@ -158,9 +158,6 @@ class ThreeBotServer(j.baseclasses.object_config):
                 "packages_manager",
                 path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/packages_manager",
             )
-            j.tools.threebot_packages.get(
-                "bcdb", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/bcdb"
-            )
 
             # add user added packages
             for package in j.tools.threebot_packages.find():
