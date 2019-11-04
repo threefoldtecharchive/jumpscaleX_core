@@ -35,10 +35,10 @@ class TFGridRegistryClient(j.baseclasses.object):
         scm = j.data.schema.get_from_text(schema)
         self.registry_client.schema_register(scm.url, schema)
         model = self.bcdb.model_get(url=scm.url).new()
-
         if is_encrypted_data:
+            authors.append(self.me.tid)
             dataobj = self.__add_registry_schema_encrypted_data(
-                authors=[self.me.tid],
+                authors=authors,
                 readers=[],
                 threebotclient=self.me,
                 new_scm=scm,
@@ -48,19 +48,20 @@ class TFGridRegistryClient(j.baseclasses.object):
             )
             verifykey, signed_data = self.__sign_data(dataobj=dataobj)
             post_id = self.registry_client.register(
-                author=self.me.tid, verifykey=verifykey, input_object=dataobj, signature_hex=signed_data.hex()
+                authors=authors, verifykey=verifykey, input_object=dataobj, signature_hex=signed_data.hex()
             )
             print(post_id)
             if not post_id:
                 raise j.exceptions.Input("Failed to register your content")
 
         else:
+            authors.append(self.me.tid)
             dataobj = self.__add_registry_schema_data(
-                authors=[self.me.tid], new_scm=scm, model=model, format=Format.WIKI.name, description="text"
+                authors=authors, new_scm=scm, model=model, format=Format.WIKI.name, description="text"
             )
             verifykey, signed_data = self.__sign_data(dataobj=dataobj)
             post_id = self.registry_client.register(
-                author=self.me.tid, verifykey=verifykey, input_object=dataobj, signature_hex=signed_data.hex()
+                authors=authors, verifykey=verifykey, input_object=dataobj, signature_hex=signed_data.hex()
             )
             print(post_id)
             if not post_id:
@@ -71,15 +72,10 @@ class TFGridRegistryClient(j.baseclasses.object):
         info = j.data.serializers.jsxdata.loads(res.registered_info)
         pprint(f"{res._ddict_hr}\ninfo_data:{info._ddict_hr}")
 
-    def find_encrypted(self, country_code=None, format=None, category=None, topic=None, description=None):
+    def find_encrypted(self, tid, country_code=None, format=None, category=None, topic=None, description=None):
         #  Find all encrypted data for specific user or you can use your search criteria
         res = self.registry_client.find_encrypted(
-            tid=self.me.tid,
-            country_code=country_code,
-            format=format,
-            category=category,
-            topic=topic,
-            description=description,
+            tid=tid, country_code=country_code, format=format, category=category, topic=topic, description=description
         )
         for item in res:
             pprint(f"{item._ddict_hr}")
