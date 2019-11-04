@@ -14,7 +14,7 @@ class OauthProviderClient(j.baseclasses.object_config):
     redirect_url = "" (S)
     user_info_url = "" (S)
     scope = "" (S)
-    user_info_fields = "username,email" (LS)
+    user_info_fields = "email" (LS)
     """
 
     def _init(self, **kwargs):
