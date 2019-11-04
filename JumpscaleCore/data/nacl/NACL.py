@@ -1,5 +1,5 @@
 from Jumpscale import j
-from nacl.public import PrivateKey, SealedBox
+from nacl.public import PrivateKey, SealedBox, Box
 from nacl.signing import SigningKey, VerifyKey
 from nacl.encoding import RawEncoder
 import nacl.signing
@@ -135,7 +135,7 @@ class NACL(j.baseclasses.object):
         Generate an ed25519 signing key
         if words if specified, words are used as seed to rengerate a known key
         if words is None, a random seed is generated
-        
+
         once the key is generated it is stored in chosen path encrypted using the local secret
         """
         if words:
@@ -296,6 +296,50 @@ class NACL(j.baseclasses.object):
             data = self._hex_to_bin(data)
         res = self._box.decrypt(self.tobytes(data))
         return res
+
+    def encryptAsymmetric(self, public_key, plaintext, nonce=None, encoder=RawEncoder):
+        """
+        Encrypts the plaintext message using the given `nonce` (or generates
+        one randomly if omitted) and returns the ciphertext encoded with the
+        encoder.
+        Uses a Box, created using public_key and self.private_key, to encrypt the data.
+
+        :param public_key: public key used to encrypt and
+        decrypt messages
+        :type public_key: nacl.public.PublicKey
+        :param plaintext: The plain text message to encrypt
+        :type plaintext: str
+        :param nonce: The nonce to use in the encryption, defaults to None
+        :type nonce: bytes, optional
+        :param encoder:  The encoder to use to encode the ciphertext, defaults to RawEncoder
+        :type encoder: nacl encoder, optional
+        :return: encrypted plaintext
+        :rtype: nacl.utils.EncryptedMessage
+        """
+        box = Box(self.private_key, public_key)
+        return box.encrypt(plaintext, nonce, encoder)
+
+    def decryptAsymmetric(self, public_key, ciphertext, nonce=None, encoder=RawEncoder):
+        """Decrypts the ciphertext using the `nonce` (explicitly, when passed as a
+        parameter or implicitly, when omitted, as part of the ciphertext) and
+        returns the plaintext message.
+
+        Uses a Box, created using public_key and self.private_key, to encrypt the data.
+
+        :param public_key: public key used to encrypt and
+        decrypt messages
+        :type public_key: nacl.public.PublicKey
+        :param ciphertext: The ciphered message to decrypt
+        :type ciphertext: bytes
+        :param nonce: The nonce used when encrypting the
+            ciphertext, default to None
+        :type nonce: bytes, optional
+        :type encoder: nacl encoder, optional
+        :return: decrypted ciphertext
+        :rtype: bytes
+        """
+        box = Box(self.private_key, public_key)
+        return box.decrypt(ciphertext, nonce, encoder)
 
     def encrypt(self, data, hex=False, public_key=None):
         """ Encrypt data using the public key
