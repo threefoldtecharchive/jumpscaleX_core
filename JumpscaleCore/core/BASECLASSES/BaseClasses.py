@@ -23,6 +23,7 @@ from .JSConfigBCDB import JSConfigBCDB
 from .JSConfigsBCDB import JSConfigsBCDB
 from .JSConfigBCDBBase import JSConfigBCDBBase
 from .ThreeBotActorBase import ThreeBotActorBase
+from .ThreeBotCRUDActorBase import ThreeBotCRUDActorBase
 from .ThreeBotPackageBase import ThreeBotPackageBase
 from .ThreeBotFactoryBase import ThreeBotFactoryBase
 from .TestTools import TestTools
@@ -132,6 +133,15 @@ class BaseClasses(JSBase, TestTools):
         :return:
         """
         return ThreeBotActorBase
+
+    @property
+    def threebot_crud_actor(self):
+        """
+        the base class for developing actors in threebot
+
+        :return:
+        """
+        return ThreeBotCRUDActorBase
 
     @property
     def threebot_package(self):
