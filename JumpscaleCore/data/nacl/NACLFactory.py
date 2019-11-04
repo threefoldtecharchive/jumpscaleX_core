@@ -253,6 +253,11 @@ class NACLFactory(j.baseclasses.object):
         except:
             pass
 
+        bob_sk = nacl.public.PrivateKey.generate()
+        a = cl.encryptAsymmetric(bob_sk.public_key, b"something")
+        b = cl.decryptAsymmetric(bob_sk.public_key, a)
+        assert b == b"something"
+
         # LETS NOW TEST THAT WE CAN START FROM WORDS
 
         words = j.data.nacl.default.words
