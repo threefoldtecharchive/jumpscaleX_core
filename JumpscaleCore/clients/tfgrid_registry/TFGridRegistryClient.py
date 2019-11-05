@@ -16,6 +16,7 @@ class TFGridRegistryClient(j.baseclasses.object):
     __jslocation__ = "j.clients.tfgrid_registry"
 
     def _init(self, **kwargs):
+        # TODO update the threebot with threebot session when it is ready to be used
         self.me = j.tools.threebot.me.get(
             name="rafy", tid=3, email="rafy.amgadbenjamin", tname="rafyUser", pubkey="asdf3dsfasdlfkjasd88893n"
         )
@@ -25,7 +26,9 @@ class TFGridRegistryClient(j.baseclasses.object):
         self.nacl = self.me.nacl
         self.bcdb = j.data.bcdb.get("threebot_registery")
 
-    def register(self, authors=[], readers=[], schema=None, model=None, is_encrypted_data=False):
+    def register(
+        self, authors=[], readers=[], schema=None, model=None, is_encrypted_data=False, format=Format.WIKI.name
+    ):
         """
         client comes from j.clients.threebot.client_get(threebot="kristof.ibiza")
 
@@ -42,7 +45,7 @@ class TFGridRegistryClient(j.baseclasses.object):
                 threebotclient=self.me,
                 new_scm=scm,
                 model=model,
-                format=Format.WIKI.name,
+                format=format,
                 description="text",
             )
             verifykey, signed_data = self.__sign_data(dataobj=dataobj)
@@ -56,7 +59,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         else:
             authors.append(self.me.tid)
             dataobj = self.__add_registry_schema_data(
-                authors=authors, new_scm=scm, model=model, format=Format.WIKI.name, description="text"
+                authors=authors, new_scm=scm, model=model, format=format, description="text"
             )
             verifykey, signed_data = self.__sign_data(dataobj=dataobj)
             post_id = self.registry_client.register(
