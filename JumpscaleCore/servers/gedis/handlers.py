@@ -313,6 +313,8 @@ class Handler(JSBASE):
             # if we get here we know that the user has been authenticated properly
             user_session.threebot_id = tclient.tid
             user_session.threebot_name = tclient.name
+            j.shell()
+
             return None, "OK"
 
         self._log_debug(
