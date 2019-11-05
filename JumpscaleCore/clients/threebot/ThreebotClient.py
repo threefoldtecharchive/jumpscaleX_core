@@ -95,13 +95,10 @@ class ThreebotClient(JSConfigBase):
             self._verifykey_obj = VerifyKey(verifykey)
         return self._verifykey_obj
 
-    def auth(self, bot_id):
+    def test_auth(self, bot_id):
         nacl_cl = j.data.nacl.get()
         nacl_cl._load_singing_key()
-        signing_key = nacl.signing.SigningKey(nacl_cl.private_key.encode())
         epoch = str(j.data.time.epoch)
         signed_message = nacl_cl.sign(epoch.encode()).hex()
         cmd = "auth {} {} {}".format(bot_id, epoch, signed_message)
-
         return self._gedis._redis.execute_command(cmd)
-
