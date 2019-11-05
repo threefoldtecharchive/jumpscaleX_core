@@ -118,7 +118,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
         link jumpscale_weblibs repo to the {path}/static
         :param path: path to link to (will copy to {path}/static
         """
-        url = "https://github.com/threefoldtech/jumpscale_weblibs"
+        url = "https://github.com/threefoldtech/jumpscaleX_weblibs"
         weblibs_path = j.clients.git.getContentPathFromURLorPath(url, pull=False)
 
         # copy static dir from repo to the right location

@@ -42,7 +42,7 @@ def main(self):
         dest = ""
 
         [[loaders]]
-        giturl = "https://github.com/threefoldtech/jumpscale_weblibs/tree/master/static"
+        giturl = "https://github.com/threefoldtech/jumpscaleX_weblibs/tree/master/static"
         dest = "blueprints/base/static"
 
         """

@@ -24,7 +24,7 @@ if ! grep -q ^en_US /etc/locale.gen; then
     export LANGUAGE=en_US.UTF-8
 fi
 
-for target in /usr/local $HOME/opt $HOME/.ssh $HOME/opt/cfg $HOME/opt/bin $HOME/code $HOME/code/github $HOME/code/github/threefoldtech $HOME/code/github/threefoldtech/jumpscale_weblibs $HOME/opt/var/capnp $HOME/opt/var/log $HOME/jumpscale/cfg; do
+for target in /usr/local $HOME/opt $HOME/.ssh $HOME/opt/cfg $HOME/opt/bin $HOME/code $HOME/code/github $HOME/code/github/threefoldtech $HOME/code/github/threefoldtech/jumpscaleX_weblibs $HOME/opt/var/capnp $HOME/opt/var/log $HOME/jumpscale/cfg; do
     mkdir -p $target
     chown -R root:root $target
 done
@@ -39,7 +39,7 @@ ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa -q -P ""; ssh-add /root/.ssh/id_rsa
 # Install jumpscale
 curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx;
 # change permission
-chmod +x /tmp/jsx; 
+chmod +x /tmp/jsx;
 /tmp/jsx configure -s --secret mysecret;
 # install
 /tmp/jsx install -s --threebot;
