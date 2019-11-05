@@ -764,6 +764,7 @@ def _generate(path=None):
     j = jumpscale_get(die=True)
     j.application.generate(path)
 
+
 @click.command(name="package-new", help="scaffold a new package tree structure")
 @click.option("--name", help="new package name")
 @click.option("--dest", default="", help="new package destination (current dir if not specified)")
@@ -773,12 +774,11 @@ def package_new(name, dest=None):
         dest = j.sal.fs.getcwd()
     capitalized_name = name.capitalize()
     dirs = ["wiki", "models", "actors", "chatflows"]
-    package_py_path =  j.sal.fs.joinPaths(dest, f"{name}/package.py")
-    factory_py_path =  j.sal.fs.joinPaths(dest, f"{name}/{capitalized_name}Factory.py")
+    package_py_path = j.sal.fs.joinPaths(dest, f"{name}/package.py")
+    factory_py_path = j.sal.fs.joinPaths(dest, f"{name}/{capitalized_name}Factory.py")
 
     for d in dirs:
         j.sal.fs.createDir(j.sal.fs.joinPaths(dest, name, d))
-    
 
     package_py_content = f"""
 from Jumpscale import j
@@ -803,12 +803,10 @@ class Package(j.baseclasses.threebot_package):
         #     locations.configure()
         #     website.configure()
 
-    """   
-    
+    """
 
     with open(package_py_path, "w") as f:
         f.write(package_py_content)
-
 
     factory_py_content = f"""
 from Jumpscale import j
@@ -821,7 +819,6 @@ class {capitalized_name}Factory(j.baseclasses.threebot_factory):
     with open(factory_py_path, "w") as f:
         f.write(factory_py_content)
 
-    
     actor_py_path = j.sal.fs.joinPaths(dest, name, "actors", f"{name}.py")
     actor_py_content = f"""
 from Jumpscale import j
@@ -831,8 +828,7 @@ class {name}(j.baseclasses.threebot_actor):
     pass
     """
     with open(actor_py_path, "w") as f:
-        f.write(actor_py_content) 
-
+        f.write(actor_py_content)
 
     chat_py_path = j.sal.fs.joinPaths(dest, name, "chatflows", f"{name}.py")
     chat_py_content = f"""
@@ -856,7 +852,6 @@ def chat(bot):
     """
     with open(chat_py_path, "w") as f:
         f.write(chat_py_content)
-    
 
 
 if __name__ == "__main__":

@@ -2714,9 +2714,14 @@ class Tools:
             if "GITHUBPASSWD" in os.environ:
                 passwd = os.environ["GITHUBPASSWD"]
 
-        protocol, repository_host, repository_account, repository_name, repository_url, port = Tools.code_git_rewrite_url(
-            url=url, login=login, passwd=passwd, ssh=ssh
-        )
+        (
+            protocol,
+            repository_host,
+            repository_account,
+            repository_name,
+            repository_url,
+            port,
+        ) = Tools.code_git_rewrite_url(url=url, login=login, passwd=passwd, ssh=ssh)
 
         repository_type = repository_host.split(".")[0] if "." in repository_host else repository_host
 
@@ -2757,9 +2762,14 @@ class Tools:
 
         """
         url = url.strip()
-        repository_host, repository_type, repository_account, repository_name, repository_url, port = Tools.code_git_rewrite_url(
-            url=url
-        )
+        (
+            repository_host,
+            repository_type,
+            repository_account,
+            repository_name,
+            repository_url,
+            port,
+        ) = Tools.code_git_rewrite_url(url=url)
         url_end = ""
         if "tree" in repository_url:
             # means is a directory
@@ -5863,13 +5873,13 @@ class ExecutorSSH:
         """
         C = """
         set +ex
-        
+
         if [ -e /sandbox ]; then
             export PBASE=/sandbox
         else
             export PBASE=~/sandbox
         fi
-        
+
         ls $PBASE  > /dev/null 2>&1 && echo 'ISSANDBOX = 1' || echo 'ISSANDBOX = 0'
 
         ls "$PBASE/bin/python3"  > /dev/null 2>&1 && echo 'ISSANDBOX_BIN = 1' || echo 'ISSANDBOX_BIN = 0'

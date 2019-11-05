@@ -67,7 +67,6 @@ class ThreeBotPackage(JSConfigBase):
             if j.sal.fs.exists(path):
                 self.gedis_server.chatbot.chatflows_load(path)
 
-
             def load_wiki(wiki_name=None, wiki_path=None):
                 """we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
                 wiki = j.tools.markdowndocs.load(name=wiki_name, path=wiki_path, pull=False)

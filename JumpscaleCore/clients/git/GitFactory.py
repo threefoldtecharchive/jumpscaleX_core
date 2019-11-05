@@ -361,9 +361,17 @@ class GitFactory(j.baseclasses.object):
         if branch != None and branch.strip() == "":
             branch = None
         url = url.strip()
-        repository_host, repository_type, repository_account, repository_name, repository_url, branch2, gitpath, relpath, port = j.clients.git.giturl_parse(
-            url
-        )
+        (
+            repository_host,
+            repository_type,
+            repository_account,
+            repository_name,
+            repository_url,
+            branch2,
+            gitpath,
+            relpath,
+            port,
+        ) = j.clients.git.giturl_parse(url)
         if j.sal.fs.exists(gitpath) and pull == False:
             return (repository_url, gitpath, relpath)
 
@@ -396,9 +404,16 @@ class GitFactory(j.baseclasses.object):
         if not j.sal.fs.exists(urlOrPath, followlinks=True):
             repository_url, gitpath, relativepath = self.getContentInfoFromURL(urlOrPath)
         else:
-            repository_host, repository_type, repository_account, repository_name, repository_url, branch, gitpath, relativepath = j.clients.git.giturl_parse(
-                urlOrPath
-            )
+            (
+                repository_host,
+                repository_type,
+                repository_account,
+                repository_name,
+                repository_url,
+                branch,
+                gitpath,
+                relativepath,
+            ) = j.clients.git.giturl_parse(urlOrPath)
             # to make sure we pull the info
             j.clients.git.pullGitRepo(repository_url, branch=branch)
 
