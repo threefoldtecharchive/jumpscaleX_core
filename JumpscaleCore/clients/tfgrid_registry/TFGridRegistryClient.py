@@ -25,7 +25,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         self.nacl = self.me.nacl
         self.bcdb = j.data.bcdb.get("threebot_registery")
 
-    def register(self, authors=[], readers=[], schema=None, is_encrypted_data=False):
+    def register(self, authors=[], readers=[], schema=None, model=None, is_encrypted_data=False):
         """
         client comes from j.clients.threebot.client_get(threebot="kristof.ibiza")
 
@@ -34,7 +34,6 @@ class TFGridRegistryClient(j.baseclasses.object):
         """
         scm = j.data.schema.get_from_text(schema)
         self.registry_client.schema_register(scm.url, schema)
-        model = self.bcdb.model_get(url=scm.url).new()
         if is_encrypted_data:
             authors.append(self.me.tid)
             dataobj = self.__add_registry_schema_encrypted_data(
@@ -67,13 +66,12 @@ class TFGridRegistryClient(j.baseclasses.object):
             if not post_id:
                 raise j.exceptions.Input("Failed to register your content")
 
-    def get_data_by_id(self, data_id):
-        res = self.registry_client.get(data_id=data_id)
-        info = j.data.serializers.jsxdata.loads(res.registered_info)
-        pprint(f"{res._ddict_hr}\ninfo_data:{info._ddict_hr}")
+    def get_data_by_id(self, data_id, tid):
+        info = self.registry_client.get(data_id=data_id, tid=tid)
+        pprint(info)
 
     def find_encrypted(self, tid, country_code=None, format=None, category=None, topic=None, description=None):
-        #  Find all encrypted data for specific user or you can use your search criteria
+        """  Find all encrypted data for specific user or you can use your search criteria"""
         res = self.registry_client.find_encrypted(
             tid=tid, country_code=country_code, format=format, category=category, topic=topic, description=description
         )
