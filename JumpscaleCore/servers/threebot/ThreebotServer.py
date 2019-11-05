@@ -145,15 +145,15 @@ class ThreeBotServer(j.baseclasses.object_config):
                 "webinterface",
                 path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webinterface/",
             )
-            j.tools.threebot_packages.get(
-                "wiki", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/wiki/"
-            )
+            # j.tools.threebot_packages.get(
+            #     "wiki", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/wiki/"
+            # )
             j.tools.threebot_packages.get(
                 "chat", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/chat/"
             )
-            j.tools.threebot_packages.get(
-                "myjobs", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/myjobs"
-            )
+            # j.tools.threebot_packages.get(
+            #     "myjobs", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/myjobs"
+            # )
             j.tools.threebot_packages.get(
                 "packages_manager",
                 path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/packages_manager",
