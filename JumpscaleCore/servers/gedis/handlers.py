@@ -300,21 +300,28 @@ class Handler(JSBASE):
         elif request.command.command == "auth":
             tid, seed, signature = request.arguments
             tid = int(tid)
-            try:
-                tclient = j.clients.threebot.client_get(threebot=tid)
-            except Exception as e:
-                logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
-                return (logdict, None)
-            try:
-                verification = tclient.verify_from_threebot(seed, signature)
-            except Exception as e:
-                logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
-                return (logdict, None)
-            # if we get here we know that the user has been authenticated properly
-            user_session.threebot_id = tclient.tid
-            user_session.threebot_name = tclient.name
-            j.shell()
 
+            current_threebot_id = int(j.tools.threebot.me.default.tid)
+            # If working on same machine no need to get a client to authenticate
+            # otherwise, we'l have recursion error
+            if current_threebot_id != tid:
+                try:
+                    tclient = j.clients.threebot.client_get(threebot=tid)
+                except Exception as e:
+                    logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+                    return (logdict, None)
+                try:
+                    verification = tclient.verify_from_threebot(seed, signature)
+                except Exception as e:
+                    logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+                    return (logdict, None)
+
+                # if we get here we know that the user has been authenticated properly
+                user_session.threebot_id = tclient.tid
+                user_session.threebot_name = tclient.name
+            else:
+                user_session.threebot_id = tid
+                user_session.threebot_name = j.tools.threebot.me.default.name
             return None, "OK"
 
         self._log_debug(
