@@ -328,7 +328,7 @@ class GedisChatBotSession(JSBASE):
   aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
     {0}%
   </div>
-</div> 
+</div>
 """
         return html
 
@@ -381,7 +381,7 @@ class GedisChatBotSession(JSBASE):
         helper method to retrieve the info of a logged user
         """
         self.q_out.put({"cat": "user_info", "kwargs": kwargs})
-        return self.q_in.get()
+        return j.data.serializers.json.loads(self.q_in.get())
 
 
 def test(factory):
