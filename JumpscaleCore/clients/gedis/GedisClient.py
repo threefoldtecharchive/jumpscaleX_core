@@ -172,8 +172,7 @@ class GedisClient(JSConfigBase):
     @property
     def _threebot_me(self):
         if not self._threebot_me_:
-            # @TODO: shall we make a test here?!
-            # assert j.tools.threebot.me.exists(self.threebot_local_profile)
+            assert j.tools.threebot.me.exists(self.threebot_local_profile)
             self._threebot_me_ = j.tools.threebot.me.get(self.threebot_local_profile)
         return self._threebot_me_
 
