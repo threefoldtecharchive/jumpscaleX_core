@@ -5,16 +5,18 @@ install:
   - apt-get update
   - pip3 install click nose nose-progressive nose-testconfig nose-exclude loguru parameterized requests checksumdir 
   - eval `ssh-agent -s`; ssh-add
-  - rm -rf /sandbox/code/github/threefoldtech/jumpscaleX*
   - cd /sandbox/code/github/threefoldtech/
-  - declare strs=('libs' 'libs_extra' 'builders' 'threebot') && for s in ${strs[@]}; do git clone https://github.com/threefoldtech/jumpscaleX_$s.git --branch development; done
+  - declare strs=('libs' 'libs_extra' 'builders' 'threebot') && for s in ${strs[@]}; do 
+    rm -rf /sandbox/code/github/threefoldtech/jumpscaleX_$s && 
+    git clone https://github.com/threefoldtech/jumpscaleX_$s.git --branch development; done
+  - rm -rf /sandbox/code/github/threefoldtech/jumpscaleX_core
   - cp -r /opt/code/github/threefoldtech/jumpscaleX_core /sandbox/code/github/threefoldtech/jumpscaleX_core
   - source /sandbox/env.sh; js_init generate
-  - source /sandbox/env.sh; kosmos "j.builders.runtimes.lua.install(reset=True)"
+  - source /sandbox/env.sh; kosmos "j.builders.runtimes.lua.install_autossl()"
 
 script:
-  - source /sandbox/env.sh; nosetests-3.4 -v /sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot/wiki/tests/ 
-   --nologcapture --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=Test_wikis
+  - source /sandbox/env.sh; nosetests-3.4 -v /sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/wiki/tests/ 
+    --nologcapture --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=Test_wikis
   - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v --nologcapture --with-noseexclude 
    --exclude-dir=JumpscaleCore/servers/ JumpscaleCore/ --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
   - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v test_loader.py:CoreTests 
