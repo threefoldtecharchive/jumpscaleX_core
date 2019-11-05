@@ -79,6 +79,32 @@ class ThreeBotPackage(JSConfigBase):
 
         self._init_ = True
 
+    def _check_frontend(self):
+        html_location = j.sal.fs.joinPaths(self.path, "html")
+        if j.sal.fs.exists(html_location):
+            return True
+        return False
+
+    def _create_locations(self):
+        if self.path and self._check_frontend():
+            for port in (443, 80):
+                website = self.openresty.get_from_port(port)
+
+                locations = website.locations.get(f"{self.name}_locations")
+
+                website_location = locations.locations_spa.new()
+                website_location.name = self.name
+                website_location.path_url = f"/{self.name}"
+                website_location.use_jumpscale_weblibs = False
+                fullpath = j.sal.fs.joinPaths(self.path, "html/")
+                website_location.path_location = fullpath
+
+                locations.configure()
+                website.configure()
+
+                # setup alert handler to intercept errors
+                j.tools.alerthandler.setup()
+
     @property
     def bcdb(self):
         return self._package_author.bcdb
@@ -90,6 +116,7 @@ class ThreeBotPackage(JSConfigBase):
     def start(self):
         self._init_before_action()
         self._package_author.start()
+        self._create_locations()
         self.status = "running"
         self.save()
 
