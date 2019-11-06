@@ -79,24 +79,32 @@ class ThreeBotPackage(JSConfigBase):
 
         self._init_ = True
 
-    def _check_frontend(self):
+    def _check_app_type(self):
         html_location = j.sal.fs.joinPaths(self.path, "html")
+        frontend_location = j.sal.fs.joinPaths(self.path, "frontend")
         if j.sal.fs.exists(html_location):
-            return True
-        return False
+            return "html"
+        elif j.sal.fs.exists(frontend_location):
+            return "frontend"
 
     def _create_locations(self):
-        if self.path and self._check_frontend():
+        if not self.path:
+            return
+        app_type = self._check_app_type()
+        if app_type:
             for port in (443, 80):
                 website = self.openresty.get_from_port(port)
 
                 locations = website.locations.get(f"{self.name}_locations")
+                if app_type == "frontend":
+                    website_location = locations.locations_spa.new()
+                elif app_type == "html":
+                    website_location = locations.locations_static.new()
 
-                website_location = locations.locations_spa.new()
                 website_location.name = self.name
                 website_location.path_url = f"/{self.name}"
                 website_location.use_jumpscale_weblibs = False
-                fullpath = j.sal.fs.joinPaths(self.path, "html/")
+                fullpath = j.sal.fs.joinPaths(self.path, f"{app_type}/")
                 website_location.path_location = fullpath
 
                 locations.configure()
