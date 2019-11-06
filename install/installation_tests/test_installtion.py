@@ -221,6 +221,35 @@ class TestInstallationInDocker(BaseTest):
         output, error = self.docker_command(command)
         self.assertNotIn(file_name, output.decode())
 
+    def test09_verify_reinstall_r_option(self):
+        """
+
+        **Verify that container-install -r  works successfully **
+        """
+        self.install_jsx_container()
+        self.info("Remove one of default installed packages using jumpscale  in existing jumpscale container")
+        command = "pip3 uninstall prompt-toolkit -y"
+        self.docker_command(command)
+
+        self.info("Add data in bcdb by get new client.")
+        client_name = str(uuid.uuid4()).replace("-", "")[:10]
+        command = "source /sandbox/env.sh && kosmos 'j.clients.zos.get({})'".format(client_name)
+        output, error = self.docker_command(command)
+
+        self.info("Run container-install -r ")
+        command = "/tmp/jsx container-install -s -n {} -r ".format(self.CONTAINER_NAME)
+        output, error = self.os_command(command)
+        self.assertIn("installed successfully", output.decode())
+
+        self.info("Check that same container exist with bcdb data and removed pacakage exist.")
+        command = "source /sandbox/env.sh && kosmos 'j.application.bcdb_system.get_all()'"
+        output, error = self.docker_command(command)
+        self.assertTrue(data for data in output.decode() if data.name == client_name)
+
+        command = "pip3 list | grep -F prompt-toolkit"
+        output, error = self.docker_command(command)
+        self.assertIn("prompt-toolkit", output.decode())
+
 
 class TestInstallationInSystem(BaseTest):
     def setUp(self):
