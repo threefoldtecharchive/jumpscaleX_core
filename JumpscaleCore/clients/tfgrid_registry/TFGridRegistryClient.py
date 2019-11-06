@@ -37,7 +37,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         self.bcdb = j.data.bcdb.get("threebot_registery")
 
     def register(
-        self, authors=[], readers=[], schema=None, model=None, is_encrypted_data=False, format=Format.WIKI.name
+        self, authors=None, readers=None, schema=None, model=None, is_encrypted_data=False, format=Format.WIKI.name
     ):
         """client comes from j.clients.threebot.client_get(threebot="kristof.ibiza").
 
@@ -134,7 +134,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         return res
 
     def __add_registry_schema_data(
-        self, url="threebot.registry.entry.data.1", authors=[], new_scm=None, model=None, format=None, description=""
+        self, url="threebot.registry.entry.data.1", authors=None, new_scm=None, model=None, format=None, description=""
     ):
         """Add data to the registry.
 
@@ -162,8 +162,8 @@ class TFGridRegistryClient(j.baseclasses.object):
     def __add_registry_schema_encrypted_data(
         self,
         url="threebot.registry.entry.data.1",
-        authors=[],
-        readers=[],
+        authors=None,
+        readers=None,
         new_scm=None,
         model=None,
         format=None,
