@@ -54,6 +54,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         Raises:
             InputException: Failed to register your content
         Returns:
+            post_id (int): Id of data object saved
         """
         scm = j.data.schema.get_from_text(schema)
         self.registry_client.schema_register(scm.url, schema)
@@ -72,9 +73,9 @@ class TFGridRegistryClient(j.baseclasses.object):
             post_id = self.registry_client.register(
                 authors=authors, verifykey=verifykey, input_object=dataobj, signature_hex=signed_data.hex()
             )
-            print(post_id)
             if not post_id:
                 raise j.exceptions.Input("Failed to register your content")
+            return post_id
 
         else:
             authors.append(self.me.tid)
@@ -85,9 +86,9 @@ class TFGridRegistryClient(j.baseclasses.object):
             post_id = self.registry_client.register(
                 authors=authors, verifykey=verifykey, input_object=dataobj, signature_hex=signed_data.hex()
             )
-            print(post_id)
             if not post_id:
                 raise j.exceptions.Input("Failed to register your content")
+            return post_id
 
     def get_data_by_id(self, data_id, tid):
         """Get data by id either encrypted or not.
@@ -97,10 +98,10 @@ class TFGridRegistryClient(j.baseclasses.object):
             tid (int) : Threebot Id.
 
         Returns:
-
+            info (object): Desired data.
         """
         info = self.registry_client.get(data_id=data_id, tid=tid)
-        pprint(info)
+        return info
 
     def find_encrypted(self, tid, country_code=None, format=None, category=None, topic=None, description=None):
         """Find all encrypted data for specific user or you can specify search criteria.
@@ -114,13 +115,12 @@ class TFGridRegistryClient(j.baseclasses.object):
             description (string): Description of the data you want.
 
         Returns:
-
+            res (list): Data in the desired format
         """
         res = self.registry_client.find_encrypted(
             tid=tid, country_code=country_code, format=format, category=category, topic=topic, description=description
         )
-        for item in res:
-            pprint(f"{item._ddict_hr}")
+        return res
 
     def find_formatted(self, format):
         """Find the not encrypted data with specific format.
@@ -128,12 +128,10 @@ class TFGridRegistryClient(j.baseclasses.object):
         Args:
             format(string) : Format of the data you want.
         Returns:
-
+            res (list): Data in the desired format
         """
         res = self.registry_client.find_formatted(registered_info_format=format)
-        for item in res:
-            res = j.data.serializers.jsxdata.loads(item)
-            pprint(f"{res._ddict_hr}")
+        return res
 
     def __add_registry_schema_data(
         self, url="threebot.registry.entry.data.1", authors=[], new_scm=None, model=None, format=None, description=""
