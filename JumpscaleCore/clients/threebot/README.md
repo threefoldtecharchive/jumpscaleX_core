@@ -15,45 +15,16 @@ cl.actors.package_manager.package_add(path="/sandbox/code/github/threefoldtech/j
 cl.reload()
 ```
 
-- Get/Create the `default` instance from threebot.me
+- Create the `default` instance from threebot.me
 
 ```python
-client = j.tools.threebot.me.get("default", tid=1, email="test@test.com", tname="first")
-```
-
-- Register threebot.me instance to the phonebook
-
-```python
-nacl = client.nacl
-pubkey = nacl.verify_key_hex
-client.pubkey=pubkey
-tid = client.tid
-name = client.name
-email = client.email
-ipaddr = ""
-description = ""
-sender_signature_hex = j.data.nacl.payload_sign(tid, name, email, ipaddr, description, pubkey, nacl=nacl)
-# Register to phonebook
-name_for_register = cl.actors.phonebook.name_register(name="default", pubkey=pubkey)
-name_for_register.signature = sender_signature_hex
-name_for_register.email = email
-name_for_register.id = tid
-```
-
-- Add the threebot.me record to phonebook
-
-```python
-cl.actors.phonebook.record_register(
-    tid=tid, name=name, email=email, description=description, pubkey=pubkey, sender_signature_hex=sender_signature_hex
-)
+ j.tools.threebot.init_my_threebot(myidentity='default', name='hamdy farag', email='ham1dy@d.com', description=None, ipaddr='127.0.0.1', interactive=False)```
 ```
 
 - Get the client and use it (registering my threebot.me id), It will authenticate automatically
 
 ```python
 c = j.clients.threebot.client_get(threebot=1)
-c.host = "127.0.0.1"
-c.save()
 ```
 
 - use the client
