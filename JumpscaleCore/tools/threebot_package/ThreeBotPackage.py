@@ -152,9 +152,6 @@ class ThreeBotPackage(JSConfigBase):
                 locations.configure()
                 website.configure()
 
-                # setup alert handler to intercept errors
-                j.tools.alerthandler.setup()
-
     @property
     def bcdb(self):
         return self._package_author.bcdb
