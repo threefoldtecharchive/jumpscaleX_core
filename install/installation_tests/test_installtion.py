@@ -1,5 +1,5 @@
 import os
-import uuid
+import uuid, random
 from .base_test import BaseTest
 from unittest import skip
 
@@ -7,6 +7,7 @@ from unittest import skip
 class TestInstallationInDocker(BaseTest):
     def setUp(self):
         print("\t")
+        self.CONTAINER_NAME = str(uuid.uuid4()).replace("-", "")[:10]
         self.info("Test case : {}".format(self._testMethodName))
 
     def tearDown(self):
@@ -21,7 +22,6 @@ class TestInstallationInDocker(BaseTest):
         self.os_command(command)
 
     def install_jsx_container(self):
-        self.CONTAINER_NAME = str(uuid.uuid4()).replace("-", "")[:10]
         self.info("Install container jumpscale in {} os type".format(self.get_os_type()))
         output, error = self.jumpscale_installation("container-install", "-n {}".format(self.CONTAINER_NAME))
         self.assertFalse(error)
@@ -247,8 +247,146 @@ class TestInstallationInDocker(BaseTest):
         self.assertTrue(data for data in output.decode() if data.name == client_name)
 
         command = "pip3 list | grep -F prompt-toolkit"
-        output, error = self.docker_command(command)
+        output, error = self.os_command(command)
         self.assertIn("prompt-toolkit", output.decode())
+
+    def test10_verify_scratch_option(self):
+        """
+
+        **Verify that container-install --scratch  works successfully **
+        """
+        self.install_jsx_container()
+
+        self.info("Add data in bcdb by get new client.")
+        client_name = str(uuid.uuid4()).replace("-", "")[:10]
+        command = "source /sandbox/env.sh && kosmos 'j.clients.zos.get({})'".format(client_name)
+        output, error = self.docker_command(command)
+
+        self.info("Use container-install --scratch with same conatiner name. ")
+        command = "/tmp/jsx container-install -s -n {} --scratch ".format(self.CONTAINER_NAME)
+        output, error = self.os_command(command)
+        self.assertIn("installed successfully", output.decode())
+
+        self.info("Check that new contianer installed without new data .")
+        command = "source /sandbox/env.sh && kosmos 'j.application.bcdb_system.get_all()'"
+        output, error = self.docker_command(command)
+        self.assertFalse(data for data in output.decode() if data.name == client_name)
+
+    def test11_verify_threebot(self):
+        """
+
+        **Verify that container-install --threebot  works successfully **
+        """
+        self.info("Use container-install --threebot.")
+        output, error = self.jumpscale_installation(
+            "container-install", "-n {} --threebot ".format(self.CONTAINER_NAME)
+        )
+        self.assertFalse(error)
+        self.assertIn("installed successfully", output.decode())
+
+        self.info("Check that container installed sucessfully with threboot.")
+        command = 'docker ps -a -f status=running  | grep %s | awk "{print \$2}"' % self.CONTAINER_NAME
+        output, error = self.os_command(command)
+        container_image = output.decode()
+        self.assertIn("threefoldtech/3bot", container_image.strip("\n"))
+
+        command = "ls /sandbox/bin"
+        files_list, error = self.docker_command(command)
+        threebot_builders = [{"sonic": "apps"}, {"zdb": "db"}, {"openresty": "web"}]
+        for builder in threebot_builders:
+            self.assertIn(list(builder.keys())[0], files_list.decode())
+            command = 'source /sandbox/env.sh && kosmos -p "getattr(getattr(j.builders,\\"{}\\"),\\"{}\\").install()"'.format(
+                list(builder.values())[0], list(builder.keys())[0]
+            )
+            output, error = self.docker_command(command)
+            self.assertIn("already done", output.decode())
+
+    def test12_verify_images(self):
+        """
+
+        **Verify that container-install --image  works successfully **
+        """
+        self.info("Use container-install --threebot.")
+        image = "threefoldtech/3bot"
+        output, error = self.jumpscale_installation(
+            "container-install", "-n {} --image {} ".format(self.CONTAINER_NAME, image)
+        )
+        self.assertFalse(error)
+        self.assertIn("installed successfully", output.decode())
+
+        self.info("Check that container installed sucessfully with right image.")
+        command = 'docker ps -a -f status=running  | grep %s | awk "{print \$2}"' % self.CONTAINER_NAME
+        output, error = self.os_command(command)
+        container_image = output.decode()
+        self.assertEqual(image, container_image.strip("\n"))
+
+    def test13_verify_ports(self):
+        """
+
+        **Verify that container-install --ports  works successfully **
+        """
+        self.info("Use container-install --ports.")
+        source_port_1 = random.randint(20, 500)
+        destination_port_1 = random.randint(500, 1000)
+
+        source_port_2 = random.randint(20, 500)
+        destination_port_2 = random.randint(500, 1000)
+        output, error = self.jumpscale_installation(
+            "container-install",
+            "-n {} --ports {}:{} {}:{} ".format(
+                self.CONTAINER_NAME, source_port_1, destination_port_1, source_port_2, destination_port_2
+            ),
+        )
+        self.assertFalse(error)
+        self.assertIn("installed successfully", output.decode())
+
+        self.info("Check that container installed sucessfully with right ports.")
+        command = "docker port {}".format(self.CONTAINER_NAME)
+        output, error = self.os_command(command)
+        exported_port_1 = "{}/tcp -> 0.0.0.0:{}".format(source_port_1, destination_port_1)
+        exported_port_2 = "{}/tcp -> 0.0.0.0:{}".format(source_port_2, destination_port_2)
+        self.assertIn(exported_port_1, output.decode())
+        self.assertIn(exported_port_2, output.decode())
+
+    def test14_verify_branch(self):
+        """
+
+        **Verify that container-install --branch  works successfully **
+        """
+        self.info("Use container-install --branch.")
+        branch = "master"
+        output, error = self.jumpscale_installation(
+            "container-install", "-n {} --branch {}".format(self.CONTAINER_NAME, branch)
+        )
+        self.assertFalse(error)
+        self.assertIn("installed successfully", output.decode())
+
+        self.info("Check that container installed sucessfully with right branch.")
+        command = "cat /sandbox/code/github/threefoldtech/jumpscaleX_core/.git/HEAD"
+        output, _ = self.docker_command(command)
+        code_branch = output.decode().replace("\n", "").split("/")[-1]
+        self.assertEqual(branch, code_branch)
+
+    # def test15_verify_containers(self):
+    #     """
+
+    #     **Verify that /tmp/jsx containers  works successfully **
+    #     """
+    #     self.install_jsx_container()
+
+    #     self.info("Use /tmp/jsx containers option ")
+    #     command = "/tmp/jsx containers"
+    #     output, error = self.os_command(command)
+
+    #     self.info("Check that all running containers have been deleted")
+    #     command = "docker ps -aq "
+    #     output, error = self.os_command(command)
+    #     self.assertFalse(output)
+
+    #     self.info("Check that containers image have been deleted")
+    #     command = "docker images -aq "
+    #     output, error = self.os_command(command)
+    #     self.assertFalse(output)
 
 
 class TestInstallationInSystem(BaseTest):
