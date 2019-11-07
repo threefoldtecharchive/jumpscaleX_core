@@ -29,7 +29,7 @@ model.save()
 
 * Register encrypted the data
 ```
-data_id = j.clients.tfgrid_registry.register(schema = schema, authors = [100,10,1], model = model,is_encrypted_data = True)
+data_id = j.clients.tfgrid_registry.register(schema = schema, authors = [100,10,1], model = model,is_encrypted_data = True,readers = [50,60])
 ```
 * Register not encrypted data
 ```
@@ -48,6 +48,8 @@ data = j.clients.tfgrid_registry.find_encrypted(author_id)
 
 * Find the not encrypted data with specific format
 ```
-data = j.clients.tfgrid_registry.find_formatted("JSXSCHEMA")
+data = j.clients.tfgrid_registry.find_formatted(registered_info_format = "jsxschema")
+data = j.clients.tfgrid_registry.find_formatted(registered_info_format = "yaml")
+data = j.clients.tfgrid_registry.find_formatted(registered_info_format = "json")
 ```
 **available formats**: jsxschema,yaml,json,msgpack,unstructured

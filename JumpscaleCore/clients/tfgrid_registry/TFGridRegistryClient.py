@@ -31,6 +31,9 @@ class TFGridRegistryClient(j.baseclasses.object):
             name="test", tid=3, email="test.test@gmail", tname="testUser", pubkey="asdf3dsfasdlfkjasd88893n"
         )
         self.gedis_client = j.servers.threebot.local_start_default(web=True)
+        self.gedis_client.actors.package_manager.package_add(
+            path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry"
+        )
         self.gedis_client.reload()
         self.registry_client = self.gedis_client.actors.registry
         self.nacl = self.me.nacl
@@ -62,7 +65,7 @@ class TFGridRegistryClient(j.baseclasses.object):
             authors.append(self.me.tid)
             dataobj = self.__add_registry_schema_encrypted_data(
                 authors=authors,
-                readers=[],
+                readers=readers,
                 threebotclient=self.me,
                 new_scm=scm,
                 model=model,
@@ -122,15 +125,39 @@ class TFGridRegistryClient(j.baseclasses.object):
         )
         return res
 
-    def find_formatted(self, format):
+    def find_formatted(
+        self,
+        schema_url=None,
+        country_code=None,
+        format=None,
+        category=None,
+        topic=None,
+        description=None,
+        registered_info_format="jsxschema",
+    ):
         """Find the not encrypted data with specific format.
 
         Args:
-            format(string) : Format of the data you want.
+            country_code (string) : Country code is used for filtering.
+            format (string) = "website,blog,wiki,doc,solutionpackage,threebotpackage" the type of the data
+            category (string): Category of the data you want.
+            topic (string): Topic of the data you want.
+            description (string): Description of the data you want.
+            registered_info_format = "jsxschema,yaml,json,msgpack,unstructured" the format of the data
+
+
         Returns:
             res (list): Data in the desired format
         """
-        res = self.registry_client.find_formatted(registered_info_format=format)
+        res = self.registry_client.find_formatted(
+            format=format,
+            schema_url=schema_url,
+            country_code=country_code,
+            category=category,
+            topic=topic,
+            description=description,
+            registered_info_format=registered_info_format,
+        )
         return res
 
     def __add_registry_schema_data(
@@ -194,6 +221,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         dataobj.description = description
         encrypted_data_model = j.data.schema.get_from_url(url="threebot.registry.entry.data_encrypted.1").new()
         encrypted_data_model.tid = threebotclient.tid
+        # TODO validate if it will be default or not
         encrypted_data_model.data_ = model._data
         dataobj.registered_info_encrypted = [encrypted_data_model]
         dataobj.save()
