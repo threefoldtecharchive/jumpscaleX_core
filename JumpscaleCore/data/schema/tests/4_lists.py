@@ -45,6 +45,8 @@ def main(self):
     assert j.data.schema.get_from_md5(md5=schemasub._md5)._md5 == schemasub._md5
 
     assert schemasub2._md5 == j.data.schema._md5(schema0)
+    s5 = j.data.schema.get_from_url(url="jumpscale.schema.test4.cmd")
+    assert s5._md5 == schemasub._md5
 
     schema1 = """
         @url = jumpscale.myjobs.job
@@ -71,9 +73,6 @@ def main(self):
     assert schema_object2._md5 == j.data.schema._md5(schema1)
 
     assert j.data.schema._url_to_md5["jumpscale.schema.test4.cmd"] == schemasub2._md5
-
-    s5 = j.data.schema.get_from_url(url="jumpscale.schema.test4.cmd")
-    assert s5._md5 == schemasub._md5
 
     q = schema_object.new()
     assert q.cmds._child_type_._schema._md5 == schemasub._md5
