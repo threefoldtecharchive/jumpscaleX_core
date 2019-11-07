@@ -74,7 +74,10 @@ def main(self):
     assert schema_test.name == "digitalme.base"
     assert schema_test.enable == True
     assert schema_test.args == []
-    assert schema_test.loaders[0].giturl == "https://github.com/threefoldtech/digital_me/tree/development960/packages/system/base"
+    assert (
+        schema_test.loaders[0].giturl
+        == "https://github.com/threefoldtech/digital_me/tree/development960/packages/system/base"
+    )
     assert schema_test.loaders[0].dest == ""
     assert schema_test.loaders[0].enable == True
     assert schema_test.loaders[1].giturl == "https://github.com/threefoldtech/jumpscaleX_weblibs/tree/master/static"
