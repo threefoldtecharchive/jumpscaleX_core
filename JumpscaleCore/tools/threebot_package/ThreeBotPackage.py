@@ -167,7 +167,6 @@ class ThreeBotPackage(JSConfigBase):
         self._create_locations()
         self._init_before_action()
         self._package_author.start()
-        self._create_locations()
         self.status = "running"
         self.save()
 
