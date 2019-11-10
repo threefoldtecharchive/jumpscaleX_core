@@ -37,7 +37,7 @@ model.save()
 data_id = j.clients.tfgrid_registry.register(schema = schema, authors = [100,10,1], model = model,is_encrypted_data = True,readers = [50,60])
 ```
 
-* Register not encrypted data
+* Register non encrypted data
 
 ```python
 data_id = j.clients.tfgrid_registry.register(schema = schema, authors = [100,10,1], model = model,is_encrypted_data = False)
