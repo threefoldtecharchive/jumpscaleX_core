@@ -128,7 +128,15 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         if not background:
             # do bcdb check and rebuild index if index and data aren't in sync.
+            # clean start for my jobs
+            if j.servers.myjobs.workers._model._index_:
+                j.servers.myjobs.workers._model._index_.destroy()
+            if j.servers.myjobs.jobs._model._index_:
+                j.servers.myjobs.jobs._model._index_.destroy()
             j.data.bcdb.check()
+            j.servers.myjobs.workers_tmux_start(4)
+            # TODO: review myjobs to have this by default.
+
             self.zdb.start()
             j.servers.sonic.default.start()
 
