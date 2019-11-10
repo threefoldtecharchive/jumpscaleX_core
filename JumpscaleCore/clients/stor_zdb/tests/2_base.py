@@ -14,6 +14,7 @@ def main(self):
     c.namespace_new("test", secret="1234")
 
     cl = self.client_get(name="test", addr="localhost", port=9901, secret="1234")
+    cl.ping()
     cl.flush()
     nr = cl.nsinfo["entries"]
     assert nr == 0
@@ -55,6 +56,12 @@ def main(self):
     assert cl.list(key_start=id2)[0] == id2
 
     assert cl.exists(id2)
+
+    cl.delete(id2)
+    assert cl.exists(id2) == False
+
+    cl.flush()
+    assert cl.list() == []
 
     self._log_debug("write 10000 entries")
 
@@ -120,5 +127,6 @@ def main(self):
 
     assert res > 3000
 
+    c.reset()
     self._log_info("PERF TEST SEQ OK")
     return "OK"

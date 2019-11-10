@@ -29,7 +29,13 @@ class FullCoreTests(TestCase):
 
 class CoreTests(TestCase):
     @parameterized.expand(
-        ["j.data.bcdb.test()", "j.data.schema.test()", "j.clients.sshkey.test()", "j.clients.sshagent.test()"]
+        [
+            "j.data.bcdb.test()",
+            "j.data.schema.test()",
+            "j.clients.sshkey.test()",
+            "j.clients.sshagent.test()",
+            "j.clients.zdb.test()",
+        ]
     )
     def test(self, cmd):
         eval(cmd)
