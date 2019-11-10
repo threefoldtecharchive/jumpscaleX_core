@@ -440,7 +440,6 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
         wikis.append((name, url))
 
     if not foreground:
-        j.servers.myjobs.workers_tmux_start(nr_workers=len(wikis))
         job_ids = [
             j.servers.myjobs.schedule(
                 load_wiki, wiki_name=wiki_name, wiki_url=wiki_url, download=download, pull=pull
