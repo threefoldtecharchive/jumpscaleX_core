@@ -40,7 +40,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :return:
         """
         if self.exists(name=name):
-            raise j.exceptions.Base("cannot do new object, exists")
+            raise j.exceptions.Base(f"cannot do new object, {name} exists")
         jsconfig = self._new(name=name, jsxobject=jsxobject, autosave=autosave, **kwargs)
         self._check(jsconfig)
         return jsconfig

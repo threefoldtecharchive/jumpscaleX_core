@@ -127,7 +127,8 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.save()
 
         if not background:
-
+            # do bcdb check and rebuild index if index and data aren't in sync.
+            j.data.bcdb.check()
             self.zdb.start()
             j.servers.sonic.default.start()
 
