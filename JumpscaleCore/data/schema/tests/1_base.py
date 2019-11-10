@@ -130,10 +130,9 @@ def main(self):
     assert "6" in o1.llist2
 
     c = o1._capnp_obj
-    c2 = o1._capnp_obj
 
     assert c.llist2[0] == "5"
-    assert c2.llist2[0] == "5"
+    assert c.llist2[1] == "6"
 
     dd = o1._ddict
 
@@ -160,9 +159,6 @@ def main(self):
     assert o1._capnp_obj.llist2[0] == "5"
 
     assert o1._data.find(b"GREEN") == -1  # needs to be stored as int
-    x = len(o1._data) + 0
-
-    o1.enum = 3
 
     schema3 = """
         @url = despiegk.test2

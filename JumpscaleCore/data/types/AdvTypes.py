@@ -126,11 +126,13 @@ class Url(String):
         self._RE = re.compile(
             "(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9]\.[^\s]{2,}"
         )
+        if not default:
+            default = ""
         self._default = default
 
     def clean(self, value):
         if value is None or value == "None" or value == "":
-            return self.default_get()
+            return self._default
         if not self.check(value):
             raise j.exceptions.Value("invalid url :%s" % value)
         else:

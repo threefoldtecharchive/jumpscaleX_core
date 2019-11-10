@@ -61,7 +61,6 @@ def main(self):
     assert jsxobject.cost_estimate == 0.0
     assert jsxobject.cost_estimate == 0
 
-    self._log_info("TEST DONE BASE")
     # CLEAN STATE
     # j.data.schema.remove_from_text(schema0)
     # j.data.schema.remove_from_text(schema1)
