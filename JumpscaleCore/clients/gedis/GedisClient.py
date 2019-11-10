@@ -164,38 +164,22 @@ class GedisClient(JSConfigBase):
             self._log_info("redisclient: %s:%s " % (addr, port))
             self._redis_ = j.clients.redis.get(ipaddr=addr, port=port, password=secret, ping=True, fromcache=False)
 
-            # DONT PUT ON JSON
-            # self._redis_.execute_command("config_format", "json")
             # authenticate us
             seed = j.data.idgenerator.generateGUID()  # any seed works, the more random the more secure
-            signature = self._nacl.default.sign_hex(seed)  # this is just std signing on nacl and hexifly it
+            signature = self._nacl.sign_hex(seed)  # this is just std signing on nacl and hexifly it
             self._redis_.execute_command("auth", self._threebot_me.tid, seed, signature)
 
         return self._redis_
 
-    # def __getattr__(self, name):
-    #     if name.startswith("_") or name in self._methods_gedis() or name in self._properties():
-    #         return self.__getattribute__(name)
-    #     return self.cmds.__getattribute__(name)
-
     @property
     def _threebot_me(self):
         if not self._threebot_me_:
-            if self.threebot_local_profile == "default":
-                self._threebot_me_ = j.tools.threebot.me.default
-            else:
-                print("TODO: implement")
-                j.shell()
-        j.shell()
+            self._threebot_me_ = j.tools.threebot.me.get(self.threebot_local_profile, needexist=False)
         return self._threebot_me_
 
     @property
     def _nacl(self):
-        if self.threebot_local_profile == "default":
-            return j.data.nacl.default
-        else:
-            print("TODO: implement")
-            j.shell()
+        return self._threebot_me.nacl
 
     def _methods_gedis(self, prefix=""):
         if prefix.startswith("_"):

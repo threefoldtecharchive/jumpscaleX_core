@@ -2,6 +2,8 @@ from Jumpscale import j
 from redis.exceptions import ConnectionError
 import nacl
 from .protocol import RedisCommandParser, RedisResponseWriter
+from nacl.signing import VerifyKey
+import binascii
 
 JSBASE = j.baseclasses.object
 
@@ -329,20 +331,35 @@ class Handler(JSBASE):
         elif request.command.command == "auth":
             tid, seed, signature = request.arguments
             tid = int(tid)
-            try:
-                tclient = j.clients.threebot.client_get(threebot=tid)
-            except Exception as e:
-                logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
-                return (logdict, None)
-            try:
-                verification = tclient.verify_from_threebot(seed, signature)
-            except Exception as e:
-                logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
-                return (logdict, None)
-            # if we get here we know that the user has been authenticated properly
-            user_session.threebot_id = tclient.tid
-            user_session.threebot_name = tclient.name
 
+            current_threebot_id = int(j.tools.threebot.me.default.tid)
+            # If working on same machine no need to get a client to authenticate
+            # otherwise, we'll have infinite loop
+            if current_threebot_id != tid:
+                try:
+                    tclient = j.clients.threebot.client_get(threebot=tid)
+                except Exception as e:
+                    logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+                    return (logdict, None)
+                try:
+                    verification = tclient.verify_from_threebot(seed, signature)
+                except Exception as e:
+                    logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+                    return (logdict, None)
+
+                # if we get here we know that the user has been authenticated properly
+                user_session.threebot_id = tclient.tid
+                user_session.threebot_name = tclient.name
+            else:
+                # can't reuse verification methods in 3 bot client, otherwise we gonna go into infinite loop
+                # so we verify directly using nacl
+                try:
+                    VerifyKey(binascii.unhexlify(j.tools.threebot.me.default.nacl.verify_key_hex)).verify(seed, binascii.unhexlify(signature))
+                except Exception as e:
+                    logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+                    return (logdict, None)
+                user_session.threebot_id = tid
+                user_session.threebot_name = j.tools.threebot.me.default.name
             return None, "OK"
 
         self._log_debug(
