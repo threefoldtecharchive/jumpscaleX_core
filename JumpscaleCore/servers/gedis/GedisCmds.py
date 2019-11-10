@@ -9,19 +9,20 @@ JSBASE = j.baseclasses.object
 SCHEMA = """
 @url = jumpscale.gedis.api
 namespace = ""
-name = ""
+name** = ""
 cmds = (LO) !jumpscale.gedis.cmd
 schemas = (LO) !jumpscale.gedis.schema
 
 @url = jumpscale.gedis.cmd
-name = ""
+name** = ""
 comment = ""
 schema_in_url = ""
 schema_out_url = ""
 args = (ls)
-auth_data = ""
+public = False
 
 @url = jumpscale.gedis.schema
+name** = ""
 md5 = ""
 url = ""
 content = ""
@@ -44,11 +45,11 @@ class GedisCmds(JSBASE):
 
         j.data.schema.get_from_text(SCHEMA)
         self.schema = j.data.schema.get_from_url(url="jumpscale.gedis.api")
-
+        self.schema = j.data.bcdb.system.model_get(schema=self.schema)
         self._cmds = {}
 
         if data:
-            self.data = self.schema.new(serializeddata=data)
+            self.data = self.schema.new(data=data)
             self.cmds
         else:
             cname = j.sal.fs.getBaseName(path)[:-3]
@@ -117,23 +118,12 @@ class GedisCmds(JSBASE):
         comment = ""
         schema_in = ""
         schema_out = ""
+        auth_args = ""
         args = []
 
         state = "START"
 
-        is_auth_decorator = txt.startswith("@auth")
-        auth_decorator = ""
-        auth_data = ""
-        if is_auth_decorator:
-            auth_decorator = txt.split("\n")[0]
-            auth_data = auth_decorator.replace("@auth", "dict")
-            auth_data = eval(auth_data)
-            cmd.auth_data = j.data.serializers.json.dumps(auth_data)
-
         for line in txt.split("\n"):
-            if is_auth_decorator:
-                if line == auth_decorator:
-                    continue
             lstrip = line.strip().lower()
             if state == "START" and lstrip.startswith("def"):
                 state = "DEF"
@@ -163,6 +153,8 @@ class GedisCmds(JSBASE):
                 if state == "COMMENT":  # are in comment, now found the schema
                     if lstrip.endswith("out"):
                         state = "SCHEMAO"
+                    elif lstrip.endswith("auth"):
+                        state = "SCHEMAAUTH"
                     else:
                         state = "SCHEMAI"
                     continue
@@ -178,6 +170,9 @@ class GedisCmds(JSBASE):
                 continue
             if state == "CODE" or state == "DEF":
                 code += "%s\n" % line
+                continue
+            if state == "SCHEMAAUTH":
+                auth_args += "%s\n" % line
                 continue
             raise j.exceptions.Base()
 
@@ -198,8 +193,37 @@ class GedisCmds(JSBASE):
             args.pop(args.index("user_session"))
 
         cmd.args = args
+        data = self._parse_auth_data(auth_args)
+        if data:
+            if data.get("public"):
+                cmd.public = True
+            if data.get("users"):
+                self.data.acl.rights_set(userids=data.get("users"), rights=f".{cmd.name}.")
+            if data.get("circles"):
+                self.data.acl.rights_set(circleids=data.get("circles"), rights=f".{cmd.name}.")
 
+        else:
+            admins_circle_id = j.data.bcdb.system.circle.get_by_name("admins").id
+            self.data.acl.rights_set(circleids=[admins_circle_id], rights=f".{cmd.name}.")
+
+        cmd.save()
+        self.data.save()
         return cmd
+
+    def _parse_auth_data(self, auth_args):
+        if auth_args:
+            import ast
+
+            data = {}
+            for line in auth_args.splitlines():
+                print(line)
+                if not line.strip() or not "=" in line:
+                    print(f"skipping {line}")
+                    continue
+                key = line.split("=")[0].strip()
+                value = ast.literal_eval(line.split("=")[1].strip())
+                data[key] = value
+            return data
 
     def _args_process(self, args):
         res = []
