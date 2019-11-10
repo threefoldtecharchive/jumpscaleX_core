@@ -74,7 +74,8 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         if len(res) > 1:
             j.shell()
             raise j.exceptions.JSBUG("should never be more than 1")
-
+        # reload, make sure newly added packages exist
+        j.tools.threebot.explorer.reload()
         r = j.tools.threebot.explorer.threebot_record_get(tid=tid, name=tname)
         assert r.id > 0
         r2 = j.baseclasses.object_config_collection_testtools.get(

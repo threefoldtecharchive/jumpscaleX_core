@@ -20,6 +20,9 @@ class ThreebotExplorer(j.baseclasses.object):
     def actors(self):
         return self._client.actors_all
 
+    def reload(self):
+        self._client.reload()
+
     def threebot_record_get(self, tid=None, name=None, die=True):
         """
         j.tools.threebot.explorer.threebot_record_get(name="something.something",die=False)
