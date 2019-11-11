@@ -3,7 +3,7 @@ prequisties:
 
 install:
   - apt-get update
-  - pip3 install click nose nose-progressive nose-testconfig nose-exclude loguru parameterized requests checksumdir 
+  - pip3 install click pytest nose nose-progressive nose-testconfig nose-exclude loguru parameterized requests checksumdir 
   - eval `ssh-agent -s`; ssh-add
   - cd /sandbox/code/github/threefoldtech/
   - declare strs=('libs' 'libs_extra' 'builders' 'threebot') && for s in ${strs[@]}; do 
