@@ -17,6 +17,7 @@ class TestPackageManager(TestCase):
         self.result_path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), PACKAGE_NAME, "result")
         self.gedis_client = j.servers.threebot.local_start_default(timeout=1200)
         self.package_manager = self.gedis_client.actors.package_manager
+        self.path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), PACKAGE_NAME)
 
     @staticmethod
     def random_string():
@@ -55,10 +56,9 @@ class TestPackageManager(TestCase):
         """
         self.info("Add test package.")
         if method == "path":
-            path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), PACKAGE_NAME)
-            package = {"path": path}
+            package = {"path": self.path}
         else:
-            giturl = "https://github.com/threefoldtech/jumpscaleX_core/tree/development/JumpscaleCore/serbers/threebot/tests/test_package"
+            giturl = "https://github.com/threefoldtech/jumpscaleX_core/tree/development/JumpscaleCore/servers/threebot/tests/test_package"
             package = {"git_url": giturl}
 
         self.package_manager.package_add(**package)
@@ -82,8 +82,8 @@ class TestPackageManager(TestCase):
         #. List packages again, test package should not be found.
         """
         self.info("Add test package.")
-        path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), PACKAGE_NAME)
-        self.package_manager.package_add(path=path)
+        self.package_manager.package_add(path=self.path)
+        self.gedis_client.reload()
 
         self.info("List packages, test_package should be found.")
         package = self.get_package(PACKAGE_NAME)
@@ -112,8 +112,8 @@ class TestPackageManager(TestCase):
         #. Check that package
         """
         self.info("Add test package.")
-        path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), PACKAGE_NAME)
-        self.package_manager.package_add(path=path)
+        self.package_manager.package_add(path=self.path)
+        self.gedis_client.reload()
 
         self.info("Enable this package.")
         self.package_manager.package_enable(PACKAGE_NAME)
@@ -143,8 +143,8 @@ class TestPackageManager(TestCase):
         #. Check that this package has been stopped.
         """
         self.info("Add test package.")
-        path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), PACKAGE_NAME)
-        self.package_manager.package_add(path=path)
+        self.package_manager.package_add(path=self.path)
+        self.gedis_client.reload()
 
         self.info("Start this package.")
         self.package_manager.package_start(PACKAGE_NAME)
