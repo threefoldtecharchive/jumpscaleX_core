@@ -51,7 +51,7 @@ class SSHKeys(j.baseclasses.object_config_collection_testtools):
         path = j.core.tools.text_replace("{DIR_HOME}/.ssh/test_key")
 
         sshkey_client = j.clients.sshkey.get(name="test_key", path=path)
-        sshkey_client.generate()
+        sshkey_client.generate(reset=True)
         assert sshkey_client.path == path
         assert sshkey_client.privkey.strip() == j.sal.fs.readFile(path).strip()
         assert sshkey_client.pubkey.strip() == j.sal.fs.readFile("%s.pub" % (path)).strip()
@@ -67,8 +67,8 @@ class SSHKeys(j.baseclasses.object_config_collection_testtools):
         old_pubkey = sshkey_client.pubkey
         old_privkey = sshkey_client.privkey
         sshkey_client.generate(reset=True)
-        assert sshkey_client.privkey == j.sal.fs.readFile(path).strip()
-        assert sshkey_client.pubkey == j.sal.fs.readFile("%s.pub" % (path)).strip()
+        assert sshkey_client.privkey.strip() == j.sal.fs.readFile(path).strip()
+        assert sshkey_client.pubkey.strip() == j.sal.fs.readFile("%s.pub" % (path)).strip()
         assert sshkey_client.privkey != old_privkey
         assert sshkey_client.pubkey != old_pubkey
         sshkey_client.save()
