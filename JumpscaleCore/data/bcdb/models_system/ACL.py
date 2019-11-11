@@ -51,9 +51,15 @@ class ACL(j.data.bcdb._BCDBModelClass):
         schemaobj = j.data.schema.get_from_url("jumpscale.bcdb.circle.2")
         return self.bcdb.model_get(schema=schemaobj)
 
-    def rights_set(self, acl, userids=None, circleids=None, rights=None):
+    def _rights_update(self, acl, userids=None, circleids=None, rights=None, action="add"):
+        if not userids:
+            userids = []
+        if not circleids:
+            circleids = []
+        changed = False
         for userid in userids:
             name = f"user_{acl.name}_{userid}"
+            new = False
             for acl_user in acl.users:
                 if acl_user.uid == userid:
                     user = acl_user
@@ -62,14 +68,23 @@ class ACL(j.data.bcdb._BCDBModelClass):
                 user = self.acl_users_model.new(name=name)
                 user.uid = userid
                 new = True
+                changed = True
 
-            user.rights.extend(rights)
+            for right in rights:
+                if right not in user.rights and action == "add":
+                    user.rights.append(right)
+                    changed = True
+                elif right in user.rights and action == "delete":
+                    user.rights.remove(right)
+                    changed = True
             user.save()
             if new:
                 acl.users.append(user)
 
+        visited = []
         while circleids:
             circleid = circleids.pop()
+            visited.append(circleid)
             name = f"circle_{acl.name}_{circleid}"
             new = False
             for acl_circle in acl.circles:
@@ -80,17 +95,35 @@ class ACL(j.data.bcdb._BCDBModelClass):
                 circle = self.acl_circles_model.new(name=name)
                 circle.cid = circleid
                 new = True
+                changed = True
 
-            circle.rights.extend(rights)
+            for right in rights:
+                if right not in circle.rights and action == "add":
+                    circle.rights.append(right)
+                    changed = True
+                elif right in circle.rights and action == "delete":
+                    circle.rights.remove(right)
+                    changed = True
+
             circle.save()
             if new:
                 acl.circles.append(circle)
+
             subcircles = self.circles_model.get(circleid).circle_members
             if subcircles:
-                circleids.extend(subcircles)
+                for subcircle in subcircles:
+                    if subcircle not in visited:
+                        circleids.append(subcircle)
 
         acl.md5 = j.data.hash.md5_string(acl._data)
         acl.save()
+        return changed
+
+    def rights_add(self, acl, userids=None, circleids=None, rights=None):
+        return self._rights_update(acl, userids=userids, circleids=circleids, rights=rights, action="add")
+
+    def rights_delete(self, acl, userids=None, circleids=None, rights=None):
+        return self._rights_update(acl, userids=userids, circleids=circleids, rights=rights, action="delete")
 
     def _try_get_user(self, id):
         try:
@@ -103,18 +136,6 @@ class ACL(j.data.bcdb._BCDBModelClass):
             return self.circles_model.get(id)
         except:
             return None
-
-    def _acl_search_user(self, acl, user_id):
-        """
-        serach in users inside acl object or in sub circles
-        :param acl:
-        :return:
-        """
-        for user in acl.users:
-            if user.uid == user_id:
-                return user
-
-        self._acl_search_circles(acl.circles, user_id, is_user=True)
 
     def _compare_rights(self, acl_rights, rights):
         for right in rights:
@@ -159,46 +180,15 @@ class ACL(j.data.bcdb._BCDBModelClass):
 
         return False
 
-    # def _methods_add(self, obj):
-    #     """
-    #     what does this do?
-    #     :param self:
-    #     :param obj:
-    #     :return:
-    #     """
-    #     obj.rights_set = types.MethodType(self.rights_set, obj)
-    #     obj.rights_check = types.MethodType(self.rights_check, obj)
-    #
-    #     return obj
+    def _methods_add(self, obj):
+        """
+        what does this do?
+        :param self:
+        :param obj:
+        :return:
+        """
+        obj.rights_add = types.MethodType(self.rights_add, obj)
+        obj.rights_delete = types.MethodType(self.rights_delete, obj)
+        obj.rights_check = types.MethodType(self.rights_check, obj)
 
-    # def _dict_process_out(self, d):
-    #     res = {}
-    #     self._log_debug("dict_process_out:\n%s" % d)
-    #     for circle in d["circles"]:
-    #         if circle.get("cid"):
-    #             r = self.circle.get_by_name("circle_%s" % circle["cid"])
-    #             r = "".join(r.rights)
-    #             acl_circle = self.circle.get_by_name("circle_%s" % circle["cid"])
-    #             res[acl_circle.cid] = r  # as string
-    #     d["circles"] = res
-    #     res = {}
-    #     for user in d["users"]:
-    #         if user.get("uid"):
-    #             r = self.user.get_by_name("user_%s" % user["uid"])
-    #             r = "".join(r.rights)
-    #             acl_user = self.user.get_by_name("user_%s" % user["uid"])
-    #             res[acl_user.uid] = r  # as string
-    #     d["users"] = res
-    #     return d
-
-    # def _dict_process_in(self, d):
-    #     res = {}
-    #     res["hash"] = d["hash"]
-    #     res["circles"] = []
-    #     res["users"] = []
-    #     for cid, rights in d["circles"].items():
-    #         res["circles"].append({"cid": cid, "rights": rights})
-    #     for uid, rights in d["users"].items():
-    #         res["users"].append({"uid": uid, "rights": rights})
-    #     self._log_debug("dict_process_in_result:\n%s" % res)
-    #     return res
+        return obj
