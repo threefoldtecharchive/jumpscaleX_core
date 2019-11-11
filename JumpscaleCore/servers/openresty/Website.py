@@ -26,7 +26,7 @@ class Website(j.baseclasses.factory_data):
         """
 
     CONFIG = """
-        
+
     {% if website.ssl %}
     server {
       {% if website.domain %}
@@ -39,9 +39,9 @@ class Website(j.baseclasses.factory_data):
       ssl_certificate /sandbox/cfg/ssl/resty-auto-ssl-fallback.crt;
       ssl_certificate_key /sandbox/cfg/ssl/resty-auto-ssl-fallback.key;
       default_type text/html;
-      
-      include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
 
+      include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
+      include vhosts/*.conf.loc;
     }
     {% else %}
     server {
@@ -52,9 +52,10 @@ class Website(j.baseclasses.factory_data):
 
       default_type text/html;
       include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
+      include vhosts/*.conf.loc;
     }
-    
-    {% endif %}           
+
+    {% endif %}
 
         """
 
