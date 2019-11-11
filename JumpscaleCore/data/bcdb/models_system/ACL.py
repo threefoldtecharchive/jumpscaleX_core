@@ -52,6 +52,15 @@ class ACL(j.data.bcdb._BCDBModelClass):
         return self.bcdb.model_get(schema=schemaobj)
 
     def _rights_update(self, acl, userids=None, circleids=None, rights=None, action="add"):
+        """
+        updates rights for set of users and/or groups
+        :param acl: referance to acl object
+        :param userids: list of user ids
+        :param circleids: list of circle ids
+        :param rights: the rights to be added or deleted
+        :param action: "add" or "delete"
+        :return: True if any rights were added or deleted
+        """
         if not userids:
             userids = []
         if not circleids:
@@ -120,30 +129,71 @@ class ACL(j.data.bcdb._BCDBModelClass):
         return changed
 
     def rights_add(self, acl, userids=None, circleids=None, rights=None):
+        """
+        adds rights to set of users or groups
+        :param acl: referance tp acl object
+        :param userids: list of user ids
+        :param circleids: list of circle ids
+        :param rights: the rights to be added
+        :return: True if any rights were added
+        """
         return self._rights_update(acl, userids=userids, circleids=circleids, rights=rights, action="add")
 
     def rights_delete(self, acl, userids=None, circleids=None, rights=None):
+        """
+        deletes rights to set of users or groups
+        :param acl: referance tp acl object
+        :param userids: list of user ids
+        :param circleids: list of circle ids
+        :param rights: the rights to be deleted
+        :return: True if any rights were deleted
+        """
         return self._rights_update(acl, userids=userids, circleids=circleids, rights=rights, action="delete")
 
     def _try_get_user(self, id):
+        """
+        try to get user from id, if it doesn't exist returns None
+        :param id: id to look for
+        :return: user object if id exists
+        """
         try:
             return self.users_model.get(id)
         except:
             return None
 
     def _try_get_circle(self, id):
+        """
+        try to get circle from id, if it doesn't exist returns None
+        :param id: id to look for
+        :return: circle object if id exists
+        """
         try:
             return self.circles_model.get(id)
         except:
             return None
 
     def _compare_rights(self, acl_rights, rights):
+        """
+        compare two lists of rights and returns True if the first list contains all the items from the second list
+        :param acl_rights: the first list which should contains all rights
+        :param rights: the second list which should contain the rights we are checking for
+        :return: True if all {rights} are in {acl_rights}
+        """
         for right in rights:
             if right not in acl_rights:
                 return False
         return True
 
     def _search_users(self, acl, user_id, rights):
+        """
+        search for certain rights in a user,
+        this will iterate over all circles in acl object and check if it contains the current user
+        and has the correct rights
+        :param acl: referance to acl object
+        :param circle_id: current circle id
+        :param rights: rights to check
+        :return: True if the rights exists
+        """
         acl_circles = acl.circles
         for acl_circle in acl_circles:
             circle = self.circles_model.get(acl_circle.cid)
@@ -155,6 +205,15 @@ class ACL(j.data.bcdb._BCDBModelClass):
         return False
 
     def _search_circles(self, acl, circle_id, rights):
+        """
+        search for certain rights in a circle,
+        this will iterate over all circles in acl object and check if it contains the current
+         circle and has the correct rights
+        :param acl: referance to acl object
+        :param circle_id: current circle id
+        :param rights: rights to check
+        :return: True if the rights exists
+        """
         acl_circles = acl.circles
         for acl_circle in acl_circles:
             if acl_circle.cid == circle_id:
@@ -163,6 +222,13 @@ class ACL(j.data.bcdb._BCDBModelClass):
         return False
 
     def rights_check(self, acl, id, rights):
+        """
+        checks if a certain user or group has certain rights
+        :param acl: referance to acl object
+        :param id: user id or circle id
+        :param rights:
+        :return:
+        """
         # 1- check if the id is user or circle
         # 2- if user look for it first in acl object then try to find it in any subcircle with the correct rights
         # 3- if circle look for it in all subcircles
@@ -178,13 +244,9 @@ class ACL(j.data.bcdb._BCDBModelClass):
         else:
             raise RuntimeError(f"Can't find users or circles with id: {id}")
 
-        return False
-
     def _methods_add(self, obj):
         """
-        what does this do?
-        :param self:
-        :param obj:
+        makes rights_add, rights_delete and rights check available on  object level
         :return:
         """
         obj.rights_add = types.MethodType(self.rights_add, obj)
