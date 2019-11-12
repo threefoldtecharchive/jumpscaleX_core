@@ -490,7 +490,7 @@ class BCDBModel(j.baseclasses.object):
 
         if not data:
             if die:
-                raise j.exceptions.NotFound("could not find obj with id:%s" % obj_id)
+                raise j.exceptions.NotFound(f"could not find obj with id:{obj_id} of {self._schema_url}")
             else:
                 return None
 
@@ -603,7 +603,9 @@ class BCDBModel(j.baseclasses.object):
         r = cursor.fetchone()
         res = []
         while r:
-            res.append(r[0])
+            # the id NEEDS to exist on the model
+            if self.exists(r[0]):
+                res.append(r[0])
             r = cursor.fetchone()
         return res
 

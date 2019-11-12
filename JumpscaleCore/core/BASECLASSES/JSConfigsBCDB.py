@@ -40,7 +40,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :return:
         """
         if self.exists(name=name):
-            raise j.exceptions.Base("cannot do new object, exists")
+            raise j.exceptions.Base(f"cannot do new object, {name} exists")
         jsconfig = self._new(name=name, jsxobject=jsxobject, autosave=autosave, **kwargs)
         self._check(jsconfig)
         return jsconfig
@@ -201,13 +201,14 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             condition = Item.name.startswith(filter) and condition if condition else Item.name.startswith(filter)
 
         if condition:
-            res = [i.name for i in Item.select().where(condition)]
+            res = [i.name for i in Item.select().where(condition) if self._model.exists(i.id)]
         else:
-            res = [i.name for i in Item.select()]
+            res = [i.name for i in Item.select() if self._model.exists(i.id)]
 
+        # every item returned here NEEDS to actually exist on the model.
+        # FIXME: future update
         if len(res) > 50:
             return []
-
         return res
 
     def find(self, reload=False, **kwargs):
@@ -215,7 +216,6 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :param kwargs: e.g. color="red",...
         :return: list of the config objects
         """
-
         res = []
         ids_done = []
         for key, item in list(self._children.items()):

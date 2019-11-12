@@ -35,6 +35,14 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self._init_pre_schedule_ = False
         self._i_am_worker = False
 
+    def index_reset(self):
+        if self.workers._model._index_:
+            self.workers._model._index_.destroy()
+        if self.jobs._model._index_:
+            self.jobs._model._index_.destroy()
+        if self.model_action._index_:
+            self.model_action._index_.destroy()
+
     def _init_pre_schedule(self):
         if not self._init_pre_schedule_:
             assert self._i_am_worker == False
@@ -170,7 +178,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
     def workers_check(self, kill_workers_in_error=True):
         """
         kosmos "print(j.servers.myjobs.workers_check())"
-        
+
         res,count,errors = j.servers.myjobs.workers_check()
 
         will check that workers are running

@@ -77,7 +77,40 @@ class ThreeBotPackage(JSConfigBase):
                 name = self.name
                 j.servers.myjobs.schedule(load_wiki, wiki_name=name, wiki_path=path)
 
+            self._create_locations()
+
         self._init_ = True
+
+    def _check_app_type(self):
+        html_location = j.sal.fs.joinPaths(self.path, "html")
+        frontend_location = j.sal.fs.joinPaths(self.path, "frontend")
+        if j.sal.fs.exists(frontend_location):
+            return "frontend"
+        elif j.sal.fs.exists(html_location):
+            return "html"
+
+    def _create_locations(self):
+        if not self.path:
+            return
+        app_type = self._check_app_type()
+        if app_type:
+            for port in (443, 80):
+                website = self.openresty.get_from_port(port)
+
+                locations = website.locations.get(f"{self.name}_locations")
+                if app_type == "frontend":
+                    website_location = locations.locations_spa.new()
+                elif app_type == "html":
+                    website_location = locations.locations_static.new()
+
+                website_location.name = self.name
+                website_location.path_url = f"/{self.name}"
+                website_location.use_jumpscale_weblibs = False
+                fullpath = j.sal.fs.joinPaths(self.path, f"{app_type}/")
+                website_location.path_location = fullpath
+
+                locations.configure()
+                website.configure()
 
     @property
     def bcdb(self):

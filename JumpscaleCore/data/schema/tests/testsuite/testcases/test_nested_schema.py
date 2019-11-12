@@ -17,15 +17,16 @@
 # along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
 # LICENSE END
 
-
-from Jumpscale.data.schema.tests.testsuite.testcases.base_test import BaseTest
-from Jumpscale import j
-from unittest import TestCase
-from uuid import uuid4
-from datetime import datetime
 import random
 import time
 import unittest
+from unittest import TestCase
+from uuid import uuid4
+from datetime import datetime
+
+from Jumpscale import j
+
+from Jumpscale.data.schema.tests.testsuite.testcases.base_test import BaseTest
 
 
 class NestedSchemaTest(BaseTest):

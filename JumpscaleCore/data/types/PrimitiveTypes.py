@@ -78,12 +78,11 @@ class StringMultiLine(String):
         """
         will do a strip on multiline
         """
-        if value is None:
-            return self.default_get()
-        try:
-            value = str(value)
-        except Exception as e:
-            raise j.exceptions.input("cannot convert to string")
+        if not value:
+            return self._default
+        if not self.check(value):
+            raise j.exceptions.Value(f"Invalid value for multiline {value}")
+
         return value
 
     def python_code_get(self, value):
@@ -130,8 +129,8 @@ class Bytes(TypeBaseClass):
     def __init__(self, default=None):
         self.BASETYPE = "bytes"
         if not default:
-            default = ""
-        self._default = b""
+            default = b""
+        self._default = default
 
     def fromString(self, s):
         """
