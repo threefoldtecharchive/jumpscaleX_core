@@ -490,7 +490,7 @@ class TestInstallationInDocker(BaseTest):
 
         self.info("Add key on base cnstainer .")
         self.docker_command('ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa')
-        self.docker_command("eval `ssh-agent -s ` && ssh-add")
+        self.docker_command("eval `ssh-agent -s` && ssh-add")
 
         self.info("Configure the no-interactive option in base container .")
         command = "/tmp/jsx configure -s --secret mysecret"
@@ -548,9 +548,9 @@ class TestInstallationInDocker(BaseTest):
         self.install_jsx_container()
 
         self.info("Check that the directory has the code now.")
-        command = "ls {}/github/threefoldtech"
+        command = "ls {}/github/threefoldtech".format(dire_name)
         output, error = self.os_command(command)
-        self.assertIn("JumpscaleX_core", output.decode())
+        self.assertIn("jumpscaleX_core", output.decode())
 
 
 class TestInstallationInSystem(BaseTest):
