@@ -115,6 +115,10 @@ class TestPackageManager(TestCase):
         self.package_manager.package_add(path=self.path)
         self.gedis_client.reload()
 
+        package = self.get_package(PACKAGE_NAME)
+        self.assertTrue(package, "Package is not found after adding it")
+        self.assertEqual(package.status, "RUNNING")
+
         self.info("Enable this package.")
         self.package_manager.package_enable(PACKAGE_NAME)
 
@@ -137,25 +141,18 @@ class TestPackageManager(TestCase):
         
         **Test scenario**
         #. Add test package.
-        #. Start this package.
-        #. Check that this package has been started.
         #. Stop this package.
         #. Check that this package has been stopped.
+        #. Start this package.
+        #. Check that this package has been started.
         """
         self.info("Add test package.")
         self.package_manager.package_add(path=self.path)
         self.gedis_client.reload()
 
-        self.info("Start this package.")
-        self.package_manager.package_start(PACKAGE_NAME)
-
-        self.info("Check that this package has been started.")
         package = self.get_package(PACKAGE_NAME)
         self.assertTrue(package, "Package is not found after adding it")
         self.assertEqual(package.status, "RUNNING")
-
-        content = j.sal.fs.readFile(self.result_path)
-        self.assertIn("starting package", content)
 
         self.info("Stop this package.")
         self.package_manager.package_stop(PACKAGE_NAME)
@@ -167,3 +164,15 @@ class TestPackageManager(TestCase):
 
         content = j.sal.fs.readFile(self.result_path)
         self.assertIn("stopping package", content)
+        j.sal.fs.remove(self.result_path)
+
+        self.info("Start this package.")
+        self.package_manager.package_start(PACKAGE_NAME)
+
+        self.info("Check that this package has been started.")
+        package = self.get_package(PACKAGE_NAME)
+        self.assertTrue(package, "Package is not found after adding it")
+        self.assertEqual(package.status, "RUNNING")
+
+        content = j.sal.fs.readFile(self.result_path)
+        self.assertIn("starting package", content)
