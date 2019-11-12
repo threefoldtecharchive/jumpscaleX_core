@@ -1,8 +1,13 @@
 from Jumpscale import j
+
+# get gdrive client so google api dependency is installed
+cl = j.clients.gdrive.get("gdrive_macro_client", credfile="/sandbox/var/cred.json")
+
 from googleapiclient.errors import HttpError as GoogleApiHTTPError
 
 
 STATIC_DIR = "/sandbox/var/gdrive/static"
+doctypes_map = {"document": "drive", "spreadsheets": "drive", "presentation": "drive", "slide": "slides"}
 
 
 class gdrive(j.baseclasses.threebot_actor):
@@ -24,15 +29,17 @@ class gdrive(j.baseclasses.threebot_actor):
         :return:
         """
 
-        doctypes_map = {"document": "drive", "spreadsheets": "drive", "presentation": "drive", "slide": "slides"}
-        cl = j.clients.gdrive.get("gdrive_macro_client", credfile="/sandbox/var/cred.json")
-
         out = schema_out.new()
 
         if not doctype in doctypes_map:
             out.error_code = -1
             allowed_types = ", ".join(doctypes_map.keys())
             out.error_message = f"invalid document type of '{doctype}', allowed types are {allowed_types}."
+            return out
+
+        if not j.sal.fs.exists(cl.credfile):
+            out.error_code = 400
+            out.error_message = "service credential file is not found"
             return out
 
         service_name = doctypes_map[doctype]
