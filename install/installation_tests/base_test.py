@@ -1,7 +1,7 @@
 import unittest
 import subprocess
 from loguru import logger
-import platform
+import platform, uuid
 
 
 class BaseTest(unittest.TestCase):
@@ -77,3 +77,8 @@ class BaseTest(unittest.TestCase):
             return True
         else:
             return False
+
+    @staticmethod
+    def rand_str(size=10):
+        return str(uuid.uuid4()).replace("-", "")[:size]
+

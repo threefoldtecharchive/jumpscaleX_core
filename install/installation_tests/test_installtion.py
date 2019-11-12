@@ -2,6 +2,7 @@ import os
 import uuid, random
 from .base_test import BaseTest
 from unittest import skip
+import requests
 
 
 class TestInstallationInDocker(BaseTest):
@@ -343,11 +344,12 @@ class TestInstallationInDocker(BaseTest):
         self.info("Check that container installed sucessfully with right ports.")
         command = "docker port {}".format(self.CONTAINER_NAME)
         output, error = self.os_command(command)
-        exported_port_1 = "{}/tcp -> 0.0.0.0:{}".format(source_port_1, destination_port_1)
-        exported_port_2 = "{}/tcp -> 0.0.0.0:{}".format(source_port_2, destination_port_2)
+        exported_port_1 = "{}/tcp -> 0.0.0.0:{}".format(destination_port_1, source_port_1)
+        exported_port_2 = "{}/tcp -> 0.0.0.0:{}".format(destination_port_2, source_port_2)
         self.assertIn(exported_port_1, output.decode())
         self.assertIn(exported_port_2, output.decode())
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/182")
     def test14_verify_branch(self):
         """
 
@@ -367,26 +369,188 @@ class TestInstallationInDocker(BaseTest):
         code_branch = output.decode().replace("\n", "").split("/")[-1]
         self.assertEqual(branch, code_branch)
 
-    # def test15_verify_containers(self):
-    #     """
+    def test15_verify_containers(self):
+        """
 
-    #     **Verify that /tmp/jsx containers  works successfully **
-    #     """
-    #     self.install_jsx_container()
+        **Verify that /tmp/jsx containers  works successfully **
+        """
+        self.install_jsx_container()
 
-    #     self.info("Use /tmp/jsx containers option ")
-    #     command = "/tmp/jsx containers"
-    #     output, error = self.os_command(command)
+        self.info("Use /tmp/jsx containers option ")
+        command = "/tmp/jsx containers"
+        output, error = self.os_command(command)
 
-    #     self.info("Check that all running containers have been deleted")
-    #     command = "docker ps -aq "
-    #     output, error = self.os_command(command)
-    #     self.assertFalse(output)
+        self.info("Check that container exist in containers list . ")
+        self.assertIn(self.CONTAINER_NAME, output.decode())
 
-    #     self.info("Check that containers image have been deleted")
-    #     command = "docker images -aq "
-    #     output, error = self.os_command(command)
-    #     self.assertFalse(output)
+    def test16_verify_develop(self):
+        """
+
+        **Verify that container-install --develop  works successfully **
+        """
+        self.info("Use container-install --develop.")
+        output, error = self.jumpscale_installation("container-install", "-n {} --develop".format(self.CONTAINER_NAME))
+        self.assertFalse(error)
+        self.assertIn("installed successfully", output.decode())
+
+        self.info("Check that container installed sucessfully with right development image.")
+        command = 'docker ps -a -f status=running  | grep %s | awk "{print \$2}"' % self.CONTAINER_NAME
+        output, error = self.os_command(command)
+        container_image = output.decode()
+        self.assertIn("threefoldtech/3botdev", container_image.strip("\n"))
+
+    def test17_verify_container_save(self):
+        """
+
+        **Verify that container-save  works successfully **
+        """
+        self.info("Install js container.")
+        self.install_jsx_container()
+
+        self.info(" Run container-save.")
+        committed_image_name = self.rand_str()
+        command = "/tmp/jsx container-save  -n {} --dest {}".format(self.CONTAINER_NAME, committed_image_name)
+        output, error = self.os_command(command)
+
+        self.info("Check that image committed successfully.")
+        command = "docker images | grep %s " % committed_image_name
+        output, error = self.os_command(command)
+        self.assertTrue(output)
+
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/180")
+    def test18_verify_threebot(self):
+        """
+
+        **Verify that threebot-test option  works successfully **
+        """
+        self.info(" Run threebot option .")
+        command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx"
+        self.os_command(command)
+
+        self.info("Change installer script [/tmp/jsx] to be executed ")
+        command = "chmod +x /tmp/jsx"
+        self.os_command(command)
+        self.info("Configure the no-interactive option")
+        command = "/tmp/jsx configure -s --secret mysecret"
+        self.os_command(command)
+
+        command = "/tmp/jsx threebot-test"
+        output, error = self.os_command(command)
+
+        self.info("Check that container installed sucessfully with right development image.")
+        self.CONTAINER_NAME = "3bot"
+        command = "docker ps -a -f status=running  | grep {}".format(self.CONTAINER_NAME)
+        output, error = self.os_command(command)
+        self.assertTrue(output.decode())
+
+        command = "ps -aux | grep startupcmd_zdb"
+        output, error = self.docker_command(command)
+        self.assertTrue(output)
+
+        command = "ps -aux | grep startupcmd_sonic"
+        output, error = self.docker_command(command)
+        self.assertTrue(output)
+
+    def test19_verify_basebuilder(self):
+        """
+
+        **Verify that basebuilder option  works successfully **
+        """
+        command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx"
+        self.os_command(command)
+
+        self.info("Change installer script [/tmp/jsx] to be executed ")
+        command = "chmod +x /tmp/jsx"
+        self.os_command(command)
+
+        self.info("Add sshkey ")
+        self.os_command('ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa')
+        self.os_command("eval `ssh-agent -s`  &&  ssh-add")
+
+        self.info("Configure the no-interactive option")
+        command = "/tmp/jsx configure -s --secret mysecret"
+        self.os_command(command)
+
+        self.info(" Run basebuilder option .")
+        command = "/tmp/jsx  basebuilder "
+        output, error = self.os_command(command)
+
+        self.info("Check that base container installed sucessfully with right base image.")
+        self.CONTAINER_NAME = "base"
+        command = 'docker ps -a -f status=running  | grep %s | awk "{print \$2}"' % self.CONTAINER_NAME
+        output, error = self.os_command(command)
+        self.assertTrue(output.decode())
+        self.assertIn("threefoldtech/base", output.decode())
+
+        self.info("install jumpscale inside the base docker, should succeed  ")
+        command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx"
+        self.docker_command(command)
+        command = "chmod +x /tmp/jsx"
+        self.docker_command(command)
+
+        self.info("Add key on base cnstainer .")
+        self.docker_command('ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa')
+        self.docker_command("eval `ssh-agent -s ` && ssh-add")
+
+        self.info("Configure the no-interactive option in base container .")
+        command = "/tmp/jsx configure -s --secret mysecret"
+        self.docker_command(command)
+
+        command = "/tmp/jsx install -s"
+        output, error = self.docker_command(command)
+        self.assertIn("installed successfully", output.decode())
+
+    def test20_verify_pull(self):
+        """
+
+        **Verify that --pull option  works successfully **
+        """
+        self.install_jsx_container()
+        self.info("Remove created container. ")
+        command = "docker rm -f {}".format(self.CONTAINER_NAME)
+        output, error = self.os_command(command)
+
+        self.info("Checkout jumpscalex_core repo to old commit")
+        command = "cd /sandbox/code/github/threefoldtech/jumpscaleX_core && git log -2"
+        output, error = self.os_command(command)
+        commits = output.decode().splitlines()
+        latest_commit = commits[0][commits[0].find("commit") + 7 :]
+        old_commit = commits[1][commits[1].find("commit") + 7 :]
+        command = "cd /sandbox/code/github/threefoldtech/jumpscaleX_core && git checkout {}".format(old_commit)
+        output, error = self.os_command(command)
+
+        self.info("install jumpscale with container-install --pull ")
+        output, error = self.jumpscale_installation("container-install", "-n {} --pull".format(self.CONTAINER_NAME))
+        self.assertFalse(error)
+        self.assertIn("installed successfully", output.decode())
+
+        self.info("Check that jumpscalex_core repo updated.")
+        command = "cd /sandbox/code/github/threefoldtech/jumpscaleX_core && git log -1"
+        output, error = self.os_command(command)
+        self.assertIn(latest_commit, output.decode())
+        output, error = self.docker_command(command)
+        self.assertIn(latest_commit, output.decode())
+
+    def test21_verify_configure(self):
+        """
+
+        **Verify that configure options  works successfully **
+        """
+        self.install_jsx_container()
+        self.info("Remove created container. ")
+        command = "docker rm -f {}".format(self.CONTAINER_NAME)
+        output, error = self.os_command(command)
+
+        self.info("Use configure to update code directory. ")
+        dire_name = "/root/test"
+        command = "/tmp/jsx configure --codedir {}".format(dire_name)
+        self.os_command(command)
+        self.install_jsx_container()
+
+        self.info("Check that the directory has the code now.")
+        command = "ls {}/github/threefoldtech"
+        output, error = self.os_command(command)
+        self.assertIn("JumpscaleX_core", output.decode())
 
 
 class TestInstallationInSystem(BaseTest):
@@ -404,7 +568,7 @@ class TestInstallationInSystem(BaseTest):
         test TC58
         ** Test installation of Jumpscale using insystem non-interactive option on Linux or mac OS **
         #. Install jumpscale from specific branch
-        #. Run kosmos ,should succeed
+        #. Run kosmos ,should succeedthreebotbuilder
         """
         self.info("Install jumpscale on {}".format(self.os_type))
         output, error = self.jumpscale_installation("install")
@@ -417,31 +581,29 @@ class TestInstallationInSystem(BaseTest):
         self.assertFalse(error)
         self.assertIn("Jumpscale.Jumpscale object", output.decode())
 
-    # @skip("Not exist anymore jumpscale_generated.py")
-    # def Test02_verify_jsx_working_insystem(self):
-    #     """
-    #     test TC59
-    #     **  test jumpscale inssystem on mac or linux depending on os_type. **
-    #     #. Run jsx generate command, should run successfully, and generate.
-    #     """
-    #     self.info("Install jumpscale on {}".format(self.os_type))
-    #     output, error = self.jumpscale_installation("install")
-    #     self.assertFalse(error)
-    #     self.assertIn("installed successfully", output.decode())
+    def Test02_verify_generate(self):
+        """
+        test TC59
+        **  test jumpscale inssystem on mac or linux depending on os_type. **
+        #. Run jsx generate command, should run successfully, and generate.
+        """
+        self.info("Install jumpscale on {}".format(self.os_type))
+        output, error = self.jumpscale_installation("install")
+        self.assertFalse(error)
+        self.assertIn("installed successfully", output.decode())
 
-    #     self.info("Check generate option, using jsx generate cmd")
+        self.info("Check generate option, using jsx generate cmd")
 
-    #     self.info("remove jumpscale_generated file")
-    #     os.remove("/sandbox/code/github/threefoldtech/jumpscaleX/Jumpscale/jumpscale_generated.py")
+        self.info("remove jumpscale_generated file")
+        os.remove("rm /sandbox/lib/jumpscale/jumpscale_generated.py")
 
-    #     self.info("Check generate option")
-    #     command = ". /sandbox/env.sh && jsx generate"
-    #     self.os_command(command)
+        self.info("Check generate option")
+        command = ". /sandbox/env.sh && /tmp/jsx generate"
+        output, error = self.os_command(command)
+        self.assertIn("process", output.decode())
 
-    #     self.info("make sure that jumpscale_generated file is generated again")
-    #     self.assertTrue(
-    #         os.path.exists("/sandbox/code/github/threefoldtech/jumpscaleX/Jumpscale/jumpscale_generated.py")
-    #     )
+        self.info("make sure that jumpscale_generated file is generated again")
+        self.assertTrue(os.path.exists("/sandbox/lib/jumpscale/jumpscale_generated.py"))
 
     def Test03_insystem_installation_r_option_no_jsx_before(self):
         """
@@ -489,48 +651,6 @@ class TestInstallationInSystem(BaseTest):
         self.assertFalse(error)
         self.assertIn("Jumpscale.Jumpscale object", output.decode())
 
-    # @skip("Not found anymore bcdb-system-delete")
-    # def Test05_bcdb_system_delete_option(self):
-    #     """
-    #     test TC203, TC204
-    #     ** test bcdb_system_delete option on Linux and Mac OS **
-    #     #. Create an instance from github client; get it
-    #     #.  destroy; make sure it doesn't exist
-    #     """
-
-    #     self.info("Install jumpscale on {}".format(self.os_type))
-    #     output, error = self.jumpscale_installation("install")
-    #     self.assertFalse(error)
-    #     self.assertIn("installed successfully", output.decode())
-
-    #     self.info("use kosmos to create github client, make sure that there is no error")
-    #     client_name = str(uuid.uuid4()).replace("-", "")[:10]
-    #     command = """. /sandbox/env.sh && kosmos 'c=j.clients.github.new("{}", token="test_bcdb_delete_option"); c.save()'""".format(
-    #         client_name
-    #     )
-    #     output, error = self.os_command(command)
-    #     self.assertFalse(error)
-
-    #     self.info("check that the client is existing")
-    #     command = """. /sandbox/env.sh && kosmos 'print(j.clients.github.get("{}").name)'""".format(
-    #         client_name
-    #     )
-    #     output, error = self.os_command(command)
-    #     self.assertFalse(error)
-    #     self.assertIn(client_name, output.decode())
-
-    #     self.info("use bcdb_system_delete option to delete database, and check if the client still exists or not")
-    #     command = ". /sandbox/env.sh && /tmp/jsx bcdb-system-delete"
-    #     output, error = self.os_command(command)
-    #     self.assertFalse(error)
-
-    #     self.info("check that the client is not existing")
-    #     command = """. /sandbox/env.sh && kosmos 'print(j.clients.github.get("{}").name)'""".format(
-    #         client_name
-    #     )
-    #     output, error = self.os_command(command)
-    #     self.assertIn("Missing Github token or login/password", output.decode())
-
     def Test06_check_option(self):
         """
         test TC205, TC206
@@ -548,3 +668,60 @@ class TestInstallationInSystem(BaseTest):
         command = ". /sandbox/env.sh && jsx check"
         output, error = self.os_command(command)
         self.assertFalse(error)
+
+    def Test07_package_new(self):
+        """
+        ** test package-new  option **
+        #. test that package-new option is working correctly.
+        """
+
+        self.info("Install jumpscale on {}".format(self.os_type))
+        output, error = self.jumpscale_installation("install")
+        self.assertFalse(error)
+        self.assertIn("installed successfully", output.decode())
+
+        self.info("Use package-new option ")
+        package_name = self.rand_str()
+        destionation = "/tmp/"
+        command = "/tmp/jsx  package-new --name {} --dest {}".format(package_name, destionation)
+        output, error = self.os_command(command)
+
+        self.info("chick that package added successfully.")
+        command = "ls {}/{}".format(destionation, package_name)
+        output, error = self.os_command(command)
+        self.assertIn("actors", output.decode())
+        self.assertIn("chatflows", output.decode())
+        self.assertIn("models", output.decode())
+        self.assertIn("wiki", output.decode())
+
+        command = "ls {}/{}/actors".format(destionation, package_name)
+        output, error = self.os_command(command)
+        self.assertIn("{}.py", output.decode())
+
+    def Test08_wiki_load(self):
+        """
+        ** test wikis-load  option **
+        #. test that wikis-load option is working correctly.  
+        """
+
+        self.info("Install jumpscale on {}".format(self.os_type))
+        output, error = self.jumpscale_installation("install")
+        self.assertFalse(error)
+        self.assertIn("installed successfully", output.decode())
+
+        self.info("start a threebot server. ")
+        command = ". /sandbox/env.sh && kosmos -p 'j.servers.threebot.local_start_default()'"
+        output, error = self.os_command(command)
+
+        self.info("Use load-wikis option.")
+        wikis_name = self.rand_str()
+        wikis_url = "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/docs/wikis/examples/docs"
+        command = "/tmp/jsx  wiki-load -n {} -u {}".format(wikis_name, wikis_url)
+        output, error = self.os_command(command)
+        self.assertFalse(error)
+
+        self.info("Check the wikis is loaded, should be found.")
+        r = requests.get("https://127.0.0.1/wiki/test_presentaion.md", verify=False)
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("includes 1", r.content.decode())
+
