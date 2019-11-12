@@ -195,18 +195,19 @@ class GedisCmds(JSBASE):
         cmd.args = args
         data = self._parse_auth_data(auth_args)
         if data:
-            if data.get("public"):
-                cmd.public = True
+            cmd.public = data.get("public")
             if data.get("users"):
-                self.data.acl.rights_set(userids=data.get("users"), rights=f".{cmd.name}.")
+                self.data.acl.rights_add(userids=data.get("users"), rights=[cmd.name])
             if data.get("circles"):
-                self.data.acl.rights_set(circleids=data.get("circles"), rights=f".{cmd.name}.")
+                self.data.acl.rights_add(circleids=data.get("circles"), rights=[cmd.name])
 
         else:
-            admins_circle_id = j.data.bcdb.system.circle.get_by_name("admins").id
-            self.data.acl.rights_set(circleids=[admins_circle_id], rights=f".{cmd.name}.")
+            cmd.public = True
+            # TODO: by default is public for now until we have the full flow of authentication
+            # admins_circle_id = j.data.bcdb.system.circle.get_by_name("admins").id
+            # self.data.acl.rights_add(circleids=[admins_circle_id], rights=[cmd.name])
 
-        cmd.save()
+        # cmd.save()
         self.data.save()
         return cmd
 
