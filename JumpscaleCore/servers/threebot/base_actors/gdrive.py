@@ -44,17 +44,20 @@ class gdrive(j.baseclasses.threebot_actor):
 
         service_name = doctypes_map[doctype]
         try:
+            parent_dir = j.sal.fs.joinPaths(STATIC_DIR, doctype)
+            if not j.sal.fs.exists(parent_dir):
+                j.sal.fs.createDir(parent_dir)
+
             if doctype in ["document", "spreadsheets", "presentation"]:
-                path = j.sal.fs.joinPaths(STATIC_DIR, doctype, "{}.pdf".format(guid1))
+                path = j.sal.fs.joinPaths(parent_dir, "{}.pdf".format(guid1))
                 cl.exportFile(guid1, destpath=path, service_name=service_name, service_version="v3")
                 out.res = "/gdrive_static/{}/{}.pdf".format(doctype, guid1)
             elif doctype == "slide":
-                path = j.sal.fs.joinPaths(STATIC_DIR, doctype)
-                cl.exportSlides(guid1, path)
-                if j.sal.fs.exists("{}/{}/{}.png".format(path, guid1, guid2), followlinks=True):
+                cl.exportSlides(guid1, parent_dir)
+                if j.sal.fs.exists("{}/{}/{}.png".format(parent_dir, guid1, guid2), followlinks=True):
                     out.res = "/gdrive_static/slide/{}/{}.png".format(guid1, guid2)
                 else:
-                    meta = cl.get_presentation_meta("{}/presentations.meta.json".format(path), guid1)
+                    meta = cl.get_presentation_meta("{}/presentations.meta.json".format(parent_dir), guid1)
                     if guid2 in meta:
                         guid2 = meta[guid2]
                         guid2 = guid2.split("_", maxsplit=1)[1]  # remove the 0x_ part from the file name
