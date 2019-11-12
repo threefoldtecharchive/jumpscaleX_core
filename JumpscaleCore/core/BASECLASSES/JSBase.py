@@ -559,7 +559,7 @@ class JSBase:
         else:
             raise j.exceptions.JSBUG("don't know how to find name")
 
-    def _filter(self, filter=None, llist=[], nameonly=True, unique=True, sort=True):
+    def _filter(self, filter=None, llist=None, nameonly=True, unique=True, sort=True):
         """
 
         :param filter: is '' then will show all, if None will ignore _
@@ -573,6 +573,8 @@ class JSBase:
         :param sort: sort but only when nameonly
         :return:
         """
+        llist = llist or []
+
         res = []
         for item in llist:
             name = self.__name_get(item)

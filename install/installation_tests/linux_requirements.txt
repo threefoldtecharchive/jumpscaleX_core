@@ -1,0 +1,7 @@
+click
+nose
+nose-progressive
+nose-testconfig
+loguru
+parameterized
+requests

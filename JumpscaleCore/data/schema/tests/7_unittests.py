@@ -28,6 +28,5 @@ def main(self):
 
     kosmos 'j.data.schema.test(name="unittests")' --debug
     """
-    return
-    unittests_path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/Jumpscale/data/schema/tests/testsuite"
+    unittests_path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/data/schema/tests/testsuite"
     assert pytest.main([unittests_path]) == 0

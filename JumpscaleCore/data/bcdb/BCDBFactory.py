@@ -356,6 +356,38 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             self._code_generation_dir_ = path
         return self._code_generation_dir_
 
+    def migrate(self, base_url, second_url, bcdb="system", **kwargs):
+        bcdb_instance = self.get(bcdb)
+        base_model = bcdb_instance.model_get(url=base_url)
+        second_model = bcdb_instance.model_get(url=second_url)
+        # create new meta with new migration
+
+        for model_s in second_model.find():
+            overwrite = False
+            for model_b in base_model.find():
+                if model_b.name == model_s.name:
+                    overwrite = True
+                    if kwargs.items():
+                        for key, val in kwargs.items():
+                            second = getattr(model_s, "{}".format(val))
+                            setattr(model_b, key, second)
+
+                    model_b.save()
+                    model_s.delete()
+                    # overwtite
+            if not overwrite:
+                m = base_model.new()
+                for prop in base_model.schema.properties:
+
+                    if hasattr(model_s, "{}".format(prop.name)):
+                        setattr(m, prop.name, getattr(model_s, "{}".format(prop.name)))
+                m.save()
+                model_s.delete()
+                # create new one
+        schema = bcdb_instance.schema_get(url=second_url)
+
+        bcdb_instance.meta._migrate_meta(schema)
+
     def _load_test_model(self, type="zdb", schema=None, datagen=False):
         """
 

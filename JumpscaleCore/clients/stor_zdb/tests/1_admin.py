@@ -15,6 +15,17 @@ def main(self):
     c.namespaces_list()
     assert c.namespaces_list() == ["default"]
 
+    c.namespace_new("test_namespace")
+    assert c.namespace_exists("test_namespace")
+    assert c.namespaces_list() == ["default", "test_namespace"]
+
+    c.namespace_delete("test_namespace")
+    assert c.namespaces_list() == ["default"]
+
+    c.namespace_new("test_namespace")
+    c.reset()
+    assert c.namespaces_list() == ["default"]
+
     self._log_info("test ok")
 
     return "OK"

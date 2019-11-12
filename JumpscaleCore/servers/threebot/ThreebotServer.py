@@ -127,6 +127,12 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.save()
 
         if not background:
+            # do bcdb check and rebuild index if index and data aren't in sync.
+            # clean start for my jobs
+            j.servers.myjobs.index_reset()
+            j.data.bcdb.check()
+            j.servers.myjobs.workers_tmux_start(4)
+            # TODO: review myjobs to have this by default.
 
             self.zdb.start()
             j.servers.sonic.default.start()
@@ -155,8 +161,8 @@ class ThreeBotServer(j.baseclasses.object_config):
                 "myjobs", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/myjobs"
             )
             j.tools.threebot_packages.get(
-                "packages_manager",
-                path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/packages_manager",
+                "packagemanagerui",
+                path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/packagemanagerui",
             )
 
             # add user added packages

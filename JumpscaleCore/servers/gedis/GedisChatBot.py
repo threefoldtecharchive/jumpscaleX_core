@@ -302,6 +302,22 @@ class GedisChatBotSession(JSBASE):
         message["cat"] = "md_show_update"
         self.q_out.put(message)
 
+    def loading_show(self, title, wait, **kwargs):
+        load_html = """\
+# Loading {1}...
+<div class="progress">
+<div class="progress-bar active" role="progressbar" aria-valuenow="{0}"
+aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
+{0}%
+</div>
+</div>
+"""
+        for x in range(wait):
+            message = self.md_msg(load_html.format((x / wait) * 100, title), **kwargs)
+            message["cat"] = "md_show_update"
+            self.q_out.put(message)
+            gevent.sleep(1)
+
     def redirect(self, msg, **kwargs):
         """
         a special helper method to redirect the user to a specific url.
@@ -328,7 +344,7 @@ class GedisChatBotSession(JSBASE):
   aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
     {0}%
   </div>
-</div> 
+</div>
 """
         return html
 
@@ -381,7 +397,7 @@ class GedisChatBotSession(JSBASE):
         helper method to retrieve the info of a logged user
         """
         self.q_out.put({"cat": "user_info", "kwargs": kwargs})
-        return self.q_in.get()
+        return j.data.serializers.json.loads(self.q_in.get())
 
 
 def test(factory):

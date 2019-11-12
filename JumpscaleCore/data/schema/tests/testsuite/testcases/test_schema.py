@@ -17,15 +17,16 @@
 # along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
 # LICENSE END
 
-
-from Jumpscale.data.schema.tests.testsuite.testcases.base_test import BaseTest
-from Jumpscale import j
-from unittest import TestCase
-from uuid import uuid4
-from datetime import datetime
 import random
 import time
 import unittest
+from datetime import datetime
+from uuid import uuid4
+from unittest import TestCase
+
+from Jumpscale import j
+
+from Jumpscale.data.schema.tests.testsuite.testcases.base_test import BaseTest
 
 
 class SchemaTest(BaseTest):
@@ -40,7 +41,6 @@ class SchemaTest(BaseTest):
         **Test Scenario:**
 
         #. Create schema with string parameter[P1], should succeed.
-        #. Try to set parameter[P1] with non string type, should fail.
         #. Try to set parameter[P1] with string type, should succeed.
         """
         self.log("Create schema with string parameter[P1], should succeed.")
@@ -81,9 +81,8 @@ class SchemaTest(BaseTest):
         schema_obj = schema.new()
 
         self.log("Try to set parameter[P1] with type which cannot convert to integer should fail.")
-
         with self.assertRaises(Exception):
-            schema_obj.number = "a"
+            schema_obj.number = self.random_string()
 
         with self.assertRaises(Exception):
             schema_obj.number = [random.randint(1, 1000), random.randint(1, 1000)]
@@ -274,7 +273,7 @@ class SchemaTest(BaseTest):
         scm = """
         @url = test.schema
         email = (email)
-        init_email_1 = test.example@domain.com (email)
+        init_email_1 = "test.example@domain.com" (email)
         init_email_2 = test.example@domain.com (email)
         """
         schema = self.schema(scm)
@@ -368,9 +367,6 @@ class SchemaTest(BaseTest):
         schema_obj = schema.new()
 
         self.log("Try to set parameter[P1] with non ipaddr type, should fail.")
-        # with self.assertRaises(Exception):
-        #     schema_obj.ip = random.randint(1, 100)
-
         with self.assertRaises(Exception):
             schema_obj.ip = random.uniform(1, 100)
 
@@ -409,16 +405,13 @@ class SchemaTest(BaseTest):
         self.log("Create schema with iprange parameter[P1], should succeed.")
         scm = """
         @url = test.schema
-        iprange = '127.0.0.1/24'(iprange)
+        iprange = (iprange)
         init_iprange = '127.0.0.1/16' (iprange)
         """
         schema = self.schema(scm)
         schema_obj = schema.new()
 
         self.log("Try to set parameter[P1] with non iprange type, should fail.")
-        with self.assertRaises(Exception):
-            schema_obj.iprange = random.randint(1, 100)
-
         with self.assertRaises(Exception):
             schema_obj.iprange = random.uniform(1, 100)
 
@@ -432,9 +425,6 @@ class SchemaTest(BaseTest):
             schema_obj.iprange = "10.20.1"
 
         with self.assertRaises(Exception):
-            schema_obj.iprange = "10.20.1.0"
-
-        with self.assertRaises(Exception):
             schema_obj.iprange = "10.20.1.0/"
 
         with self.assertRaises(Exception):
@@ -444,12 +434,19 @@ class SchemaTest(BaseTest):
             schema_obj.iprange = {"number": random.randint(1, 100)}
 
         self.log("Try to set parameter[P1] with iprange type, should succeed.")
+        iprange = random.randint(1, 100)
+        schema_obj.iprange = iprange
+        self.assertEqual(schema_obj.iprange, iprange)
+
+        iprange = "10.20.1.0"
+        schema_obj.iprange = iprange
+        self.assertEqual(schema_obj.iprange, iprange)
+
         iprange = "10.15.{}.1/24".format(random.randint(0, 255))
         schema_obj.iprange = iprange
         self.assertEqual(schema_obj.iprange, iprange)
         self.assertEqual(schema_obj.init_iprange, "127.0.0.1/16")
 
-    @unittest.skip("skipping date for now")
     def test010_validate_date_type(self):
         """
         SCM-010
@@ -664,7 +661,7 @@ class SchemaTest(BaseTest):
         self.log("Create schema with url parameter[P1], should succeed.")
         scm = """
         @url = test.schema
-        site = "test2.example.com" (u)
+        site = (u)
         init_url = 'test.example.com/home' (u)
         """
         schema = self.schema(scm)
@@ -930,27 +927,28 @@ class SchemaTest(BaseTest):
         schema = self.schema(scm)
         schema_obj = schema.new()
 
-        # self.log("Try to set parameter[P1] with non multiline type, should fail.")
-        # with self.assertRaises(Exception):
-        #     schema_obj.lines = self.random_string()
-        #
-        # with self.assertRaises(Exception):
-        #     schema_obj.lines = random.randint(1, 1000)
-        #
-        # with self.assertRaises(Exception):
-        #     schema_obj.lines = random.uniform(1, 100)
-        #
-        # with self.assertRaises(Exception):
-        #     schema_obj.lines = [random.randint(1, 100), random.randint(1, 100)]
-        #
-        # with self.assertRaises(Exception):
-        #     schema_obj.lines = {'number': random.randint(1, 100)}
+        self.log("Try to set parameter[P1] with non multiline type, should fail.")
+        with self.assertRaises(Exception):
+            schema_obj.lines = self.random_string()
+
+        with self.assertRaises(Exception):
+            schema_obj.lines = random.randint(1, 1000)
+
+        with self.assertRaises(Exception):
+            schema_obj.lines = random.uniform(1, 100)
+
+        with self.assertRaises(Exception):
+            schema_obj.lines = [random.randint(1, 100), random.randint(1, 100)]
+
+        with self.assertRaises(Exception):
+            schema_obj.lines = {"number": random.randint(1, 100)}
 
         self.log("Try to set parameter[P1] with multiline type, should succeed.")
         schema_obj.lines = "example \n example2 \n example3"
         self.assertEqual(schema_obj.lines, "example \n example2 \n example3")
         self.assertEqual(schema_obj.init_mline, "\nexample \n example2 \n example3\n")
 
+    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/162")
     def test019_validate_yaml_type(self):
         """
         SCM-019
@@ -959,44 +957,43 @@ class SchemaTest(BaseTest):
         **Test Scenario:**
 
         #. Create schema with yaml parameter[P1], should succeed.
-        #. Try to set parameter[P1] with non yaml type, should fail.
         #. Try to set parameter[P1] with yaml type, should succeed.
         """
         self.log("Create schema with yaml parameter[P1], should succeed.")
         scm = """
         @url = test.schema
-        data = {'example':'test2'} (yaml)
+        data = (yaml)
         init_yaml = {'example':'test1'} (yaml)
         """
         schema = self.schema(scm)
         schema_obj = schema.new()
 
         self.log("Try to set parameter[P1] with non yaml type, should fail.")
+        with self.assertRaises(Exception):
+            schema_obj.data = "{test"
 
-        self.log("Try to set parameter[P1] with non yaml type, should fail.")
         with self.assertRaises(Exception):
             schema_obj.data = random.randint(1, 1000)
-            schema_obj.check()
 
         with self.assertRaises(Exception):
             schema_obj.data = random.uniform(1, 100)
-            schema_obj.check()
 
         with self.assertRaises(Exception):
             schema_obj.data = [random.randint(1, 100), random.randint(1, 100)]
-            schema_obj.check()
 
         with self.assertRaises(Exception):
             schema_obj.data = {"number": random.randint(1, 100)}
-            schema_obj.check()
 
         self.log("Try to set parameter[P1] with yaml type, should succeed.")
         data = self.random_string()
         schema_obj.data = data
         self.assertEqual(schema_obj.data, data)
 
-        schema_obj.data = {"example": "test1"}
-        self.assertEqual(schema_obj.data, {"example": "test1"})
+        y = """
+example:
+  - test"""
+        schema_obj.data = y
+        self.assertEqual(schema_obj.data, "\nexample:\n  - test")
         self.assertEqual(schema_obj.init_yaml, {"example": "test1"})
 
     def test020_validate_enum_type(self):
@@ -1017,6 +1014,7 @@ class SchemaTest(BaseTest):
         """
         schema = self.schema(scm)
         schema_obj = schema.new()
+
         self.log("Try to set parameter[P1] with non enum type, should fail.")
         with self.assertRaises(Exception):
             schema_obj.colors = self.random_string()
@@ -1062,6 +1060,7 @@ class SchemaTest(BaseTest):
         """
         schema = self.schema(scm)
         schema_obj = schema.new()
+
         self.log("Try to set parameter[P1] with non binary type, should fail.")
 
         with self.assertRaises(Exception):
@@ -1079,7 +1078,5 @@ class SchemaTest(BaseTest):
         self.log("Try to set parameter[P1] with binary type, should succeed.")
         binary = self.random_string().encode()
         schema_obj.binary = binary
-        schema_obj.init_bin = "this is binary"
         self.assertEqual(schema_obj.binary, binary)
-        schema_obj.init_bin = "this is binary"
         self.assertEqual(schema_obj.init_bin, b"\xb6\x18\xac\x8a\xc6\xe2\x9d\xaa\xf2")
