@@ -1,5 +1,6 @@
 prequisties:
   - jsx
+  - docker
 
 install:
   - apt-get update
@@ -21,3 +22,4 @@ script:
    --exclude-dir=JumpscaleCore/servers/ JumpscaleCore/ --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
   - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v test_loader.py:CoreTests 
    --nologcapture --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
+  - source /sandbox/env.sh; jsx threebot-test -d

@@ -35,6 +35,8 @@ class CoreTests(TestCase):
             "j.clients.sshkey.test()",
             "j.clients.sshagent.test()",
             "j.clients.zdb.test()",
+            "j.servers.openresty.test()",
+            "j.servers.myjobs.test()",
         ]
     )
     def test(self, cmd):
