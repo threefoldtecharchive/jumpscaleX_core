@@ -119,7 +119,7 @@ class SSHClientBase(j.baseclasses.object_config):
     #         else:
     #             self._private = j.sal.nettools.tcpPortConnectionTest(self.addr_priv, self.port_priv, 1)
     #     return self._private
-    def execute_jumpscale(self, script, **kwargs):
+    def execute_jumpscale(self, script, interactive=True, **kwargs):
         script = "from Jumpscale import j\n{}".format(script)
 
         script = j.core.tools.text_replace(script, **kwargs)
@@ -129,7 +129,7 @@ class SSHClientBase(j.baseclasses.object_config):
 
         j.sal.fs.writeFile(filename, contents=script)
         self.file_copy(filename, filename)  # local -> remote
-        self.execute("source /sandbox/env.sh && python3 {}".format(filename))
+        self.execute("source /sandbox/env.sh && python3 {}".format(filename), interactive=interactive)
 
     @property
     def addr_variable(self):
