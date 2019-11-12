@@ -349,7 +349,7 @@ class Handler(JSBASE):
 
                 # if we get here we know that the user has been authenticated properly
                 user_session.threebot_id = tclient.tid
-                user_session.threebot_name = tclient.name
+                user_session.threebot_name = tclient.tname
             else:
                 # can't reuse verification methods in 3 bot client, otherwise we gonna go into infinite loop
                 # so we verify directly using nacl
@@ -359,7 +359,7 @@ class Handler(JSBASE):
                     logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
                     return (logdict, None)
                 user_session.threebot_id = tid
-                user_session.threebot_name = j.tools.threebot.me.default.name
+                user_session.threebot_name = j.tools.threebot.me.default.tname
             return None, "OK"
 
         self._log_debug(

@@ -83,3 +83,15 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         )
         self._id2client_cache[r2.tid] = r2
         return self._id2client_cache[r2.tid]
+
+    def test(self):
+        j.servers.threebot.local_start_default(web=True)
+        nacl_cl = j.data.nacl.get()
+        nacl_cl._load_singing_key()
+        epoch = str(j.data.time.epoch)
+        signed_message = nacl_cl.sign(epoch.encode()).hex()
+        cmd = "auth {} {} {}".format(j.tools.threebot.me.default.tid, epoch, signed_message)
+        c = j.clients.threebot.get()
+        print(c._gedis._redis.execute_command(cmd))
+        return "DONE"
+
