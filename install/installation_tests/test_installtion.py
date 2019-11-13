@@ -724,4 +724,3 @@ class TestInstallationInSystem(BaseTest):
         r = requests.get("https://127.0.0.1/wiki/test_presentaion.md", verify=False)
         self.assertEqual(r.status_code, 200)
         self.assertIn("includes 1", r.content.decode())
-

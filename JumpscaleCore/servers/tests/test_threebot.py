@@ -115,4 +115,3 @@ class TestThreebotServer(BaseTest):
             self.info(" Check that main servers running successfully include openresty server.  ")
             self.check_threebot_main_running_servers(web=web_status)
             j.servers.bottle_web.test()
-
