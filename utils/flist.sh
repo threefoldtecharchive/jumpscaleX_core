@@ -43,6 +43,6 @@ chmod +x /tmp/jsx;
 /tmp/jsx configure -s --secret mysecret;
 # install
 /tmp/jsx install -s --threebot;
-kosmos -p "j.servers.threebot.local_start_default()"
+source /sandbox/env.sh; kosmos -p "j.servers.threebot.local_start_default()"
 
 tar -cpzf "/tmp/archives/JSX.tar.gz" --exclude dev --exclude sys --exclude proc --exclude tmp/archives/ /
