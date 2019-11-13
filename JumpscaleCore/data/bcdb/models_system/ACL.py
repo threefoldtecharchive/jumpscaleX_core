@@ -184,7 +184,7 @@ class ACL(j.data.bcdb._BCDBModelClass):
                 return False
         return True
 
-    def _search_users(self, acl, user_id, rights):
+    def _user_has_rights(self, acl, user_id, rights):
         """
         search for certain rights in a user,
         this will iterate over all circles in acl object and check if it contains the current user
@@ -204,7 +204,7 @@ class ACL(j.data.bcdb._BCDBModelClass):
 
         return False
 
-    def _search_circles(self, acl, circle_id, rights):
+    def _circle_has_rights(self, acl, circle_id, rights):
         """
         search for certain rights in a circle,
         this will iterate over all circles in acl object and check if it contains the current
@@ -238,9 +238,9 @@ class ACL(j.data.bcdb._BCDBModelClass):
             for acl_user in acl.users:
                 if acl_user.uid == user.id and self._compare_rights(acl_user.rights, rights):
                     return True
-            return self._search_users(acl, user.id, rights)
+            return self._user_has_rights(acl, user.id, rights)
         elif circle:
-            return self._search_circles(acl, id, rights)
+            return self._circle_has_rights(acl, id, rights)
         else:
             raise RuntimeError(f"Can't find users or circles with id: {id}")
 
