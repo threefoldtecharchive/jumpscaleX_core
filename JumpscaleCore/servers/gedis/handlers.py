@@ -333,9 +333,16 @@ class Handler(JSBASE):
             tid = int(tid)
 
             current_threebot_id = int(j.tools.threebot.me.default.tid)
-            # If working on same machine no need to get a client to authenticate
-            # otherwise, we'll have infinite loop
-            if current_threebot_id != tid:
+
+            # if tid is 0 (special value)
+            # we know that this machine is not registered in phonebook yet
+            # we leave session empty
+            # this is important as some actors may require public access
+            # then it's responsibility of actors to make their own decisions
+            # around who can access them
+            if tid == 0:
+                pass
+            elif current_threebot_id != tid:
                 try:
                     tclient = j.clients.threebot.client_get(threebot=tid)
                 except Exception as e:
@@ -351,8 +358,10 @@ class Handler(JSBASE):
                 user_session.threebot_id = tclient.tid
                 user_session.threebot_name = tclient.tname
             else:
-                # can't reuse verification methods in 3 bot client, otherwise we gonna go into infinite loop
-                # so we verify directly using nacl
+                # If working on same machine no need to get a client to authenticate
+                # otherwise, we'll have infinite loop
+                # This code also validates that no hacker trying to send the
+                # same 3 bot ID for the remote machine, as here we do validation
                 try:
                     VerifyKey(binascii.unhexlify(j.tools.threebot.me.default.nacl.verify_key_hex)).verify(seed, binascii.unhexlify(signature))
                 except Exception as e:

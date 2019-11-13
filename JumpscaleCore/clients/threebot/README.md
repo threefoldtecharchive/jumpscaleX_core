@@ -13,9 +13,14 @@ cl = j.servers.threebot.local_start_default(web=True)
 ```python
 cl.actors.package_manager.package_add(path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/phonebook")
 cl.reload()
-j.tools.threebot.init_my_threebot(myidentity='default', name='hamdy farag', email='ham1dy@d.com', description=None, ipaddr='127.0.0.1', interactive=False)```
 ```
 
+- At this point, no default `3bot me instance` configured, any attempt to call actor will not be authenticated i.e `user_session` will be empty
+
+- Add 3bot me instance
+```
+j.tools.threebot.init_my_threebot(myidentity='default', name='hamdy farag', email='ham1dy@d.com', description=None, ipaddr='127.0.0.1', interactive=False)
+```
 - Add a test package and reload the server after loading the new package
 
 ```python
@@ -50,4 +55,15 @@ Here we can see user_session is filled with the threebot client info
  - threebot_client      : ## .threebot.client
  - threebot_id          : 1
  - threebot_name        : default
+```
+
+- Other examples
+
+```
+client = j.clients.threebot.get(name='remote', host='172.17.0.5', port=8901)
+client2.actors_default.html_test.hello_markdown()
+
+## actors.default.html_test.hello.537cc19efef1a82cef8751bd84c39d82
+ - content             : _markdown test_ Hello ``
+
 ```
