@@ -52,6 +52,5 @@ class ThreeBotFactoryBase(JSBase, TestTools):
         # server.start(web=self._web, ssl=self._ssl)
 
         # WILL GIVE YOU THE MAIN THREEBOT,STARTED THROUGH TMUX
-        self.client = j.servers.threebot.local_start_default(web=True)
-
         self.install()
+        self.client = j.servers.threebot.local_start_default(web=True)

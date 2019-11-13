@@ -8,9 +8,6 @@ schema url : __jumpscale.bcdb.user.2__
     - email
     - pubkey
     - ipaddr
-  - behavior of access:
-    - Read (r)
-    - Write (w)
 
 ## User ACLs:
 schema url : __jumpscale.bcdb.acl.user.2__
@@ -27,9 +24,6 @@ schema url : __jumpscale.bcdb.circle.2__
     - threebot_id
     - user_members (corresponds to users)
     - circle_members (correspondes to circles)
-  - behavior of access:
-    - Read
-    - Write
 
 ## Circle ACLs (groups):
 schema url : __jumpscale.bcdb.acl.circle.2__
@@ -39,7 +33,7 @@ schema url : __jumpscale.bcdb.acl.circle.2__
 
 ![alt text](acl.png "Logo Title Text 1")
 
-## example 
+## Example
 
 ```python
 bcdb = j.data.bcdb.get("test")
@@ -47,7 +41,7 @@ bcdb = j.data.bcdb.get("test")
 #create user
 u = bcdb.user.new()
 u.name = "kds_1"
-u.email = "user1@me.com" 
+u.email = "user1@me.com"
 u.threebot_id = "user1.ibiza"
 u.save()
 
@@ -62,7 +56,7 @@ g.save()
 # create new model and will add our acl to this model
 schema = """
     @url = despiegk.test5.acl
-    name = "" 
+    name = ""
     an_id = 0
         """
 
@@ -70,17 +64,32 @@ model = bcdb.model_get(schema=schema)
 a = model.new()
 
 # that will add right to the circle and all users in the circle
-a.acl.rights_set(userids=[], circleids=[1], rights="rw")
+a.acl.rights_add(userids=[], circleids=[1], rights=["r", "w"])
 
 
-assert a.acl.rights_check(1, "r") is True
-assert a.acl.rights_check(1, "rw") is True
-assert a.acl.rights_check(1, "w") is True
+assert a.acl.rights_check(1, ["r"]) is True
+assert a.acl.rights_check(1, ["r","w"]) is True
+assert a.acl.rights_check(1, ["w"]) is True
 
 
 ```
 
-## run the test 
-``` python 
+## Run the test
+``` python
 j.data.bcdb.test(name="acl")
 ```
+
+## Example of subcircles
+![bcdb_acl.jpg](./bcdbacl.jpg)
+
+A subcircle inherits its parent circle rights
+
+This example shows ACL object structure for a simple blog system
+
+**in this example the following rules are correct:**
+* guest1 and guest2 can read posts
+* mod1 can read and write posts
+* admin1 and admin2 can read, write and delete
+
+1- admin circle can be added as subcircle of writers,
+in this case it will inherit all rights from writers circle and have only one unique right (delete)

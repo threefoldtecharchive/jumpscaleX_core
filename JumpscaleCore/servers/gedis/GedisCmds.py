@@ -9,18 +9,20 @@ JSBASE = j.baseclasses.object
 SCHEMA = """
 @url = jumpscale.gedis.api
 namespace = ""
-name = ""
+name** = ""
 cmds = (LO) !jumpscale.gedis.cmd
 schemas = (LO) !jumpscale.gedis.schema
 
 @url = jumpscale.gedis.cmd
-name = ""
+name** = ""
 comment = ""
 schema_in_url = ""
 schema_out_url = ""
 args = (ls)
+public = False
 
 @url = jumpscale.gedis.schema
+name** = ""
 md5 = ""
 url = ""
 content = ""
@@ -43,11 +45,11 @@ class GedisCmds(JSBASE):
 
         j.data.schema.get_from_text(SCHEMA)
         self.schema = j.data.schema.get_from_url(url="jumpscale.gedis.api")
-
+        self.schema = j.data.bcdb.system.model_get(schema=self.schema)
         self._cmds = {}
 
         if data:
-            self.data = self.schema.new(serializeddata=data)
+            self.data = self.schema.new(data=data)
             self.cmds
         else:
             cname = j.sal.fs.getBaseName(path)[:-3]
@@ -116,6 +118,7 @@ class GedisCmds(JSBASE):
         comment = ""
         schema_in = ""
         schema_out = ""
+        auth_args = ""
         args = []
 
         state = "START"
@@ -150,6 +153,8 @@ class GedisCmds(JSBASE):
                 if state == "COMMENT":  # are in comment, now found the schema
                     if lstrip.endswith("out"):
                         state = "SCHEMAO"
+                    elif lstrip.endswith("auth"):
+                        state = "SCHEMAAUTH"
                     else:
                         state = "SCHEMAI"
                     continue
@@ -165,6 +170,9 @@ class GedisCmds(JSBASE):
                 continue
             if state == "CODE" or state == "DEF":
                 code += "%s\n" % line
+                continue
+            if state == "SCHEMAAUTH":
+                auth_args += "%s\n" % line
                 continue
             raise j.exceptions.Base()
 
@@ -185,8 +193,52 @@ class GedisCmds(JSBASE):
             args.pop(args.index("user_session"))
 
         cmd.args = args
+        data = self._parse_auth_data(auth_args)
+        if data:
+            cmd.public = data.get("public")
+            user_ids = []
+            for user_threebot_id in data.get("users", []):
+                user = self.data.bcdb.system.users.find(threebot_id=user_threebot_id)
+                if user:
+                    user_ids.append(user[0].id)
+                else:
+                    raise j.exceptions.NotFound(f"user with threebot_id:'{user_threebot_id}' can't be found")
 
+            circle_ids = []
+            for circle_threebot_id in data.get("circles", []):
+                circle = self.data.bcdb.system.circle.find(threebot_id=circle_threebot_id)
+                if circle:
+                    circle_ids.append(circle[0].id)
+                else:
+                    raise j.exceptions.NotFound(f"circle with threebot_id:'{circle_threebot_id}' can't be found")
+
+            self.data.acl.rights_add(userids=user_ids, circleids=circle_ids, rights=[cmd.name])
+        else:
+            cmd.public = True
+            # TODO: by default is public for now until we have the full flow of authentication
+            #  after merging this PR https://github.com/threefoldtech/jumpscaleX_core/pull/187/files
+            # admins_circle_id = j.data.bcdb.system.circle.get_by_name("admins").id
+            # self.data.acl.rights_add(circleids=[admins_circle_id], rights=[cmd.name])
+
+        # cmd.save()
+        self.data.save()
         return cmd
+
+    def _parse_auth_data(self, auth_args):
+        if auth_args:
+            import ast
+
+            data = {}
+            try:
+                for line in auth_args.splitlines():
+                    if not line.strip() or not "=" in line:
+                        continue
+                    key = line.split("=")[0].strip()
+                    value = ast.literal_eval(line.split("=")[1].strip())
+                    data[key] = value
+            except Exception as e:
+                j.exceptions.Value(f"Couldn't parse auth args {auth_args}")
+            return data
 
     def _args_process(self, args):
         res = []
