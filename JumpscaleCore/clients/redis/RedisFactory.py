@@ -140,7 +140,7 @@ class RedisFactory(j.baseclasses.factory_testtools):
                     if die == False:
                         return None
                     else:
-                        raise j.exceptions.Base("Redis on %s:%s did not answer" % (ipaddr, port))
+                        raise j.exceptions.Base("Redis on %s:%s did not answer: %s" % (ipaddr, port, str(e)))
                 else:
                     raise e
 
