@@ -22,4 +22,4 @@ script:
    --exclude-dir=JumpscaleCore/servers/tests JumpscaleCore/ --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
   - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v test_loader.py:CoreTests 
    --nologcapture --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
-  - source /sandbox/env.sh; jsx threebot-test -d
+  - source /sandbox/env.sh; eval `ssh-agent -s`; ssh-add; jsx threebot-test -d
