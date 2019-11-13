@@ -9,30 +9,30 @@ MAIN_ACTORS = ["package_manager", "sonic", "gdrive", "myjobs", "identity", "chat
 class TestThreebotServer(BaseTest):
     def setUp(self):
         self.info("install threebot server.")
+        threebot_name = self.rand_string()
         j.servers.threebot.install()
-        self.threebot_server = j.servers.threebot.get()
+        self.threebot_server = j.servers.threebot.get(name=threebot_name)
 
     def Teardown(self):
-        self.threebot_server.stop()
+        j.servers.tmux.kill()
 
     def check_threebot_main_running_servers(self, web=True):
         self.info(" *  Make sure that server started successfully by check zdb ,lapis, sonic,and openresty work.  ")
 
         self.info("*** zdb server ***")
-        zdb_output, error = self.os_command(" ps -aux | grep -v grep | grep startupcmd_zdb  | awk '{{print $2}}'")
+        zdb_output, error = self.os_command(" ps -aux | grep -v grep | grep startupcmd_zdb")
         self.assertTrue(zdb_output, "can't find zdb server.")
-        zdb_PID = int(zdb_output.decode())
-        self.info(" * Check that  zdb server connection  works successfully.")
-        output, error = self.os_command("netstat -nltp | grep '{}' ".format(zdb_PID))
-        self.assertTrue(output, "zdb server connection doesn't work.")
+        self.info(" * Check that  zdb server connection  works successfully and right port.")
+        self.assertTrue(j.sal.nettools.tcpPortConnectionTest("localhost", 9900), "zdb is not started.")
 
         self.info("*** sonic  server ***")
-        sonic_output, error = self.os_command(" ps -aux | grep -v grep | grep startupcmd_sonic  | awk '{{print $2}}'")
+        sonic_output, error = self.os_command(" ps -aux | grep -v grep | grep startupcmd_sonic ")
         self.assertTrue(sonic_output.decode(), "can't find sonic server ")
-        sonic_PID = int(sonic_output.decode())
         self.info(" * Check that  sonic server connection  works successfully.")
-        output, error = self.os_command("netstat -nltp | grep '{}' ".format(sonic_PID))
-        self.assertTrue(output, "sonic server connection doesn't work.")
+        self.assertTrue(j.sal.nettools.tcpPortConnectionTest("localhost", 1491), "sonic is not started.")
+
+        self.info("*** gedis server ***")
+        self.assertTrue(j.sal.nettools.tcpPortConnectionTest("localhost", 8901), "Gedis is not started.")
 
         self.info("*** lapis server ***")
         lapis_output, error = self.os_command(" ps -aux | grep -v grep | grep lapis ")
@@ -50,7 +50,7 @@ class TestThreebotServer(BaseTest):
         - Check it works correctly.
         """
         self.info("Get gedis client from it .")
-        gedis_client = j.servers.threebot.local_start_default()
+        gedis_client = j.servers.threebot.local_start_default(timeout=1500)
         self.info("Check it works correctly.")
         self.assertTrue(gedis_client.ping())
 
@@ -75,7 +75,7 @@ class TestThreebotServer(BaseTest):
         bcdb_name = self.rand_string()
         self.threebot_server.bcdb_get(name=bcdb_name)
         output, error = self.os_command(" ls /sandbox/var/bcdb")
-        self.assertNotIn(bcdb_name, output.decode())
+        self.assertIn(bcdb_name, output.decode())
 
     @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/208")
     def Test03_start_stop_options(self, server):
@@ -91,8 +91,11 @@ class TestThreebotServer(BaseTest):
 
         self.info(" * Stop server {}".format(server))
         self.threebot_server.stop()
-        output, error = self.os_command("ps -aux | grep -v grep | grep -e startupcmd_sonic -e startupcmd_zdb")
-        self.assertFalse(output.decode())
+
+        self.info("Check servers stopped successfully.")
+        self.assertFalse(j.sal.nettools.tcpPortConnectionTest("localhost", 9900), "zdb still running.")
+        self.assertFalse(j.sal.nettools.tcpPortConnectionTest("localhost", 1491), "sonic still running.")
+        self.assertFalse(j.sal.nettools.tcpPortConnectionTest("localhost", 8901), "Gedis still running.")
 
     @parameterized.expand([(True,), (False,)])
     @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/208")
@@ -111,3 +114,5 @@ class TestThreebotServer(BaseTest):
         if web_status:
             self.info(" Check that main servers running successfully include openresty server.  ")
             self.check_threebot_main_running_servers(web=web_status)
+            j.servers.bottle_web.test()
+
