@@ -231,7 +231,8 @@ class BCDB(j.baseclasses.object):
             if self.storclient:
                 if self.storclient.get(key=i - 1) is None:
                     obj = model.new()
-                    obj.name = j.data.idgenerator.generateGUID()
+                    if hasattr(obj, "name"):
+                        obj.name = j.data.idgenerator.generateGUID()
                     obj.id = None
                     obj.save()
             if i in data:
