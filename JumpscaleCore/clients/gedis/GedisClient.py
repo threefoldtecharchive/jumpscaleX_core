@@ -102,7 +102,6 @@ class GedisClient(JSConfigBase):
             tpath = "%s/templates/GedisClientGenerated.py" % (j.clients.gedis._dirpath)
             actorname_ = actormeta.namespace + "_" + actorname
             dest = "/sandbox/var/codegen/gedis/%s/client/%s.py" % (self.name, actorname_)
-
             cl = j.tools.jinja2.code_python_render(
                 obj_key="GedisClientGenerated",
                 path=tpath,

@@ -33,7 +33,7 @@ schema url : __jumpscale.bcdb.acl.circle.2__
 
 ![alt text](acl.png "Logo Title Text 1")
 
-## example
+## Example
 
 ```python
 bcdb = j.data.bcdb.get("test")
@@ -74,7 +74,7 @@ assert a.acl.rights_check(1, ["w"]) is True
 
 ```
 
-## run the test
+## Run the test
 ``` python
 j.data.bcdb.test(name="acl")
 ```

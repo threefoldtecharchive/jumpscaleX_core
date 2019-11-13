@@ -196,14 +196,27 @@ class GedisCmds(JSBASE):
         data = self._parse_auth_data(auth_args)
         if data:
             cmd.public = data.get("public")
-            if data.get("users"):
-                self.data.acl.rights_add(userids=data.get("users"), rights=[cmd.name])
-            if data.get("circles"):
-                self.data.acl.rights_add(circleids=data.get("circles"), rights=[cmd.name])
+            user_ids = []
+            for user_threebot_id in data.get("users", []):
+                user = self.data.bcdb.system.users.find(threebot_id=user_threebot_id)
+                if user:
+                    user_ids.append(user[0].id)
+                else:
+                    raise j.exceptions.NotFound(f"user with threebot_id:'{user_threebot_id}' can't be found")
 
+            circle_ids = []
+            for circle_threebot_id in data.get("circles", []):
+                circle = self.data.bcdb.system.circle.find(threebot_id=circle_threebot_id)
+                if circle:
+                    circle_ids.append(circle[0].id)
+                else:
+                    raise j.exceptions.NotFound(f"circle with threebot_id:'{circle_threebot_id}' can't be found")
+
+            self.data.acl.rights_add(userids=user_ids, circleids=circle_ids, rights=[cmd.name])
         else:
             cmd.public = True
             # TODO: by default is public for now until we have the full flow of authentication
+            #  after merging this PR https://github.com/threefoldtech/jumpscaleX_core/pull/187/files
             # admins_circle_id = j.data.bcdb.system.circle.get_by_name("admins").id
             # self.data.acl.rights_add(circleids=[admins_circle_id], rights=[cmd.name])
 
@@ -216,14 +229,15 @@ class GedisCmds(JSBASE):
             import ast
 
             data = {}
-            for line in auth_args.splitlines():
-                print(line)
-                if not line.strip() or not "=" in line:
-                    print(f"skipping {line}")
-                    continue
-                key = line.split("=")[0].strip()
-                value = ast.literal_eval(line.split("=")[1].strip())
-                data[key] = value
+            try:
+                for line in auth_args.splitlines():
+                    if not line.strip() or not "=" in line:
+                        continue
+                    key = line.split("=")[0].strip()
+                    value = ast.literal_eval(line.split("=")[1].strip())
+                    data[key] = value
+            except Exception as e:
+                j.exceptions.Value(f"Couldn't parse auth args {auth_args}")
             return data
 
     def _args_process(self, args):

@@ -119,10 +119,9 @@ class ACL(j.data.bcdb._BCDBModelClass):
                 acl.circles.append(circle)
 
             subcircles = self.circles_model.get(circleid).circle_members
-            if subcircles:
-                for subcircle in subcircles:
-                    if subcircle not in visited:
-                        circleids.append(subcircle)
+            for subcircle in subcircles:
+                if subcircle not in visited:
+                    circleids.append(subcircle)
 
         acl.md5 = j.data.hash.md5_string(acl._data)
         acl.save()

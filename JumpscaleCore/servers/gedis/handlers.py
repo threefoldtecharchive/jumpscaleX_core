@@ -282,22 +282,24 @@ class Handler(JSBASE):
         Notes:
         * system actor is always public, it will be used to retrieve the client metadata even before authentication
         * threebot_id should be in the session otherwise it can only access the public methods only
-        :return: True if authorized
+        :return: (True, None) if authorized else (False, reason)
         """
         if actor_name == "system":
-            return True
+            return True, None
         actor_obj = self.api_model.get_by_name(actor_name)
         for cmd in actor_obj.cmds:
             if cmd.name == cmd_name:
                 if cmd.public:
-                    return True
+                    return True, None
                 elif not threebot_id:
-                    return False
+                    return False, "No user is authenticated on this session and the command isn't public"
                 else:
-                    user_id = j.data.bcdb.system.user.find(threebot_id=threebot_id)[0].id
-                    return actor_obj.acl.rights_check(userids=[user_id], rights=[cmd_name])
+                    user = j.data.bcdb.system.user.find(threebot_id=threebot_id)
+                    if not user:
+                        return False, f"couldn't find user with threebot_id {threebot_id}"
+                    return actor_obj.acl.rights_check(userids=[user[0].id], rights=[cmd_name]), None
 
-        return False
+        return False, "Command not found"
 
     def _handle_request(self, request, address, user_session):
         """
@@ -348,13 +350,16 @@ class Handler(JSBASE):
 
         # cmd is cmd metadata + cmd.method is what needs to be executed
         try:
-            if self._authorized(request.command.actor, request.command.command, user_session.threebot_id):
+            is_authorized, reason = self._authorized(
+                request.command.actor, request.command.command, user_session.threebot_id
+            )
+            if is_authorized:
                 cmd = self._cmd_obj_get(
                     cmd=request.command.command, namespace=request.command.namespace, actor=request.command.actor
                 )
             else:
                 not_authorized_err = {
-                    "message": "not authorized",
+                    "message": f"not authorized {reason}",
                     "actor_name": request.command.actor,
                     "cmd_name": request.command.command,
                     "threebot_id": user_session.threebot_id,
