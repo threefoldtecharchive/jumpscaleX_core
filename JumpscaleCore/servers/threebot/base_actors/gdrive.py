@@ -1,6 +1,13 @@
 from Jumpscale import j
 
+# get gdrive client so google api dependency is installed
+cl = j.clients.gdrive.get("gdrive_macro_client", credfile="/sandbox/var/cred.json")
+
+from googleapiclient.errors import HttpError as GoogleApiHTTPError
+
+
 STATIC_DIR = "/sandbox/var/gdrive/static"
+doctypes_map = {"document": "drive", "spreadsheets": "drive", "presentation": "drive", "slide": "slides"}
 
 
 class gdrive(j.baseclasses.threebot_actor):
@@ -12,40 +19,51 @@ class gdrive(j.baseclasses.threebot_actor):
         guid2 = "" (S)
         ```
         ```out
-        res = (S)
+        res = "" (S)
+        error_message = "" (S)
+        error_code = 0 (I)
         ```
         :param collection:
         :param bucket:
         :param text:
         :return:
-        172.17.0.2:8080/gdrive/slide/1-Eh4ghLxoVCGSt5onNb8Dx9sCi3-OJ3mNQGo0h9CUgg/second
         """
 
-        doctypes_map = {"doc": "drive", "sheet": "drive", "slide": "slides"}
-        cl = j.clients.gdrive.get("gdrive_macro_client", credfile="/sandbox/var/cred.json")
+        out = schema_out.new()
 
         if not doctype in doctypes_map:
-            raise j.exceptions.Base("invalid type")
+            out.error_code = -1
+            allowed_types = ", ".join(doctypes_map.keys())
+            out.error_message = f"invalid document type of '{doctype}', allowed types are {allowed_types}."
+            return out
+
+        if not j.sal.fs.exists(cl.credfile):
+            out.error_code = 400
+            out.error_message = "service credential file is not found"
+            return out
 
         service_name = doctypes_map[doctype]
-        if doctype in ["doc", "sheet"]:
+        try:
+            parent_dir = j.sal.fs.joinPaths(STATIC_DIR, doctype)
+            if not j.sal.fs.exists(parent_dir):
+                j.sal.fs.createDir(parent_dir)
 
-            path = j.sal.fs.joinPaths(STATIC_DIR, doctype, "{}.pdf".format(guid1))
-            cl.exportFile(guid1, destpath=path, service_name=service_name, service_version="v3")
-
-            out = schema_out.new()
-            out.res = "/gdrive_static/{}/{}.pdf".format(doctype, guid1)
-            return out
-
-        elif doctype == "slide":
-            path = j.sal.fs.joinPaths(STATIC_DIR, doctype)
-            cl.exportSlides(guid1, path)
-            out = schema_out.new()
-            if j.sal.fs.exists("{}/{}/{}.png".format(path, guid1, guid2), followlinks=True):
-                out.res = "/gdrive_static/slide/{}/{}.png".format(guid1, guid2)
-            else:
-                meta = cl.get_presentation_meta("{}/presentations.meta.json".format(path), guid1)
-                guid2 = meta[guid2]
-                guid2 = guid2.split("_", maxsplit=1)[1]  # remove the 0x_ part from the file name
-                out.res = "/gdrive_static/slide/{}/{}".format(guid1, guid2)
-            return out
+            if doctype in ["document", "spreadsheets", "presentation"]:
+                path = j.sal.fs.joinPaths(parent_dir, "{}.pdf".format(guid1))
+                cl.exportFile(guid1, destpath=path, service_name=service_name, service_version="v3")
+                out.res = "/gdrive_static/{}/{}.pdf".format(doctype, guid1)
+            elif doctype == "slide":
+                cl.exportSlides(guid1, parent_dir)
+                if j.sal.fs.exists("{}/{}/{}.png".format(parent_dir, guid1, guid2), followlinks=True):
+                    out.res = "/gdrive_static/slide/{}/{}.png".format(guid1, guid2)
+                else:
+                    meta = cl.get_presentation_meta("{}/presentations.meta.json".format(parent_dir), guid1)
+                    if guid2 in meta:
+                        guid2 = meta[guid2]
+                        guid2 = guid2.split("_", maxsplit=1)[1]  # remove the 0x_ part from the file name
+                        out.res = "/gdrive_static/slide/{}/{}".format(guid1, guid2)
+        except GoogleApiHTTPError as api_http_error:
+            error = j.data.serializers.json.loads(api_http_error.content)["error"]
+            out.error_code = error["code"]
+            out.error_message = error["message"]
+        return out

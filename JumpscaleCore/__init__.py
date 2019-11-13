@@ -201,7 +201,7 @@ class Jumpscale:
         # self.clear()
         return self._shell(stack_depth=stack_depth)
 
-    def debug():
+    def debug(self):
         # disable console logging when entering interactive debugger
         j.core.myenv.log_console = False
         import sys
