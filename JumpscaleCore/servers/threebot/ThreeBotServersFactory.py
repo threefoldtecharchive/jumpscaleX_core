@@ -60,6 +60,19 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         client = self.default.start(background=True, web=web, timeout=timeout)
 
+        client.actors.package_manager.package_add(path=j.threebot.package.phonebook._dirpath)
+
+        if packages_add:
+            client.actors.package_manager.package_add(
+                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/threefold/phonebook"
+            )
+
+            client.actors.package_manager.package_add(
+                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/threebot/wiki"
+            )
+
+            client.reload()
+
         return client
 
     def test(self, name="threebot_phonebook", wiki=True, web=False, fileserver=False):
