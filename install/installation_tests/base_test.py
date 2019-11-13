@@ -81,4 +81,3 @@ class BaseTest(unittest.TestCase):
     @staticmethod
     def rand_str(size=10):
         return str(uuid.uuid4()).replace("-", "")[:size]
-

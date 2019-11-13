@@ -9,8 +9,14 @@ ACTORS_PATH = (
 ACTOR_FILE_1 = "simple"
 ACTOR_FILE_2 = "actor"
 
-#
-@unittest.SkipTest
+START_SCRIPT = """ 
+server=j.servers.gedis.get(name="{name}")  
+server.actor_add(path={actor_path}/{actor_file}.py, namespace="{ns}")  
+server.start()  
+"""
+
+
+@unittest.SkipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/128")
 class TestGedisServer(BaseTest):
     def setUp(self):
         self.info("​Get gedis server instance.")
@@ -20,13 +26,11 @@ class TestGedisServer(BaseTest):
 
         self.info("Add new actor,Start server ")
         self.namespace = self.rand_string()
-        self.gedis_server.actor_add(path="{}/{}.py".format(ACTORS_PATH, ACTOR_FILE_1), namespace=self.namespace)
-        self.gedis_server.save()
-        self.os_command(
-            'tmux new -d -s {} \' kosmos -p "j.servers.gedis.get(name=\\"{}\\").start() "\' '.format(
-                self.rand_string(), self.instance_name
-            )
+        sc = START_SCRIPT.format(
+            name=self.instance_name, actor_path=ACTORS_PATH, actor_file=ACTOR_FILE_1, ns=self.namespace
         )
+        cmd = "kosmos -p '{}'".format(sc)
+        j.servers.tmux.execute(cmd)
 
     def tearDown(self):
         self.gedis_server.stop()
@@ -44,28 +48,7 @@ class TestGedisServer(BaseTest):
         self.info("Check that actor added successfully.")
         self.assertIn(self.namespace, self.gedis_server.actors_list(self.namespace))
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/92")
-    def test02_actors_methods_list(self):
-        """
-        - ​Get gedis server instance. 
-        - Add two actors ,Start server. 
-        - Check that actors methods list works correctly.
-        """
-        self.info("Add two actors ,Start server.")
-        self.gedis_server.stop()
-        self.gedis_server.actor_add(path="{}/{}.py".format(ACTORS_PATH, ACTOR_FILE_2), namespace=self.namespace)
-        self.os_command(
-            'tmux new -d -s {} \' kosmos -p "j.servers.gedis.get(name=\\"{}\\").start() "\' '.format(
-                self.rand_string(), self.instance_name
-            )
-        )
-
-        self.info(" Check that actors methods list works correctly.")
-        methods_list = self.gedis_server.actors_methods_list(name=self.namespace)
-        self.assertIn("foo", methods_list)
-        self.assertIn("schema_out", methods_list)
-
-    def test03_gedis_client(self):
+    def test02_gedis_client(self):
         """
         - ​Get gedis server instance. 
         - Add  actor ,Start server. 
@@ -82,19 +65,22 @@ class TestGedisServer(BaseTest):
             wrong_namespace = self.rand_string()
             cl = self.gedis_server.client_get(namespace=wrong_namespace)
 
-    def test04_gedis_add_actors(self):
+    def test03_gedis_add_actors(self):
         """
         - ​Get gedis server instance. 
         - Use add_actors method.
         - check that actors added and client can get from both of them .
         """
         self.gedis_server.stop()
-        self.gedis_server.actors_add(path=ACTORS_PATH, namespace=self.namespace)
-        self.os_command(
-            'tmux new -d -s {} \' kosmos -p "j.servers.gedis.get(name=\\"{}\\").start() "\' '.format(
-                self.rand_string(), self.instance_name
-            )
+        sc = """ 
+            server=j.servers.gedis.get(name={name})  
+            server.actors_add(path={actor_path},namespace={ns}) 
+            server.start()  
+            """.format(
+            name=self.instance_name, actor_path=ACTORS_PATH, ns=self.namesapce
         )
+        cmd = "kosmos -p '{}'".format(sc)
+        j.servers.tmux.execute(cmd)
 
         self.assertIn(ACTOR_FILE_2, self.gedis_server.actors_list(self.namespace))
         cl = self.gedis_server.client_get(namespace=self.namespace)
@@ -103,7 +89,7 @@ class TestGedisServer(BaseTest):
         result = getattr(cl.actors, ACTOR_FILE_2).args_in(arg_1, arg_2)
         self.assertEqual("{} {} ".format(arg_1, arg_2), result.decode())
 
-    def test05_gedis_load_actors(self):
+    def test04_gedis_load_actors(self):
         """
         - ​Add actor to actors_data
         - Use load_actors.
@@ -111,14 +97,17 @@ class TestGedisServer(BaseTest):
         """
         self.gedis_server.stop()
 
-        self.gedis_server.actors_data = "{}:{}/{}.py".format(self.namespace, ACTORS_PATH, ACTOR_FILE_2)
-        self.gedis_server.load_actors()
-
-        self.os_command(
-            'tmux new -d -s {} \' kosmos -p "j.servers.gedis.get(name=\\"{}\\").start() "\' '.format(
-                self.rand_string(), self.instance_name
-            )
+        sc = """ 
+            server=j.servers.gedis.get(name={name})  
+            server.actors_data = "{ns}:{actor_path}/{actor_file}.py".format(self.namespace, ACTORS_PATH, ACTOR_FILE_2)
+            server.load_actors()
+            server.start()  
+            """.format(
+            name=self.instance_name, actor_path=ACTORS_PATH, ns=self.namespace, actor_file=ACTOR_FILE_2
         )
+        cmd = "kosmos -p '{}'".format(sc)
+        j.servers.tmux.execute(cmd)
+
         self.assertIn(ACTOR_FILE_2, self.gedis_server.actors_list(self.namespace))
         cl = self.gedis_server.client_get(namespace=self.namespace)
         arg_1 = random.randint(11, 55)
