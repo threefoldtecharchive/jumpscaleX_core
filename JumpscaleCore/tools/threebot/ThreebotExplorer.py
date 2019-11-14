@@ -258,9 +258,7 @@ class ThreebotExplorer(j.baseclasses.object):
         signature = j.tools.threebot.me.default.sign_bytes(reservation.json.encode())
 
         # Register reservation and sign
-        reservation = j.tools.threebot.explorer.actors.workload_manager.reservation_register(reservation_data)
-        j.tools.threebot.explorer.actors.workload_manager.sign_customer(
-            reservation.id, binascii.hexlify(signature.signature)
-        )
+        reservation = self.actors.workload_manager.reservation_register(reservation_data)
+        self.actors.workload_manager.sign_customer(reservation.id, binascii.hexlify(signature.signature))
 
         return reservation
