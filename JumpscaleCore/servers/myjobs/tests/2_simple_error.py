@@ -46,6 +46,8 @@ def main(self):
 
     self._log_info("basic error test done")
 
-    self.stop(reset=False)
+    # self.stop(reset=False)
+    self.stop(reset=True)
 
+    print("Simple_error TEST OK")
     print("TEST OK")

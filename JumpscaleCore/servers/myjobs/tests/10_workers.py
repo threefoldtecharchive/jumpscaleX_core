@@ -9,6 +9,8 @@ def main(self):
 
     j.tools.logger.debug = True
 
+    self.stop(reset=True)
+
     def reset():
         # kill leftovers from last time, if any
         self.reset()
@@ -29,10 +31,9 @@ def main(self):
         raise j.exceptions.Base("s")
 
     def wait_2sec():
-        gevent.sleep(2)
+        gevent.sleep(3)
 
     reset()
-
     self.workers_tmux_start(4)
 
     # test the behaviour for 1 job in process, only gevent for data handling
@@ -96,7 +97,7 @@ def main(self):
     self.workers_tmux_start(nr_workers=10)
 
     print("wait to schedule jobs")
-    gevent.sleep(2)
+    gevent.sleep(5)
 
     for x in range(20):
         self.schedule(wait_2sec)
@@ -131,4 +132,5 @@ def main(self):
 
     self.stop(reset=True)
 
+    print("workers TEST OK")
     print("TEST OK")
