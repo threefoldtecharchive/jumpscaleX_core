@@ -16,7 +16,7 @@ server.start()
 """
 
 
-@unittest.SkipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/128")
+@unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/128")
 class TestGedisServer(BaseTest):
     def setUp(self):
         self.info("​Get gedis server instance.")
