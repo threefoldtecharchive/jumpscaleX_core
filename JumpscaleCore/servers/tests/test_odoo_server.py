@@ -3,6 +3,7 @@ from base_test import BaseTest
 import random, requests, uuid, unittest
 
 
+@unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/222")
 class TestOdooServer(BaseTest):
     def setUp(self):
         self.info("​Install odoo server , and get new instance of it ")
