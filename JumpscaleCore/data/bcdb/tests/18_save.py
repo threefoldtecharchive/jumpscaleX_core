@@ -19,6 +19,7 @@
 
 
 from Jumpscale import j
+from unittest import TestCase
 
 
 def main(self):
@@ -27,6 +28,7 @@ def main(self):
     kosmos 'j.data.bcdb.test(name="save")'
 
     """
+    test_case = TestCase()
 
     scm = """
         @url = test.schema.1
@@ -55,19 +57,15 @@ def main(self):
     schema_obj3 = model.new()
     schema_obj3.name = "test2"
     schema_obj3.number = 55
-    try:
+    with test_case.assertRaises(j.exceptions.Input):
         schema_obj3.save()
-    except:
-        assert Exception
 
     # Scenario 3
     # Saving an object with empty name while it has a name in its schema
     schema_obj4 = model.new()
     schema_obj4.number = 55
-    try:
+    with test_case.assertRaises(j.exceptions.Input):
         schema_obj3.save()
-    except:
-        assert Exception
 
     # Scenario 4
     # Update already saved object
@@ -78,7 +76,5 @@ def main(self):
     # Scenraio 5
     # Update already saved object with not unique name
     schema_obj2.name = "test1"
-    try:
+    with test_case.assertRaises(j.exceptions.Input):
         schema_obj2.save()
-    except:
-        assert Exception
