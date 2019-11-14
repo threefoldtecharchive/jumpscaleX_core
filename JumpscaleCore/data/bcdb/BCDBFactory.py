@@ -510,9 +510,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         out += "{RESET}"
         out = j.core.tools.text_replace(out)
-        print(out)
-        # TODO: *1 dirty hack, the ansi codes are not printed, need to check why
-        return ""
+        return out
 
     __repr__ = __str__
 
