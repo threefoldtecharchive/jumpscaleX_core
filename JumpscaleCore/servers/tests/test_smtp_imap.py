@@ -1,11 +1,16 @@
-from JumpscaleCore.servers.tests.base_test import BaseTest
+from base_test import BaseTest
 from Jumpscale import j
 from smtplib import SMTP
 from imbox import Imbox
 from imapclient import IMAPClient
+from time import sleep
 
 
 class TestSMTPIMAP(BaseTest):
+    def tearDown(self):
+        self.info("Stop the running server")
+        self.pan.kill()
+
     def test001_check_smtp_save_message_in_bcdb(self):
         """
         SMTP server should connect to 'main' bcdb instance and store data into it.
@@ -19,9 +24,11 @@ class TestSMTPIMAP(BaseTest):
         """
         cmd = "kosmos 'j.servers.smtp.start()'"
         self.info("Execute {} in tmux main session".format(cmd))
-        pan = j.servers.tmux.execute(cmd=cmd)
+        self.pan = j.servers.tmux.execute(cmd=cmd)
+        self.info('Wait for 30s to make sure that the server is running')
+        sleep(30)
         self.info("Assert that the server is running")
-        self.assertTrue(pan.cmd_running)
+        self.assertTrue(self.pan.cmd_running)
 
         self.info("Connect to the server 0.0.0.0:7002")
         with SMTP("0.0.0.0", 7002) as smtp:
@@ -37,14 +44,12 @@ class TestSMTPIMAP(BaseTest):
         data = retrieved_model.find()[-1]
 
         self.info("Assert that the message has been saved in the database")
-        self.assertEqual(data.from_email, "you@gmail.com")
+        self.assertEqual(data.from_email, "test@mail.com")
         self.assertEqual(data.to_email, "target@example.com")
         self.assertEqual(data.body, body)
 
         self.info("Destroy the database")
         db.destroy()
-        self.info("Stop the running server")
-        pan.kill()
 
     def test002_imapclient_can_create_folder_in_imap(self):
         """
@@ -57,13 +62,15 @@ class TestSMTPIMAP(BaseTest):
         """
         cmd = "kosmos 'j.servers.imap.start()'"
         self.info("Execute {} in tmux main session".format(cmd))
-        pan = j.servers.tmux.execute(cmd=cmd)
+        self.pan = j.servers.tmux.execute(cmd=cmd)
+        self.info('Wait for 30s to make sure that the server is running')
+        sleep(30)
         self.info("Assert that the server is running")
-        self.assertTrue(pan.cmd_running)
+        self.assertTrue(self.pan.cmd_running)
 
         self.info("List default folder, inbox should be there")
         box = Imbox("0.0.0.0", "random@mail.com", "randomPW", ssl=False, port=7143)
-        self.assertIn("INBOX", box.folders()[-1])
+        self.assertIn("INBOX", str(box.folders()[-1][0]))
 
         self.info("Connect the client to the IMAP server")
         client = IMAPClient("0.0.0.0", port=7143, ssl=False)
@@ -74,10 +81,7 @@ class TestSMTPIMAP(BaseTest):
         client.create_folder(box_name)
 
         self.info("Assert that the new box has been created")
-        self.assertIn(box_name, box.folders()[-1])
-
-        self.info("Stop the running server")
-        pan.kill()
+        self.assertIn(box_name, str(box.folders()[-1][0]))
 
     def test003_imapClient_get_messages_from_database(self):
         """
@@ -92,9 +96,11 @@ class TestSMTPIMAP(BaseTest):
         """
         cmd = "kosmos 'j.servers.smtp.start()'"
         self.info("Execute {} in tmux main session".format(cmd))
-        pan = j.servers.tmux.execute(cmd=cmd)
+        self.pan = j.servers.tmux.execute(cmd=cmd)
+        self.info('Wait for 30s to make sure that the server is running')
+        sleep(30)
         self.info("Assert that the server is running")
-        self.assertTrue(pan.cmd_running)
+        self.assertTrue(self.pan.cmd_running)
 
         self.info("Connect to the server 0.0.0.0:7002")
         with SMTP("0.0.0.0", 7002) as smtp:
@@ -107,18 +113,19 @@ class TestSMTPIMAP(BaseTest):
         cmd = "kosmos 'j.servers.imap.start()'"
         self.info("Execute {} in tmux main session".format(cmd))
         pan_imap = j.servers.tmux.execute(cmd=cmd)
+        self.info('Wait for 30s to make sure that the server is running')
+        sleep(30)
         self.info("Assert that the server is running")
-        self.assertTrue(pan.cmd_running)
+        self.assertTrue(self.pan.cmd_running)
 
         self.info("Connect to the imap server")
         box = Imbox("0.0.0.0", "random@mail.com", "randomPW", ssl=False, port=7143)
 
         uid, last_message = box.messages()[-1]
         self.info("Assert that client get the message from the database")
-        self.assertEqual(last_message.sent_from[0]["email"], "you@gmail.com")
+        self.assertEqual(last_message.sent_from[0]["email"], "test@mail.com")
         self.assertEqual(last_message.sent_to[0]["email"], "target@example.com")
-        self.assertEqual(last_message.subject, body)
+        self.assertEqual(last_message.body['plain'][0], body)
 
         self.info("Stop the running server")
-        pan.kill()
         pan_imap.kill()
