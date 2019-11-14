@@ -1,3 +1,4 @@
+import ast
 import inspect
 import pudb
 import sys
@@ -72,11 +73,34 @@ def filter_completions_on_prefix(completions, prefix=None):
         yield completion
 
 
+def get_rhs(line):
+    """
+    get the right-hand side from assignment statement
+    will return the given line if it is not an assigment statement (e.g.an expression)
+
+    :param line: line
+    :type line: str
+    """
+    try:
+        # remove the dot at the end to avoid syntax errors
+        mod = ast.parse(line.rstrip("."))
+    except SyntaxError:
+        return line
+
+    if mod.body:
+        stmt = mod.body[0]
+        # only assignment statements
+        if type(stmt) in (ast.Assign, ast.AugAssign, ast.AnnAssign):
+            return line[stmt.value.col_offset :].strip()
+    return line
+
+
 def get_current_line(document):
     tbc = document.current_line_before_cursor
     if tbc:
-        line = tbc.split(".")
-        parent, member = ".".join(line[:-1]), line[-1]
+        line = get_rhs(tbc)
+        parts = line.split(".")
+        parent, member = ".".join(parts[:-1]), parts[-1]
         if member.startswith("__"):  # then we want to show private methods
             prefix = "__"
         elif member.startswith("_"):  # then we want to show private methods
