@@ -12,7 +12,7 @@ class ThreebotMe(JSConfigBase):
 
     _SCHEMATEXT = """
     @url = jumpscale.threebot.me
-    name** = ""                      
+    name** = ""
     tid** =  0 (I)                  #my threebot id
     tname** = "" (S)                #my threebot name
     email = "" (S)                  #for caching purposes
@@ -31,6 +31,10 @@ class ThreebotMe(JSConfigBase):
     def sign(self, data):
         raise
         # TODO: implement
+
+    def sign_bytes(self, data):
+        signing_key = self.nacl.signing_key
+        return signing_key.sign(data)
 
     def data_send_serialize(self, threebot, data):
         """
