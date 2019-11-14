@@ -61,19 +61,20 @@ class package_manager(j.baseclasses.threebot_actor):
         if j.tools.threebot_packages.exists(name):
             package2 = j.tools.threebot_packages.get(name)
             if not package.path == package2.path:
-                j.shell()
                 raise j.exceptions.Input("package name is not unique:%s for %s" % (name, p))
 
-        if reload == False and j.tools.threebot_packages.exists(name):
+        if reload is False and j.tools.threebot_packages.exists(name):
             return "OK"
-
-        package.save()
-        package.prepare()
-        package.status = "INSTALLED"
-        package.save()
-        package.start()
-        package.status = "RUNNING"
-        package.save()
+        try:
+            package.save()
+            package.prepare()
+            package.status = "INSTALLED"
+            package.save()
+            package.start()
+            package.status = "RUNNING"
+            package.save()
+        except Exception as e:
+            return f"Could not add package {package.name}: {e.message}"
 
         if j.servers.threebot.current.web:
             # reload openresty configuration if web is enabled for this threebot server
