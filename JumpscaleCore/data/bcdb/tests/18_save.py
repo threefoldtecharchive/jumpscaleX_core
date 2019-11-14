@@ -49,8 +49,11 @@ def main(self):
     schema_obj2.name = "test2"
     schema_obj2.number = 55
     schema_obj2.save()
-    assert isinstance(schema_obj.id, int)
-    assert isinstance(schema_obj2.id, int)
+    if not isinstance(schema_obj.id, int):
+        raise AssertionError("Error happened during saving")
+
+    if not isinstance(schema_obj2.id, int):
+        raise AssertionError("Error happened during saving")
 
     # Scenario 2
     # Saving an object with already exist name (Not unique name)
@@ -71,7 +74,8 @@ def main(self):
     # Update already saved object
     schema_obj2.number = 5500
     schema_obj2.save()
-    assert isinstance(schema_obj2.id, int)
+    if not isinstance(schema_obj2.id, int):
+        raise AssertionError("Error happened during saving")
 
     # Scenraio 5
     # Update already saved object with not unique name
