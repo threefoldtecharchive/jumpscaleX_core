@@ -65,4 +65,5 @@ def main(self):
     assert self.workers.w2.pid > 0
     assert self.workers.w2.state == "WAITING"
 
+    print("Tmux TEST OK")
     print("TEST OK FOR TMUX")

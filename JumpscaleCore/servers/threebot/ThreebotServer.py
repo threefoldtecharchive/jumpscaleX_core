@@ -152,10 +152,6 @@ class ThreeBotServer(j.baseclasses.object_config):
                 path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webinterface/",
             )
             j.tools.threebot_packages.get(
-                "webplatform",
-                path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform/",
-            )
-            j.tools.threebot_packages.get(
                 "wiki", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/wiki/"
             )
             j.tools.threebot_packages.get(
@@ -235,7 +231,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         startup = j.servers.startupcmd.get(name="threebot_{}".format(self.name), cmd_start=cmd_start)
         startup.executor = self.executor
         startup.interpreter = "python"
-        startup.timeout = 120
+        startup.timeout = 600
         startup.ports = [9900, 1491, 8901]
         if self.web:
             startup.ports += [80, 443, 4444, 4445]

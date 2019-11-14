@@ -28,17 +28,17 @@ class TestZdbServer(BaseTest):
         self.assertEqual(result.nsname, namespace)
 
         self.info("Get zdb client and make sure it works correctly ")
-        zdb_client = self.zdb.client_get(namespace=namespace)
+        zdb_client = self.zdb.client_get(nsname=namespace)
         data = self.rand_string()
         id = zdb_client.set(data)
         self.assertEqual(id, 0)
         self.assertEqual(data, zdb_client.get(id).decode())
 
         self.info(" Destroy zdb server")
-        zdb_client.destroy()
+        self.zdb.destroy()
 
         self.info("Check that server stopped and database removed successfully.")
-        output, error = self.os_command(" ps -aux | grep -v grep | grep zdb ")
+        output, error = self.os_command(" ps -aux | grep -v grep | grep startupcmd_zdb ")
         self.assertFalse(output.decode())
 
         output, error = self.os_command(" ls /sandbox/var/zdb")

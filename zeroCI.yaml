@@ -1,5 +1,6 @@
 prequisties:
   - jsx
+  - docker
 
 install:
   - apt-get update
@@ -18,6 +19,7 @@ script:
   - source /sandbox/env.sh; nosetests-3.4 -v /sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/wiki/tests/ 
     --nologcapture --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=Test_wikis
   - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v --nologcapture --with-noseexclude 
-   --exclude-dir=JumpscaleCore/servers/ JumpscaleCore/ --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
+   --exclude-dir=JumpscaleCore/servers/tests JumpscaleCore/ --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
   - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v test_loader.py:CoreTests 
    --nologcapture --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
+  - source /sandbox/env.sh; eval `ssh-agent -s`; ssh-add; jsx threebot-test -d

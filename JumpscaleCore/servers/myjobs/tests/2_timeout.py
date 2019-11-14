@@ -24,6 +24,8 @@ def main(self):
     assert job.state == "ERROR"
     assert job.error_cat == "TIMEOUT"
 
-    self.stop(reset=False)
+    # self.stop(reset=False)
+    self.stop(reset=True)
 
+    print("timeout TEST OK")
     print("TEST OK")

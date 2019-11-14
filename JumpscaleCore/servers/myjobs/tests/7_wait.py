@@ -40,4 +40,7 @@ def main(self, reset=False):
     # q = self.wait(queue_name="q2", size=11, timeout=5)
     # assert q is None
 
+    self.stop(reset=True)
+
+    print("wait TEST OK")
     print("TEST OK")

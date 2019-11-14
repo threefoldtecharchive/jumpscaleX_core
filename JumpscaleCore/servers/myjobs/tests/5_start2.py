@@ -17,4 +17,5 @@ def main(self, count=20):
     self.stop(reset=True)
     assert self._mainloop_gipc.ready()
 
+    print("start2 TEST OK")
     print("TEST OK")
