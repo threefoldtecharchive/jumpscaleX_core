@@ -286,7 +286,10 @@ class Handler(JSBASE):
         """
         if actor_name == "system":
             return True, None
-        actor_obj = self.api_model.get_by_name(actor_name)
+        try:
+            actor_obj = self.api_model.get_by_name(actor_name)
+        except:
+            return False, f"Couldn't find actor with name: {actor_name}"
         for cmd in actor_obj.cmds:
             if cmd.name == cmd_name:
                 if cmd.public:
@@ -296,7 +299,7 @@ class Handler(JSBASE):
                 else:
                     user = j.data.bcdb.system.user.find(threebot_id=threebot_id)
                     if not user:
-                        return False, f"couldn't find user with threebot_id {threebot_id}"
+                        return False, f"Couldn't find user with threebot_id {threebot_id}"
                     return actor_obj.acl.rights_check(userids=[user[0].id], rights=[cmd_name]), None
 
         return False, "Command not found"
