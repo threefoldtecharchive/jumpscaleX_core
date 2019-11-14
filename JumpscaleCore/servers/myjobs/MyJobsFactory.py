@@ -2,6 +2,7 @@ from Jumpscale import j
 import gipc
 import gevent
 import time
+import redis
 from . import schemas
 from .MyWorkerProcess import MyWorkerProcess
 from .MyJobs import MyJobs
@@ -50,8 +51,14 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             assert self._children
             assert self.jobs
             assert self.workers
-            self._mainloop_greenlet_redis = gevent.spawn(self._bcdb.redis_server_start, port=self.BCDB_CONNECTOR_PORT)
-            self._bcdb.redis_server_wait_up(self.BCDB_CONNECTOR_PORT)
+            try:
+                # start bcdb connector only if it's not started already
+                j.clients.redis.get(port=self.BCDB_CONNECTOR_PORT).ping()
+            except (j.exceptions.Base, redis.ConnectionError):
+                self._mainloop_greenlet_redis = gevent.spawn(
+                    self._bcdb.redis_server_start, port=self.BCDB_CONNECTOR_PORT
+                )
+                self._bcdb.redis_server_wait_up(self.BCDB_CONNECTOR_PORT)
             self._init_pre_schedule_ = True
             self.jobs._model.trigger_add(self._job_update)
 
