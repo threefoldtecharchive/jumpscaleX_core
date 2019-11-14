@@ -49,8 +49,8 @@ def main(self):
     schema_obj2.name = "test2"
     schema_obj2.number = 55
     schema_obj2.save()
-    assert type(schema_obj.id) is int
-    assert type(schema_obj2.id) is int
+    assert isinstance(schema_obj.id, int)
+    assert isinstance(schema_obj2.id, int)
 
     # Scenario 2
     # Saving an object with already exist name (Not unique name)
@@ -71,7 +71,7 @@ def main(self):
     # Update already saved object
     schema_obj2.number = 5500
     schema_obj2.save()
-    assert type(schema_obj2.id) is int
+    assert isinstance(schema_obj2.id, int)
 
     # Scenraio 5
     # Update already saved object with not unique name
