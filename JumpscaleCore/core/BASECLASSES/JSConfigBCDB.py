@@ -172,43 +172,5 @@ class JSConfigBCDB(JSConfigBCDBBase):
 
     def __repr__(self):
         out = "{BLUE}# JSXOBJ:{RESET}\n"
-        print(j.core.tools.text_replace(out, die_if_args_left=False).rstrip())
-        return self._data.__repr__()
-        #
-        # out = "{YELLOW}## JSXOBJ: %s{RESET}\n\n" % (self.__class__._classname,)
-        #
-        # def add(name, color, items, out):
-        #     if len(items) > 0:
-        #         out += "{GREEN} - ID: %s\n{%s}" % (self._id, color)
-        #         if len(items) < 20:
-        #             for item in items:
-        #                 self._log_debug(item)
-        #                 item = item.rstrip()
-        #                 if name in ["data", "properties"]:
-        #                     try:
-        #                         v = j.core._data_serializer_safe(getattr(self, item)).rstrip()
-        #                         if "\n" in v:
-        #                             # v = j.core.tools.text_indent(content=v, nspaces=4)
-        #                             v = "\n".join(v.split("\n")[:1])
-        #                             out += " - %-20s : {GRAY}%s{%s}\n" % (item, v, color)
-        #                         else:
-        #                             out += " - %-20s : {GRAY}%s{%s}\n" % (item, v, color)
-        #
-        #                     except Exception as e:
-        #                         out += " - %-20s : {GRAY}ERROR ATTRIBUTE{%s}\n" % (item, color)
-        #                 else:
-        #                     out += " - %s\n" % item
-        #         else:
-        #             out += " - ...\n"
-        #     out += "\n"
-        #     return out
-        #
-        # out = add("data", "BLUE", self._dataprops_names_get(), out)
-        #
-        # out += "{RESET}"
-        #
-        # out = j.core.tools.text_replace(out, die_if_args_left=False)
-        # print(out)
-        #
-        # # TODO: *1 dirty hack, the ansi codes are not printed, need to check why
-        # return ""
+        ansi_out = j.core.tools.text_replace(out, die_if_args_left=False).rstrip()
+        return ansi_out + "\n" + self._data.__repr__()

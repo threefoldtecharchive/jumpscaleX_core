@@ -264,11 +264,7 @@ class JSXObject(j.baseclasses.object):
 
     def __repr__(self):
         # FIXME: breaks in some cases in docsites generation needs to be cleanly implemented
-        out = self._str_get(ansi=True)
-        # # #TODO: *1 when returning the text it does not represent propertly, needs to be in kosmos shell I think
-        # # IS UGLY WORKAROUND
-        print(out)
-        return ""
+        return self._str_get(ansi=True)
 
     def __str__(self):
         out = self._str_get(ansi=False)
