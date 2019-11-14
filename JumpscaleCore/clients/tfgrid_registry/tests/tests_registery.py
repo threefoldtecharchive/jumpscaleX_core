@@ -113,3 +113,7 @@ class RegisteryTests(TestCase):
         data_dict = j.data.serializers.yaml.loads(res)
         self.assertEqual(type(data_dict), type({}))
 
+    ## To Do
+    # Do more tests for complicated scenarios
+    # filter using diiferent fields, when this:https://github.com/threefoldtech/jumpscaleX_core/issues/217 is done
+
