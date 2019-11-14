@@ -62,4 +62,5 @@ def main(self):
 
     self.stop(reset=True)
 
+    print("Basic TEST OK")
     print("TEST OK")

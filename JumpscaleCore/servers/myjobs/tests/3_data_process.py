@@ -63,4 +63,5 @@ def main(self, count=20):
     for job in jobs:
         assert job.result == "OK"
 
+    print("Data_process TEST OK")
     print("TEST OK")

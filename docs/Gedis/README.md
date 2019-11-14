@@ -66,9 +66,7 @@ Creation of an actor at `/tmp/actor.py`:
 ```python
 from Jumpscale import j
 
-JSBASE = j.baseclasses.object
-
-class actor(JSBASE):
+class actor(j.baseclasses.threebot_actor):
 
     def _init(self, **kwargs):
         pass

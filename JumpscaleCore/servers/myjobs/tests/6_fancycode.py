@@ -48,6 +48,8 @@ def main(self):
     self.worker_tmux_start(nr=1)
     job1.wait()
 
+    self.stop(reset=True)
+
     print("TEST OK FOR fancy functions")
 
     # j.application.stop()

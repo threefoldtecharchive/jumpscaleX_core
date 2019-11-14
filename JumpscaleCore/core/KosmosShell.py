@@ -1,5 +1,8 @@
+import ast
 import inspect
+import os
 import pudb
+import six
 import sys
 import time
 import traceback
@@ -10,7 +13,15 @@ from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
 from prompt_toolkit.completion import Completion
 from prompt_toolkit.filters import Condition, is_done
-from prompt_toolkit.formatted_text import ANSI, to_formatted_text, fragment_list_to_text
+from prompt_toolkit.formatted_text import (
+    ANSI,
+    FormattedText,
+    PygmentsTokens,
+    to_formatted_text,
+    fragment_list_to_text,
+    merge_formatted_text,
+)
+from prompt_toolkit.formatted_text.utils import fragment_list_width
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.layout.containers import ConditionalContainer, Window
 from prompt_toolkit.layout.controls import BufferControl
@@ -20,6 +31,7 @@ from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.shortcuts import print_formatted_text
 from ptpython.filters import ShowDocstring, PythonInputFilter
 from ptpython.prompt_style import PromptStyle
+from ptpython.repl import _lex_python_result
 from pygments.lexers import PythonLexer
 
 
@@ -72,11 +84,34 @@ def filter_completions_on_prefix(completions, prefix=None):
         yield completion
 
 
+def get_rhs(line):
+    """
+    get the right-hand side from assignment statement
+    will return the given line if it is not an assigment statement (e.g.an expression)
+
+    :param line: line
+    :type line: str
+    """
+    try:
+        # remove the dot at the end to avoid syntax errors
+        mod = ast.parse(line.rstrip("."))
+    except SyntaxError:
+        return line
+
+    if mod.body:
+        stmt = mod.body[0]
+        # only assignment statements
+        if type(stmt) in (ast.Assign, ast.AugAssign, ast.AnnAssign):
+            return line[stmt.value.col_offset :].strip()
+    return line
+
+
 def get_current_line(document):
     tbc = document.current_line_before_cursor
     if tbc:
-        line = tbc.split(".")
-        parent, member = ".".join(line[:-1]), line[-1]
+        line = get_rhs(tbc)
+        parts = line.split(".")
+        parent, member = ".".join(parts[:-1]), parts[-1]
         if member.startswith("__"):  # then we want to show private methods
             prefix = "__"
         elif member.startswith("_"):  # then we want to show private methods
@@ -274,6 +309,88 @@ def setup_logging_containers(repl):
             ),
         ]
     )
+
+
+# We patch ptpython.repl.PythonRepl.execute to print ansi text
+# we only modified this part where formatted text is printed
+#
+#    # Write output tokens.
+#    if self.enable_syntax_highlighting:
+#        formatted_output = merge_formatted_text(
+#            [out_prompt, PygmentsTokens(list(_lex_python_result(result_str)))]
+#        )
+#    else:
+#        formatted_output = FormattedText(out_prompt + [("", result_str)])
+#
+# and added ansi formatting instead
+#
+#    # Support ansi formatting (removed syntax higlighting)
+#    ansi_formatted = ANSI(result_str)._formatted_text
+#    formatted_output = merge_formatted_text([FormattedText(out_prompt) + ansi_formatted])
+def patched_execute(self, line):
+    """
+    Evaluate the line and print the result.
+    """
+    output = self.app.output
+
+    # WORKAROUND: Due to a bug in Jedi, the current directory is removed
+    # from sys.path. See: https://github.com/davidhalter/jedi/issues/1148
+    if "" not in sys.path:
+        sys.path.insert(0, "")
+
+    def compile_with_flags(code, mode):
+        " Compile code with the right compiler flags. "
+        return compile(code, "<stdin>", mode, flags=self.get_compiler_flags(), dont_inherit=True)
+
+    if line.lstrip().startswith("\x1a"):
+        # When the input starts with Ctrl-Z, quit the REPL.
+        self.app.exit()
+
+    elif line.lstrip().startswith("!"):
+        # Run as shell command
+        os.system(line[1:])
+    else:
+        # Try eval first
+        try:
+            code = compile_with_flags(line, "eval")
+            result = eval(code, self.get_globals(), self.get_locals())
+
+            locals = self.get_locals()
+            locals["_"] = locals["_%i" % self.current_statement_index] = result
+
+            if result is not None:
+                out_prompt = self.get_output_prompt()
+
+                try:
+                    result_str = "%r\n" % (result,)
+                except UnicodeDecodeError:
+                    # In Python 2: `__repr__` should return a bytestring,
+                    # so to put it in a unicode context could raise an
+                    # exception that the 'ascii' codec can't decode certain
+                    # characters. Decode as utf-8 in that case.
+                    result_str = "%s\n" % repr(result).decode("utf-8")
+
+                # Align every line to the first one.
+                line_sep = "\n" + " " * fragment_list_width(out_prompt)
+                result_str = line_sep.join(result_str.splitlines()) + "\n"
+
+                # Support ansi formatting (removed syntax higlighting)
+                ansi_formatted = ANSI(result_str)._formatted_text
+                formatted_output = merge_formatted_text([FormattedText(out_prompt) + ansi_formatted])
+
+                print_formatted_text(
+                    formatted_output,
+                    style=self._current_style,
+                    style_transformation=self.style_transformation,
+                    include_default_pygments_style=False,
+                )
+
+        # If not a valid `eval` expression, run using `exec` instead.
+        except SyntaxError:
+            code = compile_with_flags(line, "exec")
+            six.exec_(code, self.get_globals(), self.get_locals())
+
+        output.flush()
 
 
 def ptconfig(repl):
@@ -474,3 +591,5 @@ def ptconfig(repl):
     # setup docstring and logging containers
     setup_docstring_containers(repl)
     setup_logging_containers(repl)
+
+    repl.__class__._execute = patched_execute

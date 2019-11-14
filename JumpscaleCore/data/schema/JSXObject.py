@@ -145,6 +145,9 @@ class JSXObject(j.baseclasses.object):
         return out
 
     def save(self, serialize=False):
+        if hasattr(self, "name") and not self.name:
+            raise j.exceptions.Input("Name can't be empty")
+
         if self._changed:
             self._capnp_obj  # makes sure we get back to binary form
             if serialize:
@@ -157,7 +160,7 @@ class JSXObject(j.baseclasses.object):
                     self._deserialized_items["ACL"] = True
 
             if self._changed:
-
+                objects = self._model.find()
                 # WE NEED UNIQUE PROPERTIES
                 for prop_u in self._model.schema.properties_unique:
                     r = []
@@ -165,9 +168,9 @@ class JSXObject(j.baseclasses.object):
                     # unique properties have to be indexed
                     args_search = {prop_u.name: getattr(self, prop_u.name)}
                     if "name" not in args_search:
-                        for model in self._model.find():
-                            m = getattr(model, prop_u.name)
-                            if m == args_search[prop_u.name] and model.id != self.id:
+                        for obj in objects:
+                            m = getattr(obj, prop_u.name)
+                            if m == args_search[prop_u.name] and obj.id != self.id:
                                 msg = "could not save, was not unique.\n%s." % (args_search)
                                 # can for sure not be ok
                                 raise j.exceptions.Input(msg)
@@ -180,16 +183,8 @@ class JSXObject(j.baseclasses.object):
                         raise j.exceptions.Input(msg)
                     elif len(r) == 1:
                         msg = "could not save, was not unique.\n%s." % (args_search)
-                        if self.id:
-                            if not self.id == r[0].id:
-                                raise j.exceptions.Input(msg)
-                        else:
-                            self.id = r[0].id
-                            self._ddict_hr  # to trigger right serialization
-                            if self._data == r[0]._data:
-                                return self  # means data was not changed
-                            else:  # means data is not the same and id not known yet
-                                self.id = r[0].id
+                        if (self.id and not self.id == r[0].id) or not self.id:
+                            raise j.exceptions.Input(msg)
 
                 if not self._nosave:
                     o = self._model.set(self)
@@ -264,11 +259,7 @@ class JSXObject(j.baseclasses.object):
 
     def __repr__(self):
         # FIXME: breaks in some cases in docsites generation needs to be cleanly implemented
-        out = self._str_get(ansi=True)
-        # # #TODO: *1 when returning the text it does not represent propertly, needs to be in kosmos shell I think
-        # # IS UGLY WORKAROUND
-        print(out)
-        return ""
+        return self._str_get(ansi=True)
 
     def __str__(self):
         out = self._str_get(ansi=False)

@@ -25,4 +25,6 @@ def main(self, count=10):
     print(res)
 
     self.stop(reset=True)
+
+    print("start TEST OK")
     print("TEST OK")

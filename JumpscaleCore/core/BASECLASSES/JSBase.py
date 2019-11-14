@@ -832,10 +832,7 @@ class JSBase:
         out += "{RESET}"
 
         out = j.core.tools.text_replace(out, die_if_args_left=False)
-        print(out)
-
-        # TODO: *1 dirty hack, the ansi codes are not printed, need to check why
-        return ""
+        return out
 
     def __str__(self):
         """

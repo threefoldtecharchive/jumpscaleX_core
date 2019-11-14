@@ -37,7 +37,7 @@ class StartupCMD(j.baseclasses.object_config):
         env = (dict)
         ports = (LI)
         ports_udp = (LI)
-        timeout = 10
+        timeout = 120
         process_strings = (ls)
         process_strings_regex = (ls)
         pid = 0
@@ -456,7 +456,7 @@ class StartupCMD(j.baseclasses.object_config):
                 return self._error_raise("could not stop")
             return -1  # we don't know
 
-    def wait_running(self, die=True, timeout=120):
+    def wait_running(self, die=True, timeout=None):
         if timeout is None:
             timeout = self.timeout
         end = j.data.time.epoch + timeout
