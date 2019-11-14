@@ -61,14 +61,15 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         client = self.default.start(background=True, web=web, timeout=timeout)
 
         if packages_add:
-            client.actors.package_manager.package_add(git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/threefold/phonebook")
+            client.actors.package_manager.package_add(
+                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/threefold/phonebook"
+            )
 
             client.reload()
 
         return client
 
-
-    def local_start_default(self, web=True, packages_add=False, timeout=600):
+    def local_start_default(self, web=True, packages_add=False, timeout=600, ssl=None):
         """
 
         kosmos -p 'j.servers.threebot.local_start_default()'
@@ -84,13 +85,15 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             self.install()
             self.default.stop()
 
-        client = self.default.start(background=True, web=web, timeout=timeout)
+        client = self.default.start(background=True, web=web, timeout=timeout, ssl=ssl)
 
         client.actors.package_manager.package_add(
-                path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform/",
+            path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform/"
         )
         if packages_add:
-            client.actors.package_manager.package_add(git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/threefold/phonebook")
+            client.actors.package_manager.package_add(
+                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/threefold/phonebook"
+            )
 
         client.reload()
 
