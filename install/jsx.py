@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 import click
+import gevent
+import os
+import redis
+import shutil
+
 from urllib.request import urlopen
 from importlib import util
-import shutil
-import os
+
 
 DEFAULT_BRANCH = "development"
 os.environ["LC_ALL"] = "en_US.UTF-8"
@@ -419,9 +423,15 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
     monkey.patch_all(subprocess=False)
     from Jumpscale import j
 
-    def load_wiki(wiki_name, wiki_url, pull=False, download=False):
-        wiki = j.tools.markdowndocs.load(path=wiki_url, name=wiki_name, pull=pull)
-        wiki.write()
+    try:
+        threebot_client = j.clients.gedis.get("jsx_threebot", port=8901)
+        threebot_client.ping()
+        threebot_client.reload()
+    except (j.exceptions.Base, redis.ConnectionError):
+        print(
+            "Threebot server must be running, please start a local threebot first using `kosmos -p 'j.servers.threebot.local_start_default()'`"
+        )
+        return
 
     wikis = []
 
@@ -440,20 +450,15 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
         wikis.append((name, url))
 
     if not foreground:
-        job_ids = [
-            j.servers.myjobs.schedule(
-                load_wiki, wiki_name=wiki_name, wiki_url=wiki_url, download=download, pull=pull
-            ).id
+        greenlets = [
+            gevent.spawn(threebot_client.actors.content_wiki.load, wiki_name, wiki_url, pull, download)
             for wiki_name, wiki_url in wikis
         ]
-
-        j.servers.myjobs.wait(job_ids, timeout=None, die=False)
-        # FIXME: myjobs stop does not work properly
-        # j.servers.myjobs.stop()
-
+        gevent.wait(greenlets)
     else:
         for wiki_name, wiki_url in wikis:
-            load_wiki(wiki_name, wiki_url, download=download, pull=pull)
+            docsite = j.tools.markdowndocs.load(name=wiki_name, path=wiki_url, download=download, pull=pull)
+            docsite.write()
 
     print("You'll find the wiki(s) loaded at https://<container or 3bot hostname>/wiki")
 
