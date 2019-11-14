@@ -1,6 +1,6 @@
 from Jumpscale import j
 from base_test import BaseTest
-import random, requests, uuid, unittest
+import random, requests, uuid, unittest, time
 
 
 class TestTmuxServer(BaseTest):
@@ -80,6 +80,7 @@ class TestTmuxServer(BaseTest):
 
         self.info("Run server or process in created tmux session using execute.")
         j.servers.tmux.execute("python -m SimpleHTTPServer", window=window_name)
+        time.sleep(5)
         output, error = self.os_command("ps -aux | grep -v grep | grep '{}'".format("python -m SimpleHTTPServer"))
         self.assertTrue(output.decode())
 

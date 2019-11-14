@@ -127,6 +127,8 @@ class JSXObject(j.baseclasses.object):
         if self._acl is None:
             if self.acl_id == 0:
                 self._acl = self._model.bcdb.acl.new()
+            else:
+                self._acl = self._model.bcdb.acl
         return self._acl
 
     def _hr_get(self, exclude=[]):

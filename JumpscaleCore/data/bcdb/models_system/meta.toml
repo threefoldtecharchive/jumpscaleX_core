@@ -28,13 +28,13 @@ md5** = ""
 @sub = true
 name**=""
 cid** = 1 (I)
-rights = ""
+rights = (LS)
 
 @url = jumpscale.bcdb.acl.user.2
 @sub = true
 name**=""
 uid** = 0 (I)
-rights = ""
+rights = (LS)
 
 
 #acl's and users are std property the records being inserted in the BCDB

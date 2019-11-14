@@ -30,7 +30,6 @@ class TestStartupcmdServer(BaseTest):
 
         self.info("Add process cmd_start.")
         startupcmd_server.cmd_start = "python -m SimpleHTTPServer"
-
         self.info("Start startupcmd server")
         if executor == "foreground":
             tmux_session_name = self.rand_string()
@@ -45,7 +44,7 @@ class TestStartupcmdServer(BaseTest):
         self.info("Check that process running successfully in right executor.")
         time.sleep(5)
         output, error = self.os_command(
-            " ps -aux | grep -v grep | grep \"startupcmd_{} {}\" | awk '{{print $2}}'".format(
+            " ps -aux | grep -v grep | grep \"startupcmd_{} -m {}\" | awk '{{print $2}}'".format(
                 startupcmd_server.name, "SimpleHTTPServer"
             )
         )
@@ -67,7 +66,7 @@ class TestStartupcmdServer(BaseTest):
             output, error = self.os_command("tmux list-windows")
             self.assertNotIn(startupcmd_server.name, output.decode())
         output, error = self.os_command(
-            " ps -aux | grep -v grep | grep \"startupcmd_{} {}\" | awk '{{print $2}}'".format(
+            " ps -aux | grep -v grep | grep \"startupcmd_{} -m {}\" | awk '{{print $2}}'".format(
                 startupcmd_server.name, "SimpleHTTPServer"
             )
         )
@@ -165,13 +164,13 @@ class TestStartupcmdServer(BaseTest):
 
         self.info("Start startupcmd ,should start rack server successfully.")
         startupcmd_server.start()
-        time.sleep(5)
+        time.sleep(10)
         output, error = self.os_command("netstat -nltp | grep {}".format(port))
         self.assertTrue(output.decode())
 
         self.info("Stop startupcmd, should stop rack server successfully.")
         startupcmd_server.stop()
-        time.sleep(5)
+        time.sleep(10)
         output, error = self.os_command("netstat -nltp | grep {}".format(port))
         self.assertFalse(output.decode())
         startupcmd_server.delete()

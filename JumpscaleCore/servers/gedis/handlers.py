@@ -227,6 +227,7 @@ class Handler(JSBASE):
         self.cmds = {}  # caching of commands
         self.actors = self.gedis_server.actors
         self.cmds_meta = self.gedis_server.cmds_meta
+        self.api_model = j.data.bcdb.system.model_get(url="jumpscale.gedis.api")
         self.session = Session()
 
     def handle_gedis(self, socket, address):
@@ -274,6 +275,31 @@ class Handler(JSBASE):
                 self._log_info("connection error: %s" % str(err), context="%s:%s" % address)
                 # close the connection
                 return
+
+    def _authorized(self, actor_name, cmd_name, threebot_id):
+        """
+        checks if the current session is authorized to access the requested command
+        Notes:
+        * system actor is always public, it will be used to retrieve the client metadata even before authentication
+        * threebot_id should be in the session otherwise it can only access the public methods only
+        :return: (True, None) if authorized else (False, reason)
+        """
+        if actor_name == "system":
+            return True, None
+        actor_obj = self.api_model.get_by_name(actor_name)
+        for cmd in actor_obj.cmds:
+            if cmd.name == cmd_name:
+                if cmd.public:
+                    return True, None
+                elif not threebot_id:
+                    return False, "No user is authenticated on this session and the command isn't public"
+                else:
+                    user = j.data.bcdb.system.user.find(threebot_id=threebot_id)
+                    if not user:
+                        return False, f"couldn't find user with threebot_id {threebot_id}"
+                    return actor_obj.acl.rights_check(userids=[user[0].id], rights=[cmd_name]), None
+
+        return False, "Command not found"
 
     def _handle_request(self, request, address, user_session):
         """
@@ -324,9 +350,22 @@ class Handler(JSBASE):
 
         # cmd is cmd metadata + cmd.method is what needs to be executed
         try:
-            cmd = self._cmd_obj_get(
-                cmd=request.command.command, namespace=request.command.namespace, actor=request.command.actor
+            is_authorized, reason = self._authorized(
+                request.command.actor, request.command.command, user_session.threebot_id
             )
+            if is_authorized:
+                cmd = self._cmd_obj_get(
+                    cmd=request.command.command, namespace=request.command.namespace, actor=request.command.actor
+                )
+            else:
+                not_authorized_err = {
+                    "message": f"not authorized {reason}",
+                    "actor_name": request.command.actor,
+                    "cmd_name": request.command.command,
+                    "threebot_id": user_session.threebot_id,
+                }
+                return (j.data.serializers.json.dumps(not_authorized_err), None)
+
         except Exception as e:
             logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
             return (logdict, None)

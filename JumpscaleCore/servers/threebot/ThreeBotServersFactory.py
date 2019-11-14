@@ -42,7 +42,33 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def local_start_default(self, web=True, packages_add=False, timeout=120):
+    def local_start_zerobot_default(self, web=True, packages_add=False, timeout=600):
+        """
+
+        kosmos -p 'j.servers.threebot.local_start_zerobot_default()'
+
+        tbot_client = j.servers.threebot.local_start_zerobot_default()
+
+        will check if there is already one running, will create client to localhost & return
+        gedis client
+        :param timeout: you can increase the timeout to make sure you server runs on slow machines
+        :return:
+        """
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
+            self.install()
+            self.default.stop()
+
+        client = self.default.start(background=True, web=web, timeout=timeout)
+
+        if packages_add:
+            client.actors.package_manager.package_add(git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/threefold/phonebook")
+
+            client.reload()
+
+        return client
+
+
+    def local_start_default(self, web=True, packages_add=False, timeout=600):
         """
 
         kosmos -p 'j.servers.threebot.local_start_default()'
@@ -59,6 +85,14 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             self.default.stop()
 
         client = self.default.start(background=True, web=web, timeout=timeout)
+
+        client.actors.package_manager.package_add(
+                path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform/",
+        )
+        if packages_add:
+            client.actors.package_manager.package_add(git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/threefold/phonebook")
+
+        client.reload()
 
         return client
 

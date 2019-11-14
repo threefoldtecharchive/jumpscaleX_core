@@ -10,6 +10,8 @@ SKIPPED_INSTALLATION = {
     "flask": "https://github.com/threefoldtech/jumpscaleX_core/issues/94",
     "sockexec": "https://github.com/threefoldtech/jumpscaleX_core/issues/30",
     "errbot": "https://github.com/threefoldtech/jumpscaleX_core/issues/94",
+    "etcd": "https://github.com/threefoldtech/jumpscaleX_core/issues/158",
+    "odoo": "https://github.com/threefoldtech/jumpscaleX_core/issues/222",
 }
 
 
@@ -104,29 +106,3 @@ class TestServers(BaseTest):
         self.info("* Check that can't connect to server anymore.")
         output, error = self.os_command("netstat -nltp | grep {}".format(server_element))
         self.assertFalse(output)
-
-    @parameterized.expand(BaseTest.SERVERS)
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/30")
-    def Test03_port_and_name_options(self, server):
-        """
-        - install server with default port and get server.
-        - Make sure that server started successfully.
-        - Stop the server.
-        """
-        self.info("Install server with default port and get server.")
-        getattr(j.servers, server).install()
-        server = getattr(j.servers, server).get()
-
-        self.info("Change server port and name. ")
-        new_port = random.randint(2000, 3000)
-        new_name = str(uuid.uuid4()).replace("-", "")[1:10]
-        server.port = new_port
-        server.name = new_name
-
-        self.info("​​​​​Start the server and check the  port server started with")
-        server.start()
-        output, error = self.os_command("ps -aux | grep {}".format(server))
-        self.assertIn(new_port, output.decode())
-        self.assertIn(new_name, output.decode())
-        self.info(" Stop the server.")
-        server.stop()
