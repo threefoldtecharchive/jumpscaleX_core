@@ -159,6 +159,7 @@ class SshClient(BaseTest):
         with self.assertRaises(Exception):
             self.SSH_CLIENT.copy_file("/tmp/ssh_test07", "/tmp/")
 
+    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/160")
     def test008_download_with_valid_source_valid_dest_none_ignoredir_none_ignorefiles_recursive_True(self):
         """
         TC 491
@@ -184,6 +185,7 @@ class SshClient(BaseTest):
         self.assertFalse(error)
         self.assertEqual("test1\ntest2\n", output.decode())
 
+    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/160")
     def test009_download_with_valid_source_valid_dest_none_ignoredir_none_ignorefiles_recursive_False(self):
         """
         TC 502
@@ -210,6 +212,7 @@ class SshClient(BaseTest):
         self.assertFalse(error)
         self.assertEqual("test09_1\n", output.decode())
 
+    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/160")
     def test010_download_with_valid_source_valid_dest_with_ignoredir_with_ignorefiles_recursive_True(self):
         """
         TC 503
@@ -255,6 +258,7 @@ class SshClient(BaseTest):
         with self.assertRaises(Exception):
             self.SSH_CLIENT.download(source="non-valid", dest="/tmp")
 
+    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/160")
     def test012_upload_with_valid_source_valid_dest_none_ignoredir_none_ignorefiles_recursive_True(self):
         """
         TC 491
@@ -279,6 +283,7 @@ class SshClient(BaseTest):
         self.assertFalse(error)
         self.assertEqual("test1\ntest2\n", output.decode())
 
+    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/160")
     def test013_upload_with_valid_source_valid_dest_none_ignoredir_none_ignorefiles_recursive_False(self):
         """
         TC 506
@@ -303,6 +308,7 @@ class SshClient(BaseTest):
         self.assertFalse(error)
         self.assertEqual("test13_1\n", output.decode())
 
+    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/160")
     def test014_upload_with_valid_source_valid_dest_with_ignoredir_with_ignorefiles_recursive_True(self):
         """
         TC 507
