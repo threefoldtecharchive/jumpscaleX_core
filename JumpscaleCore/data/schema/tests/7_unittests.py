@@ -19,7 +19,7 @@
 
 
 from Jumpscale import j
-import pytest,nose,os
+import nose, os
 
 
 def main(self):
@@ -30,4 +30,4 @@ def main(self):
     """
     unittests_path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/data/schema/tests/testsuite"
     os.chdir(unittests_path)
-    nose.run(argv=['', unittests_path])
+    nose.run(argv=["", unittests_path])
