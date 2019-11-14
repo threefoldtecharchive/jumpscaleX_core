@@ -102,7 +102,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         locations.configure()
         website.configure()
 
-    def start(self, background=False, web=None, ssl=None, timeout=600):
+    def start(self, background=False, web=None, ssl=None, timeout=1000):
         """
 
         kosmos -p 'j.servers.threebot.default.start(background=True,web=False)'
