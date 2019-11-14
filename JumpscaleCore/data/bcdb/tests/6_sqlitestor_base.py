@@ -45,7 +45,6 @@ def main(self):
     assert model.find() == []
 
     model_obj = model.new()
-    model_obj.name = "house1"
     model_obj.cost = "10 USD"
     model_obj.save()
     # model.cache_reset()

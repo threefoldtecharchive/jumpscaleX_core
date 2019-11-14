@@ -48,7 +48,6 @@ def main(self):
     schema_md5 = model.schema._md5
 
     model_obj = model.new()
-    model_obj.name = "house1"
     model_obj.cost = "10 USD"
     model_obj.save()
 
