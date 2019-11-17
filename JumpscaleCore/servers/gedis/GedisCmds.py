@@ -29,6 +29,10 @@ content = ""
 """
 
 
+class ActorNamespace:
+    pass
+
+
 class GedisCmds(JSBASE):
     """
     cmds understood by gedis server
@@ -59,6 +63,11 @@ class GedisCmds(JSBASE):
             key = "%s__%s" % (namespace, cname.replace(".", "_"))
 
             self.server.actors[key] = kobj  # as used in gedis server (when serving the commands)
+
+            if not namespace in j.threebot.actors.__dict__:
+                j.threebot.actors.__dict__[namespace] = ActorNamespace()
+
+            j.threebot.actors.__dict__[namespace].__dict__[cname.replace(".", "_")] = self.server.actors[key]
 
             self.data = self.schema.new()
             self.data.name = name

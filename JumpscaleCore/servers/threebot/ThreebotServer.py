@@ -9,6 +9,10 @@ from gevent import event
 JSConfigs = j.baseclasses.object_config_collection
 
 
+class Actors:
+    pass
+
+
 class ThreeBotServer(j.baseclasses.object_config):
     """
     Threebot server

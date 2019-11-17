@@ -15,6 +15,10 @@ from .handlers import Handler
 JSBaseConfig = j.baseclasses.object_config
 
 
+class Actors:
+    pass
+
+
 def waiter(job):
     while job.result is None:
         time.sleep(0.1)
@@ -50,6 +54,8 @@ class GedisServer(JSBaseConfig):
 
         self.namespaces = ["system", "default"]
         self._threebot_server = None
+
+        j.threebot.actors = Actors()
 
         # hook to allow external servers to find this gedis
         # self.server_gedis = self
@@ -341,4 +347,3 @@ def actor_key(name, namespace):
     :rtype: str
     """
     return "%s__%s" % (namespace, name)
-
