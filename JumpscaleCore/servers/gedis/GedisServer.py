@@ -79,8 +79,8 @@ class GedisServer(JSBaseConfig):
     def gevent_server(self):
         if self.ssl:
             if not self.ssl_keyfile and not self.ssl_certfile:
-                ssl_keyfile = "/sandbox/cfg/ssl/resty-auto-ssl-fallback.key"
-                ssl_certfile = "/sandbox/cfg/ssl/resty-auto-ssl-fallback.crt"
+                ssl_keyfile = j.core.tools.text_replace("{DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.key")
+                ssl_certfile = j.core.tools.text_replace("{DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.crt")
 
                 if j.sal.fs.exists(ssl_keyfile):
                     self.ssl_keyfile = ssl_keyfile
@@ -341,3 +341,4 @@ def actor_key(name, namespace):
     :rtype: str
     """
     return "%s__%s" % (namespace, name)
+

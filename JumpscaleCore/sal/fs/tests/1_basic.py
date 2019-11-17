@@ -9,11 +9,11 @@ def main(self):
 
     j.tools.logger.debug = True
     test_case = TestCase()
-    sandbox_path = "/sandbox"
+    sandbox_path = j.core.tools.text_replace("{DIR_BASE}")
     inexistant_dir_path = "/64ds6d4s67f6d7f6sd4f6s4/Fsdfsdgjhgsdjfgsj/"
     inexistant_file_path = inexistant_dir_path + "42_yolo.bmat"
     prio_path = "/root/tmp/33_adoc.doc/"
-    sandbox_path2 = "/sandbox/"
+    sandbox_path2 = j.core.tools.text_replace("{DIR_BASE}/")
     long_file_path = "/opt/qbase3/apps/specs/myspecs/definitions/cloud/datacenter.txt"
 
     print("TEST getDirName")
@@ -46,7 +46,7 @@ def main(self):
     res = j.sal.fs.pathParse(sandbox_path)
     print(res)
     assert len(res) == 4
-    assert res[0] == "/sandbox/"
+    assert res[0] == j.core.tools.text_replace("{DIR_BASE}/")
     assert res[1] == ""
     assert res[2] == ""
     assert res[3] == 0
@@ -89,7 +89,7 @@ def main(self):
 
     res = j.sal.fs.pathParse(sandbox_path + "/test", existCheck=False)
     print(res)
-    assert res[0] == "/sandbox/"
+    assert res[0] == j.core.tools.text_replace("{DIR_BASE}/")
     assert res[1] == "test"
     assert res[2] == ""
     assert res[3] == 0
@@ -119,10 +119,12 @@ def main(self):
     assert res[2] == "txt"
     assert res[3] == 0
 
-    res = j.sal.fs.pathParse("/sandbox/cfg/jumpscale_config.toml", baseDir="/sandbox/cfg")
+    res = j.sal.fs.pathParse(j.core.tools.text_replace("{DIR_BASE}/cfg/jumpscale_config.toml", baseDir=j.core.tools.text_replace("{DIR_BASE}/cfg")))
     # should return a list of dirpath,filename,extension,priority
     print(res)
     assert res[0] == "/"
     assert res[1] == "jumpscale_config"
     assert res[2] == "toml"
     assert res[3] == 0
+
+

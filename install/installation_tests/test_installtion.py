@@ -603,7 +603,7 @@ class TestInstallationInSystem(BaseTest):
         self.assertIn("process", output.decode())
 
         self.info("make sure that jumpscale_generated file is generated again")
-        self.assertTrue(os.path.exists("/sandbox/lib/jumpscale/jumpscale_generated.py"))
+        self.assertTrue(os.path.exists(j.core.tools.text_replace("{DIR_BASE}/lib/jumpscale/jumpscale_generated.py")))
 
     def Test03_insystem_installation_r_option_no_jsx_before(self):
         """
@@ -724,3 +724,4 @@ class TestInstallationInSystem(BaseTest):
         r = requests.get("https://127.0.0.1/wiki/test_presentaion.md", verify=False)
         self.assertEqual(r.status_code, 200)
         self.assertIn("includes 1", r.content.decode())
+

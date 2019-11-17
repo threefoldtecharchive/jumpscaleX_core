@@ -16,7 +16,7 @@ os.environ["LC_ALL"] = "en_US.UTF-8"
 def load_install_tools(branch=None):
     # get current install.py directory
 
-    path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py"
+    path = j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py")
     if not os.path.exists(path):
         path = os.path.expanduser("~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py")
 
@@ -889,3 +889,4 @@ if __name__ == "__main__":
         cli.add_command(threebot_test, "threebot-test")
 
     cli()
+

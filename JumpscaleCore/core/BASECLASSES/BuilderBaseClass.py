@@ -297,18 +297,18 @@ class BuilderBaseClass(JSBase):
 
     def _profile_sandbox_set(self):
 
-        self._bash = j.tools.bash.get("/sandbox")
+        self._bash = j.tools.bash.get(j.core.tools.text_replace("{DIR_BASE}"))
 
         self.profile.state = "sandbox"
 
         # cannot manipuate env.sh in sandbox, should be set properly by design
-        if self.profile.profile_path != "/sandbox/env.sh":
-            self.profile.path_add("/sandbox/bin")
+        if self.profile.profile_path != j.core.tools.text_replace("{DIR_BASE}/env.sh"):
+            self.profile.path_add(j.core.tools.text_replace("{DIR_BASE}/bin"))
 
             self.profile.env_set("PYTHONHTTPSVERIFY", 0)
 
-            self.profile.env_set_part("PYTHONPATH", "/sandbox/lib")
-            self.profile.env_set_part("PYTHONPATH", "/sandbox/lib/jumpscale")
+            self.profile.env_set_part("PYTHONPATH", j.core.tools.text_replace("{DIR_BASE}/lib"))
+            self.profile.env_set_part("PYTHONPATH", j.core.tools.text_replace("{DIR_BASE}/lib/jumpscale"))
 
             self.profile.env_set("LC_ALL", "en_US.UTF-8")
             self.profile.env_set("LANG", "en_US.UTF-8")
@@ -618,3 +618,4 @@ class BuilderBaseClass(JSBase):
 
         """
         raise j.exceptions.Base("not implemented")
+

@@ -10,7 +10,7 @@ def main(self):
     client = j.clients.gedis.get("system_test", port=8901, namespace="system")
     client.actors.system.ping()
 
-    actors_path = "/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/ibiza/actors"
+    actors_path = j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/ibiza/actors")
     client.actors.system.actors_add_path(namespace="ibiza", path=actors_path)
 
     client = j.clients.gedis.get("gedis_test", port=8901, namespace="ibiza")
@@ -62,3 +62,4 @@ def main(self):
     print("[5] Done")
 
     print("**DONE**")
+

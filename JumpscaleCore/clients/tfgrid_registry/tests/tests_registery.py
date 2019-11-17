@@ -16,7 +16,7 @@ class RegisteryTests(TestCase):
         # . Start threebot server, add registery package, then reload the client.
         cl = j.servers.threebot.local_start_default(web=True)
         cl.actors.package_manager.package_add(
-            path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry"
+            path=j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry")
         )
         cl.reload()
         return cl
@@ -116,4 +116,5 @@ class RegisteryTests(TestCase):
     ## To Do
     # Do more tests for complicated scenarios
     # filter using diiferent fields, when this:https://github.com/threefoldtech/jumpscaleX_core/issues/217 is done
+
 

@@ -29,7 +29,7 @@ class OpenRestyFactory(j.baseclasses.object_config_collection_testtools):
         :return:
         """
         if reset:
-            j.sal.fs.remove("/sandbox/var/web")
+            j.sal.fs.remove(j.core.tools.text_replace("{DIR_BASE}/var/web"))
         j.builders.web.openresty.install()
         j.builders.runtimes.lua.install()
         j.builders.runtimes.lua.install_certificates()
@@ -44,3 +44,4 @@ class OpenRestyFactory(j.baseclasses.object_config_collection_testtools):
             self.install()
 
         self._test_run(name=name)
+

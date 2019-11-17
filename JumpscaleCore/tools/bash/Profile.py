@@ -238,7 +238,7 @@ class Profile(j.baseclasses.object):
             self.path_add("/usr/local/bin", end=True, check_exists=True, save=False)
             self.path_add("/usr/local/sbin", end=True, check_exists=True, save=False)
 
-        if j.core.tools.text_replace(self.profile_path).lower() == "/sandbox/env.sh":
+        if j.core.tools.text_replace(self.profile_path).lower() == j.core.tools.text_replace("{DIR_BASE}/env.sh"):
             raise j.exceptions.JSBUG("should never overwrite /sandbox/env.sh")
 
         self.executor.file_write(self.profile_path, str(self))
@@ -294,3 +294,4 @@ class Profile(j.baseclasses.object):
         return content.getvalue()
 
     __repr__ = __str__
+

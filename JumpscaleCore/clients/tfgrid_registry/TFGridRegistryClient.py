@@ -32,7 +32,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         )
         self.gedis_client = j.servers.threebot.local_start_default(web=True)
         self.gedis_client.actors.package_manager.package_add(
-            path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry"
+            path=j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry")
         )
         self.gedis_client.reload()
         self.registry_client = self.gedis_client.actors.registry
@@ -241,3 +241,4 @@ class TFGridRegistryClient(j.baseclasses.object):
         verifykey = self.me.nacl.verify_key.encode()
         signed_data = self.me.nacl.sign(dataobj._data)
         return verifykey, signed_data
+

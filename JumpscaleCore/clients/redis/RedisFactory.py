@@ -18,7 +18,7 @@ class RedisFactory(j.baseclasses.factory_testtools):
 
     def _init(self, **kwargs):
         self._cache_clear()
-        self._unix_socket_core = "/sandbox/var/redis.sock"
+        self._unix_socket_core = j.core.tools.text_replace("{DIR_BASE}/var/redis.sock")
         self._core = None
 
         #
@@ -231,3 +231,4 @@ class RedisFactory(j.baseclasses.factory_testtools):
 
         """
         self._test_run(name=name)
+

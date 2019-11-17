@@ -1,12 +1,12 @@
 from Jumpscale import j
 
 # get gdrive client so google api dependency is installed
-cl = j.clients.gdrive.get("gdrive_macro_client", credfile="/sandbox/var/cred.json")
+cl = j.clients.gdrive.get("gdrive_macro_client", credfile=j.core.tools.text_replace("{DIR_BASE}/var/cred.json"))
 
 from googleapiclient.errors import HttpError as GoogleApiHTTPError
 
 
-STATIC_DIR = "/sandbox/var/gdrive/static"
+STATIC_DIR = j.core.tools.text_replace("{DIR_BASE}/var/gdrive/static")
 doctypes_map = {"document": "drive", "spreadsheets": "drive", "presentation": "drive", "slide": "slides"}
 
 
@@ -67,3 +67,4 @@ class gdrive(j.baseclasses.threebot_actor):
             out.error_code = error["code"]
             out.error_message = error["message"]
         return out
+

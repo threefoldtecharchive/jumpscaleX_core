@@ -507,8 +507,8 @@ class GitFactory(j.baseclasses.object):
 
             ```
             #example
-            [['github', 'docker', 'docker-py', '/sandbox/code/github/docker/docker-py'],
-            ['github', 'jumpscale', 'docs', '/sandbox/code/github/threefoldtech/jumpscale_docs']]
+            [['github', 'docker', 'docker-py', j.core.tools.text_replace("{DIR_BASE}/code/github/docker/docker-py")],
+            ['github', 'jumpscale', 'docs', j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscale_docs")]]
             ```
 
             """
@@ -725,3 +725,4 @@ class GitFactory(j.baseclasses.object):
 
         if pushmessage != "":
             self.pushGitRepos(pushmessage, name=name, update=True, provider=provider, account=account)
+

@@ -149,20 +149,20 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             j.tools.threebot_packages.get(
                 "webinterface",
-                path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webinterface/",
+                path=j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webinterface/"),
             )
             j.tools.threebot_packages.get(
-                "wiki", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/wiki/"
+                "wiki", path=j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/wiki/")
             )
             j.tools.threebot_packages.get(
-                "chat", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/chat/"
+                "chat", path=j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/chat/")
             )
             j.tools.threebot_packages.get(
-                "myjobs", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/myjobs"
+                "myjobs", path=j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/myjobs")
             )
             j.tools.threebot_packages.get(
                 "packagemanagerui",
-                path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/packagemanagerui",
+                path=j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/packagemanagerui"),
             )
 
             # add user added packages
@@ -236,3 +236,4 @@ class ThreeBotServer(j.baseclasses.object_config):
         if self.web:
             startup.ports += [80, 443, 4444, 4445]
         return startup
+
