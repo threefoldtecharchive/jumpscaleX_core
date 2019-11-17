@@ -18,7 +18,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
     _SCHEMATEXT = """
         @url = jumpscale.openresty.location
         name** = (S)
-        path = j.core.tools.text_replace("{DIR_BASE}/var/web/default")
+        path = "/sandbox/var/web/default" (S)
         locations_static = (LO) !jumpscale.openresty.location_static
         locations_proxy = (LO) !jumpscale.openresty.location_proxy
         locations_lapis = (LO) !jumpscale.openresty.location_lapis
@@ -137,5 +137,3 @@ class Locations(j.baseclasses.object_config_collection):
     def configure(self):
         for item in self.find():
             item.configure()
-
-

@@ -166,8 +166,11 @@ class OpenRestyServer(j.baseclasses.factory_data):
         self.install(reset=reset)
         self.configure()
         self._letsencrypt_configure()
+
         # compile all 1 time to lua, can do this at each start
-        j.sal.process.execute("cd %s;moonc ." % self._web_path)
+        # j.sal.process.execute("cd %s;moonc ." % self._web_path)
+        # NO LONGER NEEDED BECAUSE WE DON"T USE THE MOONSCRIPT ANY MORE
+
         if reset:
             self.startup_cmd.stop(force=True)
         if self.startup_cmd.is_running():
