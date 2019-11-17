@@ -40,7 +40,18 @@ class TFGridRegistryClient(j.baseclasses.object):
         self.bcdb = j.data.bcdb.get("threebot_registery")
 
     def register(
-        self, authors=None, readers=None, schema=None, model=None, is_encrypted_data=False, format=Format.WIKI.name
+        self,
+        authors=None,
+        readers=None,
+        schema=None,
+        model=None,
+        is_encrypted_data=False,
+        format=Format.WIKI.name,
+        schema_url=None,
+        country_code=None,
+        category=None,
+        topic=None,
+        description=None,
     ):
         """client comes from j.clients.threebot.client_get(threebot="kristof.ibiza").
 
@@ -70,7 +81,11 @@ class TFGridRegistryClient(j.baseclasses.object):
                 new_scm=scm,
                 model=model,
                 format=format,
-                description="text",
+                schema_url=schema_url,
+                country_code=country_code,
+                category=category,
+                topic=topic,
+                description=description,
             )
             verifykey, signed_data = self.__sign_data(dataobj=dataobj)
             post_id = self.registry_client.register(
@@ -83,7 +98,15 @@ class TFGridRegistryClient(j.baseclasses.object):
         else:
             authors.append(self.me.tid)
             dataobj = self.__add_registry_schema_data(
-                authors=authors, new_scm=scm, model=model, format=format, description="text"
+                authors=authors,
+                new_scm=scm,
+                model=model,
+                format=format,
+                schema_url=schema_url,
+                country_code=country_code,
+                category=category,
+                topic=topic,
+                description=description,
             )
             verifykey, signed_data = self.__sign_data(dataobj=dataobj)
             post_id = self.registry_client.register(
@@ -158,10 +181,20 @@ class TFGridRegistryClient(j.baseclasses.object):
             description=description,
             registered_info_format=registered_info_format,
         )
-        return res
+        return res.res
 
     def __add_registry_schema_data(
-        self, url="threebot.registry.entry.data.1", authors=None, new_scm=None, model=None, format=None, description=""
+        self,
+        url="threebot.registry.entry.data.1",
+        authors=None,
+        new_scm=None,
+        model=None,
+        format=None,
+        schema_url=None,
+        country_code=None,
+        category=None,
+        topic=None,
+        description="",
     ):
         """Add data to the registry.
 
@@ -182,6 +215,10 @@ class TFGridRegistryClient(j.baseclasses.object):
         dataobj.schema_url = new_scm
         dataobj.registered_info = model._data
         dataobj.format = format
+        dataobj.schema_url = schema_url
+        dataobj.country_code = country_code
+        dataobj.category = category
+        dataobj.topic = topic
         dataobj.description = description
         dataobj.save()
         return dataobj
@@ -194,6 +231,10 @@ class TFGridRegistryClient(j.baseclasses.object):
         new_scm=None,
         model=None,
         format=None,
+        schema_url=None,
+        country_code=None,
+        category=None,
+        topic=None,
         description="",
         threebotclient=None,
     ):
@@ -218,6 +259,10 @@ class TFGridRegistryClient(j.baseclasses.object):
         dataobj.readers = readers
         dataobj.schema_url = new_scm.url
         dataobj.format = format
+        dataobj.schema_url = schema_url
+        dataobj.country_code = country_code
+        dataobj.category = category
+        dataobj.topic = topic
         dataobj.description = description
         encrypted_data_model = j.data.schema.get_from_url(url="threebot.registry.entry.data_encrypted.1").new()
         encrypted_data_model.tid = threebotclient.tid
