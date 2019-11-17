@@ -14,11 +14,13 @@ def main(self):
     def reset():
         # kill leftovers from last time, if any
         self.reset()
-        # self.init()
 
         jobs = self.jobs.find()
         assert len(jobs) == 0
         assert self.queue_jobs_start.qsize() == 0
+
+        self._workers_gipc_nr_max = 10
+        self.workers_subprocess_start()
 
     def add(a=None, b=None):
         assert a
@@ -26,6 +28,8 @@ def main(self):
         return a + b
 
     def add_error(a=None, b=None):
+        import time
+
         assert a
         assert b
         raise j.exceptions.Base("s")
@@ -34,12 +38,14 @@ def main(self):
         gevent.sleep(3)
 
     reset()
-    self.workers_tmux_start(4)
 
     # test the behaviour for 1 job in process, only gevent for data handling
     job_sch = self.schedule(add_error, a=1, b=2)
+
+    job_sch.wait(die=False)
     jobid = job_sch.id
-    wait_2sec()
+
+    assert job_sch.state == "ERROR"
 
     job = self.jobs.get(id=jobid)
 
@@ -56,8 +62,8 @@ def main(self):
     assert job.time_stop > 0
 
     # lets start from scratch, now we know the super basic stuff is working
+
     reset()
-    self.workers_tmux_start(4)
 
     for x in range(10):
         self.schedule(add, a=1, b=2)
@@ -69,6 +75,7 @@ def main(self):
     assert len(jobs) == 11
 
     wait_2sec()
+
     assert self.queue_jobs_start.qsize() == 0  # there need to be 0 jobs in queue (all executed by now)
 
     # nothing got started yet
@@ -77,9 +84,6 @@ def main(self):
     res = self.results([job.id])
 
     assert res == {job.id: 3}  # is the result back
-
-    # TODO: what is this test supposed to do?
-    # assert 3 == j.servers.myjobs.schedule(add, a=1, b=2, inprocess=True)
 
     print("will wait for results")
     assert self.results([jobs[2].id, jobs[3].id, jobs[4].id], timeout=1) == {
@@ -94,10 +98,6 @@ def main(self):
     assert len(errors) == 1
 
     reset()
-    self.workers_tmux_start(nr_workers=10)
-
-    print("wait to schedule jobs")
-    gevent.sleep(5)
 
     for x in range(20):
         self.schedule(wait_2sec)
@@ -106,13 +106,11 @@ def main(self):
     j.servers.myjobs.schedule(add_error, a=1, b=2)
 
     print("there should be 10 workers, so wait is max 5 sec")
-    gevent.sleep(10)
 
-    # now timeout should have happened & all should have executed
-
-    jobs = self.wait(die=False)
-
+    jobs = self.jobs.find()
     assert len(jobs) == 22
+
+    gevent.sleep(5)
 
     completed = [job for job in jobs if job.time_stop]
 
