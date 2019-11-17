@@ -477,19 +477,23 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self._init_pre_schedule_ = False
 
         if reset:
-            self.model_action.destroy()
-            self.jobs.reset()
-            self.workers.reset()
-            self.scheduled_ids = []
             # delete the queue
             while self.queue_jobs_start.get_nowait() != None:
                 pass
+            self.reset_data()
 
             self._init_ = False
 
     def reset(self):
         # kill leftovers from last time, if any
         self.stop(graceful=False, reset=True)
+        assert self.queue_jobs_start.qsize() == 0
+
+    def reset_data(self):
+        self.model_action.destroy()
+        self.jobs.reset()
+        self.workers.reset()
+        self.scheduled_ids = []
         assert self.queue_jobs_start.qsize() == 0
 
     def check_all(self, die=True):
