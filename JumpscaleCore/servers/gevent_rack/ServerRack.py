@@ -12,6 +12,7 @@ from gevent import monkey
 monkey.patch_all(subprocess=False)
 import gevent
 from gevent import event
+from gevent import Greenlet
 
 
 class StripPathMiddleware(object):
@@ -35,6 +36,14 @@ class ServerRack(JSBASE):
         # self._monkeypatch_done = False
         self.is_started = False
 
+    def greenlet_add(self, name, method, *args, **kwargs):
+        if name in self.servers:
+            raise j.exceptions.BASE("cannot add greenlet:%s already exists" % name)
+        g = Greenlet(method, *args, **kwargs)
+        self.servers[name] = g
+        if self.is_started:
+            self.servers[name].start()
+
     def add(self, name, server):
         """add a gevent server
 
@@ -48,7 +57,7 @@ class ServerRack(JSBASE):
         """
         assert server
 
-        if self.is_started and not server in self.servers:
+        if self.is_started and not name in self.servers:
             self.servers[name] = server
             server.start()
         else:

@@ -56,6 +56,8 @@ class GedisServer(JSBaseConfig):
         self._threebot_server = None
 
         j.threebot.actors = Actors()
+        j.threebot.actors_add = self.actors_add
+        # j.threebot.actors_list = self.actors_list
 
         # hook to allow external servers to find this gedis
         # self.server_gedis = self

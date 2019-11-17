@@ -24,6 +24,10 @@ from .TestTools import TestTools
 import os
 
 
+class PackageInstaller:
+    pass
+
+
 class ThreeBotFactoryBase(JSBase, TestTools):
     def client_get(self):
         """
@@ -32,17 +36,38 @@ class ThreeBotFactoryBase(JSBase, TestTools):
 
         return self.client
 
+    @property
+    def packagename(self):
+        path = self._dirpath
+        path = path.rstrip("/")
+        splitted = path.split("/")
+        u = splitted.index("ThreeBotPackages")
+        name = "__".join(splitted[u + 1 :])
+        return name
+
+    def _connect(self):
+        print("CONNECT")
+        if self.packagename in j.threebot.packages.__dict__:
+            return
+        if j.tools.threebot_packages.exists(self.packagename):
+            p = j.tools.threebot_packages.get(self.packagename)
+            p.start()
+            j.threebot.packages.__dict__[self.packagename] = p
+        else:
+            j.threebot.packages.__dict__[self.packagename] = PackageInstaller()
+            j.threebot.packages.__dict__[self.packagename].install = self.install()
+
     def install(self):
         server = j.servers.threebot.default
         server.save()
-
-        packagename = os.path.basename(self._dirpath)
         # TODO: need to call the package_manager actor on the threebot, and ask to load the package there
         # should not be done manually
-        package = j.tools.threebot_packages.get(packagename, path=self._dirpath, threebot_server_name=server.name)
+        package = j.tools.threebot_packages.get(self.packagename, path=self._dirpath, threebot_server_name=server.name)
         package.prepare()
         package.save()
         self._log_info(f"{packagename} loaded")
+
+        self._connect()
 
         return "OK"
 

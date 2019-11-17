@@ -42,7 +42,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def local_start_zerobot_default(self, web=True, packages_add=False, timeout=600):
+    def local_start_zerobot_default(self, packages_add=False):
         """
 
         kosmos -p 'j.servers.threebot.local_start_zerobot_default(packages_add=True)'
@@ -58,7 +58,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             self.install()
             self.default.stop()
 
-        client = self.default.start(background=True, web=web, timeout=timeout)
+        client = self.default.start(background=True)
 
         if packages_add:
             client.actors.package_manager.package_add(
@@ -69,7 +69,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         return client
 
-    def local_start_default(self, web=True, packages_add=False, timeout=600, ssl=None):
+    def local_start_default(self, packages_add=False, ssl=None):
         """
 
         kosmos -p 'j.servers.threebot.local_start_default()'
@@ -85,7 +85,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             self.install()
             self.default.stop()
 
-        client = self.default.start(background=True, web=web, timeout=timeout, ssl=ssl)
+        client = self.default.start(background=True)
 
         client.actors.package_manager.package_add(
             path=j.core.tools.text_replace(
