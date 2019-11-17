@@ -14,7 +14,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
     _CHILDCLASSES = [MyWorkers, MyJobs]
 
     def _init(self, **kwargs):
-        self.BCDB_CONNECTOR_PORT = 6385
+        self.BCDB_CONNECTOR_PORT = 6380
         self.queue_jobs_start = j.clients.redis.queue_get(redisclient=j.core.db, key="queue:jobs:start")
 
         self._workers_gipc = {}
@@ -58,6 +58,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 self._mainloop_greenlet_redis = gevent.spawn(
                     self._bcdb.redis_server_start, port=self.BCDB_CONNECTOR_PORT
                 )
+                self._log_warning("waiting for redis interface of threebotserver to come up")
                 self._bcdb.redis_server_wait_up(self.BCDB_CONNECTOR_PORT)
             self._init_pre_schedule_ = True
             self.jobs._model.trigger_add(self._job_update)

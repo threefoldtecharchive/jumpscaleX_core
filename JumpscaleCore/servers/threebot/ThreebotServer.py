@@ -2,6 +2,7 @@ from Jumpscale import j
 import os
 import gevent
 import time
+from gevent import event
 
 # from .OpenPublish import OpenPublish
 
@@ -132,10 +133,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.servers.myjobs.index_reset()
             j.data.bcdb.check()
 
-            # j.servers.myjobs.workers_tmux_start(4)
-            j.servers.myjobs._workers_gipc_nr_max = 10
-            j.servers.myjobs.workers_subprocess_start()
-
             self.zdb.start()
             j.servers.sonic.default.start()
 
@@ -148,6 +145,12 @@ class ThreeBotServer(j.baseclasses.object_config):
             redis_server = bcdb.redis_server_get(port=6380, secret="123456")
             self.rack_server.add("bcdb_system_redis", redis_server.gevent_server)
             # FIXME: the package_manager actor doesn't properly load the package (web interface)
+
+            if web:
+                self._log_info("OPENRESTY START")
+                self.openresty_server.start()
+                # for in case was already loaded
+                j.servers.threebot.current.openresty_server.reload()
 
             j.tools.threebot_packages.get(
                 "webinterface",
@@ -180,6 +183,16 @@ class ThreeBotServer(j.baseclasses.object_config):
                 ),
             )
 
+            self._log_info("start workers")
+
+            self.rack_server.start(wait=False)
+
+            j.servers.myjobs.workers_tmux_start(2)
+            # j.servers.myjobs._workers_gipc_nr_max = 10
+            # j.servers.myjobs.workers_subprocess_start()
+
+            self._log_info("start workers done")
+
             # add user added packages
             for package in j.tools.threebot_packages.find():
                 if package.status == "INIT":
@@ -197,12 +210,14 @@ class ThreeBotServer(j.baseclasses.object_config):
                     # except Exception as e:
                     #     j.core.tools.log(level=50, exception=e, stdout=True)
                     #     package.status = "error"
-            if web:
-                self._log_info("OPENRESTY START")
-                self.openresty_server.start()
-                # for in case was already loaded
-                j.servers.threebot.current.openresty_server.reload()
-            self.rack_server.start()
+
+            print("*** 3BOTSERVER IS RUNNING ***")
+            j.shell()
+            forever = event.Event()
+            try:
+                forever.wait()
+            except KeyboardInterrupt:
+                self.stop()
 
         else:
             if not self.startup_cmd.is_running():

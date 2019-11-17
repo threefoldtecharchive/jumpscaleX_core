@@ -220,7 +220,7 @@ class ServerRack(JSBASE):
 
         self.add(name=name, server=server)
 
-    def start(self):
+    def start(self, wait=True):
         # self._monkeypatch()
         started = []
         try:
@@ -236,11 +236,12 @@ class ServerRack(JSBASE):
             self.is_started = False
             raise
 
-        forever = event.Event()
-        try:
-            forever.wait()
-        except KeyboardInterrupt:
-            self.stop()
+        if wait:
+            forever = event.Event()
+            try:
+                forever.wait()
+            except KeyboardInterrupt:
+                self.stop()
 
     def stop(self, servers=None):
         self._log_info("stopping server rack")

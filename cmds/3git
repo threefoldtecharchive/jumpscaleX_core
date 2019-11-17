@@ -32,6 +32,7 @@ def process(path=None, all=False):
     git = j.clients.git.get(basedir=path)
     git.patchGitignore()
     revision, result = git.logChanges(all=all)
+    # TODO:
     print(result)
     git.logChangesRevisionSet(revision=revision)
     # j.shell()

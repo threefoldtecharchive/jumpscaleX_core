@@ -146,7 +146,6 @@ class OpenRestyServer(j.baseclasses.factory_data):
         """
         if not self._cmd:
             # Start Lapis Server
-            self._log_info("Starting Lapis Server")
             cmd = "lapis server"
             self._cmd = j.servers.startupcmd.get(
                 name="lapis",
@@ -173,6 +172,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
 
         if reset:
             self.startup_cmd.stop(force=True)
+        self._log_info("Starting Lapis Server")
         if self.startup_cmd.is_running():
             self.stop()
             self.reload()
