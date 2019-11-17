@@ -376,7 +376,7 @@ class JSBase:
     def _logger_set(self, minlevel=None, children=True, parents=True):
         """
 
-        :param min_level if not set then will use the LOGGER_LEVEL from /sandbox/cfg/jumpscale_config.toml
+        :param min_level if not set then will use the LOGGER_LEVEL from {DIR_BASE}/cfg/jumpscale_config.toml
 
         make sure that logging above minlevel will happen, std = 100
         if 100 means will not log anything
@@ -841,3 +841,4 @@ class JSBase:
         :return:
         """
         return "jsxobj:%s:%s" % (self.__class__._location, self.__class__.__name__)
+

@@ -41,5 +41,6 @@ class TestZdbServer(BaseTest):
         output, error = self.os_command(" ps -aux | grep -v grep | grep startupcmd_zdb ")
         self.assertFalse(output.decode())
 
-        output, error = self.os_command(" ls /sandbox/var/zdb")
+        output, error = self.os_command(" ls {DIR_BASE}/var/zdb")
         self.assertNotIn(self.zdb.name, output.decode())
+

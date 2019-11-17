@@ -42,7 +42,7 @@ def main(self):
     assert path == "specs"
 
     print("TEST pathParse")
-    # parse /sandbox path. should be ok
+    # parse {DIR_BASE} path. should be ok
     res = j.sal.fs.pathParse(sandbox_path)
     print(res)
     assert len(res) == 4
@@ -51,7 +51,7 @@ def main(self):
     assert res[2] == ""
     assert res[3] == 0
 
-    # parse /sandbox path existCheck = false
+    # parse {DIR_BASE} path existCheck = false
     # we can't determine if the path is a file or directory path
     # because the decorator will remove the trailing`/`
     # so by default I will treat it as a file pat
@@ -126,5 +126,6 @@ def main(self):
     assert res[1] == "jumpscale_config"
     assert res[2] == "toml"
     assert res[3] == 0
+
 
 

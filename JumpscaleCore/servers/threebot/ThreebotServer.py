@@ -111,7 +111,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         :param background: if True will start all servers including threebot itself in the background
 
         ports & paths used for threebotserver
-        see: /sandbox/code/github/threefoldtech/jumpscaleX_core/docs/3Bot/web_environment.md
+        see: {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/docs/3Bot/web_environment.md
 
         """
         if web is None:
@@ -236,4 +236,5 @@ class ThreeBotServer(j.baseclasses.object_config):
         if self.web:
             startup.ports += [80, 443, 4444, 4445]
         return startup
+
 

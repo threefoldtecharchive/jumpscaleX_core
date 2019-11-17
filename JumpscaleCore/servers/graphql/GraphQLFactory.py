@@ -170,11 +170,11 @@ class GraphQLFactory(JSBASE):
         else:
 
             S = """
-            . /sandbox/env.sh;
+            . {DIR_BASE}/env.sh;
             kosmos 'j.servers.graphql._server_test_start()'
             """
 
-            j.servers.tmux.execute(S)
+            j.servers.tmux.execute(j.core.tools.text_replace(S))
 
     # parse data from the form in the request body
     def parse_data(self, raw_data):

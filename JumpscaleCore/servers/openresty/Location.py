@@ -11,7 +11,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
 
     it will include locations from
 
-    /sandbox/cfg/
+    {DIR_BASE}/cfg/
 
     """
 
@@ -137,4 +137,5 @@ class Locations(j.baseclasses.object_config_collection):
     def configure(self):
         for item in self.find():
             item.configure()
+
 

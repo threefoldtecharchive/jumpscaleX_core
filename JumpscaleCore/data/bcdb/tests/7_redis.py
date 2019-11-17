@@ -39,7 +39,7 @@ def main(self):
 
     def do(bcdb, m, zdb=False):
         cmd = """
-        . /sandbox/env.sh;
+        . {DIR_BASE}/env.sh;
         kosmos 'j.data.bcdb.get("test").redis_server_start(port=6380)'
         """
         test_case = TestCase()

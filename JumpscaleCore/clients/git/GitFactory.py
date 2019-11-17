@@ -99,7 +99,7 @@ class GitFactory(j.baseclasses.object):
     ):
         """
         will clone or update repo
-        if dest is None then clone underneath: /sandbox/code/$type/$account/$repo
+        if dest is None then clone underneath: {DIR_BASE}/code/$type/$account/$repo
         will ignore changes !!!!!!!!!!!
 
         @param ssh ==True means will checkout ssh
@@ -458,7 +458,7 @@ class GitFactory(j.baseclasses.object):
         walk over repo's known on system
         2 locations are checked
             ~/code
-            /sandbox/code
+            {DIR_BASE}/code
         """
         if name is None:
             name = ""
@@ -725,4 +725,5 @@ class GitFactory(j.baseclasses.object):
 
         if pushmessage != "":
             self.pushGitRepos(pushmessage, name=name, update=True, provider=provider, account=account)
+
 

@@ -129,7 +129,7 @@ class SSHClientBase(j.baseclasses.object_config):
 
         j.sal.fs.writeFile(filename, contents=script)
         self.file_copy(filename, filename)  # local -> remote
-        self.execute("source /sandbox/env.sh && python3 {}".format(filename))
+        self.execute(j.core.tools.text_replace("source {DIR_BASE}/env.sh && python3 {}".format(filename)))
 
     @property
     def addr_variable(self):

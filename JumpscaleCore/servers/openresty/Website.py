@@ -9,7 +9,7 @@ class Website(j.baseclasses.factory_data):
 
     it will include locations from
 
-    /sandbox/cfg/
+    {DIR_BASE}/cfg/
 
     """
 
@@ -36,8 +36,8 @@ class Website(j.baseclasses.factory_data):
       ssl_certificate_by_lua_block {
         auto_ssl:ssl_certificate()
       }
-      ssl_certificate /sandbox/cfg/ssl/resty-auto-ssl-fallback.crt;
-      ssl_certificate_key /sandbox/cfg/ssl/resty-auto-ssl-fallback.key;
+      ssl_certificate {DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.crt;
+      ssl_certificate_key {DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.key;
       default_type text/html;
 
       include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
@@ -92,7 +92,7 @@ class Website(j.baseclasses.factory_data):
 
         j.sal.fs.createDir(self.path_cfg_dir)
 
-        r = j.tools.jinja2.template_render(text=self.CONFIG, website=self)
+        r = j.tools.jinja2.template_render(text=j.core.tools.text_replace(self.CONFIG), website=self)
         j.sal.fs.writeFile(self.path_cfg, r)
 
         for locationsconfigs in self.locations.find():

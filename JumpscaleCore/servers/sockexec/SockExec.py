@@ -26,7 +26,7 @@ class SockExec(j.baseclasses.object_config):
 
     def stop(self):
         self._log_info("stop sockexec server")
-        remove_exec_cmd = "rm -f /sandbox/var/exec.sock"
+        remove_exec_cmd = "rm -f {DIR_BASE}/var/exec.sock"
         j.core.tools.execute(remove_exec_cmd)
         self.startupcmd.stop()
 
@@ -85,4 +85,3 @@ class SockExec(j.baseclasses.object_config):
         self.stop()
         assert j.servers.startupcmd.sockexec.is_running() == False
         print("test ok")
-

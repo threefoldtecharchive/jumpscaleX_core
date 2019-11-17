@@ -97,7 +97,7 @@ class Application(object):
 
     def log2fs_register(self, session_name):
         """
-        will write logs with ansi codes to /sandbox/var/log/session_name/$hrtime4session/$hrtime4step_context.ansi
+        will write logs with ansi codes to {DIR_BASE}/var/log/session_name/$hrtime4session/$hrtime4step_context.ansi
 
         use less -r to see the logs with color output
 
@@ -541,4 +541,5 @@ class Application(object):
             g.lib_link(path)
         g.generate(methods_find=True)
         g.report()
+
 

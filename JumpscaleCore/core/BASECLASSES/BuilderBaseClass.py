@@ -192,7 +192,7 @@ class builder_method:
 
 class BuilderBaseClass(JSBase):
     """
-    doc in /sandbox/code/github/threefoldtech/jumpscaleX_core/docs/Internals/builders/Builders.md
+    doc in {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/docs/Internals/builders/Builders.md
     """
 
     ALREADY_DONE_VALUE = "ALREADY DONE"
@@ -618,4 +618,5 @@ class BuilderBaseClass(JSBase):
 
         """
         raise j.exceptions.Base("not implemented")
+
 
