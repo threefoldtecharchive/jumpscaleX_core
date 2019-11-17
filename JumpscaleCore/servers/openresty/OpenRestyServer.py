@@ -33,10 +33,10 @@ class OpenRestyServer(j.baseclasses.factory_data):
 
     def _init(self, **kwargs):
         self._cmd = None
-        self._web_path = "/sandbox/var/web/%s" % self.name
-        self.path_web_default = "/sandbox/var/web/default"
-        self.path_web = "/sandbox/var/web/%s" % self.name
-        self.path_cfg_dir = "/sandbox/cfg/nginx/%s" % self.name
+        self._web_path = j.core.tools.text_replace("{DIR_BASE}/var/web/%s" % self.name)
+        self.path_web_default = j.core.tools.text_replace("{DIR_BASE}/var/web/default"
+        self.path_web = j.core.tools.text_replace("{DIR_BASE}/var/web/%s" % self.name)
+        self.path_cfg_dir = j.core.tools.text_replace("{DIR_BASE}/cfg/nginx/%s" % self.name)
         self.path_cfg = "%s/nginx.conf" % self.path_cfg_dir
         j.sal.fs.createDir(self.path_web)
         j.sal.fs.createDir(self.path_cfg_dir)

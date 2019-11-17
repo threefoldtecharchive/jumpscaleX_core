@@ -30,7 +30,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
                     return True
             return False
 
-        fallback_ssl_key_path = "/sandbox/cfg/ss/resty-auto-ssl-fallback.crt"
+        fallback_ssl_key_path = j.core.tools.text_replace("{DIR_BASE}/cfg/ss/resty-auto-ssl-fallback.crt")
         if force or need_install() or not j.sal.fs.exists(fallback_ssl_key_path):
             j.servers.openresty.install()
             j.builders.web.openresty.install()
@@ -88,7 +88,9 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         client = self.default.start(background=True, web=web, timeout=timeout, ssl=ssl)
 
         client.actors.package_manager.package_add(
-            path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform/"
+            path=j.core.tools.text_replace(
+                "{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform/"
+            )
         )
         if packages_add:
             client.actors.package_manager.package_add(

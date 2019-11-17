@@ -440,11 +440,16 @@ class GitFactory(j.baseclasses.object):
         path = j.sal.fs.joinPaths(gitpath, relativepath)
         return path
 
-    def get(self, basedir="", check_path=True):
+    def get(self, basedir=None, check_path=True):
         """
-        PLEASE USE SSH, see http://gig.gitbooks.io/jumpscale/content/Howto/how_to_use_git.html for more details
+
+        git = j.clients.git.get()
+
+        :param basedir:
+        :param check_path:
+        :return:
         """
-        if basedir == "":
+        if not basedir:
             basedir = j.sal.fs.getcwd()
         return GitClient(basedir, check_path=check_path)
 

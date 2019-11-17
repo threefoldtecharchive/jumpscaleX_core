@@ -10,6 +10,9 @@ class GitClient(j.baseclasses.object):
 
     def __init__(self, baseDir, check_path=True):  # NOQA
 
+        self._3git_config = None
+        self._ignore_items = None
+
         if baseDir is None or baseDir.strip() == "":
             raise j.exceptions.Base("basedir cannot be empty")
 
@@ -184,6 +187,99 @@ class GitClient(j.baseclasses.object):
                 continue
             return True
         return False
+
+    @property
+    def _config_3git_path(self):
+        return self.BASEDIR + "/.3gitconfig.toml"
+
+    @property
+    def config_3git(self):
+        if not self._3git_config:
+            if j.sal.fs.exists(self._config_3git_path):
+                self._3git_config = j.data.serializers.toml.load(self._config_3git_path)
+            else:
+                self._3git_config = {}
+        return self._3git_config
+
+    def config_3git_save(self):
+        j.data.serializers.toml.dump(self._config_3git_path, self._3git_config)
+
+    def config_3git_get(self, name, default=""):
+        if not name in self.config_3git:
+            self.config_3git[name] = default
+            self.config_3git_save()
+        return self.config_3git[name]
+
+    def config_3git_set(self, name, val=""):
+        v = self.config_3git_get(name=name)
+        if v == "" or v != val:
+            self.config_3git[name] = val
+            self.config_3git_save()
+
+    def logChanges(self, from_revision=None, all=False, untracked=True):
+        """
+
+        :param from_revision:
+        :param all: don't check previous state, list all
+        :param untracked:  also add the untracked files
+        :return:  (lastrevision,changes)
+        """
+
+        if not from_revision and all == False:
+            from_revision = self.config_3git_get("revision_last_processed")
+
+        if from_revision:
+            cmd = "cd %s;git --no-pager log %s --name-status --oneline" % (self.BASEDIR, from_revision)
+        else:
+            cmd = "cd %s;git --no-pager log --name-status --oneline" % self.BASEDIR
+
+        rc, out, err = j.tools.executorLocal.execute(cmd)
+        # Organize files in lists
+        result = []
+        for item in out.split("\n"):
+            item = item.strip()
+            if item == "":
+                continue
+
+            if "\t" in item:
+                pre, post, = item.split("\t", 1)
+            else:
+                pre, post, = item.split(" ", 1)
+            if len(pre) == 7:
+                revision = pre
+                msg = post
+            else:
+                state = pre[0]
+                _file = post
+                if state in ["N", "M", "A"]:
+                    if _file not in result:
+                        result.append(_file)
+                elif state == "R":
+                    from_, to_ = post.split("\t")
+                    if from_ in result:
+                        result.pop(result.index(from_))
+                    if _file not in result:
+                        result.append(_file)
+                elif state == "D":
+                    # delete
+                    if _file in result:
+                        result.pop(result.index(_file))
+
+                else:
+                    j.shell()
+                    w
+        if untracked:
+            for item in self.getModifiedFiles(collapse=True):
+                if item not in result:
+                    result.append(item)
+        return (revision, result)
+
+    def logChangesRevisionSet(self, revision):
+        """
+        will mark in repo the last revision which has been processed so we don't process previously committed files
+        :return:
+        """
+        self.config_3git_set("revision_last_processed", revision)
 
     def getModifiedFiles(self, collapse=False, ignore=[]):
         """
@@ -392,16 +488,84 @@ class GitClient(j.baseclasses.object):
 
         return diffs
 
+    @property
+    def gitignoreItems(self):
+        """
+        return list of items in gitignore
+        :return:
+        """
+        if not self._ignore_items:
+            self._ignore_items = []
+            ignorefilepath = j.sal.fs.joinPaths(self.BASEDIR, ".gitignore")
+            if not j.sal.fs.exists(ignorefilepath):
+                self.patchGitignore()
+            inn = j.sal.fs.readFile(ignorefilepath)
+            lines_in = inn.splitlines()
+            for item in lines_in:
+                item = item.strip()
+                if item:
+                    if item not in self._ignore_items:
+                        self._ignore_items.append(item)
+        return self._ignore_items
+
+    # def gitignoreCheck(self, path):
+    #     """
+    #     :param path:
+    #     :return: True if in ignore list
+    #     """
+    #     if path.startswith("/"):
+    #         # means need to remove the basepath and only if its in the current basepath
+    #         if not path.startswith(self.BASEDIR):
+    #             raise j.exceptions.Input("path needs to be in git repo:%s" % path)
+    #         j.shell()
+    #     for item in self.gitignoreItems:
+    #         if item.endswith("/"):
+    #             # is dir check
+    #             if path.startswith(item):
+    #                 return True
+    #         elif item.startswith("*"):
+    #             item2 = item.replace("*", "")
+    #             if path.endswith(item2):
+    #                 return True
+    #         elif item.endswith("*"):
+    #             item2 = item.replace("*", "")
+    #             if path.startswith(item2):
+    #                 return True
+
     def patchGitignore(self):
         gitignore = """
-            # Byte-compiled / optimized / DLL files
-            __pycache__/
-            *.py[cod]
+        
+            logs
+            *.log
+            npm-debug.log*
+            yarn-debug.log*
+            yarn-error.log*
+            pids
+            *.pid
+            *.seed
+            *.pid.lock
+            lib-cov
+            coverage
+            .nyc_output
+            .grunt
+            bower_components
+            .lock-wscript
+            build/Release
+            node_modules/
+            jspm_packages/
+            typings/
+            .npm
+            .eslintcache
+            .node_repl_history
+            *.tgz
+            .yarn-integrity
+            .env
+            .next        
             
-            # C extensions
+            __pycache__/
+            *.py[cod]            
             *.so
             
-            # Distribution / packaging
             .Python
             develop-eggs/
             eggs/
@@ -411,11 +575,9 @@ class GitClient(j.baseclasses.object):
             .installed.cfg
             *.egg
             
-            # Installer logs
             pip-log.txt
             pip-delete-this-directory.txt
             
-            # Unit test / coverage reports
             .tox/
             .coverage
             .cache
@@ -425,38 +587,36 @@ class GitClient(j.baseclasses.object):
             # Translations
             *.mo
             
-            # Mr Developer
             .mr.developer.cfg
             .project
             .pydevproject
-            
-            # Rope
-            .ropeproject
-            
-            # Django stuff:
-            *.log
+            .ropeproject            
             *.pot
             
-            # Sphinx documentation
-            docs/_build/
+            docs/_build/            
+            errors.md
+            
             """
+
         gitignore = j.core.tools.text_strip(gitignore)
         ignorefilepath = j.sal.fs.joinPaths(self.BASEDIR, ".gitignore")
+        change = False
         if not j.sal.fs.exists(ignorefilepath):
             j.sal.fs.writeFile(ignorefilepath, gitignore)
         else:
             lines = gitignore.splitlines()
             inn = j.sal.fs.readFile(ignorefilepath)
-            lines = inn.splitlines()
+            lines_in = inn.splitlines()
             linesout = []
             for line in lines:
-                if line.strip():
-                    linesout.append(line)
-            for line in lines:
-                if line not in lines and line.strip():
-                    linesout.append(line)
-            out = "\n".join(linesout)
-            if out.strip() != inn.strip():
+                line = line.strip()
+                if line:
+                    if line not in linesout:
+                        linesout.append(line)
+                        if line not in lines_in:
+                            change = True
+            if change:
+                out = "\n".join(linesout)
                 j.sal.fs.writeFile(ignorefilepath, out)
 
     def describe(self):
