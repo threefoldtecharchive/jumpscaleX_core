@@ -168,11 +168,39 @@ class ThreebotExplorer(j.baseclasses.object):
 
         return record1
 
-    def _reservation_create(self, flist="", hub_url="", environment={}, entrypoint=""):
+    def _reservation_create(self, expiration_provisioning, expiration_reservation):
         """
-        Create a reservation object with container workload from schema url of "tfgrid.reservation.1".
+        Create a reservation object from schema url of "tfgrid.reservation.1".
+
+        :param expiration_provisioning:
+        :type expiration_provisioning: int
+        :param expiration_reservation:
+        :type expiration_reservation: int
+        :return: reservation object
+        :return type: obj
+        """
+        reservation_model = j.data.schema.get_from_url(url="tfgrid.reservation.1")
+
+        reservation = reservation_model.new()
+        reservation.customer_tid = j.tools.threebot.me.default.tid
+        reservation.data_reservation.expiration_provisioning = int(j.data.time.epoch + 30 * 60)
+        reservation.data_reservation.expiration_reservation = int(j.data.time.epoch + 50 * 60)
+
+        return reservation
+
+    def _container_add(
+        self, reservation=None, node_id="", workload_id=1, flist="", hub_url="", environment={}, entrypoint=""
+    ):
+        """
+        Create and add container workload to reservation.
         The parameters passed will be added to the container workload
 
+        :param reservation: reservation object to add container to
+        :type reservation: obj
+        :param node_id: links to unique node on the TFGrid
+        :type node_id: str
+        :param workload_id: unique id inside the reservation is an autoincrement
+        :type workload_id: int
         :param flist: link to flist to create a container from
         :type flist: str
         :param hub_url: link to hub
@@ -184,28 +212,39 @@ class ThreebotExplorer(j.baseclasses.object):
         :return: reservation object
         :return type: obj
         """
-        reservation_model = j.data.schema.get_from_url(url="tfgrid.reservation.1")
-
-        reservation = reservation_model.new()
-        reservation.customer_tid = j.tools.threebot.me.default.tid
-        reservation.data_reservation.expiration_provisioning = int(j.data.time.epoch + 30 * 60)
-        reservation.data_reservation.expiration_reservation = int(j.data.time.epoch + 50 * 60)
-
+        if not reservation:
+            raise j.exceptions.Value("You need to provide a reservation object")
+        if not node_id:
+            raise j.exceptions.Value("You need to provide a node_id value")
         # Create container workload
         container = reservation.data_reservation.containers.new()
-        container.node_id = "1"
-        container.workload_id = 1
+        container.node_id = node_id
+        container.workload_id = workload_id
         container.flist = flist
         container.hub_url = hub_url
         container.environment = environment or {}
         container.entrypoint = entrypoint or ""
-        container.interactive = "yes"  # yes or no
-        reservation.data_reservation.containers.append(container)
+        container.interactive = True  # yes or no
 
+        return reservation
+
+    def _network_add(
+        self,
+        reservation=None,
+        node_id="",
+        workload_id=2,
+        wireguard_private_key_encrypted="",
+        wireguard_public_key="",
+        wireguard_listen_port=51820,
+    ):
+        if not reservation:
+            raise j.exceptions.Value("You need to provide a reservation object")
+        if not node_id:
+            raise j.exceptions.Value("You need to provide a node_id value")
         # Create network workload
         # TODO create network for reservation
         # network = reservation.data_reservation.networks.new()
-        # network.workload_id = 2
+        # network.workload_id = node_id
 
         # stats_aggregator = network.stats_aggregator.new()
         # stats_aggregator.addr = ""
@@ -228,14 +267,26 @@ class ThreebotExplorer(j.baseclasses.object):
         # network_resource.peers.append(peer)
         # network.network_resources.append(network_resource)
 
-        # reservation.data_reservation.networks.append(network)
+        # return reservation
 
-        return reservation
-
-    def container_create(self, flist, hub_url, environment, entrypoint):
+    def container_create(
+        self,
+        container_node_id=0,
+        volume_node_id=0,
+        flist="",
+        hub_url="",
+        environment={},
+        entrypoint="",
+        expiration_provisioning=None,
+        expiration_reservation=None,
+    ):
         """
         Create and register a reservation using explorer workloads actor to deploy a container on a node
 
+        :param container_node_id: links to unique node on the TFGrid to create container on
+        :type container_node_id: str
+        :param volume_node_id: links to unique node on the TFGrid with network on
+        :type volume_node_id: str
         :param flist: link to flist to create a container from
         :type flist: str
         :param hub_url: link to hub
@@ -247,8 +298,29 @@ class ThreebotExplorer(j.baseclasses.object):
         :return: reservation object
         :return type: obj
         """
+        if not container_node_id or not volume_node_id:
+            raise j.exceptions.Value("You need to provide a container_node_id and volume_node_id values ")
+        if not expiration_provisioning:
+            expiration_provisioning = int(j.data.time.epoch + 30 * 60)
+        if not expiration_reservation:
+            expiration_reservation = int(j.data.time.epoch + 50 * 60)
+
         # Create container reservation
-        reservation = self._reservation_create(flist, hub_url, environment, entrypoint)
+        reservation = self._reservation_create(
+            expiration_provisioning=expiration_provisioning, expiration_reservation=expiration_provisioning
+        )
+        # Add container configurations
+        self._container_add(
+            reservation=reservation,
+            node_id=container_node_id,
+            workload_id=1,  # value is 1 as only one container is added in this scenario
+            flist=flist,
+            hub_url=hub_url,
+            environment=environment,
+            entrypoint=entrypoint,
+        )
+        # Add network configurations TODO
+        # self._network_add(reservation=reservation, node_id=volume_node_id, workload_id=2)
 
         # Create reservation.json
         reservation.json = j.data.serializers.json.dumps(reservation.data_reservation._ddict)
