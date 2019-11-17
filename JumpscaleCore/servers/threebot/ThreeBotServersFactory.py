@@ -45,7 +45,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def local_start_zerobot_default(self, web=True, packages_add=False, timeout=600):
         """
 
-        kosmos -p 'j.servers.threebot.local_start_zerobot_default()'
+        kosmos -p 'j.servers.threebot.local_start_zerobot_default(packages_add=True)'
 
         tbot_client = j.servers.threebot.local_start_zerobot_default()
 
@@ -101,19 +101,25 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         return client
 
-    def test(self, name="threebot_phonebook", wiki=True, web=False, fileserver=False):
+    def test(self):
         """
 
-        kosmos 'j.servers.threebot.test(name="basic")'
-        kosmos 'j.servers.threebot.test(name="onlystart")'
+        kosmos 'j.servers.threebot.test()'
         :return:
         """
 
-        gedis_client = j.servers.threebot.local_start_default(web=True)
+        # gedis_client = j.servers.threebot.local_start_default(web=True)
+        gedis_client = j.servers.threebot.local_start_zerobot_default(packages_add=True)
+
+        cl = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
+
+        j.shell()
 
         gedis_client.actors.package_manager.package_add(
             git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook"
         )
+
+        j.shell()
 
         # self.client.actors.package_manager.package_add(
         #     "tfgrid_directory",

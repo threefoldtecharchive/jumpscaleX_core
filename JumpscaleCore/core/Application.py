@@ -106,7 +106,10 @@ class Application(object):
         """
         self._log2fs_session_name = session_name
         tt = self._j.data.time.getLocalTimeHRForFilesystem()
-        self._log2fs_path_prefix = j.core.tools.text_replace("{DIR_BASE}/var/log/%s/%s") % (self._log2fs_session_name, tt)
+        self._log2fs_path_prefix = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s/%s") % (
+            self._log2fs_session_name,
+            tt,
+        )
         self.log2fs_context_change("init")
 
         os.makedirs(self._log2fs_path_prefix)
@@ -541,5 +544,3 @@ class Application(object):
             g.lib_link(path)
         g.generate(methods_find=True)
         g.report()
-
-

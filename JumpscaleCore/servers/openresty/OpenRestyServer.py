@@ -34,7 +34,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
     def _init(self, **kwargs):
         self._cmd = None
         self._web_path = j.core.tools.text_replace("{DIR_BASE}/var/web/%s" % self.name)
-        self.path_web_default = j.core.tools.text_replace("{DIR_BASE}/var/web/default"
+        self.path_web_default = j.core.tools.text_replace("{DIR_BASE}/var/web/default")
         self.path_web = j.core.tools.text_replace("{DIR_BASE}/var/web/%s" % self.name)
         self.path_cfg_dir = j.core.tools.text_replace("{DIR_BASE}/cfg/nginx/%s" % self.name)
         self.path_cfg = "%s/nginx.conf" % self.path_cfg_dir
@@ -100,7 +100,8 @@ class OpenRestyServer(j.baseclasses.factory_data):
             if not j.sal.fs.exists(lualib_dir):
                 j.sal.fs.createDir(lualib_dir)
             j.sal.fs.copyFile(
-                "%s/web_resources/lualib/redis.lua" % self._dirpath, j.core.tools.text_replace("{DIR_BASE}/openresty/lualib/redis.lua")
+                "%s/web_resources/lualib/redis.lua" % self._dirpath,
+                j.core.tools.text_replace("{DIR_BASE}/openresty/lualib/redis.lua"),
             )
             # j.sal.fs.copyFile(
             #     "%s/web_resources/lualib/websocket.lua" % self._dirpath, j.core.tools.text_replace("{DIR_BASE}/openresty/lualib/websocket.lua")
@@ -195,4 +196,3 @@ class OpenRestyServer(j.baseclasses.factory_data):
         self.configure()
         cmd = "cd  %s;lapis build" % self.path_cfg_dir
         j.sal.process.execute(cmd)
-

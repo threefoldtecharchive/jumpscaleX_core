@@ -131,8 +131,10 @@ class ThreeBotServer(j.baseclasses.object_config):
             # clean start for my jobs
             j.servers.myjobs.index_reset()
             j.data.bcdb.check()
-            j.servers.myjobs.workers_tmux_start(4)
-            # TODO: review myjobs to have this by default.
+
+            # j.servers.myjobs.workers_tmux_start(4)
+            j.servers.myjobs._workers_gipc_nr_max = 10
+            j.servers.myjobs.workers_subprocess_start()
 
             self.zdb.start()
             j.servers.sonic.default.start()
@@ -149,20 +151,33 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             j.tools.threebot_packages.get(
                 "webinterface",
-                path=j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webinterface/"),
+                path=j.core.tools.text_replace(
+                    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webinterface/"
+                ),
             )
             j.tools.threebot_packages.get(
-                "wiki", path=j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/wiki/")
+                "wiki",
+                path=j.core.tools.text_replace(
+                    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/wiki/"
+                ),
             )
             j.tools.threebot_packages.get(
-                "chat", path=j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/chat/")
+                "chat",
+                path=j.core.tools.text_replace(
+                    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/chat/"
+                ),
             )
             j.tools.threebot_packages.get(
-                "myjobs", path=j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/myjobs")
+                "myjobs",
+                path=j.core.tools.text_replace(
+                    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/myjobs"
+                ),
             )
             j.tools.threebot_packages.get(
                 "packagemanagerui",
-                path=j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/packagemanagerui"),
+                path=j.core.tools.text_replace(
+                    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/packagemanagerui"
+                ),
             )
 
             # add user added packages
@@ -236,5 +251,3 @@ class ThreeBotServer(j.baseclasses.object_config):
         if self.web:
             startup.ports += [80, 443, 4444, 4445]
         return startup
-
-
