@@ -594,7 +594,8 @@ class StartupCMD(j.baseclasses.object_config):
         else:
             C = self.cmd_start
 
-        C2 = j.core.text.strip(j.core.tools.text_replace(C))
+        C2 = j.core.text.strip(C)
+        C2 = C2.replace("{DIR_BASE}", j.dirs.BASEDIR)
 
         C3 = j.tools.jinja2.template_render(
             text=C2, args=self.env, cmdpath=self.path, cmd=self.cmd_start, name=self.name, cmdobj=self
