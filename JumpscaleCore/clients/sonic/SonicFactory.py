@@ -18,9 +18,7 @@ class SonicFactory(JSConfigs):
         j.clients.sonic.get_client_bcdb()
         :return:
         """
-        j.builders.apps.sonic.install()
-        j.servers.sonic.get("bcdb", port=1491).start()
-        return self.get("bcdb", host="127.0.0.1", port=1491, password="123456")
+        return self.get("bcdb", host="127.0.0.1", port=1491, password="123456")  # default passwd also not ok
 
     def test(self):
         """
