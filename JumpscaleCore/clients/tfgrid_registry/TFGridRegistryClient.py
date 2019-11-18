@@ -48,6 +48,8 @@ class TFGridRegistryClient(j.baseclasses.object):
         is_encrypted_data=False,
         format=Format.WIKI.name,
         schema_url=None,
+        location_longitude=None,
+        location_latitude=None,
         country_code=None,
         category=None,
         topic=None,
@@ -84,6 +86,8 @@ class TFGridRegistryClient(j.baseclasses.object):
                 schema_url=schema_url,
                 country_code=country_code,
                 category=category,
+                location_longitude=location_longitude,
+                location_latitude=location_latitude,
                 topic=topic,
                 description=description,
             )
@@ -103,6 +107,8 @@ class TFGridRegistryClient(j.baseclasses.object):
                 model=model,
                 format=format,
                 schema_url=schema_url,
+                location_longitude=location_longitude,
+                location_latitude=location_latitude,
                 country_code=country_code,
                 category=category,
                 topic=topic,
@@ -129,7 +135,17 @@ class TFGridRegistryClient(j.baseclasses.object):
         info = self.registry_client.get(data_id=data_id, tid=tid)
         return info
 
-    def find_encrypted(self, tid, country_code=None, format=None, category=None, topic=None, description=None):
+    def find_encrypted(
+        self,
+        tid,
+        country_code=None,
+        format=None,
+        category=None,
+        location_longitude=None,
+        location_latitude=None,
+        topic=None,
+        description=None,
+    ):
         """Find all encrypted data for specific user or you can specify search criteria.
 
         Args:
@@ -144,7 +160,14 @@ class TFGridRegistryClient(j.baseclasses.object):
             res (list): Data in the desired format
         """
         res = self.registry_client.find_encrypted(
-            tid=tid, country_code=country_code, format=format, category=category, topic=topic, description=description
+            tid=tid,
+            country_code=country_code,
+            format=format,
+            category=category,
+            topic=topic,
+            description=description,
+            location_longitude=location_longitude,
+            location_latitude=location_latitude,
         )
         return res
 
@@ -156,6 +179,8 @@ class TFGridRegistryClient(j.baseclasses.object):
         category=None,
         topic=None,
         description=None,
+        location_longitude=None,
+        location_latitude=None,
         registered_info_format="jsxschema",
     ):
         """Find the not encrypted data with specific format.
@@ -179,6 +204,8 @@ class TFGridRegistryClient(j.baseclasses.object):
             category=category,
             topic=topic,
             description=description,
+            location_longitude=location_longitude,
+            location_latitude=location_latitude,
             registered_info_format=registered_info_format,
         )
         return res.res
@@ -193,6 +220,8 @@ class TFGridRegistryClient(j.baseclasses.object):
         schema_url=None,
         country_code=None,
         category=None,
+        location_longitude=None,
+        location_latitude=None,
         topic=None,
         description="",
     ):
@@ -217,6 +246,8 @@ class TFGridRegistryClient(j.baseclasses.object):
         dataobj.format = format
         dataobj.schema_url = schema_url
         dataobj.country_code = country_code
+        dataobj.location_longitude = location_longitude
+        dataobj.location_latitude = location_latitude
         dataobj.category = category
         dataobj.topic = topic
         dataobj.description = description
@@ -233,6 +264,8 @@ class TFGridRegistryClient(j.baseclasses.object):
         format=None,
         schema_url=None,
         country_code=None,
+        location_longitude=None,
+        location_latitude=None,
         category=None,
         topic=None,
         description="",
@@ -263,6 +296,8 @@ class TFGridRegistryClient(j.baseclasses.object):
         dataobj.country_code = country_code
         dataobj.category = category
         dataobj.topic = topic
+        dataobj.location_longitude = location_longitude
+        dataobj.location_latitude = location_latitude
         dataobj.description = description
         encrypted_data_model = j.data.schema.get_from_url(url="threebot.registry.entry.data_encrypted.1").new()
         encrypted_data_model.tid = threebotclient.tid
