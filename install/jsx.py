@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import click
-import gevent
 import os
-import redis
 import shutil
 
 from urllib.request import urlopen
@@ -418,7 +416,10 @@ def basebuilder_(dest=None, push=False, delete=True):
 @click.option("--download", is_flag=True, help="download the images")
 def wiki_load(name=None, url=None, foreground=False, pull=False, download=False):
     # monkey patch for myjobs to start/work properly
+    import gevent
     from gevent import monkey
+
+    import redis
 
     monkey.patch_all(subprocess=False)
     from Jumpscale import j
@@ -513,6 +514,20 @@ def threebotbuilder(push=False, base=False, cont=False):
         docker.push()
 
     docker.image = dest
+
+    docker = e.DF.container_get(name="3botprod", delete=True, image=dest)
+    docker.install()
+    installer = IT.JumpscaleInstaller()
+    installer.repos_get(pull=False)
+    docker.jumpscale_install(branch=IT.DEFAULT_BRANCH, threebot=True)
+    docker.install_threebotserver()
+
+    image = dest + "-production"
+    docker.save(image=image, clean_devel=True)
+    if push:
+        docker.push()
+
+    docker.image = image
 
     print("- *OK* threebot container has been built, as image & exported")
 
