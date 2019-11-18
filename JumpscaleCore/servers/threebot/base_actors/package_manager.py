@@ -76,9 +76,8 @@ class package_manager(j.baseclasses.threebot_actor):
         except Exception as e:
             return f"Could not add package {package.name}: {e.message}"
 
-        if j.servers.threebot.current.web:
-            # reload openresty configuration if web is enabled for this threebot server
-            j.servers.threebot.current.openresty_server.reload()
+        # reload openresty configuration
+        j.servers.threebot.current.openresty_server.reload()
 
         return "OK"
 

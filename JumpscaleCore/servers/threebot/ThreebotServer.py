@@ -151,7 +151,9 @@ class ThreeBotServer(j.baseclasses.object_config):
                 worker.load()
 
             # remove jobs from _children older than 1 day
-            for key, job in j.threebot.myjobs.jobs._children.items():
+            # copy jobs, because we will modify children inside the loop
+            jobs = dict(j.threebot.myjobs.jobs._children.items())
+            for key, job in jobs.items():
                 job.load()
                 if job.time_stop > 0:
                     if job.time_stop < j.data.time.epoch - 600:
@@ -218,9 +220,6 @@ class ThreeBotServer(j.baseclasses.object_config):
                 if restart:
                     self.openresty_server.stop()
                 self.openresty_server.start()
-            else:
-                # for in case was already loaded
-                j.servers.threebot.current.openresty_server.reload()
 
             j.tools.threebot_packages.get(
                 "webinterface",
@@ -257,9 +256,9 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             self.rack_server.start(wait=False)
 
-            # j.servers.myjobs.workers_tmux_start(2, in3bot=True)
-            j.servers.myjobs._workers_gipc_nr_max = 10
-            j.servers.myjobs.workers_subprocess_start()
+            j.servers.myjobs.workers_tmux_start(2, in3bot=True)
+            # j.servers.myjobs._workers_gipc_nr_max = 10
+            # j.servers.myjobs.workers_subprocess_start()
 
             self._log_info("start workers done")
 
@@ -297,15 +296,18 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             self._packages_walk()
             j.threebot.__dict__.pop("package")
-            j.__dict__.pop("servers")
+            # j.__dict__.pop("servers")
             j.__dict__.pop("builders")
             # j.__dict__.pop("shell")
             # j.__dict__.pop("shelli")
             j.__dict__.pop("tutorials")
             j.__dict__.pop("sal_zos")
 
+            # reload nginx at the end after loading packages and its config is written
+            j.servers.threebot.current.openresty_server.reload()
+
             print("*** 3BOTSERVER IS RUNNING ***")
-            j.shell()
+            # j.shell()
             forever = event.Event()
             try:
                 forever.wait()
@@ -318,7 +320,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                 self.startup_cmd.start()
                 time.sleep(1)
 
-        if not j.sal.nettools.waitConnectionTest("127.0.0.1", 8901, timeout=timeout):
+        if not j.sal.nettools.waitConnectionTest("127.0.0.1", 8901, timeout=600):
             raise j.exceptions.Timeout("Could not start threebot server")
 
         self.client = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
