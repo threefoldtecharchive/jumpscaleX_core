@@ -213,7 +213,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                     self.openresty_server.stop()
                 self.openresty_server.start()
             else:
-                j.servers.threebot.current.openresty_server.reload()
+                self.openresty_server.reload()
 
             j.tools.threebot_packages.get(
                 "webinterface",
@@ -280,14 +280,14 @@ class ThreeBotServer(j.baseclasses.object_config):
                     package.save()
                 if package.status not in ["disabled"]:
                     self._log_warning("START:%s" % package.name)
-                    package.start()
+                    # package.start()
+                    try:
+                        package.start()
+                    except Exception as e:
+                        j.core.tools.log(level=50, exception=e, stdout=True)
+                        package.status = "error"
                     package.status = "RUNNING"
                     package.save()
-                    # try:
-                    #     package.start()
-                    # except Exception as e:
-                    #     j.core.tools.log(level=50, exception=e, stdout=True)
-                    #     package.status = "error"
 
             self._packages_walk()
             j.threebot.__dict__.pop("package")
@@ -299,7 +299,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.__dict__.pop("sal_zos")
 
             # reload nginx at the end after loading packages and its config is written
-            j.servers.threebot.current.openresty_server.reload()
+            j.threebot.servers.core.openresty_server.reload()
 
             print("*** 3BOTSERVER IS RUNNING ***")
             j.shell()  # DO NOT REMOVE THIS SHELL

@@ -57,6 +57,7 @@ class JSBase:
         if "parent" in kwargs:
             kwargs.pop("parent")
         self._init_pre(**kwargs)
+        self._init_actor(**kwargs)
         self._init_pre2(**kwargs)
         self.__init_class()
         self._obj_cache_reset()
@@ -218,6 +219,12 @@ class JSBase:
     def _init_factory(self, **kwargs):
         """
         only used by factory class
+        :return:
+        """
+        pass
+
+    def _init_actor(self, **kwargs):
+        """
         :return:
         """
         pass

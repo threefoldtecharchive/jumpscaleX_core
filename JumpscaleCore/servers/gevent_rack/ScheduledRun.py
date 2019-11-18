@@ -30,7 +30,7 @@ class ScheduledRun(j.baseclasses.object):
     #     self.greenlets[name] = g
     #     self.greenlets[name].start()
 
-    def schedule(self, name, method, period=0, time_start=0, timeout=0, event=None, retry=None, *args, **kwargs):
+    def schedule(self, name, method, period=0, time_start=0, timeout=0, event=None, retry=None, **kwargs):
         """
 
         :param self:
@@ -58,7 +58,6 @@ class ScheduledRun(j.baseclasses.object):
         sj = ScheduledJob(
             name=name,
             method=method,
-            args=args,
             kwargs=kwargs,
             period=period,
             time_start=time_start,

@@ -5,7 +5,7 @@ from .JSBase import JSBase
 
 
 class ThreeBotActorBase(JSBase):
-    def _init_pre2(self, **kwargs):
+    def _init_actor(self, **kwargs):
         self._schemas = {}
         if "gedis_server" in kwargs:
             self._gedis_server = kwargs["gedis_server"]

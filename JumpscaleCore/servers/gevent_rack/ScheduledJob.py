@@ -46,16 +46,14 @@ class ScheduledJob(j.baseclasses.object):
                 self.raise_error()
                 return self._stop()
             if self.greenlet.successful():
+                j.shell()
                 self._log_debug("ok:%s" % self.name)
                 self.error = None
                 self.result = self.greenlet.value
-                from pudb import set_trace
-
-                set_trace()
                 return self._stop()
             if self.greenlet.dead:
                 self._log_debug("dead:%s" % self.name)
-            j.shell()
+
             self._log_debug("running:%s" % self.name)
         else:
             if self.time_start < now:
