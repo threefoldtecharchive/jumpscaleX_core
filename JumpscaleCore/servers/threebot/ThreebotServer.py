@@ -213,7 +213,6 @@ class ThreeBotServer(j.baseclasses.object_config):
                     self.openresty_server.stop()
                 self.openresty_server.start()
             else:
-                # for in case was already loaded
                 j.servers.threebot.current.openresty_server.reload()
 
             j.tools.threebot_packages.get(
@@ -299,8 +298,11 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.__dict__.pop("tutorials")
             j.__dict__.pop("sal_zos")
 
+            # reload nginx at the end after loading packages and its config is written
+            j.servers.threebot.current.openresty_server.reload()
+
             print("*** 3BOTSERVER IS RUNNING ***")
-            j.shell()
+            j.shell()  # DO NOT REMOVE THIS SHELL
             forever = event.Event()
             try:
                 forever.wait()
@@ -313,7 +315,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                 self.startup_cmd.start()
                 time.sleep(1)
 
-        if not j.sal.nettools.waitConnectionTest("127.0.0.1", 8901, timeout=timeout):
+        if not j.sal.nettools.waitConnectionTest("127.0.0.1", 8901, timeout=600):
             raise j.exceptions.Timeout("Could not start threebot server")
 
         self.client = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
