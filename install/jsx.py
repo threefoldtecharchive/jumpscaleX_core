@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import click
-import gevent
 import os
-import redis
 import shutil
 
 from urllib.request import urlopen
@@ -418,7 +416,10 @@ def basebuilder_(dest=None, push=False, delete=True):
 @click.option("--download", is_flag=True, help="download the images")
 def wiki_load(name=None, url=None, foreground=False, pull=False, download=False):
     # monkey patch for myjobs to start/work properly
+    import gevent
     from gevent import monkey
+
+    import redis
 
     monkey.patch_all(subprocess=False)
     from Jumpscale import j
@@ -477,8 +478,9 @@ def wiki_reload(name=None):
 @click.command(name="threebotbuilder")
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 @click.option("-b", "--base", is_flag=True, help="build base image as well")
+@click.option("-t", "--production", is_flag=True, help="build production image as well")
 @click.option("-c", "--cont", is_flag=True, help="don't delete continue a previously stopped run")
-def threebotbuilder(push=False, base=False, cont=False):
+def threebotbuilder(push=False, base=False, cont=False, production=False):
     """
     create the base for a 3bot
     if 3bot then will also create a 3botdev which is with the development tools inside
@@ -513,6 +515,21 @@ def threebotbuilder(push=False, base=False, cont=False):
         docker.push()
 
     docker.image = dest
+
+    if production:
+        docker = e.DF.container_get(name="3botprod", delete=True, image=dest)
+        docker.install()
+        installer = IT.JumpscaleInstaller()
+        installer.repos_get(pull=False)
+        docker.jumpscale_install(branch=IT.DEFAULT_BRANCH, threebot=True)
+        docker.install_threebotserver()
+
+        image = dest + "-production"
+        docker.save(image=image, clean_devel=True)
+        if push:
+            docker.push()
+
+        docker.image = image
 
     print("- *OK* threebot container has been built, as image & exported")
 
