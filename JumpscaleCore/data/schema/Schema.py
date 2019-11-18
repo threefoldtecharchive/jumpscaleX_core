@@ -57,10 +57,13 @@ class Schema(j.baseclasses.object):
             self._md5 = j.data.schema._md5(text)
 
         self._schema_from_text(text)
-        if self.url:
-            self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
-        else:
-            raise j.exceptions.Input("url not defined in schema", data=text)
+        if not self.url:
+            self.url = j.data.hash.md5_string(text)
+        self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
+        # if self.url:
+        #     self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
+        # else:
+        #     raise j.exceptions.Input("url not defined in schema", data=text)
 
         # urls = self.url.split(".")
         # if len(urls) > 0:

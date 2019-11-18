@@ -138,33 +138,27 @@ class ThreeBotServer(j.baseclasses.object_config):
 
     def _maintenance(self):
 
-        while True:
-            # check all models are mapped to global namespace
-            for bcdb in j.data.bcdb.instances:
-                if bcdb.name not in j.threebot.bcdb.__dict__:
-                    j.threebot.bcdb.__dict__[bcdb.name] = bcdb.children
-                    print("AAA")
+        # check all models are mapped to global namespace
+        for bcdb in j.data.bcdb.instances:
+            if bcdb.name not in j.threebot.bcdb.__dict__:
+                j.threebot.bcdb.__dict__[bcdb.name] = bcdb.children
 
-            # check state workers
-            for key, worker in j.threebot.myjobs.workers._children.items():
-                # get status from worker
-                worker.load()
+        # check state workers
+        for key, worker in j.threebot.myjobs.workers._children.items():
+            # get status from worker
+            worker.load()
 
-            # remove jobs from _children older than 1 day
-            for key, job in j.threebot.myjobs.jobs._children.items():
+        # remove jobs from _children older than 1 day
+        keys = [key for key in j.threebot.myjobs.jobs._children.keys()]
+        for key in keys:
+            if key in j.threebot.myjobs.jobs._children:
+                job = j.threebot.myjobs.jobs._children[key]
                 job.load()
                 if job.time_stop > 0:
                     if job.time_stop < j.data.time.epoch - 600:
                         j.threebot.myjobs.jobs._children.pop(job.name)
 
-            # unbind old jobs from namespace
-            self._log_debug("maintenance")
-
-            gevent.sleep(10)
-
     def _maintenance_day(self):
-
-        day1 = 3600 * 24
 
         while True:
             # remove jobs older than 1 day
@@ -275,7 +269,8 @@ class ThreeBotServer(j.baseclasses.object_config):
             # j.threebot.bcdb_get = j.servers.threebot.bcdb_get
             j.threebot.bcdb = BCDBS()
 
-            j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
+            # j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
+            self._maintenance()
 
             # add user added packages
             for package in j.tools.threebot_packages.find():

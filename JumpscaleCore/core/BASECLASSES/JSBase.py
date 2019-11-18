@@ -841,4 +841,3 @@ class JSBase:
         :return:
         """
         return "jsxobj:%s:%s" % (self.__class__._location, self.__class__.__name__)
-

@@ -1,18 +1,19 @@
 from Jumpscale import j
 from Jumpscale.servers.gedis_http.GedisHTTPFactory import enable_cors
 
+# from .ScheduledJob import ScheduledJob
+from .ScheduledRun import ScheduledRun
 import sys
 import mimetypes
 
-
-JSBASE = j.baseclasses.object
 
 from gevent import monkey
 
 monkey.patch_all(subprocess=False)
 import gevent
 from gevent import event
-from gevent import Greenlet
+
+# from gevent import Greenlet
 
 
 class StripPathMiddleware(object):
@@ -24,25 +25,16 @@ class StripPathMiddleware(object):
         return self.app(e, h)
 
 
-class ServerRack(JSBASE):
+class ServerRack(j.baseclasses.object):
     """
     is a group of gedis servers in a virtual rack
     """
 
     def _init(self, **kwargs):
         self.servers = {}
-        self.greenlets = {}
+        self.schedulers = {}
         self._logger_enable()
-        # self._monkeypatch_done = False
         self.is_started = False
-
-    def greenlet_add(self, name, method, *args, **kwargs):
-        if name in self.servers:
-            raise j.exceptions.BASE("cannot add greenlet:%s already exists" % name)
-        g = Greenlet(method, *args, **kwargs)
-        self.servers[name] = g
-        if self.is_started:
-            self.servers[name].start()
 
     def add(self, name, server):
         """add a gevent server
@@ -62,6 +54,19 @@ class ServerRack(JSBASE):
             server.start()
         else:
             self.servers[name] = server
+
+    def scheduler_get(self, name, timeout=0):
+        """
+
+        :param self:
+        :param name:
+        :param timeout: in seconds after start
+        :return:
+        """
+        if name in self.schedulers:
+            raise j.exceptions.Input("cannot add scheduler with name:%s" % name)
+        self.schedulers[name] = ScheduledRun(name=name, timeout=timeout)
+        return self.schedulers[name]
 
     def bottle_server_add(
         self, name="bottle", port=4442, app=None, websocket=False, force_override=False, strip_slash=True
@@ -230,14 +235,16 @@ class ServerRack(JSBASE):
         self.add(name=name, server=server)
 
     def start(self, wait=True):
-        # self._monkeypatch()
-        started = []
+        # started = []
+        keys = [key for key in self.servers.keys()]
         try:
-            for key, server in self.servers.items():
-                server.start()
-                started.append(server)
-                name = getattr(server, "name", None) or server.__class__.__name__ or "Server"
-                self._log_info("%s started on %s" % (name, server.address))
+            for key in keys:
+                if key in self.servers:
+                    server = self.servers[key]
+                    server.start()
+                    # started.append(server)
+                    name = getattr(server, "name", None) or server.__class__.__name__ or "Server"
+                    self._log_info("%s started on %s" % (name, server.address))
             self.is_started = True
 
         except:

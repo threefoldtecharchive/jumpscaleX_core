@@ -27,25 +27,21 @@ class ServerRackFactory(JSBASE):
     __jslocation__ = "j.servers.rack"
 
     def _init(self, **kwargs):
-        self._logger_enable()
-        self.current = None
+        # self._logger_enable()
+        self._current = None
+
+    @property
+    def current(self):
+        if not self._current:
+            self._current = ServerRack()
+        return self._current
 
     def get(self):
-
-        """
-        returns a gevent rack
-
-        to start the server manually do:
-        js_shell 'j.servers.rack.start(namespace="test", secret="1234")'
-
-        """
-        if not self.current:
-            self.current = ServerRack()
         return self.current
 
     def install(self):
         """
-        kosmos 'j.servers.rack._server_test_start()'
+        kosmos 'j.servers.rack.install()'
         :return:
         """
         j.builders.runtimes.python3.pip_package_install("bottle,webdavclient3")
