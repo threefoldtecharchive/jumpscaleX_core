@@ -48,14 +48,16 @@ fifth_id= j.tools.threebot.me.get("fifth_id", tid=60, email="test4@test.com", tn
 
 * Register encrypted data
 
+    schema_url = "threebot.registry.test.schema.1"
+
     ```python
-    data_id = j.clients.tfgrid_registry.register(schema = schema, authors = [first_id.tid, second_id.tid, third_id.tid], model = model,is_encrypted_data = True,readers = [fourh_id.tid, fifth_id.tid])
+    data_id = j.clients.tfgrid_registry.register(schema = schema, schema_url=schema_url, authors = [first_id.tid, second_id.tid, third_id.tid], model=model,is_encrypted_data = True,readers = [fourh_id.tid, fifth_id.tid])
     ```
 
 * Register non encrypted data
 
     ```python
-    data_id = j.clients.tfgrid_registry.register(schema = schema, authors = [first_id.tid, second_id.tid, third_id.tid], model = model,is_encrypted_data = False)
+    data_id = j.clients.tfgrid_registry.register(schema=schema, schema_url=schema_url, authors=[first_id.tid, second_id.tid, third_id.tid], model=model,is_encrypted_data=False)
     ```
 
 * Get data
