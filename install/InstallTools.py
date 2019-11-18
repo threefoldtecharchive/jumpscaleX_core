@@ -3972,6 +3972,7 @@ class BaseInstaller:
                 "Flask>=0.12.2",
                 "html2text",
                 "influxdb>=4.1.0",
+                "google-api-python-client",
             ],
         }
 
