@@ -18,14 +18,14 @@ class SSHClientBase(j.baseclasses.object_config):
         passwd = ""
         sshkey_name = ""
         #if we want to use other key compared to the one we have by default, can specify the name here
-        sshkey_deployment = ""  
+        sshkey_deployment = ""
         proxy = ""
         stdout = True (B)
         forward_agent = True (B)
         allow_agent = True (B)
         client_type = "paramiko,pssh" (E)
         timeout = 60
-        config_msgpack = "" (bytes)     
+        config_msgpack = "" (bytes)
         env_on_system_msgpack = "" (bytes)
         meta = {} (DICT)
         """
@@ -45,6 +45,15 @@ class SSHClientBase(j.baseclasses.object_config):
         self.executor = j.tools.executor.ssh_get(self)
         self._wireguard = None
         self._init3()
+        if (
+            j.sal.process.execute("ssh-add -l", die=False, showout=False)[2]
+            == "Could not open a connection to your authentication agent.\n"
+        ):
+            j.core.myenv.sshagent.start()
+            try:
+                self.sshkey_obj.load()
+            except:
+                j.clients.sshkey.get().load()
 
     def state_reset(self):
         """
@@ -365,6 +374,7 @@ class SSHClientBase(j.baseclasses.object_config):
                         when the len of the cmd is more than 100.000 then will always execute as script
         :return:
         """
+
         if not isinstance(cmd, str):
             raise j.exceptions.Base("cmd needs to be string")
         if replace:
