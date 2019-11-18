@@ -14,9 +14,7 @@ class ZDBClientBase(j.baseclasses.object_config):
 
         self.type = "ZDB"
 
-        self.redis = _patch_redis_client(
-            j.clients.redis.get(ipaddr=self.addr, port=self.port, fromcache=False, ping=False)
-        )
+        self._redis = None
 
         self.nsname = self.nsname.lower().strip()
 
@@ -39,6 +37,18 @@ class ZDBClientBase(j.baseclasses.object_config):
             self._select_namespace()
 
         assert self.ping()
+
+    def save(self):
+        self._redis = None
+        j.baseclasses.object_config.save(self)
+
+    @property
+    def redis(self):
+        if not self._redis:
+            self._redis = _patch_redis_client(
+                j.clients.redis.get(ipaddr=self.addr, port=self.port, fromcache=False, ping=False)
+            )
+        return self._redis
 
     def _select_namespace(self, nsname=None):
         if not nsname is None:
