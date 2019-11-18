@@ -198,29 +198,25 @@ class GedisCmds(JSBASE):
             cmd.public = data.get("public")
             user_ids = []
             for user_threebot_id in data.get("users", []):
-                user = self.data.bcdb.system.users.find(threebot_id=user_threebot_id)
+                user = j.data.bcdb.system.user.find(threebot_id=user_threebot_id)
                 if user:
-                    user_ids.append(user[0].id)
-                else:
-                    raise j.exceptions.NotFound(f"user with threebot_id:'{user_threebot_id}' can't be found")
+                    user_ids.append(user_threebot_id)
 
             circle_ids = []
             for circle_threebot_id in data.get("circles", []):
-                circle = self.data.bcdb.system.circle.find(threebot_id=circle_threebot_id)
-                if circle:
-                    circle_ids.append(circle[0].id)
-                else:
-                    raise j.exceptions.NotFound(f"circle with threebot_id:'{circle_threebot_id}' can't be found")
-
+                circle = j.data.bcdb.system.circle.find(threebot_id=circle_threebot_id)
+                # if circle not found, create it locally
+                # Append circle threebot_id into circle_ids in all cases
+                if not circle:
+                    c = j.data.bcdb.system.circle.new()
+                    c.threebot_id =  circle_threebot_id
+                    c.save()
+                circle_ids.append(circle_threebot_id)
             self.data.acl.rights_add(userids=user_ids, circleids=circle_ids, rights=[cmd.name])
         else:
-            cmd.public = True
-            # TODO: by default is public for now until we have the full flow of authentication
-            #  after merging this PR https://github.com/threefoldtech/jumpscaleX_core/pull/187/files
-            # admins_circle_id = j.data.bcdb.system.circle.get_by_name("admins").id
-            # self.data.acl.rights_add(circleids=[admins_circle_id], rights=[cmd.name])
-
-        # cmd.save()
+            cmd.public = False
+            admins_circle_threebot_id = j.data.bcdb.system.circle.get_by_name("admins").threebot_id
+            self.data.acl.rights_add(circleids=[admins_circle_threebot_id], rights=[cmd.name])
         self.data.save()
         return cmd
 

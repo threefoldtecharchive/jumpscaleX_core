@@ -278,7 +278,7 @@ class Handler(JSBASE):
                 # close the connection
                 return
 
-    def _authorized(self, actor_name, cmd_name, threebot_id):
+    def _authorized(self, actor_name, cmd_name, threebot_name):
         """
         checks if the current session is authorized to access the requested command
         Notes:
@@ -288,6 +288,8 @@ class Handler(JSBASE):
         """
         if actor_name == "system":
             return True, None
+        if threebot_name == j.tools.threebot.me.default.tname:
+            return True, None
         try:
             actor_obj = self.api_model.get_by_name(actor_name)
         except:
@@ -296,13 +298,14 @@ class Handler(JSBASE):
             if cmd.name == cmd_name:
                 if cmd.public:
                     return True, None
-                elif not threebot_id:
+                elif not threebot_name:
                     return False, "No user is authenticated on this session and the command isn't public"
                 else:
-                    user = j.data.bcdb.system.user.find(threebot_id=threebot_id)
+                    user = j.data.bcdb.system.user.find(threebot_id=threebot_name)
                     if not user:
-                        return False, f"Couldn't find user with threebot_id {threebot_id}"
-                    return actor_obj.acl.rights_check(userids=[user[0].id], rights=[cmd_name]), None
+                        return False, f"Couldn't find user with threebot_id {threebot_name}"
+                    acl = actor_obj.acl.find()[0]
+                    return actor_obj.acl.rights_check(acl=acl, id=user[0].threebot_id, rights=[cmd_name]), None
 
         return False, "Command not found"
 
@@ -379,7 +382,7 @@ class Handler(JSBASE):
         # cmd is cmd metadata + cmd.method is what needs to be executed
         try:
             is_authorized, reason = self._authorized(
-                request.command.actor, request.command.command, user_session.threebot_id
+                request.command.actor, request.command.command, user_session.threebot_name
             )
             if is_authorized:
                 cmd = self._cmd_obj_get(

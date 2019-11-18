@@ -67,15 +67,15 @@ class ACL(j.data.bcdb._BCDBModelClass):
             circleids = []
         changed = False
         for userid in userids:
-            name = f"user_{acl.name}_{userid}"
+            name = f"{userid}"
             new = False
             for acl_user in acl.users:
-                if acl_user.uid == userid:
+                if acl_user.threebot_id == userid:
                     user = acl_user
                     break
             else:
                 user = self.acl_users_model.new(name=name)
-                user.uid = userid
+                user.threebot_id = userid
                 new = True
                 changed = True
 
@@ -97,12 +97,12 @@ class ACL(j.data.bcdb._BCDBModelClass):
             name = f"circle_{acl.name}_{circleid}"
             new = False
             for acl_circle in acl.circles:
-                if acl_circle.cid == circleid:
+                if acl_circle.threebot_id == circleid:
                     circle = acl_circle
                     break
             else:
                 circle = self.acl_circles_model.new(name=name)
-                circle.cid = circleid
+                circle.threebot_id = circleid
                 new = True
                 changed = True
 
@@ -118,10 +118,11 @@ class ACL(j.data.bcdb._BCDBModelClass):
             if new:
                 acl.circles.append(circle)
 
-            subcircles = self.circles_model.get(circleid).circle_members
-            for subcircle in subcircles:
-                if subcircle not in visited:
-                    circleids.append(subcircle)
+            subcircles = self.circles_model.find(threebot_id=circleid)
+            if subcircles:
+                for subcircle in subcircles[0].circle_members:
+                    if subcircle not in visited:
+                        circleids.append(subcircle)
 
         acl.md5 = j.data.hash.md5_string(acl._data)
         acl.save()
@@ -131,8 +132,8 @@ class ACL(j.data.bcdb._BCDBModelClass):
         """
         adds rights to set of users or groups
         :param acl: referance tp acl object
-        :param userids: list of user ids
-        :param circleids: list of circle ids
+        :param userids: list of user threebot ids
+        :param circleids: list of circle threebot ids
         :param rights: the rights to be added
         :return: True if any rights were added
         """
@@ -156,8 +157,8 @@ class ACL(j.data.bcdb._BCDBModelClass):
         :return: user object if id exists
         """
         try:
-            return self.users_model.get(id)
-        except:
+            return self.users_model.find(threebot_id=id)[0]
+        except IndexError:
             return None
 
     def _try_get_circle(self, id):
@@ -167,8 +168,8 @@ class ACL(j.data.bcdb._BCDBModelClass):
         :return: circle object if id exists
         """
         try:
-            return self.circles_model.get(id)
-        except:
+            return self.circles_model.find(threebot_id=id)[0]
+        except IndexError:
             return None
 
     def _compare_rights(self, acl_rights, rights):
@@ -193,14 +194,20 @@ class ACL(j.data.bcdb._BCDBModelClass):
         :param rights: rights to check
         :return: True if the rights exists
         """
+        users =  j.data.bcdb.system.user.find(threebot_id=user_id)
+        if not users:
+            return False
+        user = users[0]
         acl_circles = acl.circles
         for acl_circle in acl_circles:
-            circle = self.circles_model.get(acl_circle.cid)
+            circles = self.circles_model.find(threebot_id=acl_circle.threebot_id)
+            if not circles:
+                continue
+            circle = circles[0]
             if self._compare_rights(acl_circle.rights, rights):
                 for member in circle.user_members:
-                    if member == user_id:
+                    if member == user.id:
                         return True
-
         return False
 
     def _circle_has_rights(self, acl, circle_id, rights):
@@ -215,7 +222,7 @@ class ACL(j.data.bcdb._BCDBModelClass):
         """
         acl_circles = acl.circles
         for acl_circle in acl_circles:
-            if acl_circle.cid == circle_id:
+            if acl_circle.threebot_id == circle_id:
                 if self._compare_rights(acl_circle.rights, rights):
                     return True
         return False
@@ -224,7 +231,7 @@ class ACL(j.data.bcdb._BCDBModelClass):
         """
         checks if a certain user or group has certain rights
         :param acl: referance to acl object
-        :param id: user id or circle id
+        :param id: user threebot_id or circle threebot_id
         :param rights:
         :return:
         """
@@ -235,12 +242,10 @@ class ACL(j.data.bcdb._BCDBModelClass):
         circle = self._try_get_circle(id)
         if user:
             for acl_user in acl.users:
-                if acl_user.uid == user.id and self._compare_rights(acl_user.rights, rights):
+                if acl_user.name == user.threebot_id and self._compare_rights(acl_user.rights, rights):
                     return True
-            return self._user_has_rights(acl, user.id, rights)
+            return self._user_has_rights(acl, user.name, rights)
         elif circle:
-            return self._circle_has_rights(acl, id, rights)
-        else:
             raise RuntimeError(f"Can't find users or circles with id: {id}")
 
     def _methods_add(self, obj):

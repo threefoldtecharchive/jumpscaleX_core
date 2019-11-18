@@ -67,3 +67,5 @@ client2.actors_default.html_test.hello_markdown()
  - content             : _markdown test_ Hello ``
 
 ```
+
+- For authorization Please refer to actor documentation [here](/docs/packages/actors.md)
