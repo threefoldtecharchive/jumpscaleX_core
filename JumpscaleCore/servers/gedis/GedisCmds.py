@@ -215,8 +215,9 @@ class GedisCmds(JSBASE):
             self.data.acl.rights_add(userids=user_ids, circleids=circle_ids, rights=[cmd.name])
         else:
             cmd.public = False
-            admins_circle_threebot_id = j.data.bcdb.system.circle.get_by_name("admins").threebot_id
+            admins_circle_threebot_id = j.data.bcdb.system.circle.find(name="admins")[0].threebot_id
             self.data.acl.rights_add(circleids=[admins_circle_threebot_id], rights=[cmd.name])
+
         self.data.save()
         return cmd
 

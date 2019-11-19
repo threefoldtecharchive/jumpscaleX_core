@@ -124,7 +124,13 @@ class ThreeBotServer(j.baseclasses.object_config):
         else:
             self.ssl = ssl
 
+
         self.save()
+
+        if not j.data.bcdb.system.circle.find(name='admins'):
+            c = j.data.bcdb.system.circle.new()
+            c.name = 'admins'
+            c.save()
 
         if not background:
             # do bcdb check and rebuild index if index and data aren't in sync.
@@ -197,11 +203,15 @@ class ThreeBotServer(j.baseclasses.object_config):
         if not j.sal.nettools.waitConnectionTest("127.0.0.1", 8901, timeout=timeout):
             raise j.exceptions.Timeout("Could not start threebot server")
 
+
+
         self.client = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
         # TODO: will have to authenticate myself
 
         self.client.reload()
         assert self.client.ping()
+
+
 
         return self.client
 
