@@ -45,10 +45,9 @@ class SSHClientBase(j.baseclasses.object_config):
         self.executor = j.tools.executor.ssh_get(self)
         self._wireguard = None
         self._init3()
-        if self.sshkey_name not in j.core.myenv.sshagent.key_names:
+        if self.sshkey_name and self.sshkey_name not in j.core.myenv.sshagent.key_names:
             j.core.myenv.sshagent.start()
-            if self.sshkey_name:
-                self.sshkey_obj.load()
+            self.sshkey_obj.load()
 
     def state_reset(self):
         """
