@@ -122,7 +122,7 @@ class SonicClient(BaseTest):
         self.info("Use pop method to pop an object")
         self.client.pop(self.COLLECTION, self.BUCKET, 'post:2', 'this is a hello {}'.format(self.RAND_STRING_2))
 
-        self.info("Use count method to check that output")
+        self.info("Use count method to check the length of data after pop")
         self.assertEqual(self.client.count(self.COLLECTION, self.BUCKET), len(self.data)-1)
 
     def test006_flush_for_certain_collection_and_bucket(self):
