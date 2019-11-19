@@ -175,5 +175,5 @@ class SonicClient(BaseTest):
         self.info("use flush_bucket method to flush certain bucket")
         self.client.flush_bucket(self.COLLECTION, self.BUCKET)
 
-        self.info("Check count in {} bucket, should be 0")
+        self.info("Check count in {} bucket, should be 0".format(self.BUCKET))
         self.assertEqual(self.client.count(self.COLLECTION, self.BUCKET), 0)
