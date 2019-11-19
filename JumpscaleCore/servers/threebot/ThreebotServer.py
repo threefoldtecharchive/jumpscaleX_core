@@ -267,6 +267,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.threebot.myjobs = j.servers.myjobs
             # j.threebot.bcdb_get = j.servers.threebot.bcdb_get
             j.threebot.bcdb = BCDBS()
+            j.threebot.bcdb_factory = j.data.bcdb
 
             # j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
             self._maintenance()
