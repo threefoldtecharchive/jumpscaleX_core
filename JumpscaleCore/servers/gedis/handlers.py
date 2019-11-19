@@ -336,8 +336,15 @@ class Handler(JSBASE):
             tid = int(tid)
 
             current_threebot_id = int(j.tools.threebot.me.default.tid)
-
-            if current_threebot_id != tid:
+            # if tid is 0 (special value)
+            # we know that this machine is not registered in phonebook yet
+            # we leave session empty
+            # this is important as some actors may require public access
+            # then it's responsibility of actors to make their own decisions
+            # around who can access them
+            if tid == 0:
+                pass
+            elif current_threebot_id != tid:
                 try:
                     tclient = j.clients.threebot.client_get(threebot=tid)
                 except Exception as e:
