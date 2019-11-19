@@ -1,3 +1,4 @@
+from functools import wraps
 from Jumpscale import j
 
 
@@ -25,6 +26,7 @@ def actor_method(func):
 
         return (schema_in, schema_out)
 
+    @wraps(func)
     def wrapper_action(*args, **kwargs):
         self = args[0]
         if not len(args) == 1:

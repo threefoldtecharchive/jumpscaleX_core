@@ -58,6 +58,7 @@ class ScheduledRun(j.baseclasses.object):
         sj = ScheduledJob(
             name=name,
             method=method,
+            args=[],
             kwargs=kwargs,
             period=period,
             time_start=time_start,
