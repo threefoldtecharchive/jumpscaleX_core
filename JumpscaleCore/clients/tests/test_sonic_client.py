@@ -71,7 +71,7 @@ class SonicClient(BaseTest):
         )
 
         # need to check the correct behaviour for this query.
-        self.info("Query for non valid collection and bucket")
+        self.info("Query for non valid collection and bucket, should raise an error")
         self.assertEqual(len(self.client.query("RANDOM_COLLECTION", "RANDOM_BUCKET", "RANDOM_OBJECT")), 0)
 
     def test003_suggest_with_certain_collection_and_bucket(self):
@@ -119,7 +119,7 @@ class SonicClient(BaseTest):
         self.info("Use pop method with non valid data, the count of data shouldn't change")
         self.client.pop(self.COLLECTION, self.BUCKET, 'post:15', "test")
 
-        self.info("Use pop method to pop the latest index")
+        self.info("Use pop method to pop an object")
         self.client.pop(self.COLLECTION, self.BUCKET, 'post:2', 'this is a hello {}'.format(self.RAND_STRING_2))
 
         self.info("Use count method to check that output")
