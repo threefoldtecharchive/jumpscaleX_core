@@ -49,8 +49,6 @@ class SSHClientBase(j.baseclasses.object_config):
             j.core.myenv.sshagent.start()
             if self.sshkey_name:
                 self.sshkey_obj.load()
-            else:
-                j.clients.sshkey.get().load()
 
     def state_reset(self):
         """
