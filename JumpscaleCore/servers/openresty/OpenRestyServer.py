@@ -96,9 +96,6 @@ class OpenRestyServer(j.baseclasses.factory_data):
             )
 
             # link individual files & create a directory TODO:*1
-            lualib_dir = "/sandbox/openresty/lualib"
-            if not j.sal.fs.exists(lualib_dir):
-                j.sal.fs.createDir(lualib_dir)
             self.status = "installed"
 
             self.save()
