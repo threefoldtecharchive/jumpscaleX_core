@@ -45,14 +45,11 @@ class SSHClientBase(j.baseclasses.object_config):
         self.executor = j.tools.executor.ssh_get(self)
         self._wireguard = None
         self._init3()
-        if (
-            j.sal.process.execute("ssh-add -l", die=False, showout=False)[2]
-            == "Could not open a connection to your authentication agent.\n"
-        ):
+        if self.sshkey_name not in j.core.myenv.sshagent.key_names:
             j.core.myenv.sshagent.start()
-            try:
+            if self.sshkey_name:
                 self.sshkey_obj.load()
-            except:
+            else:
                 j.clients.sshkey.get().load()
 
     def state_reset(self):
