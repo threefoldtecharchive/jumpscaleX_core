@@ -135,10 +135,10 @@ class SonicClient(BaseTest):
         #. Use count method to check that output, should be 0.
         """
 
-        self.info("Use flush to flush certain collection with certain bucket")
+        self.info("Use flush to flush certain collection")
         self.client.flush(self.COLLECTION)
 
-        self.info("Use count method to check that output")
+        self.info("Use count method to check the length of data after flush, should be 0")
         self.assertEqual(self.client.count(self.COLLECTION, self.BUCKET), 0)
 
         # self.info("Use flush to flush non existing collection with certain bucket")
@@ -168,8 +168,8 @@ class SonicClient(BaseTest):
         Test Case for flush_object method for certain bucket in certain collection.
 
         **Test scenario**
-        #. use flush_bucket method to flush certain bucket.
-        #. Check that their is no more objects in the second created bucket.
+        #. Use flush_bucket method to flush certain bucket.
+        #. Check that there is no more objects in the bucket.
         """
 
         self.info("use flush_bucket method to flush certain bucket")
