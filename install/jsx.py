@@ -482,10 +482,7 @@ def wiki_reload(name=None):
 @click.option("-c", "--cont", is_flag=True, help="don't delete continue a previously stopped run")
 def threebotbuilder(push=False, base=False, cont=False, production=False):
     """
-    create the base for a 3bot
-    if 3bot then will also create a 3botdev which is with the development tools inside
-    :param dest: default threefoldtech/base  the base is the base ubuntu image
-    :return:
+    create the 3bot and 3botdev images
     """
     delete = not cont
     if base:
