@@ -24,6 +24,7 @@ Commands:
   container-stop     stop the 3bot container :param name: :return:
   containers-reset   remove all docker containers :param name: :return:
   generate           generate the loader file, important to do when new...
+  threebotbuilder    create the 3bot and 3botdev images
   install            install jumpscale in the local system (only supported...
   kosmos
 ```
@@ -89,6 +90,33 @@ Options:
                        without removing the data
   --no-interactive     default is interactive
   --help               Show this message and exit.
+```
+
+## threebotbuilder
+
+`threebotbuilder` can be used to build and push all our 3bot images.
+
+  We have four images:
+- threefoldtech/base: pass `-b` to build it
+- threefoldtech/3botdev: built by default
+- threefoldtech/3bot: built by default
+- threefoldtech/3bot-production: pass `-t` to build it
+
+  to push all images, pass `-p` to the command
+
+```bash
+jsx threebotbuilder --help
+Usage: jsx.py threebotbuilder [OPTIONS]
+
+  create the 3bot and 3botdev images
+
+Options:
+  -p, --push        push to docker hub
+  -b, --base        build base image as well
+  -t, --production  build production image as well
+  -c, --cont        don't delete continue a previously stopped run
+  --help            Show this message and exit.
+
 ```
 
 ## other commands

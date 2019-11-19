@@ -40,7 +40,20 @@ class TFGridRegistryClient(j.baseclasses.object):
         self.bcdb = j.data.bcdb.get("threebot_registery")
 
     def register(
-        self, authors=None, readers=None, schema=None, model=None, is_encrypted_data=False, format=Format.WIKI.name
+        self,
+        authors=None,
+        readers=None,
+        schema=None,
+        model=None,
+        is_encrypted_data=False,
+        format=Format.WIKI.name,
+        schema_url=None,
+        location_longitude=None,
+        location_latitude=None,
+        country_code=None,
+        category=None,
+        topic=None,
+        description=None,
     ):
         """client comes from j.clients.threebot.client_get(threebot="kristof.ibiza").
 
@@ -70,7 +83,13 @@ class TFGridRegistryClient(j.baseclasses.object):
                 new_scm=scm,
                 model=model,
                 format=format,
-                description="text",
+                schema_url=schema_url,
+                country_code=country_code,
+                category=category,
+                location_longitude=location_longitude,
+                location_latitude=location_latitude,
+                topic=topic,
+                description=description,
             )
             verifykey, signed_data = self.__sign_data(dataobj=dataobj)
             post_id = self.registry_client.register(
@@ -83,7 +102,17 @@ class TFGridRegistryClient(j.baseclasses.object):
         else:
             authors.append(self.me.tid)
             dataobj = self.__add_registry_schema_data(
-                authors=authors, new_scm=scm, model=model, format=format, description="text"
+                authors=authors,
+                new_scm=scm,
+                model=model,
+                format=format,
+                schema_url=schema_url,
+                location_longitude=location_longitude,
+                location_latitude=location_latitude,
+                country_code=country_code,
+                category=category,
+                topic=topic,
+                description=description,
             )
             verifykey, signed_data = self.__sign_data(dataobj=dataobj)
             post_id = self.registry_client.register(
@@ -106,7 +135,17 @@ class TFGridRegistryClient(j.baseclasses.object):
         info = self.registry_client.get(data_id=data_id, tid=tid)
         return info
 
-    def find_encrypted(self, tid, country_code=None, format=None, category=None, topic=None, description=None):
+    def find_encrypted(
+        self,
+        tid,
+        country_code=None,
+        format=None,
+        category=None,
+        location_longitude=None,
+        location_latitude=None,
+        topic=None,
+        description=None,
+    ):
         """Find all encrypted data for specific user or you can specify search criteria.
 
         Args:
@@ -121,7 +160,14 @@ class TFGridRegistryClient(j.baseclasses.object):
             res (list): Data in the desired format
         """
         res = self.registry_client.find_encrypted(
-            tid=tid, country_code=country_code, format=format, category=category, topic=topic, description=description
+            tid=tid,
+            country_code=country_code,
+            format=format,
+            category=category,
+            topic=topic,
+            description=description,
+            location_longitude=location_longitude,
+            location_latitude=location_latitude,
         )
         return res
 
@@ -133,6 +179,8 @@ class TFGridRegistryClient(j.baseclasses.object):
         category=None,
         topic=None,
         description=None,
+        location_longitude=None,
+        location_latitude=None,
         registered_info_format="jsxschema",
     ):
         """Find the not encrypted data with specific format.
@@ -156,12 +204,26 @@ class TFGridRegistryClient(j.baseclasses.object):
             category=category,
             topic=topic,
             description=description,
+            location_longitude=location_longitude,
+            location_latitude=location_latitude,
             registered_info_format=registered_info_format,
         )
-        return res
+        return res.res
 
     def __add_registry_schema_data(
-        self, url="threebot.registry.entry.data.1", authors=None, new_scm=None, model=None, format=None, description=""
+        self,
+        url="threebot.registry.entry.data.1",
+        authors=None,
+        new_scm=None,
+        model=None,
+        format=None,
+        schema_url=None,
+        country_code=None,
+        category=None,
+        location_longitude=None,
+        location_latitude=None,
+        topic=None,
+        description="",
     ):
         """Add data to the registry.
 
@@ -182,6 +244,12 @@ class TFGridRegistryClient(j.baseclasses.object):
         dataobj.schema_url = new_scm
         dataobj.registered_info = model._data
         dataobj.format = format
+        dataobj.schema_url = schema_url
+        dataobj.country_code = country_code
+        dataobj.location_longitude = location_longitude
+        dataobj.location_latitude = location_latitude
+        dataobj.category = category
+        dataobj.topic = topic
         dataobj.description = description
         dataobj.save()
         return dataobj
@@ -194,6 +262,12 @@ class TFGridRegistryClient(j.baseclasses.object):
         new_scm=None,
         model=None,
         format=None,
+        schema_url=None,
+        country_code=None,
+        location_longitude=None,
+        location_latitude=None,
+        category=None,
+        topic=None,
         description="",
         threebotclient=None,
     ):
@@ -218,6 +292,12 @@ class TFGridRegistryClient(j.baseclasses.object):
         dataobj.readers = readers
         dataobj.schema_url = new_scm.url
         dataobj.format = format
+        dataobj.schema_url = schema_url
+        dataobj.country_code = country_code
+        dataobj.category = category
+        dataobj.topic = topic
+        dataobj.location_longitude = location_longitude
+        dataobj.location_latitude = location_latitude
         dataobj.description = description
         encrypted_data_model = j.data.schema.get_from_url(url="threebot.registry.entry.data_encrypted.1").new()
         encrypted_data_model.tid = threebotclient.tid

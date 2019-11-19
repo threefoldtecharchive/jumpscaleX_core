@@ -43,6 +43,10 @@ class GedisClient(JSConfigBase):
         self._reset()
         self.reload()
 
+    def save(self):
+        self._redis_ = None
+        JSConfigBase.save(self)
+
     def _update_trigger(self, key, val):
         self._reset()
 

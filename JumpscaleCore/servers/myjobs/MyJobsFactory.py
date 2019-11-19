@@ -498,6 +498,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self.workers.reset()
         self.scheduled_ids = []
         self.queue_jobs_start.reset()
+        assert self.queue_jobs_start.qsize() == 0
 
     def check_all(self, die=True):
         for job in self.find(state="NEW"):

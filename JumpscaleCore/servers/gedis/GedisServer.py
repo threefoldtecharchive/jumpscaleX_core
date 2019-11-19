@@ -232,7 +232,6 @@ class GedisServer(JSBaseConfig):
         data["host"] = host
         data["port"] = self.port
         data["password_"] = self.secret_
-        data["ssl"] = self.ssl
         data["namespace"] = namespace
 
         return j.clients.gedis.get(name=self.name, **data)
