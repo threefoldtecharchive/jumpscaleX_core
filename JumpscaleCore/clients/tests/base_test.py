@@ -5,10 +5,9 @@ from Jumpscale import j
 
 
 class BaseTest(unittest.TestCase):
-
     @staticmethod
     def info(message):
-        logging.basicConfig(format='%(message)s', level=logging.INFO)
+        logging.basicConfig(format="%(message)s", level=logging.INFO)
         logging.info(message)
 
     @staticmethod
@@ -22,8 +21,8 @@ class BaseTest(unittest.TestCase):
         return j.data.idgenerator.generateRandomInt(100, 1000)
 
     @staticmethod
-    def rand_string(num):
-        return j.data.idgenerator.generateXCharID(num)
+    def rand_string():
+        return j.data.idgenerator.generateXCharID(10)
 
     def delete_client_method(self, client, schema_url, client_name):
         """
