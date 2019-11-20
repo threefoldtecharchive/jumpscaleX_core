@@ -3,6 +3,7 @@ from Jumpscale import j
 from base_test import BaseTest
 
 
+@unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/250")
 class SonicClient(BaseTest):
     @classmethod
     def setUpClass(cls):
@@ -45,7 +46,7 @@ class SonicClient(BaseTest):
         self.client.flush(self.COLLECTION)
 
     @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/271")
-    def test001_push_with_collection_and_bucket(self):
+    def test001_push_collection_bucket(self):
         """
         TC 522
         Test case to Push method in Sonic client, with valid collection, bucket, object, text.
@@ -65,7 +66,7 @@ class SonicClient(BaseTest):
         self.assertEqual(self.client.count("RANDOM_COLLECTION", "RANDOM_BUCKET"), 0)
 
     @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/272")
-    def test002_query_for_certain_collection_and_bucket(self):
+    def test002_query_collection_bucket(self):
         """
         TC 526
         Test Case to query method with certain collection and data.
@@ -86,7 +87,7 @@ class SonicClient(BaseTest):
         self.assertEqual(len(self.client.query("RANDOM_COLLECTION", "RANDOM_BUCKET", self.rand_string())), 0)
 
     @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/272")
-    def test003_suggest_with_certain_collection_and_bucket(self):
+    def test003_suggest_collection_bucket(self):
         """
         TC 528
         Test Case to suggest with certain collection and bucket name.
@@ -108,7 +109,7 @@ class SonicClient(BaseTest):
         self.assertIn("PENDING", self.client.suggest("RANDOM_COLLECTION", "RANDOM_COLLECTION", self.rand_string()))
 
     @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/272")
-    def test004_pop_with_certain_collection_and_bucket(self):
+    def test004_pop_collection_bucket(self):
         """
         TC 532
         Test Case to pop method with certain collection and bucket.
@@ -129,7 +130,7 @@ class SonicClient(BaseTest):
         self.assertEqual(self.client.count(self.COLLECTION, self.BUCKET), len(self.data) - 1)
 
     @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/272")
-    def test005_flush_for_certain_collection_and_bucket(self):
+    def test005_flush_collection_and_bucket(self):
         """
         TC 534
         Test Case to flush for certain collection.
@@ -146,8 +147,8 @@ class SonicClient(BaseTest):
         self.info("Use count method to check the length of data after flush, should be 0")
         self.assertEqual(self.client.count(self.COLLECTION, self.BUCKET), 0)
 
-        # self.info("Use flush to flush non existing collection with certain bucket")
-        # self.client.flush("RANDOM_COLLECTION", "RANDOM_BUCKET")
+        self.info("Use flush to flush non existing collection with certain bucket")
+        self.client.flush("RANDOM_COLLECTION", "RANDOM_BUCKET")
 
     @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/272")
     def test007_flush_object_using_collection_bucket(self):
@@ -166,8 +167,8 @@ class SonicClient(BaseTest):
         self.info("Use query to check that this record is flushed")
         self.assertEqual(self.client.query(self.COLLECTION, self.BUCKET, self.sub_word), ["post:5"])
 
-        # self.info("Use flush_object to flush non existing object in collection with certain bucket")
-        # self.client.flush_object("RANDOM_COLLECTION", "RANDOM_BUCKET", "RANDOM_OBJECT")
+        self.info("Use flush_object to flush non existing object in collection with certain bucket")
+        self.client.flush_object("RANDOM_COLLECTION", "RANDOM_BUCKET", "RANDOM_OBJECT")
 
     def test007_flush_bucket_for_certain_collection(self):
         """
