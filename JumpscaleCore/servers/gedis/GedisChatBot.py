@@ -52,7 +52,7 @@ class GedisChatBotFactory(JSBASE):
             msg = "Chat had ended"
             if bot.greenlet.exception:
                 j.errorhandler.exception_handle(bot.greenlet.exception, die=False)
-                msg = "Something went wrong please contact support"
+                msg = "Something went wrong. Please contact support at support@threefold.tech"
             return {"cat": "md_show", "msg": msg, "kwargs": {}}
         return bot.q_out.get(block=True)
 
