@@ -341,7 +341,6 @@ class StartupCMD(j.baseclasses.object_config):
             self.save()
 
     def is_running(self):
-
         if self._local and self.ports != []:
             for port in self.ports:
                 if j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=port) == False:
@@ -360,6 +359,8 @@ class StartupCMD(j.baseclasses.object_config):
                     return True
 
         if self.executor == "corex":
+            if self.state in ["NOTFOUND"]:
+                return False
             if not self.pid and not self.corex_id:
                 return self._error_raise("cannot check running don't have pid or corex_id")
             self.refresh()
@@ -483,6 +484,8 @@ class StartupCMD(j.baseclasses.object_config):
                                 "could not start because core-x did not return pid, probably issue in start script.\n%s"
                                 % out
                             )
+                    else:
+                        return True
                 elif self.executor == "tmux" and not r:
                     if (
                         self.process_strings == []
