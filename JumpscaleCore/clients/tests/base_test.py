@@ -1,16 +1,14 @@
-import uuid
+import logging
 import unittest
 import subprocess
 from Jumpscale import j
-from loguru import logger
 
 
 class BaseTest(unittest.TestCase):
-    LOGGER = logger
-
     @staticmethod
     def info(message):
-        BaseTest.LOGGER.info(message)
+        logging.basicConfig(format="%(message)s", level=logging.INFO)
+        logging.info(message)
 
     @staticmethod
     def os_command(command):
@@ -19,8 +17,12 @@ class BaseTest(unittest.TestCase):
         return output, error
 
     @staticmethod
-    def rand_string(size=10):
-        return str(uuid.uuid4()).replace("-", "")[1:10]
+    def rand_num():
+        return j.data.idgenerator.generateRandomInt(100, 1000)
+
+    @staticmethod
+    def rand_string():
+        return j.data.idgenerator.generateXCharID(10)
 
     def delete_client_method(self, client, schema_url, client_name):
         """
