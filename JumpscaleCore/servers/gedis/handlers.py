@@ -278,7 +278,7 @@ class Handler(JSBASE):
                 # close the connection
                 return
 
-    def _authorized(self, actor_name, cmd_name, threebot_name):
+    def _authorized(self, actor_name, cmd_name, threebot_name, threebot_tid):
         """
         checks if the current session is authorized to access the requested command
         Notes:
@@ -286,10 +286,19 @@ class Handler(JSBASE):
         * threebot_id should be in the session otherwise it can only access the public methods only
         :return: (True, None) if authorized else (False, reason)
         """
+
+        # if tid is 0: we know that this is local machine talking to local server
+        # but it's not configured with me instance (new installation) yet
+
+        if threebot_tid == 0:
+            return True, None
+
         if actor_name == "system":
             return True, None
-        if threebot_name == j.tools.threebot.me.default.tname:
+
+        if threebot_tid == j.tools.threebot.me.default.tid:
             return True, None
+
         try:
             actor_obj = self.api_model.get_by_name(actor_name)
         except:
@@ -336,14 +345,34 @@ class Handler(JSBASE):
             tid = int(tid)
 
             current_threebot_id = int(j.tools.threebot.me.default.tid)
-            # if tid is 0 (special value)
-            # we know that this machine is not registered in phonebook yet
-            # we leave session empty
-            # this is important as some actors may require public access
-            # then it's responsibility of actors to make their own decisions
-            # around who can access them
+            # tid 0 (special value) means the machine calling server is not registered in phonebook yet
+            # because it deosn't have me instance!
+            # this can happen in 3 scenarios:
+            #   1- if  a remote machine calling current server withouth being registered to phonebook (tid) = 0
+            #      but current_threebot_id has a value for the current machine
+            #      we need to allow access for such machine, because it may want to call public actors
+            #      in this case, we need to make sure session is empty
+            #   2- local machine (not having me instance configured) calling local server
+            #      in this case, tid = 0, current_threebot_id=0 and seed & signature match
+            #   3- remote machine (not registered to me instance calling current machine which doesn't have
+            #      me isntance registered, so seed and signature don't match. It this case we should allow empty session
+            #
             if tid == 0:
-                pass
+                if current_threebot_id != 0:
+                    # case (1)
+                    user_session.threebot_id = None
+                    user_session.threebot_name = None
+                else:
+                    try:
+                        VerifyKey(binascii.unhexlify(j.tools.threebot.me.default.nacl.verify_key_hex)).verify(seed, binascii.unhexlify(signature))
+                        # case (2)
+                        user_session.threebot_id = 0
+                        user_session.threebot_name = j.tools.threebot.me.default.tname
+                    except Exception as e:
+                        # case (3)
+                        user_session.threebot_id = None
+                        user_session.threebot_name = None
+
             elif current_threebot_id != tid:
                 try:
                     tclient = j.clients.threebot.client_get(threebot=tid)
@@ -381,7 +410,7 @@ class Handler(JSBASE):
         # cmd is cmd metadata + cmd.method is what needs to be executed
         try:
             is_authorized, reason = self._authorized(
-                request.command.actor, request.command.command, user_session.threebot_name
+                request.command.actor, request.command.command, user_session.threebot_name, user_session.threebot_id
             )
             if is_authorized:
                 cmd = self._cmd_obj_get(

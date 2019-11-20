@@ -193,16 +193,20 @@ class GedisCmds(JSBASE):
             args.pop(args.index("user_session"))
 
         cmd.args = args
+
+        circle_ids = []
+        user_ids = []
+        admins_circle_threebot_id = j.data.bcdb.system.circle.find(name="admins")[0].threebot_id
+        circle_ids.append(admins_circle_threebot_id)
+
         data = self._parse_auth_data(auth_args)
         if data:
             cmd.public = data.get("public")
-            user_ids = []
+
             for user_threebot_id in data.get("users", []):
                 user = j.data.bcdb.system.user.find(threebot_id=user_threebot_id)
                 if user:
                     user_ids.append(user_threebot_id)
-
-            circle_ids = []
             for circle_threebot_id in data.get("circles", []):
                 circle = j.data.bcdb.system.circle.find(threebot_id=circle_threebot_id)
                 # if circle not found, create it locally
@@ -212,11 +216,10 @@ class GedisCmds(JSBASE):
                     c.threebot_id =  circle_threebot_id
                     c.save()
                 circle_ids.append(circle_threebot_id)
-            admins_circle_threebot_id = j.data.bcdb.system.circle.find(name="admins")[0].threebot_id
-            circle_ids.append(admins_circle_threebot_id)
-            self.data.acl.rights_add(userids=user_ids, circleids=circle_ids, rights=[cmd.name])
         else:
-            cmd.public = True
+            cmd.public = False
+
+        self.data.acl.rights_add(userids=user_ids, circleids=circle_ids, rights=[cmd.name])
         self.data.save()
         return cmd
 
