@@ -16,11 +16,7 @@ class SshClient(BaseTest):
     def setUpClass(cls):
         cls.info("create ssh client")
         cls.SSH_CLIENT = j.clients.ssh.get(
-            name="SSH_{}".format(randint(1, 1000)),
-            addr=cls.addr,
-            port=cls.port,
-            login=cls.login,
-            passwd=cls.passwd
+            name="SSH_{}".format(randint(1, 1000)), addr=cls.addr, port=cls.port, login=cls.login, passwd=cls.passwd
         )
 
     @classmethod
@@ -30,15 +26,17 @@ class SshClient(BaseTest):
 
     def install_nginx(self):
         self.info("install nginx on remote machine")
-        self.os_command('sshpass -p {} ssh root@{} -p {} "sudo apt install nginx -y "'
-                        .format(self.passwd, self.addr, self.port))
+        self.os_command(
+            'sshpass -p {} ssh root@{} -p {} "sudo apt install nginx -y "'.format(self.passwd, self.addr, self.port)
+        )
 
     def check_nginx_install(self):
         self.info("check that nginx is installed correctly")
         self.install_nginx()
 
-        output, error = self.os_command('sshpass -p {} ssh root@{} -p {} "curl localhost"'
-                                        .format(self.passwd, self.addr, self.port))
+        output, error = self.os_command(
+            'sshpass -p {} ssh root@{} -p {} "curl localhost"'.format(self.passwd, self.addr, self.port)
+        )
 
         self.info("check that nginx is installed correctly on remote machine")
         if "Welcome to nginx!" in output.decode():
@@ -95,16 +93,19 @@ class SshClient(BaseTest):
         """
 
         self.info("create file locally")
-        with open('/tmp/ssh_test04.txt', 'w') as f:
-            data = 'test ssh client copy_file function\n'
+        with open("/tmp/ssh_test04.txt", "w") as f:
+            data = "test ssh client copy_file function\n"
             f.write(data)
 
         self.info("use copy_file to copy ssh_test04.txt from local machine to remote one")
         self.SSH_CLIENT.file_copy("/tmp/ssh_test04.txt", "/tmp/ssh_test04.txt")
 
         self.info("check that file is copy in the remote machine or not")
-        output, error = self.os_command('sshpass -p {} ssh {}@{} -p {} "cat /tmp/ssh_test04.txt"'
-                                        .format(self.passwd, self.login, self.addr, self.port))
+        output, error = self.os_command(
+            'sshpass -p {} ssh {}@{} -p {} "cat /tmp/ssh_test04.txt"'.format(
+                self.passwd, self.login, self.addr, self.port
+            )
+        )
         self.assertEqual("test ssh client copy_file function\n", output.decode())
 
     def test005_file_copy_non_valid_file_local_and_valid_file_remote(self):
@@ -149,8 +150,11 @@ class SshClient(BaseTest):
         #. try to use copy_file to copy this file from local machine to remote one, should fail.
         """
         self.info("create a directory in remote machine with name ssh_test07 in /tmp/")
-        self.os_command('sshpass -p {} ssh {}@{} -p {} "mkdir /tmp/ssh_test07"'
-                        .format(self.passwd, self.login, self.addr, self.port))
+        self.os_command(
+            'sshpass -p {} ssh {}@{} -p {} "mkdir /tmp/ssh_test07"'.format(
+                self.passwd, self.login, self.addr, self.port
+            )
+        )
 
         self.info("create a file with name ssh_test_DIR in local machine")
         self.os_command("touch /tmp/ssh_test07")
@@ -172,16 +176,22 @@ class SshClient(BaseTest):
         """
 
         self.info("create a file in a directory in remote machine, with certain file name.")
-        self.os_command('sshpass -p {} ssh {}@{} -p {} "mkdir  /tmp/ssh_test08/"'
-                        .format(self.passwd, self.login, self.addr, self.port))
-        self.os_command('sshpass -p {} ssh {}@{} -p {} "touch /tmp/ssh_test08/test1 /tmp/ssh_test08/test2"'
-                        .format(self.passwd, self.login, self.addr, self.port))
+        self.os_command(
+            'sshpass -p {} ssh {}@{} -p {} "mkdir  /tmp/ssh_test08/"'.format(
+                self.passwd, self.login, self.addr, self.port
+            )
+        )
+        self.os_command(
+            'sshpass -p {} ssh {}@{} -p {} "touch /tmp/ssh_test08/test1 /tmp/ssh_test08/test2"'.format(
+                self.passwd, self.login, self.addr, self.port
+            )
+        )
 
         self.info("use download method to copy this directory in my local machine in /tmp/ssh_test08/")
         self.SSH_CLIENT.download(source="/tmp/ssh_test08/", dest="/tmp/ssh_test08/")
 
         self.info("check if files is downloaded or not")
-        output, error = self.os_command('ls /tmp/ssh_test08/')
+        output, error = self.os_command("ls /tmp/ssh_test08/")
         self.assertFalse(error)
         self.assertEqual("test1\ntest2\n", output.decode())
 
@@ -198,17 +208,22 @@ class SshClient(BaseTest):
         """
 
         self.info("create a file in a directory in remote machine, with certain file name.")
-        self.os_command('sshpass -p {} ssh {}@{} -p {} "mkdir  /tmp/ssh_test09/test1/test2 -p"'
-                        .format(self.passwd, self.login, self.addr, self.port))
         self.os_command(
-            'sshpass -p {} ssh {}@{} -p {} "touch /tmp/ssh_test09/test09_1 /tmp/ssh_test09/test1/test2/test3"'
-            .format(self.passwd, self.login, self.addr, self.port))
+            'sshpass -p {} ssh {}@{} -p {} "mkdir  /tmp/ssh_test09/test1/test2 -p"'.format(
+                self.passwd, self.login, self.addr, self.port
+            )
+        )
+        self.os_command(
+            'sshpass -p {} ssh {}@{} -p {} "touch /tmp/ssh_test09/test09_1 /tmp/ssh_test09/test1/test2/test3"'.format(
+                self.passwd, self.login, self.addr, self.port
+            )
+        )
 
         self.info("use download method to copy this directory in my local machine in /tmp/ssh_test09/")
         self.SSH_CLIENT.download(source="/tmp/ssh_test09/", dest="/tmp/ssh_test09/", recursive=False)
 
         self.info("check if files is downloaded or not")
-        output, error = self.os_command('ls /tmp/ssh_test09/')
+        output, error = self.os_command("ls /tmp/ssh_test09/")
         self.assertFalse(error)
         self.assertEqual("test09_1\n", output.decode())
 
@@ -225,11 +240,15 @@ class SshClient(BaseTest):
         """
 
         self.info("create a file in remote directory in remote machine, with certain file name.")
-        self.os_command('sshpass -p {} ssh {}@{} -p {} "mkdir  /tmp/ssh_test10/test1 /tmp/ssh_test10/test2 -p"'
-                        .format(self.passwd, self.login, self.addr, self.port))
         self.os_command(
-            'sshpass -p {} ssh {}@{} -p {} "touch /tmp/ssh_test10/test10_1 /tmp/ssh_test10/test10_2"'
-            .format(self.passwd, self.login, self.addr, self.port)
+            'sshpass -p {} ssh {}@{} -p {} "mkdir  /tmp/ssh_test10/test1 /tmp/ssh_test10/test2 -p"'.format(
+                self.passwd, self.login, self.addr, self.port
+            )
+        )
+        self.os_command(
+            'sshpass -p {} ssh {}@{} -p {} "touch /tmp/ssh_test10/test10_1 /tmp/ssh_test10/test10_2"'.format(
+                self.passwd, self.login, self.addr, self.port
+            )
         )
 
         self.info("use download method to copy this directory in my local machine in /tmp/ssh_test10/")
@@ -238,11 +257,11 @@ class SshClient(BaseTest):
             dest="/tmp/ssh_test10/",
             recursive=True,
             ignoredir=["test2"],
-            ignorefiles=["test10_2"]
+            ignorefiles=["test10_2"],
         )
 
         self.info("check if files is downloaded or not")
-        output, error = self.os_command('ls /tmp/ssh_test10/')
+        output, error = self.os_command("ls /tmp/ssh_test10/")
         self.assertFalse(error)
         self.assertEqual("test1\ntest10_1\n", output.decode())
 
@@ -278,8 +297,9 @@ class SshClient(BaseTest):
         self.SSH_CLIENT.upload(source="/tmp/ssh_test12/", dest="/tmp/ssh_test12/")
 
         self.info("check if files is downloaded or not")
-        output, error = self.os_command('sshpass -p {} ssh {}@{} -p {} "ls /tmp/ssh_test12/"'
-                                        .format(self.passwd, self.login, self.addr, self.port))
+        output, error = self.os_command(
+            'sshpass -p {} ssh {}@{} -p {} "ls /tmp/ssh_test12/"'.format(self.passwd, self.login, self.addr, self.port)
+        )
         self.assertFalse(error)
         self.assertEqual("test1\ntest2\n", output.decode())
 
@@ -303,8 +323,9 @@ class SshClient(BaseTest):
         self.SSH_CLIENT.upload(source="/tmp/ssh_test13/", dest="/tmp/ssh_test13/", recursive=False)
 
         self.info("check if files is uploaded or not")
-        output, error = self.os_command('sshpass -p {} ssh {}@{} -p {} "ls /tmp/ssh_test13/"'
-                                        .format(self.passwd, self.login, self.addr, self.port))
+        output, error = self.os_command(
+            'sshpass -p {} ssh {}@{} -p {} "ls /tmp/ssh_test13/"'.format(self.passwd, self.login, self.addr, self.port)
+        )
         self.assertFalse(error)
         self.assertEqual("test13_1\n", output.decode())
 
@@ -331,11 +352,13 @@ class SshClient(BaseTest):
             dest="/tmp/ssh_test14/",
             recursive=True,
             ignoredir=["test2"],
-            ignorefiles=["test14_2"])
+            ignorefiles=["test14_2"],
+        )
 
         self.info("check if files is uploaded or not")
-        output, error = self.os_command('sshpass -p {} ssh {}@{} -p {} "ls /tmp/ssh_test14/"'
-                                        .format(self.passwd, self.login, self.addr, self.port))
+        output, error = self.os_command(
+            'sshpass -p {} ssh {}@{} -p {} "ls /tmp/ssh_test14/"'.format(self.passwd, self.login, self.addr, self.port)
+        )
         self.assertFalse(error)
         self.assertIn("test1\ntest14_1", output.decode())
 
@@ -386,12 +409,17 @@ class SshClient(BaseTest):
         """
 
         self.info("use execute method to execute multi-lines cmd with script option == True")
-        self.assertEqual("test_execute_script\n",
-                         self.SSH_CLIENT.execute(script=True, interactive=False, cmd="""
+        self.assertEqual(
+            "test_execute_script\n",
+            self.SSH_CLIENT.execute(
+                script=True,
+                interactive=False,
+                cmd="""
                          touch /tmp/test_execute_script
                          ls /tmp/ | grep test_execute_script
-                         """)[1]
-                         )
+                         """,
+            )[1],
+        )
 
     @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/160")
     def test019_ssh_authorize_with_pubkeys_option_specified_and_home_dir(self):
@@ -411,8 +439,9 @@ class SshClient(BaseTest):
         self.SSH_CLIENT.ssh_authorize(pubkeys=pubkey, interactive=False)
 
         self.info("check the existence of the pubkey in the remote ssh directory")
-        output, error = self.os_command('sshpass -p {} ssh root@{} -p {} "cat /root/.ssh/authorized_keys"'
-                                        .format(self.passwd, self.addr, self.port))
+        output, error = self.os_command(
+            'sshpass -p {} ssh root@{} -p {} "cat /root/.ssh/authorized_keys"'.format(self.passwd, self.addr, self.port)
+        )
         self.assertIn(pubkey, output.decode())
 
     def test020_ssh_authorize_without_pubkeys_option_specified(self):
@@ -557,11 +586,12 @@ class SshClient(BaseTest):
         """
 
         self.info("use execute_jumpscale command create ssh_test28 file in /tmp directory")
-        self.SSH_CLIENT.execute_jumpscale("j.sal.fs.touch(\"/tmp/ssh_test28\")")
+        self.SSH_CLIENT.execute_jumpscale('j.sal.fs.touch("/tmp/ssh_test28")')
 
         self.info("make sure that this file is created correctly")
-        output, error = self.os_command('sshpass -p {} ssh {}@{} -p {} "ls /tmp/"'
-                                        .format(self.passwd, self.login, self.addr, self.port))
+        output, error = self.os_command(
+            'sshpass -p {} ssh {}@{} -p {} "ls /tmp/"'.format(self.passwd, self.login, self.addr, self.port)
+        )
 
         self.assertIn("ssh_test28", output.decode())
 
