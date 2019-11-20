@@ -18,7 +18,7 @@ Our newest release is version 10, called JSX.
 
 ## About Jumpscale
 
-Some tools available in jumpscale
+Some tools available in JumpScale
 
 * [Config Manager](docs/config/configmanager.md)
   The config manager is a secure way to manage configuration instances.
