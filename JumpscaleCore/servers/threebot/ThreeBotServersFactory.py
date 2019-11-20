@@ -62,7 +62,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         if packages_add:
             client.actors.package_manager.package_add(
-                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/threefold/phonebook"
+                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/tfgrid/phonebook"
             )
 
             client.reload()
@@ -92,7 +92,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         )
         if packages_add:
             client.actors.package_manager.package_add(
-                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/threefold/phonebook"
+                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/tfgrid/phonebook"
             )
 
         client.reload()
