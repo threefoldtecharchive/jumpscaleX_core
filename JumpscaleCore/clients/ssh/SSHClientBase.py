@@ -122,7 +122,7 @@ class SSHClientBase(j.baseclasses.object_config):
     #         else:
     #             self._private = j.sal.nettools.tcpPortConnectionTest(self.addr_priv, self.port_priv, 1)
     #     return self._private
-    def execute_jumpscale(self, script, **kwargs):
+    def execute_jumpscale(self, script, interactive=True, **kwargs):
         script = "from Jumpscale import j\n{}".format(script)
 
         script = j.core.tools.text_replace(script, **kwargs)
@@ -132,7 +132,7 @@ class SSHClientBase(j.baseclasses.object_config):
 
         j.sal.fs.writeFile(filename, contents=script)
         self.file_copy(filename, filename)  # local -> remote
-        self.execute("source /sandbox/env.sh && python3 {}".format(filename))
+        self.execute("source /sandbox/env.sh && python3 {}".format(filename), interactive=interactive)
 
     @property
     def addr_variable(self):
@@ -168,7 +168,7 @@ class SSHClientBase(j.baseclasses.object_config):
             self._ftpclient = None
         return self._connected
 
-    def ssh_authorize(self, pubkeys=None, homedir="/root"):
+    def ssh_authorize(self, pubkeys=None, homedir="/root", interactive=True):
         """add key to authorized users, if key is specified will get public key from sshkey client,
         or can directly specify the public key. If both are specified key name instance will override public key.
 
@@ -183,7 +183,9 @@ class SSHClientBase(j.baseclasses.object_config):
             pubkeys = [pubkeys]
         for sshkey in pubkeys:
             # TODO: need to make sure its only 1 time
-            self.execute('echo "{sshkey}" >> {homedir}/.ssh/authorized_keys'.format(**locals()))
+            self.execute(
+                'echo "{sshkey}" >> {homedir}/.ssh/authorized_keys'.format(**locals()), interactive=interactive
+            )
 
     def shell(self, cmd=None):
         if cmd:
@@ -192,7 +194,7 @@ class SSHClientBase(j.baseclasses.object_config):
         cmd = self._replace(cmd)
         j.sal.process.executeWithoutPipe(cmd)
 
-    def mosh(self, ssh_private_key_name=None):
+    def mosh(self, ssh_private_key_name=None, interactive=True):
         """
         if private key specified
         :param ssh_private_key:
@@ -200,7 +202,7 @@ class SSHClientBase(j.baseclasses.object_config):
         """
         self.executor.installer.mosh()
         C = j.clients.sshagent._script_get_sshload(keyname=ssh_private_key_name)
-        r = self.execute(C)
+        r = self.execute(C, interactive=interactive)
         cmd = "mosh -ssh='ssh -tt -oStrictHostKeyChecking=no -p {PORT}' {LOGIN}@{ADDR} -p 6000:6100 'bash'"
         cmd = self._replace(cmd)
         j.sal.process.executeWithoutPipe(cmd)
