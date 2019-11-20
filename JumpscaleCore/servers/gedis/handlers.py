@@ -364,7 +364,9 @@ class Handler(JSBASE):
                     user_session.threebot_name = None
                 else:
                     try:
-                        VerifyKey(binascii.unhexlify(j.tools.threebot.me.default.nacl.verify_key_hex)).verify(seed, binascii.unhexlify(signature))
+                        VerifyKey(binascii.unhexlify(j.tools.threebot.me.default.nacl.verify_key_hex)).verify(
+                            seed, binascii.unhexlify(signature)
+                        )
                         # case (2)
                         user_session.threebot_id = 0
                         user_session.threebot_name = j.tools.threebot.me.default.tname
@@ -387,14 +389,16 @@ class Handler(JSBASE):
 
                 # if we get here we know that the user has been authenticated properly
                 user_session.threebot_id = tclient.tid
-                user_session.threebot_name = tclient.tname
+                user_session.threebot_name = tclient.name
             else:
                 # If working on same machine no need to get a client to authenticate
                 # otherwise, we'll have infinite loop
                 # This code also validates that no hacker trying to send the
                 # same 3 bot ID for the remote machine, as here we do validation
                 try:
-                    VerifyKey(binascii.unhexlify(j.tools.threebot.me.default.nacl.verify_key_hex)).verify(seed, binascii.unhexlify(signature))
+                    VerifyKey(binascii.unhexlify(j.tools.threebot.me.default.nacl.verify_key_hex)).verify(
+                        seed, binascii.unhexlify(signature)
+                    )
                 except Exception as e:
                     logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
                     return (logdict, None)
