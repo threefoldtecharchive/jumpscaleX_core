@@ -292,7 +292,8 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             self._packages_walk()
             j.threebot.__dict__.pop("package")
-            j.__dict__.pop("servers")
+            # LETS NOT DO SERVERS YET, STILL BREAKS TOO MUCH
+            # j.__dict__.pop("servers")
             j.__dict__.pop("builders")
             # j.__dict__.pop("shell")
             # j.__dict__.pop("shelli")
