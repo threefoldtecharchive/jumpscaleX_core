@@ -7,22 +7,24 @@ def actor_method(func):
         S = None
         schema_in = None
         schema_out = None
-        for line in func.__doc__.split("\n"):
-            line = line.strip()
-            if line.startswith("```in") or line.startswith("'''in"):
-                S = "in"
-                schema_text = ""
-            elif line.startswith("```out") or line.startswith("'''out"):
-                S = "out"
-                schema_text = ""
-            elif line.startswith("```") or line.startswith("'''"):
-                if S == "in":
-                    schema_in = j.data.schema.get_from_text(schema_text)
-                else:
-                    schema_out = j.data.schema.get_from_text(schema_text)
-                S = None
-            elif S:
-                schema_text += line + "\n"
+
+        if func.__doc__:
+            for line in func.__doc__.split("\n"):
+                line = line.strip()
+                if line.startswith("```in") or line.startswith("'''in"):
+                    S = "in"
+                    schema_text = ""
+                elif line.startswith("```out") or line.startswith("'''out"):
+                    S = "out"
+                    schema_text = ""
+                elif line.startswith("```") or line.startswith("'''"):
+                    if S == "in":
+                        schema_in = j.data.schema.get_from_text(schema_text)
+                    else:
+                        schema_out = j.data.schema.get_from_text(schema_text)
+                    S = None
+                elif S:
+                    schema_text += line + "\n"
 
         return (schema_in, schema_out)
 

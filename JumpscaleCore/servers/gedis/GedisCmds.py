@@ -134,6 +134,8 @@ class GedisCmds(JSBASE):
 
         for line in txt.split("\n"):
             lstrip = line.strip().lower()
+            if lstrip.startswith("@"):
+                continue
             if state == "START" and lstrip.startswith("def"):
                 state = "DEF"
                 if "self" in lstrip:
