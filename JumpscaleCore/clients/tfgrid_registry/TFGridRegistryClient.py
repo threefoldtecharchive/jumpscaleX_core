@@ -30,7 +30,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         self.me = j.tools.threebot.me.get(
             name="test", tid=3, email="test.test@gmail", tname="testUser", pubkey="asdf3dsfasdlfkjasd88893n"
         )
-        self.gedis_client = j.servers.threebot.local_start_default(web=True)
+        self.gedis_client = j.servers.threebot.local_start_default()
         self.gedis_client.actors.package_manager.package_add(
             path=j.core.tools.text_replace(
                 "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry")

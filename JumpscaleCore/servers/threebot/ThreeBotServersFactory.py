@@ -106,7 +106,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         :return:
         """
 
-        # gedis_client = j.servers.threebot.local_start_default(web=True)
+        # gedis_client = j.servers.threebot.local_start_default()
         gedis_client = j.servers.threebot.local_start_zerobot_default(packages_add=True)
 
         cl = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
@@ -174,7 +174,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         self._log_info("start the threebot server")
         docker.sshexec(
-            "source /sandbox/env.sh;kosmos 'j.servers.threebot.local_start_default(web=True,packages_add=True)'"
+            "source /sandbox/env.sh;kosmos 'j.servers.threebot.local_start_default(packages_add=True)'"
         )
         j.shell()
 
