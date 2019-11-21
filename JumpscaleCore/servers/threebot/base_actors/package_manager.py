@@ -8,6 +8,7 @@ class package_manager(j.baseclasses.threebot_actor):
         self._gedis_server = gedis_server
         j.data.schema.get_from_text(j.tools.threebot_packages._model.schema.text)
 
+    @j.baseclasses.actor_method
     def package_add(self, git_url=None, path=None, reload=True, schema_out=None, user_session=None):
         """
         ```in
@@ -21,7 +22,6 @@ class package_manager(j.baseclasses.threebot_actor):
         it will not update if its already there
 
         """
-
         user_session.admin_check()  # means will give error when not an admin user
 
         if git_url and path:
@@ -81,6 +81,7 @@ class package_manager(j.baseclasses.threebot_actor):
 
         return "OK"
 
+    @j.baseclasses.actor_method
     def package_delete(self, name, schema_out=None, user_session=None):
         """
         ```in
@@ -98,6 +99,7 @@ class package_manager(j.baseclasses.threebot_actor):
         package.uninstall()
         package.delete()
 
+    @j.baseclasses.actor_method
     def package_stop(self, name, schema_out=None, user_session=None):
         """
         ```in
@@ -112,6 +114,7 @@ class package_manager(j.baseclasses.threebot_actor):
         package = j.tools.threebot_packages.get(name)
         package.stop()
 
+    @j.baseclasses.actor_method
     def package_start(self, name, schema_out=None, user_session=None):
         """
         ```in
@@ -125,6 +128,7 @@ class package_manager(j.baseclasses.threebot_actor):
         package = j.tools.threebot_packages.get(name)
         package.start()
 
+    @j.baseclasses.actor_method
     def package_disable(self, name, schema_out=None, user_session=None):
         """
         ```in
@@ -138,6 +142,7 @@ class package_manager(j.baseclasses.threebot_actor):
         package = j.tools.threebot_packages.get(name)
         package.disable()
 
+    @j.baseclasses.actor_method
     def package_enable(self, name, schema_out=None, user_session=None):
         """
         ```in
@@ -151,6 +156,7 @@ class package_manager(j.baseclasses.threebot_actor):
         package = j.tools.threebot_packages.get(name)
         package.enable()
 
+    @j.baseclasses.actor_method
     def packages_list(self, frontend=False, schema_out=None, user_session=None):
         """
         ```in

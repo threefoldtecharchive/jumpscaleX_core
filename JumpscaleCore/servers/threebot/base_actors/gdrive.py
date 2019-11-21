@@ -11,6 +11,7 @@ doctypes_map = {"document": "drive", "spreadsheets": "drive", "presentation": "d
 
 
 class gdrive(j.baseclasses.threebot_actor):
+    @j.baseclasses.actor_method
     def file_get(self, doctype, guid1, guid2, schema_out=None, user_session=None):
         """
         ```in
@@ -67,4 +68,3 @@ class gdrive(j.baseclasses.threebot_actor):
             out.error_code = error["code"]
             out.error_message = error["message"]
         return out
-

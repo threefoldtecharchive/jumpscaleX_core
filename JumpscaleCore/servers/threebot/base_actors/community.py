@@ -27,9 +27,11 @@ class community(j.baseclasses.threebot_actor):
     def _init(self, **kwargs):
         self.path = None
 
+    @j.baseclasses.actor_method
     def clone_repo(self):
         self.path = j.clients.git.getContentPathFromURLorPath(REPO, pull=True)
 
+    @j.baseclasses.actor_method
     def list_partners(self, user_session):
         """
         """
