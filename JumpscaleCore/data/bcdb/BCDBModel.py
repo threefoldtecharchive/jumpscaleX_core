@@ -18,12 +18,10 @@
 # LICENSE END
 
 
-from pyblake2 import blake2b
 from Jumpscale import j
 
 
-import struct
-from .BCDBDecorator import *
+from .BCDBDecorator import queue_method, queue_method_results
 
 JSBASE = j.baseclasses.object
 INT_BIN_EMPTY = b"\xff\xff\xff\xff"  # is the empty value for in our key containers
@@ -62,14 +60,12 @@ class BCDBModel(j.baseclasses.object):
 
         self._schema_url = schema_url
 
-        # TODO: this shouls not happen!!!!
-        # if self._schema_url in bcdb._schema_url_to_model:
-        #     raise j.exceptions.JSBUG("should never have 2 bcdbmodels for same url")
-
         self.bcdb = bcdb
+        self._md5_previous_ = None
 
         self.readonly = False
-        self.autosave = False  # if set it will make sure data is automatically set from object
+        self._index_ = None  # if set it will make sure data is automatically set from object
+        self.autosave = False
         self.nosave = False
 
         if self.storclient and self.storclient.type == "ZDB":
@@ -84,16 +80,23 @@ class BCDBModel(j.baseclasses.object):
 
         self._kosmosinstance = None
 
-        indexklass = self._index_class_generate()
-        self.index = indexklass(model=self, reset=reset)
-
         self._sonic_client = None
         # self.cache_expiration = 3600
 
         self._triggers = []
 
         if reset:
+            indexklass = self._index_class_generate()
+            self._index_ = indexklass(model=self, reset=True)
             self.destroy()
+
+    @property
+    def index(self):
+        if not self._index_:
+            indexklass = self._index_class_generate()
+
+            self._index_ = indexklass(model=self, reset=False)
+        return self._index_
 
     def _index_class_generate(self):
         """
@@ -108,17 +111,28 @@ class BCDBModel(j.baseclasses.object):
         imodel = BCDBIndexMeta(schema=self.schema)
         imodel.include_schema = True
         tpath = "%s/templates/BCDBModelIndexClass.py" % j.data.bcdb._dirpath
-        name = "bcdbindex_%s" % self._schema_url
+        name = "bcdbindex_%s_%s" % (self._schema_url, self.schema._md5)
         name = name.replace(".", "_")
         myclass = j.tools.jinja2.code_python_render(
-            name=name, path=tpath, objForHash=self.schema._md5, reload=True, schema=self, bcdb=self.bcdb, index=imodel
+            name=name,
+            path=tpath,
+            objForHash=self.schema._md5,
+            reload=True,
+            schema=self.schema,
+            bcdb=self.bcdb,
+            index=imodel,
+            model=self,
         )
 
         return myclass
 
     @property
     def schema(self):
-        return j.data.schema.get_from_url(self._schema_url)
+        schema = j.data.schema.get_from_url(self._schema_url)
+        if self._md5_previous_ != schema._md5:
+            self._md5_previous_ = schema._md5 + ""  # to make sure we have copy=
+            self._index_ = None
+        return schema
 
     @property
     def mid(self):
@@ -198,23 +212,29 @@ class BCDBModel(j.baseclasses.object):
             self.set(obj, store=False, index=True)
 
     @queue_method
-    def delete(self, obj):
+    def delete(self, obj, force=True):
         if not isinstance(obj, j.data.schema._JSXObjectClass):
             if isinstance(obj, int):
-                obj = self.get(obj)
+                try:
+                    obj = self.get(obj)
+                except Exception as e:
+                    if not force:
+                        raise
+                    obj_id = obj + 0  # make sure is copy
+                    obj = None
             else:
                 raise j.exceptions.Base("specify id or obj")
-        assert obj.nid
-        if obj.id is not None:
-            self._triggers_call(obj=obj, action="delete")
-            # if obj.id in self.obj_cache:
-            #     self.obj_cache.pop(obj.id)
-            if not self.storclient:
-                raise RuntimeError("should never get here")
-                self.bcdb.sqlclient.delete(key=obj.id)
-            else:
+        if obj:
+            assert obj.nid
+            if obj.id is not None:
+                self._triggers_call(obj=obj, action="delete")
+                # if obj.id in self.obj_cache:
+                #     self.obj_cache.pop(obj.id)
                 self.storclient.delete(obj.id)
-            self.index.delete(obj)
+                self.index.delete_by_id(obj_id=obj.id, nid=obj.nid)
+        else:
+            self.storclient.delete(obj_id)
+            self.index.delete_by_id(obj_id=obj_id, nid=obj.nid)
 
     def check(self, obj):
         if not isinstance(obj, j.data.schema._JSXObjectClass):
@@ -275,9 +295,13 @@ class BCDBModel(j.baseclasses.object):
             obj.id = obj_id  # do not forget
         return self.set(obj)
 
-    def get_by_name(self, name, nid=1):
+    def get_by_name(self, name, nid=1, die=True):
         args = {"name": name}
-        return self.find(nid=nid, **args)
+        list_obj = self.find(nid=nid, **args)
+        if len(list_obj) > 0:
+            return list_obj[0]
+        if die:
+            raise j.exceptions.NotFound("cannot find data with name : %s" % name)
 
     def search(self, text, property_name=None):
         # FIXME: get the real nids
@@ -286,77 +310,13 @@ class BCDBModel(j.baseclasses.object):
         for obj in objs:
             parts = obj.split(":")
             if (property_name and parts[1] == property_name) or (not property_name):
-                res.append(self.get(parts[0]))
+                res.append(self.get(int(parts[0])))
         return res
 
     def upgrade(self, obj):
         obj._model.schema_change(obj._model.bcdb.schema_get(url=obj._schema.url))
         j.shell()
         return obj
-
-    def find(self, nid=1, **args):
-        """
-        is a the retrieval part of a very fast indexing system
-        e.g.
-        self.get_from_keys(name="myname",nid=2)
-        :return:
-        """
-        delete_if_not_found = True
-        # if no args are provided that mean we will do a get all
-        if len(args.keys()) == 0:
-            res = []
-            for obj in self.iterate(nid=nid):
-                if obj is None:
-                    raise j.exceptions.Base("iterate should not return None, ever")
-                res.append(obj)
-            return res
-
-        ids = self.index._key_index_find(nid=nid, **args)
-
-        def check2(obj, args):
-            dd = obj._ddict
-            for propname, val in args.items():
-                if not propname in dd:
-                    self._log_warning("need to update an object, could not find propname:%s" % propname, data=dd)
-                    return propname
-                if dd[propname] != val:
-                    return False
-            return True
-
-        res = []
-        for id_ in ids:
-            # ids right now come from redis, they should be fone when model is gone, when they exist there they should really exist
-            res2 = self.get(id_, die=True)
-            if res2 is None:
-                # only when we use file based id index then there can be situation where id is in file but not in db
-                # if id index in redis which is default now then there needs to be consistency between id index & db
-                if len(args) == 0:
-                    # means we were iterating so there could be
-                    if delete_if_not_found:
-                        for key, val in args.items():
-                            self._key_index_delete(key, val, id_, nid=nid)
-            else:
-                # we now need to check if there was no false positive
-                check = check2(res2, args)
-                if isinstance(check, str):
-                    # FOR NOW NO UPGRADE POSSIBLE, JUST FAIL
-                    # j.shell()
-                    # from pudb import set_trace
-                    #
-                    # set_trace()
-                    # res2 = self.upgrade(res2)
-                    # check = check2(res2, args)
-                    if isinstance(check, str):
-                        # means we still don't find the argument, the upgrade did notwork
-                        raise j.exceptions.JSBUG(
-                            "find was done on argument:%s which does not exist in model." % res, data=obj
-                        )
-                elif check:
-                    res.append(res2)
-                else:
-                    self._log_warning("index system produced false positive, is not abnormal")
-
-        return res
 
     # @queue_method_results
     def set(self, obj, index=True, store=True):
@@ -408,8 +368,10 @@ class BCDBModel(j.baseclasses.object):
             if obj.id is None:
                 # means a new one
                 obj.id = self.storclient.set(data)
+                new = True
                 # self._log_debug("NEW:\n%s" % obj)
             else:
+                new = False
                 try:
                     self.storclient.set(data, key=obj.id)
                 except Exception as e:
@@ -418,9 +380,34 @@ class BCDBModel(j.baseclasses.object):
                     raise
 
         if index:
-            self.index.set(obj)
+            # self._log_debug(obj)
+            # print(obj)
+            try:
+                self.index.set(obj)
+            except j.clients.peewee.IntegrityError as e:
+                # this deals with checking on e.g. uniqueness
+                if store and new:
+                    # delete from the storclient was incorrect
+                    # never ever delete when object exists, so only when new
+                    self.storclient.delete(obj.id)
+                else:
+                    # j.shell()
+                    raise j.exceptions.Input("Could not insert object, unique constraint failed:%s" % e, data=obj)
+
+                obj.id = None
+                if str(e).find("UNIQUE") != -1:
+                    raise j.exceptions.Input("Could not insert object, unique constraint failed:%s" % e, data=obj)
+                raise
 
         obj = self._triggers_call(obj=obj, action="set_post")
+
+        # if self.storclient.type == "RDB":
+        #     # TODO: should be part of the storclient itself and we should use lua code on the redis, is much faster
+        #     self.storclient._redis
+        #     # idea is to allow subscribers to listen to changes, each change needs to get a unique nr
+        #     # so remote users can replicate where needed, or can be used to do replication
+        #     j.shell()
+        #     self.storclient
 
         return obj
 
@@ -440,7 +427,9 @@ class BCDBModel(j.baseclasses.object):
         """
         return ddict
 
-    def new(self, data=None, nid=1):
+    def new(self, data=None, nid=1, **kwargs):
+        if kwargs != {}:
+            data = kwargs
         if data and isinstance(data, dict):
             data = self._dict_process_in(data)
         elif isinstance(data, str) and j.data.types.json.check(data):
@@ -471,6 +460,9 @@ class BCDBModel(j.baseclasses.object):
     def _methods_add(self, obj):
         return obj
 
+    def exists(self, obj_id):
+        return self.get(obj_id=obj_id, die=False) != None
+
     @queue_method_results
     def get(self, obj_id, return_as_capnp=False, usecache=True, die=True):
         """
@@ -498,12 +490,11 @@ class BCDBModel(j.baseclasses.object):
 
         if not data:
             if die:
-                raise j.exceptions.NotFound("could not find obj with id:%s" % obj_id)
+                raise j.exceptions.NotFound(f"could not find obj with id:{obj_id} of {self._schema_url}")
             else:
                 return None
 
         obj = self.bcdb._unserialize(obj_id, data, return_as_capnp=return_as_capnp)
-
         if obj._schema.url == self._schema_url:
             obj = self._triggers_call(obj=obj, action="get")
         else:
@@ -520,27 +511,51 @@ class BCDBModel(j.baseclasses.object):
         self._log_warning("destroy: %s nid:%s" % (self, nid))
         assert isinstance(nid, int)
         assert nid > 0
-        for obj_id in self.index._id_iterator(nid=nid):
+        for obj_id in self.find_ids(nid=nid):
             self.storclient.delete(obj_id)
         self.index.destroy()
         j.sal.fs.remove(self._data_dir)
 
     def _list_ids(self, nid=1):
-        res = []
-        for obj_id in self.index._id_iterator(nid=nid):
-            res.append(obj_id)
-        return res
+        return self.find_ids(nid=nid)
+        # res = []
+        # for obj_id in self.index._id_iterator(nid=nid):
+        #     res.append(obj_id)
+        # return res
+
+    @property
+    def ids_names(self):
+        """
+        return list of [[name,id]]
+        :return:
+        """
+        query = "SELECT id,name FROM %s; " % self.index.sql_table_name
+        cursor = self.index.db.execute_sql(query)
+        return [(item[0], item[1]) for item in cursor]
+
+    @property
+    def ids(self):
+        """
+        return list of ids (read from index)
+        :return:
+        """
+        query = "SELECT id FROM %s; " % self.index.sql_table_name
+        cursor = self.index.db.execute_sql(query)
+        return [item[0] for item in cursor]
 
     def iterate(self, nid=1):
         """
         walk over objects which are of type of this model
         """
-        for obj_id in self.index._id_iterator(nid=nid):
-            # self._log_debug("iterate:%s" % obj_id)
-            assert obj_id > 0
-            o = self.get(obj_id, die=False)
-            if not o:
-                continue
+        # for obj_id in self.index._id_iterator(nid=nid):
+        #     # self._log_debug("iterate:%s" % obj_id)
+        #     assert obj_id > 0
+        #     o = self.get(obj_id, die=False)
+        #     if not o:
+        #         continue
+        #     yield o
+        for id in self.find_ids(nid=nid):
+            o = self.get(id)
             yield o
 
     def _text_index_content_pre_(self, property_name, val, obj_id, nid=1):
@@ -548,9 +563,145 @@ class BCDBModel(j.baseclasses.object):
         """
         return property_name, val, obj_id, nid
 
+    def _find_query(self, nid, _count=False, **kwargs):
+        values = []
+        field = "id"
+        if _count:
+            field = 'count("id")'
+        whereclause = ""
+        if kwargs:
+            for key, val in kwargs.items():
+                if whereclause:
+                    whereclause += " AND"
+                if isinstance(val, bool):
+                    if val:
+                        val = 1
+                    else:
+                        val = 0
+                whereclause += f" {key} = ?"
+                values.append(val)
+            whereclause += ";"
+        return self.query_model([field], whereclause, values)
+
+    def query_model(self, fields, whereclause=None, values=None):
+        fieldstring = ", ".join(fields)
+        query = f"select {fieldstring} FROM {self.index.sql_table_name} "
+        if whereclause:
+            query += f"where {whereclause}"
+        return self.index.db.execute_sql(query, values)
+
+    def find_ids(self, nid=None, **kwargs):
+        """
+        is an iterator !!!
+        :param nid:
+        :param kwargs:
+        :return:
+        """
+        if not nid:
+            nid = 1
+        cursor = self._find_query(nid, **kwargs)
+        r = cursor.fetchone()
+        res = []
+        while r:
+            # the id NEEDS to exist on the model
+            if self.exists(r[0]):
+                res.append(r[0])
+            r = cursor.fetchone()
+        return res
+
+    def query(self, query, values=None):
+        """
+        returns id's
+
+        ps there are lots of good tools which allow you to build sql statements graphically
+        e.g. razorsql
+
+        to load the sqlite db go to : {DIR_BASE}/var/bcdb/myjobs/sqlite_index.db
+        in this case name of this bcdb is myjobs
+
+        :param sqlquery:
+        :return: sqlite cursor
+        """
+        return self.index.db.execute_sql(query, values)
+
+    def find(self, nid=None, **kwargs):
+        res = []
+        for id in self.find_ids(nid=nid, **kwargs):
+            res.append(self.get(id))
+        return res
+
+    def count(self, nid=None, **kwargs):
+        res = self._find_query(nid, True, **kwargs).fetchone()
+        return res[0]
+
     def __str__(self):
         out = "model:%s\n" % self._schema_url
         # out += j.core.text.prefix("    ", self.schema.text)
         return out
 
     __repr__ = __str__
+
+    # def find(self, nid=1, **args):
+    #     """
+    #     is a the retrieval part of a very fast indexing system
+    #     e.g.
+    #     self.get_from_keys(name="myname",nid=2)
+    #     :return:
+    #     """
+    #     delete_if_not_found = True
+    #     # if no args are provided that mean we will do a get all
+    #     if len(args.keys()) == 0:
+    #         res = []
+    #         for obj in self.iterate(nid=nid):
+    #             if obj is None:
+    #                 raise j.exceptions.Base("iterate should not return None, ever")
+    #             res.append(obj)
+    #         return res
+    #
+    #     ids = self.index._key_index_find(nid=nid, **args)
+    #
+    #     def check2(obj, args):
+    #         dd = obj._ddict
+    #         for propname, val in args.items():
+    #             if not propname in dd:
+    #                 self._log_warning("need to update an object, could not find propname:%s" % propname, data=dd)
+    #                 return propname
+    #             if dd[propname] != val:
+    #                 return False
+    #         return True
+    #
+    #     res = []
+    #     for id_ in ids:
+    #         # ids right now come from redis, they should be fone when model is gone, when they exist there they should really exist
+    #         res2 = self.get(id_, die=True)
+    #         if res2 is None:
+    #             # only when we use file based id index then there can be situation where id is in file but not in db
+    #             # if id index in redis which is default now then there needs to be consistency between id index & db
+    #             if len(args) == 0:
+    #                 # means we were iterating so there could be
+    #                 if delete_if_not_found:
+    #                     for key, val in args.items():
+    #                         self._key_index_delete(key, val, id_, nid=nid)
+    #         else:
+    #             # we now need to check if there was no false positive
+    #             check = check2(res2, args)
+    #             if isinstance(check, str):
+    #                 # FOR NOW NO UPGRADE POSSIBLE, JUST FAIL
+    #                 # j.shell()
+    #                 # from pudb import set_trace
+    #                 #
+    #                 # set_trace()
+    #                 # res2 = self.upgrade(res2)
+    #                 # check = check2(res2, args)
+    #                 if isinstance(check, str):
+    #                     # means we still don't find the argument, the upgrade did notwork
+    #                     raise j.exceptions.JSBUG(
+    #                         "find was done on argument:%s which does not exist in model." % res, data=obj
+    #                     )
+    #             elif check:
+    #                 res.append(res2)
+    #             else:
+    #                 self._log_warning("index system produced false positive, is not abnormal")
+    #
+    #     return res
+

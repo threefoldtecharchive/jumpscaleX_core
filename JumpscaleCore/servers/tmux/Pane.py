@@ -106,7 +106,7 @@ class Pane(j.baseclasses.object):
             try:
                 process_obj = self.process_obj
             except Exception as e:
-                j.shell()
+                return res
         if res is None:
             res = []
         curdepth = curdepth + 1
@@ -122,6 +122,9 @@ class Pane(j.baseclasses.object):
 
         cmd = 'tmux list-panes -a -F "#{pane_pid} #{pane_id}"'
         cs = self.process_obj_children
+
+        if not self.process_obj_children:
+            return
 
         for child in self.process_obj_children:
             try:

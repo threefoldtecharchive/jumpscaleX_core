@@ -40,17 +40,23 @@ class DIR(j.data.bcdb._BCDBModelClass):
         return new_dir
 
     def create_empty_dir(self, name, create_parent=True):
-        if name == "/" and not len(self.get_by_name(name="/")) > 0:
-            return self._create_root_dir()
+        if self.get_by_name(name=name, die=False):
+            return name
         if name == "/":
-            return self.get_by_name("/")[0]
+            try:
+                return self.get_by_name(name="/")
+            except j.exceptions.NotFound:
+                return self._create_root_dir()
+        if name == "/":
+            return self.get_by_name("/")
         parent_path = j.sal.fs.getParent(name)
-        parent = self.get_by_name(name=parent_path)
-        if len(parent) == 0 and create_parent:
-            parent = [self.create_empty_dir(parent_path, create_parent=True)]
-        if len(parent) == 0:
+        parent = self.get_by_name(name=parent_path, die=False)
+        if not parent and create_parent:
+            parent = self.create_empty_dir(parent_path, create_parent=True)
+
+        if not parent:
             raise j.exceptions.Base("can't find {}".format(parent_path))
-        parent = parent[0]
+
         new_dir = self.new()
         path = j.sal.fs.pathClean(j.sal.fs.joinPaths(parent.name, name))
         new_dir.name = path
@@ -61,7 +67,7 @@ class DIR(j.data.bcdb._BCDBModelClass):
 
     def delete_recursive(self, name):
         name = j.sal.fs.pathClean(name)
-        dir = self.get_by_name(name=name)[0]
+        dir = self.get_by_name(name=name)
         for file_id in dir.files:
             self._file_model.get(file_id).delete()
 
@@ -71,7 +77,7 @@ class DIR(j.data.bcdb._BCDBModelClass):
         # delete the dir id from parent
         parent_path = j.sal.fs.getParent(name)
         if parent_path:
-            parent = self.get_by_name(name=parent_path)[0]
+            parent = self.get_by_name(name=parent_path)
             parent.dirs.remove(dir.id)
             parent.save()
 

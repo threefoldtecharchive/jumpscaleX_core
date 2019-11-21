@@ -22,7 +22,7 @@ class CorexFactory(JSConfigs):
         kosmos 'j.servers.corex.install(reset=True)'
         :return:
         """
-        j.builders.apps.corex.install(reset=reset)
+        j.builders.zos.corex.install(reset=reset)
 
     @property
     def default(self):

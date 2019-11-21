@@ -19,95 +19,114 @@
 
 
 from Jumpscale import j
-
+from Jumpscale.clients.peewee import peewee
+import time
+import operator
+from functools import reduce
 from Jumpscale.data.bcdb.BCDBModelIndex import BCDBModelIndex
 
 class {{BASENAME}}(BCDBModelIndex):
-
-    {% if index.active %}
 
     def _sql_index_init(self,**kwargs):
         self._log_info("init index:%s"%self.model.schema.url)
 
         p = j.clients.peewee
 
-        db = self.bcdb.sqlite_index_client
+        self.db = self.bcdb.sqlite_index_client
         # print(db)
 
         class BaseModel(p.Model):
             class Meta:
                 # print("*%s"%db)
-                database = db
+                database = self.db
 
-        class Index_{{schema.key}}(BaseModel):
+        class Index_{{schema.key}}_{{model.mid}}(BaseModel):
             id = p.IntegerField(unique=True)
             nid = p.IntegerField(index=True) #need to store the namespace id
             {%- for field in index.fields %}
+            {%- if field.unique %}
+            {{field.name}} = p.{{field.type}}(unique=True)
+            {%- else %}
             {{field.name}} = p.{{field.type}}(index=True)
+            {%- endif %}
             {%- endfor %}
 
-        self._sql_index_db = Index_{{schema.key}}
-        self._sql_index_db.create_table(safe=True)
-        self.sql=self._sql_index_db
+        self.sql = Index_{{schema.key}}_{{model.mid}}
+        self.sql.create_table(safe=True)
+        self._schema_md5_generated = "{{schema._md5}}"
+
+        self.sql_table_name = "index_{{schema.key}}_{{model.mid}}".lower()
 
 
     def _sql_index_set(self,obj):
-        idict={}
-        {%- for field in index.fields %}
-        {%- if field.jumpscaletype.NAME == "numeric" %}
-        idict["{{field.name}}"] = obj.{{field.name}}_usd
-        {%- else %}
-        idict["{{field.name}}"] = obj.{{field.name}}
-        {%- endif %}
-        {%- endfor %}
         assert obj.id
         assert obj.nid
-        idict["id"] = obj.id
-        idict["nid"] = obj.nid
-        #need to delete previous record from index
-        self._sql_index_delete(obj)
-        self._sql_index_db.insert(**idict).execute()
+        dd={}
+        query = [self.sql.id == obj.id]
+        {%- for field in index.fields %}
+        {%- if field.jumpscaletype.NAME == "numeric" %}
+        dd["{{field.name}}"] = obj.{{field.name}}_usd
+        query.append((self.sql.{{field.name}} == obj.{{field.name}}_usd))
+        {%- elif field.attr %}
+        dd["{{field.name}}"] = obj.{{field.attr}}
+        query.append((self.sql.{{field.name}} == obj.{{field.attr}}))
+        {%- else %}
+        dd["{{field.name}}"] = obj.{{field.name}}
+        query.append((self.sql.{{field.name}} == obj.{{field.name}}))
+        {%- endif %}
+        {%- endfor %}
+        dd["nid"] = obj.nid
+    
+        #TODO: REEM there need to be other ways, why can peewee update when needed
+        #self.sql.delete().where(reduce(operator.or_, query)).execute()
+        msg = ""
+        for _ in range(10):
+            try:
+                z = self.sql.get_or_none(id=obj.id)
+                if z == None:
+                    dd["id"] = obj.id
+                    self.sql.create(**dd)
+                else:
+                    self.sql.update(**dd).where(self.sql.id==obj.id).execute()
+                break
+            except peewee.OperationalError as e:
+                time.sleep(0.5)
+                msg = str(e)
+        else:
+            raise j.exceptions.Runtime(msg)
+        #TODO: if there is other  unique constraint beside ID and we try to force it then 
+        # the replace function will  delete the row where the constraint is and still update the row 
+        # where the id points
+
 
     def _sql_index_delete(self,obj):
-        # if not self._sql_index_db.select().where(self._sql_index_db.id == obj.id).count()==0:
-        self._sql_index_db.delete().where(self._sql_index_db.id == obj.id).execute()
+        # if not self.sql.select().where(self.sql.id == obj.id).count()==0:
+        self.sql.delete().where(self.sql.id == id).execute()
 
+    def _sql_index_delete_by_id(self,obj_id):
+        self.sql.delete().where(self.sql.id == obj_id).execute()
 
-    {% else %}
-    def _init_index(self):
-        return
-
-    def _sql_index_set(self,obj):
-        return
-
-    def _sql_index_delete(self,obj):
-        return
-
-    def _sql_index_destroy(self, nid=1):
-        return
-
-    {% endif %}
 
 
     {%- if index.active_keys %}
     def _key_index_set(self,obj):
         {%- for property_name in index.fields_key %}
-        if self._hasattr(obj,"{{property_name}}"):
-            val = obj.{{property_name}}
-            if val not in ["",None]:
-                val=str(val)
-                # self._log_debug("key:{{property_name}}:%s:%s"%(val,obj.id))
-                self._key_index_set_("{{property_name}}",val,obj.id,nid=obj.nid)
+        # if self._hasattr(obj,"{{property_name}}"):
+        val = obj.{{property_name}}
+        if val not in ["",None]:
+            val=str(val)
+            # self._log_debug("key:{{property_name}}:%s:%s"%(val,obj.id))
+            self._key_index_set_("{{property_name}}",val,obj.id,nid=obj.nid)
         {%- endfor %}
 
     def _key_index_delete(self,obj):
         {%- for property_name in index.fields_key %}
-        if self._hasattr(obj,"{{property_name}}"):
-            val = obj.{{property_name}}
-            if val not in ["",None]:
-                val=str(val)
-                self._log_debug("delete key:{{property_name}}:%s:%s"%(val,obj.id))
-                self._key_index_delete_("{{property_name}}",val,obj.id,nid=obj.nid)
+        # if self._hasattr(obj,"{{property_name}}"):
+        val = obj.{{property_name}}
+        if val not in ["",None]:
+            val=str(val)
+            self._log_debug("delete key:{{property_name}}:%s:%s"%(val,obj.id))
+            self._key_index_delete_("{{property_name}}",val,obj.id,nid=obj.nid)
         {%- endfor %}
 
     {% else %}
@@ -129,12 +148,11 @@ class {{BASENAME}}(BCDBModelIndex):
             self._text_index_set_("{{property_name}}",val,obj.id,nid=obj.nid)
         {%- endfor %}
 
-    def _text_index_delete(self,obj):
+    def _text_index_delete(self,obj_id=None,nid=None):
+        assert obj_id
+        assert nid
         {%- for property_name in index.fields_text %}
-        val = obj.{{property_name}}
-        if val not in ["",None]:
-            val=str(val)
-            self._text_index_delete_("{{property_name}}",val,obj.id,nid=obj.nid)
+        self._text_index_delete_("{{property_name}}",obj_id=obj_id,nid=nid)
         {%- endfor %}
 
     {% else %}

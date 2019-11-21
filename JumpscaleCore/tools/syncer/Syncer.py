@@ -3,11 +3,13 @@ import time
 from watchdog.observers import Observer
 from .MyFileSystemEventHandler import MyFileSystemEventHandler
 import gevent
-
-import gevent
+from gevent import time
+import traceback
+import re
 
 
 class Syncer(j.baseclasses.object_config):
+
     """
     make sure there is an ssh client first, can be done by
 
@@ -28,7 +30,7 @@ class Syncer(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
         @url = jumpscale.syncer.1
-        name* = "" (S)
+        name** = "" (S)
         sshclient_names = [] (LS)
         paths = [] (LS)
         ignoredir = [] (LS)
@@ -62,6 +64,9 @@ class Syncer(j.baseclasses.object_config):
 
         if cl.name not in self.sshclients:
             self.sshclients[cl.name] = cl
+            if not cl.name in self.sshclient_names:
+                self.sshclient_names.append(cl.name)
+                self.save()
 
     def _init(self, **kwargs):
 
@@ -74,11 +79,8 @@ class Syncer(j.baseclasses.object_config):
         self.IGNOREDIR = [".git", ".github"]
         self._executor = None
 
-        j.application.debug = True
-
         self._log_info("syncer started")
 
-        # self.paths = []
         if self.paths == []:
             for item in [
                 "jumpscaleX_builders",
@@ -87,7 +89,9 @@ class Syncer(j.baseclasses.object_config):
                 "jumpscaleX_libs_extra",
                 "jumpscaleX_threebot",
             ]:
-                self.paths.append("{DIR_CODE}/github/threefoldtech/%s" % item)
+                self.paths.append(
+                    "{DIR_CODE}/github/threefoldtech/%s:/sandbox/code/github/threefoldtech/%s" % (item, item)
+                )
             self.save()
 
     def _get_paths(self, executor=None):
@@ -132,19 +136,22 @@ class Syncer(j.baseclasses.object_config):
         from .MyFileSystemEventHandler import FileSystemMonitor
 
         self._monitor = FileSystemMonitor(syncer=self)
-        # if j.servers.rack.current:
-        #     j.servers.rack.current.greenlets["fs_sync_monitor"] = self.monitor_greenlet
-
+        print("## INSTRUCTIONS HOW TO USE")
+        print("kosmos -p")
+        print("do (if your client is called master): \n    j.clients.ssh.master.syncer.sync()")
         self._monitor.start()
-        gevent.time.sleep(3600)
+        print("monitor started, are now waiting for changes")
+        time.sleep(3600)
 
     def handler(self, event, action="copy"):
+        self._log_info("......................new event........................")
+        self._log_info("syncer handle")
+        self._log_info("event:%s" % event)
+        self._log_info("action:%s" % action)
         self._log_debug("%s:%s" % (event, action))
         for key, sshclient in self.sshclients.items():
             if sshclient.executor.isContainer:
                 continue
-            self._log_debug("open sftp to sshclient '%s'" % key)
-            ftp = sshclient.sftp
             changedfile = event.src_path
             if event.src_path.endswith((".swp", ".swx")):
                 return
@@ -160,6 +167,7 @@ class Syncer(j.baseclasses.object_config):
                 self._log_info("directory changed")
                 return self.sync(monitor=False)  # no need to continue
             else:
+                self._log_info("changed file name: %s" % changedfile)
                 if changedfile.find("/.git") != -1:
                     return
                 elif changedfile.find("/__pycache__/") != -1:
@@ -170,7 +178,13 @@ class Syncer(j.baseclasses.object_config):
                     return
                 elif changedfile.endswith("___"):
                     return
+                elif changedfile.endswith("~"):
+                    return
+                elif hasattr(event, "dest_path"):
+                    if event.dest_path.endswith("~"):
+                        return
                 dest = self._path_dest_get(executor=sshclient.executor, src=changedfile)
+                self._log_info("destination file name: %s" % dest)
 
                 e = ""
                 self._log_debug("action:%s for %s" % (action, changedfile))
@@ -194,15 +208,28 @@ class Syncer(j.baseclasses.object_config):
                                 break
                     elif action == "delete":
                         self._log_debug("delete: %s:%s" % (changedfile, dest))
-                        if self.ignore_delete:
-                            return
                         try:
-                            cmd = "rm %s" % dest
-                            sshclient.exec_command(cmd)
+                            cmd = "rm -f %s" % dest
+                            sshclient.execute(cmd)
                             rc = 0
                             self._log_info("OK")
                         except Exception as e:
                             self._log_error("Couldn't remove file: %s" % (dest))
+                            if "No such file" in str(e):
+                                rc = 0
+                                continue
+                            else:
+                                rc = 1
+                                continue
+                    elif action == "moved":
+                        self._log_debug("moving  : %s:%s" % (changedfile, event.dest_path))
+                        try:
+                            cmd = "mv  %s %s" % (changedfile, event.dest_path)
+                            sshclient.execute(cmd)
+                            rc = 0
+                            self._log_info("OK")
+                        except Exception as e:
+                            self._log_error("Couldn't move file: %s" % (event.dest_path))
                             if "No such file" in str(e):
                                 rc = 0
                                 continue
@@ -214,7 +241,7 @@ class Syncer(j.baseclasses.object_config):
 
                 if rc > 0:
                     self._log_error("Couldn't sync file: %s:%s" % (changedfile, dest))
-                    self._log_error("** ERROR IN COPY, WILL SYNC ALL")
+                    self._log_error("** ERROR HAPPENED, WILL SYNC ALL")
                     try:
                         self._log_error(str(e))
                     except:
@@ -231,10 +258,10 @@ class Syncer(j.baseclasses.object_config):
         sync all code to the remote destinations, uses config as set in jumpscale.toml
 
         """
+
         for key, sshclient in self.sshclients.items():
 
             if sshclient.executor.isContainer:
-
                 continue
 
             for item in self._get_paths(executor=sshclient.executor):

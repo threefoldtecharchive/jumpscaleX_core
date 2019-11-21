@@ -99,7 +99,7 @@ class GitFactory(j.baseclasses.object):
     ):
         """
         will clone or update repo
-        if dest is None then clone underneath: /sandbox/code/$type/$account/$repo
+        if dest is None then clone underneath: {DIR_BASE}/code/$type/$account/$repo
         will ignore changes !!!!!!!!!!!
 
         @param ssh ==True means will checkout ssh
@@ -183,7 +183,7 @@ class GitFactory(j.baseclasses.object):
             # checkedout branch
             currentBranch = self.getCurrentBranch(dest)
             if not currentBranch:
-                raise j.exceptions.Base("Cannot retrieve branch:\n%s\n" % cmd)
+                raise j.exceptions.Base("Cannot retrieve the current branch:\n\n")
             if branch is not None and branch.find(currentBranch) == -1 and ignorelocalchanges is False:
                 raise j.exceptions.Base(
                     "Cannot pull repo '%s', branch on filesystem is not same as branch asked for.\n"
@@ -361,11 +361,24 @@ class GitFactory(j.baseclasses.object):
         if branch != None and branch.strip() == "":
             branch = None
         url = url.strip()
-        repository_host, repository_type, repository_account, repository_name, repository_url, branch2, gitpath, relpath, port = j.clients.git.giturl_parse(
-            url
-        )
-        if not branch:
+        (
+            repository_host,
+            repository_type,
+            repository_account,
+            repository_name,
+            repository_url,
+            branch2,
+            gitpath,
+            relpath,
+            port,
+        ) = j.clients.git.giturl_parse(url)
+        if j.sal.fs.exists(gitpath) and pull == False:
+            return (repository_url, gitpath, relpath)
+
+        if not branch and not j.sal.fs.exists(gitpath):
             branch = branch2
+        if branch == "*":
+            branch = None
         rpath = j.sal.fs.joinPaths(gitpath, relpath)
 
         if not j.sal.fs.exists(rpath, followlinks=True):
@@ -391,9 +404,16 @@ class GitFactory(j.baseclasses.object):
         if not j.sal.fs.exists(urlOrPath, followlinks=True):
             repository_url, gitpath, relativepath = self.getContentInfoFromURL(urlOrPath)
         else:
-            repository_host, repository_type, repository_account, repository_name, repository_url, branch, gitpath, relativepath = j.clients.git.giturl_parse(
-                urlOrPath
-            )
+            (
+                repository_host,
+                repository_type,
+                repository_account,
+                repository_name,
+                repository_url,
+                branch,
+                gitpath,
+                relativepath,
+            ) = j.clients.git.giturl_parse(urlOrPath)
             # to make sure we pull the info
             j.clients.git.pullGitRepo(repository_url, branch=branch)
 
@@ -420,11 +440,16 @@ class GitFactory(j.baseclasses.object):
         path = j.sal.fs.joinPaths(gitpath, relativepath)
         return path
 
-    def get(self, basedir="", check_path=True):
+    def get(self, basedir=None, check_path=True):
         """
-        PLEASE USE SSH, see http://gig.gitbooks.io/jumpscale/content/Howto/how_to_use_git.html for more details
+
+        git = j.clients.git.get()
+
+        :param basedir:
+        :param check_path:
+        :return:
         """
-        if basedir == "":
+        if not basedir:
             basedir = j.sal.fs.getcwd()
         return GitClient(basedir, check_path=check_path)
 
@@ -433,7 +458,7 @@ class GitFactory(j.baseclasses.object):
         walk over repo's known on system
         2 locations are checked
             ~/code
-            /sandbox/code
+            {DIR_BASE}/code
         """
         if name is None:
             name = ""
@@ -482,8 +507,8 @@ class GitFactory(j.baseclasses.object):
 
             ```
             #example
-            [['github', 'docker', 'docker-py', '/sandbox/code/github/docker/docker-py'],
-            ['github', 'jumpscale', 'docs', '/sandbox/code/github/threefoldtech/jumpscale_docs']]
+            [['github', 'docker', 'docker-py', j.core.tools.text_replace("{DIR_BASE}/code/github/docker/docker-py")],
+            ['github', 'jumpscale', 'docs', j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscale_docs")]]
             ```
 
             """
@@ -700,3 +725,5 @@ class GitFactory(j.baseclasses.object):
 
         if pushmessage != "":
             self.pushGitRepos(pushmessage, name=name, update=True, provider=provider, account=account)
+
+

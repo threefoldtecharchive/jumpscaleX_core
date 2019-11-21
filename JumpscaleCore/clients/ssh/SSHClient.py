@@ -1,9 +1,10 @@
 import io
-import functools
+import os
 from Jumpscale import j
 from .SSHClientBase import SSHClientBase
-import os
 import time
+import gevent
+import ssh2.sftp
 
 
 class SSHClient(SSHClientBase):
@@ -33,7 +34,7 @@ class SSHClient(SSHClientBase):
 
             passwd = None
 
-            from pssh.clients import SSHClient as PSSHCLIENT
+            from pssh.clients import ParallelSSHClient as PSSHCLIENT
 
             # SSHClient = functools.partial(PSSHClient, retry_delay=1)
 
@@ -46,14 +47,15 @@ class SSHClient(SSHClientBase):
                 "ssh connection: %s@%s:%s (passwd:%s,key:%s)"
                 % (self.login, self.addr_variable, self.port_variable, passwd, pkey)
             )
-
+            hosts = []
+            hosts.append(self.addr_variable)
             try:
                 self._client_ = PSSHCLIENT(
-                    self.addr_variable,
+                    hosts,
                     user=self.login,
                     password=passwd,
                     port=self.port_variable,
-                    pkey=pkey,
+                    proxy_pkey=pkey,
                     num_retries=10,
                     allow_agent=self.allow_agent,
                     timeout=self.timeout,
@@ -63,13 +65,24 @@ class SSHClient(SSHClientBase):
                 if str(e).find("Error connecting to host") != -1:
                     msg = e.args[0] % e.args[1:]
                     raise j.exceptions.Base("PSSH:%s" % msg)
-                j.shell()
 
         return self._client_
 
     def _execute(self, cmd, showout=True, die=True, timeout=None):
+
         # print ("execute", cmd, showout, die, timeout)
-        channel, _, stdout, stderr, _ = self._client.run_command(cmd, timeout=timeout)
+        # channel, _, stdout, stderr, _ = self._client.run_command(cmd, timeout=timeout, use_pty=True)
+
+        output = self._client.run_command(cmd)
+        client = output[self.addr_variable]
+        channel = client.channel
+        stdout = client.stdout
+        stderr = client.stderr
+
+        # for host, host_output in output.items():
+        #     for line in host_output.stdout:
+        #         print(line)
+
         # self._client.wait_finished(channel)
 
         def _consume_stream(stream, printer, buf=None):
@@ -82,7 +95,7 @@ class SSHClient(SSHClientBase):
 
         out = _consume_stream(stdout, self._log_debug)
         err = _consume_stream(stderr, self._log_error)
-        self._client.wait_finished(channel)
+        # self._client.wait_finished(channel)
         _consume_stream(stdout, self._log_debug, out)
         _consume_stream(stderr, self._log_error, err)
 
@@ -97,6 +110,41 @@ class SSHClient(SSHClientBase):
             raise j.exceptions.RuntimeError("Cannot execute (ssh):\n%s\noutput:\n%serrors:\n%s" % (cmd, output, error))
 
         return rc, output, error
+
+    def file_write(self, path, content, mode=0o755, append=False):
+        flags = ssh2.sftp.LIBSSH2_FXF_CREAT
+        if append:
+            flags |= ssh2.sftp.LIBSSH2_FXF_APPEND
+        else:
+            flags |= ssh2.sftp.LIBSSH2_FXF_WRITE
+        file = self.sftp.open(path, flags, mode)
+        file.write(content)
+        file.close()
+
+    def file_copy(self, local_file, remote_file):
+        """Copy local file to host via SFTP/SCP
+
+        Copy is done natively using SFTP/SCP version 2 protocol, no scp command
+        is used or required.
+
+        :param local_file: Local filepath to copy to remote host
+        :type local_file: str
+        :param remote_file: Remote filepath on remote host to copy file to
+        :type remote_file: str
+        :raises: :py:class:`ValueError` when a directory is supplied to
+          ``local_file`` and ``recurse`` is not set
+        :raises: :py:class:`IOError` on I/O errors writing files
+        :raises: :py:class:`OSError` on OS errors like permission denied
+        """
+        local_file = self._replace(local_file, paths_executor=False)
+        remote_file = self._replace(remote_file)
+        if os.path.isdir(local_file):
+            raise j.exceptions.Value("Local file cannot be a dir")
+        destination = j.sal.fs.getDirName(remote_file)
+        self.executor.dir_ensure(destination)
+        res = self._client.scp_send(local_file, remote_file, recurse=False)
+        gevent.joinall(res)
+        self._log_info("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
 
     def sftp_stat(self, path):
         res = self.sftp.stat(path)

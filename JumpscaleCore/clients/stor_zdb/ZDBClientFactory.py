@@ -22,7 +22,7 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
     _CHILDCLASS = None  # because we use _childclass_selector
     _SCHEMATEXT = """
     @url = jumpscale.zdb.client.1
-    name* = "test" (S)
+    name** = "test" (S)
     addr = "localhost" (S)
     port = 9900 (I)
     secret_ = "" (S)
@@ -89,16 +89,10 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
 
         j.servers.zdb.test_instance_start()
 
-        self.delete("admin")
-
         cl = self.client_admin_get(port=9901)
         assert cl.ping()
-
+        cl.namespace_delete("admin")
         self._test_run(name="base")
         self._test_run(name="admin")
-
-        self.delete("admin")
-        self.delete("test")
-        self.delete("newnamespace")
 
         j.servers.zdb.test_instance_stop()

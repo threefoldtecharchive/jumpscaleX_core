@@ -17,10 +17,12 @@
 # along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
 # LICENSE END
 
-
-from JumpscaleLibs.data.schema.tests.testsuite.testcases.base_test import BaseTest
-from Jumpscale import j
 import random
+
+from Jumpscale import j
+
+from Jumpscale.data.schema.tests.testsuite.testcases.base_test import BaseTest
+
 
 # raise j.exceptions.Base("needs to be part of tests on BCDB not here")
 
@@ -28,7 +30,10 @@ import random
 class Unique(BaseTest):
     def setUp(self):
         super().setUp()
-        self.bcdb = j.data.bcdb.get("test")
+        if j.data.bcdb.exists("test"):
+            self.bcdb = j.data.bcdb.get("test")
+        else:
+            self.bcdb = j.data.bcdb.new("test")
 
     def tearDown(self):
         self.bcdb.reset()
@@ -50,12 +55,12 @@ class Unique(BaseTest):
         #. Change test var of the first object and try to use the first test var again, should success.
         #. Change number of the first object and try to use the first number again, should success.
         #. Delete the second object and create new one.
-        #. Set the new object's attributes with the same attributes of the second object, should success. 
+        #. Set the new object's attributes with the same attributes of the second object, should success.
         """
         self.log("Create schema with unique attributes and save it")
         scm = """
         @url = test.schema.1
-        name* = "" (S)
+        name** = "" (S)
         new_name = "" (S)
         &test = "" (S)
         &number = 0 (I)

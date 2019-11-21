@@ -11,7 +11,7 @@ from .List import *
 import copy
 
 
-class Types(j.baseclasses.object_config_collection):
+class Types(j.baseclasses.object, j.baseclasses.testtools):
 
     __jslocation__ = "j.data.types"
 

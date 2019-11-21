@@ -25,12 +25,9 @@ from .BCDBModel import BCDBModel
 
 import os
 import sys
-import redis
-import copy
-import copy
 
 
-class BCDBFactory(j.baseclasses.factory):
+class BCDBFactory(j.baseclasses.factory_testtools):
 
     __jslocation__ = "j.data.bcdb"
 
@@ -112,12 +109,30 @@ class BCDBFactory(j.baseclasses.factory):
             res.append(bcdb)
         return res
 
-    def index_rebuild(self):
+    def index_rebuild(self, name=None, storclient=None):
         """
-        kosmos 'j.data.bcdb.index_rebuild()'
+        kosmos 'j.data.bcdb.index_rebuild(name="system")'
+
+        can get a stor client by e.g.
+            storclient = j.clients.sqlitedb.client_get(namespace="system")
+            storclient = j.clients.zdb.client_get...
+
+        if you use a stor client then the metadata for BCDB will not be used
+
+
         :return:
         """
-        for bcdb in self.instances:
+        if not name:
+            for bcdb in self.instances:
+                bcdb.index_rebuild()
+        elif storclient:
+            bcdb = self._get(name, storclient=storclient)
+            bcdb.index_rebuild()
+        elif name == "system":
+            bcdb = self.get_system()
+            bcdb.index_rebuild()
+        else:
+            bcdb = self.get(name=name)
             bcdb.index_rebuild()
 
     def check(self):
@@ -177,8 +192,6 @@ class BCDBFactory(j.baseclasses.factory):
 
     def exists(self, name):
         if name in self._children:
-            if not name in self._config:
-                j.shell()
             assert name in self._config
             return True
 
@@ -189,11 +202,17 @@ class BCDBFactory(j.baseclasses.factory):
         assert isinstance(name, str)
 
         if name in self._config:
-            storclient = self._get_storclient(name)
+            try:
+                storclient = self._get_storclient(name)
+            except Exception as e:
+                self._log_warning("could not create BCDB to destroy, will go without")
+                # logdict = j.core.tools.log(tb=tb, level=50, exception=e, stdout=True)
+                storclient = None
         else:
             raise RuntimeError("there should always be a storclient")
 
-        dontuse = BCDB(storclient=storclient, name=name, reset=True)
+        if storclient:
+            dontuse = BCDB(storclient=storclient, name=name, reset=True)
 
         if name in self._children:
             self._children.pop(name)
@@ -216,13 +235,13 @@ class BCDBFactory(j.baseclasses.factory):
             bcdb = self._children[name]
             assert name in self._config
             return bcdb
-        elif storclient:
-            return self._get(name=name, storclient=storclient, reset=reset)
-        elif name in self._config:
+
+        if name in self._config and not storclient:
             storclient = self._get_storclient(name)
-            return self._get(name=name, storclient=storclient, reset=reset)
+        if not self.exists(name=name):
+            return self.new(name=name, storclient=storclient, reset=reset)
         else:
-            raise j.exceptions.Input("could not find bcdb with name:%s" % name)
+            return self._get(name=name, storclient=storclient, reset=reset)
 
     def _get_vfs(self):
         from .BCDBVFS import BCDBVFS
@@ -244,8 +263,6 @@ class BCDBFactory(j.baseclasses.factory):
         elif data["type"] == "rdb":
             storclient = j.clients.rdb.client_get(namespace=data["namespace"], redisconfig_name="core")
         elif data["type"] == "sdb":
-            if "type" in data:
-                data.pop("type")
             storclient = j.clients.sqlitedb.client_get(namespace=data["namespace"])
         else:
             raise j.exceptions.Input("type storclient not found:%s" % data["type"])
@@ -339,6 +356,38 @@ class BCDBFactory(j.baseclasses.factory):
             self._code_generation_dir_ = path
         return self._code_generation_dir_
 
+    def migrate(self, base_url, second_url, bcdb="system", **kwargs):
+        bcdb_instance = self.get(bcdb)
+        base_model = bcdb_instance.model_get(url=base_url)
+        second_model = bcdb_instance.model_get(url=second_url)
+        # create new meta with new migration
+
+        for model_s in second_model.find():
+            overwrite = False
+            for model_b in base_model.find():
+                if model_b.name == model_s.name:
+                    overwrite = True
+                    if kwargs.items():
+                        for key, val in kwargs.items():
+                            second = getattr(model_s, "{}".format(val))
+                            setattr(model_b, key, second)
+
+                    model_b.save()
+                    model_s.delete()
+                    # overwtite
+            if not overwrite:
+                m = base_model.new()
+                for prop in base_model.schema.properties:
+
+                    if hasattr(model_s, "{}".format(prop.name)):
+                        setattr(m, prop.name, getattr(model_s, "{}".format(prop.name)))
+                m.save()
+                model_s.delete()
+                # create new one
+        schema = bcdb_instance.schema_get(url=second_url)
+
+        bcdb_instance.meta._migrate_meta(schema)
+
     def _load_test_model(self, type="zdb", schema=None, datagen=False):
         """
 
@@ -356,7 +405,7 @@ class BCDBFactory(j.baseclasses.factory):
             schema = """
             @url = despiegk.test
             llist2 = "" (LS)
-            name** = ""
+            name*** = ""
             email** = ""
             nr** = 0
             date_start** = 0 (D)
@@ -401,8 +450,7 @@ class BCDBFactory(j.baseclasses.factory):
 
         assert bcdb.name == "test"
 
-        if type == "zdb":
-            bcdb.reset()  # empty
+        bcdb.reset()  # empty
 
         assert bcdb.storclient.get(0)
         assert bcdb.storclient.count == 1
@@ -411,7 +459,8 @@ class BCDBFactory(j.baseclasses.factory):
 
         model = bcdb.model_get(schema=schema)
 
-        self._log_debug("bcdb already exists")
+        # lets check the sql index is empty
+        assert model.index.sql_index_count() == 0
 
         if type.lower() in ["zdb"]:
             # print(model.storclient.nsinfo["entries"])
@@ -461,9 +510,7 @@ class BCDBFactory(j.baseclasses.factory):
 
         out += "{RESET}"
         out = j.core.tools.text_replace(out)
-        print(out)
-        # TODO: *1 dirty hack, the ansi codes are not printed, need to check why
-        return ""
+        return out
 
     __repr__ = __str__
 

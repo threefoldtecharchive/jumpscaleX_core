@@ -21,9 +21,9 @@ class ZDBServers(JSConfigs):
             self._default = self.get(name="default")
         return self._default
 
-    def build(self, reset=True):
+    def install(self, reset=True):
         """
-        kosmos 'j.servers.zdb.build()'
+        kosmos 'j.servers.zdb.install()'
         """
         j.builders.db.zdb.install(reset=reset)
 
@@ -44,7 +44,7 @@ class ZDBServers(JSConfigs):
         """
         if not namespaces:
             namespaces = []
-        zdb = self.get(name="test", port=9901, save=True)
+        zdb = self.get(name="test", port=9901, autosave=True)
 
         if destroydata:
             zdb.destroy()

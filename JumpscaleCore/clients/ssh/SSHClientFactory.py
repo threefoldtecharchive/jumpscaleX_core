@@ -14,23 +14,38 @@ class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
         self._clients = {}
         self._SSHClientBaseClass = SSHClientBase
 
-    def _childclass_selector(self, **kwargs):
+    def _childclass_selector(self, jsxobject):
         """
         gives a creator of a factory the ability to change the type of child to be returned
         :return:
         """
-        if "client_type" in kwargs and kwargs["client_type"] == "pssh":
+        if jsxobject.client_type == "pssh":
             return SSHClient
         elif j.core.platformtype.myplatform.platform_is_osx:
             # return SSHClientParamiko
             return SSHClient
         else:
-            return SSHClient
+            return SSHClientParamiko
 
     def test(self):
         """
         kosmos 'j.clients.ssh.test()'
         """
+        wg = self.master.wireguard_server
+        # wg.executor.file_write("/var/test", "test")
+        # r = wg.executor.file_read("/var/test")
+        # assert r == "test"
+        #
+        # wg.executor.file_write("/var/test", b"test")
+        # r = wg.executor.file_read("/var/test")
+        # assert r == "test" or r == b"test"
+        # wg.config["test"] = ["bb"]
+        # wg.save()
+
+        wg.server_start()
+
+        j.shell()
+        w
 
         # TODO:*1 create docker make sure default key is used in the docker
         # d = j.sal.docker.create(name='test', ports='22:8022', vols='', volsro='', stdout=True, base='phusion/baseimage',

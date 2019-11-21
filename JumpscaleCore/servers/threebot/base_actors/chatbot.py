@@ -12,7 +12,7 @@ class chatbot(j.baseclasses.threebot_actor):
         # check self.chatbot.chatflows for the existing chatflows
         # all required commands are here
 
-    def work_get(self, sessionid):
+    def work_get(self, sessionid, user_session=None):
         """
         ```in
         sessionid = "" (S)
@@ -21,7 +21,7 @@ class chatbot(j.baseclasses.threebot_actor):
         res = self.chatbot.session_work_get(sessionid)
         return json.dumps(res)
 
-    def work_report(self, sessionid, result):
+    def work_report(self, sessionid, result, user_session=None):
         """
         ```in
         sessionid = "" (S)
@@ -31,17 +31,21 @@ class chatbot(j.baseclasses.threebot_actor):
         self.chatbot.session_work_set(sessionid, result)
         return
 
-    def session_alive(self, sessionid, schema_out):
+    def session_alive(self, sessionid, schema_out, user_session=None):
         # TODO:*1 check if greenlet is alive
         pass
 
-    def ping(self):
+    def ping(self, user_session=None):
         return "PONG"
 
-    def session_new(self, topic):
+    def session_new(self, topic, query_params, user_session=None):
         """
         ```in
         topic = "" (S)
+        query_params = "" (S)
         ```
         """
-        return json.dumps(self.chatbot.session_new(topic))
+        return json.dumps(self.chatbot.session_new(topic, query_params))
+
+    def chatflows_list(self, user_session=None):
+        return self.chatbot.chatflows_list()

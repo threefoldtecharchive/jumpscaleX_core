@@ -26,9 +26,10 @@ from Jumpscale.sal.fs.SystemFSDecorators import (
 )
 
 JSBASE = j.baseclasses.object
+TESTTOOLS = j.baseclasses.testtools
 
 
-class SystemFS(j.baseclasses.object):
+class SystemFS(JSBASE, TESTTOOLS):
 
     __jslocation__ = "j.sal.fs"
 
@@ -167,19 +168,19 @@ class SystemFS(j.baseclasses.object):
         The dst directory may already exist; if not,
         it will be created as well as missing parent directories
         @param src: string (source of directory tree to be copied)
-        @param rsyncdelete will remove files on dest which are not on source (default)
+        @param rsyncdelete will remove files on dest which are not on source (default) this works with the overwriteFiles to true otherwise it will not remove any files. Effective only when rsync=True
         @param recursive:  recursively look in all subdirs
-        :param ignoredir: the following are always in, no need to specify ['.egg-info', '.dist-info', '__pycache__']
-        :param ignorefiles: the following are always in, no need to specify: ["*.egg-info","*.pyc","*.bak"]
+        @param ignoredir: the following are always in, no need to specify ['.egg-info', '.dist-info', '__pycache__']
+        @param ignorefiles: the following are always in, no need to specify: ["*.egg-info","*.pyc","*.bak"]
+        @param rsync: bool. Use rsync for copying.
         @param ssh:  bool (copy to remote)
         @param sshport int (ssh port)
         @param createdir:   bool (when ssh creates parent directory)
         @param dst: string (path directory to be copied to...should not already exist)
         @param keepsymlinks: bool (True keeps symlinks instead of copying the content of the file)
-        @param deletefirst: bool (Set to True if you want to erase destination first, be carefull, this can erase directories)
+        @param deletefirst: bool (Set to True if you want to erase symlinks/folders in the destination that also exist in the source, before copying.)
         @param overwriteFiles: if True will overwrite files, otherwise will not overwrite when destination exists
         """
-
         default_ignore_dir = [".egg-info", ".dist-info", "__pycache__"]
         if ignoredir is None:
             ignoredir = []
@@ -244,6 +245,7 @@ class SystemFS(j.baseclasses.object):
                             overwriteFiles=overwriteFiles,
                             ignoredir=ignoredir,
                             ignorefiles=ignorefiles,
+                            rsync=rsync,
                         )
                     if self.isFile(srcname):
                         # print "2:%s %s"%(srcname,dstname)
@@ -255,12 +257,15 @@ class SystemFS(j.baseclasses.object):
             for item in ignoredir:
                 excl += "--exclude '*%s/' " % item
 
+            for item in ignorefiles:
+                excl += "--exclude '*%s' " % item
+
             dstpath2 = dst.split(":")[1] if ":" in dst else dst  # OTHERWISE CANNOT WORK FOR SSH
 
             dstpath = dst
-            dstpath = dstpath.replace("//", "/")
+            dstpath = self.pathClean(dstpath)
 
-            src = src.replace("//", "/")
+            src = self.pathClean(src)
 
             # ":" is there to make sure we support ssh
             if ":" not in src and j.sal.fs.isDir(src):
@@ -277,7 +282,11 @@ class SystemFS(j.baseclasses.object):
                 cmd += " -rLt --partial %s" % excl
             if not recursive:
                 cmd += ' --exclude "*/"'
-            if rsyncdelete:
+            if not overwriteFiles:
+                cmd += " --ignore-existing "
+            if rsyncdelete and overwriteFiles:
+                # --delete delete extraneous files from dest dirs
+                # --delete-excluded also delete excluded files from dest dirs
                 cmd += " --delete --delete-excluded "
             if ssh:
                 cmd += " -e 'ssh -o StrictHostKeyChecking=no -p %s' " % sshport
@@ -471,7 +480,7 @@ class SystemFS(j.baseclasses.object):
         if not found will return None or die
 
         Raises:
-            RuntimeError -- if die 
+            RuntimeError -- if die
 
         Returns:
             string -- the path which has the dirname or None
@@ -573,7 +582,12 @@ class SystemFS(j.baseclasses.object):
         if checkIsFile and not self.isFile(path):
             raise j.exceptions.RuntimeError("Path %s should be a file (not e.g. a dir), error when importing" % path)
         extension = ""
-        if self.isDir(path):
+
+        isDir = False
+        if existCheck:
+            isDir = self.isDir(path)
+
+        if isDir:
             name = ""
             path = self.pathClean(path)
         else:
@@ -581,6 +595,8 @@ class SystemFS(j.baseclasses.object):
             path = self.pathClean(path)
             # make sure only clean path is left and the filename is out
             path = self.getDirName(path)
+            # if it is a root directory getDirName will return //
+            path = self.pathClean(path)
             # find extension
             regexToFindExt = "\.\w*$"
             if j.data.regex.match(regexToFindExt, name):
@@ -597,6 +613,10 @@ class SystemFS(j.baseclasses.object):
             dirOrFilename = self.getDirName(path, lastOnly=True)
         else:
             dirOrFilename = name
+
+        if name == "" and dirOrFilename == "":
+            # Here we are at a root level so instead of retruning an empty string we want to return the directory name
+            dirOrFilename = self.pathClean(path)
         # check for priority
         regexToFindPriority = "^\d*_"
         if j.data.regex.match(regexToFindPriority, dirOrFilename):
@@ -608,7 +628,12 @@ class SystemFS(j.baseclasses.object):
             )
         else:
             priority = 0
-
+        # for consistency reason path should always end with a /
+        if len(path) > 0:
+            if path[len(path) - 1] != "/":
+                path += "/"
+        else:
+            path = "/"
         return path, name, extension, priority  # if name =="" then is dir
 
     def getcwd(self):
@@ -651,12 +676,27 @@ class SystemFS(j.baseclasses.object):
         for item in items:
             self.unlink(item)
 
-    def _listInDir(self, path, followSymlinks=True):
+    def _listInDir(self, path, listSymlinks=True):
         """returns array with dirs & files in directory
         @param path: string (Directory path to list contents under)
         """
         names = os.listdir(path)
+        if not listSymlinks:
+            sym_links = self._list_sym_links(path)
+            if sym_links:
+                for link in sym_links:
+                    if link in names:
+                        names.remove(link)
         return names
+
+    def _list_sym_links(self, path):
+        sym_links = []
+        for name in os.listdir(path):
+            if name not in (os.curdir, os.pardir):
+                full = os.path.join(path, name)
+                if os.path.islink(full):
+                    sym_links.append(name)
+        return sym_links
 
     @path_check(path={"required", "replace", "exists", "dir"})
     def listFilesInDir(
@@ -777,7 +817,25 @@ class SystemFS(j.baseclasses.object):
         # 2. `sensitive`: case-sensitive comparison
         # 3. `insensitive`: case-insensitive comparison
         """
-        dircontent = self._listInDir(path)
+
+        def filter_include(fullpath):
+            include = False
+            if (filter is None) or matcher(direntry, filter):
+                if (minmtime is not None) or (maxmtime is not None):
+                    mymtime = os.stat(fullpath)[ST_MTIME]
+                    if (minmtime is None) or (mymtime > minmtime):
+                        if (maxmtime is None) or (mymtime < maxmtime):
+                            include = True
+                else:
+                    include = True
+                if include:
+                    if exclude != []:
+                        for excludeItem in exclude:
+                            if matcher(direntry, excludeItem):
+                                include = False
+            return include
+
+        dircontent = self._listInDir(path, listSymlinks=listSymlinks)
         filesreturn = []
 
         if case_sensitivity.lower() == "sensitive":
@@ -801,26 +859,13 @@ class SystemFS(j.baseclasses.object):
                     fullpath = self.readLink(fullpath)
 
             if self.isFile(fullpath) and "f" in type:
-                includeFile = False
-                if (filter is None) or matcher(direntry, filter):
-                    if (minmtime is not None) or (maxmtime is not None):
-                        mymtime = os.stat(fullpath)[ST_MTIME]
-                        if (minmtime is None) or (mymtime > minmtime):
-                            if (maxmtime is None) or (mymtime < maxmtime):
-                                includeFile = True
-                    else:
-                        includeFile = True
-                if includeFile:
-                    if exclude != []:
-                        for excludeItem in exclude:
-                            if matcher(direntry, excludeItem):
-                                includeFile = False
-                    if includeFile:
-                        filesreturn.append(fullpath)
+                if filter_include(fullpath):
+                    filesreturn.append(fullpath)
             elif self.isDir(fullpath):
                 if "d" in type:
                     # if not(listSymlinks==False and self.isLink(fullpath)):
-                    filesreturn.append(fullpath)
+                    if filter_include(fullpath):
+                        filesreturn.append(fullpath)
                 if recursive:
                     newdepth = depth
                     if newdepth is not None and newdepth != 0:
@@ -875,21 +920,6 @@ class SystemFS(j.baseclasses.object):
             if new_file_name != file_name:
                 new_path = self.joinPaths(dir_name, new_file_name)
                 self.renameFile(path, new_path)
-
-    def replaceWordsInFiles(
-        self, pathToSearchIn, templateengine, recursive=True, filter=None, minmtime=None, maxmtime=None
-    ):
-        """
-        apply templateengine to list of found files
-        @param templateengine =te  #example below
-            te=j.tools.code.template_engine_get()
-            te.add("name",self.a.name)
-            te.add("description",self.ayses.description)
-            te.add("version",self.ayses.version)
-        """
-        paths = self.listFilesInDir(pathToSearchIn, recursive, filter, minmtime, maxmtime)
-        for path in paths:
-            templateengine.replaceInsideFile(path)
 
     @path_check(path={"required", "replace"})
     def listDirsInDir(self, path, recursive=False, dirNameOnly=False, findDirectorySymlinks=True, followSymlinks=True):
@@ -1111,7 +1141,7 @@ class SystemFS(j.baseclasses.object):
                 return True
         return False
 
-    @path_check(path={"required", "replace", "exists"})
+    @path_check(path={"required", "replace"})
     def isLink(self, path, checkJunction=False, check_valid=False):
         """Check if the specified path is a link
         @param path: string
@@ -1141,9 +1171,10 @@ class SystemFS(j.baseclasses.object):
 
         if os.path.islink(path):
             if check_valid:
-                j.shell()
-                w
-            self._log_debug("path %s is a link" % path, _levelup=3)
+                if not os.path.exists(path):
+                    self._log_debug("path %s is not a link and will be removed" % path, _levelup=3)
+                    self.isLinkAndBroken(path)
+                    return False
             return True
         self._log_debug("path %s is not a link" % path, _levelup=3)
         return False
@@ -1189,7 +1220,7 @@ class SystemFS(j.baseclasses.object):
         self._log_debug("Unlink file with path: %s" % filename, _levelup=3)
         os.unlink(filename)
 
-    @path_check(filename={"required", "replace", "exists", "file"})
+    @path_check(filename={"required", "replace", "exists"})
     def unlink(self, filename):
         """Remove the given file if it's a file or a symlink
 
@@ -1323,33 +1354,46 @@ class SystemFS(j.baseclasses.object):
         @return: object
         """
         self._log_debug("Opening file %s for reading" % filelocation, _levelup=3)
-        contents = self.fileGetContents(filelocation)
+        contents = self.readFile(filelocation, binary=True)
         self._log_debug("creating object")
         return pickle.loads(contents)
 
-    @path_check(filename={"required", "replace", "exists", "file"})
-    def md5sum(self, filename):
+    @path_check(filepath={"required", "replace", "exists", "file"})
+    def md5sum(self, filepath):
         """Return the hex digest of a file without loading it all into memory
-        @param filename: string (filename to get the hex digest of it) or list of files
+        @param filepath: string (filepath of the file we want to get the hex digest of it)
         @rtype: md5 of the file
         """
-        self._log_debug("Get the hex digest of file %s without loading it all into memory" % filename, _levelup=3)
-        if not isinstance(filename, list):
-            filename = [filename]
+        self._log_debug("Get the hex digest of file %s without loading it all into memory" % filepath, _levelup=3)
+        # we can't use a list of file because the FS decorators will break
         digest = hashlib.md5()
-        for filepath in filename:
-            with open(filepath, "rb") as fh:
-                while True:
-                    buf = fh.read(4096)
-                    if buf == b"":
-                        break
-                    digest.update(buf)
+        with open(filepath, "rb") as fh:
+            while True:
+                buf = fh.read(4096)
+                if buf == b"":
+                    break
+                digest.update(buf)
         return digest.hexdigest()
 
     @path_check(folder={"required", "replace", "exists", "dir"})
-    def getFolderMD5sum(self, folder):
-        files = sorted(self.walk(folder, recurse=1))
-        return self.md5sum(files)
+    def getFolderMD5sum(self, folder, ignore_empty_files=False):
+        """Return the hex digest of a folder without loading it all into memory
+        by hashing of the file contained in this folder except the empty files if the flag is true
+        and by hashing all the files hashes together
+        @param folder: string (folder to get the hex digest of it)
+        @param ignore_empty_files: Boolean (ignore empty files)
+        @rtype: md5 of the directory
+        """
+        files = sorted(self.listFilesInDir(folder, recursive=True, followSymlinks=False, listSymlinks=False))
+        dir_hash = hashlib.md5()
+
+        for file in files:
+            if ignore_empty_files:
+                if self.fileSize(file) == 0:
+                    continue
+            md5 = self.md5sum(file).encode("utf-8")
+            dir_hash.update(md5)
+        return dir_hash.hexdigest()
 
     def getTmpDirPath(self, name="", create=True):
         """
@@ -1398,9 +1442,9 @@ class SystemFS(j.baseclasses.object):
     def isBinaryFile(self, filename, checksize=4096):
         return not self.isAsciiFile(filename, checksize)
 
-    @path_check(path={"required"})
     def isAbsolute(self, path):
-        return os.path.isabs(path)
+        path = path or ""
+        return os.path.isabs(str(path))
 
     # THERE IS A tools.lock implementation we need to use that one
     # lock = staticmethod(lock)
@@ -1409,7 +1453,7 @@ class SystemFS(j.baseclasses.object):
     # unlock = staticmethod(unlock)
     # unlock_ = staticmethod(unlock_)
 
-    @path_check(filename={"required", "replace"})
+    @path_check(filename={"replace"})
     def validateFilename(self, filename, platform=None):
         """Validate a filename for a given (or current) platform
 
@@ -1638,15 +1682,10 @@ class SystemFS(j.baseclasses.object):
                 tarfile = params["t"]
                 destInTar = params["destintar"]
                 destpath = self.joinPaths(destInTar, self.pathRemoveDirPart(path, sourcepath))
-                if self.isLink(path) and followlinks:
-                    path = self.readLink(path)
                 self._log_debug("fs.tar: add file %s to tar" % path)
                 # print "fstar: add file %s to tar" % path
                 if not (j.core.platformtype.myplatform.platform_is_windows and j.sal.windows.checkFileToIgnore(path)):
-                    if self.isFile(path) or self.isLink(path):
-                        tarfile.add(path, destpath)
-                    else:
-                        raise j.exceptions.RuntimeError("Cannot add file %s to destpath" % destpath)
+                    tarfile.add(path, destpath)
 
             params = {}
             params["t"] = t
@@ -1662,7 +1701,7 @@ class SystemFS(j.baseclasses.object):
                 contentRegexIncludes=contentRegexIncludes,
                 contentRegexExcludes=contentRegexExcludes,
                 depths=depths,
-                followlinks=False,
+                followlinks=followlinks,
             )
 
             if extrafiles != []:
@@ -1728,3 +1767,13 @@ class SystemFS(j.baseclasses.object):
         else:
             cmd = "tar xzf '%s' -C '%s'" % (sourceFile, destinationdir)
             j.sal.process.execute(cmd)
+
+    def test(self, name=""):
+        """
+        it's run all tests
+        kosmos 'j.sal.fs.test()'
+
+        """
+        self._test_run(name=name)
+
+        print("TEST OK ALL PASSED")

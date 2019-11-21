@@ -21,6 +21,7 @@
 from Jumpscale import j
 from wsgidav import compat
 import mimetypes
+import types
 
 
 class FILE(j.data.bcdb._BCDBModelClass):
@@ -110,10 +111,9 @@ class FILE(j.data.bcdb._BCDBModelClass):
         name = j.sal.fs.pathClean(name)
         new_file.name = name
         new_file.save()
-        dir = self._dir_model.get_by_name(name=j.sal.fs.getParent(name))
-        if len(dir) == 0:
-            dir = [self._dir_model.create_empty_dir(j.sal.fs.getParent(name))]
-        dir = dir[0]
+        dir = self._dir_model.get_by_name(name=j.sal.fs.getParent(name), die=False)
+        if not dir:
+            dir = self._dir_model.create_empty_dir(j.sal.fs.getParent(name))
         dir.files.append(new_file.id)
         dir.save()
         return new_file
@@ -128,14 +128,12 @@ class FILE(j.data.bcdb._BCDBModelClass):
         :return: file object
         """
         path = j.sal.fs.pathClean(path)
-        try:
-            file = self.get_by_name(name=path)[0]
-        except:
-            if not create:
-                raise RuntimeError(
-                    "file with path {} doesn't exist, if you want to create it pass create = True".format(path)
-                )
+        file = self.get_by_name(name=path, die=not create)  # die if create=False and file not found
+
+        # file not found, & create=True
+        if not file:
             file = self.file_create_empty(path)
+
         fs = FileStream(file)
         fs.writelines(content, append=append)
         fs.close()
@@ -144,22 +142,17 @@ class FILE(j.data.bcdb._BCDBModelClass):
     def file_delete(self, path):
         path = j.sal.fs.pathClean(path)
         file = self.get_by_name(name=path)
-        if not file:
-            raise RuntimeError("file with {} does not exist".format(file))
-        file = file[0]
         file.delete()
         parent = j.sal.fs.getParent(path)
         parent = j.sal.fs.pathClean(parent)
-        parent = self._dir_model.get_by_name(name=parent)[0]
+        parent = self._dir_model.get_by_name(name=parent)
         parent.files.remove(file.id)
         parent.save()
 
     def file_read(self, path):
-        try:
-            path = j.sal.fs.pathClean(path)
-            file = self.get_by_name(name=path)[0]
-        except:
-            raise RuntimeError("file with path {} does not exist".format(path))
+        path = j.sal.fs.pathClean(path)
+        file = self.get_by_name(name=path)
+
         fs = FileStream(file)
         return fs.read_stream_get().read()
 
@@ -184,7 +177,7 @@ class FileStream:
 
     def writelines(self, stream, append=True):
         ext = self._vfile.extension or self._vfile.name.split(".")[-1]
-        if ext in self.PLAIN_TYPES or isinstance(stream, str):
+        if (ext in self.PLAIN_TYPES and getattr(stream, "readlines", None)) or isinstance(stream, str):
             self._save_plain(stream, append=append)
         else:
             self._save_blocks(stream, append=append)
@@ -193,8 +186,7 @@ class FileStream:
             self._vfile.extension = ext
             self._vfile.save()
 
-    def _drain_response(self, response):
-        response_generator = response.iter_content(self.BLOCK_SIZE)
+    def _drain_response(self, response_generator):
         while True:
             try:
                 yield next(response_generator)
@@ -217,6 +209,9 @@ class FileStream:
             self._vfile.save()
 
         if hasattr(stream, "iter_content"):
+            response_generator = stream.iter_content(self.BLOCK_SIZE)
+            blocks_generator = self._drain_response(response_generator)
+        elif isinstance(stream, types.GeneratorType):
             blocks_generator = self._drain_response(stream)
         else:
             blocks_generator = self._drain_stream(stream)
@@ -251,6 +246,8 @@ class FileStream:
             content = content + stream
         else:
             for line in stream.readlines():
+                if isinstance(line, bytes):
+                    line = line.decode()
                 content = content + line + "\n"
         self._vfile.content = content
         self._vfile.size_bytes = len(self._vfile.content.encode())

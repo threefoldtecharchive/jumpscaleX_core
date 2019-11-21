@@ -1,5 +1,5 @@
 from Jumpscale import j
-from nacl.public import PrivateKey, SealedBox
+from nacl.public import PrivateKey, SealedBox, Box
 from nacl.signing import SigningKey, VerifyKey
 from nacl.encoding import RawEncoder
 import nacl.signing
@@ -8,6 +8,9 @@ import nacl.utils
 import nacl.hash
 import nacl.encoding
 import hashlib
+
+import binascii
+
 
 # from .AgentWithKeyname import AgentWithName
 import binascii
@@ -21,13 +24,16 @@ MyEnv = j.core.myenv
 
 
 class NACL(j.baseclasses.object):
-    def _init(self, name=None, **kwargs):
+    def _init(self, name=None, configure_if_needed=False, **kwargs):
         assert name
         self.name = name
         self._signingkey = None
         self._box = None
         if not Tools.exists(self._path):
             Tools.dir_ensure(self._path)
+        if not Tools.exists(self._path_seed):
+            if configure_if_needed:
+                self.configure(privkey_words=None, generate=True)
 
     def reset(self):
         self._signingkey = None
@@ -52,13 +58,21 @@ class NACL(j.baseclasses.object):
         return self.signing_key.verify_key.to_curve25519_public_key()
 
     @property
+    def public_key_hex(self):
+        return binascii.hexlify(self.public_key.encode()).decode()
+
+    @property
+    def verify_key_hex(self):
+        return binascii.hexlify(self.verify_key.encode()).decode()
+
+    @property
     def box(self):
         """
         box is a used to do symetric encryption
         it uses the local private key
         """
         if not self._box:
-            self.load()
+            self.load(die=False)
         return self._box
 
     @property
@@ -121,7 +135,7 @@ class NACL(j.baseclasses.object):
         Generate an ed25519 signing key
         if words if specified, words are used as seed to rengerate a known key
         if words is None, a random seed is generated
-        
+
         once the key is generated it is stored in chosen path encrypted using the local secret
         """
         if words:
@@ -137,9 +151,9 @@ class NACL(j.baseclasses.object):
         # build in verification
         assert encrypted_seed == self._file_read_hex(self._path_seed)
 
-        self._load_singing_key()
+        self._load_singing_key(die=False)
 
-    def configure(self, privkey_words=None, sshagent_use=None, interactive=None, generate=True):
+    def configure(self, privkey_words=None, sshagent_use=None, interactive=None, generate=True, reset=False):
         """
 
         secret is used to encrypt/decrypt the private key when stored on local filesystem
@@ -161,6 +175,10 @@ class NACL(j.baseclasses.object):
         if sshagent_use:
             raise j.exceptions.Base("does not work yet")
 
+        if reset:
+            self.reset()
+            j.sal.fs.remove(self._path_seed)
+            self._keys_generate(privkey_words)
         self.load(die=False)
 
         if self._signingkey is None:
@@ -173,10 +191,10 @@ class NACL(j.baseclasses.object):
                     assert self._signingkey
                     return
                 # means we did not find the seed yet
-                if interactive:
-                    self._ask_privkey_words()
-                elif generate:
+                if generate:
                     self._keys_generate()
+                elif interactive:
+                    self._ask_privkey_words()
                 else:
                     self._error_raise("cannot generate private key, was not allowed")
 
@@ -279,6 +297,50 @@ class NACL(j.baseclasses.object):
         res = self._box.decrypt(self.tobytes(data))
         return res
 
+    def encryptAsymmetric(self, public_key, plaintext, nonce=None, encoder=RawEncoder):
+        """
+        Encrypts the plaintext message using the given `nonce` (or generates
+        one randomly if omitted) and returns the ciphertext encoded with the
+        encoder.
+        Uses a Box, created using public_key and self.private_key, to encrypt the data.
+
+        :param public_key: public key used to encrypt and
+        decrypt messages
+        :type public_key: nacl.public.PublicKey
+        :param plaintext: The plain text message to encrypt
+        :type plaintext: str
+        :param nonce: The nonce to use in the encryption, defaults to None
+        :type nonce: bytes, optional
+        :param encoder:  The encoder to use to encode the ciphertext, defaults to RawEncoder
+        :type encoder: nacl encoder, optional
+        :return: encrypted plaintext
+        :rtype: nacl.utils.EncryptedMessage
+        """
+        box = Box(self.private_key, public_key)
+        return box.encrypt(plaintext, nonce, encoder)
+
+    def decryptAsymmetric(self, public_key, ciphertext, nonce=None, encoder=RawEncoder):
+        """Decrypts the ciphertext using the `nonce` (explicitly, when passed as a
+        parameter or implicitly, when omitted, as part of the ciphertext) and
+        returns the plaintext message.
+
+        Uses a Box, created using public_key and self.private_key, to encrypt the data.
+
+        :param public_key: public key used to encrypt and
+        decrypt messages
+        :type public_key: nacl.public.PublicKey
+        :param ciphertext: The ciphered message to decrypt
+        :type ciphertext: bytes
+        :param nonce: The nonce used when encrypting the
+            ciphertext, default to None
+        :type nonce: bytes, optional
+        :type encoder: nacl encoder, optional
+        :return: decrypted ciphertext
+        :rtype: bytes
+        """
+        box = Box(self.private_key, public_key)
+        return box.decrypt(ciphertext, nonce, encoder)
+
     def encrypt(self, data, hex=False, public_key=None):
         """ Encrypt data using the public key
             :param data: data to be encrypted, should be of type binary
@@ -287,8 +349,7 @@ class NACL(j.baseclasses.object):
         """
         if not public_key:
             public_key = self.public_key
-
-            data = self.tobytes(data)
+        data = self.tobytes(data)
         sealed_box = SealedBox(public_key)
         res = sealed_box.encrypt(data)
         if hex:
@@ -304,7 +365,7 @@ class NACL(j.baseclasses.object):
         if not private_key:
             private_key = self.private_key
 
-        unseal_box = SealedBox(self.private_key)
+        unseal_box = SealedBox(private_key)
         if hex:
             data = self._hex_to_bin(data)
         return unseal_box.decrypt(data)
@@ -314,8 +375,21 @@ class NACL(j.baseclasses.object):
         sign using your private key using Ed25519 algorithm
         the result will be 64 bytes
         """
+        if isinstance(data, str):
+            data = data.encode()
         signed = self.signing_key.sign(data)
         return signed.signature
+
+    def sign_hex(self, data):
+        """
+        sign using your private key using Ed25519 algorithm
+        the result will be 128 bytes
+        """
+        if isinstance(data, str):
+            data = data.encode()
+        signed = self.signing_key.sign(data)
+        signedhex = binascii.hexlify(signed.signature)
+        return signedhex
 
     def verify(self, data, signature, verify_key=""):
         """ data is the original data we have to verify with signature

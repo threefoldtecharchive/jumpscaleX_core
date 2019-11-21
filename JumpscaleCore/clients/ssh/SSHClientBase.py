@@ -1,7 +1,4 @@
 from Jumpscale import j
-
-import base64
-import time
 import os
 
 
@@ -12,7 +9,7 @@ class SSHClientBase(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
         @url = jumpscale.sshclient.1
-        name* = ""
+        name** = ""
         addr = ""
         port = 22
         #addr_priv = ""
@@ -21,25 +18,36 @@ class SSHClientBase(j.baseclasses.object_config):
         passwd = ""
         sshkey_name = ""
         #if we want to use other key compared to the one we have by default, can specify the name here
-        sshkey_deployment = ""  
+        sshkey_deployment = ""
         proxy = ""
         stdout = True (B)
         forward_agent = True (B)
         allow_agent = True (B)
         client_type = "paramiko,pssh" (E)
         timeout = 60
-        config_msgpack = "" (bytes)     
+        config_msgpack = "" (bytes)
         env_on_system_msgpack = "" (bytes)
         meta = {} (DICT)
         """
+
+    @property
+    def wireguard_server(self):
+        if not self._wireguard:
+            from Jumpscale.core.InstallTools import WireGuardServer
+
+            self._wireguard = WireGuardServer(self.addr, port=self.port)
+        return self._wireguard
 
     def _init(self, **kwargs):
         self._client_ = None
         self._env_on_system = None
         self._uid = None
         self.executor = j.tools.executor.ssh_get(self)
-
+        self._wireguard = None
         self._init3()
+        if self.sshkey_name and self.sshkey_name not in j.core.myenv.sshagent.key_names:
+            j.core.myenv.sshagent.start()
+            self.sshkey_obj.load()
 
     def state_reset(self):
         """
@@ -98,30 +106,6 @@ class SSHClientBase(j.baseclasses.object_config):
     def sftp_stat(self, path):
         return self.sftp.stat(path)
 
-    def file_copy(self, local_file, remote_file):
-        """Copy local file to host via SFTP/SCP
-
-        Copy is done natively using SFTP/SCP version 2 protocol, no scp command
-        is used or required.
-
-        :param local_file: Local filepath to copy to remote host
-        :type local_file: str
-        :param remote_file: Remote filepath on remote host to copy file to
-        :type remote_file: str
-        :raises: :py:class:`ValueError` when a directory is supplied to
-          ``local_file`` and ``recurse`` is not set
-        :raises: :py:class:`IOError` on I/O errors writing files
-        :raises: :py:class:`OSError` on OS errors like permission denied
-        """
-        local_file = self._replace(local_file, paths_executor=False)
-        remote_file = self._replace(remote_file)
-        if os.path.isdir(local_file):
-            raise j.exceptions.Value("Local file cannot be a dir")
-        destination = j.sal.fs.getDirName(remote_file)
-        self.executor.dir_ensure(destination)
-        self._client.scp_send(local_file, remote_file, recurse=False, sftp=None)
-        self._log_debug("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
-
     def _replace(self, txt, paths_executor=True):
         if "{" in txt:
             res = {}
@@ -138,7 +122,7 @@ class SSHClientBase(j.baseclasses.object_config):
     #         else:
     #             self._private = j.sal.nettools.tcpPortConnectionTest(self.addr_priv, self.port_priv, 1)
     #     return self._private
-    def execute_jumpscale(self, script, **kwargs):
+    def execute_jumpscale(self, script, interactive=True, **kwargs):
         script = "from Jumpscale import j\n{}".format(script)
 
         script = j.core.tools.text_replace(script, **kwargs)
@@ -148,7 +132,7 @@ class SSHClientBase(j.baseclasses.object_config):
 
         j.sal.fs.writeFile(filename, contents=script)
         self.file_copy(filename, filename)  # local -> remote
-        self.execute("source /sandbox/env.sh && python3 {}".format(filename))
+        self.execute("source /sandbox/env.sh && python3 {}".format(filename), interactive=interactive)
 
     @property
     def addr_variable(self):
@@ -184,7 +168,7 @@ class SSHClientBase(j.baseclasses.object_config):
             self._ftpclient = None
         return self._connected
 
-    def ssh_authorize(self, pubkeys=None, homedir="/root"):
+    def ssh_authorize(self, pubkeys=None, homedir="/root", interactive=True):
         """add key to authorized users, if key is specified will get public key from sshkey client,
         or can directly specify the public key. If both are specified key name instance will override public key.
 
@@ -199,7 +183,9 @@ class SSHClientBase(j.baseclasses.object_config):
             pubkeys = [pubkeys]
         for sshkey in pubkeys:
             # TODO: need to make sure its only 1 time
-            self.execute('echo "{sshkey}" >> {homedir}/.ssh/authorized_keys'.format(**locals()))
+            self.execute(
+                'echo "{sshkey}" >> {homedir}/.ssh/authorized_keys'.format(**locals()), interactive=interactive
+            )
 
     def shell(self, cmd=None):
         if cmd:
@@ -208,7 +194,7 @@ class SSHClientBase(j.baseclasses.object_config):
         cmd = self._replace(cmd)
         j.sal.process.executeWithoutPipe(cmd)
 
-    def mosh(self, ssh_private_key_name=None):
+    def mosh(self, ssh_private_key_name=None, interactive=True):
         """
         if private key specified
         :param ssh_private_key:
@@ -216,7 +202,7 @@ class SSHClientBase(j.baseclasses.object_config):
         """
         self.executor.installer.mosh()
         C = j.clients.sshagent._script_get_sshload(keyname=ssh_private_key_name)
-        r = self.execute(C)
+        r = self.execute(C, interactive=interactive)
         cmd = "mosh -ssh='ssh -tt -oStrictHostKeyChecking=no -p {PORT}' {LOGIN}@{ADDR} -p 6000:6100 'bash'"
         cmd = self._replace(cmd)
         j.sal.process.executeWithoutPipe(cmd)
@@ -286,6 +272,7 @@ class SSHClientBase(j.baseclasses.object_config):
         :param showout:
         :return:
         """
+
         source = self._replace(source)
         if not dest:
             dest = source
@@ -383,6 +370,7 @@ class SSHClientBase(j.baseclasses.object_config):
                         when the len of the cmd is more than 100.000 then will always execute as script
         :return:
         """
+
         if not isinstance(cmd, str):
             raise j.exceptions.Base("cmd needs to be string")
         if replace:
@@ -418,7 +406,6 @@ class SSHClientBase(j.baseclasses.object_config):
         @param remote can be ip addr or hostname of remote,
                     if given will execute cmds there
         """
-
         if "sudo -H -SE" in content:
             raise j.exceptions.Base(content)
 
@@ -429,11 +416,11 @@ class SSHClientBase(j.baseclasses.object_config):
             content += "\n"
 
         if die:
-            content = "set -ex\n{}".format(content)
+            content = "set -e\n{}".format(content)
 
         dpath = "/tmp/jsxssh_{}.sh".format(j.data.idgenerator.generateRandomInt(1, 100000))
 
-        self.executor.file_write(dpath, content, mode="7770")
+        self.executor.file_write(dpath, content, mode="777")
 
         # j.sal.fs.writeFile(path, content)
         #

@@ -27,32 +27,28 @@ class ServerRackFactory(JSBASE):
     __jslocation__ = "j.servers.rack"
 
     def _init(self, **kwargs):
-        self._logger_enable()
-        self.current = None
+        # self._logger_enable()
+        self._current = None
+
+    @property
+    def current(self):
+        if not self._current:
+            self._current = ServerRack()
+        return self._current
 
     def get(self):
-
-        """
-        returns a gevent rack
-
-        to start the server manually do:
-        js_shell 'j.servers.rack.start(namespace="test", secret="1234")'
-
-        """
-        if not self.current:
-            self.current = ServerRack()
         return self.current
 
     def install(self):
         """
-        kosmos 'j.servers.rack._server_test_start()'
+        kosmos 'j.servers.rack.install()'
         :return:
         """
         j.builders.runtimes.python3.pip_package_install("bottle,webdavclient3")
         j.builders.runtimes.python3.pip_package_install("git+https://github.com/mar10/wsgidav.git")
 
     def _server_test_start(
-        self, background=False, gedis=True, gedis_ssl=True, webdav=True, bottle=True, websockets=True
+        self, zdb=False, background=False, gedis=True, webdav=True, bottle=True, websockets=True, gedis_ssl=False
     ):
         """
         kosmos 'j.servers.rack._server_test_start()'
@@ -64,13 +60,14 @@ class ServerRackFactory(JSBASE):
         if not background:
 
             self.install()
-            j.servers.zdb.test_instance_start(destroydata=True)
-            admin_zdb_cl = j.clients.zdb.client_admin_get(port=9901)
-            cl = admin_zdb_cl.namespace_new("test", secret="1234")
+
+            if zdb:
+                j.servers.zdb.test_instance_start(destroydata=True)
+                admin_zdb_cl = j.clients.zdb.client_admin_get(port=9901)
+                cl = admin_zdb_cl.namespace_new("test", secret="1234")
 
             if gedis:
-
-                gedis = j.servers.gedis.get_gevent_server("test", port=8900)
+                gedis = j.servers.gedis.get_gevent_server("test", port=8901)
 
             rack = self.get()
             rack.add("gedis", gedis)
@@ -95,7 +92,7 @@ class ServerRackFactory(JSBASE):
             ports = []
             args = {}
             if gedis:
-                ports.append(8900)
+                ports.append(8901)
                 args["gedis"] = "True"
             else:
                 args["gedis"] = "False"
@@ -129,7 +126,7 @@ class ServerRackFactory(JSBASE):
 
             S = j.core.tools.text_replace(S, args)
 
-            s = j.servers.startupcmd.new(name="gedis_test")
+            s = j.servers.startupcmd.get(name="gedis_test")
             s.cmd_start = S
             # the MONKEY PATCH STATEMENT IS A WEIRD ONE, will make sure that before starting monkeypatching will be done
             s.executor = "tmux"
@@ -158,7 +155,7 @@ class ServerRackFactory(JSBASE):
 
         namespace = "system"
         secret = "1234"
-        cl = j.clients.gedis.new(namespace, namespace=namespace, port=8900, secret=secret, host="localhost")
+        cl = j.clients.gedis.new(namespace, namespace=namespace, port=8901, secret=secret, host="localhost")
         assert cl.ping()
         cl.actors
         assert cl.actors.system.ping() == b"PONG"

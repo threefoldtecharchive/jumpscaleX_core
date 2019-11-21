@@ -10,11 +10,12 @@ JSConfigClient = j.baseclasses.object_config
 class GedisWebsocketServer(JSConfigClient):
     _SCHEMATEXT = """
         @url = jumpscale.gedis.websocket.1
-        name* = "default" (S)
+        name** = "default" (S)
         port = 4444
+        gedis_port = 8901
         ssl = False (B)
-        ssl_keyfile = "/sandbox/cfg/ssl/resty-auto-ssl-fallback.key" (S) #bad to do like this, harcoded TODO:, also should not be here can be done in openresty
-        ssl_certfile = "/sandbox/cfg/ssl/resty-auto-ssl-fallback.crt" (S)
+        ssl_keyfile = j.core.tools.text_replace("{DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.key") (S) #bad to do like this, harcoded TODO:, also should not be here can be done in openresty
+        ssl_certfile = j.core.tools.text_replace("{DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.crt") (S)
         """
 
     def _init(self, **kwargs):
@@ -45,6 +46,7 @@ class GedisWebsocketServer(JSConfigClient):
     @property
     def app(self):
         if not self._app:
+            Application.GEDIS_PORT = self.gedis_port
             self._app = Application
         return self._app
 
@@ -54,7 +56,16 @@ class GedisWebsocketServer(JSConfigClient):
         :param manual means the server is run manually using e.g. kosmos 'j.servers.rack.start()'
         """
 
+        self._log_info("starting server on PORT: {0}".format(self.port))
         self.server.start()
+
+    def stop(self):
+        """
+        kosmos 'j.servers.gedis_websocket.stop()'
+        stop the server
+        """
+        self._log_info("stopping server running on PORT: {0}".format(self.port))
+        self.server.stop()
 
     def test(self):
         self.default.start()
@@ -62,6 +73,9 @@ class GedisWebsocketServer(JSConfigClient):
 
 
 class Application(WebSocketApplication):
+
+    GEDIS_PORT = None
+
     def on_message(self, message):
         print(message)
         if message is None:
@@ -95,4 +109,5 @@ class Application(WebSocketApplication):
         print(reason)
 
     def on_open(self):
-        self.client_gedis = j.clients.gedis.get("main", port=8900)
+        self.client_gedis = j.clients.gedis.get("main", port=self.GEDIS_PORT)
+

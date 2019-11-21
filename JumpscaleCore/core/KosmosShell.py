@@ -1,20 +1,37 @@
+import ast
 import inspect
+import os
+import pudb
+import six
+import sys
+import time
 import traceback
 
+from functools import partial
+from prompt_toolkit.application import get_app
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
 from prompt_toolkit.completion import Completion
 from prompt_toolkit.filters import Condition, is_done
-from prompt_toolkit.formatted_text import ANSI, to_formatted_text, fragment_list_to_text
+from prompt_toolkit.formatted_text import (
+    ANSI,
+    FormattedText,
+    PygmentsTokens,
+    to_formatted_text,
+    fragment_list_to_text,
+    merge_formatted_text,
+)
+from prompt_toolkit.formatted_text.utils import fragment_list_width
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.layout.containers import ConditionalContainer, Window
 from prompt_toolkit.layout.controls import BufferControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.processors import HighlightIncrementalSearchProcessor, Processor, Transformation
 from prompt_toolkit.lexers import PygmentsLexer
+from prompt_toolkit.shortcuts import print_formatted_text
 from ptpython.filters import ShowDocstring, PythonInputFilter
 from ptpython.prompt_style import PromptStyle
-from ptpython.utils import get_jedi_script_from_document
+from ptpython.repl import _lex_python_result
 from pygments.lexers import PythonLexer
 
 
@@ -67,11 +84,34 @@ def filter_completions_on_prefix(completions, prefix=None):
         yield completion
 
 
+def get_rhs(line):
+    """
+    get the right-hand side from assignment statement
+    will return the given line if it is not an assigment statement (e.g.an expression)
+
+    :param line: line
+    :type line: str
+    """
+    try:
+        # remove the dot at the end to avoid syntax errors
+        mod = ast.parse(line.rstrip("."))
+    except SyntaxError:
+        return line
+
+    if mod.body:
+        stmt = mod.body[0]
+        # only assignment statements
+        if type(stmt) in (ast.Assign, ast.AugAssign, ast.AnnAssign):
+            return line[stmt.value.col_offset :].strip()
+    return line
+
+
 def get_current_line(document):
     tbc = document.current_line_before_cursor
     if tbc:
-        line = tbc.split(".")
-        parent, member = ".".join(line[:-1]), line[-1]
+        line = get_rhs(tbc)
+        parts = line.split(".")
+        parent, member = ".".join(parts[:-1]), parts[-1]
         if member.startswith("__"):  # then we want to show private methods
             prefix = "__"
         elif member.startswith("_"):  # then we want to show private methods
@@ -110,6 +150,9 @@ def get_completions(self, document, complete_event):
     obj = eval_code(parent, self.get_locals(), self.get_globals())
     if obj:
         if isinstance(obj, j.baseclasses.object):
+            # inspect object before getting its members
+            obj._inspect()
+
             if not prefix.endswith("*"):
                 prefix += "*"  # to make it a real prefix
 
@@ -131,6 +174,8 @@ def get_completions(self, document, complete_event):
 
 
 def get_doc_string(tbc, locals_, globals_):
+    # j = KosmosShellConfig.j
+
     obj = eval_code(tbc, locals_=locals_, globals_=globals_)
     if not obj:
         raise j.exceptions.Value("cannot get docstring of %s, not an object" % tbc)
@@ -148,6 +193,32 @@ def get_doc_string(tbc, locals_, globals_):
     if not signature:
         return doc
     return "\n\n".join([signature, doc])
+
+
+def patched_handle_exception(self, e):
+    j = KosmosShellConfig.j
+
+    # Instead of just calling ``traceback.format_exc``, we take the
+    # traceback and skip the bottom calls of this framework.
+    t, v, tb = sys.exc_info()
+
+    output = self.app.output
+    # Required for pdb.post_mortem() to work.
+    sys.last_type, sys.last_value, sys.last_traceback = t, v, tb
+
+    # loop until getting actual traceback (without internal ptpython part)
+    last_stdin_tb = tb
+    while tb:
+        if tb.tb_frame.f_code.co_filename == "<stdin>":
+            last_stdin_tb = tb
+        tb = tb.tb_next
+
+    logdict = j.core.tools.log(tb=last_stdin_tb, level=50, exception=e, stdout=False)
+    formatted_tb = j.core.tools.log2str(logdict, data_show=True, replace=True)
+    print_formatted_text(ANSI(formatted_tb))
+
+    output.write("%s\n" % e)
+    output.flush()
 
 
 class LogPane:
@@ -243,6 +314,88 @@ def setup_logging_containers(repl):
     )
 
 
+# We patch ptpython.repl.PythonRepl.execute to print ansi text
+# we only modified this part where formatted text is printed
+#
+#    # Write output tokens.
+#    if self.enable_syntax_highlighting:
+#        formatted_output = merge_formatted_text(
+#            [out_prompt, PygmentsTokens(list(_lex_python_result(result_str)))]
+#        )
+#    else:
+#        formatted_output = FormattedText(out_prompt + [("", result_str)])
+#
+# and added ansi formatting instead
+#
+#    # Support ansi formatting (removed syntax higlighting)
+#    ansi_formatted = ANSI(result_str)._formatted_text
+#    formatted_output = merge_formatted_text([FormattedText(out_prompt) + ansi_formatted])
+def patched_execute(self, line):
+    """
+    Evaluate the line and print the result.
+    """
+    output = self.app.output
+
+    # WORKAROUND: Due to a bug in Jedi, the current directory is removed
+    # from sys.path. See: https://github.com/davidhalter/jedi/issues/1148
+    if "" not in sys.path:
+        sys.path.insert(0, "")
+
+    def compile_with_flags(code, mode):
+        " Compile code with the right compiler flags. "
+        return compile(code, "<stdin>", mode, flags=self.get_compiler_flags(), dont_inherit=True)
+
+    if line.lstrip().startswith("\x1a"):
+        # When the input starts with Ctrl-Z, quit the REPL.
+        self.app.exit()
+
+    elif line.lstrip().startswith("!"):
+        # Run as shell command
+        os.system(line[1:])
+    else:
+        # Try eval first
+        try:
+            code = compile_with_flags(line, "eval")
+            result = eval(code, self.get_globals(), self.get_locals())
+
+            locals = self.get_locals()
+            locals["_"] = locals["_%i" % self.current_statement_index] = result
+
+            if result is not None:
+                out_prompt = self.get_output_prompt()
+
+                try:
+                    result_str = "%r\n" % (result,)
+                except UnicodeDecodeError:
+                    # In Python 2: `__repr__` should return a bytestring,
+                    # so to put it in a unicode context could raise an
+                    # exception that the 'ascii' codec can't decode certain
+                    # characters. Decode as utf-8 in that case.
+                    result_str = "%s\n" % repr(result).decode("utf-8")
+
+                # Align every line to the first one.
+                line_sep = "\n" + " " * fragment_list_width(out_prompt)
+                result_str = line_sep.join(result_str.splitlines()) + "\n"
+
+                # Support ansi formatting (removed syntax higlighting)
+                ansi_formatted = ANSI(result_str)._formatted_text
+                formatted_output = merge_formatted_text([FormattedText(out_prompt) + ansi_formatted])
+
+                print_formatted_text(
+                    formatted_output,
+                    style=self._current_style,
+                    style_transformation=self.style_transformation,
+                    include_default_pygments_style=False,
+                )
+
+        # If not a valid `eval` expression, run using `exec` instead.
+        except SyntaxError:
+            code = compile_with_flags(line, "exec")
+            six.exec_(code, self.get_globals(), self.get_locals())
+
+        output.flush()
+
+
 def ptconfig(repl):
     j = KosmosShellConfig.j
 
@@ -324,12 +477,23 @@ def ptconfig(repl):
 
     repl.min_brightness = 0.3
 
-    # Add custom key binding for PDB.
-
-    @repl.add_key_binding(Keys.ControlB)
+    @repl.add_key_binding(Keys.ControlJ)
     def _debug_event(event):
-        ' Pressing Control-B will insert "pdb.set_trace()" '
-        event.cli.current_buffer.insert_text("\nimport pdb; pdb.set_trace()\n")
+        """
+        custom binding for pudb, to allow debugging a statement and also
+        post-mortem debugging in case of any exception
+        """
+        b = event.cli.current_buffer
+        app = get_app()
+        statements = b.document.text
+        if statements:
+            import linecache
+
+            linecache.cache["<string>"] = (len(statements), time.time(), statements.split("\n"), "<string>")
+            app.exit(pudb.runstatement(statements))
+            app.pre_run_callables.append(b.reset)
+        else:
+            pudb.pm()
 
     # Custom key binding for some simple autocorrection while typing.
 
@@ -349,16 +513,29 @@ def ptconfig(repl):
     @repl.add_key_binding("?", filter=~IsInsideString(repl))
     def _docevent(event):
         b = event.cli.current_buffer
-        tbc = b.document.current_line_before_cursor.rstrip("(")
+        parent, member, _ = get_current_line(b.document)
+        member = member.rstrip("(")
 
         try:
-            d = get_doc_string(tbc, repl.get_locals(), repl.get_globals())
+            d = None
+            try:
+                # try get the class member itself first
+                d = get_doc_string(f"{parent}.__class__.{member}", repl.get_locals(), repl.get_globals())
+            except:
+                pass
+
+            if not d:
+                if parent:
+                    d = get_doc_string(f"{parent}.{member}", repl.get_locals(), repl.get_globals())
+                else:
+                    d = get_doc_string(member, repl.get_locals(), repl.get_globals())
         except Exception as exc:
-            j.tools.logger._log_error(exc)
+            j.tools.logger._log_error(str(exc))
             repl.docstring_buffer.reset()
             return
 
-        repl.docstring_buffer.reset(document=Document(d, cursor_position=0))
+        if d:
+            repl.docstring_buffer.reset(document=Document(d, cursor_position=0))
 
     sidebar_visible = Condition(lambda: repl.show_sidebar)
 
@@ -380,6 +557,7 @@ def ptconfig(repl):
         def out_prompt(self):
             return []
 
+    repl._handle_exception = partial(patched_handle_exception, repl)
     repl.all_prompt_styles["custom"] = CustomPrompt()
     repl.prompt_style = "custom"
 
@@ -399,6 +577,8 @@ def ptconfig(repl):
         except Exception:
             j.tools.logger._log_error("Error while getting completions\n" + traceback.format_exc())
 
+        # j.tools.logger._log_error(completions)
+
         if not completions:
             completions = old_get_completions(self, document, complete_event)
 
@@ -406,7 +586,6 @@ def ptconfig(repl):
         yield from filter_completions_on_prefix(completions, prefix)
 
     repl._completer.__class__.get_completions = custom_get_completions
-
     j.core.tools.custom_log_printer = add_logs_to_pane
 
     parent_container = get_ptpython_parent_container(repl)
@@ -415,3 +594,5 @@ def ptconfig(repl):
     # setup docstring and logging containers
     setup_docstring_containers(repl)
     setup_logging_containers(repl)
+
+    repl.__class__._execute = patched_execute

@@ -22,7 +22,7 @@ class ExecutorFactory(j.baseclasses.object):
 
     def ssh_get(self, sshclient):
         if j.data.types.string.check(sshclient):
-            sshclient = j.clients.ssh.get(instance=sshclient)
+            sshclient = j.clients.ssh.get(name=sshclient)
         key = "%s:%s:%s" % (sshclient.addr, sshclient.port, sshclient.login)
         if key not in self._executors or self._executors[key].sshclient is None:
             self._executors[key] = ExecutorSSH(sshclient=sshclient)

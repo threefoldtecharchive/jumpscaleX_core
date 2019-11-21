@@ -5,14 +5,12 @@ import socket
 import time
 
 
-class SockExec(j.application.JSBaseDataObjClass):
-
-    __jslocation__ = "j.servers.sockexec"
+class SockExec(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
            @url =  jumpscale.servers.sockexec.1
-           name* = "default" (S)
-           socketpath = "/sandbox/var/exec.sock"
+           name** = "default" (S)
+           socketpath = j.core.tools.text_replace("{DIR_BASE}/var/exec.sock")
            """
 
     def _init(self, **kwargs):
@@ -28,6 +26,8 @@ class SockExec(j.application.JSBaseDataObjClass):
 
     def stop(self):
         self._log_info("stop sockexec server")
+        remove_exec_cmd = "rm -f {DIR_BASE}/var/exec.sock"
+        j.core.tools.execute(remove_exec_cmd)
         self.startupcmd.stop()
 
     @property
@@ -35,7 +35,7 @@ class SockExec(j.application.JSBaseDataObjClass):
         if not self._startupcmd:
             if not j.core.tools.cmd_installed("sockexec"):
                 raise j.exceptions.Base("cannot find command sockexec, please install")
-            cmd = "rm -f /sandbox/var/exec.sock;sockexec %s" % self.data.socketpath
+            cmd = "sockexec %s" % self.socketpath
             self._startupcmd = j.servers.startupcmd.get("sockexec", cmd_start=cmd)
             self._startupcmd.executor = "background"
             self._startupcmd.process_strings_regex = ["^sockexec"]
@@ -50,7 +50,7 @@ class SockExec(j.application.JSBaseDataObjClass):
         # https://github.com/jprjr/sockexec
         args = cmd.split(" ")
         if not os.path.exists(self.socketpath):
-            raise j.exceptions.Base("cannot find exec socket path:%s" % path)
+            raise j.exceptions.Base("cannot find exec socket path:%s" % self.socketpath)
         self.client = socket.socket(socket.AF_UNIX)
         self.client.connect(self.socketpath)
         s = netstr.encode(str(len(args)).encode())

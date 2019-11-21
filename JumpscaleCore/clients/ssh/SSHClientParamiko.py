@@ -1,16 +1,14 @@
 import io
-from io import StringIO
 import paramiko
-import functools
-import threading
 import queue
+import gevent
 import socket
 import time
 import os
 from Jumpscale import j
 from paramiko.ssh_exception import AuthenticationException, BadHostKeyException, SSHException, BadAuthenticationType
 from .SSHClientBase import SSHClientBase
-from .StreamReader import StreamReader
+from .StreamReader import StreamReaderGevent, StreamReaderThreading
 
 
 class SSHClientParamiko(SSHClientBase):
@@ -56,6 +54,32 @@ class SSHClientParamiko(SSHClientBase):
             self._ftp = paramiko.SFTPClient.from_transport(transport)
 
         return self._ftp
+
+    def file_copy(self, local_file, remote_file):
+        """Copy local file to host via SFTP/SCP
+
+        Copy is done natively using SFTP/SCP version 2 protocol, no scp command
+        is used or required.
+
+        :param local_file: Local filepath to copy to remote host
+        :type local_file: str
+        :param remote_file: Remote filepath on remote host to copy file to
+        :type remote_file: str
+        :raises: :py:class:`ValueError` when a directory is supplied to
+          ``local_file`` and ``recurse`` is not set
+        :raises: :py:class:`IOError` on I/O errors writing files
+        :raises: :py:class:`OSError` on OS errors like permission denied
+        """
+        local_file = self._replace(local_file, paths_executor=False)
+        remote_file = self._replace(remote_file)
+        if os.path.isdir(local_file):
+            raise j.exceptions.Value("Local file cannot be a dir")
+        destination = j.sal.fs.getDirName(remote_file)
+        self.executor.dir_ensure(destination)
+        with open(local_file) as fd:
+            self.sftp.putfo(fd, remote_file)
+        self._log_debug("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
+        self._log_info("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
 
     def _parent_paths_split(self, file_path, sep=None):
         sep = os.path.sep if sep is None else sep
@@ -170,8 +194,9 @@ class SSHClientParamiko(SSHClientBase):
 
         ch = self._transport.open_session()
 
-        # if self._forward_agent:
-        #     paramiko.agent.AgentRequestHandler(ch)
+        if self.allow_agent:
+            if os.environ.get("SSH_AUTH_SOCK"):
+                paramiko.agent.AgentRequestHandler(ch)
 
         # execute the command on the remote server
         ch.exec_command(cmd)
@@ -183,9 +208,14 @@ class SSHClientParamiko(SSHClientBase):
         stderr = ch.makefile_stderr("r")
 
         # Start stream reader thread that will read strout and strerr
-        inp = queue.Queue()
-        outReader = StreamReader(stdout, ch, inp, "O")
-        errReader = StreamReader(stderr, ch, inp, "E")
+        if j.core.is_gevent_monkey_patched():
+            inp = gevent.queue.Queue()
+            outReader = StreamReaderGevent(stdout, ch, inp, "O")
+            errReader = StreamReaderGevent(stderr, ch, inp, "E")
+        else:
+            inp = queue.Queue()
+            outReader = StreamReaderThreading(stdout, ch, inp, "O")
+            errReader = StreamReaderThreading(stderr, ch, inp, "E")
         outReader.start()
         errReader.start()
 

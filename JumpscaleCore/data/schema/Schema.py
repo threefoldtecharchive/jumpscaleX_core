@@ -57,10 +57,13 @@ class Schema(j.baseclasses.object):
             self._md5 = j.data.schema._md5(text)
 
         self._schema_from_text(text)
-        if self.url:
-            self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
-        else:
-            raise j.exceptions.Input("url not defined in schema", data=text)
+        if not self.url:
+            self.url = j.data.hash.md5_string(text)
+        self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
+        # if self.url:
+        #     self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
+        # else:
+        #     raise j.exceptions.Input("url not defined in schema", data=text)
 
         # urls = self.url.split(".")
         # if len(urls) > 0:
@@ -143,7 +146,7 @@ class Schema(j.baseclasses.object):
         self._log_debug("load schema", data=text)
 
         if text.count("@url") > 1:
-            raise j.exceptions.Input("there should only be 1 url in the schema")
+            raise j.exceptions.Input("there should only be 1 url in the schema", data=text)
 
         self.text = j.core.text.strip(text)
 
@@ -193,6 +196,7 @@ class Schema(j.baseclasses.object):
                 name = name[:-2]
                 p.index = True
             if name.endswith("*"):
+                raise j.exceptions.Input("key based indexing (*) for now not supported use **", data=text)
                 name = name[:-1]
                 p.index_key = True
             if name.startswith("&"):
@@ -202,7 +206,7 @@ class Schema(j.baseclasses.object):
                 p.index_key = True
 
             if name in ["id"]:
-                self._error_raise("do not use 'id' in your schema, is reserved for system.", schema=text)
+                self._error_raise("do not use 'id' in your schema, is reserved for system.", data=text)
             elif name in ["name"]:
                 p.unique = True
                 # everything which is unique also needs to be indexed
@@ -255,7 +259,6 @@ class Schema(j.baseclasses.object):
             if line.startswith("#"):
                 continue
             if "=" not in line:
-                j.shell()
                 raise j.exceptions.Input(
                     "did not find =, need to be there to define field, line=%s\ntext:%s" % (line, text)
                 )
@@ -345,8 +348,9 @@ class Schema(j.baseclasses.object):
                 index_text = True
             if p.index:
                 index_sql = True
-            if p.index_key:
-                index_key = True
+            index_key = False
+            # if p.index_key:
+            #     index_key = True
         return (index_key, index_sql, index_text)
 
     def new(self, capnpdata=None, serializeddata=None, datadict=None, bcdb=None):
@@ -365,6 +369,8 @@ class Schema(j.baseclasses.object):
 
         if bcdb:
             model = bcdb.model_get(url=self.url)
+            # here the model retrieved will be linked to a schema with the same url
+            # but can be a different md5
         else:
             model = None
 
@@ -408,6 +414,18 @@ class Schema(j.baseclasses.object):
         for prop in self.properties:
             if prop.index:
                 res.append(prop)
+            elif prop.is_jsxobject:
+                for subprop in prop.jumpscaletype._schema.properties_index_sql:
+                    sprop = SchemaProperty(
+                        name=f"{prop.name}_{subprop.name}",
+                        attr=f"{prop.name}.{subprop.name}",
+                        jumpscaletype=subprop.jumpscaletype,
+                        comment=subprop.comment,
+                        nr=subprop.nr,
+                        index=subprop.index,
+                        unique=subprop.unique,
+                    )
+                    res.append(sprop)
         return res
 
     @property

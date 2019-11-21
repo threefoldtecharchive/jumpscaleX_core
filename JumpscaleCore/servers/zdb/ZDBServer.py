@@ -6,7 +6,7 @@ import socket
 class ZDBServer(j.baseclasses.object_config):
     _SCHEMATEXT = """
            @url =  jumpscale.zdb.server.1
-           name* = "default" (S)
+           name** = "default" (S)
            addr = "127.0.0.1" (S)
            port = 9900 (I)
            adminsecret_ = "123456" (S)
@@ -81,9 +81,9 @@ class ZDBServer(j.baseclasses.object_config):
 
     @property
     def datadir(self):
-        return "/sandbox/var/zdb/%s/" % self.name
+        return j.core.tools.text_replace("{DIR_BASE}/var/zdb/%s/") % self.name
 
-    def client_admin_get(self, name="test"):
+    def client_admin_get(self):
         """
 
         """
@@ -100,3 +100,4 @@ class ZDBServer(j.baseclasses.object_config):
         assert cl.ping()
 
         return cl
+

@@ -25,13 +25,19 @@ class JSXObject(j.baseclasses.object):
     def _init_pre(self, capnpdata=None, datadict={}, schema=None, model=None):
         self._capnp_obj_ = None
         self.id = None
-        assert schema
-        self._schema = schema
-        self._model = model
+
+        if model:
+            self._model = model
+            self._schema_ = schema
+        else:
+            self._schema_ = schema
+            self._model = None
+            assert model == None
 
         self._deserialized_items = {}
 
         self._autosave = False
+
         self.acl_id = None
         self._acl = None
 
@@ -42,6 +48,13 @@ class JSXObject(j.baseclasses.object):
         # self.nid = 1
 
         self._logger_enable()
+
+    @property
+    def _schema(self):
+        if self._schema_:
+            return self._schema_
+        else:
+            return self._model.schema
 
     @property
     def _key(self):
@@ -89,7 +102,7 @@ class JSXObject(j.baseclasses.object):
         """
 
         if isinstance(capnpdata, bytes):
-            self._capnp_obj_ = self._capnp_schema.from_bytes_packed(capnpdata)
+            self._capnp_obj_ = self._capnp_schema.from_bytes_packed(capnpdata, traversal_limit_in_words=1.8446744e19)
             set_default = False
         else:
             self._capnp_obj_ = self._capnp_schema.new_message()
@@ -114,6 +127,8 @@ class JSXObject(j.baseclasses.object):
         if self._acl is None:
             if self.acl_id == 0:
                 self._acl = self._model.bcdb.acl.new()
+            else:
+                self._acl = self._model.bcdb.acl
         return self._acl
 
     def _hr_get(self, exclude=[]):
@@ -135,7 +150,7 @@ class JSXObject(j.baseclasses.object):
             if serialize:
                 self._deserialized_items = {}  # need to go back to smallest form
         if self._model:
-            if not self._model.__class__._name == "acl" and self._acl is not None:
+            if not self._model._classname == "acl" and self._acl is not None:
                 if self.acl.id is None:
                     self.acl.save()
                 if self.acl.id != self.acl_id:
@@ -143,11 +158,22 @@ class JSXObject(j.baseclasses.object):
 
             if self._changed:
 
+                # WE NEED UNIQUE PROPERTIES
                 for prop_u in self._model.schema.properties_unique:
+                    r = []
                     # find which properties need to be unique
                     # unique properties have to be indexed
                     args_search = {prop_u.name: getattr(self, prop_u.name)}
-                    r = self._model.find(**args_search)
+                    if "name" not in args_search:
+                        for model in self._model.find():
+                            m = getattr(model, prop_u.name)
+                            if m == args_search[prop_u.name] and model.id != self.id:
+                                msg = "could not save, was not unique.\n%s." % (args_search)
+                                # can for sure not be ok
+                                raise j.exceptions.Input(msg)
+
+                    else:
+                        r = self._model.find(**args_search)
                     if len(r) > 1:
                         msg = "could not save, was not unique.\n%s." % (args_search)
                         # can for sure not be ok
@@ -156,16 +182,14 @@ class JSXObject(j.baseclasses.object):
                         msg = "could not save, was not unique.\n%s." % (args_search)
                         if self.id:
                             if not self.id == r[0].id:
-                                # j.shell()
                                 raise j.exceptions.Input(msg)
                         else:
                             self.id = r[0].id
                             self._ddict_hr  # to trigger right serialization
                             if self._data == r[0]._data:
                                 return self  # means data was not changed
-                            else:  # means data is not the same
-                                self.id = None
-                                raise j.exceptions.Input(msg)
+                            else:  # means data is not the same and id not known yet
+                                self.id = r[0].id
 
                 if not self._nosave:
                     o = self._model.set(self)
@@ -228,23 +252,20 @@ class JSXObject(j.baseclasses.object):
         return j.data.serializers.msgpack.dumps(self._ddict)
 
     def __eq__(self, val):
+        if isinstance(val, str) or isinstance(val, int) or isinstance(val, float) or isinstance(val, set):
+            return False
         if not isinstance(val, JSXObject):
             tt = j.data.types.get("jsxobject", self._schema.url)
             val = tt.clean(val)
         return self._data == val._data
 
     def __hash__(self):
-        return j.data.hash.md5_string(self._data)
-        # return int(self.id)
-        # CANNOT DO THIS it does not mean its the same
-        # WHY DO WE NEED THIS?
+        return hash(j.data.hash.md5_string(self._data))
+
+    def __repr__(self):
+        # FIXME: breaks in some cases in docsites generation needs to be cleanly implemented
+        return self._str_get(ansi=True)
 
     def __str__(self):
-        # FIXME: breaks in some cases in docsites generation needs to be cleanly implemented
-        out = self._str_get(ansi=True)
-        # # #TODO: *1 when returning the text it does not represent propertly, needs to be in kosmos shell I think
-        # # IS UGLY WORKAROUND
-        print(out)
-        return ""
-
-    __repr__ = __str__
+        out = self._str_get(ansi=False)
+        return out

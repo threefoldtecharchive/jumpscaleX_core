@@ -1,11 +1,10 @@
 import imp
 import os
-import nacl
 
 from Jumpscale import j
 from redis.connection import ConnectionError
 
-JSConfigBase = j.baseclasses.object_config
+JSConfigBase = j.baseclasses.factory_data
 
 
 class GedisClientActors(j.baseclasses.object):
@@ -19,20 +18,20 @@ class GedisClientSchemas(j.baseclasses.object):
 class GedisClient(JSConfigBase):
     _SCHEMATEXT = """
     @url = jumpscale.gedis.client
-    name* = "main"
+    name** = "main"
     host = "127.0.0.1" (S)
     port = 8900 (ipport)
     namespace = "default" (S)
-    password_ = "" (S)
-    ssl = False (B)
-    ssl_keyfile = "" (S)
-    ssl_certfile = "" (S)
-    ssl_ca_certs = "" (S)
+    threebot_local_profile = "default"
+    password_ = ""
+    # ssl = False (B)
+    # ssl_keyfile = "" (S)
+    # ssl_certfile = "" (S)
+    # ssl_ca_certs = "" (S)
     """
 
     def _init(self, **kwargs):
         # j.clients.gedis.latest = self
-        self._namespace = self.namespace
         self._actorsmeta = {}
         self.schemas = None
         self._actors = None
@@ -40,7 +39,13 @@ class GedisClient(JSConfigBase):
         j.sal.fs.createDir(self._code_generated_dir)
         j.sal.fs.touch(j.sal.fs.joinPaths(self._code_generated_dir, "__init__.py"))
         self._redis_ = None
+        self._threebot_me_ = None
         self._reset()
+        self.reload()
+
+    def save(self):
+        self._redis_ = None
+        JSConfigBase.save(self)
 
     def _update_trigger(self, key, val):
         self._reset()
@@ -56,19 +61,25 @@ class GedisClient(JSConfigBase):
             return True
         return False
 
-    def auth(self, bot_id):
-        nacl_cl = j.data.nacl.get()
-        nacl_cl._load_privatekey()
-        signing_key = nacl.signing.SigningKey(nacl_cl.privkey.encode())
-        epoch = str(j.data.time.epoch)
-        signed_message = signing_key.sign(epoch.encode())
-        cmd = "auth {} {} {}".format(bot_id, epoch, signed_message)
-        res = self._redis.execute_command(cmd)
-        return res
+    # def auth(self, bot_id):
+    #     j.shell()
+    #     nacl_cl = j.data.nacl.get()
+    #     nacl_cl._load_privatekey()
+    #     signing_key = nacl.signing.SigningKey(nacl_cl.privkey.encode())
+    #     epoch = str(j.data.time.epoch)
+    #     signed_message = signing_key.sign(epoch.encode())
+    #     cmd = "auth {} {} {}".format(bot_id, epoch, signed_message)
+    #     res = self._redis.execute_command(cmd)
+    #     return res
 
-    def reload(self):
+    def reload(self, namespace=None):
         self._log_info("reload")
+        self._reset()
         assert self.ping()
+
+        if namespace:
+            self.namespace = namespace
+
         self._actorsmeta = {}
         self._actors = GedisClientActors()
         self.schemas = GedisClientSchemas()
@@ -94,7 +105,7 @@ class GedisClient(JSConfigBase):
         for actorname, actormeta in self._actorsmeta.items():
             tpath = "%s/templates/GedisClientGenerated.py" % (j.clients.gedis._dirpath)
             actorname_ = actormeta.namespace + "_" + actorname
-            dest = "/sandbox/var/codegen/gedis/%s/client/%s.py" % (self.name, actorname_)
+            dest = j.core.tools.text_replace("{DIR_BASE}/var/codegen/gedis/%s/client/%s.py") % (self.name, actorname_)
             cl = j.tools.jinja2.code_python_render(
                 obj_key="GedisClientGenerated",
                 path=tpath,
@@ -151,21 +162,48 @@ class GedisClient(JSConfigBase):
             secret = self.password_
 
             self._log_info("redisclient: %s:%s " % (addr, port))
-
             self._redis_ = j.clients.redis.get(ipaddr=addr, port=port, password=secret, ping=True, fromcache=False)
+
+            # DONT PUT ON JSON
+            # self._redis_.execute_command("config_format", "json")
+            # authenticate us
+            seed = j.data.idgenerator.generateGUID()  # any seed works, the more random the more secure
+            signature = self._nacl.default.sign_hex(seed)  # this is just std signing on nacl and hexifly it
+            self._redis_.execute_command("auth", self._threebot_me.tid, seed, signature)
+
         return self._redis_
 
     # def __getattr__(self, name):
-    #     if name.startswith("_") or name in self._methods() or name in self._properties():
+    #     if name.startswith("_") or name in self._methods_gedis() or name in self._properties():
     #         return self.__getattribute__(name)
     #     return self.cmds.__getattribute__(name)
 
-    def _methods(self, prefix=""):
+    @property
+    def _threebot_me(self):
+        if not self._threebot_me_:
+            if self.threebot_local_profile == "default":
+                self._threebot_me_ = j.tools.threebot.me.default
+            else:
+                print("TODO: implement")
+                j.shell()
+        j.shell()
+        return self._threebot_me_
+
+    @property
+    def _nacl(self):
+        if self.threebot_local_profile == "default":
+            return j.data.nacl.default
+        else:
+            print("TODO: implement")
+            j.shell()
+
+    def _methods_gedis(self, prefix=""):
         if prefix.startswith("_"):
-            return JSConfigBase._methods(self, prefix=prefix)
-        res = self.actors._methods()
+            return JSConfigBase._methods_gedis(self, prefix=prefix)
+        res = [str(i) for i in self.actors._methods_gedis()]
         for i in ["ping"]:
             if i not in res:
                 res.append(i)
 
         return res
+

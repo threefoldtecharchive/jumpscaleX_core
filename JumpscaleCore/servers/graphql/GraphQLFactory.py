@@ -8,7 +8,7 @@ class GraphQLFactory(JSBASE):
     __jslocation__ = "j.servers.graphql"
     _SCHEMA_TEXT = """
         @url = graphql.posts.schema
-        info_id* = (I)
+        info_id** =  (I)
         title = (S) 
         author = (S)
         name = (S)
@@ -39,6 +39,7 @@ class GraphQLFactory(JSBASE):
         j.builders.runtimes.python3.pip_package_install("tox")
         j.builders.runtimes.python3.pip_package_install("graphql-ws")
         j.builders.runtimes.python3.pip_package_install("Rx==1.6.0")
+        j.builders.runtimes.python3.pip_package_install("graphql_core<3.0.0a2")
 
     def _server_test_start(self, background=False):
         """
@@ -169,11 +170,11 @@ class GraphQLFactory(JSBASE):
         else:
 
             S = """
-            . /sandbox/env.sh;
+            . {DIR_BASE}/env.sh;
             kosmos 'j.servers.graphql._server_test_start()'
             """
 
-            j.servers.tmux.execute(S)
+            j.servers.tmux.execute(j.core.tools.text_replace(S))
 
     # parse data from the form in the request body
     def parse_data(self, raw_data):

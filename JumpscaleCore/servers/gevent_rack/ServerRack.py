@@ -1,10 +1,11 @@
 from Jumpscale import j
+from Jumpscale.servers.gedis_http.GedisHTTPFactory import enable_cors
 
+# from .ScheduledJob import ScheduledJob
+from .ScheduledRun import ScheduledRun
 import sys
 import mimetypes
 
-
-JSBASE = j.baseclasses.object
 
 from gevent import monkey
 
@@ -12,36 +13,82 @@ monkey.patch_all(subprocess=False)
 import gevent
 from gevent import event
 
+# from gevent import Greenlet
 
-class ServerRack(JSBASE):
+
+class StripPathMiddleware(object):
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, e, h):
+        e["PATH_INFO"] = e["PATH_INFO"].rstrip("/")
+        return self.app(e, h)
+
+
+class ServerRack(j.baseclasses.object):
     """
     is a group of gedis servers in a virtual rack
     """
 
     def _init(self, **kwargs):
         self.servers = {}
-        self.greenlets = {}
+        self.schedulers = {}
         self._logger_enable()
-        # self._monkeypatch_done = False
+        self.is_started = False
 
-    def add(self, name, server, start=False):
-        """
-        add a gevent server e.g
+    def add(self, name, server):
+        """add a gevent server
 
-        - gedis_server = j.servers.gedis.geventservers_get("test")
-        - web_server = j.servers.web.geventserver_get("test")
-
-        can then add them
-
+        if the server rack is already started it will start the added server too otherwise it will only add it
         REMARK: make sure that subprocesses are run before adding gevent servers
 
+        :param name: server name
+        :type name: str
+        :param server: gevent server
+        :type server: gevent.baseserver.BaseServer
         """
         assert server
-        self.servers[name] = server
-        if start:
-            server.start()
 
-    def bottle_server_add(self, name="bottle", port=4442, app=None, websocket=False):
+        if self.is_started and not name in self.servers:
+            self.servers[name] = server
+            server.start()
+        else:
+            self.servers[name] = server
+
+    def scheduler_get(self, name, timeout=0):
+        """
+
+        :param self:
+        :param name:
+        :param timeout: in seconds after start
+        :return:
+        """
+        if name in self.schedulers:
+            raise j.exceptions.Input("cannot add scheduler with name:%s" % name)
+        self.schedulers[name] = ScheduledRun(name=name, timeout=timeout)
+        return self.schedulers[name]
+
+    def bottle_server_add(
+        self, name="bottle", port=4442, app=None, websocket=False, force_override=False, strip_slash=True
+    ):
+        """add a bottle app server
+
+        :param name: name, defaults to "bottle"
+        :type name: str, optional
+        :param port: port to listen on, defaults to 4442
+        :type port: int, optional
+        :param app: app, if not given, will be created, defaults to None
+        :type app: WSGI application, optional
+        :param websocket: enable websocket handler, defaults to False
+        :type websocket: bool, optional
+        :param force_override: if set, the app will be re-added, defaults to False
+        :type force_override: bool, optional
+        :param strip_slash: strip slash for all routes, so e.g `/index/` will match `/index` too, defaults to True
+        :type strip_slash: bool, optional
+        """
+        # TODO: improve the check for name+port combo
+        if name in self.servers and not force_override:
+            return True
 
         from gevent.pywsgi import WSGIServer
         from geventwebsocket.handler import WebSocketHandler
@@ -50,22 +97,6 @@ class ServerRack(JSBASE):
 
             from bottle import route, template, request, Bottle, abort, template, response
 
-            # the decorator
-            def enable_cors(fn):
-                def _enable_cors(*args, **kwargs):
-                    # set CORS headers
-                    response.headers["Access-Control-Allow-Origin"] = "*"
-                    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, OPTIONS"
-                    response.headers[
-                        "Access-Control-Allow-Headers"
-                    ] = "Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token"
-
-                    if request.method != "OPTIONS":
-                        # actual request; reply with the actual response
-                        return fn(*args, **kwargs)
-
-                return _enable_cors
-
             app = Bottle()
 
             @app.route("/<url:re:.+>")
@@ -73,10 +104,13 @@ class ServerRack(JSBASE):
             def index(url):
                 try:
                     file = j.sal.bcdbfs.file_read("/" + url)
-                except RuntimeError:
+                except j.exceptions.NotFound:
                     abort(404)
                 response.headers["Content-Type"] = mimetypes.guess_type(url)[0]
                 return file
+
+        if strip_slash:
+            app = StripPathMiddleware(app)
 
         if not websocket:
             server = WSGIServer(("0.0.0.0", port), app)
@@ -200,29 +234,35 @@ class ServerRack(JSBASE):
 
         self.add(name=name, server=server)
 
-    def start(self):
-        # self._monkeypatch()
-        started = []
+    def start(self, wait=True):
+        # started = []
+        keys = [key for key in self.servers.keys()]
         try:
-            for key, server in self.servers.items():
-                server.start()
-                started.append(server)
-                name = getattr(server, "name", None) or server.__class__.__name__ or "Server"
-                self._log_info("%s started on %s" % (name, server.address))
+            for key in keys:
+                if key in self.servers:
+                    server = self.servers[key]
+                    server.start()
+                    # started.append(server)
+                    name = getattr(server, "name", None) or server.__class__.__name__ or "Server"
+                    self._log_info("%s started on %s" % (name, server.address))
+            self.is_started = True
+
         except:
-            self.stop(started)
+            self.stop()
+            self.is_started = False
             raise
 
-        forever = event.Event()
-        try:
-            forever.wait()
-        except KeyboardInterrupt:
-            self.stop()
+        if wait:
+            forever = event.Event()
+            try:
+                forever.wait()
+            except KeyboardInterrupt:
+                self.stop()
 
     def stop(self, servers=None):
         self._log_info("stopping server rack")
         if servers is None:
-            servers = [item[1] for item in self.servers.items()]
+            servers = self.servers.values()
         for server in servers:
             try:
                 server.stop()

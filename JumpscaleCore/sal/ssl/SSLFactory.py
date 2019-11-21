@@ -13,7 +13,7 @@ class SSLFactory(JSBASE):
     def ca_cert_generate(self, cert_dir="", reset=False):
         """CA (Certificate Authority) generate
         :param cert_dir: certificate directory, defaults to '' 
-                        it will create ca in /sandbox/cfg/ssl/ if default is ''  
+                        it will create ca in {DIR_BASE}/cfg/ssl/ if default is ''  
         :type cert_dir: str, optional
         :param reset: bool, defaults to False
         :return: returns True if generation happened
@@ -245,3 +245,4 @@ class SSLFactory(JSBASE):
         :type name: str, optional
         """
         self._test_run(name=name, obj_key="test_main")
+

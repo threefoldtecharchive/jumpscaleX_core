@@ -1,3 +1,0 @@
-location /ws {
-    content_by_lua_file 'lualib.websocket.lua';
-}

@@ -37,10 +37,7 @@ class JSConfigBCDBBase(JSBase, Attr):
         # self._model._kosmosinstance = self
 
     def _init_post(self, **kwargs):
-        # I THINK THIS CAN BE MOVED TO __init_class_post (LETS DO LATER)
-        props, methods = self._inspect()
-        self._properties_ = props
-        self._methods_ = methods
+        self._inspect()  # force inspection
         self._protected = True
 
     def _bcdb_selector(self):
@@ -68,6 +65,7 @@ class JSConfigBCDBBase(JSBase, Attr):
                 if self._parent and isinstance(self._parent, j.baseclasses.object_config_collection):
                     self._model_ = self._parent._model
                     return self._model_
+
             if isinstance(self, j.baseclasses.object_config_base):
                 if "_SCHEMATEXT" in self.__class__.__dict__:
                     s = self.__class__._SCHEMATEXT
@@ -76,17 +74,24 @@ class JSConfigBCDBBase(JSBase, Attr):
                 else:
                     raise j.exceptions.JSBUG("cannot find _SCHEMATEXT on childclass or class itself")
 
-            t = self._process_schematext(s)
-            t2 = j.data.schema._schema_blocks_get(t)[0]
+            schema = j.data.schema.get_from_text(s)
+
+            # if schema.url == "jumpscale.servers.gipc.process.1":
+            #     from pudb import set_trace
+            #
+            #     set_trace()
+
+            t2 = j.data.schema._schema_blocks_get(s)[0]
+
+            t = self._process_schematext(t2)
 
             # if j.core.text.strip_to_ascii_dense(t) != j.core.text.strip_to_ascii_dense(s):
             #     from pudb import set_trace
             #
             #     set_trace()
-
             self._model_ = self._bcdb.model_get(schema=t)
 
-            assert self._model_.schema._md5 == j.data.schema._md5(t2)
+            assert self._model_.schema._md5 == j.data.schema._md5(t)
 
             # if self._model_.schema._md5 != j.data.schema._md5(t2):
             #     from pudb import set_trace
@@ -113,12 +118,12 @@ class JSConfigBCDBBase(JSBase, Attr):
         if schematext.find("name") == -1:
             if "\n" != schematext[-1]:
                 schematext += "\n"
-            schematext += 'name* = ""\n'
-        if isinstance(self._parent, j.baseclasses.object_config):
-            if schematext.find("parent_id") == -1:
+            schematext += 'name** = ""\n'
+        if self._mother_id_get():
+            if schematext.find("mother_id") == -1:
                 if "\n" != schematext[-1]:
                     schematext += "\n"
-                schematext += "parent_id* = 0 (I)\n"
+                schematext += "mother_id** = 0 (I)\n"
 
         return schematext
 

@@ -1,5 +1,5 @@
 # Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy) 
+# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
 #   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
 #   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
 # This file is part of jumpscale at <https://github.com/threefoldtech>.
@@ -24,7 +24,7 @@ from capnp import KjException
 
 class JSXObject2(j.data.schema._JSXObjectClass):
 
-    __slots__ = ["id","_schema","_model","_autosave","_capnp_obj_","_deserialized_items","_acl_id","_acl",
+    __slots__ = ["id","_model","_autosave","_capnp_obj_","_deserialized_items","_acl_id","_acl",
                         {% for prop in obj.properties %}"_{{prop.name}}",{% endfor %}]
 
     def _defaults_set(self):
@@ -215,20 +215,22 @@ class JSXObject2(j.data.schema._JSXObjectClass):
         return d
 
     def _str_get(self, ansi=True):
-        out = "## "
+        out = ""
         if ansi:
-            out += "{BLUE}%s\n{RESET}" % self._schema.url_str
+            out += "{BLUE}## %s\n{RESET}" % self._schema.url_str
+        else:
+            out += "## %s\n" % self._schema.url_str
         if self.id:
             if ansi:
-                out += "{GRAY}id: %s\n{RESET}" % self.id
+                out += "{GREEN}ID: %s\n{RESET}" % self.id
             else:
                 out += "id:%s\n" % self.id
         {% for prop in obj.properties %}
         {% if prop.name == "name" %}
         if ansi:
-            out += "{RED}{{prop.name_str}}: %s\n{RESET}" % self.name
+            out += " - {YELLOW}{{prop.name_str}}: %s\n{RESET}" % self.name
         else:
-            out += "{{prop.name_str}}: %s\n" % self.name
+            out += " - {{prop.name_str}}: %s\n" % self.name
         {% else %}
         {% if prop.is_jsxobject %}
         out+= j.core.text.indent(self.{{prop.name}}._str_get(ansi=ansi).rstrip(),4)+"\n"
@@ -236,7 +238,7 @@ class JSXObject2(j.data.schema._JSXObjectClass):
 
         items = {{prop.js_typelocation}}.toHR(self.{{prop.name}})
         if items:
-            out+= "{{prop.name_str}}:\n"
+            out+= " - {{prop.name_str}}:\n"
             for item in items:
                 if isinstance(item, dict):
                     for key, value in item.items():
@@ -244,15 +246,15 @@ class JSXObject2(j.data.schema._JSXObjectClass):
                 else:
                     out+= "    - %s\n"%item.rstrip()
         else:
-            out+= "{{prop.name_str}}: []\n"
+            out+= " - {{prop.name_str}}: []\n"
         {% else %}
-        out+= "{{prop.name_str}}: %s\n"%{{prop.js_typelocation}}.toHR(self.{{prop.name}})
+        out+= " - {{prop.name_str}}: %s\n"%{{prop.js_typelocation}}.toHR(self.{{prop.name}})
         {% endif %}
         {% endif %}
         {% endfor %}
         if ansi:
             out += "{RESET}"
-        out = j.core.tools.text_strip(out, replace=True,check_no_args_left=False)
+        out = j.core.tools.text_strip(out, replace=True,die_if_args_left=False)
         return out
 
 

@@ -21,10 +21,10 @@
 # from importlib import import_module
 
 import gevent
+import time
 from Jumpscale.clients.stor_zdb.ZDBClientBase import ZDBClientBase
 from Jumpscale.clients.stor_rdb.RDBClient import RDBClient
 from Jumpscale.clients.stor_sqlite.DBSQLite import DBSQLite
-from gevent import queue
 from .BCDBModel import BCDBModel
 from .BCDBMeta import BCDBMeta
 
@@ -32,7 +32,6 @@ from .BCDBMeta import BCDBMeta
 from .connectors.redis.RedisServer import RedisServer
 from Jumpscale import j
 import sys
-import time
 
 JSBASE = j.baseclasses.object
 
@@ -64,10 +63,11 @@ class BCDB(j.baseclasses.object):
         self._data_dir = j.sal.fs.joinPaths(j.dirs.VARDIR, "bcdb", self.name)
         self.storclient = storclient
 
+        j.sal.fs.createDir(self._data_dir)
+
         self._sqlite_index_dbpath = "%s/sqlite_index.db" % self._data_dir
 
         self._init_props()
-        j.sal.fs.createDir(self._data_dir)
 
         if reset:
             self.meta = None
@@ -231,6 +231,8 @@ class BCDB(j.baseclasses.object):
             if self.storclient:
                 if self.storclient.get(key=i - 1) is None:
                     obj = model.new()
+                    if hasattr(obj, "name"):
+                        obj.name = j.data.idgenerator.generateGUID()
                     obj.id = None
                     obj.save()
             if i in data:
@@ -269,14 +271,30 @@ class BCDB(j.baseclasses.object):
             self._sqlite_index_client = None
 
     def redis_server_start(self, port=6380, secret="123456"):
+        self.redis_server_get(port=port, secret=secret)
+        self.redis_server.start()
 
+    def redis_server_wait_up(self, port, timeout=60):
+        start = time.time()
+        client = j.clients.redis.get(port=port)
+        while start + timeout > time.time():
+            try:
+                client.ping()
+                break
+            except:
+                pass
+            gevent.sleep(0.5)
+        else:
+            raise j.exceptions.RuntimeError("Failed to wait for redisserver")
+
+    def redis_server_get(self, port=6380, secret="123456"):
         self.redis_server = RedisServer(bcdb=self, port=port, secret=secret, addr="0.0.0.0")
         self.redis_server._init2(bcdb=self, port=port, secret=secret, addr="0.0.0.0")
-        self.redis_server.start()
+        return self.redis_server
 
     def _data_process(self):
         # needs gevent loop to process incoming data
-        self._log_info("DATAPROCESSOR STARTS")
+        # self._log_info("DATAPROCESSOR STARTS")
         while True:
             method, args, kwargs, event, returnid = self.queue.get()
             if args == ["STOP"]:
@@ -286,10 +304,14 @@ class BCDB(j.baseclasses.object):
                 if returnid:
                     self.results[returnid] = res
                 event.set()
+            self._data_process_1time()
         self.dataprocessor_greenlet = None
         if event:
             event.set()
-        self._log_warning("DATAPROCESSOR STOPS")
+        # self._log_warning("DATAPROCESSOR STOPS")
+
+    def _data_process_1time(self, timeout=0, die=False):
+        return
 
     def dataprocessor_start(self):
         """
@@ -312,11 +334,11 @@ class BCDB(j.baseclasses.object):
                 # stop dataprocessor
                 self.queue.put((None, ["STOP"], {}, None, None))
                 while self.queue.qsize() > 0:
-                    self._log_debug("wait dataprocessor to stop")
-                    time.sleep(0.1)
-            self.dataprocessor_greenlet.kill()
+                    # self._log_debug("wait dataprocessor to stop")
+                    gevent.sleep(1)
 
-        self._log_info("DATAPROCESSOR & SQLITE STOPPED OK")
+        self._log_warning("DATAPROCESSOR & SQLITE STOPPED OK")
+        # TODO: JO is this ok that it happens 2x
         return True
 
     def reset(self):
@@ -403,6 +425,7 @@ class BCDB(j.baseclasses.object):
         # this needs to happen to make sure all models are loaded because there is lazy loading now
         for s in self.meta.schema_dicts:
             if s["url"] not in self._schema_url_to_model:
+                assert s["url"]
                 schema = j.data.schema.get_from_url(s["url"])
                 self.model_get(schema=schema)
         for key, model in self._schema_url_to_model.items():
@@ -494,7 +517,7 @@ class BCDB(j.baseclasses.object):
 
         return self._schema_url_to_model[model.schema.url]
 
-    def _schema_property_add_if_needed(self, schema):
+    def _schema_property_add_if_needed(self, schema, done=[]):
         """
         recursive walks over schema properties (multiple levels)
         if a sub property is a complex type by itself, then we need to make sure we remember the schema's also in BCDB
@@ -508,12 +531,18 @@ class BCDB(j.baseclasses.object):
                 s = prop.jumpscaletype.SUBTYPE._schema
                 self.meta._schema_set(s)
                 # now see if more subtypes
-                self._schema_property_add_if_needed(s)
+                if s._md5 not in done:
+                    done.append(s._md5)
+                    done = self._schema_property_add_if_needed(s)
             elif prop.jumpscaletype.NAME == "jsxobject":
                 s = prop.jumpscaletype._schema
                 self.meta._schema_set(s)
                 # now see if more subtypes
-                self._schema_property_add_if_needed(s)
+                if s._md5 not in done:
+                    done.append(s._md5)
+                    done = self._schema_property_add_if_needed(s)
+
+        return done
 
     def model_get_from_file(self, path):
         """

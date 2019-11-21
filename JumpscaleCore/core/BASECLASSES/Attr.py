@@ -32,8 +32,9 @@ class Attr:
 
         if not name.startswith("_"):
 
-            if name in self._children:
-                return self._children[name]
+            child = self._validate_child(name)
+            if child:
+                return child
 
             if isinstance(self, j.baseclasses.object_config):
                 if name in self._model.schema.propertynames:
@@ -43,14 +44,14 @@ class Attr:
 
                 if (
                     name.startswith("_")
-                    or name in self._methods_names_get()
-                    or name in self._properties_names_get()
+                    or name in self._methods
+                    or name in self._properties
                     or name in self._dataprops_names_get()
                 ):
                     return self.__getattribute__(name)  # else see if we can from the factory find the child object
 
                 if isinstance(self, j.baseclasses.object_config_collection):
-                    r = self._get(name=name, die=False)
+                    rc, r = self._get(name=name, die=False)
                     if not r:
                         raise j.exceptions.NotFound(
                             "try to get attribute: '%s', instance did not exist, was also not a method or property, was on '%s'"
@@ -61,10 +62,7 @@ class Attr:
         try:
             r = self.__getattribute__(name)
         except AttributeError as e:
-            try:
-                whereami = self._key
-            except:
-                whereami = self._name
+            whereami = self._key
             msg = "could not find attribute:%s in %s (error was:%s)" % (name, whereami, e)
             raise j.exceptions.NotFound(msg)
 

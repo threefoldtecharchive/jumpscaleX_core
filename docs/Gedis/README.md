@@ -30,14 +30,14 @@ If you want to enforce data validation automatically, you can use the [DigitalMe
 To define which schema is expected you need to write a docstring to your method. example:
 
 ```python
-def foo(self, wallet, schema_out):
+def foo(self, wallet, schema_out=None, user_session=None):
     """
     ```in
-    wallet = (O) !jumpscale.example.wallet
+    wallet = (O) !jumpscale.test.ibiza.wallet
     ```
 
     ```out
-    !jumpscale.example.wallet
+    !jumpscale.test.ibiza.wallet
     ```
     """
     w = schema_out.new()
@@ -48,7 +48,7 @@ def foo(self, wallet, schema_out):
     return w
 ```
 
-This actor method has 2 arguments, `wallet` and `schema_out`. With the docstring we ask gedis to validate that `wallet` is actually a valid instance of the schema named `jumpscale.example.wallet`. We also define the type of the return value with the `schema_out` argument and the docstring which specify that schema_out is also an instance of the `jumpscale.example.wallet`.
+This actor method has 2 arguments, `wallet` and `schema_out`. With the docstring we ask gedis to validate that `wallet` is actually a valid instance of the schema named `jumpscale.test.ibiza.wallet`. We also define the type of the return value with the `schema_out` argument and the docstring which specify that schema_out is also an instance of the `jumpscale.test.ibiza.wallet`.
 
 When defining docstring like this, if the data received or sent back doesn't validate the schema, an error will be raised.
 
@@ -66,12 +66,10 @@ Creation of an actor at `/tmp/actor.py`:
 ```python
 from Jumpscale import j
 
-JSBASE = j.application.JSBaseClass
+class actor(j.baseclasses.threebot_actor):
 
-class actor(JSBASE):
-
-    def __init__(self):
-        JSBASE.__init__(self)
+    def _init(self, **kwargs):
+        pass
 
     def ping(self):
         return "pong"
@@ -81,7 +79,7 @@ Creation of the gedis service and load our actor:
 
 ```python
 # configure the server
-server = j.servers.gedis.configure(name='test', port=8889, host='0.0.0.0', ssl=False, password='')
+server = j.servers.gedis.get(name='test', port=8889, host='0.0.0.0', ssl=False)
 # load a single actor
 server.actor_add('/tmp/actor.py', namespace='demo')
 # you can also load a directory that contains multiple actor files
@@ -94,6 +92,7 @@ server.actor_add('/tmp/actor.py', namespace='demo')
 server.actors_add('/tmp/test_actor', namespace='demo')
 
 # start the server
+server.save()
 server.start()
 ```
 
@@ -109,4 +108,4 @@ client.actors.actor.ping() # note if your actor name is xactor, then client.acto
 # result will be b'pong'
 ```
 
-**to see more usage examples please read the tests in [gedis_factory class](DigitalMeLib/servers/gedis/GedisFactory.py)**
+**to see more usage examples please read the tests in [gedis_factory class](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/servers/gedis/GedisFactory.py)**

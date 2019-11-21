@@ -1,20 +1,30 @@
 import gevent
 
 
-def main(self, count=100):
+def main(self, count=10):
+    """
+    kosmos -p 'j.servers.myjobs.test("start")'
+    """
+
+    self.reset()
+
     def wait_1sec():
         gevent.sleep(1)
         return "OK"
 
     ids = []
     for x in range(count):
-        ids.append(self.schedule(wait_1sec))
+        job_sch = self.schedule(wait_1sec)
+        ids.append(job_sch.id)
 
-    self.workers_nr_max = 100
-    self.start(subprocess=True)
+    self._workers_gipc_nr_max = 10
+    self.workers_subprocess_start()
 
     res = self.results(ids, timeout=120)
 
     print(res)
 
+    self.stop(reset=True)
+
+    print("start TEST OK")
     print("TEST OK")

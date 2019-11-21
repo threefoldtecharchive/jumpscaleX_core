@@ -17,6 +17,8 @@ class BytesEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, bytes):
             return obj.decode(self.ENCODING)
+        elif isinstance(obj, j.baseclasses.dict):
+            return obj._data
         return json.JSONEncoder.default(self, obj)
 
 
@@ -32,7 +34,7 @@ class SerializerUJson(SerializerBase):
     def __init__(self):
         SerializerBase.__init__(self)
 
-    def dumps(self, obj, sort_keys=False, indent=False, encoding="ascii"):
+    def dumps(self, obj, sort_keys=False, indent=None, encoding="ascii"):
         try:
             return json.dumps(
                 obj, ensure_ascii=False, sort_keys=sort_keys, indent=indent, cls=Encoder.get(encoding=encoding)

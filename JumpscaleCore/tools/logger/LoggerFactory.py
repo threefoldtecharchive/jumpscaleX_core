@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-class LoggerFactory(j.baseclasses.object):
+class LoggerFactory(j.baseclasses.object, j.baseclasses.testtools):
 
     __jslocation__ = "j.tools.logger"
     # _CHILDCLASS = LoggerBase
@@ -9,18 +9,14 @@ class LoggerFactory(j.baseclasses.object):
 
     @property
     def debug(self):
-        return j.core.myenv.config["DEBUG"]
+        return j.application.debug
 
     @debug.setter
     def debug(self, value):
-        assert j.data.types.bool.check(value)
-        config = {}
-        config["DEBUG"] = value
-        self.config = config
+        j.application.debug = value
 
     @property
     def config(self):
-
         res = {}
         for name in j.core.myenv.config.keys():
             if name.startswith("LOGGER") or name == "DEBUG":

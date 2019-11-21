@@ -45,6 +45,7 @@ class Application(object):
 
     @property
     def interactive(self):
+
         return self._j.core.myenv.interactive
 
     @interactive.setter
@@ -88,14 +89,15 @@ class Application(object):
         self._debug = None
         self._systempid = None
         self._j.core.db_reset(self._j)
-        for obj in self.obj_interator:
-            obj._children = j.baseclasses.dict()
+
+        for obj in self.obj_iterator:
+            obj._children = self._j.baseclasses.dict()
             obj._obj_cache_reset()
             obj._obj_reset()
 
     def log2fs_register(self, session_name):
         """
-        will write logs with ansi codes to /sandbox/var/log/session_name/$hrtime4session/$hrtime4step_context.ansi
+        will write logs with ansi codes to {DIR_BASE}/var/log/session_name/$hrtime4session/$hrtime4step_context.ansi
 
         use less -r to see the logs with color output
 
@@ -104,7 +106,10 @@ class Application(object):
         """
         self._log2fs_session_name = session_name
         tt = self._j.data.time.getLocalTimeHRForFilesystem()
-        self._log2fs_path_prefix = "/sandbox/var/log/%s/%s" % (self._log2fs_session_name, tt)
+        self._log2fs_path_prefix = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s/%s") % (
+            self._log2fs_session_name,
+            tt,
+        )
         self.log2fs_context_change("init")
 
         os.makedirs(self._log2fs_path_prefix)
@@ -210,6 +215,15 @@ class Application(object):
     @debug.setter
     def debug(self, value):
         self._j.core.myenv.debug = value
+
+    def debug_set_in_config(self, value=True):
+        """
+        the std debug is only set in memory, if you want to have on config file use this one
+        :return:
+        """
+        value = j.data.types.bool.clean(value)
+        j.core.myenv.config["DEBUG"] = True
+        j.core.myenv.config.config_save()
 
     def break_into_jshell(self, msg="DEBUG NOW"):
         if self.debug is True:
@@ -370,16 +384,16 @@ class Application(object):
     #         # sys.modules.pop(key)
 
     @property
-    def obj_interator(self):
+    def obj_iterator(self):
         """
         iterates over all loaded objects in kosmos space (which inherits of JSBase class)
         e.g.
-        objnames = [i._name for i in j.application.obj_interator]
+        objnames = [i._classname,for i in j.application.obj_iterator]
 
         :return:
         """
         for item in self._iterate_rootobj():
-            if isinstance(item, self.JSBaseClass):
+            if isinstance(item, self._j.baseclasses.object):
                 yield item
                 for item in item._children_recursive_get():
                     yield item

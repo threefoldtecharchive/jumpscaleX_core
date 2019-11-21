@@ -1,15 +1,16 @@
-# BCDB
-BCDB `Block Chain Database` is a Database built with `Block Chain` concepts. 
+# Block Chain Database (BCDB)
+BCDB is a database built with `Block Chain` concepts. 
 
 ## Components
+![BCDB components](images/BCDB_components.png)
 ### Models 
-the model in BCDB is a class using [JumpScale Schema](/docs/schema/README.md) it adds:
-- indexing capabilities 
-    - to make data queries go faster you can use indexing with BCDB to the fields you will query with,
- this can be achieved easily by just adding `*` beside the field you want to index in the schema 
+The model in BCDB is a class using [JumpScale Schema](/docs/schema/README.md), it adds:
+- Indexing capabilities 
+    - To make data queries go faster, you can use indexing with BCDB for the fields you will query with.
+  This can be achieved easily by just adding `*` after the field you want to index in the schema 
         ```
         @url = school.student
-        name* = (S)
+        name** =  (S)
         subjects = (LS)
         address = !schema.address
         ```
@@ -21,19 +22,19 @@ the model in BCDB is a class using [JumpScale Schema](/docs/schema/README.md) it
     - you can add hooks to be manipulated before set/get
 
 ### Namespaces
-to organize the models stored in the database, the database is divided into namespaces, the default namespace is called 
+To organize the models stored in the database, the database is divided into namespaces, the default namespace is called 
 `default`
 
 ### Backend
-in order to get BCDB to work you should provide a Backend client, A `Backend Client` is a `Jumpscale client` 
-for a key value store (ZDB, Redis or ETCD) which will be used to save the data
+In order to get BCDB to work, you should provide a Backend client. A `Backend Client` is a `Jumpscale client` 
+for a key value store (ZDB, Redis or sql) which will be used to save the data
 
 ## Usage
 ```python
 # Define the Schema
 schema = """
         @url = school.student
-        name* = (S)
+        name** =  (S)
         subjects = (LS)
         address = (S)
         """
@@ -82,4 +83,71 @@ bcdb = j.data.bcdb.get(db_cl,namespace="test",reset=True)
 bcdb.models_add("/sandbox/code/github/threefoldtech/digitalmeX/packages/notary/models") 
 
 
+```
+
+##  Add trigger
+There are a lot of use cases for triggers, In these docs we will use it to create a custom index.
+
+### Creating custom indexing example
+Let us assume we have a reservation object which has ```containers``` field which is a list of container objects.
+The container object has a single integer field ```node_id``` to refer to the node id which hosts the container.
+
+Our goal is to get all the reservations which has containers hosted on a specific node
+
+```python
+bcdb = j.data.bcdb.get(name="reservations")
+
+# defaine reservation schema
+reservation_schema = """
+@url = jumpscale.reservation.1
+containers = (LO) !jumpscale.container.1
+"""
+
+# defaine container schema
+container_schema = """
+@url = jumpscale.container.1
+node_id = (I)
+"""
+
+container = bcdb.model_get(container_schema)
+reservation = bcdb.model_get(reservation_schema)
+
+# define our new index table
+class IndexTable(j.clients.peewee.Model):
+  class Meta:
+    database = None
+
+  pw = j.clients.peewee
+  id = pw.PrimaryKeyField(unique=True)
+  reservation_id = pw.IntegerField(index=True)
+  node_id = pw.IntegerField(index=True)
+
+# define the trigger function
+def trigger_func(model, obj, action, **kwargs):
+    # Create new record in the index table after storing in BCDB
+    if action == 'set_post':
+        for container in obj.containers:
+            
+            record = model.IndexTable.create(reservation_id=obj.id, node_id=container.node_id)
+            record.save()
+
+IndexTable._meta.database = reservation.bcdb.sqlite_index_client
+IndexTable.create_table(safe=True)
+reservation.IndexTable = IndexTable
+# register the trigger function 
+reservation.trigger_add(trigger_func)
+```
+
+Now we can search for the reservations by the container's ```node_id ``` using our index table
+
+```python
+c = container.new()
+c.node_id = 1
+
+r = reservation.new()
+r.containers.append(c)
+r.save()
+
+result = reservation.IndexTable.select().where((reservation.IndexTable.node_id == 1)).execute()
+assert len(result) == 1
 ```

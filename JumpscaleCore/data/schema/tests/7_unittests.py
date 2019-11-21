@@ -19,7 +19,7 @@
 
 
 from Jumpscale import j
-import pytest
+import nose, os
 
 
 def main(self):
@@ -28,6 +28,7 @@ def main(self):
 
     kosmos 'j.data.schema.test(name="unittests")' --debug
     """
-    return
-    unittests_path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/Jumpscale/data/schema/tests/testsuite"
-    assert pytest.main([unittests_path]) == 0
+    unittests_path = j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/data/schema/tests/testsuite")
+    os.chdir(unittests_path)
+    nose.run(argv=["", unittests_path])
+

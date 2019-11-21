@@ -1,6 +1,7 @@
 from Jumpscale import j
-import binascii
+
 from .ThreebotClient import ThreebotClient
+from io import BytesIO
 
 JSConfigBase = j.baseclasses.object_config_collection
 
@@ -11,66 +12,73 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
 
     def _init(self, **kwargs):
         self._explorer = None
+        self._id2client_cache = {}
+
+    @property
+    def explorer_addr(self):
+        if "EXPLORER_ADDR" not in j.core.myenv.config:
+            return "localhost"
+        else:
+            return j.core.myenv.config["EXPLORER_ADDR"] + ""
+
+    def explorer_addr_set(self, value):
+        """
+
+        :param value:
+        :return:
+        """
+        j.core.myenv.config["EXPLORER_ADDR"] = value
+        j.core.myenv.config_save()
 
     @property
     def explorer(self):
         if not self._explorer:
-            self._explorer = self.get(name="explorer", host="134.209.90.92")
+            self._explorer = j.baseclasses.object_config_collection_testtools.get(
+                self, name="explorer", host=self.explorer_addr
+            )
         return self._explorer
 
-    def sign(self, payload):
-        n = j.data.nacl.default
-        return n.signing_key.sign(payload)
+    @property
+    def explorer_redis(self):
+        cl = j.clients.redis.get(self.explorer_addr, port=8901)
+        cl.execute_command("config_format", "json")
+        return cl
 
-    def threebot_record_get(self, user_id=None, name=None):
-        r = self.explorer.client.actors.phonebook.get(user_id=user_id, name=name)
-        j.shell()
-
-    def threebot_register(self, name, email, ipaddr="", description="", pubkey=None):
-        n = j.data.nacl.default
-        if not pubkey:
-            pubkey = n.verify_key.encode()
-        self._log(pubkey)
-
-        # FOR ENCRYPTION WITH PUB KEY
-        # import nacl
-        # from nacl.signing import VerifyKey
-        #
-        # vk = VerifyKey(pubkey)
-        # pubkey_obj = vk.to_curve25519_public_key()
-        # encrypted = n.encrypt(b"a", hex=False, public_key=pubkey_obj)
-        # n.decrypt(encrypted)
-
-        if not isinstance(pubkey, bytes):
-            raise j.exceptions.Input("needs to be bytes")
-
-        from io import BytesIO
-
-        buffer = BytesIO()
-        buffer.write(name.encode())
-        buffer.write(email.encode())
-        buffer.write(pubkey)
-        buffer.write(ipaddr.encode())
-        buffer.write(description.encode())
-
-        # payload = name + email + pubkey + ipaddr + description
-        payload = buffer.getvalue()
-        signature = n.sign(payload)
-
-        # need to show how to use the pubkey to verify the signature & get the data
-        assert n.verify(payload, signature, verify_key=pubkey)
-
-        j.shell()
-        asd
-        r = self.explorer.client.actors.phonebook.register(name=name, email=email, pubkey=pubkey, signature=signature)
-
-        j.shell()
-
-    def test(self):
+    def client_get(self, threebot=None):
         """
-        kosmos 'j.clients.threebot.test()'
+
+        cl=j.clients.threebot.client_get(threebot="kristof.ibiza")
+        cl=j.clients.threebot.client_get(threebot=10)
+
+        returns a client connection to a threebot
+
+        :param tid: threebot id
+        :param name:
         :return:
         """
+        # path to get a threebot client needs to be as fast as possible
+        if isinstance(threebot, int):
+            assert threebot > 0
+            if threebot in self._id2client_cache:
+                return self._id2client_cache[threebot]
+            res = self.find(tid=threebot)
+            tid = threebot
+            tname = None
+        elif isinstance(threebot, str):
+            res = [self.get(name=threebot)]
+            tid = None
+            tname = threebot
+        else:
+            raise j.exceptions.Input("threebot needs to be int or str")
 
-        r = self.threebot_register("test.test", "test@incubaid.com", ipaddr="134.209.90.92")
-        j.shell()
+        if len(res) > 1:
+            j.shell()
+            raise j.exceptions.JSBUG("should never be more than 1")
+
+        r = j.tools.threebot.explorer.threebot_record_get(tid=tid, name=tname)
+        assert r.id > 0
+        r2 = j.baseclasses.object_config_collection_testtools.get(
+            self, name=r.name, tid=r.id, host=r.ipaddr, pubkey=r.pubkey
+        )
+        self._id2client_cache[r2.tid] = r2
+        return self._id2client_cache[r2.tid]

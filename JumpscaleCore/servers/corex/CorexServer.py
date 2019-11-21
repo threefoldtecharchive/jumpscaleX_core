@@ -7,7 +7,7 @@ JSConfigClient = j.baseclasses.object_config
 class CorexServer(JSConfigClient):
     _SCHEMATEXT = """
            @url =  jumpscale.servers.corex.1
-           name* = "default" (S)
+           name** = "default" (S)
            port = 1500 (I)
            user = "" (S)
            password = "" (S)
@@ -30,9 +30,10 @@ class CorexServer(JSConfigClient):
 
     @property
     def client(self):
-        j.clients.corex.default.addr = "localhost"
-        j.clients.corex.default.port = self.port
-        return j.clients.corex.default
+        default_client = j.clients.corex.get("default")
+        default_client.addr = "localhost"
+        default_client.port = self.port
+        return default_client
 
     def stop(self):
         self._log_info("stop corex server")
@@ -54,9 +55,3 @@ class CorexServer(JSConfigClient):
             self._startupcmd.executor = "background"
 
         return self._startupcmd
-
-    def check(self):
-        if not j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=self.port):
-            self.start()
-        if not j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=self.port):
-            raise j.exceptions.Base("could not start corex server")

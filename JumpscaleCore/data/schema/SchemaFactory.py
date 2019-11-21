@@ -25,7 +25,7 @@ from Jumpscale import j
 from .JSXObject import JSXObject
 
 
-class SchemaFactory(j.baseclasses.factory):
+class SchemaFactory(j.baseclasses.factory_testtools):
     __jslocation__ = "j.data.schema"
 
     def _init(self, **kwargs):
@@ -54,8 +54,8 @@ class SchemaFactory(j.baseclasses.factory):
         return self.__code_generation_dir
 
     def reset(self):
-        self._url_to_md5 = {}  # NO LONGER A LIST
-        self._md5_to_schema = {}
+        self._url_to_md5 = j.baseclasses.dict()
+        self._md5_to_schema = j.baseclasses.dict()
 
     def exists(self, md5=None, url=None):
         if md5:
@@ -74,8 +74,7 @@ class SchemaFactory(j.baseclasses.factory):
             if isinstance(schema_text_or_obj, str):
                 if schema_text_or_obj.strip() == "":
                     raise j.exceptions.JSBUG("schema should never be empty string")
-                self._add_text_to_schema_obj(schema_text_or_obj)
-
+                md5, schema = self._add_text_to_schema_obj(schema_text_or_obj)
             assert isinstance(self._md5_to_schema[md5], j.data.schema.SCHEMA_CLASS)
             return self._md5_to_schema[md5]
         else:
@@ -139,7 +138,7 @@ class SchemaFactory(j.baseclasses.factory):
             Schema
         """
         assert isinstance(schema_text, str)
-        md5 = self._add_text_to_schema_obj(schema_text=schema_text, url=url)
+        md5, schema = self._add_text_to_schema_obj(schema_text=schema_text, url=url)
         return self.get_from_md5(md5)
 
     def _md5(self, text):
@@ -204,22 +203,22 @@ class SchemaFactory(j.baseclasses.factory):
         """
         md5 = self._md5(schema_text)
         if md5 in self._md5_to_schema and not isinstance(self._md5_to_schema[md5], str):
-            return md5
+            return md5, self._md5_to_schema[md5]
 
         s = Schema(text=schema_text, md5=md5, url=url)
 
-        self._md5_to_schema[md5] = s
-        self.schemas_md5._add(md5, s)
-        self._url_to_md5[s.url] = md5
-
-        self.schemas._add(s.url, s)
-
-        assert s.url
         # here we always update the md5 because if we are here it means
         # that we have added a new schema
         self._url_to_md5[s.url] = md5
 
-        return md5
+        self._md5_to_schema._add(md5, s)
+        self.schemas_md5._add(md5, s)
+
+        self.schemas._add(s.url, s)
+
+        assert s.url
+
+        return md5, s
 
     def add_from_path(self, path=None):
         """

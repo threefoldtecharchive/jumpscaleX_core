@@ -119,47 +119,28 @@ class ExecutorBase(JSBASE):
         rc, out, err = self.execute("cat %s" % path, showout=False, interactive=False)
         return out
 
-    def file_write(self, path, content, mode=None, owner=None, group=None, append=False, sudo=False, showout=True):
+    def file_write(self, path, content, mode=None, owner=None, group=None, showout=True):
         """
         @param append if append then will add to file
-
-        if file bigger than 100k it will not set the attributes!
-
         """
         path = self._replace(path)
         if showout:
             self._log_debug("file write:%s" % path)
 
-        if len(content) > 100000:
-            # when contents are too big, bash will crash
-            temp = j.sal.fs.getTempFileName()
-            j.sal.fs.writeFile(filename=temp, contents=content, append=False)
-            self.upload(temp, path, showout=showout)
-            j.sal.fs.remove(temp)
-        else:
-            content2 = content.encode("utf-8")
-            # sig = hashlib.md5(content2).hexdigest()
-            parent = j.sal.fs.getParent(path)
-            cmd = "set -e;mkdir -p %s\n" % parent
+        temp = j.sal.fs.getTmpFilePath()
+        j.sal.fs.writeFile(filename=temp, contents=content, append=False)
+        self.upload(temp, path)
+        j.sal.fs.remove(temp)
+        cmd = ""
+        if mode:
+            cmd += "chmod %s %s && " % (mode, path)
+        if owner:
+            cmd += "chown %s %s && " % (owner, path)
+        if group:
+            cmd += "chgrp %s %s &&" % (group, path)
+        cmd = cmd.strip().strip("&")
 
-            content_base64 = base64.b64encode(content2).decode()
-            # cmd += 'echo "%s" | openssl base64 -D '%content_base64   #DONT
-            # KNOW WHERE THIS COMES FROM?
-            cmd += 'echo "%s" | openssl base64 -A -d ' % content_base64
-
-            if append:
-                cmd += ">> %s\n" % path
-            else:
-                cmd += "> %s\n" % path
-
-            if mode:
-                cmd += "chmod %s %s\n" % (mode, path)
-            if owner:
-                cmd += "chown %s %s\n" % (owner, path)
-            if group:
-                cmd += "chgrp %s %s\n" % (group, path)
-
-            res = self.execute(cmd, showout=False, script=False, interactive=False)
+        self.execute(cmd, showout=False, script=False, interactive=False)
 
         return None
 
@@ -278,7 +259,7 @@ class ExecutorBase(JSBASE):
         has this env a sandbox?
         """
         if self._isSandbox is None:
-            if self.exists("/sandbox"):
+            if self.exists(j.core.tools.text_replace("{DIR_BASE}")):
                 self._isSandbox = True
             else:
                 self._isSandbox = False
@@ -331,10 +312,6 @@ class ExecutorBase(JSBASE):
         if self._cache is None:
             self._cache = j.core.cache.get("executor" + self.uid, reset=True, expiration=600)  # 10 min
         return self._cache
-
-    @property
-    def platformtype(self):
-        return j.core.platformtype.get(self)
 
     # def sudo_cmd(self, command):
     #
@@ -415,14 +392,14 @@ class ExecutorBase(JSBASE):
         ls "/sandbox"  > /dev/null 2>&1 && echo 'ISSANDBOX = 1' || echo 'ISSANDBOX = 0'
 
         ls "/sandbox/bin/python3"  > /dev/null 2>&1 && echo 'ISSANDBOX_BIN = 1' || echo 'ISSANDBOX_BIN = 0'                        
-
         echo UNAME = \""$(uname -mnprs)"\"
-
         echo "HOME = $HOME"
-
         echo HOSTNAME = "$(hostname)"
-
-        echo OS_TYPE = "ubuntu"
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+            echo OS_TYPE = "darwin"
+        else
+            echo OS_TYPE = "ubuntu"
+        fi
 
         # lsmod > /dev/null 2>&1|grep vboxdrv |grep -v grep  > /dev/null 2>&1 && echo 'VBOXDRV=1' || echo 'VBOXDRV=0'
 
@@ -437,7 +414,7 @@ class ExecutorBase(JSBASE):
         # 
 
         echo "CFG_JUMPSCALE = --TEXT--"
-        cat /sandbox/cfg/jumpscale_config.msgpack 2>/dev/null || echo ""
+        cat {DIR_BASE}/cfg/jumpscale_config.msgpack 2>/dev/null || echo ""
         echo --TEXT--
 
         echo "BASHPROFILE = --TEXT--"

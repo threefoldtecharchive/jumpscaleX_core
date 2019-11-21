@@ -208,7 +208,7 @@ class PrettyYaml(j.baseclasses.object):
     def pprint(self, *data, **dump_kws):
         dst = dump_kws.pop("file", dump_kws.pop("dst", sys.stdout))
         if len(data) == 1:
-            data, = data
+            (data,) = data
         dump(data, dst=dst, **dump_kws)
 
     # p, _p = pprint, print

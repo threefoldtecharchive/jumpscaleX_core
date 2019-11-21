@@ -2,7 +2,7 @@ from Jumpscale import j
 
 
 class EBCDB(j.baseclasses.object):
-    def set(self, data, schema_out):
+    def set(self, data, schema_out=None, user_session=None):
         """
         ```in
         doctype = "" (S)

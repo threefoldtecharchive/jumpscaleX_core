@@ -82,7 +82,7 @@ class Netconfig(j.baseclasses.object):
 
     # TODO: need to check this works
     def interface_remove_ipaddr(self, network="192.168.1"):
-        for item in j.sal.nettools.getNetworkInfo():
+        for item in j.sal.nettools.networkinfo_get():
             for ip in item["ip"]:
                 if ip.startswith(network):
                     # remove ip addr from this interface
@@ -237,15 +237,6 @@ class Netconfig(j.baseclasses.object):
             proxy_support = urllib.request.ProxyHandler()
             opener = urllib.request.build_opener(proxy_support)
             urllib.request.install_opener(opener)
-
-    def interface_remove_ipaddr(self, network="192.168.1"):
-        for item in j.sal.nettools.getNetworkInfo():
-            for ip in item["ip"]:
-                if ip.startswith(network):
-                    # remove ip addr from this interface
-                    cmd = "ip addr flush dev %s" % item["name"]
-                    self._log_debug(cmd)
-                    j.sal.process.execute(cmd)
 
     def interface_configure_dhcp_waitdown(self, interface="eth0", ipaddr=None, gw=None, mask=24, config=True):
         """

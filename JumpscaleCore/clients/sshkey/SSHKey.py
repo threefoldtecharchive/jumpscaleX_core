@@ -5,8 +5,8 @@ class SSHKey(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
         @url = jumpscale.sshkey.client
-        name* = "" (S)
-        pubkey = "" (S) 
+        name** = "" (S)
+        pubkey = "" (S)
         allow_agent = True (B)
         passphrase_ = "" (S)
         privkey = "" (S)
@@ -21,7 +21,7 @@ class SSHKey(j.baseclasses.object_config):
         if self.name == "":
             raise j.exceptions.Base("need to specify name")
 
-        self.autosave = True  # means every write will be saved (is optional to set)
+        self._autosave = True  # means every write will be saved (is optional to set)
 
         if self.path == "":
             keyspath = "%s/keys" % (j.sal.fs.getcwd())
@@ -134,26 +134,20 @@ class SSHKey(j.baseclasses.object_config):
     #     return self.agent.sign_ssh_data(data)
     #     # TODO: does not work, property needs to be implemented
 
-    def load(self, duration=3600 * 24):
+    def load(self):
         """
         load ssh key in ssh-agent, if no ssh-agent is found, new ssh-agent will be started
-
-        :param duration: duration, defaults to 3600*24
-        :type duration: int, optional
         """
-        self._log_debug("load sshkey: %s for duration:%s" % (self.name, duration))
-        j.clients.sshagent.key_load(self.path, passphrase=self.passphrase_, duration=duration)
+        self._log_debug("load sshkey: %s for duration:%s" % (self.name, self.duration))
+        j.core.myenv.sshagent.key_load(self.path, passphrase=self.passphrase_, duration=self.duration)
 
     def unload(self):
         cmd = "ssh-add -d %s " % (self.path)
         rc = 0
         while rc == 0:
-            rc, out, err = j.sal.process.execute(cmd, die=False)  # there could be more than 1 instance
-        j.core.myenv.sshagent.__keys = None
-        if err.find("agent refused operation") != -1:
-            raise j.exceptions.Base("agent did not allow operation")
-        j.shell()
-        assert self.is_loaded() == False
+            rc, _, _ = j.sal.process.execute(cmd, die=False)  # there could be more than 1 instance
+        if self.is_loaded():
+            raise j.exceptions.Base("failed to unload sshkey")
 
     def is_loaded(self):
         """
@@ -162,12 +156,12 @@ class SSHKey(j.baseclasses.object_config):
         :return: whether ssh key was loadeed in ssh agent or not
         :rtype: bool
         """
-        for id, key in j.core.myenv.sshagent._read_keys():
+        for path, key in j.core.myenv.sshagent._read_keys():
             if " " in key.strip():
                 keypub = key.split(" ")[1].strip()
             else:
                 keypub = key.strip()
-            if keypub == keypub:
+            if self.path == path and self.pubkey_only == keypub:
                 return True
         self._log_debug("ssh key: %s is not loaded", self.name)
         return False

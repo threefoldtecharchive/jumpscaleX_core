@@ -23,15 +23,32 @@ from .JSConfigBCDB import JSConfigBCDB
 from .JSConfigsBCDB import JSConfigsBCDB
 from .JSConfigBCDBBase import JSConfigBCDBBase
 from .ThreeBotActorBase import ThreeBotActorBase
+from .ThreeBotCRUDActorBase import ThreeBotCRUDActorBase
 from .ThreeBotPackageBase import ThreeBotPackageBase
+from .ThreeBotFactoryBase import ThreeBotFactoryBase
 from .TestTools import TestTools
 from .JSFactory import JSFactory
 from .JSDict import JSDict
+from .Decorators import actor_method
 
 
-class BaseClasses:
+class BaseClasses(JSBase, TestTools):
     def __init__(self):
         pass
+
+    @property
+    def actor_method(self):
+        """
+        decorator for actor method
+
+        use as
+
+        @j.baseclasses.actor_method
+        def myactormethod(self,name=None,...):
+            ...
+
+        """
+        return actor_method
 
     @property
     def dict(self):
@@ -109,13 +126,15 @@ class BaseClasses:
     @property
     def object_config_base(self):
         """
-        the base class as used by object_config_bcdb and object_config_collection
+        the base class as used by object_config and object_config_collection
 
         deals with base functionality as required for the object(s)_config classes
 
         - triggers
         - change schema's inside object
         - initialization
+
+        is useful to test classes against isinstance(...)
 
         :return:
         """
@@ -131,6 +150,15 @@ class BaseClasses:
         return ThreeBotActorBase
 
     @property
+    def threebot_crud_actor(self):
+        """
+        the base class for developing actors in threebot
+
+        :return:
+        """
+        return ThreeBotCRUDActorBase
+
+    @property
     def threebot_package(self):
         """
         the base class for a package class for a therebot
@@ -138,6 +166,15 @@ class BaseClasses:
         :return:
         """
         return ThreeBotPackageBase
+
+    @property
+    def threebot_factory(self):
+        """
+        the base class for a package factory
+
+        :return:
+        """
+        return ThreeBotFactoryBase
 
     @property
     def testtools(self):
@@ -163,46 +200,6 @@ class BaseClasses:
         return BuilderBaseClass
 
     @property
-    def factory(self):
-        """
-        factory class is combination of testtools+factory class
-
-        functions
-
-        - use _ChildClass(es) functionality to create children
-        - recursive delete & reset
-        - can have an own jsxobject attached to it
-
-
-        :return:
-        """
-
-        class JSFactoryTestTools(JSFactory, TestTools):
-            pass
-
-        return JSFactoryTestTools
-
-    @property
-    def factory_data(self):
-        """
-        factory class is combination of jsxobject+testtools+factory class
-
-        functions
-
-        - use _ChildClass(es) functionality to create children
-        - recursive delete & reset
-        - can have an own jsxobject attached to it
-
-
-        :return:
-        """
-
-        class JSFactoryTestToolsData(JSConfigBCDB, JSFactory):
-            pass
-
-        return JSFactoryTestToolsData
-
-    @property
     def builder_method(self):
         """
         decorator method for builder base class
@@ -210,3 +207,84 @@ class BaseClasses:
         from .BuilderBaseClass import builder_method
 
         return builder_method
+
+    @property
+    def factory(self):
+        """
+        factory class is combination of jsxobject+factory class
+
+        functions
+
+        - use _ChildClass(es) functionality to create children
+        - recursive delete & reset
+        - can have an own jsxobject attached to it
+
+        example see /sandbox/code/github/threefoldtech/jumpscaleX_libs/tutorials/base/object_structure/BaseClasses_ConfigObjects.py
+
+        this type of class will show all the objects of the type
+
+
+        :return:
+        """
+
+        return JSFactory
+
+    @property
+    def factory_testtools(self):
+        """
+        factory class is combination of jsxobject+factory class
+
+        functions
+
+        - use _ChildClass(es) functionality to create children
+        - recursive delete & reset
+        - can have an own jsxobject attached to it
+
+        example see /sandbox/code/github/threefoldtech/jumpscaleX_libs/tutorials/base/object_structure/BaseClasses_ConfigObjects.py
+
+        this type of class will show all the objects of the type
+
+
+        :return:
+        """
+
+        class JSFactoryDataTesttools(JSFactory, TestTools):
+            pass
+
+        return JSFactoryDataTesttools
+
+    @property
+    def factory_data(self):
+        """
+        factory class is combination of jsxobject+factory class
+
+        functions
+
+        - use _ChildClass(es) functionality to create children
+        - recursive delete & reset
+        - can have an own jsxobject attached to it
+
+        example see /sandbox/code/github/threefoldtech/jumpscaleX_libs/tutorials/base/object_structure/BaseClasses_ConfigObjects.py
+
+        this one acts as a parent, only the children will be shown
+
+
+        :return:
+        """
+
+        class JSFactoryData(JSConfigBCDB, JSFactory):
+            pass
+
+        return JSFactoryData
+
+    @property
+    def factory_data_testtools(self):
+        """
+
+        :return:
+        """
+
+        class JSFactoryDataTesttools(JSConfigBCDB, JSFactory, TestTools):
+            pass
+
+        return JSFactoryDataTesttools

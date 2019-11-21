@@ -5,8 +5,8 @@ class DNSResolver(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
     @url = jumpscale.resolver.1
-    name* = ""
-    zone* = "" (S)
+    name** = ""
+    zone** =  "" (S)
     domains = (LO) !jumpscale.resolver.domain.1
 
     @url = jumpscale.resolver.domain.1

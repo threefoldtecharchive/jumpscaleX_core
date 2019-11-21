@@ -5,11 +5,11 @@ from redis._compat import nativestr
 
 from Jumpscale import j
 
-from core.InstallTools import Redis
-from core.InstallTools import RedisTools
+from Jumpscale.core.InstallTools import Redis
+from Jumpscale.core.InstallTools import RedisTools
 
 
-class RedisFactory(j.baseclasses.factory):
+class RedisFactory(j.baseclasses.factory_testtools):
 
     """
     """
@@ -18,7 +18,7 @@ class RedisFactory(j.baseclasses.factory):
 
     def _init(self, **kwargs):
         self._cache_clear()
-        self._unix_socket_core = "/sandbox/var/redis.sock"
+        self._unix_socket_core = j.core.tools.text_replace("{DIR_BASE}/var/redis.sock")
         self._core = None
 
         #
@@ -102,7 +102,7 @@ class RedisFactory(j.baseclasses.factory):
         if key not in self._redis or not fromcache:
             if ipaddr and port:
                 self._log_debug("REDIS:%s:%s" % (ipaddr, port))
-                self._redis[key] = Redis(
+                cl = Redis(
                     ipaddr,
                     port,
                     password=password,
@@ -117,32 +117,38 @@ class RedisFactory(j.baseclasses.factory):
                 )
             else:
                 self._log_debug("REDIS:%s" % unixsocket)
-                self._redis[key] = Redis(
+                cl = Redis(
                     unix_socket_path=unixsocket,
                     # socket_timeout=timeout,
                     password=password,
                     **args,
                 )
+        else:
+            cl = self._redis[key]
 
         if ardb_patch:
-            self._ardb_patch(self._redis[key])
+            self._ardb_patch(cl)
 
         if set_patch:
-            self._set_patch(self._redis[key])
+            self._set_patch(cl)
 
         if ping:
             try:
-                res = self._redis[key].ping()
+                res = cl.ping()
             except Exception as e:
                 if "Timeout" in str(e) or "Connection refused" in str(e):
                     if die == False:
                         return None
                     else:
-                        raise j.exceptions.Base("Redis on %s:%s did not answer" % (ipaddr, port))
+                        raise j.exceptions.Base("Redis on %s:%s did not answer: %s" % (ipaddr, port, str(e)))
                 else:
                     raise e
 
-        return self._redis[key]
+        if not fromcache:
+            return cl
+        else:
+            self._redis[key] = cl
+            return self._redis[key]
 
     def _ardb_patch(self, client):
         client.response_callbacks["HDEL"] = lambda r: r and nativestr(r) == "OK"
@@ -176,7 +182,7 @@ class RedisFactory(j.baseclasses.factory):
         kosmos 'j.clients.redis.core_get(reset=False)'
         j.clients.redis.core_get(fromcache=False)
 
-        will try to create redis connection to {DIR_TEMP}/redis.sock or /sandbox/var/redis.sock  if sandbox
+        will try to create redis connection to {DIR_TEMP}/redis.sock or {DIR_BASE}/var/redis.sock  if sandbox
         if that doesn't work then will look for std redis port
         if that does not work then will return None
 
@@ -225,3 +231,5 @@ class RedisFactory(j.baseclasses.factory):
 
         """
         self._test_run(name=name)
+
+

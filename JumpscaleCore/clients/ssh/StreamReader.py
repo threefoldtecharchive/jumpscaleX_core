@@ -1,15 +1,14 @@
 import threading
+import gevent
 
 
-class StreamReader(threading.Thread):
+class StreamReaderBase:
     def __init__(self, stream, channel, queue, flag):
-        super(StreamReader, self).__init__()
         self.stream = stream
         self.channel = channel
         self.queue = queue
         self.flag = flag
         self._stopped = False
-        self.setDaemon(True)
 
     def run(self):
         """
@@ -29,3 +28,18 @@ class StreamReader(threading.Thread):
             else:
                 break
         self.queue.put(("T", self.flag))
+
+
+class StreamReaderThreading(StreamReaderBase, threading.Thread):
+    def __init__(self, stream, channel, queue, flag):
+        threading.Thread.__init__(self)
+        self.setDaemon(True)
+        StreamReaderBase.__init__(self, stream, channel, queue, flag)
+
+
+class StreamReaderGevent(StreamReaderBase):
+    def start(self):
+        self.greenlet = gevent.spawn(self.run)
+
+    def join(self):
+        self.greenlet.join()

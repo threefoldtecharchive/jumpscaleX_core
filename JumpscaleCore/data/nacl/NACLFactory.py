@@ -5,8 +5,13 @@ import nacl.secret
 import nacl.utils
 import base64
 import hashlib
+from io import BytesIO
 from nacl.public import PrivateKey, SealedBox
 import fakeredis
+import binascii
+from nacl.signing import VerifyKey
+from nacl.exceptions import BadSignatureError
+
 
 JSBASE = j.baseclasses.object
 
@@ -21,7 +26,9 @@ class NACLFactory(j.baseclasses.object):
         if isinstance(j.core.db, fakeredis.FakeStrictRedis):
             j.clients.redis.core_get()
 
-    def configure(self, name="default", privkey_words=None, sshagent_use=None, generate=False, interactive=True):
+    def configure(
+        self, name="default", privkey_words=None, sshagent_use=None, generate=True, interactive=False, reset=False
+    ):
         """
         secret is used to encrypt/decrypt the private key when stored on local filesystem
         privkey_words is used to put the private key back
@@ -35,22 +42,148 @@ class NACLFactory(j.baseclasses.object):
 
         """
         n = self.get(name=name, load=False)
-        n.configure(privkey_words=privkey_words, sshagent_use=sshagent_use, generate=generate, interactive=interactive)
+        n.configure(
+            privkey_words=privkey_words,
+            sshagent_use=sshagent_use,
+            generate=generate,
+            interactive=interactive,
+            reset=reset,
+        )
         return n
 
-    def get(self, name="default", load=True):
+    def get(self, name="default", load=True, configure_if_needed=True):
         """
+
+        :param name: name of the nacl config
+        :param load: if the keys need to be loaded
+        :param configure_if_needed: if key path does not exist will generate a key automatically
+        :return:
         """
-        n = NACL(name=name)
+        n = NACL(name=name, configure_if_needed=configure_if_needed)
         if load:
             n.load()
         return n
+
+    def payload_build(self, *args):
+        """
+        build a bytesIO buffer with all arguments serialized to somethign repeatable
+        :param args:
+        :return:
+        """
+        buffer = BytesIO()
+        for item in args:
+            if isinstance(item, str):
+                item = item.encode()
+            elif isinstance(item, int) or isinstance(item, float):
+                item = str(item).encode()
+            elif isinstance(item, bytes):
+                pass
+            elif isinstance(item, j.data.schema._JSXObjectClass):
+                item = item._json
+            elif isinstance(item, j.baseclasses.dict):
+                item = j.data.serializers.json.dumps(item._data).encode()
+            elif item == None:
+                raise j.exceptions.Input("should not be None")
+            else:
+                item = j.data.serializers.json.dumps(item).encode()
+            buffer.write(item)
+        return buffer.getvalue()
+
+    def payload_sign(self, *args, nacl=None):
+        """
+        :param nacl: the nacl from the author, by default  j.data.nacl.default
+        :param args: what needs to be serialized in same order and signed
+        :return: 128 chars hexstring
+        """
+
+        if not nacl:
+            nacl = j.data.nacl.default
+
+        payload = self.payload_build(*args)
+
+        signature = nacl.sign(payload)
+        return binascii.hexlify(signature).decode()
+
+    def verifykey_obj_get(self, verifykey):
+        if isinstance(verifykey, VerifyKey):
+            return verifykey
+        if len(verifykey) == 64:
+            verifykey = binascii.unhexlify(verifykey)
+        return VerifyKey(verifykey)
+
+    def pubkey_obj_get(self, verifykey):
+        verifykey = self.verifykey_obj_get(verifykey)
+        return verifykey.to_curve25519_public_key()
+
+    def payload_verify(self, *args, verifykey=None, signature=None, die=True):
+        """
+        :param args:
+        :param verifykey:
+        :param signature: 64 bytes or 128 bytes hex encoded (binascii.hexlify)
+        :param die:
+        :return: True if ok, False if failed or die when die==True
+        """
+        payload = self.payload_build(*args)
+        self._log_debug("payload", data=payload)
+        assert signature
+        assert verifykey
+        assert len(signature) == 64 or len(signature) == 128
+
+        verifykey = self.verifykey_obj_get(verifykey)
+
+        if len(signature) == 128:
+            signature = binascii.unhexlify(signature)
+
+        try:
+            verifykey.verify(payload, signature)
+        except BadSignatureError:
+            if die:
+                raise j.exceptions.Input("cannot verify payload")
+            return False
+        return True
+
+    def payload_encrypt_pubkey(self, payload, verifykey=None, hex=False):
+        assert verifykey
+        pubkey = self.pubkey_obj_get(verifykey)
+
+        sealed_box = SealedBox(pubkey)
+        res = sealed_box.encrypt(payload)
+        if hex:
+            res = self._bin_to_hex(res)
+        return res
 
     @property
     def default(self):
         if self._default is None:
             self._default = self.get()
         return self._default
+
+    def test_signatures(self):
+        """
+        kosmos 'j.data.nacl.test_signatures()'
+        """
+        j.data.nacl.configure("test_a", generate=True, interactive=False)
+        j.data.nacl.configure("test_b", generate=True, interactive=False)
+        nacl_a = j.data.nacl.get("test_a")
+        nacl_b = j.data.nacl.get("test_b")
+
+        args = ["a", 1, "astring"]
+
+        payload = j.data.nacl.payload_build(*args)  # you can't do anything with payload, its only useful for signing
+
+        signature = j.data.nacl.payload_sign(*args, nacl=nacl_a)
+
+        assert j.data.nacl.payload_verify(*args, verifykey=nacl_a.verify_key_hex, signature=signature)
+        assert j.data.nacl.payload_verify(*args, verifykey=nacl_a.verify_key, signature=signature)
+        assert j.data.nacl.payload_verify(*args, verifykey=nacl_a.verify_key.encode(), signature=signature)
+
+        encrypted = j.data.nacl.payload_encrypt_pubkey(payload, verifykey=nacl_b.verify_key_hex)
+        encrypted2 = j.data.nacl.payload_encrypt_pubkey(payload, verifykey=nacl_b.verify_key.encode())
+
+        assert nacl_b.decrypt(encrypted) == payload
+        assert nacl_b.decrypt(encrypted2) == payload
+
+        print("OK")
 
     def test(self):
         """
@@ -120,11 +253,16 @@ class NACLFactory(j.baseclasses.object):
         except:
             pass
 
+        bob_sk = nacl.public.PrivateKey.generate()
+        a = cl.encryptAsymmetric(bob_sk.public_key, b"something")
+        b = cl.decryptAsymmetric(bob_sk.public_key, a)
+        assert b == b"something"
+
         # LETS NOW TEST THAT WE CAN START FROM WORDS
 
         words = j.data.nacl.default.words
-        j.sal.fs.copyDirTree("/sandbox/cfg/keys/default", "/sandbox/cfg/keys/default_backup")  # make backup
-        j.sal.fs.remove("/sandbox/cfg/keys/default")
+        j.sal.fs.copyDirTree(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default", j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup")))  # make backup
+        j.sal.fs.remove(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default"))
         try:
             self.default.reset()
             try:
@@ -140,8 +278,8 @@ class NACLFactory(j.baseclasses.object):
             assert b == b"something"
 
         finally:
-            j.sal.fs.copyDirTree("/sandbox/cfg/keys/default_backup", "/sandbox/cfg/keys/default")
-            j.sal.fs.remove("/sandbox/cfg/keys/default_backup")
+            j.sal.fs.copyDirTree(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup", j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default")))
+            j.sal.fs.remove(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup"))
 
         self._log_info("TEST OK")
         print("TEST OK")
@@ -177,3 +315,5 @@ class NACLFactory(j.baseclasses.object):
             b = cl.decrypt(a)
             assert data2 == b
         j.tools.timer.stop(i)
+
+

@@ -14,7 +14,7 @@ JSConfigClient = j.baseclasses.object_config
 class EmailClient(JSConfigClient):
     _SCHEMATEXT = """
         @url = jumpscale.Email.client
-        name* = "" (S)
+        name** = "" (S)
         smtp_server = "" (S)
         smtp_port = 25 (ipport)
         login = "" (S)

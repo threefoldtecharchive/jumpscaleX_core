@@ -32,7 +32,7 @@ class SonicClient(JSConfigClient):
 
     _SCHEMATEXT = """
         @url =  jumpscale.sonic.client
-        name* = "" (S)
+        name** = "" (S)
         host = "127.0.0.1" (S)
         port = 1491 (I)
         password = "" (S)

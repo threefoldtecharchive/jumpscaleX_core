@@ -8,19 +8,21 @@ class RedisCoreClient(j.baseclasses.object):
     __jslocation__ = "j.clients.credis_core"
 
     def _init(self, **kwargs):
+        self._credis = False
 
         try:
-            self._credis = True
             from credis import Connection
 
-            self._client = Connection(path="/sandbox/var/redis.sock")
-            self._client.connect()
-        except Exception as e:
-            self._credis = False
-            self._client = j.clients.redis.core_get()
-            from redis import ConnectionError
+        except (ModuleNotFoundError, ImportError) as e:
+            j.builders.runtimes.python3.pip_package_install("credis")
+            from credis import Connection
 
-            self._ConnectionError = ConnectionError
+        try:
+            self._client = Connection(path=j.core.tools.text_replace("{DIR_BASE}/var/redis.sock"))
+            self._client.connect()
+            self._credis = True
+        except:
+            self._client = j.clients.redis.core_get()
 
         if self._credis:
             assert self.execute("PING") == b"PONG"
@@ -70,3 +72,4 @@ class RedisCoreClient(j.baseclasses.object):
 
             self._client = redis.Redis(unix_socket_path=j.core.db.connection_pool.connection_kwargs["path"], db=1)
         return self._client
+

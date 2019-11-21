@@ -3,9 +3,7 @@ from Jumpscale import j
 from .Attr import Attr
 from .JSBase import JSBase
 
-
-# from .TestTools import TestTools
-# from .JSConfigBCDB import JSConfigBCDB
+from .TestTools import TestTools
 
 
 class JSFactory(JSBase, Attr):
@@ -16,14 +14,11 @@ class JSFactory(JSBase, Attr):
             for kl in self.__class__._CHILDCLASSES:
                 # childclasses are the e.g. JSConfigs classes
 
-                if not kl._name:
-                    # raise j.exceptions.JSBUG("Cannot start childclass it has no _name")
-                    name = j.core.text.strip_to_ascii_dense(str(kl)).split(".")[-1].lower()
-                else:
-                    name = kl._name
-                assert name
-
+                # if not kl._name or not isinstance(kl._name, str):
+                #     name = j.core.text.strip_to_ascii_dense(str(kl)).split(".")[-1].lower()
+                # else:
                 obj = kl(parent=self, **kwargs)
+                name = obj._name
                 assert obj._parent
                 self._children[name] = obj
 
@@ -53,91 +48,17 @@ class JSFactory(JSBase, Attr):
 
         :return:
         """
-        for key, item in self._children.items():
-            if self._hasattr(item, "reset"):
-                item.reset()
-
         self.delete()
 
     def save(self):
         for item in self._children_get():
-            if self._hasattr(item, "save"):
-                item.save()
+            if isinstance(item, j.baseclasses.object):
+                if item._hasattr("save"):
+                    item.save()
+            else:
+                raise j.exceptions.JSBUG("only suport j.baseclasses.object")
 
-        # if self._object_config:
-        #     self._object_config.save()
-
-    # def _dataprops_names_get(self, filter=None):
-    #     # means there is an object attached to it
-    #     if self._object_config:
-    #         self._object_config._dataprops_names_get()
-    #     return []
-
-    # def _children_names_get(self, filter=None):
-    #     """
-    #     :param filter: is '' then will show all, if None will ignore _
-    #             when * at end it will be considered a prefix
-    #             when * at start it will be considered a end of line filter (endswith)
-    #             when R as first char its considered to be a regex
-    #             everything else is a full match
-    #
-    #     :param self:
-    #     :param filter:
-    #     :return:
-    #     """
-    #
-    #     def do():
-    #         x = []
-    #         for key, item in self._children.items():
-    #             x.append(key)
-    #         return x
-    #
-    #     x = self._cache.get(key="_children_names_get", method=do, expire=10)  # will redo every 10 sec
-    #     return self._filter(filter=filter, llist=x, nameonly=True)
-
-    # def _children_get(self, filter=None):
-    #     """
-    #     :param filter: is '' then will show all, if None will ignore _
-    #             when * at end it will be considered a prefix
-    #             when * at start it will be considered a end of line filter (endswith)
-    #             when R as first char its considered to be a regex
-    #             everything else is a full match
-    #
-    #     :return:
-    #     """
-    #     x = []
-    #     for key, item in self._children.items():
-    #         x.append(item)
-    #     return self._filter(filter=filter, llist=x, nameonly=False)
-
-    # def _new(self, name, save=False, **kwargs):
-    #     """
-    #     it it exists will delete if first when delete == True
-    #     :param name:
-    #     :param jsxobject:
-    #     :param save:
-    #     :param kwargs:
-    #     :return:
-    #     """
-    #     if self.exists(name=name):
-    #         raise j.exceptions.Base("cannot do new object, exists")
-    #     return self._new2(name=name, save=save, **kwargs)
-    #
-    # def _new2(self, name, save=False, **kwargs):
-    #     """
-    #     :param name: for the CONFIG item (is a unique name for the service, client, ...)
-    #     :return: the service
-    #     """
-    #     klass = self._childclass_selector(**kwargs)
-    #     child = klass(parent=self, **kwargs)
-    #     assert child._name
-    #     assert child._parent
-    #     self._children[name] = child
-    #     if save:
-    #         self._children[child].save()
-    #     return self._children[name]
-
-    def get(self, name="main", needexist=False, save=False, **kwargs):
+    def get(self, name="main", needexist=False, autosave=False, reload=False, **kwargs):
         """
 
         :param name: of the child to get, if it doesn't need to exist then will try to create new
@@ -145,12 +66,15 @@ class JSFactory(JSBase, Attr):
 
 
         """
-        if not name in self._children:
+        child = self._validate_child(name)
+        if not child:
             if hasattr(self.__class__, "_CHILDCLASS") and needexist == False:
-                self.new(name=name, save=save, **kwargs)
+                self.new(name=name, autosave=save, **kwargs)
             else:
                 raise j.exceptions.Value("cannot get child with name:%s" % name)
-        return self._children[name]
+        if reload:
+            child.load()
+        return child
 
     def find(self, **kwargs):
         """
@@ -160,36 +84,60 @@ class JSFactory(JSBase, Attr):
         res = []
         for key, item in self._children.items():
             match = True
-            for key, val in kwargs.items():
-                if self._hasattr(item, key):
-                    if val != getattr(item, key):
-                        match = False
-                else:
-                    raise j.exceptions.Value("could not find for prop:%s, did not exist in %s" % (key, self._key))
+            if isinstance(item, j.baseclasses.object_config):
+                for key, val in kwargs.items():
+                    print("need to check in properties of schema to see if we can check")
+                    j.shell()
+            elif isinstance(item, j.baseclasses.object):
+                for key, val in kwargs.items():
+                    if item._hasattr(key):
+                        if val != getattr(item, key):
+                            match = False
+                    else:
+                        raise j.exceptions.Value("could not find for prop:%s, did not exist in %s" % (key, self._key))
+            else:
+                raise j.exceptions.JSBUG("only support jsx objects in _children")
             if match:
                 res.append(item)
         return res
 
-    def count(self, name, recursive=False):
-        """
-        :param kwargs: e.g. color="red",...
-        :return: list of the config objects
-        """
-        r = 0
-        if name in self._children:
-            child = self._children[name]
-            if self._hasattr(child, "count"):
-                r += child.count(name=name)
+    # def count(self, name):
+    #     """
+    #     :param kwargs: e.g. color="red",...
+    #     :return: list of the config objects
+    #     """
+    #     raise j.exceptions.NotImplemented()
+    #     # r = 0
+    #     # if name in self._children:
+    #     #     child = self._children[name]
+    #     #     if self._hasattr(child, "count"):
+    #     #         r += child.count(name=name)
 
-    def delete(self, name=None, recursive=False):
-        if name in self._children:
-            if recursive:
-                self._children[name].delete(name=name, recursive=recursive)
-            self._children.pop(name)
+    def delete(self, name=None):
+        """
+
+        :param name:
+        :return:
+        """
+        self._delete(name=name)
+
+    def _delete(self, name=None):
+        if name:
+            child = self._validate_child(name)
+            if child:
+                child.delete()
+        else:
+            self._children_delete()
+
+        if self._parent:
+            # if we exist in the parent remove us from their children
+            if self._classname in self._parent._children:
+                self._parent._children.pop(self._classname)
 
     def exists(self, name="main"):
         """
         :param name: of the object
         """
-        if name in self._children:
+        child = self._validate_child(name)
+        if child:
             return True

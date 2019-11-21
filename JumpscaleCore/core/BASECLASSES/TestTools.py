@@ -18,8 +18,8 @@
 # LICENSE END
 
 
-from .JSBase import JSBase
 from Jumpscale import j
+import re
 
 """
 adds test management to JSBASE
@@ -106,6 +106,17 @@ class TestTools:
         # to avoid taking twice the same file if it ends by the same prefix
         # e.g. base and x_base
         files = j.sal.fs.listFilesInDir(path, recursive=recursive, filter="*.py")
+        if isinstance(name, int):
+            matches = []
+            for file in files:
+                basename = j.sal.fs.getBaseName(file).split("_", 1)[0]
+                if basename.isdigit() and int(basename) == name:
+                    matches.append(file)
+            if matches:
+                return matches
+            else:
+                raise j.exceptions.NotFound(f"Could not find test with nr {name}")
+
         files_dict = {get_shortname(j.sal.fs.getBaseName(f)): f for f in files}
         target_file_shortened = get_shortname(name, underscoreprocess=False)
         if target_file_shortened in files_dict:
@@ -120,7 +131,7 @@ class TestTools:
             bname = j.sal.fs.getBaseName(item)
             bname2 = get_shortname(bname)
             self._log_debug("%s:%s" % (bname2, name))
-            
+
             if bname2 == get_shortname(name, underscoreprocess=False):
                 return item
             if bname2 == get_shortname(name, underscoreprocess=True):
@@ -133,18 +144,24 @@ class TestTools:
             name = None
 
         if name is not None:
-            self._log_info("##: TEST RUN: %s" % name.upper())
+            self._log_info(f"##: TEST RUN: {name}")
 
         if name is not None:
             tpath = self.__find_code(name=name)
-            self._code_run(name=name, path=tpath, obj_key=obj_key, die=die, **kwargs)
-            self._log_debug("##: path: %s\n\n" % tpath)
+            if not isinstance(tpath, list):
+                tpath = [tpath]
+            for path in tpath:
+                self._code_run(name=name, path=path, obj_key=obj_key, die=die, **kwargs)
+                self._log_debug("##: path: %s\n\n" % path)
         else:
             items = [
                 j.sal.fs.getBaseName(item)
                 for item in j.sal.fs.listFilesInDir("%s/tests" % self._dirpath, recursive=False, filter="*.py")
             ]
-            items.sort()
+
+            natsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split("(\d+)", s)]
+            items.sort(key=natsort)
+
             for name in items:
                 self.__test_run(name=name, obj_key=obj_key, **kwargs)
 

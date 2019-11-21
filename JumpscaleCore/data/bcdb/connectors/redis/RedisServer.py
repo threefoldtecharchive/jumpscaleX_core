@@ -19,9 +19,8 @@
 
 
 from Jumpscale import j
-import json
 from gevent.pool import Pool
-from gevent import time, signal
+from gevent import signal
 import gevent
 from gevent.server import StreamServer
 from redis.exceptions import ConnectionError
@@ -52,7 +51,7 @@ class RedisServer(j.baseclasses.object):
             self.ssl_priv_key_path, self.ssl_cert_path = self.sslkeys_generate()
             # Server always supports SSL
             # client can use to talk to it in SSL or not
-            self.redis_server = StreamServer(
+            self.gevent_server = StreamServer(
                 (self.host, self.port),
                 spawn=Pool(),
                 handle=self.handle_redis,
@@ -60,12 +59,12 @@ class RedisServer(j.baseclasses.object):
                 certfile=self.ssl_cert_path,
             )
         else:
-            self.redis_server = StreamServer((self.host, self.port), spawn=Pool(), handle=self.handle_redis)
+            self.gevent_server = StreamServer((self.host, self.port), spawn=Pool(), handle=self.handle_redis)
         self.vfs = j.data.bcdb._get_vfs()
 
     def start(self):
         self._log_info("RUNNING")
-        self.redis_server.serve_forever()
+        self.gevent_server.serve_forever()
 
     def stop(self):
         """
@@ -77,7 +76,7 @@ class RedisServer(j.baseclasses.object):
             h.cancel()
 
         self._log_info("stopping server")
-        self.redis_server.stop()
+        self.gevent_server.stop()
 
     def handle_redis(self, socket, address):
 
@@ -185,30 +184,32 @@ class RedisServer(j.baseclasses.object):
         splitted = key.split(":")
         len_splitted = len(splitted)
         m = ""
-        if len_splitted == 3:
-            cat = splitted[1]
-            url = ""
-            key = ""
-        elif len_splitted == 4:
-            cat = splitted[1]
-            url = splitted[3]
-            key = ""
-        elif len_splitted == 5:
-            cat = splitted[1]
-            url = splitted[3]
-            key = splitted[4]
+        key = ""
+        if "schemas" in splitted[:2]:
+            idx = splitted.index("schemas")
+            cat = "schemas"
+            url = splitted[idx + 1]
+        else:
+            if len_splitted == 3:
+                cat = splitted[1]
+            elif len_splitted == 4:
+                cat = splitted[1]
+                url = splitted[3]
+            elif len_splitted == 5:
+                cat = splitted[1]
+                url = splitted[3]
+                key = splitted[4]
         if url != "":
             # If we have a url we should be able to get the corresponding model if we already have seen that model
             # otherwise we leave the model to an empty string because it is tested further on to know that we have to set
             # this schema
-            for i in list(self.bcdb.meta._data.schemas):
-
-                if url == i.url:
-                    m = self.bcdb.model_get(url=i.url)
-                elif url == i.md5:
-                    m = self.bcdb.model_get(url=i.url)
-                elif url == str(i.sid):
-                    m = self.bcdb.model_get(url=i.url)
+            for schema in self.bcdb.meta.schema_dicts:
+                if url == schema["url"]:
+                    m = self.bcdb.model_get(url=schema["url"])
+                    break
+                elif url == schema["md5"]:
+                    m = self.bcdb.model_get(url=schema["url"])
+                    break
 
         return (cat, url, key, m)
 
@@ -223,8 +224,8 @@ class RedisServer(j.baseclasses.object):
                 response.error("cannot set, key:'%s' not supported" % key)
         else:
             try:
-                key = parse_key.split("/")
-                self.vfs.add_datas(val, int(key[1]), key[2])
+                tree = self.vfs.get(parse_key)
+                tree.set(val)
                 response.encode("OK")
                 return
             except:
@@ -281,29 +282,22 @@ class RedisServer(j.baseclasses.object):
         response._array(["0", res])
 
     def hset(self, response, key, id, val):
+        key = f"{key}/{id}"
         return self.set(response, key, val)
 
     def hget(self, response, key, id):
-        parse_key = key.replace(":", "/")
-        try:
-            vfs_objs = self.vfs.get(self.bcdb.name + "/" + parse_key)
-            if not isinstance(vfs_objs.get(), str):
-                objs = [i for i in vfs_objs.list()]
-                response.encode(objs)
-            else:
-                response.encode(vfs_objs.get())
-            return
-        except:
-            response.error("cannot get, key:'%s' not found" % key)
+        key = f"{key}/{id}"
+        return self.get(response, key)
 
     def hdel(self, response, key, id):
-        raise j.exceptions.Base("not implemented")
+        key = f"{key}/{id}"
+        return self.delete(response, key)
 
     def hlen(self, response, key):
         parse_key = key.replace(":", "/")
         vfs_objs = self.vfs.get(self.bcdb.name + "/" + parse_key)
         if isinstance(vfs_objs.get(), str):
-            response.encode("1")
+            response.encode(1)
             return
         response.encode(len(vfs_objs.items))
         return
@@ -326,18 +320,18 @@ class RedisServer(j.baseclasses.object):
         return urls
 
     def hscan(self, response, key, startid, count=10000):
-
         _, _, _, model = self._split(key)
         # objs = model.get_all()
         res = []
+
         if "schemas" in key:
-            res.append(model.sid)
+            res.append(model.mid)
             res.append(model.schema.text)
             response._array(["0", res])
             return
         else:
             key = key.replace(":", "/")
-            objs = self.vfs.get(key)
+            objs = self.vfs.get("/%s" % key)
             for obj in objs.list():
                 schema = j.data.serializers.json.loads(obj)
                 res.append(schema["id"])

@@ -39,7 +39,7 @@ def main(self):
 
     def do(bcdb, m, zdb=False):
         cmd = """
-        . /sandbox/env.sh;
+        . {DIR_BASE}/env.sh;
         kosmos 'j.data.bcdb.get("test").redis_server_start(port=6380)'
         """
         test_case = TestCase()
@@ -51,7 +51,7 @@ def main(self):
 
         self._cmd = j.servers.startupcmd.get(name="redis_6380", cmd_start=cmd, ports=[6380], executor="tmux")
         self._cmd.start()
-        j.sal.nettools.waitConnectionTest("127.0.0.1", port=6380, timeoutTotal=15)
+        j.sal.nettools.waitConnectionTest("127.0.0.1", port=6380, timeout=15)
 
         if zdb:
             cl = j.clients.zdb.client_get(name="test", namespace="test_zdb", port=9901)
@@ -143,10 +143,10 @@ def main(self):
     schema = """
         @url = despiegk.test2
         llist2 = "" (LS)
-        name* = ""
-        email* = ""
-        nr* = 0
-        date_start* = 0 (D)
+        name** = ""
+        email** = ""
+        nr** =  0
+        date_start** =  0 (D)
         description = ""
         cost_estimate = 0.0 #this is a comment
         llist = []

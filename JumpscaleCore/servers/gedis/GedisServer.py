@@ -15,6 +15,10 @@ from .handlers import Handler
 JSBaseConfig = j.baseclasses.object_config
 
 
+class Actors:
+    pass
+
+
 def waiter(job):
     while job.result is None:
         time.sleep(0.1)
@@ -24,13 +28,14 @@ def waiter(job):
 class GedisServer(JSBaseConfig):
     _SCHEMATEXT = """
         @url = jumpscale.gedis.server
-        name* = "main" (S)
+        name** = "main" (S)
         host = "0.0.0.0" (ipaddress)
         port = 9900 (ipport)
         ssl = False (B)
         secret_ = "" (S)
         ssl_keyfile = "" (S)
         ssl_certfile = "" (S)
+        # actors_data = (LS)
         """
 
     def _init(self, **kwargs):
@@ -48,6 +53,11 @@ class GedisServer(JSBaseConfig):
         self.chatbot = GedisChatBotFactory()
 
         self.namespaces = ["system", "default"]
+        self._threebot_server = None
+
+        j.threebot.actors = Actors()
+        j.threebot.actors_add = self.actors_add
+        # j.threebot.actors_list = self.actors_list
 
         # hook to allow external servers to find this gedis
         # self.server_gedis = self
@@ -77,8 +87,8 @@ class GedisServer(JSBaseConfig):
     def gevent_server(self):
         if self.ssl:
             if not self.ssl_keyfile and not self.ssl_certfile:
-                ssl_keyfile = "/sandbox/cfg/ssl/resty-auto-ssl-fallback.key"
-                ssl_certfile = "/sandbox/cfg/ssl/resty-auto-ssl-fallback.crt"
+                ssl_keyfile = j.core.tools.text_replace("{DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.key")
+                ssl_certfile = j.core.tools.text_replace("{DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.crt")
 
                 if j.sal.fs.exists(ssl_keyfile):
                     self.ssl_keyfile = ssl_keyfile
@@ -122,6 +132,9 @@ class GedisServer(JSBaseConfig):
         if not j.sal.fs.isDir(path):
             raise j.exceptions.Value("actor_add: path needs to point to an existing directory")
 
+        path = j.data.types.string.clean(path)
+        namespace = j.data.types.string.clean(namespace)
+
         files = j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py")
         for file_path in files:
             basepath = j.sal.fs.getBaseName(file_path)
@@ -146,6 +159,8 @@ class GedisServer(JSBaseConfig):
         self._log_debug("actor_add:%s:%s", namespace, path)
         name = actor_name(path, namespace)
         key = actor_key(name, namespace)
+        # if key not in self.actors.keys():
+        #     self.actors_data.append("%s:%s" % (namespace, path))
         self.cmds_meta[key] = GedisCmds(server=self, path=path, name=name, namespace=namespace)
 
     ####################################################################
@@ -186,13 +201,13 @@ class GedisServer(JSBaseConfig):
         :return: dict of actor and they commands
         :rtype: dict
         """
-        actors = self.actors_list(namespace)
         res = {}
-        for actor in actors:
-            res[actor.name] = {
-                "schema": str(actor.schema),
-                "cmds": {cmd.name: str(cmd.args) for cmd in actor.cmds.values()},
-            }
+        for key, actor in self.cmds_meta.items():
+            if not namespace or key.startswith("%s__" % namespace):
+                res[actor.name] = {
+                    "schema": str(actor.schema),
+                    "cmds": {cmd.name: str(cmd.args) for cmd in actor.cmds.values()},
+                }
         return res
 
     ##########################CLIENT FROM SERVER #######################
@@ -217,7 +232,6 @@ class GedisServer(JSBaseConfig):
         data["host"] = host
         data["port"] = self.port
         data["password_"] = self.secret_
-        data["ssl"] = self.ssl
         data["namespace"] = namespace
 
         return j.clients.gedis.get(name=self.name, **data)
@@ -239,42 +253,38 @@ class GedisServer(JSBaseConfig):
 
     #######################PROCESSING OF CMDS ##############
 
-    def job_schedule(self, method, timeout=60, wait=False, depends_on=None, **kwargs):
-        """
-        @return job, waiter_greenlet
-        """
-        job = self.workers_queue.enqueue_call(func=method, kwargs=kwargs, timeout=timeout, depends_on=depends_on)
-        greenlet = gevent.spawn(waiter, job)
-        job.greenlet = greenlet
-        self.workers_jobs[job.id] = job
-        if wait:
-            greenlet.get(block=True, timeout=timeout)
-        return job
+    # def sslkeys_generate(self):
+    #     if not self.ssl:
+    #         raise j.exceptions.Base("sslkeys_generate: gedis server is not configure to use ssl")
+    #
+    #     path = os.path.dirname(self.code_generated_dir)
+    #     key = j.sal.fs.joinPaths(path, "ca.key")
+    #     cert = j.sal.fs.joinPaths(path, "ca.crt")
+    #
+    #     if os.path.exists(key) and os.path.exists(cert):
+    #         return key, cert
+    #
+    #     j.sal.process.execute(
+    #         'openssl req -newkey rsa:2048 -nodes -keyout ca.key -x509 -days 365 -out ca.crt -subj "/C=GB/ST=London/L=London/O=Global Security/OU=IT Department/CN=localhost"'.format(
+    #             key, cert
+    #         ),
+    #         showout=False,
+    #     )
+    #
+    #     # res = j.sal.ssl.ca_cert_generate(path)
+    #     # if res:
+    #     #     self._log_info("generated sslkeys for gedis in %s" % path)
+    #     # else:
+    #     #     self._log_info("using existing key and cerificate for gedis @ %s" % path)
+    #     return key, cert
 
-    def sslkeys_generate(self):
-        if not self.ssl:
-            raise j.exceptions.Base("sslkeys_generate: gedis server is not configure to use ssl")
-
-        path = os.path.dirname(self.code_generated_dir)
-        key = j.sal.fs.joinPaths(path, "ca.key")
-        cert = j.sal.fs.joinPaths(path, "ca.crt")
-
-        if os.path.exists(key) and os.path.exists(cert):
-            return key, cert
-
-        j.sal.process.execute(
-            'openssl req -newkey rsa:2048 -nodes -keyout ca.key -x509 -days 365 -out ca.crt -subj "/C=GB/ST=London/L=London/O=Global Security/OU=IT Department/CN=localhost"'.format(
-                key, cert
-            ),
-            showout=False,
-        )
-
-        # res = j.sal.ssl.ca_cert_generate(path)
-        # if res:
-        #     self._log_info("generated sslkeys for gedis in %s" % path)
-        # else:
-        #     self._log_info("using existing key and cerificate for gedis @ %s" % path)
-        return key, cert
+    # def load_actors(self):
+    #     for item in self.actors_data:
+    #         namespace, path = item.split(":")
+    #         name = actor_name(path, namespace)
+    #         key = actor_key(name, namespace)
+    #         if key not in self.actors.keys():
+    #             self.actor_add(path, namespace)
 
     def start(self):
         """
@@ -300,12 +310,6 @@ class GedisServer(JSBaseConfig):
 
         self._log_info("stopping server")
         self.gevent_server.stop()
-
-    def test(self, name=""):
-        if name:
-            self._test_run(name=name)
-        else:
-            self._test_run(name="basic")
 
     def __repr__(self):
         return "<Gedis Server address=%s  generated_code_dir=%s)" % (self.address, self.code_generated_dir)
@@ -344,35 +348,3 @@ def actor_key(name, namespace):
     :rtype: str
     """
     return "%s__%s" % (namespace, name)
-
-    ########################POPULATION OF SERVER#########################
-    #
-    # def models_add(self, models, namespace="default"):
-    #     """
-    #     :param models:  e.g. bcdb.models.values() or bcdb itself
-    #     :param namespace:
-    #     :return:
-    #     """
-    #     if namespace not in self.namespaces:
-    #         self.namespaces.append(namespace)
-    #
-    #     reset = True  # FIXME: this mean we always reset, why ?
-    #
-    #     # FIXME: what is models is not a list or have no models attribute ?
-    #     if not j.data.types.list.check(models):
-    #         if hasattr(models, "models"):
-    #             models = models.models.values()
-    #
-    #     for model in models:
-    #         model_name = "model_%s.py" % (model.schema.key)
-    #         dest = j.sal.fs.joinPaths(self.code_generated_dir, model_name)
-    #         self._log_info("generate model: %s at %s", model_name, dest)
-    #         if reset or not j.sal.fs.exists(dest):
-    #             j.tools.jinja2.template_render(
-    #                 path=j.sal.fs.joinPaths(j.servers.gedis._dirpath, "templates/actor_model_server.py"),
-    #                 dest=dest,
-    #                 bcdb=model.bcdb,
-    #                 schema=model.schema,
-    #                 model=model)
-    #             self.actor_add(path=dest, namespace=namespace)
-    #         self.schema_urls.append(model.schema.url)

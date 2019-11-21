@@ -124,6 +124,18 @@ e.g. self.bash.profile is very useful
 
 will replace arguments like {DIR_SANDBOX} but also arguments from  j.core.myenv.config inside the text
 
+### _joinpaths(*args)
+
+join paths
+
+### _touch(path)
+
+touch the file
+
+### ._dir_ensure(path)
+
+make sure dir exists and also call self._replace(path)
+
 ### ._write(path,txt)
 
 - will write and also call self._replace()

@@ -48,15 +48,33 @@ class JSConfigBCDB(JSConfigBCDBBase):
             self._data.name = name
 
     @property
+    def _autosave(self):
+        return self._data._autosave
+
+    @_autosave.setter
+    def _autosave(self, val):
+        self._data._autosave = val
+
+    @property
     def name(self):
         return self._data.name
 
     @property
     def _key(self):
-        return self._name + "_" + self.name
+        assert self.name
+        return self._classname + "_" + self.name
+
+    @property
+    def _name(self):
+        assert self._classname
+        return self._classname
 
     @property
     def _id(self):
+        return self._data.id
+
+    @property
+    def id(self):
         return self._data.id
 
     def _data_update(self, datadict):
@@ -70,7 +88,22 @@ class JSConfigBCDB(JSConfigBCDBBase):
         self._data._data_update(datadict=datadict)
 
     def delete(self):
+        """
+        :return:
+        """
         self._delete()
+
+    def load(self):
+        """
+        load from bcdb
+        :return:
+        """
+        jsxobjects = self._model.find(name=self.name)
+        if len(jsxobjects) == 0:
+            raise j.exceptions.JSBUG("cannot find obj:%s for reload" % self.name)
+        self._data = jsxobjects[0]
+        self._data._autosave = True
+        return self
 
     def _delete(self):
         self._triggers_call(self, "delete")
@@ -78,7 +111,12 @@ class JSConfigBCDB(JSConfigBCDBBase):
         self._model.delete(self._data)
         if self._parent:
             if self._data.name in self._parent._children:
-                del self._parent._children[self._data.name]
+                if not isinstance(self._parent, j.baseclasses.factory):
+                    # if factory then cannot delete from the mother because its the only object
+                    del self._parent._children[self._data.name]
+
+        self._children_delete()
+
         self._triggers_call(self, "delete_post")
 
     def save(self):
@@ -87,6 +125,13 @@ class JSConfigBCDB(JSConfigBCDBBase):
     def save_(self):
         assert self._model
         self._triggers_call(self, "save")
+
+        mother_id = self._mother_id_get()
+        if mother_id:
+            # means there is a mother
+            self._data.mother_id = mother_id
+            assert self._data._model.schema._md5 == self._model.schema._md5
+
         self._data.save()
 
         self._triggers_call(self, "save_post")
@@ -121,3 +166,11 @@ class JSConfigBCDB(JSConfigBCDBBase):
         :return: list of the names
         """
         return self._filter(filter=filter, llist=self._model.schema.propertynames)
+
+    def __str__(self):
+        return str(self._data)
+
+    def __repr__(self):
+        out = "{BLUE}# JSXOBJ:{RESET}\n"
+        ansi_out = j.core.tools.text_replace(out, die_if_args_left=False).rstrip()
+        return ansi_out + "\n" + self._data.__repr__()

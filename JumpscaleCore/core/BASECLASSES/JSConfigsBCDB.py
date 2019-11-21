@@ -30,82 +30,136 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         return self.__class__._CHILDCLASS
 
-    def new(self, name, jsxobject=None, save=True, **kwargs):
+    def new(self, name, jsxobject=None, autosave=True, **kwargs):
         """
         it it exists will delete if first when delete == True
         :param name:
         :param jsxobject:
-        :param save:
+        :param autosave: sets the autosave argument on the data and also saves the object before the function returns. If set to False, you need to explicitly save the object.
         :param kwargs:
         :return:
         """
         if self.exists(name=name):
-            raise j.exceptions.Base("cannot do new object, exists")
-        return self._new(name=name, jsxobject=jsxobject, save=save, **kwargs)
+            raise j.exceptions.Base(f"cannot do new object, {name} exists")
+        jsconfig = self._new(name=name, jsxobject=jsxobject, autosave=autosave, **kwargs)
+        self._check(jsconfig)
+        return jsconfig
 
-    def _new(self, name, jsxobject=None, save=True, **kwargs):
+    def _check_children(self):
+        if not self._cache_use:
+            assert self._children == {}
+
+    def _check(self, jsconfig):
+        if jsconfig._id is None:
+            # model has never been saved no check required yet
+            return
+
+        # lets do some tests (maybe in future can be removed, but for now the safe bet)
+        assert jsconfig._id > 0
+        mother_id = jsconfig._mother_id_get()
+        if mother_id:
+            assert jsconfig.mother_id == mother_id
+        assert jsconfig._model.schema._md5 == self._model.schema._md5
+
+    def _new(self, name, jsxobject=None, autosave=True, **kwargs):
         """
         :param name: for the CONFIG item (is a unique name for the service, client, ...)
         :param jsxobject: you can right away specify the jsxobject
         :param kwargs: the data elements which will be given to JSXObject underneith (given to constructor)
         :return: the service
         """
+        kwargs_to_class = {}
         if not jsxobject:
-            jsxobject = self._model.new(data=kwargs)
+            if kwargs:
+                kwargs_to_obj_new = {}
+                props = [i.name for i in self._model.schema.properties]
+                for key, val in kwargs.items():
+                    if key in props:
+                        kwargs_to_obj_new[key] = val
+                    else:
+                        kwargs_to_class[key] = val
+                jsxobject = self._model.new(data=kwargs_to_obj_new)
+            else:
+                jsxobject = self._model.new()
             jsxobject.name = name
 
         # means we need to remember the parent id
-        if isinstance(self._parent, j.baseclasses.object_config):
-            if not self._parent._id:
-                self._parent.save()
-                assert self._parent._id
-            jsxobject.parent_id = self._parent._id
+        mother_id = self._mother_id_get()
+        if mother_id:
+            if jsxobject.mother_id != mother_id:
+                jsxobject.mother_id = mother_id
 
         jsconfig_klass = self._childclass_selector(jsxobject=jsxobject)
-        jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject)
+        jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject, **kwargs_to_class)
         jsconfig._triggers_call(jsconfig, "new")
+        jsconfig._autosave = autosave
         self._children[name] = jsconfig
-        if save:
+        if autosave:
             self._children[name].save()
-            self._children[name]._autosave = True
+            jsxobject._autosave = autosave
+
         return self._children[name]
 
-    def get(self, name="main", needexist=False, save=True, **kwargs):
+    def get(self, name="main", id=None, needexist=False, autosave=True, reload=False, **kwargs):
         """
         :param name: of the object
         """
 
-        jsconfig = self._get(name=name, die=needexist)
+        # will reload if needed (not in self._children)
+        rc, jsconfig = self._get(name=name, id=id, die=needexist, reload=reload)
 
         if not jsconfig:
-            self._log_debug("NEW OBJ:%s:%s" % (name, self._name))
-            jsconfig = self._new(name=name, save=save, **kwargs)
+            self._log_debug("NEW OBJ:%s:%s" % (name, self._classname))
+            jsconfig = self._new(name=name, autosave=autosave, **kwargs)
         else:
             # check that the stored values correspond with kwargs given
+            # means comes from the database
+            if not jsconfig._data._model.schema._md5 == jsconfig._model.schema._md5:
+                # means data came from DB and schema is not same as config mgmt class
+                j.shell()
             changed = False
+            jsconfig._data._autosave = False
             for key, val in kwargs.items():
                 if not getattr(jsconfig, key) == val:
                     changed = True
                     setattr(jsconfig, key, val)
-            if changed and save:
-                jsconfig.save()
+            if changed and autosave:
+                try:
+                    jsconfig.save()
+                except Exception as e:
+                    print("CHECK WHY ERROR")
+                    j.shell()
+
+            jsconfig._autosave = autosave
+
+        # lets do some tests (maybe in future can be removed, but for now the safe bet)
+        self._check(jsconfig)
 
         jsconfig._triggers_call(jsconfig, "get")
+
         return jsconfig
 
-    def _get(self, name="main", die=True):
-        assert name
-        if name in self._children:
-            return self._children[name]
+    def _get(self, name="main", id=None, die=True, reload=False, autosave=True):
 
-        self._log_debug("get child:'%s'from '%s'" % (name, self._name))
+        if id:
+            obj = self._model.get(id)
+            name = obj.name
+            return 1, self._new(name, obj)
+
+        obj = self._validate_child(name)
+        if obj:
+            if reload:
+                obj.load()
+            return 1, obj
+
+        self._log_debug("get child:'%s'from '%s'" % (name, self._classname))
 
         # new = False
         res = self.find(name=name)
 
         if len(res) < 1:
             if not die:
-                return
+                return 3, None
             raise j.exceptions.Base(
                 "Did not find instance for:%s, name searched for:%s" % (self.__class__._location, name)
             )
@@ -117,7 +171,9 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         else:
             jsxconfig = res[0]
 
-        return jsxconfig
+        jsxconfig._autosave = autosave
+
+        return 2, jsxconfig
 
     def reset(self):
         """
@@ -126,45 +182,82 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         self._log_debug("reset all data")
         for item in self.find():
-            item.delete()
+            try:
+                item.delete()
+            except Exception as e:
+                j.shell()
 
-        # TODO: in fact this should work without having to do this, we put it in to get to some more tests, but if deletes work well it should work without (JO)
-        if not self._parent or self._parent._hasattr("_id") == False:
-            # means we can remove all objects of the url (index)
+        if not self._mother_id_get():
             self._model.index.destroy()
 
-        self._children = j.baseclasses.dict()
+    def _children_names_get(self, filter=None):
+        condition = False
+        Item = self._model.index.sql
+        mother_id = self._mother_id_get()
 
-    def find(self, **kwargs):
+        if mother_id:
+            condition = Item.mother_id == mother_id
+        if filter and filter != "*":
+            condition = Item.name.startswith(filter) and condition if condition else Item.name.startswith(filter)
+
+        if condition:
+            res = [i.name for i in Item.select().where(condition) if self._model.exists(i.id)]
+        else:
+            res = [i.name for i in Item.select() if self._model.exists(i.id)]
+
+        # every item returned here NEEDS to actually exist on the model.
+        # FIXME: future update
+        if len(res) > 50:
+            return []
+        return res
+
+    def find(self, reload=False, **kwargs):
         """
         :param kwargs: e.g. color="red",...
         :return: list of the config objects
         """
         res = []
-        for key, item in self._children.items():
+        ids_done = []
+        for key, item in list(self._children.items()):
             match = True
             for key, val in kwargs.items():
-                if self._hasattr(item, key):
+                if item._hasattr(key):
                     if val != getattr(item, key):
                         match = False
                 else:
                     match = False
             if match:
+                if reload:
+                    item.load()
+                res.append(item)
+                if item.id not in ids_done:
+                    ids_done.append(item.id)
+
+        kwargs = self._kwargs_update(kwargs)
+
+        # this is more efficient no need to go to backend stor if the objects are already in mem
+        ids = self._model.find_ids(**kwargs)
+        for id in ids:
+            if id not in ids_done:
+                item = self.get(id=id, reload=reload, autosave=False)
                 res.append(item)
 
-        for jsxobject in self._findData(**kwargs):
-            name = jsxobject.name
-            if not name in self._children:
-                r = self._new(name=name, jsxobject=jsxobject)
-                res.append(r)
         return res
+
+    def _kwargs_update(self, kwargs):
+        mother_id = self._mother_id_get()
+        if mother_id:
+            kwargs["mother_id"] = mother_id
+        return kwargs
 
     def count(self, **kwargs):
         """
         :param kwargs: e.g. color="red",...
         :return: list of the config objects
         """
-        return len(self._findData(**kwargs))
+        kwargs = self._kwargs_update(kwargs)
+        # TODO do proper count query
+        return len(list(self._model.find_ids(**kwargs)))
 
     def _findData(self, **kwargs):
         """
@@ -172,59 +265,45 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :return: list of the data objects (the data of the model)
         """
 
-        if isinstance(self._parent, j.baseclasses.object_config):
-            if not self._parent._id:
-                self._parent.save()
-                assert self._parent._id
-            kwargs["parent_id"] = str(self._parent._id)
-
-        if len(kwargs) > 0:
-            propnames = [i for i in kwargs.keys()]
-            propnames_keys_in_schema = [
-                item.name for item in self._model.schema.properties_index_keys if item.name in propnames
-            ]
-            if len(propnames_keys_in_schema) > 0:
-                # we can try to find this config
-                return self._model.find(**kwargs)
-            else:
-                raise j.exceptions.Base(
-                    "cannot find obj with kwargs:\n%s\n in %s\nbecause kwargs do not match, is there * in schema"
-                    % (kwargs, self)
-                )
-            return []
-        else:
-            return self._model.find()
+        kwargs = self._kwargs_update(kwargs)
+        return self._model.find(**kwargs)
 
     def save(self):
         for item in self._children_get():
-            if self._hasattr(item, "save"):
+            if item._hasattr("save"):
                 item.save()
 
-    def delete(self, name):
-        self._model
-        if name in self._children:
-            self._children.pop(name)
-        res = self._findData(name=name)
-        if len(res) == 0:
-            return
-        elif len(res) == 1:
-            self._model.delete(res[0].id)
+    def delete(self, name=None):
+        """
+        :param name:
+        :return:
+        """
+        self._delete(name=name)
+
+    def _delete(self, name=None):
+        if name:
+            _, child = self._get(name=name, die=False)
+            if child:
+                return child.delete()
+        else:
+            return self.reset()
+
+        if not name and self._parent:
+            if self._classname in self._parent._children:
+                if not isinstance(self._parent, j.baseclasses.factory):
+                    # only delete when not a factory means is a custom class we're building
+                    del self._parent._children[self._data.name]
 
     def exists(self, name="main"):
         """
         :param name: of the object
         """
-        if name in self._children:
+        obj = self._validate_child(name)
+        if obj:
             return True
-        res = self._findData(name=name)
-        if len(res) > 1:
-            raise j.exceptions.Base(
-                "found too many items for :%s, name:\n%s\n%s" % (self.__class__.__name__, name, res)
-            )
-        elif len(res) == 1:
-            return True
-        else:
-            return False
+
+        # will only use the index
+        return self.count(name=name) == 1
 
     def _children_get(self, filter=None):
         """
@@ -235,10 +314,16 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 everything else is a full match
         :return:
         """
+        # TODO implement filter properly
         x = []
-        for key, item in self._children.items():
+        for _, item in self._children.items():
             x.append(item)
+        x = self._filter(filter=filter, llist=x, nameonly=False)
+        # be smarter in how we use the index
         for item in self.find():
             if item not in x:
                 x.append(item)
-        return self._filter(filter=filter, llist=x, nameonly=False)
+        return x
+
+    def __str__(self):
+        return "jsxconfigobj:collection:%s" % self._model.schema.url

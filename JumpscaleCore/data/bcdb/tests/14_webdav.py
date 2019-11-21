@@ -25,7 +25,7 @@ import requests
 def main(self):
     """
     to run:
-    kosmos 'j.data.bcdb.test(name="vfs")'
+    kosmos 'j.data.bcdb.test(name="webdav")'
 
     """
 
@@ -38,7 +38,7 @@ def main(self):
     
     SCHEMA = \"\"\"
     @url = threefoldtoken.wallet.test
-    name* = "wallet"
+    name** = "wallet"
     addr = ""                   # Address
     ipaddr = (ipaddr)           # IP Address
     email = "" (S)              # Email address
@@ -76,7 +76,8 @@ def main(self):
     assert data["name"] == "myuser_0"
     assert data["id"] == 1
 
-    """  data["email"] = "yolo@nofear.com"
+    """  
+    data["email"] = "yolo@nofear.com"
     session.auth = requests.auth.HTTPBasicAuth("root", "root")
     put = session.put("http://0.0.0.0:4443/test/data/1/threefoldtoken.wallet.test/1", data)
     print(put)
@@ -90,5 +91,7 @@ def main(self):
     web_dav = j.servers.startupcmd.get("webdav_test")
     web_dav.stop()
     web_dav.wait_stopped()
+
+    # TODO: mount webdav over fuse and do some tests
 
     self._log_info("test ok")

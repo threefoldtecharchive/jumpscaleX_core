@@ -39,7 +39,7 @@ class builder_method:
         zhub_client = kwargs.get("zhub_client")
         if not zhub_client and kwargs.get("flist_create"):
             if not j.clients.zhub.exists(name="main"):
-                raise j.exceptions.Base("cannot find main zhub client")
+                raise j.exceptions.Base("Cannot find main zhub client, please configure main instance")
 
             # verifying the client
             zhub_client = j.clients.zhub.get(name="main")
@@ -129,7 +129,7 @@ class builder_method:
             name = func.__name__
 
             if not j.application._log2fs_session_name:
-                j.application.log2fs_register(builder._name)
+                j.application.log2fs_register(builder._classname)
             j.application.log2fs_context_change(name)
 
             kwargs = self.get_all_as_keyword_arguments(func, args, kwargs)
@@ -144,7 +144,7 @@ class builder_method:
             #     builder.state_reset()  # lets not reset the full module
 
             if self.already_done(func, builder, done_key, reset):
-                builder._log_info("no need to do: %s:%s, was already done" % (builder._name, kwargs_without_reset))
+                builder._log_info("no need to do: %s:%s, was already done" % (builder._classname, kwargs_without_reset))
                 return builder.ALREADY_DONE_VALUE
 
             # Make sure to call _init before any method
@@ -152,11 +152,13 @@ class builder_method:
                 builder._init()
 
             if name == "build":
-                builder.stop()
+                if builder._done_check(done_key):
+                    builder.stop()
                 builder.profile_builder_select()
 
             if name == "install":
-                builder.stop()
+                if builder._done_check(done_key):
+                    builder.stop()
                 builder.profile_builder_select()
                 builder.build()
 
@@ -190,16 +192,16 @@ class builder_method:
 
 class BuilderBaseClass(JSBase):
     """
-    doc in /sandbox/code/github/threefoldtech/jumpscaleX_core/docs/Internals/builders/Builders.md
+    doc in {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/docs/Internals/builders/Builders.md
     """
 
     ALREADY_DONE_VALUE = "ALREADY DONE"
 
     def __init__(self):
         self._bash = None
-        self._name = self.__class__.__jslocation__.lower().split(".")[-1]
-        self.DIR_BUILD = "/tmp/builders/{}".format(self._name)
-        self.DIR_SANDBOX = "/tmp/package/{}".format(self._name)
+        self._classname = self.__class__.__jslocation__.lower().split(".")[-1]
+        self.DIR_BUILD = "/tmp/builders/{}".format(self._classname)
+        self.DIR_SANDBOX = "/tmp/package/{}".format(self._classname)
         JSBase.__init__(self)
 
     def state_sandbox_set(self):
@@ -295,18 +297,18 @@ class BuilderBaseClass(JSBase):
 
     def _profile_sandbox_set(self):
 
-        self._bash = j.tools.bash.get("/sandbox")
+        self._bash = j.tools.bash.get(j.core.tools.text_replace("{DIR_BASE}"))
 
         self.profile.state = "sandbox"
 
         # cannot manipuate env.sh in sandbox, should be set properly by design
-        if self.profile.profile_path != "/sandbox/env.sh":
-            self.profile.path_add("/sandbox/bin")
+        if self.profile.profile_path != j.core.tools.text_replace("{DIR_BASE}/env.sh"):
+            self.profile.path_add(j.core.tools.text_replace("{DIR_BASE}/bin"))
 
             self.profile.env_set("PYTHONHTTPSVERIFY", 0)
 
-            self.profile.env_set_part("PYTHONPATH", "/sandbox/lib")
-            self.profile.env_set_part("PYTHONPATH", "/sandbox/lib/jumpscale")
+            self.profile.env_set_part("PYTHONPATH", j.core.tools.text_replace("{DIR_BASE}/lib"))
+            self.profile.env_set_part("PYTHONPATH", j.core.tools.text_replace("{DIR_BASE}/lib/jumpscale"))
 
             self.profile.env_set("LC_ALL", "en_US.UTF-8")
             self.profile.env_set("LANG", "en_US.UTF-8")
@@ -344,7 +346,7 @@ class BuilderBaseClass(JSBase):
         res = j.core.tools.text_replace(content=txt, args=args, text_strip=True)
         return res
 
-    def _execute(self, cmd, die=True, args={}, timeout=600, replace=True, showout=True, interactive=False):
+    def _execute(self, cmd, die=True, args={}, timeout=3600, replace=True, showout=True, interactive=False, retry=None):
         """
 
         :param cmd:
@@ -362,7 +364,7 @@ class BuilderBaseClass(JSBase):
             raise j.exceptions.Base("cmd cannot be empty")
 
         cmd = "cd /tmp/\n. %s\n%s" % (self.profile.profile_path, cmd)
-        name = self.__class__._name
+        name = self.__class__._classname
         name = name.replace("builder", "")
         path = "/tmp/builder_%s.sh" % (name)
         self._log_debug("execute: '%s'" % path)
@@ -382,9 +384,22 @@ class BuilderBaseClass(JSBase):
             interactive=interactive,
             replace=False,
             showout=showout,
+            retry=retry,
         )
         j.sal.fs.remove(path)
         return (rc, res, out)
+
+    def _touch(self, path):
+        path = self._replace(path)
+        self.tools.touch.touch(path)
+
+    def _dir_ensure(self, path):
+        path = self._replace(path)
+        j.builders.tools.dir_ensure(path)
+
+    def _joinpaths(self, *args):
+        args = [self._replace(arg) for arg in args]
+        return self.tools.joinpaths(*args)
 
     def _copy(
         self,
@@ -454,7 +469,6 @@ class BuilderBaseClass(JSBase):
         """
         self._log_debug("remove:%s" % path)
         path = self._replace(path)
-
         j.sal.fs.remove(path)
 
     def _exists(self, path):
@@ -558,19 +572,21 @@ class BuilderBaseClass(JSBase):
             self._copy("/lib64/ld-linux-x86-64.so.2", ld_dest)
 
         self._log_info("uploading flist to the hub")
-        flist_url = zhub_client.sandbox_upload(self._name, self.DIR_SANDBOX)
+        flist_url = zhub_client.sandbox_upload(self._classname, self.DIR_SANDBOX)
         if merge_base_flist:
             self._log_info("merging the produced flist with {}".format(merge_base_flist))
 
-            target = "{}_merged_{}".format(self._name, merge_base_flist.replace("/", "_").replace(".flist", ""))
-            flist_name = "{username}/{flist_name}.flist".format(username=zhub_client.username, flist_name=self._name)
+            target = "{}_merged_{}".format(self._classname, merge_base_flist.replace("/", "_").replace(".flist", ""))
+            flist_name = "{username}/{flist_name}.flist".format(
+                username=zhub_client.username, flist_name=self._classname
+            )
             flist_url = zhub_client.merge(target, [flist_name, merge_base_flist])
 
         return flist_url
 
     @builder_method()
     def _tarfile_create(self):
-        tarfile = "/tmp/{}.tar.gz".format(self._name)
+        tarfile = "/tmp/{}.tar.gz".format(self._classname)
         j.sal.process.execute("tar czf {} -C {} .".format(tarfile, self.DIR_SANDBOX))
         return tarfile
 

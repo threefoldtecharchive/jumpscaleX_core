@@ -43,7 +43,7 @@ class PeeweeFactory(j.baseclasses.object):
 
     def db_postgresql_get(self, dbname="template", login="postgres", passwd="", ipaddr="localhost", port=5432):
         if not self._peewee:
-            from peewee import PostgresqlDatabase
+            from Jumpscale.clients.peewee.peewee import PostgresqlDatabase
 
             db = PostgresqlDatabase(dbname, user=login, password=passwd, host=ipaddr, port=port)
         return db
@@ -57,7 +57,7 @@ class PeeweeFactory(j.baseclasses.object):
         :return:
         """
 
-        j.builders.db.postgres.start()
+        j.builders.db.psql.start()
         cl = j.clients.postgres.db_client_get()
         cl.db_create("pewee_test")
         db = self.db_postgresql_get()

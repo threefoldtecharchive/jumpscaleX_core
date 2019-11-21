@@ -1,6 +1,6 @@
 import subprocess
 from Jumpscale import j
-from JumpscaleLibs.sal.ssl.SSLFactory import SSLFactory
+from Jumpscale.sal.ssl.SSLFactory import SSLFactory
 
 SSLFactory = SSLFactory()
 
@@ -8,7 +8,7 @@ SSLFactory = SSLFactory()
 def ca_generate():
 
     """
-    test_ca_geneerate uses ca_cert_generate to generate ca certificate 
+    test_ca_geneerate uses ca_cert_generate to generate ca certificate
     in cert_dir directory
     """
 

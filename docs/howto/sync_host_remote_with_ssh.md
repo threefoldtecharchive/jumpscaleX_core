@@ -29,7 +29,7 @@ cl.shell() #will open an ssh shell
 
 ```
 where
-- *addr* : remote machine address
+- *addr**: remote machine address
 - *port* : remote machine port
 - *sshkey_name* : name of sshkey client created
 

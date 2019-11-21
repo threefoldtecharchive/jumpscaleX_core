@@ -1,6 +1,5 @@
 import os
 import socket
-import pytoml
 import inspect
 import sys
 from importlib import util
@@ -53,9 +52,9 @@ from .core.InstallTools import BaseInstaller
 from .core.InstallTools import JumpscaleInstaller
 from .core.InstallTools import Tools
 from .core.InstallTools import RedisTools
-
+from .core.InstallTools import DockerFactory
 from .core.InstallTools import MyEnv
-
+import yaml
 
 MyEnv.init()
 # TODO: there is something not right we get different version of this class, this should be like a singleton !!!
@@ -88,8 +87,46 @@ class Core:
                 self._isSandbox = False
         return self._isSandbox
 
+    def is_gevent_monkey_patched(self):
+        try:
+            from gevent import monkey
+        except ImportError:
+            return False
+        else:
+            if hasattr(monkey, "is_module_patched"):
+                return monkey.is_module_patched("threading")
+            else:
+                return bool(monkey.saved)
 
-from .core.KosmosShell import *
+    @staticmethod
+    def _data_serializer_safe(data):
+        if isinstance(data, dict):
+            data = data.copy()  # important to have a shallow copy of data so we don't change original
+            for key in ["passwd", "password", "secret"]:
+                if key in data:
+                    data[key] = "***"
+            try:
+                serialized = yaml.dump(data, default_flow_style=False, default_style="", indent=4, line_break="\n")
+            except Exception as e:
+                serialized = "CANNOT SERIALIZE CORE FOR DICT"
+
+        elif isinstance(data, list) or isinstance(data, set):
+            try:
+                serialized = yaml.dump(data, default_flow_style=False, default_style="", indent=4, line_break="\n")
+            except Exception as e:
+                serialized = "CANNOT SERIALIZE CORE FOR LIST"
+        else:
+            try:
+                serialized = str(data)
+                # to deal with special value
+                if serialized == "2147483647":
+                    serialized = ""
+            except Exception as e:
+                serialized = "CANNOT SERIALIZE CORE FOR STR"
+        return serialized
+
+
+from .core.KosmosShell import KosmosShellConfig, ptconfig
 
 
 class Jumpscale:
@@ -156,8 +193,6 @@ class Jumpscale:
                 name = "SHELL:%s" % name
             self._shell = InteractiveShellEmbed(banner1=name, exit_msg="")
         if loc:
-            import inspect
-
             curframe = inspect.currentframe()
             calframe = inspect.getouterframes(curframe, 2)
             f = calframe[1]
@@ -167,12 +202,28 @@ class Jumpscale:
         return self._shell(stack_depth=stack_depth)
 
     def debug(self):
-        import urwid
+        # disable console logging when entering interactive debugger
+        j.core.myenv.log_console = False
+        import sys
 
-        urwid.set_encoding("utf8")
-        from ptdb import set_trace
+        if j.core.myenv.debugger == "pudb":
+            import pudb
+            import threading
 
-        set_trace()
+            dbg = pudb._get_debugger()
+
+            if isinstance(threading.current_thread(), threading._MainThread):
+                pudb.set_interrupt_handler()
+
+            dbg.set_trace(sys._getframe().f_back, paused=True)
+        elif j.core.myenv.debugger == "ipdb":
+            try:
+                import ipdb as debugger
+            except ImportError:
+                import pdb
+
+                debugger = pdb.Pdb()
+            debugger.set_trace(sys._getframe().f_back)
 
 
 j = Jumpscale()
@@ -190,6 +241,9 @@ j.core.redistools = RedisTools
 j.core.installer_base = BaseInstaller
 j.core.installer_jumpscale = JumpscaleInstaller()
 j.core.tools = Tools
+j.core.dockerfactory = DockerFactory
+
+j.core.tools._data_serializer_safe = j.core._data_serializer_safe
 
 j.core.profileStart = profileStart
 j.core.profileStop = profileStop
@@ -256,13 +310,6 @@ if not os.path.exists(j.core.application._lib_generation_path):
     j.core.jsgenerator.report()
     generated = True
 
-ipath = j.core.tools.text_replace("{DIR_BASE}/lib/jumpscale/Jumpscale")
-if ipath not in sys.path:
-    sys.path.append(ipath)
-
-ipath = j.core.tools.text_replace("{DIR_BASE}/lib/jumpscale")
-if ipath not in sys.path:
-    sys.path.append(ipath)
 
 import jumpscale_generated
 

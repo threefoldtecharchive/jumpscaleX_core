@@ -12,6 +12,7 @@ from uuid import UUID
 from Jumpscale import j
 from datetime import datetime, timedelta
 from .TypeBaseClasses import *
+from ipaddress import IPv4Interface, IPv6Interface
 
 
 class Guid(String):
@@ -125,11 +126,13 @@ class Url(String):
         self._RE = re.compile(
             "(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9]\.[^\s]{2,}"
         )
+        if not default:
+            default = ""
         self._default = default
 
     def clean(self, value):
         if value is None or value == "None" or value == "":
-            return self.default_get()
+            return self._default
         if not self.check(value):
             raise j.exceptions.Value("invalid url :%s" % value)
         else:
@@ -192,14 +195,33 @@ class IPRange(String):
 
     def __init__(self, default=None):
         self.BASETYPE = "string"
-        self._RE = re.compile("[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,2}")
+        if not default:
+            default = "::/128"
         self._default = default
 
     def check(self, value):
         """
         Check whether provided value is a valid
         """
-        return self._RE.fullmatch(value) is not None
+        return self.is_valid_ipv6_range(value) or self.is_valid_ipv4_range(value)
+
+    def is_valid_ipv6_range(self, ip):
+        """
+        Validate if the ipv6 range is valid while using CIDR.
+        """
+        try:
+            return IPv6Interface(ip) and True
+        except (ValueError):
+            return False
+
+    def is_valid_ipv4_range(self, ip):
+        """
+        Validate if the ipv4 range is valid while using CIDR.
+        """
+        try:
+            return IPv4Interface(ip) and True
+        except (ValueError):
+            return False
 
     def clean(self, value):
 

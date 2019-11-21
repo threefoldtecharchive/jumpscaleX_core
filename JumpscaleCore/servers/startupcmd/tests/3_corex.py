@@ -25,25 +25,26 @@ def main(self):
     """
     to run:
 
-    kosmos 'j.data.schema.test(name="corex")' --debug
+    kosmos 'j.servers.startupcmd.test(name="corex")' --debug
     """
 
-    j.servers.corex.default.check()
+    j.servers.corex.default.start()
     corex = j.servers.corex.default.client
 
-    self.http.executor = "corex"
-    self.http.corex_client_name = corex.name
-    self.http.timeout = 5
-    self.http.delete()
-    self.http.cmd_start = "python3 -m http.server"  # starts on port 8000
-    self.http.executor = "corex"
-    self.http.corex_client_name = corex.name
-    self.http.start()
+    self.http_corex.executor = "corex"
+    self.http_corex.corex_client_name = corex.name
+    self.http_corex.timeout = 5
+    self.http_corex.interpreter = "direct"
+    self.http_corex.cmd_start = "python3 -m http.server"  # starts on port 8000
+    self.http_corex.executor = "corex"
+    self.http_corex.ports = 8000
+    self.http_corex.corex_client_name = corex.name
 
-    self.http.monitor.ports = 8000
+    self.http_corex.start()
+    assert self.http_corex.is_running() is True
+    assert self.http_corex.pid
 
-    j.shell()
-    self.http.stop()
-    self.http.delete()
+    self.http_corex.stop()
+    assert self.http_corex.is_running() is False
 
     return "OK"

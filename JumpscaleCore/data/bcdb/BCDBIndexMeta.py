@@ -19,7 +19,6 @@
 
 
 from Jumpscale import j
-import os
 
 JSBASE = j.baseclasses.object
 
@@ -29,18 +28,26 @@ JSBASE = j.baseclasses.object
 class IndexField:
     def __init__(self, property):
         self.name = property.name
+        self.attr = property.attr
         self.jumpscaletype = property.jumpscaletype
+        self.unique = property.unique
         if self.jumpscaletype.NAME == "string":
             self.type = "TextField"
-        elif self.jumpscaletype.NAME in ["int", "date"]:
+        elif self.jumpscaletype.NAME == "enum":
+            self.type = "TextField"
+        elif self.jumpscaletype.NAME in ["int", "date", "datetime"]:
             self.type = "IntegerField"
-        elif self.jumpscaletype.NAME in ["boolean"]:
+        elif self.jumpscaletype.NAME in ["boolean", "bool"]:
             self.type = "BooleanField"
         elif self.jumpscaletype.NAME in ["numeric"]:
             self.type = "FloatField"
         elif self.jumpscaletype.NAME in ["float"]:
             self.type = "FloatField"
+        elif self.jumpscaletype.BASETYPE in ["string"]:
+            self.type = "TextField"
         else:
+            self.type = "UNKNOWN"
+            j.shell()
             raise j.exceptions.Base("did not find required type for peewee:%s" % self)
 
     def __str__(self):

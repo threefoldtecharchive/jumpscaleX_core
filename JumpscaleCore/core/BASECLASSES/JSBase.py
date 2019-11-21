@@ -37,9 +37,10 @@ class JSBase:
     _cache_expiration = 3600
     _test_runs = {}
     _test_runs_error = {}
-    _name = ""
+    _classname = ""
     _location = ""
     _logger_min_level = 10
+    _logger_enabled = True
     _class_children = []
 
     def __init__(self, parent=None, **kwargs):
@@ -52,9 +53,11 @@ class JSBase:
         self._parent = parent
         self._children = JSDict()
         self._properties_ = None
+        self._methods_ = None
         if "parent" in kwargs:
             kwargs.pop("parent")
         self._init_pre(**kwargs)
+        self._init_actor(**kwargs)
         self._init_pre2(**kwargs)
         self.__init_class()
         self._obj_cache_reset()
@@ -63,40 +66,34 @@ class JSBase:
         self._init_post(**kwargs)
         self._init_post_attr()
 
+    def _children_reset(self):
+        self._children = JSDict()
+
     @property
     def _properties(self):
         if self._properties_ == None:  # need to be specific None
-            props, methods = self._inspect()
-            return props
-        else:
-            return self._properties_
+            self._inspect()
+        return self._properties_
 
     @property
     def _methods(self):
-        if not self._hasattr(self, "_methods_"):
-            props, methods = self._inspect()
-            return methods
-        else:
-            return self._methods_
+        if self._methods_ == None:
+            self._inspect()
+        return self._methods_
 
-    def _hasattr(self, *args):
+    def _hasattr(self, key):
         """
-        the std hasattr does not work like we were expecting
-        will try other aproaches later
+        will only return the properties, methods & children (will not lookin jsconfig data)
         :param name:
         :return:
         """
-        if len(args) == 2:
-            obj, key = args
-        elif len(args) == 1:
-            obj = self
-            key = args[0]
-        else:
-            raise j.exceptions.JSBUG("can only have 1 or 2 arguments")
-        try:
-            return hasattr(obj, key)
-        except j.exceptions.NotFound:
-            return False
+        if key in self._properties:
+            return True
+        if key in self._methods:
+            return True
+        if key in self._children:
+            return True
+        return False
 
     def __init_class(self):
 
@@ -104,8 +101,8 @@ class JSBase:
 
             # short location name:
 
-            if not self.__class__._name:
-                self.__class__._name = j.core.text.strip_to_ascii_dense(str(self.__class__)).split(".")[-1].lower()
+            if not self.__class__._classname:
+                self.__class__._classname = j.core.text.strip_to_ascii_dense(str(self.__class__)).split(".")[-1].lower()
                 # name = str(self.__class__).split(".")[-1].split("'", 1)[0].lower()  # wonder if there is no better way
 
             if "__jslocation__" in self.__dict__:
@@ -124,7 +121,7 @@ class JSBase:
                         break
                     parent = parent._parent
                 if self.__class__._location is None:
-                    self.__class__._location = self.__class__._name
+                    self.__class__._location = self.__class__._classname
 
             # # walk to all parents, let them know that there are child classes
             # self.__class__._class_children = []
@@ -134,16 +131,16 @@ class JSBase:
             #         parent._class_children.append(parent.__class__)
             #     parent = parent._parent
 
-            # if self.__class__._location.lower() != self.__class__._name.lower():
-            #     self.__class__._key = "%s:%s" % (self.__class__._location, self.__class__._name)
+            # if self.__class__._location.lower() != self.__class__._classname.lower():
+            #     self.__class__._key = "%s:%s" % (self.__class__._location, self.__class__._classname)
             # else:
-            #     self.__class__._key = self.__class__._name.lower()
+            #     self.__class__._key = self.__class__._classname.lower()
 
             self.__init_class_post()
 
             self.__class__.__init_class_done = True
 
-            self._log_debug("***CLASS INIT 1: %s" % self.__class__._name)
+            self._log_debug("***CLASS INIT 1: %s" % self.__class__._classname)
 
             # lets make sure the initial loglevel gets set
             self._logger_set(children=False, parents=False)
@@ -188,11 +185,19 @@ class JSBase:
                 continue
             if item not in properties:
                 properties.append(item)
-        return properties, methods
+
+        self._properties_ = properties
+        self._methods_ = methods
+
+        return self._properties_, self._methods_
 
     @property
     def _key(self):
-        return self._name
+        return self._classname
+
+    @property
+    def _name(self):
+        return self._key
 
     def _init(self, **kwargs):
         pass
@@ -214,6 +219,12 @@ class JSBase:
     def _init_factory(self, **kwargs):
         """
         only used by factory class
+        :return:
+        """
+        pass
+
+    def _init_actor(self, **kwargs):
+        """
         :return:
         """
         pass
@@ -242,7 +253,7 @@ class JSBase:
         self._cache_ = None
         self._objid_ = None
 
-        for key, obj in self._children.items():
+        for _, obj in self._children.items():
             obj._obj_cache_reset()
 
     def _obj_reset(self):
@@ -333,6 +344,17 @@ class JSBase:
             return True
 
         def check(checkitems):
+            key = ""
+            location = ""
+            try:
+                key = self._key
+            except:
+                key = self._classname
+            if self._hasattr("_location"):
+                try:
+                    location = self._location
+                except:
+                    pass
             for finditem in checkitems:
                 finditem = finditem.strip().lower()
                 if finditem == "*":
@@ -342,19 +364,15 @@ class JSBase:
                 if "*" in finditem:
                     if finditem[-1] == "*":
                         # means at end
-                        if self._key.startswith(finditem[:-1]):
+                        if key.startswith(finditem[:-1]):
                             return True
                     elif finditem[0] == "*":
-                        if self._key.endswith(finditem[1:]):
+                        if key.endswith(finditem[1:]):
                             return True
                     else:
                         raise j.exceptions.Base("find item can only have * at start or at end")
                 else:
-                    try:
-                        if self._location == finditem:
-                            return True
-                    except:
-                        # TODO: we need to have a better solution for this
+                    if location in [finditem, f"j.{finditem}"]:
                         return True
             return False
 
@@ -365,7 +383,7 @@ class JSBase:
     def _logger_set(self, minlevel=None, children=True, parents=True):
         """
 
-        :param min_level if not set then will use the LOGGER_LEVEL from /sandbox/cfg/jumpscale_config.toml
+        :param min_level if not set then will use the LOGGER_LEVEL from {DIR_BASE}/cfg/jumpscale_config.toml
 
         make sure that logging above minlevel will happen, std = 100
         if 100 means will not log anything
@@ -386,28 +404,24 @@ class JSBase:
 
         :return:
         """
-        if minlevel is not None or self._logging_enable_check():
-            # if minlevel specified we overrule anything
+        if not self._logging_enable_check():
+            self.__class__._logger_enabled = False
+            return
+        if minlevel is None:
+            minlevel = int(j.core.myenv.config.get("LOGGER_LEVEL", 15))
 
-            # print ("%s:loginit"%self.__class__._name)
-            if minlevel is None:
-                minlevel = int(j.core.myenv.config.get("LOGGER_LEVEL", 15))
+        self.__class__._logger_min_level = minlevel
 
-            if minlevel is not None or not self._logging_enable_check():
+        if parents:
+            parent = self._parent
+            while parent is not None:
+                parent._logger_set(minlevel=minlevel)
+                parent = parent._parent
 
-                self.__class__._logger_min_level = minlevel
-
-                if parents:
-                    parent = self._parent
-                    while parent is not None:
-                        parent._logger_set(minlevel=minlevel)
-                        parent = parent._parent
-
-                if children:
-
-                    for kl in self.__class__._class_children:
-                        # print("%s:minlevel:%s"%(kl,minlevel))
-                        kl._logger_min_level = minlevel
+        if children:
+            for kl in self.__class__._class_children:
+                # print("%s:minlevel:%s"%(kl,minlevel))
+                kl._logger_min_level = minlevel
 
     def _print(self, msg, cat=""):
         self._log(msg, cat=cat, level=15)
@@ -464,7 +478,7 @@ class JSBase:
 
         """
 
-        if j.application.debug or self.__class__._logger_min_level - 1 < level:
+        if j.application.debug or (self._logger_enabled and self._logger_min_level - 1 < level):
             # now we will log
 
             frame_ = inspect.currentframe().f_back
@@ -538,25 +552,21 @@ class JSBase:
 
     ################### mechanisms for autocompletion in kosmos
 
-    def __name_get(self, item, instance=True):
+    def __name_get(self, item):
         """
         helper mechanism to come to name
         """
         if isinstance(item, str) or isinstance(item, int):
             name = str(item)
             return name
-        if instance:
-            if self._hasattr(item, "name"):
-                name = item.name
-            else:
-                name = item._objid
+        elif isinstance(item, j.baseclasses.object_config):
+            return item.name
+        elif isinstance(item, j.baseclasses.object):
+            return item._name
         else:
-            name = self._hasattr(item, "_name")
-            if not name:
-                raise j.exceptions.JSBUG("cannot find _name")
-        return name
+            raise j.exceptions.JSBUG("don't know how to find name")
 
-    def _filter(self, filter=None, llist=[], nameonly=True, unique=True, sort=True):
+    def _filter(self, filter=None, llist=None, nameonly=True, unique=True, sort=True):
         """
 
         :param filter: is '' then will show all, if None will ignore _
@@ -570,10 +580,12 @@ class JSBase:
         :param sort: sort but only when nameonly
         :return:
         """
+        llist = llist or []
+
         res = []
         for item in llist:
             name = self.__name_get(item)
-            self._log_debug("filtername:%s" % name)
+            # self._log_debug("filtername:%s" % name)
             if not name:
                 continue
             if name.startswith("_JSBase"):
@@ -621,6 +633,30 @@ class JSBase:
             return self.__name_get(self._parent)
         return ""
 
+    def _mother_id_get(self):
+        """
+        this goes to all parents till it finds a parent which has a model attached
+        this is to find the parent which acts as the mother for the children.
+        when you do a search only the children of this mother will be shown
+
+        :return: The id of the mother if there is a mother
+        """
+        obj = self
+        while obj and obj._parent:
+            if isinstance(obj._parent, j.baseclasses.object_config):
+                if obj._parent._id is None:
+                    if obj._parent.name is None:
+                        raise j.exceptions.JSBUG("cannot happen, there needs to be a name")
+                    else:
+                        obj._parent.save()
+                        assert obj._parent._id > 0
+                        return obj._parent._id
+                else:
+                    return obj._parent._id
+            obj = obj._parent
+        # means we did not find a parent which can act as mother
+        return None
+
     def _children_names_get(self, filter=None):
         return self._filter(filter=filter, llist=self._children_get(filter=filter))
 
@@ -636,11 +672,23 @@ class JSBase:
 
         :return:
         """
-        if self._hasattr(self, "_children"):
+        if self._hasattr("_children"):
             children = self._children.values()
             return self._filter(filter=filter, llist=children, nameonly=False)
         else:
             return []
+
+    def _children_delete(self, filter=None):
+        """
+        filter only applies on the first children search
+        :param filter:
+        :return:
+        """
+        for child in self._children_get(filter=filter):
+            if child._hasattr("delete"):
+                child.delete()
+            else:
+                child._children_delete()
 
     def _child_get(self, name=None, id=None):
         """
@@ -662,6 +710,24 @@ class JSBase:
                 raise j.exceptions.Base("need to specify name or id")
         return None
 
+    def _validate_child(self, name):
+        """Check if name is in self._children. If it exists, validate that the name on the object equals to the key in self._children.
+        If not, it updates the key in the self._children dict and deletes the old key <name> and returns False,
+        otherwise returns the object.
+        """
+        if name not in self._children:
+            return False
+
+        child = self._children[name]
+        if not isinstance(child, j.baseclasses.object_config) or child.name == name:
+            return child
+        else:
+            child.save()  # save it in case autosave was False, to update the name in the database too
+            del self._children[name]
+            self._children[child.name] = child
+
+        return False
+
     def _dataprops_names_get(self, filter=None):
         """
         e.g. in a JSConfig object would be the names of properties of the jsxobject = data
@@ -669,7 +735,6 @@ class JSBase:
 
         :return: list of the names
         """
-        # return self._filter(filter=filter, llist=self._names_methods_)
         return []
 
     def _methods_names_get(self, filter=None):
@@ -697,7 +762,7 @@ class JSBase:
 
         """
         others = self._children_names_get(filter=filter)
-        if self._hasattr(self, "_parent"):
+        if self._hasattr("_parent"):
             pname = self._parent_name_get()  # why do we need the parent name?
             if pname not in others:
                 others.append(pname)
@@ -712,36 +777,16 @@ class JSBase:
             self._children_names_get()
             + self._properties_names_get()
             + self._dataprops_names_get()
-            + self._children_names_get()
             + self._methods_names_get()
         )
         return l
 
     def _prop_exist(self, name):
         """
-        only returns in protected mode otherwise always True
         :param name:
         :return:
         """
-        if self.__class__._protected:
-            if name in self._names_properties_:
-                return True
-            if name in self._names_methods_:
-                return True
-            if self._children_get(filter=name):
-                return True
-            if name == self._parent_name_get():
-                return True
-            if self._children_get(filter=name):
-                return True
-            if self._dataprops_get(filter=name):
-                return True
-            if self._methods_names_get(filter=name):
-                return True
-            if self._properties_names_get(filter=name):
-                return True
-        else:
-            return True
+        raise
 
     def _children_recursive_get(self):
         res = []
@@ -752,9 +797,9 @@ class JSBase:
 
     ###################
 
-    def __str__(self):
+    def __repr__(self):
 
-        out = "## {GRAY}{RED}%s{BLUE} %s{RESET}\n\n" % (
+        out = "{YELLOW}## %s{BLUE} %s{RESET}\n\n" % (
             # self._objcat_name,
             self.__class__._location,
             self.__class__.__name__,
@@ -770,7 +815,7 @@ class JSBase:
                         item = item.rstrip()
                         if name in ["data", "properties"]:
                             try:
-                                v = j.core.tools._data_serializer_safe(getattr(self, item)).rstrip()
+                                v = j.core._data_serializer_safe(getattr(self, item)).rstrip()
                                 if "\n" in v:
                                     # v = j.core.tools.text_indent(content=v, nspaces=4)
                                     v = "\n".join(v.split("\n")[:1])
@@ -793,10 +838,13 @@ class JSBase:
 
         out += "{RESET}"
 
-        out = j.core.tools.text_replace(out, check_no_args_left=False)
-        print(out)
+        out = j.core.tools.text_replace(out, die_if_args_left=False)
+        return out
 
-        # TODO: *1 dirty hack, the ansi codes are not printed, need to check why
-        return ""
-
-    __repr__ = __str__
+    def __str__(self):
+        """
+        this will give us cleaner reporting in logs, the repr needs to be big, is for user
+        __str__ is for logging, printing, ...
+        :return:
+        """
+        return "jsxobj:%s:%s" % (self.__class__._location, self.__class__.__name__)

@@ -19,8 +19,6 @@
 
 
 from Jumpscale import j
-from .BCDBModel import BCDBModel
-from .BCDBMeta import BCDBMeta
 
 JSBASE = j.baseclasses.object
 
@@ -87,11 +85,13 @@ class BCDBVFS(j.baseclasses.object):
         self.directories_under_root = ["data", "schemas", "info"]
 
     def change_current_bcdb(self, bcdb_name):
-        if bcdb_name in self._bcdb_names and self.current_bcbd_name != bcdb_name:
+        if "_" in bcdb_name:
+            raise j.exceptions.Input("VFS can not walk bdcname with underscore {}".format(bcdb_name))
+        if bcdb_name in self._bcdb_names:
             self.current_bcbd_name = bcdb_name
             self._bcdb = self._bcdb_instances[bcdb_name]
         else:
-            raise Exception("cannot change current bcdb name:%s is not in:%s" % (bcdb_name, self._bcdb_names))
+            raise Exception("cannot change current bcdb name: %s is not in: %s" % (bcdb_name, self._bcdb_names))
 
     def _split_clean_path(self, path):
         """split the path into elements and returns the element list
@@ -163,7 +163,7 @@ class BCDBVFS(j.baseclasses.object):
 
     def get(self, path):
         splitted = self._split_clean_path(path)
-        self._log_info("vfs get path:%s " % path)
+        # self._log_info("vfs get path:%s " % path)
         if len(splitted) > 0:
             key = None
             if splitted[0] == "data":
@@ -343,7 +343,8 @@ class BCDBVFS(j.baseclasses.object):
         return None
 
     def delete(self, path):
-        if self._split_clean_path(path) == []:
+        split = self._split_clean_path(path)
+        if split == []:
             # will change the current bcdb if it has to
             # it means we are trying to remove everything on the current bcdb
             self._log_info("WARNING bcdb:%s reset" % self.current_bcbd_name)
@@ -351,13 +352,17 @@ class BCDBVFS(j.baseclasses.object):
             cached_keys = list(self._dirs_cache.keys())
             for o in cached_keys:
                 try:
-                    self._log_info("deleting:%s" % o)
+                    # self._log_info("deleting:%s" % o)
                     if o in self._dirs_cache:
                         self._dirs_cache[o].delete()
                 except:
                     pass
             del cached_keys
             self._dirs_cache = {}
+        elif len(split) == 1 and split not in ["schemas", "info", "data"]:
+            self.change_current_bcdb(split[0])
+            self._bcdb.destroy()
+            self._bcdb_names.remove(split[0])
         else:
             return self.get(path).delete()
 
@@ -445,7 +450,7 @@ class BCDBVFS(j.baseclasses.object):
             keys {tuple(string,string)} -- object_key and the containing directory key
             obj {JSXObj} -- [description]
         """
-        self._log_info("data cache updated key:%s " % (key))
+        # self._log_info("data cache updated key:%s " % (key))
         if not key in self._dirs_cache:
             self._dirs_cache[key] = BCDBVFS_Data(self, key=key, item=obj)
         else:
@@ -554,9 +559,13 @@ class BCDBVFS_Data_Dir:
     def delete(self):
         info = self.vfs._extract_info_from_key(self.key)
         res = []
-        if not info["type"] is "info":  # make sure that the directory contains data
+        if info["type"] != "info":  # make sure that the directory contains data
             for i in self.items:
-                res.append(self.vfs.get("%s/%s" % (self.key.replace("_", "/"), i.id)).delete())
+                if isinstance(i, str):
+                    itemkey = i
+                else:
+                    itemkey = i.id
+                res.append(self.vfs.get("%s/%s" % (self.key.replace("_", "/"), itemkey)).delete())
         else:
             raise Exception("that data directory can't be deleted")
         return res
@@ -715,6 +724,7 @@ class BCDBVFS_Data:
 
     def get(self):
         if self.item:
+            self.item = self.item._model.get(self.item.id)
             return self.vfs._get_serialized_obj(self.item)
         else:
             raise Exception("Data has been deleted")

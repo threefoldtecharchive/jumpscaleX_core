@@ -1,5 +1,3 @@
-from .ReverseProxy import ReverseProxies
-from .Wiki import Wikis
 from .Website import Websites
 from Jumpscale import j
 
@@ -16,13 +14,11 @@ class OpenRestyServer(j.baseclasses.factory_data):
     Factory for openresty
     """
 
-    _CHILDCLASSES = [Websites, ReverseProxies]
+    _CHILDCLASSES = [Websites]
     _SCHEMATEXT = """
            @url =  jumpscale.openresty.server.1
-           name* = "default" (S)
+           name** = "default" (S)
            host = "127.0.0.1" (S)
-           port = 80 (I)
-           port_ssl = 443 (I)
            status = init,installed,ok (E)
            executor = tmux,corex (E)
            hardkill = false (b)
@@ -37,23 +33,47 @@ class OpenRestyServer(j.baseclasses.factory_data):
 
     def _init(self, **kwargs):
         self._cmd = None
-        self._web_path = "/sandbox/var/web/%s" % self.name
-        j.sal.fs.createDir(self._web_path)
-
-        self.executor = "tmux"
+        self._web_path = j.core.tools.text_replace("{DIR_BASE}/var/web/%s" % self.name)
+        self.path_web_default = j.core.tools.text_replace("{DIR_BASE}/var/web/default")
+        self.path_web = j.core.tools.text_replace("{DIR_BASE}/var/web/%s" % self.name)
+        self.path_cfg_dir = j.core.tools.text_replace("{DIR_BASE}/cfg/nginx/%s" % self.name)
+        self.path_cfg = "%s/nginx.conf" % self.path_cfg_dir
+        j.sal.fs.createDir(self.path_web)
+        j.sal.fs.createDir(self.path_cfg_dir)
+        # clean old websites config
+        j.sal.fs.remove("%s/servers" % self.path_cfg_dir)
+        self.executor = "tmux"  # only tmux for now
 
         self.install()
-
-        if j.core.myenv.platform_is_linux:
-            self.letsencrypt = True
-        else:
-            self.letsencrypt = True
 
         self.configure()
 
     def configure(self):
-        r = j.tools.jinja2.template_render(path="%s/templates/nginx.conf" % self._dirpath, obj=self)
-        j.sal.fs.writeFile("%s/nginx.conf" % self._web_path, r)
+        self.install()
+        configtext = j.tools.jinja2.file_render(path=f"{self._dirpath}/templates/nginx.conf", obj=self)
+        j.sal.fs.writeFile(self.path_cfg, configtext)
+
+    def get_from_port(self, port, domain=None):
+        """
+        will try to get a website listening on port, if it doesn't exist it will create one
+        :param port: port to search for
+        :return: website
+        """
+
+        for website in self.websites.find():
+            if website.port == port:
+                return website
+        ssl = None
+        if port == 80:
+            ssl = False
+        elif port == 443:
+            ssl = True
+
+        ws = self.websites.get(f"website_{port}", port=port, domain=domain)
+        if ssl != None:
+            ws.ssl = ssl
+
+        return ws
 
     def install(self, reset=False):
         """
@@ -65,30 +85,58 @@ class OpenRestyServer(j.baseclasses.factory_data):
         if reset or self.status not in ["ok", "installed"]:
 
             # get weblib
-            url = "https://github.com/threefoldtech/jumpscale_weblibs"
-
-            weblibs_path = j.clients.git.getContentPathFromURLorPath(url, pull=False)
+            url = "https://github.com/threefoldtech/jumpscaleX_weblibs"
+            weblibs_path = j.clients.git.getContentPathFromURLorPath(url, pull=False, branch="master")
 
             # copy the templates to the right location
-            j.sal.fs.copyDirTree("%s/web_resources/" % self._dirpath, self._web_path)
+            j.sal.fs.copyDirTree("%s/web_resources/" % self._dirpath, self.path_cfg_dir)
 
             j.sal.fs.symlink(
                 "%s/static" % weblibs_path, "{}/static/weblibs".format(self._web_path), overwriteTarget=True
             )
 
             # link individual files & create a directory TODO:*1
-            lualib_dir = "/sandbox/openresty/lualib"
+            lualib_dir = j.core.tools.text_replace("{DIR_BASE}/openresty/lualib")
             if not j.sal.fs.exists(lualib_dir):
                 j.sal.fs.createDir(lualib_dir)
             j.sal.fs.copyFile(
-                "%s/web_resources/lualib/redis.lua" % self._dirpath, "/sandbox/openresty/lualib/redis.lua"
+                "%s/web_resources/lualib/redis.lua" % self._dirpath,
+                j.core.tools.text_replace("{DIR_BASE}/openresty/lualib/redis.lua"),
             )
-            j.sal.fs.copyFile(
-                "%s/web_resources/lualib/websocket.lua" % self._dirpath, "/sandbox/openresty/lualib/websocket.lua"
-            )
+            # j.sal.fs.copyFile(
+            #     "%s/web_resources/lualib/websocket.lua" % self._dirpath, j.core.tools.text_replace("{DIR_BASE}/openresty/lualib/websocket.lua")
+            # )
             self.status = "installed"
 
             self.save()
+
+    def _letsencrypt_configure(self):
+        """
+        add location required by let's encrypt to any website listening on port 80
+        """
+
+        ssl = False
+        listening_80 = None
+        for website in self.websites.find():
+            if website.ssl:
+                ssl = True
+            if website.port == 80:
+                listening_80 = website
+
+        if not ssl:
+            return
+
+        if not listening_80:
+            listening_80 = self.websites.new("listening_80")
+            listening_80.port = 80
+            listening_80.ssl = False
+
+        listening_80.configure()
+        location_dir = f"{listening_80.path_cfg_dir}/{listening_80.name}_locations"
+        j.sal.fs.createDir(location_dir)
+        j.sal.fs.copyFile(
+            f"{self._dirpath}/templates/letsencrypt_challenge_location.conf", f"{location_dir}/letsencrypt.conf"
+        )
 
     @property
     def startup_cmd(self):
@@ -98,13 +146,11 @@ class OpenRestyServer(j.baseclasses.factory_data):
         """
         if not self._cmd:
             # Start Lapis Server
-            self._log_info("Starting Lapis Server")
             cmd = "lapis server"
             self._cmd = j.servers.startupcmd.get(
                 name="lapis",
                 cmd_start=cmd,
-                path=self._web_path,
-                ports=[self.port, self.port_ssl],
+                path=self.path_cfg_dir,
                 process_strings_regex="^nginx",
                 executor=self.executor,
             )
@@ -118,14 +164,20 @@ class OpenRestyServer(j.baseclasses.factory_data):
         """
         self.install(reset=reset)
         self.configure()
+        self._letsencrypt_configure()
+
         # compile all 1 time to lua, can do this at each start
-        j.sal.process.execute("cd %s;moonc ." % self._web_path)
+        # j.sal.process.execute("cd %s;moonc ." % self._web_path)
+        # NO LONGER NEEDED BECAUSE WE DON"T USE THE MOONSCRIPT ANY MORE
+
         if reset:
-            self.startup_cmd.stop()
+            self.startup_cmd.stop(force=True)
+        self._log_info("Starting Lapis Server")
         if self.startup_cmd.is_running():
+            self.stop()
             self.reload()
-        else:
-            self.startup_cmd.start()
+
+        self.startup_cmd.start()
 
     def stop(self):
         """
@@ -145,5 +197,5 @@ class OpenRestyServer(j.baseclasses.factory_data):
         :return:
         """
         self.configure()
-        cmd = "cd  %s;lapis build" % self._web_path
+        cmd = "cd  %s;lapis build" % self.path_cfg_dir
         j.sal.process.execute(cmd)

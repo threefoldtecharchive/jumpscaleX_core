@@ -28,16 +28,16 @@ class StartupCMD(j.baseclasses.object_config):
 
     _SCHEMATEXT = """
         @url = jumpscale.startupcmd.1
-        name* = ""
+        name** = ""
         cmd_start = "" (s)
-        interpreter = "bash,jumpscale,direct,python" (E)  #direct means we will not put in bash script
+        interpreter = "bash,jumpscale,jumpscale_gevent,direct,python" (E)  #direct means we will not put in bash script
         cmd_stop = ""
         debug = False (b)
         path = "/tmp"
         env = (dict)
         ports = (LI)
         ports_udp = (LI)
-        timeout = 10
+        timeout = 120
         process_strings = (ls)
         process_strings_regex = (ls)
         pid = 0
@@ -63,6 +63,7 @@ class StartupCMD(j.baseclasses.object_config):
         self._logger_enable()
         if self.path == "":
             self.path = "/tmp"
+        self._pid = 0
 
         self.cmd_start = j.core.tools.text_strip(self.cmd_start)
 
@@ -73,9 +74,31 @@ class StartupCMD(j.baseclasses.object_config):
     def _reset(self):
         self.time_start = 0
         self.time_stop = 0
-        self.pid = 0
         self.state = "init"
         self.corex_id = ""
+        self._pid = 0
+
+    @property
+    def pid(self):
+        if self._pid:
+            return self._pid
+        try:
+            pids = j.sal.process.getProcessPid("startupcmd_%s" % self.name)
+            if pids:
+                return pids[0]
+        except Exception:  # This is keeping with the old implementation this handling might not be needed
+            pass
+        return 0
+
+    @pid.setter
+    def pid(self, pid):
+        self._pid = pid
+
+    def __setattr__(self, name, value):
+        if name == "pid":
+            self._pid = value
+        else:
+            j.baseclasses.object_config.__setattr__(self, name=name, value=value)
 
     @property
     def data(self):
@@ -104,7 +127,8 @@ class StartupCMD(j.baseclasses.object_config):
 
         def notify_p(p):
             if p.status().casefold() in ["running", "sleeping", "idle"]:
-                self._notify_state("running")
+                if self.state not in ["stopped", "stopping"]:
+                    self._notify_state("running")
                 if p.pid != self.pid:
                     self.pid = p.pid
                     self.save()
@@ -193,6 +217,8 @@ class StartupCMD(j.baseclasses.object_config):
                 if not self.corex_id:
                     raise j.exceptions.Base("corexid cannot be empty")
             r = self._corex_client.process_stop(self.corex_id)
+            if r["status"] == "success":
+                j.sal.process.killProcessByName("startupcmd_%s" % self.name)
             return True
         if self._local:
             if self.cmd_stop:
@@ -214,7 +240,7 @@ class StartupCMD(j.baseclasses.object_config):
             if self.pid and self.pid > 0:
                 self._log_info("found process to stop:%s" % self.pid)
                 p = self.process
-                if p and self.state == "running":
+                if p and self.state in ["running", "stopping"]:
                     p.kill()
                     time.sleep(0.2)
 
@@ -222,6 +248,8 @@ class StartupCMD(j.baseclasses.object_config):
 
         if self.executor == "background":
             # only process mechanism above can have worked
+            if not self.pid and self.state == "stopping":
+                self._notify_state("stopped")
             return False
         elif self.executor == "corex":
             if not self.corex_id:
@@ -313,7 +341,6 @@ class StartupCMD(j.baseclasses.object_config):
             self.save()
 
     def is_running(self):
-
         if self._local and self.ports != []:
             for port in self.ports:
                 if j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=port) == False:
@@ -332,6 +359,8 @@ class StartupCMD(j.baseclasses.object_config):
                     return True
 
         if self.executor == "corex":
+            if self.state in ["NOTFOUND"]:
+                return False
             if not self.pid and not self.corex_id:
                 return self._error_raise("cannot check running don't have pid or corex_id")
             self.refresh()
@@ -344,6 +373,9 @@ class StartupCMD(j.baseclasses.object_config):
                 # we found a process so can take decision now
                 if self.state == "running":
                     # self process sets the state
+                    return True
+                elif j.sal.process.psfind("startupcmd_%s" % self.name):
+                    self._notify_state("running")
                     return True
                 else:
                     return False
@@ -425,7 +457,7 @@ class StartupCMD(j.baseclasses.object_config):
                 return self._error_raise("could not stop")
             return -1  # we don't know
 
-    def wait_running(self, die=True, timeout=120):
+    def wait_running(self, die=True, timeout=None):
         if timeout is None:
             timeout = self.timeout
         end = j.data.time.epoch + timeout
@@ -452,6 +484,8 @@ class StartupCMD(j.baseclasses.object_config):
                                 "could not start because core-x did not return pid, probably issue in start script.\n%s"
                                 % out
                             )
+                    else:
+                        return True
                 elif self.executor == "tmux" and not r:
                     if (
                         self.process_strings == []
@@ -506,7 +540,10 @@ class StartupCMD(j.baseclasses.object_config):
 
         self.cmd_start = j.core.tools.text_strip(self.cmd_start)
 
-        self._hardkill()
+        if self.state in ["running"]:
+            raise RuntimeError()
+        if self.state in ["init", "running", "error"]:
+            self._hardkill()
 
         if "\n" in self.cmd_start.strip():
             C = self.cmd_start
@@ -517,12 +554,12 @@ class StartupCMD(j.baseclasses.object_config):
             tmux clear
             {% endif %}
             clear
-            cat /sandbox/var/cmds/{{name}}.sh
+            cat {DIR_BASE}/var/cmds/{{name}}.sh
             set +ex
             {% for key,val in args.items() %}
             export {{key}}='{{val}}'
             {% endfor %}
-            . /sandbox/env.sh
+            . {DIR_BASE}/env.sh
             set +ex
             {% if cmdpath != None %}
             mkdir -p {{cmdpath}}
@@ -542,12 +579,26 @@ class StartupCMD(j.baseclasses.object_config):
             {% endif %}
             {{cmd}}
             """
+        elif self.interpreter == "jumpscale_gevent":
+            C = """
+            import gevent
+            from gevent import monkey
+            monkey.patch_all(subprocess=False)
+            from Jumpscale import j
+            j.application.bcdb_system
+            {% if cmdpath %}
+            j.sal.fs.changeDir("{{cmdpath}}")
+            {% endif %}
+            {{cmd}}
+            """
+
         elif "\n" in self.cmd_start.strip():
             C = self.cmd_start
         else:
             C = self.cmd_start
 
         C2 = j.core.text.strip(C)
+        C2 = C2.replace("{DIR_BASE}", j.dirs.BASEDIR)
 
         C3 = j.tools.jinja2.template_render(
             text=C2, args=self.env, cmdpath=self.path, cmd=self.cmd_start, name=self.name, cmdobj=self
@@ -581,7 +632,7 @@ class StartupCMD(j.baseclasses.object_config):
         elif self.interpreter == "bash":
             tpath = self._cmd_path + ".sh"
             toexec = "sh %s" % tpath
-        elif self.interpreter in ["jumpscale", "python"]:
+        elif self.interpreter in ["jumpscale", "jumpscale_gevent", "python"]:
             tpath = self._cmd_path + ".py"
             # toexec = "python3 %s" % tpath
             if self.debug:
@@ -617,10 +668,6 @@ class StartupCMD(j.baseclasses.object_config):
 
         # if tpath:
         #     j.sal.fs.remove(tpath)
-        try:
-            self.pid = j.sal.process.getProcessPid("startupcmd_%s" % self.name)[0]
-        except:
-            pass
 
         self.save()
 
