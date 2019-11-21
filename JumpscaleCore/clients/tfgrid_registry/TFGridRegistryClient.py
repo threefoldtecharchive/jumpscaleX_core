@@ -32,7 +32,8 @@ class TFGridRegistryClient(j.baseclasses.object):
         )
         self.gedis_client = j.servers.threebot.local_start_default(web=True)
         self.gedis_client.actors.package_manager.package_add(
-            path=j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry")
+            path=j.core.tools.text_replace(
+                "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry")
         )
         self.gedis_client.reload()
         self.registry_client = self.gedis_client.actors.registry
@@ -56,26 +57,21 @@ class TFGridRegistryClient(j.baseclasses.object):
         description=None,
     ):
         """client comes from j.clients.threebot.client_get(threebot="kristof.ibiza").
-=======
-    def register(self, authors=[], readers=[], schema=None, is_encrypted_data=False):
-        """
-        client comes from j.clients.threebot.client_get(threebot="kristof.ibiza")
->>>>>>> development_actors_improvement
 
         register in easy way an object with our without schema
 
         Args:
-            authors (list): People who contributed in writing the data
-            readers (list): People who can have access to read the data that has been written by the authors
-            schema (string): Used by BCDB to create the schema for the desired data format by the authors.
-            model (object of schema): Actual data stored in BCDB schema
-            format (string) : Format of the data you want.
-            is_encrypted_data (bool): Used to distinguish is that the data will be decrypted or not.
+            authors(list): People who contributed in writing the data
+            readers(list): People who can have access to read the data that has been written by the authors
+            schema(string): Used by BCDB to create the schema for the desired data format by the authors.
+            model(object of schema): Actual data stored in BCDB schema
+            format(string): Format of the data you want.
+            is_encrypted_data(bool): Used to distinguish is that the data will be decrypted or not.
 
         Raises:
             InputException: Failed to register your content
         Returns:
-            post_id (int): Id of data object saved
+            post_id(int): Id of data object saved
         """
         scm = j.data.schema.get_from_text(schema)
         self.registry_client.schema_register(scm.url, schema)
@@ -131,11 +127,11 @@ class TFGridRegistryClient(j.baseclasses.object):
         """Get data by id either encrypted or not.
 
         Args:
-            data_id (int): Id for the requited data.
-            tid (int) : Threebot Id.
+            data_id(int): Id for the requited data.
+            tid(int): Threebot Id.
 
         Returns:
-            info (object): Desired data.
+            info(object): Desired data.
         """
         info = self.registry_client.get(data_id=data_id, tid=tid)
         return info
@@ -154,15 +150,15 @@ class TFGridRegistryClient(j.baseclasses.object):
         """Find all encrypted data for specific user or you can specify search criteria.
 
         Args:
-            tid (int) : Threebot Id
-            country_code (string) : Country code is used for filtering.
-            format (string) : Format of the data you want.
-            category (string): Category of the data you want.
-            topic (string): Topic of the data you want.
-            description (string): Description of the data you want.
+            tid(int): Threebot Id
+            country_code(string): Country code is used for filtering.
+            format(string): Format of the data you want.
+            category(string): Category of the data you want.
+            topic(string): Topic of the data you want.
+            description(string): Description of the data you want.
 
         Returns:
-            res (list): Data in the desired format
+            res(list): Data in the desired format
         """
         res = self.registry_client.find_encrypted(
             tid=tid,
@@ -191,16 +187,15 @@ class TFGridRegistryClient(j.baseclasses.object):
         """Find the not encrypted data with specific format.
 
         Args:
-            country_code (string) : Country code is used for filtering.
-            format (string) = "website,blog,wiki,doc,solutionpackage,threebotpackage" the type of the data
-            category (string): Category of the data you want.
-            topic (string): Topic of the data you want.
-            description (string): Description of the data you want.
+            country_code(string): Country code is used for filtering.
+            format(string) = "website,blog,wiki,doc,solutionpackage,threebotpackage" the type of the data
+            category(string): Category of the data you want.
+            topic(string): Topic of the data you want.
+            description(string): Description of the data you want.
             registered_info_format = "jsxschema,yaml,json,msgpack,unstructured" the format of the data
 
-
         Returns:
-            res (list): Data in the desired format
+            res(list): Data in the desired format
         """
         res = self.registry_client.find_formatted(
             format=format,
@@ -233,12 +228,12 @@ class TFGridRegistryClient(j.baseclasses.object):
         """Add data to the registry.
 
         Args:
-            url (string): The url of the schema.
-            authors (list): People who contributed in writing the data.
-            new_scm (string): Used by BCDB to create the schema for the desired data format by the authors.
-            model (object of schema): Actual data stored in BCDB schema.
-            format (string) : Format of the data you want.
-            description (string) : Description for the registry.
+            url(string): The url of the schema.
+            authors(list): People who contributed in writing the data.
+            new_scm(string): Used by BCDB to create the schema for the desired data format by the authors.
+            model(object of schema): Actual data stored in BCDB schema.
+            format(string): Format of the data you want.
+            description(string): Description for the registry.
 
         Returns:
 
@@ -279,14 +274,14 @@ class TFGridRegistryClient(j.baseclasses.object):
         """Add encrypted data to registry.
 
         Args:
-            url (string): The url of the schema.
-            authors (list): People who contributed in writing the data.
-            readers (list): People who can have access to read the data that has been written by the authors
-            new_scm (string): Used by BCDB to create the schema for the desired data format by the authors.
-            model (object of schema): Actual data stored in BCDB schema.
-            format (string) : Format of the data you want.
-            description (string) : Description for the registry.
-            threebotclient (object threebot): Threebot object of the owner.
+            url(string): The url of the schema.
+            authors(list): People who contributed in writing the data.
+            readers(list): People who can have access to read the data that has been written by the authors
+            new_scm(string): Used by BCDB to create the schema for the desired data format by the authors.
+            model(object of schema): Actual data stored in BCDB schema.
+            format(string): Format of the data you want.
+            description(string): Description for the registry.
+            threebotclient(object threebot): Threebot object of the owner.
 
         Returns:
 
@@ -316,19 +311,21 @@ class TFGridRegistryClient(j.baseclasses.object):
         """Sign the data.
 
         Args:
-            dataobj (object) : holds all the data for the registry
+            dataobj(object): holds all the data for the registry
 
         Returns:
 
         """
-<<<<<<< HEAD
+
+
+<< << << < HEAD
         pubkey = self.me.nacl.public_key.encode()
         signingkey = self.me.nacl.signing_key.encode()
         verifykey = self.me.nacl.verify_key.encode()
         signed_data = self.me.nacl.sign(dataobj._data)
         return verifykey, signed_data
 
-=======
+== == == =
         scm = j.data.schema.get_from_text(schema)
         self.registry_client.schema_register(scm.url, schema)
         model = self.bcdb.model_get(url=scm.url).new()
