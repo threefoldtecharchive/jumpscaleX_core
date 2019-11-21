@@ -63,6 +63,11 @@ class SerializerJSXObject(SerializerBase):
             data2 = data[21:]
             if not schema:
                 schema = j.data.schema.get_from_md5(md5)
+            else:
+                if md5 != schema._md5:
+                    # lets put a test in to make sure the schema url's correspond
+                    schema_old = j.data.schema.get_from_md5(md5)
+                    assert schema_old.url == schema.url
             obj = schema.new(capnpdata=data2, bcdb=bcdb)
             obj.id = obj_id
             if obj.id == 0:
