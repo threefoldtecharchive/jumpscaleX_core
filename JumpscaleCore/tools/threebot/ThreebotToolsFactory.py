@@ -113,9 +113,8 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         elif isinstance(data, list) and len(data) == 3 and data[0] == 999:
             # means is jsxobject
             _, md5, json_str = data
-            if schema._md5 != md5:
-                j.shell()
-            schema = j.data.schema.get_from_md5(md5)
+            if not schema:
+                schema = j.data.schema.get_from_md5(md5)
             datadict = self._serializer_get(serialization_format="json").loads(json_str.encode())
             data = schema.new(datadict=datadict)
             return data
