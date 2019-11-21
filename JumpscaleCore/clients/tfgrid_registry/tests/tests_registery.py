@@ -14,7 +14,7 @@ class RegisteryTests(TestCase):
     @classmethod
     def addRegistryPackage(cls):
         # . Start threebot server, add registery package, then reload the client.
-        cl = j.servers.threebot.local_start_default(web=True)
+        cl = j.servers.threebot.local_start_default()
         cl.actors.package_manager.package_add(
             path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry"
         )
@@ -113,6 +113,6 @@ class RegisteryTests(TestCase):
         data_dict = j.data.serializers.yaml.loads(res)
         self.assertEqual(type(data_dict), type({}))
 
-    ## To Do
+    # To Do
     # Do more tests for complicated scenarios
     # filter using diiferent fields, when this:https://github.com/threefoldtech/jumpscaleX_core/issues/217 is done

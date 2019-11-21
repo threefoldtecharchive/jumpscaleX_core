@@ -89,7 +89,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         if serialization_format == "msgpack":
             return j.data.serializers.msgpack
 
-    def _unserialize_item(self, data, serialization_format="json"):
+    def _unserialize_item(self, data, serialization_format="json", schema=None):
         """
         :param data: can be a binary blob or a list of items, which will be converted to binary counterpart
         :param serialization_format: json or msgpack
@@ -113,7 +113,8 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         elif isinstance(data, list) and len(data) == 3 and data[0] == 999:
             # means is jsxobject
             _, md5, json_str = data
-            schema = j.data.schema.get_from_md5(md5)
+            if not schema:
+                schema = j.data.schema.get_from_md5(md5)
             datadict = self._serializer_get(serialization_format="json").loads(json_str.encode())
             data = schema.new(datadict=datadict)
             return data
@@ -176,7 +177,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         else:
             return serializer.dumps(data)
 
-    def _unserialize(self, data, serialization_format="json"):
+    def _unserialize(self, data, serialization_format="json", schema=None):
         """
         :param data: a list which needs to be unserialized, or 1 item
         :param serialization_format: json or msgpack
@@ -197,10 +198,10 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         if isinstance(data, list):
             res = []
             for item in data:
-                res.append(self._unserialize_item(item, serialization_format=serialization_format))
+                res.append(self._unserialize_item(item, serialization_format=serialization_format, schema=schema))
             return res
         else:
-            return self._unserialize_item(data, serialization_format=serialization_format)
+            return self._unserialize_item(data, serialization_format=serialization_format, schema=schema)
 
     def _serialize_sign_encrypt(self, data, serialization_format="json", pubkey_hex=None, nacl=None, threebot=None):
         """
@@ -261,7 +262,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         :param data: result of self._serialize_sign_encrypt()
         :param serialization_format: json or msgpack
 
-        :return: [list of items] deserialized but which were serialized in data using serialization_format 
+        :return: [list of items] deserialized but which were serialized in data using serialization_format
         raises exceptions if decryption or signature fails
 
         """
@@ -288,7 +289,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         S = """
         @url = tools.threebot.test.schema
         name** = "aname"
-        description = "something" 
+        description = "something"
         """
         schema = j.data.schema.get_from_text(S)
         jsxobject = schema.new()

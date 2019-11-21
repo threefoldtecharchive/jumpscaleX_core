@@ -5129,7 +5129,7 @@ class DockerContainer:
         Starts then stops the threebotserver to make sure all needed packages are installed
         """
         self.sshexec(
-            ". /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_default(web=True); j.servers.threebot.default.stop()'"
+            ". /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_default(); j.servers.threebot.default.stop()'"
         )
 
     def jumpscale_install(

@@ -32,7 +32,7 @@ class ZDBServers(JSConfigs):
     ):
         """
 
-        kosmos 'j.servers.zdb.test_instance_start(reset=True)'
+        kosmos 'j.servers.zdb.test_instance_start()'
 
         start a test instance with self.adminsecret 123456
         will use port 9901

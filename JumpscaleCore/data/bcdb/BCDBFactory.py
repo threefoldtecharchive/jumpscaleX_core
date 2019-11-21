@@ -430,6 +430,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             storclient = storclient_admin.namespace_new(name="test_zdb", secret=secret)
             return storclient
 
+        if not j.sal.nettools.tcpPortConnectionTest("localhost", 1491):
+            j.servers.sonic.default.start()
+
         if type == "rdb":
             j.core.db
             storclient = j.clients.rdb.client_get(namespace="test_rdb")  # will be to core redis
