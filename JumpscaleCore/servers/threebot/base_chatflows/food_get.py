@@ -9,9 +9,7 @@ def chat(bot):
 
     res = {}
     waittime = bot.int_ask("Wait time")
-    for x in range(waittime):
-        bot.loading_show("progress", (x // waittime) * 100)
-        gevent.sleep(1)
+    bot.loading_show("progress", waittime)
 
     country = bot.drop_down_country("where do you want to eat?")
     food = bot.string_ask("What do you need to eat?")
