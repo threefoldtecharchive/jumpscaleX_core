@@ -494,7 +494,7 @@ class BCDBModel(j.baseclasses.object):
             else:
                 return None
 
-        obj = self.bcdb._unserialize(obj_id, data, return_as_capnp=return_as_capnp)
+        obj = self.bcdb._unserialize(obj_id, data, return_as_capnp=return_as_capnp, schema=self.schema)
         if obj._schema.url == self._schema_url:
             obj = self._triggers_call(obj=obj, action="get")
         else:
@@ -704,4 +704,3 @@ class BCDBModel(j.baseclasses.object):
     #                 self._log_warning("index system produced false positive, is not abnormal")
     #
     #     return res
-

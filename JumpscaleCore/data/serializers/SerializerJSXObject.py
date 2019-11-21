@@ -46,7 +46,7 @@ class SerializerJSXObject(SerializerBase):
 
         return data2
 
-    def loads(self, data, bcdb=None):
+    def loads(self, data, bcdb=None, schema=None):
         """
         j.data.serializers.jsxdata.loads(..
         :param data:
@@ -61,8 +61,8 @@ class SerializerJSXObject(SerializerBase):
             md5bin = data[5:21]
             md5 = md5bin.hex()
             data2 = data[21:]
-
-            schema = j.data.schema.get_from_md5(md5)
+            if not schema:
+                schema = j.data.schema.get_from_md5(md5)
             obj = schema.new(capnpdata=data2, bcdb=bcdb)
             obj.id = obj_id
             if obj.id == 0:
