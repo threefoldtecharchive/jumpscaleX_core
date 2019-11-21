@@ -616,7 +616,7 @@ class BCDBModel(j.baseclasses.object):
         ps there are lots of good tools which allow you to build sql statements graphically
         e.g. razorsql
 
-        to load the sqlite db go to : /sandbox/var/bcdb/myjobs/sqlite_index.db
+        to load the sqlite db go to : {DIR_BASE}/var/bcdb/myjobs/sqlite_index.db
         in this case name of this bcdb is myjobs
 
         :param sqlquery:
@@ -704,3 +704,4 @@ class BCDBModel(j.baseclasses.object):
     #                 self._log_warning("index system produced false positive, is not abnormal")
     #
     #     return res
+

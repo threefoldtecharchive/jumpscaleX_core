@@ -18,7 +18,7 @@ class RedisFactory(j.baseclasses.factory_testtools):
 
     def _init(self, **kwargs):
         self._cache_clear()
-        self._unix_socket_core = "/sandbox/var/redis.sock"
+        self._unix_socket_core = j.core.tools.text_replace("{DIR_BASE}/var/redis.sock")
         self._core = None
 
         #
@@ -182,7 +182,7 @@ class RedisFactory(j.baseclasses.factory_testtools):
         kosmos 'j.clients.redis.core_get(reset=False)'
         j.clients.redis.core_get(fromcache=False)
 
-        will try to create redis connection to {DIR_TEMP}/redis.sock or /sandbox/var/redis.sock  if sandbox
+        will try to create redis connection to {DIR_TEMP}/redis.sock or {DIR_BASE}/var/redis.sock  if sandbox
         if that doesn't work then will look for std redis port
         if that does not work then will return None
 
@@ -231,3 +231,5 @@ class RedisFactory(j.baseclasses.factory_testtools):
 
         """
         self._test_run(name=name)
+
+

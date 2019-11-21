@@ -30,11 +30,9 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
                     return True
             return False
 
-        fallback_ssl_key_path = "/sandbox/cfg/ss/resty-auto-ssl-fallback.crt"
+        fallback_ssl_key_path = j.core.tools.text_replace("{DIR_BASE}/cfg/ss/resty-auto-ssl-fallback.crt")
         if force or need_install() or not j.sal.fs.exists(fallback_ssl_key_path):
             j.servers.openresty.install()
-            j.builders.web.openresty.install()
-            j.builders.runtimes.lua.install()
             j.builders.db.zdb.install()
             j.builders.apps.sonic.install()
             self._log_info("install done for threebot server.")
@@ -42,10 +40,10 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def local_start_zerobot_default(self, web=True, packages_add=False, timeout=600):
+    def local_start_zerobot_default(self, packages_add=False):
         """
 
-        kosmos -p 'j.servers.threebot.local_start_zerobot_default()'
+        kosmos -p 'j.servers.threebot.local_start_zerobot_default(packages_add=True)'
 
         tbot_client = j.servers.threebot.local_start_zerobot_default()
 
@@ -58,7 +56,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             self.install()
             self.default.stop()
 
-        client = self.default.start(background=True, web=web, timeout=timeout)
+        client = self.default.start(background=True)
 
         if packages_add:
             client.actors.package_manager.package_add(
@@ -69,7 +67,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         return client
 
-    def local_start_default(self, web=True, packages_add=False, timeout=600, ssl=None):
+    def local_start_default(self, packages_add=False, ssl=None):
         """
 
         kosmos -p 'j.servers.threebot.local_start_default()'
@@ -85,10 +83,12 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             self.install()
             self.default.stop()
 
-        client = self.default.start(background=True, web=web, timeout=timeout, ssl=ssl)
+        client = self.default.start(background=True)
 
         client.actors.package_manager.package_add(
-            path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform/"
+            path=j.core.tools.text_replace(
+                "{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform/"
+            )
         )
         if packages_add:
             client.actors.package_manager.package_add(
@@ -99,19 +99,25 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         return client
 
-    def test(self, name="threebot_phonebook", wiki=True, web=False, fileserver=False):
+    def test(self):
         """
 
-        kosmos 'j.servers.threebot.test(name="basic")'
-        kosmos 'j.servers.threebot.test(name="onlystart")'
+        kosmos 'j.servers.threebot.test()'
         :return:
         """
 
-        gedis_client = j.servers.threebot.local_start_default(web=True)
+        # gedis_client = j.servers.threebot.local_start_default(web=True)
+        gedis_client = j.servers.threebot.local_start_zerobot_default(packages_add=True)
+
+        cl = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
+
+        j.shell()
 
         gedis_client.actors.package_manager.package_add(
             git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook"
         )
+
+        j.shell()
 
         # self.client.actors.package_manager.package_add(
         #     "tfgrid_directory",

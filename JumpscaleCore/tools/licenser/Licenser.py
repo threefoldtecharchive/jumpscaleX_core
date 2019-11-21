@@ -30,13 +30,13 @@ class Licenser(j.baseclasses.object):
         """
         if not path:
             self.replacer.dir_process(
-                path="/sandbox/code/github/threefoldtech/jumpscaleX", write=True, addlicense=False
+                path=j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX"), write=True, addlicense=False
             )
             self.replacer.dir_process(
-                path="/sandbox/code/github/threefoldtech/digitalmeX", write=True, addlicense=False
+                path=j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/digitalmeX"), write=True, addlicense=False
             )
-            self.do("/sandbox/code/github/threefoldtech/jumpscaleX", write=write, addlicense=addlicense)
-            self.do("/sandbox/code/github/threefoldtech/digitalmeX", write=write, addlicense=addlicense)
+            self.do(j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX"), write=write, addlicense=addlicense)
+            self.do(j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/digitalmeX"), write=write, addlicense=addlicense)
         else:
             for path2 in j.sal.fs.listFilesInDir(path, filter=".gpl3", recursive=True):
                 header = j.sal.fs.readFile(path2)
@@ -44,3 +44,4 @@ class Licenser(j.baseclasses.object):
                     header = None
                 path3 = j.sal.fs.getDirName(path2)
                 self.replacer.dir_process(path=path3, write=write, header=header, addlicense=addlicense)
+

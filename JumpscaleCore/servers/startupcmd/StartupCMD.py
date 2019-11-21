@@ -554,12 +554,12 @@ class StartupCMD(j.baseclasses.object_config):
             tmux clear
             {% endif %}
             clear
-            cat /sandbox/var/cmds/{{name}}.sh
+            cat {DIR_BASE}/var/cmds/{{name}}.sh
             set +ex
             {% for key,val in args.items() %}
             export {{key}}='{{val}}'
             {% endfor %}
-            . /sandbox/env.sh
+            . {DIR_BASE}/env.sh
             set +ex
             {% if cmdpath != None %}
             mkdir -p {{cmdpath}}
@@ -598,6 +598,7 @@ class StartupCMD(j.baseclasses.object_config):
             C = self.cmd_start
 
         C2 = j.core.text.strip(C)
+        C2 = C2.replace("{DIR_BASE}", j.dirs.BASEDIR)
 
         C3 = j.tools.jinja2.template_render(
             text=C2, args=self.env, cmdpath=self.path, cmd=self.cmd_start, name=self.name, cmdobj=self

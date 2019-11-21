@@ -1,17 +1,19 @@
 from Jumpscale import j
 from Jumpscale.servers.gedis_http.GedisHTTPFactory import enable_cors
 
+# from .ScheduledJob import ScheduledJob
+from .ScheduledRun import ScheduledRun
 import sys
 import mimetypes
 
-
-JSBASE = j.baseclasses.object
 
 from gevent import monkey
 
 monkey.patch_all(subprocess=False)
 import gevent
 from gevent import event
+
+# from gevent import Greenlet
 
 
 class StripPathMiddleware(object):
@@ -23,16 +25,15 @@ class StripPathMiddleware(object):
         return self.app(e, h)
 
 
-class ServerRack(JSBASE):
+class ServerRack(j.baseclasses.object):
     """
     is a group of gedis servers in a virtual rack
     """
 
     def _init(self, **kwargs):
         self.servers = {}
-        self.greenlets = {}
+        self.schedulers = {}
         self._logger_enable()
-        # self._monkeypatch_done = False
         self.is_started = False
 
     def add(self, name, server):
@@ -48,11 +49,24 @@ class ServerRack(JSBASE):
         """
         assert server
 
-        if self.is_started and not server in self.servers:
+        if self.is_started and not name in self.servers:
             self.servers[name] = server
             server.start()
         else:
             self.servers[name] = server
+
+    def scheduler_get(self, name, timeout=0):
+        """
+
+        :param self:
+        :param name:
+        :param timeout: in seconds after start
+        :return:
+        """
+        if name in self.schedulers:
+            raise j.exceptions.Input("cannot add scheduler with name:%s" % name)
+        self.schedulers[name] = ScheduledRun(name=name, timeout=timeout)
+        return self.schedulers[name]
 
     def bottle_server_add(
         self, name="bottle", port=4442, app=None, websocket=False, force_override=False, strip_slash=True
@@ -220,15 +234,17 @@ class ServerRack(JSBASE):
 
         self.add(name=name, server=server)
 
-    def start(self):
-        # self._monkeypatch()
-        started = []
+    def start(self, wait=True):
+        # started = []
+        keys = [key for key in self.servers.keys()]
         try:
-            for key, server in self.servers.items():
-                server.start()
-                started.append(server)
-                name = getattr(server, "name", None) or server.__class__.__name__ or "Server"
-                self._log_info("%s started on %s" % (name, server.address))
+            for key in keys:
+                if key in self.servers:
+                    server = self.servers[key]
+                    server.start()
+                    # started.append(server)
+                    name = getattr(server, "name", None) or server.__class__.__name__ or "Server"
+                    self._log_info("%s started on %s" % (name, server.address))
             self.is_started = True
 
         except:
@@ -236,11 +252,12 @@ class ServerRack(JSBASE):
             self.is_started = False
             raise
 
-        forever = event.Event()
-        try:
-            forever.wait()
-        except KeyboardInterrupt:
-            self.stop()
+        if wait:
+            forever = event.Event()
+            try:
+                forever.wait()
+            except KeyboardInterrupt:
+                self.stop()
 
     def stop(self, servers=None):
         self._log_info("stopping server rack")

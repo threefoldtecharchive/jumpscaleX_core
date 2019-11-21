@@ -23,7 +23,7 @@ def deadline(timeout, *args):
 
 
 class MyWorkerProcess(j.baseclasses.object):
-    def _init(self, worker_id=None, onetime=False, showout=True, debug=False):
+    def _init(self, worker_id=None, onetime=False, showout=False, debug=False):
         """
         :return:
         """
@@ -182,12 +182,12 @@ class MyWorkerProcess(j.baseclasses.object):
 
             if res == None:
                 if j.data.time.epoch > last_info_push + 20:
-                    print(self.worker_obj)
-                    self._log_info("queue request timeout, no data, continue", data=self.worker_obj)
+                    # print(self.worker_obj)
+                    # self._log_info("queue request timeout, no data, continue", data=self.worker_obj)
                     self._state_set()
                     last_info_push = j.data.time.epoch
             else:
-                self._log_debug("queue has data")
+                # self._log_debug("queue has data")
                 jobid = int(res)
                 job = self.job_get(jobid)
                 self.job = job
@@ -215,7 +215,7 @@ class MyWorkerProcess(j.baseclasses.object):
                 if skip and relaunch:
                     if self.queue_jobs_start.qsize() == 0:
                         # means we are waiting for some jobs to finish, lets wait 1 sec before we throw this job back on queue
-                        self._log_info("job queue empty, will wait 1 sec to relaunch the job", data=job)
+                        # self._log_info("job queue empty, will wait 1 sec to relaunch the job", data=job)
                         time.sleep(1)
                     job.state = "NEW"
                     job.save()

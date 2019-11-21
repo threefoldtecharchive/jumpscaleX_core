@@ -3177,9 +3177,7 @@ class MyEnv_:
             "REVERSE": "",
         }
 
-        LOGFORMATBASE = (
-            "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"
-        )  # DO NOT CHANGE COLOR
+        LOGFORMATBASE = "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"  # DO NOT CHANGE COLOR
 
         self.LOGFORMAT = {
             "DEBUG": LOGFORMATBASE.replace("{COLOR}", "{CYAN}"),
@@ -4304,18 +4302,18 @@ class JumpscaleInstaller:
                             Tools.log("found old jumpscale item to remove:%s" % toremove)
                             Tools.delete(toremove)
 
-    def prebuilt_copy(self):
-        """
-        copy the prebuilt files to the {DIR_BASE} location
-        :return:
-        """
-        self.cmds_link(generate_js=False)
-        # why don't we use our primitives here?
-        Tools.execute("cp -a {DIR_CODE}/github/threefoldtech/sandbox_threebot_linux64/* /")
-        # -a won't copy hidden files
-        Tools.execute("cp {DIR_CODE}/github/threefoldtech/sandbox_threebot_linux64/.startup.toml /")
-        Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
-
+    # def prebuilt_copy(self):
+    #     """
+    #     copy the prebuilt files to the {DIR_BASE} location
+    #     :return:
+    #     """
+    #     self.cmds_link(generate_js=False)
+    #     # why don't we use our primitives here?
+    #     Tools.execute("cp -a {DIR_CODE}/github/threefoldtech/sandbox_threebot_linux64/* /")
+    #     # -a won't copy hidden files
+    #     Tools.execute("cp {DIR_CODE}/github/threefoldtech/sandbox_threebot_linux64/.startup.toml /")
+    #     Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
+    #
     def repos_get(self, pull=False, prebuilt=False):
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO

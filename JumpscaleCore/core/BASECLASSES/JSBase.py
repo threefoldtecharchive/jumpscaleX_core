@@ -57,6 +57,7 @@ class JSBase:
         if "parent" in kwargs:
             kwargs.pop("parent")
         self._init_pre(**kwargs)
+        self._init_actor(**kwargs)
         self._init_pre2(**kwargs)
         self.__init_class()
         self._obj_cache_reset()
@@ -222,6 +223,12 @@ class JSBase:
         """
         pass
 
+    def _init_actor(self, **kwargs):
+        """
+        :return:
+        """
+        pass
+
     def _init_post(self, **kwargs):
         """
         meant to be used by developers of the base classes
@@ -376,7 +383,7 @@ class JSBase:
     def _logger_set(self, minlevel=None, children=True, parents=True):
         """
 
-        :param min_level if not set then will use the LOGGER_LEVEL from /sandbox/cfg/jumpscale_config.toml
+        :param min_level if not set then will use the LOGGER_LEVEL from {DIR_BASE}/cfg/jumpscale_config.toml
 
         make sure that logging above minlevel will happen, std = 100
         if 100 means will not log anything

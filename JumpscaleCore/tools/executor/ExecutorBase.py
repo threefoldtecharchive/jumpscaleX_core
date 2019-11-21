@@ -259,7 +259,7 @@ class ExecutorBase(JSBASE):
         has this env a sandbox?
         """
         if self._isSandbox is None:
-            if self.exists("/sandbox"):
+            if self.exists(j.core.tools.text_replace("{DIR_BASE}")):
                 self._isSandbox = True
             else:
                 self._isSandbox = False
@@ -414,7 +414,7 @@ class ExecutorBase(JSBASE):
         # 
 
         echo "CFG_JUMPSCALE = --TEXT--"
-        cat /sandbox/cfg/jumpscale_config.msgpack 2>/dev/null || echo ""
+        cat {DIR_BASE}/cfg/jumpscale_config.msgpack 2>/dev/null || echo ""
         echo --TEXT--
 
         echo "BASHPROFILE = --TEXT--"

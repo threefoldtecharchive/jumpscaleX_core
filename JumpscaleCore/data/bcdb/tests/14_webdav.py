@@ -92,4 +92,6 @@ def main(self):
     web_dav.stop()
     web_dav.wait_stopped()
 
+    # TODO: mount webdav over fuse and do some tests
+
     self._log_info("test ok")

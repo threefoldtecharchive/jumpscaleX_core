@@ -163,7 +163,7 @@ class BCDBVFS(j.baseclasses.object):
 
     def get(self, path):
         splitted = self._split_clean_path(path)
-        self._log_info("vfs get path:%s " % path)
+        # self._log_info("vfs get path:%s " % path)
         if len(splitted) > 0:
             key = None
             if splitted[0] == "data":
@@ -352,7 +352,7 @@ class BCDBVFS(j.baseclasses.object):
             cached_keys = list(self._dirs_cache.keys())
             for o in cached_keys:
                 try:
-                    self._log_info("deleting:%s" % o)
+                    # self._log_info("deleting:%s" % o)
                     if o in self._dirs_cache:
                         self._dirs_cache[o].delete()
                 except:
@@ -450,7 +450,7 @@ class BCDBVFS(j.baseclasses.object):
             keys {tuple(string,string)} -- object_key and the containing directory key
             obj {JSXObj} -- [description]
         """
-        self._log_info("data cache updated key:%s " % (key))
+        # self._log_info("data cache updated key:%s " % (key))
         if not key in self._dirs_cache:
             self._dirs_cache[key] = BCDBVFS_Data(self, key=key, item=obj)
         else:

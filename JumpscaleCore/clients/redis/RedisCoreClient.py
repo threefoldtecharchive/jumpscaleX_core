@@ -18,7 +18,7 @@ class RedisCoreClient(j.baseclasses.object):
             from credis import Connection
 
         try:
-            self._client = Connection(path="/sandbox/var/redis.sock")
+            self._client = Connection(path=j.core.tools.text_replace("{DIR_BASE}/var/redis.sock"))
             self._client.connect()
             self._credis = True
         except:
@@ -72,3 +72,4 @@ class RedisCoreClient(j.baseclasses.object):
 
             self._client = redis.Redis(unix_socket_path=j.core.db.connection_pool.connection_kwargs["path"], db=1)
         return self._client
+

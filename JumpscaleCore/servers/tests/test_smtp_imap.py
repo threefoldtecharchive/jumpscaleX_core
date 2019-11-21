@@ -25,7 +25,7 @@ class TestSMTPIMAP(BaseTest):
         cmd = "kosmos 'j.servers.smtp.start()'"
         self.info("Execute {} in tmux main session".format(cmd))
         self.pan = j.servers.tmux.execute(cmd=cmd)
-        self.info('Wait for 30s to make sure that the server is running')
+        self.info("Wait for 30s to make sure that the server is running")
         sleep(30)
         self.info("Assert that the server is running")
         self.assertTrue(self.pan.cmd_running)
@@ -63,7 +63,7 @@ class TestSMTPIMAP(BaseTest):
         cmd = "kosmos 'j.servers.imap.start()'"
         self.info("Execute {} in tmux main session".format(cmd))
         self.pan = j.servers.tmux.execute(cmd=cmd)
-        self.info('Wait for 30s to make sure that the server is running')
+        self.info("Wait for 30s to make sure that the server is running")
         sleep(30)
         self.info("Assert that the server is running")
         self.assertTrue(self.pan.cmd_running)
@@ -97,7 +97,7 @@ class TestSMTPIMAP(BaseTest):
         cmd = "kosmos 'j.servers.smtp.start()'"
         self.info("Execute {} in tmux main session".format(cmd))
         self.pan = j.servers.tmux.execute(cmd=cmd)
-        self.info('Wait for 30s to make sure that the server is running')
+        self.info("Wait for 30s to make sure that the server is running")
         sleep(30)
         self.info("Assert that the server is running")
         self.assertTrue(self.pan.cmd_running)
@@ -113,7 +113,7 @@ class TestSMTPIMAP(BaseTest):
         cmd = "kosmos 'j.servers.imap.start()'"
         self.info("Execute {} in tmux main session".format(cmd))
         pan_imap = j.servers.tmux.execute(cmd=cmd)
-        self.info('Wait for 30s to make sure that the server is running')
+        self.info("Wait for 30s to make sure that the server is running")
         sleep(30)
         self.info("Assert that the server is running")
         self.assertTrue(self.pan.cmd_running)
@@ -125,7 +125,7 @@ class TestSMTPIMAP(BaseTest):
         self.info("Assert that client get the message from the database")
         self.assertEqual(last_message.sent_from[0]["email"], "test@mail.com")
         self.assertEqual(last_message.sent_to[0]["email"], "target@example.com")
-        self.assertEqual(last_message.body['plain'][0], body)
+        self.assertEqual(last_message.body["plain"][0], body)
 
         self.info("Stop the running server")
         pan_imap.kill()

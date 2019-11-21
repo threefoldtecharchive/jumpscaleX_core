@@ -14,8 +14,8 @@ class GedisWebsocketServer(JSConfigClient):
         port = 4444
         gedis_port = 8901
         ssl = False (B)
-        ssl_keyfile = "/sandbox/cfg/ssl/resty-auto-ssl-fallback.key" (S) #bad to do like this, harcoded TODO:, also should not be here can be done in openresty
-        ssl_certfile = "/sandbox/cfg/ssl/resty-auto-ssl-fallback.crt" (S)
+        ssl_keyfile = j.core.tools.text_replace("{DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.key") (S) #bad to do like this, harcoded TODO:, also should not be here can be done in openresty
+        ssl_certfile = j.core.tools.text_replace("{DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.crt") (S)
         """
 
     def _init(self, **kwargs):
@@ -110,3 +110,4 @@ class Application(WebSocketApplication):
 
     def on_open(self):
         self.client_gedis = j.clients.gedis.get("main", port=self.GEDIS_PORT)
+

@@ -5,7 +5,6 @@ from base_test import BaseTest
 
 
 class TestSshKeyClient(BaseTest):
-
     def setUp(self):
         self.SSHKEYCLIENT_NAME = str(uuid.uuid4()).replace("-", "")[:10]
         self.info("create sshkey client with name {}".format(self.SSHKEYCLIENT_NAME))
@@ -13,8 +12,8 @@ class TestSshKeyClient(BaseTest):
         self.ssh_pubkey = self.sshkey_client.pubkey
         self.ssh_privkey = self.sshkey_client.privkey
 
-        print('\t')
-        self.info('Test case : {}'.format(self._testMethodName))
+        print("\t")
+        self.info("Test case : {}".format(self._testMethodName))
 
     def tearDown(self):
         self.delete_from_sshdir()
@@ -24,8 +23,10 @@ class TestSshKeyClient(BaseTest):
         self.info("check delete_from_sshdir method in sshkey client")
         self.sshkey_client.delete_from_sshdir()
         self.info("check that sshkey_client files are deleted from ssh directory")
-        if not (os.path.isfile('/root/.ssh/{}.pub'.format(self.SSHKEYCLIENT_NAME))
-                and os.path.isfile('/root/.ssh/{}'.format(self.SSHKEYCLIENT_NAME))):
+        if not (
+            os.path.isfile("/root/.ssh/{}.pub".format(self.SSHKEYCLIENT_NAME))
+            and os.path.isfile("/root/.ssh/{}".format(self.SSHKEYCLIENT_NAME))
+        ):
             return True
         else:
             return False
@@ -41,8 +42,9 @@ class TestSshKeyClient(BaseTest):
         #. check client existence
         """
         self.info("use delete_client_method to delete {} client".format(self.sshkey_client))
-        self.assertTrue(self.delete_client_method(self.sshkey_client, "jumpscale.sshkey.client",
-                                                  self.SSHKEYCLIENT_NAME))
+        self.assertTrue(
+            self.delete_client_method(self.sshkey_client, "jumpscale.sshkey.client", self.SSHKEYCLIENT_NAME)
+        )
         self.info("use load_from_filesystem to load sshkey")
         self.sshkey_client.load_from_filesystem()
         self.info("check the existence of the client in BCDB")
@@ -74,12 +76,12 @@ class TestSshKeyClient(BaseTest):
         self.info("check generate method with option reset=True")
         self.sshkey_client.generate(reset=True)
         self.info("check that sshkey_client files are in ssh directory, and with the new values")
-        self.assertTrue(os.path.isfile('/root/.ssh/{}'.format(self.SSHKEYCLIENT_NAME)))
-        self.assertTrue(os.path.isfile('/root/.ssh/{}.pub'.format(self.SSHKEYCLIENT_NAME)))
+        self.assertTrue(os.path.isfile("/root/.ssh/{}".format(self.SSHKEYCLIENT_NAME)))
+        self.assertTrue(os.path.isfile("/root/.ssh/{}.pub".format(self.SSHKEYCLIENT_NAME)))
         old_privkey = self.ssh_privkey
-        new_privkey = open('/root/.ssh/{}'.format(self.SSHKEYCLIENT_NAME)).read()
+        new_privkey = open("/root/.ssh/{}".format(self.SSHKEYCLIENT_NAME)).read()
         old_pubkey = self.ssh_pubkey
-        new_pubkey = open('/root/.ssh/{}'.format(self.SSHKEYCLIENT_NAME)).read()
+        new_pubkey = open("/root/.ssh/{}".format(self.SSHKEYCLIENT_NAME)).read()
         self.assertNotEqual(old_pubkey, new_pubkey)
         self.assertNotEqual(old_privkey, new_privkey)
 
@@ -111,11 +113,11 @@ class TestSshKeyClient(BaseTest):
         self.info("check write_to_sshdir method in sshkey client")
         self.sshkey_client.write_to_sshdir()
         self.info("check that sshkey_client public and private files are in ssh directory")
-        self.assertTrue(os.path.isfile('/root/.ssh/{}.pub'.format(self.SSHKEYCLIENT_NAME)))
-        self.assertTrue(os.path.isfile('/root/.ssh/{}'.format(self.SSHKEYCLIENT_NAME)))
+        self.assertTrue(os.path.isfile("/root/.ssh/{}.pub".format(self.SSHKEYCLIENT_NAME)))
+        self.assertTrue(os.path.isfile("/root/.ssh/{}".format(self.SSHKEYCLIENT_NAME)))
         self.info("check the public and private keys values,  should be the same as before")
-        self.assertEqual(self.ssh_pubkey, open('/root/.ssh/{}.pub'.format(self.SSHKEYCLIENT_NAME)).read())
-        self.assertEqual(self.ssh_privkey, open('/root/.ssh/{}'.format(self.SSHKEYCLIENT_NAME)).read())
+        self.assertEqual(self.ssh_pubkey, open("/root/.ssh/{}.pub".format(self.SSHKEYCLIENT_NAME)).read())
+        self.assertEqual(self.ssh_privkey, open("/root/.ssh/{}".format(self.SSHKEYCLIENT_NAME)).read())
 
     def test006_load(self):
         """
@@ -174,5 +176,5 @@ class TestSshKeyClient(BaseTest):
         """
         self.info("check pubkey_only method in sshkey client")
         ssh_key_pubkey_only = self.sshkey_client.pubkey_only
-        pubkey_only = open('/root/.ssh/{}.pub'.format(self.SSHKEYCLIENT_NAME)).read().split()[1]
+        pubkey_only = open("/root/.ssh/{}.pub".format(self.SSHKEYCLIENT_NAME)).read().split()[1]
         self.assertEqual(ssh_key_pubkey_only, pubkey_only)

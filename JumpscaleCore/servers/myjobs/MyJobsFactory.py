@@ -14,7 +14,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
     _CHILDCLASSES = [MyWorkers, MyJobs]
 
     def _init(self, **kwargs):
-        self.BCDB_CONNECTOR_PORT = 6385
+        self.BCDB_CONNECTOR_PORT = 6380
         self.queue_jobs_start = j.clients.redis.queue_get(redisclient=j.core.db, key="queue:jobs:start")
 
         self._workers_gipc = {}
@@ -36,15 +36,15 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self._init_pre_schedule_ = False
         self._i_am_worker = False
 
-    def index_reset(self):
-        if self.workers._model._index_:
-            self.workers._model._index_.destroy()
-        if self.jobs._model._index_:
-            self.jobs._model._index_.destroy()
-        if self.model_action._index_:
-            self.model_action._index_.destroy()
+    # def index_reset(self):
+    #     if self.workers._model._index_:
+    #         self.workers._model._index_.destroy()
+    #     if self.jobs._model._index_:
+    #         self.jobs._model._index_.destroy()
+    #     if self.model_action._index_:
+    #         self.model_action._index_.destroy()
 
-    def _init_pre_schedule(self):
+    def _init_pre_schedule(self, in3bot=False):
         if not self._init_pre_schedule_:
             assert self._i_am_worker == False
             # need to make sure at startup we process all data which is still waiting there for us
@@ -55,9 +55,12 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 # start bcdb connector only if it's not started already
                 j.clients.redis.get(port=self.BCDB_CONNECTOR_PORT).ping()
             except (j.exceptions.Base, redis.ConnectionError):
+                if in3bot:
+                    raise j.exceptions.Base("cannot connect to 3bot bcdb redis port")
                 self._mainloop_greenlet_redis = gevent.spawn(
                     self._bcdb.redis_server_start, port=self.BCDB_CONNECTOR_PORT
                 )
+                self._log_warning("waiting for redis interface of threebotserver to come up")
                 self._bcdb.redis_server_wait_up(self.BCDB_CONNECTOR_PORT)
             self._init_pre_schedule_ = True
             self.jobs._model.trigger_add(self._job_update)
@@ -98,13 +101,13 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         w.nr = nr
         w.start()
 
-    def worker_tmux_start(self, nr=None, debug=False, startloop=True):
+    def worker_tmux_start(self, nr=None, debug=False, startloop=True, in3bot=False):
         """
         :param nr: is the nr of the worker 1 to x will be a child with name w$nr e.g. w3
         :param debug:
         :return:
         """
-        self._init_pre_schedule()
+        self._init_pre_schedule(in3bot=in3bot)
         if not nr:
             nr = self._worker_next_get()
         w = self.workers.get(name="w%s" % nr)
@@ -125,9 +128,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         w.time_start = j.data.time.epoch
         w.last_update = j.data.time.epoch
         self._log_info("worker in process for tmux: %s" % nr)
-        MyWorkerProcess(worker_id=w._id, onetime=False)
+        MyWorkerProcess(worker_id=w._id, onetime=False, showout=False)
 
-    def workers_tmux_start(self, nr_workers=4, debug=False):
+    def workers_tmux_start(self, nr_workers=4, debug=False, in3bot=False):
         """
 
         run the workers in subprocess
@@ -137,19 +140,19 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         :return:
         """
-        self._init_pre_schedule()
+        self._init_pre_schedule(in3bot=in3bot)
         for i in range(nr_workers):
             self.worker_tmux_start(nr=i + 1, debug=debug, startloop=False)
         if not self._mainloop_tmux:
             self._mainloop_tmux = gevent.spawn(self._main_loop_tmux)
 
-    def worker_subprocess_start(self, nr=None, debug=False):
+    def worker_subprocess_start(self, nr=None, debug=False, in3bot=True):
         """
         :param nr: is the nr of the worker 1 to x will be a child with name w$nr e.g. w3
         :param debug:
         :return:
         """
-        self._init_pre_schedule()
+        self._init_pre_schedule(in3bot=in3bot)
         if not nr:
             nr = self._worker_next_get()
         w = self.workers.get(name="w%s" % nr)
@@ -357,7 +360,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                         job.error = "TIMEOUT"
                         job.time_stop = j.data.time.epoch
                         self.jobs.set(job)
-                        print(job)
+                        # print(job)
                         # make sure right nr of workers are active
                         self.worker_subprocess_start()
 
@@ -494,6 +497,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self.jobs.reset()
         self.workers.reset()
         self.scheduled_ids = []
+        self.queue_jobs_start.reset()
         assert self.queue_jobs_start.qsize() == 0
 
     def check_all(self, die=True):

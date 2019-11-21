@@ -27,8 +27,8 @@ class package_manager(j.baseclasses.threebot_actor):
         if git_url and path:
             raise j.exceptions.Input("add can only be done by git_url or name but not both")
 
-        assert j.servers.threebot.current
-        threebot_server_name = j.servers.threebot.current.name
+        assert j.threebot.servers.core
+        threebot_server_name = j.threebot.servers.core.name
 
         if git_url:
             p = git_url
@@ -76,9 +76,8 @@ class package_manager(j.baseclasses.threebot_actor):
         except Exception as e:
             return f"Could not add package {package.name}: {e.message}"
 
-        if j.servers.threebot.current.web:
-            # reload openresty configuration if web is enabled for this threebot server
-            j.servers.threebot.current.openresty_server.reload()
+        # reload openresty configuration
+        j.threebot.servers.core.openresty_server.reload()
 
         return "OK"
 

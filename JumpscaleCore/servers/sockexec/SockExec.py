@@ -10,7 +10,7 @@ class SockExec(j.baseclasses.object_config):
     _SCHEMATEXT = """
            @url =  jumpscale.servers.sockexec.1
            name** = "default" (S)
-           socketpath = "/sandbox/var/exec.sock"
+           socketpath = j.core.tools.text_replace("{DIR_BASE}/var/exec.sock")
            """
 
     def _init(self, **kwargs):
@@ -26,7 +26,7 @@ class SockExec(j.baseclasses.object_config):
 
     def stop(self):
         self._log_info("stop sockexec server")
-        remove_exec_cmd = "rm -f /sandbox/var/exec.sock"
+        remove_exec_cmd = "rm -f {DIR_BASE}/var/exec.sock"
         j.core.tools.execute(remove_exec_cmd)
         self.startupcmd.stop()
 

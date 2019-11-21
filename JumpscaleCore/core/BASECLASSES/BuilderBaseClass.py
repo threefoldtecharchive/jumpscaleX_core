@@ -192,7 +192,7 @@ class builder_method:
 
 class BuilderBaseClass(JSBase):
     """
-    doc in /sandbox/code/github/threefoldtech/jumpscaleX_core/docs/Internals/builders/Builders.md
+    doc in {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/docs/Internals/builders/Builders.md
     """
 
     ALREADY_DONE_VALUE = "ALREADY DONE"
@@ -297,18 +297,18 @@ class BuilderBaseClass(JSBase):
 
     def _profile_sandbox_set(self):
 
-        self._bash = j.tools.bash.get("/sandbox")
+        self._bash = j.tools.bash.get(j.core.tools.text_replace("{DIR_BASE}"))
 
         self.profile.state = "sandbox"
 
         # cannot manipuate env.sh in sandbox, should be set properly by design
-        if self.profile.profile_path != "/sandbox/env.sh":
-            self.profile.path_add("/sandbox/bin")
+        if self.profile.profile_path != j.core.tools.text_replace("{DIR_BASE}/env.sh"):
+            self.profile.path_add(j.core.tools.text_replace("{DIR_BASE}/bin"))
 
             self.profile.env_set("PYTHONHTTPSVERIFY", 0)
 
-            self.profile.env_set_part("PYTHONPATH", "/sandbox/lib")
-            self.profile.env_set_part("PYTHONPATH", "/sandbox/lib/jumpscale")
+            self.profile.env_set_part("PYTHONPATH", j.core.tools.text_replace("{DIR_BASE}/lib"))
+            self.profile.env_set_part("PYTHONPATH", j.core.tools.text_replace("{DIR_BASE}/lib/jumpscale"))
 
             self.profile.env_set("LC_ALL", "en_US.UTF-8")
             self.profile.env_set("LANG", "en_US.UTF-8")
@@ -389,6 +389,18 @@ class BuilderBaseClass(JSBase):
         j.sal.fs.remove(path)
         return (rc, res, out)
 
+    def _touch(self, path):
+        path = self._replace(path)
+        self.tools.touch.touch(path)
+
+    def _dir_ensure(self, path):
+        path = self._replace(path)
+        j.builders.tools.dir_ensure(path)
+
+    def _joinpaths(self, *args):
+        args = [self._replace(arg) for arg in args]
+        return self.tools.joinpaths(*args)
+
     def _copy(
         self,
         src,
@@ -457,7 +469,6 @@ class BuilderBaseClass(JSBase):
         """
         self._log_debug("remove:%s" % path)
         path = self._replace(path)
-
         j.sal.fs.remove(path)
 
     def _exists(self, path):

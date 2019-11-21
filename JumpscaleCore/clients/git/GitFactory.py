@@ -99,7 +99,7 @@ class GitFactory(j.baseclasses.object):
     ):
         """
         will clone or update repo
-        if dest is None then clone underneath: /sandbox/code/$type/$account/$repo
+        if dest is None then clone underneath: {DIR_BASE}/code/$type/$account/$repo
         will ignore changes !!!!!!!!!!!
 
         @param ssh ==True means will checkout ssh
@@ -440,11 +440,16 @@ class GitFactory(j.baseclasses.object):
         path = j.sal.fs.joinPaths(gitpath, relativepath)
         return path
 
-    def get(self, basedir="", check_path=True):
+    def get(self, basedir=None, check_path=True):
         """
-        PLEASE USE SSH, see http://gig.gitbooks.io/jumpscale/content/Howto/how_to_use_git.html for more details
+
+        git = j.clients.git.get()
+
+        :param basedir:
+        :param check_path:
+        :return:
         """
-        if basedir == "":
+        if not basedir:
             basedir = j.sal.fs.getcwd()
         return GitClient(basedir, check_path=check_path)
 
@@ -453,7 +458,7 @@ class GitFactory(j.baseclasses.object):
         walk over repo's known on system
         2 locations are checked
             ~/code
-            /sandbox/code
+            {DIR_BASE}/code
         """
         if name is None:
             name = ""
@@ -502,8 +507,8 @@ class GitFactory(j.baseclasses.object):
 
             ```
             #example
-            [['github', 'docker', 'docker-py', '/sandbox/code/github/docker/docker-py'],
-            ['github', 'jumpscale', 'docs', '/sandbox/code/github/threefoldtech/jumpscale_docs']]
+            [['github', 'docker', 'docker-py', j.core.tools.text_replace("{DIR_BASE}/code/github/docker/docker-py")],
+            ['github', 'jumpscale', 'docs', j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscale_docs")]]
             ```
 
             """
@@ -720,3 +725,5 @@ class GitFactory(j.baseclasses.object):
 
         if pushmessage != "":
             self.pushGitRepos(pushmessage, name=name, update=True, provider=provider, account=account)
+
+

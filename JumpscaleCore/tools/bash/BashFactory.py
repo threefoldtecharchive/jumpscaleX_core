@@ -19,7 +19,7 @@ class BashFactory(j.baseclasses.object):
     @property
     def sandbox(self):
         if not self._sandbox:
-            self._sandbox = self.get("/sandbox")
+            self._sandbox = self.get(j.core.tools.text_replace("{DIR_BASE}"))
         return self._sandbox
 
     def get(self, path=None, profile_name=None, executor=None):
@@ -75,3 +75,4 @@ class BashFactory(j.baseclasses.object):
         assert p.env == {"PATH": "/tmp/2:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin", "TEST": "B:A"}
 
         self._log_info("TEST FOR j.tools.bash is OK")
+

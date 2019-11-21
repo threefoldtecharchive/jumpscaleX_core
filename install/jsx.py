@@ -292,6 +292,7 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
         branch = IT.DEFAULT_BRANCH
 
     installer = IT.JumpscaleInstaller()
+    assert prebuilt == False  # not supported yet
     installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt)
     if threebot:
         IT.Tools.execute(
@@ -579,7 +580,7 @@ def containers_reset(configdir=None):
 @click.command(name="containers")
 def containers(configdir=None):
     """
-    remove all docker containers & imagess
+    list the containers
     :param name:
     :return:
     """

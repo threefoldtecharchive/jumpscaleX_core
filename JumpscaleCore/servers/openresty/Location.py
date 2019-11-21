@@ -11,14 +11,14 @@ class LocationsConfiguration(j.baseclasses.object_config):
 
     it will include locations from
 
-    /sandbox/cfg/
+    {DIR_BASE}/cfg/
 
     """
 
     _SCHEMATEXT = """
         @url = jumpscale.openresty.location
         name** = (S)
-        path = "/sandbox/var/web/default"
+        path = "/sandbox/var/web/default" (S)
         locations_static = (LO) !jumpscale.openresty.location_static
         locations_proxy = (LO) !jumpscale.openresty.location_proxy
         locations_lapis = (LO) !jumpscale.openresty.location_lapis

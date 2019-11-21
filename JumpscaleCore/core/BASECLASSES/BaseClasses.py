@@ -29,11 +29,26 @@ from .ThreeBotFactoryBase import ThreeBotFactoryBase
 from .TestTools import TestTools
 from .JSFactory import JSFactory
 from .JSDict import JSDict
+from .Decorators import actor_method
 
 
 class BaseClasses(JSBase, TestTools):
     def __init__(self):
         pass
+
+    @property
+    def actor_method(self):
+        """
+        decorator for actor method
+
+        use as
+
+        @j.baseclasses.actor_method
+        def myactormethod(self,name=None,...):
+            ...
+
+        """
+        return actor_method
 
     @property
     def dict(self):

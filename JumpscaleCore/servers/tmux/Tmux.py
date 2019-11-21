@@ -46,7 +46,7 @@ class Tmux(j.baseclasses.object):
     @property
     def server(self):
         def start():
-            cmd = "/sandbox/bin/js_mux start"
+            cmd = "%s/bin/js_mux start" % j.core.myenv.config["DIR_BASE"]
             j.sal.process.execute(cmd, die=True)
             time.sleep(0.1)
 

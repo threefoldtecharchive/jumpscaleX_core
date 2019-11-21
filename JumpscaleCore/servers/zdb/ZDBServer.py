@@ -81,7 +81,7 @@ class ZDBServer(j.baseclasses.object_config):
 
     @property
     def datadir(self):
-        return "/sandbox/var/zdb/%s/" % self.name
+        return j.core.tools.text_replace("{DIR_BASE}/var/zdb/%s/") % self.name
 
     def client_admin_get(self):
         """
@@ -100,3 +100,4 @@ class ZDBServer(j.baseclasses.object_config):
         assert cl.ping()
 
         return cl
+

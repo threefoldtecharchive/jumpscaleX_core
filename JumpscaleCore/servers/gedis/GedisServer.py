@@ -15,6 +15,10 @@ from .handlers import Handler
 JSBaseConfig = j.baseclasses.object_config
 
 
+class Actors:
+    pass
+
+
 def waiter(job):
     while job.result is None:
         time.sleep(0.1)
@@ -51,6 +55,10 @@ class GedisServer(JSBaseConfig):
         self.namespaces = ["system", "default"]
         self._threebot_server = None
 
+        j.threebot.actors = Actors()
+        j.threebot.actors_add = self.actors_add
+        # j.threebot.actors_list = self.actors_list
+
         # hook to allow external servers to find this gedis
         # self.server_gedis = self
 
@@ -79,8 +87,8 @@ class GedisServer(JSBaseConfig):
     def gevent_server(self):
         if self.ssl:
             if not self.ssl_keyfile and not self.ssl_certfile:
-                ssl_keyfile = "/sandbox/cfg/ssl/resty-auto-ssl-fallback.key"
-                ssl_certfile = "/sandbox/cfg/ssl/resty-auto-ssl-fallback.crt"
+                ssl_keyfile = j.core.tools.text_replace("{DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.key")
+                ssl_certfile = j.core.tools.text_replace("{DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.crt")
 
                 if j.sal.fs.exists(ssl_keyfile):
                     self.ssl_keyfile = ssl_keyfile

@@ -97,7 +97,7 @@ class Application(object):
 
     def log2fs_register(self, session_name):
         """
-        will write logs with ansi codes to /sandbox/var/log/session_name/$hrtime4session/$hrtime4step_context.ansi
+        will write logs with ansi codes to {DIR_BASE}/var/log/session_name/$hrtime4session/$hrtime4step_context.ansi
 
         use less -r to see the logs with color output
 
@@ -106,7 +106,10 @@ class Application(object):
         """
         self._log2fs_session_name = session_name
         tt = self._j.data.time.getLocalTimeHRForFilesystem()
-        self._log2fs_path_prefix = "/sandbox/var/log/%s/%s" % (self._log2fs_session_name, tt)
+        self._log2fs_path_prefix = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s/%s") % (
+            self._log2fs_session_name,
+            tt,
+        )
         self.log2fs_context_change("init")
 
         os.makedirs(self._log2fs_path_prefix)

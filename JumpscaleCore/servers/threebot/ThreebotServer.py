@@ -2,10 +2,44 @@ from Jumpscale import j
 import os
 import gevent
 import time
+from gevent import event
+import os
 
 # from .OpenPublish import OpenPublish
 
 JSConfigs = j.baseclasses.object_config_collection
+
+
+class Actors:
+    pass
+
+
+class Servers:
+    pass
+
+
+class BCDBS:
+    pass
+
+
+class Packages:
+    pass
+
+
+class PackageInstall(j.baseclasses.object):
+    def _init(self, name=None, path=None):
+        self.path = path
+        self.name = name
+
+    def install(self):
+        server = j.servers.threebot.default
+        package = j.tools.threebot_packages.get(self.name, path=self.path, threebot_server_name=server.name)
+        package.prepare()
+        package.save()
+        name = self.name
+        package.start()
+        j.threebot.packages.__dict__[self.name] = package
+        return "OK"
 
 
 class ThreeBotServer(j.baseclasses.object_config):
@@ -102,27 +136,51 @@ class ThreeBotServer(j.baseclasses.object_config):
         locations.configure()
         website.configure()
 
-    def start(self, background=False, web=None, ssl=None, timeout=1000):
+    def _maintenance(self):
+
+        # check all models are mapped to global namespace
+        for bcdb in j.data.bcdb.instances:
+            if bcdb.name not in j.threebot.bcdb.__dict__:
+                j.threebot.bcdb.__dict__[bcdb.name] = bcdb.children
+
+        # check state workers
+        for key, worker in j.threebot.myjobs.workers._children.items():
+            # get status from worker
+            worker.load()
+
+        # remove jobs from _children older than 1 day
+        keys = [key for key in j.threebot.myjobs.jobs._children.keys()]
+        for key in keys:
+            if key in j.threebot.myjobs.jobs._children:
+                job = j.threebot.myjobs.jobs._children[key]
+                job.load()
+                if job.time_stop > 0:
+                    if job.time_stop < j.data.time.epoch - 600:
+                        j.threebot.myjobs.jobs._children.pop(job.name)
+
+    def _maintenance_day(self):
+
+        while True:
+            # remove jobs older than 1 day
+            for job in j.threebot.myjobs.jobs.find():
+                if job.time_stop > 0:
+                    if job.time_stop < j.data.time.epoch - day1:
+                        job.delete()
+
+            gevent.sleep(day1)
+
+    def start(self, background=False, restart=False):
         """
 
-        kosmos -p 'j.servers.threebot.default.start(background=True,web=False)'
-        kosmos -p 'j.servers.threebot.default.start(background=False,web=False)'
+        kosmos -p 'j.servers.threebot.default.start(background=True)'
+        kosmos -p 'j.servers.threebot.default.start(background=False)'
 
         :param background: if True will start all servers including threebot itself in the background
 
         ports & paths used for threebotserver
-        see: /sandbox/code/github/threefoldtech/jumpscaleX_core/docs/3Bot/web_environment.md
+        see: {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/docs/3Bot/web_environment.md
 
         """
-        if web is None:
-            web = self.web
-        else:
-            self.web = web
-
-        if ssl is None:
-            ssl = self.ssl
-        else:
-            self.ssl = ssl
 
 
         self.save()
@@ -133,15 +191,17 @@ class ThreeBotServer(j.baseclasses.object_config):
             c.save()
 
         if not background:
-            # do bcdb check and rebuild index if index and data aren't in sync.
-            # clean start for my jobs
-            j.servers.myjobs.index_reset()
-            j.data.bcdb.check()
-            j.servers.myjobs.workers_tmux_start(4)
-            # TODO: review myjobs to have this by default.
 
-            self.zdb.start()
-            j.servers.sonic.default.start()
+            j.servers.myjobs.reset_data()
+
+            ##SHOULD NOT BE NEEDED
+            # j.data.bcdb.check()
+
+            if restart or j.sal.nettools.tcpPortConnectionTest("localhost", 9900) == False:
+                self.zdb.start()
+
+            if restart or j.sal.nettools.tcpPortConnectionTest("localhost", 1491) == False:
+                j.servers.sonic.default.start()
 
             # add system actors and basic chat flows
             self.gedis_server.actors_add("%s/base_actors" % self._dirpath)
@@ -153,23 +213,70 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.rack_server.add("bcdb_system_redis", redis_server.gevent_server)
             # FIXME: the package_manager actor doesn't properly load the package (web interface)
 
+            if restart or j.sal.nettools.tcpPortConnectionTest("localhost", 80) == False:
+                self._log_info("OPENRESTY START")
+                if restart:
+                    self.openresty_server.stop()
+                self.openresty_server.start()
+            else:
+                self.openresty_server.reload()
+
             j.tools.threebot_packages.get(
                 "webinterface",
-                path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webinterface/",
+                path=j.core.tools.text_replace(
+                    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webinterface/"
+                ),
             )
             j.tools.threebot_packages.get(
-                "wiki", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/wiki/"
+                "wiki",
+                path=j.core.tools.text_replace(
+                    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/wiki/"
+                ),
             )
             j.tools.threebot_packages.get(
-                "chat", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/chat/"
+                "chat",
+                path=j.core.tools.text_replace(
+                    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/chat/"
+                ),
             )
             j.tools.threebot_packages.get(
-                "myjobs", path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/myjobs"
+                "myjobs",
+                path=j.core.tools.text_replace(
+                    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/myjobs"
+                ),
             )
             j.tools.threebot_packages.get(
                 "packagemanagerui",
-                path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/packagemanagerui",
+                path=j.core.tools.text_replace(
+                    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/packagemanagerui"
+                ),
             )
+
+            self._log_info("start workers")
+
+            self.rack_server.start(wait=False)
+
+            # j.servers.myjobs.workers_tmux_start(2, in3bot=True)
+            j.servers.myjobs._workers_gipc_nr_max = 10
+            j.servers.myjobs.workers_subprocess_start()
+
+            self._log_info("start workers done")
+
+            # remove the package
+
+            j.threebot.servers = Servers()
+            j.threebot.servers.zdb = j.servers.zdb.default_zdb_threebot
+            j.threebot.servers.gedis = j.servers.gedis.default_gedis_threebot
+            j.threebot.servers.web = j.servers.threebot.default.openresty_server
+            j.threebot.servers.core = j.servers.threebot.default
+            j.threebot.servers.gevent_rack = j.servers.threebot.default.rack_server
+            j.threebot.myjobs = j.servers.myjobs
+            # j.threebot.bcdb_get = j.servers.threebot.bcdb_get
+            j.threebot.bcdb = BCDBS()
+            j.threebot.bcdb_factory = j.data.bcdb
+
+            # j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
+            self._maintenance()
 
             # add user added packages
             for package in j.tools.threebot_packages.find():
@@ -180,27 +287,43 @@ class ThreeBotServer(j.baseclasses.object_config):
                     package.save()
                 if package.status not in ["disabled"]:
                     self._log_warning("START:%s" % package.name)
-                    package.start()
+                    # package.start()
+                    try:
+                        package.start()
+                    except Exception as e:
+                        j.core.tools.log(level=50, exception=e, stdout=True)
+                        package.status = "error"
                     package.status = "RUNNING"
                     package.save()
-                    # try:
-                    #     package.start()
-                    # except Exception as e:
-                    #     j.core.tools.log(level=50, exception=e, stdout=True)
-                    #     package.status = "error"
-            if web:
-                self._log_info("OPENRESTY START")
-                self.openresty_server.start()
-                # for in case was already loaded
-                j.servers.threebot.current.openresty_server.reload()
-            self.rack_server.start()
+
+            self._packages_walk()
+            j.threebot.__dict__.pop("package")
+            # LETS NOT DO SERVERS YET, STILL BREAKS TOO MUCH
+            # j.__dict__.pop("servers")
+            j.__dict__.pop("builders")
+            # j.__dict__.pop("shell")
+            # j.__dict__.pop("shelli")
+            j.__dict__.pop("tutorials")
+            j.__dict__.pop("sal_zos")
+
+            # reload nginx at the end after loading packages and its config is written
+            j.threebot.servers.core.openresty_server.reload()
+
+            print("*** 3BOTSERVER IS RUNNING ***")
+            j.shell()  # DO NOT REMOVE THIS SHELL
+            forever = event.Event()
+            try:
+                forever.wait()
+            except KeyboardInterrupt:
+                self.stop()
+            return
 
         else:
             if not self.startup_cmd.is_running():
                 self.startup_cmd.start()
                 time.sleep(1)
 
-        if not j.sal.nettools.waitConnectionTest("127.0.0.1", 8901, timeout=timeout):
+        if not j.sal.nettools.waitConnectionTest("127.0.0.1", 8901, timeout=600):
             raise j.exceptions.Timeout("Could not start threebot server")
 
 
@@ -214,6 +337,51 @@ class ThreeBotServer(j.baseclasses.object_config):
 
 
         return self.client
+
+    def _packages_walk(self):
+
+        path = j.core.tools.text_replace("{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/")
+        j.threebot.__dict__["packages"] = Packages()
+
+        def process(path, arg):
+            if j.sal.fs.getBaseName(path) == "package.py":
+                path = j.sal.fs.getDirName(path)
+                path = path.rstrip("/")
+                splitted = path.split("/")
+                u = splitted.index("ThreeBotPackages")
+                name = "__".join(splitted[u + 1 :])
+                # packagename = os.path.basename(path)
+                if not name in j.threebot.packages.__dict__:
+                    if j.tools.threebot_packages.exists(name):
+                        p = j.tools.threebot_packages.get(name)
+                        p.start()
+                        j.threebot.packages.__dict__[name] = p
+                    else:
+                        j.threebot.packages.__dict__[name] = PackageInstall(name=name, path=path)
+
+            return
+
+        def callbackForMatchDir(path, arg):
+            if j.sal.fs.getBaseName(path) in [
+                "frontend",
+                "packagemanagerui",
+                "wiki",
+                "actors",
+                "models",
+                "bottle",
+                "html",
+                "static",
+                "tests",
+                "templates",
+                "macros",
+                "jobvis",
+            ]:
+                return False
+            if not j.sal.fs.getBaseName(path).startswith("_"):
+                return True
+            # return j.sal.fs.exists(j.sal.fs.joinPaths(path, "package.py"))
+
+        j.sal.fswalker.walkFunctional(path, callbackFunctionFile=process, callbackForMatchDir=callbackForMatchDir)
 
     def stop(self):
         """

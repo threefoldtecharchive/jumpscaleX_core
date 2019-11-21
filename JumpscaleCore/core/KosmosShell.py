@@ -150,6 +150,9 @@ def get_completions(self, document, complete_event):
     obj = eval_code(parent, self.get_locals(), self.get_globals())
     if obj:
         if isinstance(obj, j.baseclasses.object):
+            # inspect object before getting its members
+            obj._inspect()
+
             if not prefix.endswith("*"):
                 prefix += "*"  # to make it a real prefix
 

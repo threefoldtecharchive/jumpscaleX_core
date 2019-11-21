@@ -28,7 +28,7 @@ def main(self):
     kosmos 'j.data.bcdb.test(name="sqlite")'
 
     TO SEE THE SQLITE DB USE SOMETHING LIKE 'db browser for sqlite'
-    OPEN DATABASE IN /sandbox/var/bcdb/test/sqlite_index.db
+    OPEN DATABASE IN {DIR_BASE}/var/bcdb/test/sqlite_index.db
     
     """
 
@@ -63,7 +63,7 @@ def main(self):
             database = db
 
     class Index_MyTest(BaseModel):
-        # see /sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/clients/peewee/PeeweeFactory.py
+        # see {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/clients/peewee/PeeweeFactory.py
         # for which fields can be used
         id = p.IntegerField(unique=True)
         nid = p.IntegerField()
@@ -184,3 +184,4 @@ def main(self):
     # DO NOTE: the data stored in the SQLITE is NOT encrypted !!!!
 
     print("TEST OK")
+

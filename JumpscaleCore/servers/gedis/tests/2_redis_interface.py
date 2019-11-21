@@ -9,7 +9,7 @@ def main(self):
     """
 
     # lets make sure we have the right package loaded
-    package_path = "/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/ibiza"
+    package_path = j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/ibiza")
     cl = self._threebot_client_default
     # if reload==False then the package will not be reloaded if its already there
     cl.actors.package_manager.package_add("ibiza_test", path=package_path, reload=False)
@@ -57,3 +57,4 @@ def main(self):
 
     data3 = cl.execute_command("ibiza.painter.example3", data2)
     assert data3 == b'{"a": "a", "b": true, "c": 3}'
+

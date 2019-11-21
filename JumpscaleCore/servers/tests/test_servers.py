@@ -74,7 +74,7 @@ class TestServers(BaseTest):
         self.info("* Start Server {}".format(server))
         if server in ["etcd"]:
             server_object = getattr(j.servers, server)
-            server_process = "/sandbox/bin/etcd"
+            server_process = j.core.tools.text_replace("{DIR_BASE}/bin/etcd")
 
         else:
             server_object = getattr(j.servers, server).get()
@@ -106,3 +106,4 @@ class TestServers(BaseTest):
         self.info("* Check that can't connect to server anymore.")
         output, error = self.os_command("netstat -nltp | grep {}".format(server_element))
         self.assertFalse(output)
+
