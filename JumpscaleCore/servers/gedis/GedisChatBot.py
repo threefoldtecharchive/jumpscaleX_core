@@ -396,6 +396,9 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
     def drop_down_msg(self, msg, options, **kwargs):
         return {"cat": "drop_down_choice", "msg": msg, "options": options, "kwargs": kwargs}
 
+    def drop_down_country(self, msg):
+        return self.drop_down_choice(msg, j.data.countries.names)
+
     def user_info(self, **kwargs):
         """
         helper method to retrieve the info of a logged user
