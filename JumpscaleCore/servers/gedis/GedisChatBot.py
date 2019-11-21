@@ -289,6 +289,10 @@ class GedisChatBotSession(JSBASE):
     def md_msg(self, msg, **kwargs):
         return {"cat": "md_show", "msg": msg, "kwargs": kwargs}
 
+    def template_render(self, msg, **kwargs):
+        res = j.tools.jinja2.template_render(text=j.core.text.strip(msg), **kwargs)
+        return self.md_show(res)
+
     def md_show_update(self, msg, **kwargs):
         """
         a special helper method to send markdown content to the bot instead of questions.
