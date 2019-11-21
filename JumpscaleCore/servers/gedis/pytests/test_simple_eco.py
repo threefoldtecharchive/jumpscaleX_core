@@ -12,7 +12,7 @@ import redis
 class TestSimpleEcho(TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.client = j.servers.threebot.local_start_default(timeout=1200)
+        cls.client = j.servers.threebot.local_start_default()
         package_path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), "test_package")
         cls.client.actors.package_manager.package_add(path=package_path)
         cls.client.reload()

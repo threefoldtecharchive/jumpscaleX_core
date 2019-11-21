@@ -712,10 +712,6 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         # TODO: can now do more stuff here
         # adding packages, get them to talk to each other, ...
 
-    if web:
-        web2 = "True"
-    else:
-        web2 = "False"
     explorer_addr = None
     for i in range(count):
         if i > 0:
@@ -737,10 +733,10 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         if not docker.config.done_get("start_cmd"):
             if web:
                 docker.sshexec(
-                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_zerobot_default(packages_add=True,timeout=1000)';jsx wiki-load"
+                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_zerobot_default(packages_add=True)';jsx wiki-load"
                 )
             else:
-                start_cmd = "j.servers.threebot.local_start_zerobot_default(web=False,packages_add=True,timeout=1000)"
+                start_cmd = "j.servers.threebot.local_start_zerobot_default(packages_add=True)"
                 docker.jsxexec(start_cmd)
         docker.config.done_set("start_cmd")
         if not docker.config.done_get("config"):

@@ -344,7 +344,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                 if not name in j.threebot.packages.__dict__:
                     if j.tools.threebot_packages.exists(name):
                         p = j.tools.threebot_packages.get(name)
-                        p.start()
+                        # DONT START, has already been done up
                         j.threebot.packages.__dict__[name] = p
                     else:
                         j.threebot.packages.__dict__[name] = PackageInstall(name=name, path=path)

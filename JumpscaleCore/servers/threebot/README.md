@@ -4,7 +4,7 @@ Threebot server is designed to be your own digital self, you can host content, s
 ## how to start
 ### Basic threebot
 ```bash
-kosmos 'j.servers.threebot.get("3bot_name").start(web=False, ssl=False)'
+kosmos 'j.servers.threebot.get("3bot_name").start(ssl=False)'
 ```
 this will start the basic threebot server which will have:
 - [gedis server](https://github.com/threefoldtech/jumpscaleX_core/blob/development/docs/Gedis/README.md) with base actors loaded
@@ -13,7 +13,7 @@ this will start the basic threebot server which will have:
 
 ### threebot for web
 ```bash
-kosmos 'j.servers.threebot.get("3bot_name").start(web=True, ssl=False)'
+kosmos 'j.servers.threebot.get("3bot_name").start(ssl=False)'
 ```
 this will start the basic servers in addition to servers that will be needed to host a web application
 - [openresty server](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/servers/openresty/README.md)
@@ -22,7 +22,7 @@ this will start the basic servers in addition to servers that will be needed to 
 
 ### threebot for web with ssl
 ```bash
-kosmos 'j.servers.threebot.get("3bot_name").start(web=True, ssl=True)'
+kosmos 'j.servers.threebot.get("3bot_name").start(ssl=True)'
 ```
 this will start the same threebot for web server with ssl configured
 
