@@ -618,7 +618,7 @@ class BCDB(j.baseclasses.object):
             path2 = "%s/%s.py" % (path, pyfile_base)
             self.model_get_from_file(path2)
 
-    def _unserialize(self, id, data, return_as_capnp=False):
+    def _unserialize(self, id, data, return_as_capnp=False, schema=None):
         """
         unserialzes data coming from database
         :param id:
@@ -639,7 +639,7 @@ class BCDB(j.baseclasses.object):
         if return_as_capnp:
             return bdata
         else:
-            obj = j.data.serializers.jsxdata.loads(bdata, bcdb=self)
+            obj = j.data.serializers.jsxdata.loads(bdata, bcdb=self, schema=schema)
             obj.nid = nid
             if not obj.id and id:
                 obj.id = id

@@ -55,7 +55,7 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
         else:
             raise j.exceptions.Base("childclass cannot be defined")
 
-    def client_admin_get(self, name="admin", addr="localhost", port=9900, secret="123456", mode="seq"):
+    def client_admin_get(self, name="admin", addr="localhost", port=9901, secret="123456", mode="seq"):
         if self.exists(name=name):
             cl = self.get(name=name)
             # we should make sure AUTH has been launched as zdb client admin comes from config
