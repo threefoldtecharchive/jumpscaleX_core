@@ -94,18 +94,6 @@ class OpenRestyServer(j.baseclasses.factory_data):
             j.sal.fs.symlink(
                 "%s/static" % weblibs_path, "{}/static/weblibs".format(self._web_path), overwriteTarget=True
             )
-
-            # link individual files & create a directory TODO:*1
-            lualib_dir = j.core.tools.text_replace("{DIR_BASE}/openresty/lualib")
-            if not j.sal.fs.exists(lualib_dir):
-                j.sal.fs.createDir(lualib_dir)
-            j.sal.fs.copyFile(
-                "%s/web_resources/lualib/redis.lua" % self._dirpath,
-                j.core.tools.text_replace("{DIR_BASE}/openresty/lualib/redis.lua"),
-            )
-            # j.sal.fs.copyFile(
-            #     "%s/web_resources/lualib/websocket.lua" % self._dirpath, j.core.tools.text_replace("{DIR_BASE}/openresty/lualib/websocket.lua")
-            # )
             self.status = "installed"
 
             self.save()
