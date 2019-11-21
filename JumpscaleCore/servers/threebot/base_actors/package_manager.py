@@ -74,7 +74,7 @@ class package_manager(j.baseclasses.threebot_actor):
             package.status = "RUNNING"
             package.save()
         except Exception as e:
-            self._log_error(e)
+            self._log_error(str(e), exception=e)
             return f"Could not add package {package.name}: {e}"
 
         # reload openresty configuration
