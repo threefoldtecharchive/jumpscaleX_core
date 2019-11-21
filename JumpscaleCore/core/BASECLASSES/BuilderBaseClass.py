@@ -389,6 +389,18 @@ class BuilderBaseClass(JSBase):
         j.sal.fs.remove(path)
         return (rc, res, out)
 
+    def _touch(self, path):
+        path = self._replace(path)
+        self.tools.touch.touch(path)
+
+    def _dir_ensure(self, path):
+        path = self._replace(path)
+        j.builders.tools.dir_ensure(path)
+
+    def _joinpaths(self, *args):
+        args = [self._replace(arg) for arg in args]
+        return self.tools.joinpaths(*args)
+
     def _copy(
         self,
         src,
@@ -457,7 +469,6 @@ class BuilderBaseClass(JSBase):
         """
         self._log_debug("remove:%s" % path)
         path = self._replace(path)
-
         j.sal.fs.remove(path)
 
     def _exists(self, path):
@@ -618,5 +629,3 @@ class BuilderBaseClass(JSBase):
 
         """
         raise j.exceptions.Base("not implemented")
-
-

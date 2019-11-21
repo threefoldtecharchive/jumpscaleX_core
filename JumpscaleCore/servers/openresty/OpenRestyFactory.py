@@ -44,4 +44,3 @@ class OpenRestyFactory(j.baseclasses.object_config_collection_testtools):
             self.install()
 
         self._test_run(name=name)
-

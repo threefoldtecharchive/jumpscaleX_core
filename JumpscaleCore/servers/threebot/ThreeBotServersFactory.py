@@ -33,8 +33,6 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         fallback_ssl_key_path = j.core.tools.text_replace("{DIR_BASE}/cfg/ss/resty-auto-ssl-fallback.crt")
         if force or need_install() or not j.sal.fs.exists(fallback_ssl_key_path):
             j.servers.openresty.install()
-            j.builders.web.openresty.install()
-            j.builders.runtimes.lua.install()
             j.builders.db.zdb.install()
             j.builders.apps.sonic.install()
             self._log_info("install done for threebot server.")
