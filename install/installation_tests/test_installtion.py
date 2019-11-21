@@ -1,5 +1,6 @@
 import os
-import uuid, random
+import uuid
+import random
 from .base_test import BaseTest
 from unittest import skip
 import requests
@@ -103,7 +104,7 @@ class TestInstallationInDocker(BaseTest):
         command = "cat /sandbox/code/github/threefoldtech/jumpscaleX_core/.git/HEAD"
         output, _ = self.docker_command(command)
         branch = output.decode().replace("\n", "").split("/")[-1]
-        self.assertEqual(branch, "development")
+        self.assertEqual(branch, "master")
 
         self.info("check  that ssh-key loaded in docker successfully")
         command = "cat /root/.ssh/authorized_keys"
@@ -424,7 +425,7 @@ class TestInstallationInDocker(BaseTest):
         **Verify that threebot-test option  works successfully **
         """
         self.info(" Run threebot option .")
-        command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx"
+        command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
         self.os_command(command)
 
         self.info("Change installer script [/tmp/jsx] to be executed ")
@@ -456,7 +457,7 @@ class TestInstallationInDocker(BaseTest):
 
         **Verify that basebuilder option  works successfully **
         """
-        command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx"
+        command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
         self.os_command(command)
 
         self.info("Change installer script [/tmp/jsx] to be executed ")
@@ -483,7 +484,7 @@ class TestInstallationInDocker(BaseTest):
         self.assertIn("threefoldtech/base", output.decode())
 
         self.info("install jumpscale inside the base docker, should succeed  ")
-        command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx"
+        command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
         self.docker_command(command)
         command = "chmod +x /tmp/jsx"
         self.docker_command(command)
@@ -514,8 +515,8 @@ class TestInstallationInDocker(BaseTest):
         command = "cd /sandbox/code/github/threefoldtech/jumpscaleX_core && git log -2"
         output, error = self.os_command(command)
         commits = output.decode().splitlines()
-        latest_commit = commits[0][commits[0].find("commit") + 7 :]
-        old_commit = commits[1][commits[1].find("commit") + 7 :]
+        latest_commit = commits[0][commits[0].find("commit") + 7:]
+        old_commit = commits[1][commits[1].find("commit") + 7:]
         command = "cd /sandbox/code/github/threefoldtech/jumpscaleX_core && git checkout {}".format(old_commit)
         output, error = self.os_command(command)
 
@@ -715,7 +716,7 @@ class TestInstallationInSystem(BaseTest):
 
         self.info("Use load-wikis option.")
         wikis_name = self.rand_str()
-        wikis_url = "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/docs/wikis/examples/docs"
+        wikis_url = "https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/docs/wikis/examples/docs"
         command = "/tmp/jsx  wiki-load -n {} -u {}".format(wikis_name, wikis_url)
         output, error = self.os_command(command)
         self.assertFalse(error)
@@ -724,4 +725,3 @@ class TestInstallationInSystem(BaseTest):
         r = requests.get("https://127.0.0.1/wiki/test_presentaion.md", verify=False)
         self.assertEqual(r.status_code, 200)
         self.assertIn("includes 1", r.content.decode())
-

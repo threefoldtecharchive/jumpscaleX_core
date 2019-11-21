@@ -9,7 +9,7 @@ install:
   - cd /sandbox/code/github/threefoldtech/
   - declare strs=('libs' 'libs_extra' 'builders' 'threebot') && for s in ${strs[@]}; do 
     rm -rf /sandbox/code/github/threefoldtech/jumpscaleX_$s && 
-    git clone https://github.com/threefoldtech/jumpscaleX_$s.git --branch development; done
+    git clone https://github.com/threefoldtech/jumpscaleX_$s.git --branch master; done
   - rm -rf /sandbox/code/github/threefoldtech/jumpscaleX_core
   - cp -r /opt/code/github/threefoldtech/jumpscaleX_core /sandbox/code/github/threefoldtech/jumpscaleX_core
   - source /sandbox/env.sh; js_init generate

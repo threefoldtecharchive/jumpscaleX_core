@@ -4,7 +4,7 @@ Registry is a package that allows the users to cooperate on data as authors, you
 
 ## Package
 
-Check the package docs [here](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/ThreeBotPackages/tfgrid/registry/wiki/README.md)
+Check the package docs [here](https://github.com/threefoldtech/jumpscaleX_threebot/blob/master/ThreeBotPackages/tfgrid/registry/wiki/README.md)
 
 **Note** In order to use the client you need to start the package first
 

@@ -58,7 +58,7 @@ Make sure to check whether **this** ssh key is stored in your github account. If
 #### Download the installer file, change its permission to make it executable
 
 ```bash
-curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx;
+curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx;
 chmod +x /tmp/jsx;
 ```
 

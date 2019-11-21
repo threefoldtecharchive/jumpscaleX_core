@@ -7,7 +7,7 @@ from urllib.request import urlopen
 from importlib import util
 
 
-DEFAULT_BRANCH = "development"
+DEFAULT_BRANCH = "master"
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
@@ -441,7 +441,7 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
         wikis.append(
             (
                 "testwikis",
-                "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/docs/wikis/examples/docs",
+                "https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/docs/wikis/examples/docs",
             )
         )
         wikis.append(("tokens", "https://github.com/threefoldfoundation/info_tokens/tree/development/docs"))

@@ -58,7 +58,7 @@ class TestPackageManager(TestCase):
         if method == "path":
             package = {"path": self.path}
         else:
-            giturl = "https://github.com/threefoldtech/jumpscaleX_core/tree/development/JumpscaleCore/servers/threebot/tests/test_package"
+            giturl = "https://github.com/threefoldtech/jumpscaleX_core/tree/master/JumpscaleCore/servers/threebot/tests/test_package"
             package = {"git_url": giturl}
 
         self.package_manager.package_add(**package)

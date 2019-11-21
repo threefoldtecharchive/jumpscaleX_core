@@ -34,7 +34,7 @@ class BuilderEthereum(j.baseclasses.builder):
 ## Builder tools 
 Builder tools is a set of tools to perform the common tasks in your builder (e.g read a file
 , write to a file, execute bash commands and many other handy methods that you will probably need in your builder)
-Check [BuilderTools.py](https://github.com/threefoldtech/jumpscaleX/blob/development/Jumpscale/builder/tools/BuilderTools.py)
+Check [BuilderTools.py](https://github.com/threefoldtech/jumpscaleX/blob/master/Jumpscale/builder/tools/BuilderTools.py)
  to see the full list of methods available 
  
 ## Builder state

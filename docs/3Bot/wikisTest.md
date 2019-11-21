@@ -5,7 +5,7 @@
 ### Install jumpscaleX in a container with threebot using the following steps
 
 ```bash
-curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py > /tmp/jsx;
+curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py > /tmp/jsx;
 chmod +x /tmp/jsx;
 /tmp/jsx container-install -s --threebot;
 ```
@@ -35,6 +35,6 @@ check in web browser ip that wireguard give it to you
 check in web browser ip of docker container
 
 #### to check slides and macros
-See how to setup a [service account](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/docs/wikis/tech/service_account.md) and use [gslide macro](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/docs/wikis/macro/gslide.md).
+See how to setup a [service account](https://github.com/threefoldtech/jumpscaleX_threebot/blob/master/docs/wikis/tech/service_account.md) and use [gslide macro](https://github.com/threefoldtech/jumpscaleX_threebot/blob/master/docs/wikis/macro/gslide.md).
 
 Then open your browser at `https://your-ip/wiki/testwikis`.

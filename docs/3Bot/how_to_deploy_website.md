@@ -35,7 +35,7 @@ The deploy website 3bot can be used to deploy websites on either a caddy server 
 1. **Domain name**: a domain name is registered using any domain name provider
 2. **Github repository url**: the website data to be deployed should be in a github repo and the url is given in the following format: https://github.com/Incubaid/www_incubaid
 3. **Branch**: the branch in the github repository to use
-4. **JWT Token**: A JWT token retrieved using https://itsyou.online/ is required.To get a JWT token using the itsyouonline client click [here](https://github.com/threefoldtech/jumpscaleX/blob/development/docs/howto/get_jwt_with_itsoyouonline_client.md).
+4. **JWT Token**: A JWT token retrieved using https://itsyou.online/ is required.To get a JWT token using the itsyouonline client click [here](https://github.com/threefoldtech/jumpscaleX/blob/master/docs/howto/get_jwt_with_itsoyouonline_client.md).
 *note: Only JWT Tokens for users who are part of sys-admin iyo organization will be valid*
 5. **Farm Zerotier ID** : Current support only for 'd3ecf5726d13091a'  
 6. **Server option**:

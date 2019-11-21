@@ -3,7 +3,7 @@ import getpass
 import pickle
 import re
 
-DEFAULT_BRANCH = "development"
+DEFAULT_BRANCH = "master
 GITREPOS = {}
 
 GITREPOS["builders_extra"] = [

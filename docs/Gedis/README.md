@@ -108,4 +108,4 @@ client.actors.actor.ping() # note if your actor name is xactor, then client.acto
 # result will be b'pong'
 ```
 
-**to see more usage examples please read the tests in [gedis_factory class](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/servers/gedis/GedisFactory.py)**
+**to see more usage examples please read the tests in [gedis_factory class](https://github.com/threefoldtech/jumpscaleX_core/blob/master/JumpscaleCore/servers/gedis/GedisFactory.py)**

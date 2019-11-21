@@ -82,7 +82,7 @@ Options:
   --portrange INTEGER  portrange, leave empty unless you know what you do.
   --image TEXT         select the container image to use to create the
                        container, leave empty unless you know what you do (-:
-  -b, --branch TEXT    jumpscale branch. default 'master' or 'development' for
+  -b, --branch TEXT    jumpscale branch. default 'master' or 'master' for
                        unstable release
   --pull               pull code from git, if not specified will only pull if
                        code directory does not exist yet

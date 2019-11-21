@@ -181,7 +181,7 @@ you can then check your 3bot registration transaction on the [testnet explorer]
 (https://explorer.testnet.threefoldtoken.com/)
 You can search the 3bot by name. Here we would enter your3bot.fancyname and click the search button. You should see the detail about the 3bot and a link to the creation transaction.
 
-For mode detail about the 3Bot registration and updates, [go to the full documentation](https://github.com/threefoldtech/jumpscaleX/blob/development/Jumpscale/clients/blockchain/tfchain/README.md#create-and-manage-3bot-records)
+For mode detail about the 3Bot registration and updates, [go to the full documentation](https://github.com/threefoldtech/jumpscaleX/blob/master/Jumpscale/clients/blockchain/tfchain/README.md#create-and-manage-3bot-records)
 
 
 # 4. Rent a virtual machine running our light weight, secure and super efficient OS called zero OS on the TF grid
@@ -396,7 +396,7 @@ If you want to know more about capacity reservation like :
 * Make your container accessible from internet
 * reserve S3 archive storage
 * reserve a Zero DB namespace
-check out this [documentation](https://github.com/threefoldfoundation/info_grid/blob/development/docs/capacity_reservation/README.md)
+check out this [documentation](https://github.com/threefoldfoundation/info_grid/blob/master/docs/capacity_reservation/README.md)
 
 ## Builders
 

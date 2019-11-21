@@ -1,7 +1,8 @@
 import unittest
 import subprocess
 from loguru import logger
-import platform, uuid
+import platform
+import uuid
 
 
 class BaseTest(unittest.TestCase):
@@ -53,7 +54,7 @@ class BaseTest(unittest.TestCase):
     @staticmethod
     def jumpscale_installation(install_type, options=" "):
         BaseTest.info("copy installation script to /tmp")
-        command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx"
+        command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
         BaseTest.os_command(command)
 
         BaseTest.info("Change installer script [/tmp/jsx] to be executed ")
@@ -63,7 +64,7 @@ class BaseTest(unittest.TestCase):
         command = "/tmp/jsx configure -s --secret mysecret"
         BaseTest.os_command(command)
 
-        BaseTest.info("Run script with {} with branch development".format(install_type))
+        BaseTest.info("Run script with {} with branch master".format(install_type))
         command = "/tmp/jsx {} -s {}".format(install_type, options)
         output, error = BaseTest.os_command(command)
         return output, error
