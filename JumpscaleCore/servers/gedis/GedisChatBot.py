@@ -399,6 +399,9 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
     def drop_down_country(self, msg):
         return self.drop_down_choice(msg, j.data.countries.names)
 
+    def autocomplete_drop_down(self, msg, options):
+        return self.drop_down_choice(msg, options, auto_complete=True)
+
     def user_info(self, **kwargs):
         """
         helper method to retrieve the info of a logged user
