@@ -1,6 +1,9 @@
 from Jumpscale import j
 from base_test import BaseTest
-import random, requests, uuid, unittest
+import random
+import requests
+import uuid
+import unittest
 from parameterized import parameterized
 
 MAIN_ACTORS = ["package_manager", "sonic", "gdrive", "myjobs", "identity", "chatbot"]
@@ -50,7 +53,7 @@ class TestThreebotServer(BaseTest):
         - Check it works correctly.
         """
         self.info("Get gedis client from it .")
-        gedis_client = j.servers.threebot.local_start_default(timeout=1500)
+        gedis_client = j.servers.threebot.local_start_default()
         self.info("Check it works correctly.")
         self.assertTrue(gedis_client.ping())
 
