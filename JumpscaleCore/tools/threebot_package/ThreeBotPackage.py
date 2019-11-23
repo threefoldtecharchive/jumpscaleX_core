@@ -16,24 +16,26 @@ class ThreeBotPackage(JSConfigBase):
         status = "init,installed,running,halted,disabled,error" (E)
         """
 
-    @property
-    def threebot_server(self):
-        return j.servers.threebot.get(name=self.threebot_server_name)
-
-    @property
-    def gedis_server(self):
-        return self.threebot_server.gedis_server
-
-    @property
-    def openresty(self):
-        return self.threebot_server.openresty_server
+    # @property
+    # def threebot_server(self):
+    #     return j.servers.threebot.get(name=self.threebot_server_name)
+    #
+    # @property
+    # def gedis_server(self):
+    #     return self.threebot_server.gedis_server
+    #
+    # @property
+    # def openresty(self):
+    #     return self.threebot_server.openresty_server
 
     def _init(self, **kwargs):
         self._init_ = False
 
     def _init_before_action(self):
 
-        # TODO: put check back that when used not from a running threebotserver, you don't continue
+        if not "bcdb" in j.threebot.__dict__:
+            # means we are not in a threebot server, should not allow the following to happen
+            raise j.exceptions.Base("cannot use threebot package data model from process out of threebot")
 
         if self._init_ == False:
             if self.giturl:

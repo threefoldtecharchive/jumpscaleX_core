@@ -382,6 +382,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         return self._code_generation_dir_
 
     def migrate(self, base_url, second_url, bcdb="system", **kwargs):
+        """
+        #TODO: what is this doing?
+        """
         bcdb_instance = self.get(bcdb)
         base_model = bcdb_instance.model_get(url=base_url)
         second_model = bcdb_instance.model_get(url=second_url)

@@ -26,20 +26,17 @@ class ThreeBotPackageBase(JSBase):
     def _init_pre2(self, **kwargs):
 
         assert "package" in kwargs
-        self._package = kwargs["package"]
         self.package_root = self._package.path
-        self.gedis_server = self._package.gedis_server
-        self.rack_server = self._package.threebot_server.rack_server
-        self.openresty = self._package.openresty
-        self.threebot_server = self._package.threebot_server
         self.actors_namespace = "default"
 
-    ###DO NOT DO ANYTHING IN THE BASECLASSES BELOW PLEASE
+        self._data = kwargs["package"]
 
-    @property
-    def bcdb(self):
-        # return system by default
-        return j.data.bcdb.system
+        # self.gedis_server = self._package.gedis_server
+        # self.rack_server = self._package.threebot_server.rack_server
+        # self.openresty = self._package.openresty
+        # self.threebot_server = self._package.threebot_server
+
+    ###DO NOT DO ANYTHING IN THE BASECLASSES BELOW PLEASE
 
     def prepare(self):
         """

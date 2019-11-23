@@ -173,14 +173,17 @@ class BCDB(j.baseclasses.object):
                     except:
                         C = j.data.serializers.yaml.dumps(obj._ddict)
                         ext = "yaml"
-                    if "name" in obj._ddict:
+                    if "name" in obj._ddict and "/" not in obj.name:
                         print(" - %s:%s" % (obj._schema.url, obj.name))
-                        dpath_file_name = "%s/%s.%s" % (dpath, obj.name, ext)
-                        j.sal.fs.writeFile(dpath_file_name, C)
+                        dpath_file = "%s/%s.%s" % (dpath, obj.name, ext)
                     else:
                         print(" - %s:%s" % (obj._schema.url, obj.id))
-                        dpath_file_id = "%s/%s.%s" % (dpath, obj.id, ext)
-                        j.sal.fs.writeFile(dpath_file_id, C)
+                        dpath_file = "%s/%s.%s" % (dpath, obj.id, ext)
+                    try:
+                        j.sal.fs.writeFile(dpath_file, C)
+                    except Exception as e:
+                        j.shell()
+                        w
 
     def import_(self, path=None, reset=True):
         if not path or not j.sal.fs.exists(path):

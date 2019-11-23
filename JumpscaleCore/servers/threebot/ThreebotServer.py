@@ -279,7 +279,6 @@ class ThreeBotServer(j.baseclasses.object_config):
                         j.core.tools.log(level=50, exception=e, stdout=True)
                 if package.status not in ["disabled"]:
                     self._log_warning("START:%s" % package.name)
-                    # package.start()
                     try:
                         package.start()
                         package.status = "RUNNING"
