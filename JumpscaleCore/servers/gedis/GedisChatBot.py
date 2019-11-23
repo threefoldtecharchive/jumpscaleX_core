@@ -289,6 +289,10 @@ class GedisChatBotSession(JSBASE):
     def md_msg(self, msg, **kwargs):
         return {"cat": "md_show", "msg": msg, "kwargs": kwargs}
 
+    def template_render(self, msg, **kwargs):
+        res = j.tools.jinja2.template_render(text=j.core.text.strip(msg), **kwargs)
+        return self.md_show(res)
+
     def md_show_update(self, msg, **kwargs):
         """
         a special helper method to send markdown content to the bot instead of questions.
@@ -391,6 +395,12 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
 
     def drop_down_msg(self, msg, options, **kwargs):
         return {"cat": "drop_down_choice", "msg": msg, "options": options, "kwargs": kwargs}
+
+    def drop_down_country(self, msg):
+        return self.drop_down_choice(msg, j.data.countries.names)
+
+    def autocomplete_drop_down(self, msg, options):
+        return self.drop_down_choice(msg, options, auto_complete=True)
 
     def user_info(self, **kwargs):
         """
