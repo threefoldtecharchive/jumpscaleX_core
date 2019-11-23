@@ -161,7 +161,7 @@ class SystemFS(JSBASE, TESTTOOLS):
         recursive=True,
         rsyncdelete=True,
         createdir=False,
-        showout=False,
+        showout=True,
         retry=5,
     ):
         """Recursively copy an entire directory tree rooted at src.
