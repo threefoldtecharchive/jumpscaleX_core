@@ -55,7 +55,7 @@ def main(self):
         model_obj.newprop = "a"
     except:
         exception = True
-    # assert exception  #TODO: needs to be re-enabled
+    assert exception
 
     data = model.get(model_obj.id)
 

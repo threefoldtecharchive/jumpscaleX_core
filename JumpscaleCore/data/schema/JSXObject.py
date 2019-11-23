@@ -219,6 +219,14 @@ class JSXObject(j.baseclasses.object):
         self._ddict
         return True
 
+    def __setattr__(self, name, value):
+        name_condition = not name.startswith("_") and name not in ["acl_id", "nid"]
+
+        if name_condition and name not in self._properties_names_get():
+            raise AttributeError(f"Object has no attribute {name}")
+
+        j.baseclasses.object.__setattr__(self, name, value)
+
     @property
     def _data(self):
         self._capnp_obj  # leave, is to make sure we have error if something happens
