@@ -13,7 +13,9 @@ class Format(Enum):
 
 
 class TFGridRegistryClient(j.baseclasses.object):
-    """A class is used as a client to be able to handle registry actors.
+    """
+
+    A class is used as a client to be able to handle registry actors.
 
     Attributes
     ----------
@@ -30,10 +32,11 @@ class TFGridRegistryClient(j.baseclasses.object):
         self.me = j.tools.threebot.me.get(
             name="test", tid=3, email="test.test@gmail", tname="testUser", pubkey="asdf3dsfasdlfkjasd88893n"
         )
-        self.gedis_client = j.servers.threebot.local_start_default()
+        self.gedis_client = j.servers.threebot.local_start_default(web=True)
         self.gedis_client.actors.package_manager.package_add(
             path=j.core.tools.text_replace(
-                "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry")
+                "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry"
+            )
         )
         self.gedis_client.reload()
         self.registry_client = self.gedis_client.actors.registry
@@ -58,6 +61,8 @@ class TFGridRegistryClient(j.baseclasses.object):
     ):
         """client comes from j.clients.threebot.client_get(threebot="kristof.ibiza").
 
+        client comes from j.clients.threebot.client_get(threebot="kristof.ibiza")
+
         register in easy way an object with our without schema
 
         Args:
@@ -75,6 +80,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         """
         scm = j.data.schema.get_from_text(schema)
         self.registry_client.schema_register(scm.url, schema)
+        model = self.bcdb.model_get(url=scm.url).new()
         if is_encrypted_data:
             authors.append(self.me.tid)
             dataobj = self.__add_registry_schema_encrypted_data(
@@ -317,6 +323,8 @@ class TFGridRegistryClient(j.baseclasses.object):
         Returns:
 
         """
+
+    def __sign_data(self, dataobj):
         pubkey = self.me.nacl.public_key.encode()
         signingkey = self.me.nacl.signing_key.encode()
         verifykey = self.me.nacl.verify_key.encode()
