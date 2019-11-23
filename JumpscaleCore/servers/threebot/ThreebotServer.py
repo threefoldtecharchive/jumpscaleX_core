@@ -191,12 +191,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             ##SHOULD NOT BE NEEDED
             # j.data.bcdb.check()
 
-            if restart or j.sal.nettools.tcpPortConnectionTest("localhost", 9900) == False:
-                self.zdb.start()
-
-            if restart or j.sal.nettools.tcpPortConnectionTest("localhost", 1491) == False:
-                j.servers.sonic.default.start()
-
             # add system actors and basic chat flows
             self.gedis_server.actors_add("%s/base_actors" % self._dirpath)
             self.gedis_server.chatbot.chatflows_load("%s/base_chatflows" % self._dirpath)
@@ -276,18 +270,22 @@ class ThreeBotServer(j.baseclasses.object_config):
             for package in j.tools.threebot_packages.find():
                 if package.status == "INIT":
                     self._log_warning("PREPARE:%s" % package.name)
-                    package.prepare()
-                    package.status = "INSTALLED"
-                    package.save()
+                    try:
+                        package.prepare()
+                        package.status = "INSTALLED"
+                        package.save()
+                    except Exception as e:
+                        self._log_error("could not install package:%s" % package.name)
+                        j.core.tools.log(level=50, exception=e, stdout=True)
                 if package.status not in ["disabled"]:
                     self._log_warning("START:%s" % package.name)
                     # package.start()
                     try:
                         package.start()
+                        package.status = "RUNNING"
                     except Exception as e:
                         j.core.tools.log(level=50, exception=e, stdout=True)
                         package.status = "error"
-                    package.status = "RUNNING"
                     package.save()
 
             self._packages_walk()
@@ -303,7 +301,9 @@ class ThreeBotServer(j.baseclasses.object_config):
             # reload nginx at the end after loading packages and its config is written
             j.threebot.servers.core.openresty_server.reload()
 
+            print("*****************************")
             print("*** 3BOTSERVER IS RUNNING ***")
+            print("*****************************")
             j.shell()  # DO NOT REMOVE THIS SHELL
             forever = event.Event()
             try:
@@ -334,13 +334,13 @@ class ThreeBotServer(j.baseclasses.object_config):
         j.threebot.__dict__["packages"] = Packages()
 
         def process(path, arg):
-            if j.sal.fs.getBaseName(path) == "package.py":
+            if j.sal.fs.getBaseName(path) == "package.toml":
                 path = j.sal.fs.getDirName(path)
                 path = path.rstrip("/")
-                splitted = path.split("/")
-                u = splitted.index("ThreeBotPackages")
-                name = "__".join(splitted[u + 1 :])
-                # packagename = os.path.basename(path)
+
+                config = j.data.serializers.toml.loads(j.sal.fs.readFile(path))
+                j.shell()
+
                 if not name in j.threebot.packages.__dict__:
                     if j.tools.threebot_packages.exists(name):
                         p = j.tools.threebot_packages.get(name)

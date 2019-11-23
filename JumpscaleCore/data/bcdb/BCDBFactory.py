@@ -71,6 +71,31 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     def system(self):
         return self.get_system()
 
+    def threebot_stop(self):
+        """
+        kosmos 'j.data.bcdb.threebot_stop()'
+        stops the threebot sonic & zdb
+        :return:
+        """
+        j.servers.threebot.default.zdb.stop()
+        j.servers.sonic.default.stop()
+
+        assert j.sal.process.checkProcessRunning("zdb") == False
+        assert j.sal.process.checkProcessRunning("sonic") == False
+
+    def threebot_start(self):
+        """
+        kosmos 'j.data.bcdb.threebot_start()'
+
+        starts all required services for the BCDB to work for threebot
+        :return:
+        """
+        self.system
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 9900) == False:
+            j.servers.threebot.default.zdb.start()
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 1491) == False:
+            j.servers.sonic.default.start()
+
     def get_system(self, reset=False):
         """
         sqlite based BCDB, don't need ZDB for this
@@ -80,7 +105,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if not self._system:
             storclient = j.clients.sqlitedb.client_get(namespace="system")
             # storclient = j.clients.rdb.client_get(namespace="system")
-            self._system = self._get("system", storclient=storclient, reset=reset)
+            self._system = self.get("system", storclient=storclient, reset=reset)
         return self._system
 
     def get_test(self, reset=False):

@@ -145,33 +145,47 @@ class BCDB(j.baseclasses.object):
             # there is no other way we can do this because without iterator the rebuild index cannot be done
             self.index_rebuild()
 
-    def export(self, path=None, encrypt=True):
+    def export(self, path=None, encrypt=True, reset=False):
         if not path:
             raise j.exceptions.Base("export no path")
-        for o in self.meta.schema_dicts:
-            m = self.model_get(schema=o["text"])
-            # to make schema export ID deterministic we add the mid at the beginning of the file name
-            dpath = "%s/%s__%s__%s" % (path, m.mid, m.schema.url, m.schema._md5)
+        if reset:
+            j.sal.fs.remove(path)
+        j.sal.fs.createDir(path)
+
+        for m in self.models:
+            dpath = f"{path}/{m.schema.url}"
             j.sal.fs.createDir(dpath)
-            dpath_file = "%s/meta.schema" % (dpath)
-            j.sal.fs.writeFile(dpath_file, m.schema.text)
+            j.sal.fs.writeFile(f"{dpath}/_schema.toml", m.schema.text)
             for obj in list(m.iterate()):
-                if obj._model.schema.url == o["url"]:
-                    json = obj._json
-                    if encrypt:
-                        ext = ".encr"
-                        json = j.data.nacl.default.encryptSymmetric(json)
-                    else:
-                        ext = ""
+
+                assert obj._model.schema.url == m.schema.url
+                assert obj._model.schema._md5 == obj._schema._md5
+
+                if encrypt:
+                    data = obj._data
+                    data2 = j.data.nacl.default.encryptSymmetric(data)
+                    print(" - %s:%s" % (obj._schema.url, obj.id))
+                    j.sal.fs.writeFile("%s/%s.data" % (dpath, obj.id), data2)
+                else:
+                    try:
+                        C = j.data.serializers.toml.dumps(obj._ddict)
+                        ext = "toml"
+                    except:
+                        C = j.data.serializers.yaml.dumps(obj._ddict)
+                        ext = "yaml"
                     if "name" in obj._ddict:
-                        dpath_file = "%s/%s__%s.json%s" % (dpath, obj.name, obj.id, ext)
+                        print(" - %s:%s" % (obj._schema.url, obj.name))
+                        dpath_file_name = "%s/%s.%s" % (dpath, obj.name, ext)
+                        j.sal.fs.writeFile(dpath_file_name, C)
                     else:
-                        dpath_file = "%s/%s.json%s" % (dpath, obj.id, ext)
-                    j.sal.fs.writeFile(dpath_file, json)
+                        print(" - %s:%s" % (obj._schema.url, obj.id))
+                        dpath_file_id = "%s/%s.%s" % (dpath, obj.id, ext)
+                        j.sal.fs.writeFile(dpath_file_id, C)
 
     def import_(self, path=None, reset=True):
-        if not path:
-            raise j.exceptions.Base("export no path")
+        if not path or not j.sal.fs.exists(path):
+            j.shell()
+            raise j.exceptions.Base("import no path, or does not exist")
         if reset:
             self.reset()
             if self.storclient:
@@ -179,82 +193,62 @@ class BCDB(j.baseclasses.object):
         self._log_info("Load bcdb:%s from %s" % (self.name, path))
         assert j.sal.fs.exists(path)
 
-        data = {}
-        models = {}
-        max = 0
-        # first load all schemas
-        for schema_id in j.sal.fs.listDirsInDir(path, False, dirNameOnly=True):
-            mid, url, md5 = schema_id.split("__")
-            schema_path = "%s/%s" % (path, schema_id)
-            schema_text = j.sal.fs.readFile("%s/meta.schema" % schema_path)
-            schema = j.data.schema.get_from_text(schema_text, multiple=False)
+        for url_path in j.sal.fs.listDirsInDir(path, False, dirNameOnly=False):
+            data = {}
+            schema_text = j.sal.fs.readFile("%s/_schema.toml" % url_path)
+            schema = j.data.schema.get_from_text(schema_text, url=j.sal.fs.getBaseName(url_path), multiple=False)
             model = self.model_get(schema=schema)
-            models[md5] = model
-        # now load the data
-        for schema_id in j.sal.fs.listDirsInDir(path, False, dirNameOnly=True):
-            schema_path = "%s/%s" % (path, schema_id)
-            mid, url, md5 = schema_id.split("__")
-            # print("MD5: %s" % md5)
-            model = models[md5]
-            assert model.schema._md5 == md5
-            for item in j.sal.fs.listFilesInDir(schema_path, False):
-                if j.sal.fs.getFileExtension(item) == "encr":
+            max = 0
+            for item in j.sal.fs.listFilesInDir(url_path, False):
+                ext = j.sal.fs.getFileExtension(item)
+                if ext == "data":
                     self._log("encr:%s" % item)
-                    encr = True
-                elif j.sal.fs.getFileExtension(item) == "json":
-                    self._log("json:%s" % item)
-                    encr = False
+                    data2 = j.sal.fs.readFile(item, binary=True)
+                    data = j.data.nacl.default.decryptSymmetric(data2)
+                    try:
+                        obj = model.schema.new(capnpdata=data)
+                        data[obj.id] = obj
+                    except:
+                        raise j.exceptions.Base("can't get a new data obj based on binary data: %s" % (item))
+                elif ext in ["toml", "yaml"]:
+                    if ext == "toml":
+                        self._log("toml:%s" % item)
+                        data = j.data.serializers.toml.load(item)
+                    if ext == "yaml":
+                        self._log("yaml:%s" % item)
+                        data = j.data.serializers.yaml.load(item)
+                    try:
+                        obj = model.schema.new(datadict=data)
+                        data[obj.id] = obj
+                    except:
+                        raise j.exceptions.Base("can't get a new data obj based on toml data:%s" % item)
                 else:
                     self._log("skip:%s" % item)
                     continue
-                base = j.sal.fs.getBaseName(item)
-                if base.find("__") != -1:
-                    obj_id = int(base.split("__")[1].split(".")[0])
-                else:
-                    obj_id = int(base.split(".")[0])
-                if obj_id in data:
-                    raise j.exceptions.Base("id's need to be unique, cannot import")
-                json = j.sal.fs.readFile(item, binary=encr)
-                if encr:
-                    json = j.data.nacl.default.decryptSymmetric(json)
-                data[obj_id] = (md5, json)
-                if obj_id > max:
-                    max = obj_id
+                if obj.id > max:
+                    max = obj.id
 
-        if self.storclient:
+        if reset:
             assert self.storclient.nsinfo["entries"] == 1
             lastid = 1
 
         # have to import it in the exact same order
-        for i in range(1, max + 1):
-            self._log("import: %s" % json)
-            if self.storclient:
-                if self.storclient.get(key=i - 1) is None:
-                    obj = model.new()
-                    if hasattr(obj, "name"):
-                        obj.name = j.data.idgenerator.generateGUID()
-                    obj.id = None
-                    obj.save()
+        for i in range(0, max + 1):
             if i in data:
-                md5, json = data[i]
-                model = models[md5]
-                if self.storclient:
-                    if self.storclient.get(key=i) is None:
-                        # does not exist yet
-                        try:
-                            obj = model.new(data=json)
-                        except:
-                            raise j.exceptions.Base("can't get a new model based on json data:%s" % json)
-                        if self.storclient:
-                            obj.id = None
-                    else:
-                        obj = model.get(obj.id)
-                        # means it exists, need to update, need to check if data is different only save if y
-                else:
-                    obj = model.get(i, die=False)
-                    if not obj:
-                        obj = model.new(data=json)
-                obj.save()
+                obj = data[i]
+                self._log("import: %s" % obj)
+                if isinstance(self.storclient, ZDBClientBase):
+                    # for zdb needs to make sure we create records which don't exist yet otherwise id's don't correspond
+                    while self.storclient.get(key=i - 1) is None:
+                        r = self.storclient.set("")
+                    j.shell()
+                    w
+                    # obj = model.new()
+                    # if hasattr(obj, "name"):
+                    #     obj.name = j.data.idgenerator.generateGUID()
+                    # obj.id = None
+                    # obj.save()
+                obj = model.set(obj)
                 assert obj.id == i
 
     @property
