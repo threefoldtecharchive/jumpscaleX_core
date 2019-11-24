@@ -165,6 +165,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         not implemented yet, will check the indexes & data
         :return:
         """
+        self._load()
         # TODO:
         pass
 
@@ -173,6 +174,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         will remove all remembered connections
         :return:
         """
+        self._load()
         j.sal.fs.remove(self._config_data_path)
         self._config = {}
         self._instances = j.baseclasses.dict()
@@ -184,6 +186,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         all data will be lost
         :return:
         """
+        self._load()
         names = [name for name in self._config.keys()]
         j.servers.tmux.window_kill("sonic")
         self._instances = j.baseclasses.dict()
@@ -216,6 +219,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         assert self._config == {}
 
     def exists(self, name):
+        self._load()
         if name in self.instances:
             assert name in self._config
             return True
@@ -223,6 +227,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         return name in self._config
 
     def destroy(self, name):
+        self._load()
         assert name
         assert isinstance(name, str)
 
@@ -256,6 +261,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             e.g. j.clients.zdb.client_get() would be a zdb client
         :return:
         """
+        self._load()
         if name in self._instances:
             bcdb = self._instances[name]
             if name != "system" and not name in self._config:

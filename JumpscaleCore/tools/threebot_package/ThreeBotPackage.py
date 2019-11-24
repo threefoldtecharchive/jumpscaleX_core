@@ -6,40 +6,67 @@ JSConfigBase = j.baseclasses.object_config
 
 
 class ThreeBotPackage(JSConfigBase):
+
     _SCHEMATEXT = """
         @url = jumpscale.threebot.package.1
         name** = "main"
         giturl = "" (S)  #if empty then local
         path = ""
-        threebot_server_name = "default"
-        branch = ""
-        status = "init,installed,running,halted,disabled,error" (E)
+        status = "init,config,installed,running,halted,disabled,error" (E)
+        source = (O) !jumpscale.threebot.package.source.1
+        actor = (O) !jumpscale.threebot.package.actor.1
+        bcdb = (LO) !jumpscale.threebot.package.bcdb.1
+
+        @url = jumpscale.threebot.package.source.1
+        name = ""
+        threebot = ""
+        description = ""
+        version = "" (S)
+
+        @url = jumpscale.threebot.package.actor.1
+        namespace = ""
+
+        @url = jumpscale.threebot.package.bcdb.1
+        namespace = ""
+        type = "zdb,sqlite" (E)
+        instance = "default"
+
         """
 
-    # @property
-    # def threebot_server(self):
-    #     return j.servers.threebot.get(name=self.threebot_server_name)
-    #
-    # @property
-    # def gedis_server(self):
-    #     return self.threebot_server.gedis_server
-    #
-    # @property
-    # def openresty(self):
-    #     return self.threebot_server.openresty_server
+    @property
+    def threebot_server(self):
+        return j.servers.threebot.get(name=self.threebot_server_name)
+
+    @property
+    def gedis_server(self):
+        return self.threebot_server.gedis_server
+
+    @property
+    def openresty(self):
+        return self.threebot_server.openresty_server
 
     def _init(self, **kwargs):
         self._init_ = False
+        if self.status == "init":
+            self.config_load()
 
-    def _init_before_action(self):
+    def config_load(self):
+        self._log_info("load package.toml config", data=self)
+        tomlfile = f"{self.path}/package.toml"
+        if not j.sal.fs.exists(tomlfile):
+            raise j.exceptions.Input("cannot find config file on:%s" % tomlfile)
+        config = j.data.serializers.toml.loads(j.sal.fs.readFile(tomlfile))
+        self._data._data_update(config)
+        if self.status == "init":
+            self.status = "config"
+
+    def load(self):
 
         if not "bcdb" in j.threebot.__dict__:
             # means we are not in a threebot server, should not allow the following to happen
             raise j.exceptions.Base("cannot use threebot package data model from process out of threebot")
 
         if self._init_ == False:
-            if self.giturl:
-                self.path = j.clients.git.getContentPathFromURLorPath(self.giturl, branch=self.branch)
 
             # Parent root directory for packages needed to be in sys.path
             # in order to be able to import file properly inside packages
@@ -48,6 +75,8 @@ class ThreeBotPackage(JSConfigBase):
                 sys.path.append(packages_root)
 
             self._path_package = "%s/package.py" % (self.path)
+
+            j.shell()
 
             if not j.sal.fs.exists(self._path_package):
                 raise j.exceptions.Input(
@@ -79,63 +108,60 @@ class ThreeBotPackage(JSConfigBase):
                 name = self.name
                 j.servers.myjobs.schedule(load_wiki, wiki_name=name, wiki_path=path)
 
-            self._create_locations()
+            if j.sal.fs.exists(self.path + "/html"):
+                self._web_load("html")
+            elif j.sal.fs.exists(self.path + "/frontend"):
+                self._web_load("frontend")
 
         self._init_ = True
 
-    def _check_app_type(self):
-        html_location = j.sal.fs.joinPaths(self.path, "html")
-        frontend_location = j.sal.fs.joinPaths(self.path, "frontend")
-        if j.sal.fs.exists(frontend_location):
-            return "frontend"
-        elif j.sal.fs.exists(html_location):
-            return "html"
+    def _web_load(self, app_type="frontend"):
+        for port in (443, 80):
+            website = self.openresty.get_from_port(port)
+            locations = website.locations.get(f"{self.name}_locations")
+            if app_type == "frontend":
+                website_location = locations.locations_spa.new()
+            elif app_type == "html":
+                website_location = locations.locations_static.new()
 
-    def _create_locations(self):
-        if not self.path:
-            return
-        app_type = self._check_app_type()
-        if app_type:
-            for port in (443, 80):
-                website = self.openresty.get_from_port(port)
+            website_location.name = self.name
+            website_location.path_url = f"/{self.name}"
+            website_location.use_jumpscale_weblibs = False
+            fullpath = j.sal.fs.joinPaths(self.path, f"{app_type}/")
+            website_location.path_location = fullpath
 
-                locations = website.locations.get(f"{self.name}_locations")
-                if app_type == "frontend":
-                    website_location = locations.locations_spa.new()
-                elif app_type == "html":
-                    website_location = locations.locations_static.new()
-
-                website_location.name = self.name
-                website_location.path_url = f"/{self.name}"
-                website_location.use_jumpscale_weblibs = False
-                fullpath = j.sal.fs.joinPaths(self.path, f"{app_type}/")
-                website_location.path_location = fullpath
-
-                locations.configure()
-                website.configure()
+            locations.configure()
+            website.configure()
 
     @property
     def bcdb(self):
+        """
+        will only return bcdb if only 1
+        :return:
+        """
+        j.shell()
         return self._package_author.bcdb
 
-    def prepare(self):
-        self._init_before_action()
+    def install(self):
+        self.load()
+        if self.giturl:
+            self.path = j.clients.git.getContentPathFromURLorPath(self.giturl, branch=self.branch)
         self._package_author.prepare()
 
     def start(self):
-        self._init_before_action()
+        self.load()
         self._package_author.start()
         self.status = "running"
         self.save()
 
     def stop(self):
-        self._init_before_action()
+        self.load()
         self._package_author.stop()
         self.status = "halted"
         self.save()
 
     def uninstall(self):
-        self._init_before_action()
+        self.load()
         self._package_author.uninstall()
 
     def disable(self):

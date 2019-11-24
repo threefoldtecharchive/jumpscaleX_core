@@ -173,9 +173,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         assert j.sal.nettools.waitConnectionTest(docker.config.ipaddr, 22, timeout=30)
 
         self._log_info("start the threebot server")
-        docker.sshexec(
-            "source /sandbox/env.sh;kosmos 'j.servers.threebot.local_start_default(packages_add=True)'"
-        )
+        docker.sshexec("source /sandbox/env.sh;kosmos 'j.servers.threebot.local_start_default(packages_add=True)'")
         j.shell()
 
     def docker_environment_multi(self):

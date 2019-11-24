@@ -52,6 +52,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         name** = "main" (S)
         executor = tmux,corex (E)
         adminsecret_ = "123456"  (S)
+        state = "init,installed"
         ssl = (B)
         web =  (B)
         """
@@ -67,6 +68,10 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.ssl = False
         self.client = None
         j.servers.threebot.current = self
+
+        if self.state == "init":
+            j.tools.threebot_packages.load()
+            self.state = "installed"
 
     @property
     def secret(self):
@@ -209,37 +214,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             else:
                 self.openresty_server.reload()
 
-            j.tools.threebot_packages.get(
-                "webinterface",
-                path=j.core.tools.text_replace(
-                    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webinterface/"
-                ),
-            )
-            j.tools.threebot_packages.get(
-                "wiki",
-                path=j.core.tools.text_replace(
-                    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/wiki/"
-                ),
-            )
-            j.tools.threebot_packages.get(
-                "chat",
-                path=j.core.tools.text_replace(
-                    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/chat/"
-                ),
-            )
-            j.tools.threebot_packages.get(
-                "myjobs",
-                path=j.core.tools.text_replace(
-                    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/myjobs"
-                ),
-            )
-            j.tools.threebot_packages.get(
-                "packagemanagerui",
-                path=j.core.tools.text_replace(
-                    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/packagemanagerui"
-                ),
-            )
-
             self._log_info("start workers")
 
             self.rack_server.start(wait=False)
@@ -327,50 +301,23 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         return self.client
 
+    def _packages_install(self):
+
+        names = ["webinterface", "wiki", "chat", "myjobs", "packagemanagerui"]
+        for name in names:
+            p = j.tools.threebot_packages.get(name=f"threefold.{name}")
+            p.prepare()
+
     def _packages_walk(self):
 
-        path = j.core.tools.text_replace("{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/")
         j.threebot.__dict__["packages"] = Packages()
-
-        def process(path, arg):
-            if j.sal.fs.getBaseName(path) == "package.toml":
-                path = j.sal.fs.getDirName(path)
-                path = path.rstrip("/")
-
-                config = j.data.serializers.toml.loads(j.sal.fs.readFile(path))
-                j.shell()
-
-                if not name in j.threebot.packages.__dict__:
-                    if j.tools.threebot_packages.exists(name):
-                        p = j.tools.threebot_packages.get(name)
-                        # DONT START, has already been done up
-                        j.threebot.packages.__dict__[name] = p
-                    else:
-                        j.threebot.packages.__dict__[name] = PackageInstall(name=name, path=path)
-
-            return
-
-        def callbackForMatchDir(path, arg):
-            if j.sal.fs.getBaseName(path) in [
-                "frontend",
-                "packagemanagerui",
-                "wiki",
-                "actors",
-                "models",
-                "bottle",
-                "html",
-                "static",
-                "tests",
-                "templates",
-                "macros",
-                "jobvis",
-            ]:
-                return False
-            if not j.sal.fs.getBaseName(path).startswith("_"):
-                return True
-            # return j.sal.fs.exists(j.sal.fs.joinPaths(path, "package.py"))
-
-        j.sal.fswalker.walkFunctional(path, callbackFunctionFile=process, callbackForMatchDir=callbackForMatchDir)
+        if not name in j.threebot.packages.__dict__:
+            if j.tools.threebot_packages.exists(name):
+                p = j.tools.threebot_packages.get(name)
+                # DONT START, has already been done up
+                j.threebot.packages.__dict__[name] = p
+            else:
+                j.threebot.packages.__dict__[name] = PackageInstall(name=name, path=path)
 
     def stop(self):
         """
