@@ -313,9 +313,9 @@ class BCDB(j.baseclasses.object):
         else:
             raise j.exceptions.RuntimeError("Failed to wait for redisserver")
 
-    def redis_server_get(self, port=6380, secret="123456"):
-        self.redis_server = RedisServer(bcdb=self, port=port, secret=secret, addr="0.0.0.0")
-        self.redis_server._init2(bcdb=self, port=port, secret=secret, addr="0.0.0.0")
+    def redis_server_get(self, port=6380, secret="123456", addr="127.0.0.1"):
+        self.redis_server = RedisServer(bcdb=self, port=port, secret=secret, addr=addr)
+        self.redis_server._init2(bcdb=self, port=port, secret=secret, addr=addr)
         return self.redis_server
 
     def _data_process(self):

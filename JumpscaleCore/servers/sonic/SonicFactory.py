@@ -15,18 +15,6 @@ class SonicFactory(JSConfigs):
     def _init(self, **kwargs):
         self._default = None
 
-    @property
-    def default(self):
-        if not self._default:
-            self._default = self.get(name="default")
-        return self._default
-
-    @property
-    def bcdb(self):
-        if not self._default:
-            self._default = self.new(name="bcdb")
-        return self._default
-
     def install(self, reset=False):
         """
         kosmos 'j.servers.sonic.build()'
@@ -39,7 +27,7 @@ class SonicFactory(JSConfigs):
         :return:
         """
         self.install()
-        s = self.get(name="test_instance")
+        s = self.get(name="test_instance", port=1492)
         s.save()
         if start:
             s.start()

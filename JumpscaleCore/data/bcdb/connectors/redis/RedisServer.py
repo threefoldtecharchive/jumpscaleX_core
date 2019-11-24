@@ -30,7 +30,7 @@ JSBASE = j.baseclasses.object
 
 
 class RedisServer(j.baseclasses.object):
-    def _init2(self, bcdb=None, addr="localhost", port=6380, secret="123456"):
+    def _init2(self, bcdb=None, addr="127.0.0.1", port=6380, secret="123456"):
         self.bcdb = bcdb
         self._sig_handler = []
         #

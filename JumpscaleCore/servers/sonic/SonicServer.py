@@ -10,7 +10,7 @@ class SonicServer(JSConfigClient):
            name** = "default" (S)
            host = "127.0.0.1" (S)
            port = 1491 (I)
-           password = "123456" (S)
+           adminsecret_ = "123456" (S)
            timeout = 300
            """
 
@@ -46,7 +46,7 @@ class SonicServer(JSConfigClient):
         args = {
             "host": self.host,
             "port": self.port,
-            "password": self.password,
+            "password": self.adminsecret_,
             "timeout": self.timeout,
             "datapath": self._path,
         }
@@ -57,7 +57,7 @@ class SonicServer(JSConfigClient):
     def default_client(self):
         if not self._default_client:
             self._default_client = j.clients.sonic.get(
-                name="default", host=self.host, port=self.port, password=self.password
+                name="default", host=self.host, port=self.port, password=self.adminsecret_
             )
             self._default_client.save()
         return self._default_client

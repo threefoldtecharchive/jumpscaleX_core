@@ -20,12 +20,6 @@ this will start the basic servers in addition to servers that will be needed to 
 - [threebot bottle server]() a bottle server to serve the content of [bcdbfs](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/sal/bcdbfs/README.md) as static files
 - websocket proxy server for gedis server
 
-### threebot for web with ssl
-```bash
-kosmos 'j.servers.threebot.get("3bot_name").start(ssl=True)'
-```
-this will start the same threebot for web server with ssl configured
-
 
 ## Packages
 packages is how you tell your threebot what to serve and how

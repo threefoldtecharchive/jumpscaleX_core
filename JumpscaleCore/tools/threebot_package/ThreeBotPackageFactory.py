@@ -36,6 +36,10 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
                 config = j.data.serializers.toml.loads(j.sal.fs.readFile(path))
                 if "." in config["source"]["name"]:
                     raise j.exceptions.Input(". should not be in name", data=config)
+                if not "source" in config:
+                    raise j.exceptions.Input("could not find 'source' section in %s" % path)
+                if not "threebot" in config["source"]:
+                    raise j.exceptions.Input("could not find 'threebot' section in source section in %s" % path)
                 name = config["source"]["threebot"].rstrip(".") + "." + config["source"]["name"]
                 if True or not self.exists(name=name):
                     p = self.get(name=name, path=j.sal.fs.getDirName(path))

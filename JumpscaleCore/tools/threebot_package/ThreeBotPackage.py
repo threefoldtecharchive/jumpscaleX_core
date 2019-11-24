@@ -12,7 +12,7 @@ class ThreeBotPackage(JSConfigBase):
         name** = "main"
         giturl = "" (S)  #if empty then local
         path = ""
-        status = "init,config,installed,running,halted,disabled,error" (E)
+        status = "init,config,installed,disabled,error" (E)
         source = (O) !jumpscale.threebot.package.source.1
         actor = (O) !jumpscale.threebot.package.actor.1
         bcdb = (LO) !jumpscale.threebot.package.bcdb.1
@@ -49,16 +49,7 @@ class ThreeBotPackage(JSConfigBase):
         self._init_ = False
         if self.status == "init":
             self.config_load()
-
-    def config_load(self):
-        self._log_info("load package.toml config", data=self)
-        tomlfile = f"{self.path}/package.toml"
-        if not j.sal.fs.exists(tomlfile):
-            raise j.exceptions.Input("cannot find config file on:%s" % tomlfile)
-        config = j.data.serializers.toml.loads(j.sal.fs.readFile(tomlfile))
-        self._data._data_update(config)
-        if self.status == "init":
-            self.status = "config"
+        self.running = False
 
     def load(self):
 
@@ -75,8 +66,6 @@ class ThreeBotPackage(JSConfigBase):
                 sys.path.append(packages_root)
 
             self._path_package = "%s/package.py" % (self.path)
-
-            j.shell()
 
             if not j.sal.fs.exists(self._path_package):
                 raise j.exceptions.Input(
@@ -113,6 +102,10 @@ class ThreeBotPackage(JSConfigBase):
             elif j.sal.fs.exists(self.path + "/frontend"):
                 self._web_load("frontend")
 
+            if j.sal.fs.exists(self.path + "/bottle"):
+                # load webserver
+                j.shell()
+
         self._init_ = True
 
     def _web_load(self, app_type="frontend"):
@@ -142,32 +135,56 @@ class ThreeBotPackage(JSConfigBase):
         j.shell()
         return self._package_author.bcdb
 
+    def config_load(self):
+        self._log_info("load package.toml config", data=self)
+        tomlfile = f"{self.path}/package.toml"
+        if not j.sal.fs.exists(tomlfile):
+            raise j.exceptions.Input("cannot find config file on:%s" % tomlfile)
+        config = j.data.serializers.toml.loads(j.sal.fs.readFile(tomlfile))
+        self._data._data_update(config)
+
+        if self.status == "init":  # should only move the config status if in init
+            self.status = "config"
+            self.save()
+
     def install(self):
-        self.load()
         if self.giturl:
             self.path = j.clients.git.getContentPathFromURLorPath(self.giturl, branch=self.branch)
+        if self.status != "config":  # make sure we load the config is not that state yet
+            self.config_load()
         self._package_author.prepare()
+        if self.status != "installed":
+            self.status = "installed"
+            self.save()
 
     def start(self):
+        if self.status != "installed":
+            self.install()
         self.load()
         self._package_author.start()
-        self.status = "running"
+        self.running = True
         self.save()
 
     def stop(self):
         self.load()
         self._package_author.stop()
-        self.status = "halted"
+        self.running = False
         self.save()
 
     def uninstall(self):
-        self.load()
+        self.stop()
+        if self.status != "config":
+            self.status = "config"
         self._package_author.uninstall()
+        self.save()
 
     def disable(self):
-        self.status = "disabled"
+        self.stop()
+        if self.status != "disabled":
+            self.status = "disabled"
         self.save()
 
     def enable(self):
-        self.status = "installed"
-        self.save()
+        if self.status != "init":
+            self.status = "init"
+        self.install()

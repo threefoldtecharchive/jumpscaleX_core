@@ -91,18 +91,39 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         assert j.sal.process.checkProcessRunning("zdb") == False
         assert j.sal.process.checkProcessRunning("sonic") == False
 
-    def threebot_start(self):
+    def threebot_zdb_sonic_start(self, reset=False):
         """
-        kosmos 'j.data.bcdb.threebot_start()'
+        kosmos 'j.data.bcdb.threebot_zdb_sonic_start()'
 
         starts all required services for the BCDB to work for threebot
-        :return:
+        :return: (sonic, zdb) server instance
         """
         self.system
+        # because will be visible on filesystem
+        adminsecret_ = j.data.hash.md5_string(j.servers.threebot.default.adminsecret_)
+
+        if reset:
+            zdb = j.servers.zdb.get(name="threebot")
+            zdb.destroy()
+            s = j.servers.sonic.get(name="threebot")
+            s.destroy()
+
         if j.sal.nettools.tcpPortConnectionTest("localhost", 9900) == False:
-            j.servers.threebot.default.zdb.start()
+            z = j.servers.zdb.get(name="threebot", adminsecret_=adminsecret_)
+            z.start()
+
         if j.sal.nettools.tcpPortConnectionTest("localhost", 1491) == False:
-            j.servers.sonic.default.start()
+            s = j.servers.sonic.get(name="threebot", port=1491, adminsecret_=adminsecret_)
+            s.start()
+
+        s = j.servers.sonic.get(name="threebot")
+        assert s.adminsecret_ == adminsecret_
+        z = j.servers.zdb.get(name="threebot")
+        assert z.adminsecret_ == adminsecret_
+
+        # TODO: would be best to login into the ZDB through admin interface and check that the passwd is ok
+
+        return (s, z)
 
     def get_test(self, reset=False):
         bcdb = j.data.bcdb.new(name="testbcdb")
