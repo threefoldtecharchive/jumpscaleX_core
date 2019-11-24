@@ -191,7 +191,6 @@ class BCDB(j.baseclasses.object):
                         j.sal.fs.writeFile(dpath_file, C)
                     except Exception as e:
                         j.shell()
-                        w
 
     def import_(self, path=None, reset=True):
         if not path or not j.sal.fs.exists(path):
@@ -200,15 +199,29 @@ class BCDB(j.baseclasses.object):
             self.reset()
             if self.storclient:
                 assert self.storclient.list() == [0]
+                assert self.storclient.nsinfo["entries"] == 1
+
         self._log_info("Load bcdb:%s from %s" % (self.name, path))
         assert j.sal.fs.exists(path)
 
-        for url_path in j.sal.fs.listDirsInDir(path, False, dirNameOnly=False):
-            data = {}
+        data = {}
+        models = {}
+        schemas = {}
+        paths = j.sal.fs.listDirsInDir(path, False, dirNameOnly=False)
+
+        for url_path in paths:
+            # load all schemas first to make sure all children schemas are loaded when refrenced by parent schemas
             print(f"processing {url_path}")
             schema_text = j.sal.fs.readFile("%s/_schema.toml" % url_path)
-            schema = j.data.schema.get_from_text(schema_text, url=j.sal.fs.getBaseName(url_path), multiple=False)
-            model = self.model_get(schema=schema)
+            url = j.sal.fs.getBaseName(url_path)
+            schema = j.data.schema.get_from_text(schema_text, url=url, multiple=False)
+            schemas[url] = schema
+
+        for url_path in paths:
+            print(f"processing {url_path}")
+            url = j.sal.fs.getBaseName(url_path)
+            model = self.model_get(schema=schemas[url])
+            models[url] = model
             if model._index_:
                 model._index_.destroy()
             for item in j.sal.fs.listFilesInDir(url_path, False):
@@ -224,64 +237,59 @@ class BCDB(j.baseclasses.object):
                     obj = j.data.serializers.jsxdata.loads(data_bin)
                     print(f"data decrypted {data}")
                     try:
-                        data[obj.id] = obj._ddict
+                        data[obj.id] = (url, obj._ddict)
                     except:
                         raise j.exceptions.Base("can't get a new data obj based on binary data: %s" % (item))
                 elif ext in ["toml", "yaml"]:
                     if ext == "toml":
                         self._log("toml:%s" % item)
                         try:
-                            data = j.data.serializers.toml.load(item)
+                            datadict = j.data.serializers.toml.load(item)
                         except Exception as e:
                             print(f"ERR TOML: {e} {item}")
                     if ext == "yaml":
                         self._log("yaml:%s" % item)
                         try:
-                            data = j.data.serializers.yaml.load(item)
+                            datadict = j.data.serializers.yaml.load(item)
                         except Exception as e:
                             print(f"ERR YAML: {e} {item}")
-                    try:
-                        obj = model.new(datadict=data)
-                        data[obj.id] = obj
-                    except:
-                        raise j.exceptions.Base("can't get a new data obj based on toml data:%s" % item)
+
+                    data[datadict["id"]] = (url, datadict)
                 else:
                     self._log("skip:%s" % item)
                     continue
 
-            if not data:
-                continue
+        max_id = max(list(data.keys()) or [0])
 
-            max_id = max(list(data.keys()) or [0])
+        print(f"MAX: {max_id}")
+        # have to import it in the exact same order
+        for i in range(1, max_id + 1):
+            print(f"i: {i}")
+            if i not in data:
+                print(f" {i} doesn't exist in data.. ")
+                gap_obj = model.new()
+                if hasattr(gap_obj, "name"):
+                    gap_obj.name = j.data.idgenerator.generateGUID() + "_TOREMOVE"
+                    gap_obj.id = None
+                    gap_obj.save()
+            else:
+                url, obj_data = data[i]
+                model = models[url]
+                obj = model.new()
+                obj.name = obj_data["name"]
+                obj.id = None
+                obj.save()
+                print(f"setting obj {obj_data} on obj with id {obj.id} using {model.schema.url}")
+                obj = model.set_dynamic(obj_data, obj.id)
 
-            # FIXME: reset code position?
-            if reset:
-                assert self.storclient.nsinfo["entries"] == 1
-                lastid = 1
+                assert obj.id == i
 
-            print(f"MAX: {max_id}")
-            # have to import it in the exact same order
-            for i in range(1, max_id + 1):
-                print(f"i: {i}")
-                if i not in data:
-                    print(f" {i} doesn't exist in data.. ")
-                    gap_obj = model.new()
-                    if hasattr(gap_obj, "name"):
-                        gap_obj.name = j.data.idgenerator.generateGUID() + "_TOREMOVE"
-                        gap_obj.id = None
-                        gap_obj.save()
-                        # TODO: make sure to remove.
-                        gap_obj.delete()
-                else:
-                    obj_data = data[i]
-                    obj = model.new()
-                    obj.name = data[i]["name"]
-                    obj.id = None
-                    obj.save()
-                    print(f"setting obj {obj_data} on obj with id {obj.id}")
-                    obj = model.set_dynamic(obj_data, obj.id)
-
-                    assert obj.id == i
+        for _, model in models.items():
+            objects = model.find()
+            for o in objects:
+                if o.name.endswith("_TOREMOVE"):
+                    print(f"Cleaning up object {o.name}")
+                    o.delete()
 
     @property
     def sqlite_index_client(self):
