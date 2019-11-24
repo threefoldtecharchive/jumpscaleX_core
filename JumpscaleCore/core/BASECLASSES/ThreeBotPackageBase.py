@@ -26,15 +26,15 @@ class ThreeBotPackageBase(JSBase):
     def _init_pre2(self, **kwargs):
 
         assert "package" in kwargs
+        self._package = kwargs["package"]
         self.package_root = self._package.path
-        self.actors_namespace = "default"
 
-        self._data = kwargs["package"]
+        self.gedis_server = j.threebot.servers.gedis
+        self.gevent_rack = j.threebot.servers.gevent_rack
+        self.openresty = j.threebot.servers.web
+        self.threebot_server = j.threebot.servers.core
 
-        # self.gedis_server = self._package.gedis_server
-        # self.rack_server = self._package.threebot_server.rack_server
-        # self.openresty = self._package.openresty
-        # self.threebot_server = self._package.threebot_server
+        self.actors_namespace = self._package.actor.namespace
 
     ###DO NOT DO ANYTHING IN THE BASECLASSES BELOW PLEASE
 

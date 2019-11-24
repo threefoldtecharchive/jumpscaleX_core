@@ -35,15 +35,15 @@ class ThreeBotPackage(JSConfigBase):
 
     @property
     def threebot_server(self):
-        return j.servers.threebot.get(name=self.threebot_server_name)
+        return j.threebot.servers.core
 
     @property
     def gedis_server(self):
-        return self.threebot_server.gedis_server
+        return j.threebot.servers.gedis
 
     @property
     def openresty(self):
-        return self.threebot_server.openresty_server
+        return j.threebot.servers.web
 
     def _init(self, **kwargs):
         self._init_ = False
@@ -148,6 +148,7 @@ class ThreeBotPackage(JSConfigBase):
             self.save()
 
     def install(self):
+        self.load()
         if self.giturl:
             self.path = j.clients.git.getContentPathFromURLorPath(self.giturl, branch=self.branch)
         if self.status != "config":  # make sure we load the config is not that state yet

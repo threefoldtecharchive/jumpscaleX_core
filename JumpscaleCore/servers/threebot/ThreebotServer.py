@@ -327,12 +327,14 @@ class ThreeBotServer(j.baseclasses.object_config):
 
     def _packages_install(self):
 
+        if not j.tools.threebot_packages.exists(name="threefold.webinterface"):
+            j.tools.threebot_packages.load()
+
         names = ["webinterface", "wiki", "chat", "myjobs", "packagemanagerui"]
         names = ["webinterface"]  # TODO: TEST REMOVE
         for name in names:
-            j.shell()
-            p = j.tools.threebot_packages.get(name=f"zerobot.{name}")
-            p.prepare()
+            p = j.tools.threebot_packages.get(name=f"threefold.{name}")
+            p.install()
 
     # def _packages_walk(self):
     #
