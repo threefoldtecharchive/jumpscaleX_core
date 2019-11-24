@@ -157,16 +157,20 @@ class BCDB(j.baseclasses.object):
             j.shell()
 
         for m in self.models:
+            print("export model: ", m)
             dpath = f"{path}/{m.schema.url}"
+            print("  datapath: ", dpath)
             j.sal.fs.createDir(dpath)
             j.sal.fs.writeFile(f"{dpath}/_schema.toml", m.schema.text)
             for obj in list(m.iterate()):
+                print("  writing object: ", obj)
 
                 assert obj._model.schema.url == m.schema.url
                 assert obj._model.schema._md5 == obj._schema._md5
 
                 if encrypt:
                     data = obj._data
+                    print("OBJ._DATA:", data)
                     data2 = j.data.nacl.default.encryptSymmetric(data)
                     print(" - %s:%s" % (obj._schema.url, obj.id))
                     j.sal.fs.writeFile("%s/%s.data" % (dpath, obj.id), data2)
@@ -191,7 +195,6 @@ class BCDB(j.baseclasses.object):
 
     def import_(self, path=None, reset=True):
         if not path or not j.sal.fs.exists(path):
-            j.shell()
             raise j.exceptions.Base("import no path, or does not exist")
         if reset:
             self.reset()
@@ -202,61 +205,83 @@ class BCDB(j.baseclasses.object):
 
         for url_path in j.sal.fs.listDirsInDir(path, False, dirNameOnly=False):
             data = {}
+            print(f"processing {url_path}")
             schema_text = j.sal.fs.readFile("%s/_schema.toml" % url_path)
             schema = j.data.schema.get_from_text(schema_text, url=j.sal.fs.getBaseName(url_path), multiple=False)
             model = self.model_get(schema=schema)
-            max = 0
+            if model._index_:
+                model._index_.destroy()
             for item in j.sal.fs.listFilesInDir(url_path, False):
+                print(f"item {item}")
+                if item.endswith("_schema.toml"):
+                    continue
+                print(f"processing item: {item}")
                 ext = j.sal.fs.getFileExtension(item)
                 if ext == "data":
                     self._log("encr:%s" % item)
                     data2 = j.sal.fs.readFile(item, binary=True)
-                    data = j.data.nacl.default.decryptSymmetric(data2)
+                    data_bin = j.data.nacl.default.decryptSymmetric(data2)
+                    obj = j.data.serializers.jsxdata.loads(data_bin)
+                    print(f"data decrypted {data}")
                     try:
-                        obj = model.schema.new(capnpdata=data)
-                        data[obj.id] = obj
+                        data[obj.id] = obj._ddict
                     except:
                         raise j.exceptions.Base("can't get a new data obj based on binary data: %s" % (item))
                 elif ext in ["toml", "yaml"]:
                     if ext == "toml":
                         self._log("toml:%s" % item)
-                        data = j.data.serializers.toml.load(item)
+                        try:
+                            data = j.data.serializers.toml.load(item)
+                        except Exception as e:
+                            print(f"ERR TOML: {e} {item}")
                     if ext == "yaml":
                         self._log("yaml:%s" % item)
-                        data = j.data.serializers.yaml.load(item)
+                        try:
+                            data = j.data.serializers.yaml.load(item)
+                        except Exception as e:
+                            print(f"ERR YAML: {e} {item}")
                     try:
-                        obj = model.schema.new(datadict=data)
+                        obj = model.new(datadict=data)
                         data[obj.id] = obj
                     except:
                         raise j.exceptions.Base("can't get a new data obj based on toml data:%s" % item)
                 else:
                     self._log("skip:%s" % item)
                     continue
-                if obj.id > max:
-                    max = obj.id
 
-        if reset:
-            assert self.storclient.nsinfo["entries"] == 1
-            lastid = 1
+            if not data:
+                continue
 
-        # have to import it in the exact same order
-        for i in range(0, max + 1):
-            if i in data:
-                obj = data[i]
-                self._log("import: %s" % obj)
-                if isinstance(self.storclient, ZDBClientBase):
-                    # for zdb needs to make sure we create records which don't exist yet otherwise id's don't correspond
-                    while self.storclient.get(key=i - 1) is None:
-                        r = self.storclient.set("")
-                    j.shell()
-                    w
-                    # obj = model.new()
-                    # if hasattr(obj, "name"):
-                    #     obj.name = j.data.idgenerator.generateGUID()
-                    # obj.id = None
-                    # obj.save()
-                obj = model.set(obj)
-                assert obj.id == i
+            max_id = max(list(data.keys()) or [0])
+
+            # FIXME: reset code position?
+            if reset:
+                assert self.storclient.nsinfo["entries"] == 1
+                lastid = 1
+
+            print(f"MAX: {max_id}")
+            # have to import it in the exact same order
+            for i in range(1, max_id + 1):
+                print(f"i: {i}")
+                if i not in data:
+                    print(f" {i} doesn't exist in data.. ")
+                    gap_obj = model.new()
+                    if hasattr(gap_obj, "name"):
+                        gap_obj.name = j.data.idgenerator.generateGUID() + "_TOREMOVE"
+                        gap_obj.id = None
+                        gap_obj.save()
+                        # TODO: make sure to remove.
+                        gap_obj.delete()
+                else:
+                    obj_data = data[i]
+                    obj = model.new()
+                    obj.name = data[i]["name"]
+                    obj.id = None
+                    obj.save()
+                    print(f"setting obj {obj_data} on obj with id {obj.id}")
+                    obj = model.set_dynamic(obj_data, obj.id)
+
+                    assert obj.id == i
 
     @property
     def sqlite_index_client(self):
