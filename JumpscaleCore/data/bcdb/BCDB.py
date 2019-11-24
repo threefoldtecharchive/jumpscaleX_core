@@ -191,7 +191,6 @@ class BCDB(j.baseclasses.object):
                         j.sal.fs.writeFile(dpath_file, C)
                     except Exception as e:
                         j.shell()
-                        w
 
     def import_(self, path=None, reset=True):
         if not path or not j.sal.fs.exists(path):
@@ -200,6 +199,8 @@ class BCDB(j.baseclasses.object):
             self.reset()
             if self.storclient:
                 assert self.storclient.list() == [0]
+                assert self.storclient.nsinfo["entries"] == 1
+
         self._log_info("Load bcdb:%s from %s" % (self.name, path))
         assert j.sal.fs.exists(path)
 
@@ -231,18 +232,18 @@ class BCDB(j.baseclasses.object):
                     if ext == "toml":
                         self._log("toml:%s" % item)
                         try:
-                            data = j.data.serializers.toml.load(item)
+                            datadict = j.data.serializers.toml.load(item)
                         except Exception as e:
                             print(f"ERR TOML: {e} {item}")
                     if ext == "yaml":
                         self._log("yaml:%s" % item)
                         try:
-                            data = j.data.serializers.yaml.load(item)
+                            datadict = j.data.serializers.yaml.load(item)
                         except Exception as e:
                             print(f"ERR YAML: {e} {item}")
                     try:
-                        obj = model.new(datadict=data)
-                        data[obj.id] = obj
+                        # obj = model.new(datadict=datadict)
+                        data[datadict["id"]] = datadict
                     except:
                         raise j.exceptions.Base("can't get a new data obj based on toml data:%s" % item)
                 else:
@@ -253,11 +254,6 @@ class BCDB(j.baseclasses.object):
                 continue
 
             max_id = max(list(data.keys()) or [0])
-
-            # FIXME: reset code position?
-            if reset:
-                assert self.storclient.nsinfo["entries"] == 1
-                lastid = 1
 
             print(f"MAX: {max_id}")
             # have to import it in the exact same order
@@ -271,7 +267,6 @@ class BCDB(j.baseclasses.object):
                         gap_obj.id = None
                         gap_obj.save()
                         # TODO: make sure to remove.
-                        gap_obj.delete()
                 else:
                     obj_data = data[i]
                     obj = model.new()
