@@ -36,6 +36,8 @@ class SSHClient(SSHClientBase):
 
             from pssh.clients import ParallelSSHClient as PSSHCLIENT
 
+            # from pssh.clients import SSHClient as PSSHCLIENT
+
             # SSHClient = functools.partial(PSSHClient, retry_delay=1)
 
             # if self.stdout:

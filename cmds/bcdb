@@ -65,14 +65,18 @@ def check(name=None):
 @click.option("--name", default=None, help="specify which bcdb you want to rebuild, if not specified will use all")
 def rebuild(name=None):
     """
+    bcdb rebuild
     will erase the indexes and rebuild it from the BCDB original data
     :return:
     """
+
+    j.data.bcdb.threebot_start()
+
     if not name:
-        for bcdb in j.data.bcdb.instances:
+        for bcdb in j.data.bcdb.instances.values():
             bcdb.index_rebuild()
     else:
-        bcdb = j.data.bcdb.get(name=name, reset=True)
+        bcdb = j.data.bcdb.get(name=name, reset=False)
         bcdb.index_rebuild()
 
 

@@ -41,35 +41,43 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         j.clients.redis.core_get()  # just to make sure the redis got started
 
-        self.children = self._children  # j.baseclasses.dict(name="BCDBS")
+        self._instances = j.baseclasses.dict(name="BCDBS")
+        self.children = self._instances
 
         self._BCDBModelClass = BCDBModel  # j.data.bcdb._BCDBModelClass
 
         # will make sure the toml schema's are loaded
         j.data.schema.add_from_path("%s/models_system" % self._dirpath)
 
-        self._load()
+        self.__loaded = False
 
     def _load(self):
 
-        self._config_data_path = j.core.tools.text_replace("{DIR_CFG}/bcdb_config")
-        if j.sal.fs.exists(self._config_data_path):
-            data_encrypted = j.sal.fs.readFile(self._config_data_path, binary=True)
-            try:
-                data = j.data.nacl.default.decryptSymmetric(data_encrypted)
-            except Exception as e:
-                if str(e).find("Ciphertext failed") != -1:
-                    raise j.exceptions.Base("%s cannot be decrypted with secret" % self._config_data_path)
-                raise e
-            self._config = j.data.serializers.msgpack.loads(data)
-        else:
-            self._config = {}
+        if not self.__loaded:
 
-        self._system = None
+            storclient = j.clients.sqlitedb.client_get(namespace="system")
+            # storclient = j.clients.rdb.client_get(namespace="system")
+            self._instances["system"] = BCDB(storclient=storclient, name="system", reset=False)
+
+            self._config_data_path = j.core.tools.text_replace("{DIR_CFG}/bcdb_config")
+            if j.sal.fs.exists(self._config_data_path):
+                data_encrypted = j.sal.fs.readFile(self._config_data_path, binary=True)
+                try:
+                    data = j.data.nacl.default.decryptSymmetric(data_encrypted)
+                except Exception as e:
+                    if str(e).find("Ciphertext failed") != -1:
+                        raise j.exceptions.Base("%s cannot be decrypted with secret" % self._config_data_path)
+                    raise e
+                self._config = j.data.serializers.msgpack.loads(data)
+            else:
+                self._config = {}
+
+            self.__loaded = True
 
     @property
     def system(self):
-        return self.get_system()
+        self._load()
+        return self._instances["system"]
 
     def threebot_stop(self):
         """
@@ -96,21 +104,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if j.sal.nettools.tcpPortConnectionTest("localhost", 1491) == False:
             j.servers.sonic.default.start()
 
-    def get_system(self, reset=False):
-        """
-        sqlite based BCDB, don't need ZDB for this
-        :return:
-        """
-
-        if not self._system:
-            storclient = j.clients.sqlitedb.client_get(namespace="system")
-            # storclient = j.clients.rdb.client_get(namespace="system")
-            self._system = self.get("system", storclient=storclient, reset=reset)
-        return self._system
-
     def get_test(self, reset=False):
         bcdb = j.data.bcdb.new(name="testbcdb")
-        bcdb2 = j.data.bcdb._children["testbcdb"]
+        bcdb2 = j.data.bcdb._instances["testbcdb"]
         assert bcdb2.storclient == None
         return bcdb
 
@@ -126,13 +122,17 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
     @property
     def instances(self):
-        res = []
-        config = self._config.copy()
-        for name, data in config.items():
-            self._log_debug(data)
-            bcdb = self.get(name)
-            res.append(bcdb)
-        return res
+        self._load()
+        keys = [i for i in self._config.keys()]
+
+        for name in keys:
+            if name == "system":
+                continue
+            storclient = self._get_storclient(name)
+            bcdb = self._get(name, storclient)
+            self._instances[name] = bcdb
+
+        return self._instances
 
     def index_rebuild(self, name=None, storclient=None):
         """
@@ -175,7 +175,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         """
         j.sal.fs.remove(self._config_data_path)
         self._config = {}
-        self._children = j.baseclasses.dict()
+        self._instances = j.baseclasses.dict()
 
     def destroy_all(self):
         """
@@ -186,7 +186,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         """
         names = [name for name in self._config.keys()]
         j.servers.tmux.window_kill("sonic")
-        self._children = j.baseclasses.dict()
+        self._instances = j.baseclasses.dict()
         storclients = []
         for name in names:
             try:
@@ -216,7 +216,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         assert self._config == {}
 
     def exists(self, name):
-        if name in self._children:
+        if name in self.instances:
             assert name in self._config
             return True
 
@@ -239,8 +239,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if storclient:
             dontuse = BCDB(storclient=storclient, name=name, reset=True)
 
-        if name in self._children:
-            self._children.pop(name)
+        if name in self._instances:
+            self._instances.pop(name)
 
         if name in self._config:
             self._config.pop(name)
@@ -256,13 +256,15 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             e.g. j.clients.zdb.client_get() would be a zdb client
         :return:
         """
-        if name in self._children:
-            bcdb = self._children[name]
-            assert name in self._config
+        if name in self._instances:
+            bcdb = self._instances[name]
+            if name != "system" and not name in self._config:
+                raise j.exceptions.Input(f"cannot find config for bcdb:{name}")
             return bcdb
 
         if name in self._config and not storclient:
             storclient = self._get_storclient(name)
+
         if not self.exists(name=name):
             return self.new(name=name, storclient=storclient, reset=reset)
         else:
@@ -271,7 +273,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     def _get_vfs(self):
         from .BCDBVFS import BCDBVFS
 
-        return BCDBVFS(self._children)
+        return BCDBVFS(self.instances)
 
     def _get_storclient(self, name):
         data = self._config[name]
@@ -305,9 +307,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if reset:
             # its the only 100% safe way to get all out for now
             dontuse = BCDB(storclient=storclient, name=name, reset=reset)
-        self._children[name] = BCDB(storclient=storclient, name=name)
+        self._instances[name] = BCDB(storclient=storclient, name=name)
 
-        return self._children[name]
+        return self._instances[name]
 
     def _config_write(self):
         data = j.data.serializers.msgpack.dumps(self._config)
@@ -517,20 +519,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             assert len(model.find()) == 3
 
         return bcdb, model
-
-    def _instance_names(self, prefix=None):
-        items = []
-        # items = [key for key in self.__dict__.keys() if not key.startswith("_")]
-        for bcdb in self.instances:
-            items.append(bcdb.name)
-        items.sort()
-        # print(items)
-        return items
-
-    def __setattr__(self, key, value):
-        if key in ["system", "test"]:
-            raise j.exceptions.Base("no system or test allowed")
-        self.__dict__[key] = value
 
     def __str__(self):
 

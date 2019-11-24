@@ -1308,6 +1308,9 @@ class SystemFS(JSBASE, TESTTOOLS):
         if contents is None:
             raise j.exceptions.Value("Passed None parameters in system.fs.writeFile")
         filename = j.core.tools.text_replace(filename)
+        dirname = self.getDirName(filename)
+        if not self.exists(dirname):
+            self.createDir(dirname)
         if append is False:
             fp = open(filename, "wb")
         else:

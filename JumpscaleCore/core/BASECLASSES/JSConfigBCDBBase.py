@@ -36,9 +36,9 @@ class JSConfigBCDBBase(JSBase, Attr):
         # that way the triggers can know about this class and can call the triggers on this level
         # self._model._kosmosinstance = self
 
-    def _init_post(self, **kwargs):
-        self._inspect()  # force inspection
-        self._protected = True
+    # def _init_post(self, **kwargs):
+    #     self._inspect()  # force inspection
+    #     # self._protected = True
 
     def _bcdb_selector(self):
         """
@@ -47,7 +47,7 @@ class JSConfigBCDBBase(JSBase, Attr):
         """
         if self._parent and self._parent._hasattr("_bcdb_selector"):
             return self._parent._bcdb_selector()
-        return j.application.bcdb_system
+        return j.data.bcdb.system
 
     @property
     def _bcdb(self):

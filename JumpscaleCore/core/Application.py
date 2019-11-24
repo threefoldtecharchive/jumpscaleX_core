@@ -70,22 +70,13 @@ class Application(object):
 
     @property
     def bcdb_system(self):
-        # try:
-        #     self._j.data.nacl.default
-        # except Exception as e:
-        #     if str(e).find("could not find the path of the private key") != -1:
-        #         print("WARNING:cannot find the private key")
-        #         self._j.data.nacl.configure()
-        #     raise e
-        return self._j.data.bcdb.get_system(reset=False)
+        return self._j.data.bcdb.system
 
     def bcdb_system_destroy(self):
-        s = self._j.data.bcdb.get_system()
+        s = self.bcdb_system
         s.destroy()
-        self._bcdb_system = None
 
     def subprocess_prepare(self):
-        self._bcdb_system = None
         self._debug = None
         self._systempid = None
         self._j.core.db_reset(self._j)
@@ -517,7 +508,7 @@ class Application(object):
             pass
 
         try:
-            j.application.bcdb_system
+            j.data.bcdb.system
         except Exception as e:
             if str(e).find("Ciphertext failed") != -1:
                 print("COULD NOT GET DATA FROM BCDB, PROB ENCRYPTED WITH OTHER PRIVATE KEY AS WHAT IS NOW ON SYSTEM")
@@ -526,7 +517,7 @@ class Application(object):
                 print("COULD NOT DECRYPT THE METADATA FOR BCDB, DIFFERENT ENCRYPTION KEY USED")
                 if j.tools.console.askYesNo("Ok to delete this metadata, will prob be rebuild"):
                     j.sal.fs.remove(j.core.tools.text_replace("{DIR_CFG}/bcdb_config"))
-                    j.application.bcdb_system
+                    j.data.bcdb.system
 
         j.data.bcdb.check()
 

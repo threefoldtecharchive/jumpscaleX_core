@@ -621,7 +621,7 @@ def kosmos(name="3bot", target="auto"):
     n = j.data.nacl.get(load=False)  # important to make sure private key is loaded
     if n.load(die=False) is False:
         n.configure()
-    j.application.bcdb_system  # needed to make sure we have bcdb running, needed for code completion
+    j.data.bcdb.system  # needed to make sure we have bcdb running, needed for code completion
     j.shell(loc=False, locals_=locals(), globals_=globals())
 
 

@@ -573,7 +573,7 @@ class StartupCMD(j.baseclasses.object_config):
         elif self.interpreter == "jumpscale":
             C = """
             from Jumpscale import j
-            j.application.bcdb_system
+            j.data.bcdb.system
             {% if cmdpath %}
             j.sal.fs.changeDir("{{cmdpath}}")
             {% endif %}
@@ -585,7 +585,7 @@ class StartupCMD(j.baseclasses.object_config):
             from gevent import monkey
             monkey.patch_all(subprocess=False)
             from Jumpscale import j
-            j.application.bcdb_system
+            j.data.bcdb.system
             {% if cmdpath %}
             j.sal.fs.changeDir("{{cmdpath}}")
             {% endif %}

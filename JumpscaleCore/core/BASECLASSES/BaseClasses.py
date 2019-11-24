@@ -30,11 +30,12 @@ from .TestTools import TestTools
 from .JSFactory import JSFactory
 from .JSDict import JSDict
 from .Decorators import actor_method
+from .Attr import Attr
 
 
 class BaseClasses(JSBase, TestTools):
     def __init__(self):
-        pass
+        self.attr = Attr
 
     @property
     def actor_method(self):

@@ -603,10 +603,11 @@ class BCDBModel(j.baseclasses.object):
         r = cursor.fetchone()
         res = []
         while r:
-            # the id NEEDS to exist on the model
-            if self.exists(r[0]):
-                res.append(r[0])
+            # the id NEEDS to exist on the model  (THIS IS A SHORTCUT FIX, BUT FIRST WANT TO SEE IF I CAN FIX IT)
+            # if self.exists(r[0]):
+            res.append(r[0])
             r = cursor.fetchone()
+
         return res
 
     def query(self, query, values=None):

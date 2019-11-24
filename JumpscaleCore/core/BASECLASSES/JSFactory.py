@@ -73,8 +73,8 @@ class JSFactory(JSBase, Attr):
             else:
                 raise j.exceptions.Value("cannot get child with name:%s" % name)
         if reload:
-            child.load()
-        return child
+            self._children[name].load()
+        return self._children[name]
 
     def find(self, **kwargs):
         """

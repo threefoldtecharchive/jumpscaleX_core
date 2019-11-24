@@ -90,6 +90,7 @@ class ZDBClientBase(j.baseclasses.object_config):
         You need to select the namespace before running the command.
         :return:
         """
+        raise
         if not self.nsname in ["default", "system"]:
             self._select_namespace()
             self.redis.execute_command("FLUSH")

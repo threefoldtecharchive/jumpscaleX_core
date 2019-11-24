@@ -139,9 +139,9 @@ class ThreeBotServer(j.baseclasses.object_config):
     def _maintenance(self):
 
         # check all models are mapped to global namespace
-        for bcdb in j.data.bcdb.instances:
+        for bcdb in j.data.bcdb.instances.values():
             if bcdb.name not in j.threebot.bcdb.__dict__:
-                j.threebot.bcdb.__dict__[bcdb.name] = bcdb.children
+                j.threebot.bcdb.__dict__[bcdb.name] = bcdb.instances
 
         # check state workers
         for key, worker in j.threebot.myjobs.workers._children.items():

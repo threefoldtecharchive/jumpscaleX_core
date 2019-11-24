@@ -47,7 +47,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
     def _check_children(self):
         if not self._cache_use:
-            assert self._children == {}
+            assert self._children == j.baseclasses.dict()
 
     def _check(self, jsconfig):
         if jsconfig._id is None:

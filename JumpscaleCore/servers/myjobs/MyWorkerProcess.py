@@ -39,7 +39,7 @@ class MyWorkerProcess(j.baseclasses.object):
 
         if not onetime:
             # make sure all traces of existing clients are gone
-            j.data.bcdb._children = j.baseclasses.dict()
+            j.data.bcdb._instances = j.baseclasses.dict()
             j.application.subprocess_prepare()
             j.clients.redis._cache_clear()  # make sure we have redis connections empty, because comes from parent
 

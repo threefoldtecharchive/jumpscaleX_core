@@ -123,19 +123,6 @@ class JSBase:
                 if self.__class__._location is None:
                     self.__class__._location = self.__class__._classname
 
-            # # walk to all parents, let them know that there are child classes
-            # self.__class__._class_children = []
-            # parent = self._parent
-            # while parent is not None:
-            #     if parent.__class__ not in parent._class_children:
-            #         parent._class_children.append(parent.__class__)
-            #     parent = parent._parent
-
-            # if self.__class__._location.lower() != self.__class__._classname.lower():
-            #     self.__class__._key = "%s:%s" % (self.__class__._location, self.__class__._classname)
-            # else:
-            #     self.__class__._key = self.__class__._classname.lower()
-
             self.__init_class_post()
 
             self.__class__.__init_class_done = True

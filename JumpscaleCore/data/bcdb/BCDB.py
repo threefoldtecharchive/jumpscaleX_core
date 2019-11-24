@@ -103,7 +103,7 @@ class BCDB(j.baseclasses.object):
     def _init_system_objects(self):
 
         assert self.name
-        j.data.bcdb._children[self.name] = self
+        j.data.bcdb._instances[self.name] = self
 
         if not j.data.types.string.check(self.name):
             raise j.exceptions.Base("name needs to be string")
@@ -151,6 +151,10 @@ class BCDB(j.baseclasses.object):
         if reset:
             j.sal.fs.remove(path)
         j.sal.fs.createDir(path)
+
+        if self.name != "system":
+            bcdbconfig = j.data.bcdb._config[self.name]
+            j.shell()
 
         for m in self.models:
             dpath = f"{path}/{m.schema.url}"
@@ -377,8 +381,8 @@ class BCDB(j.baseclasses.object):
         self.reset()
         if self.name in j.data.bcdb._config:
             j.data.bcdb._config.pop(self.name)
-        if self.name in j.data.bcdb._children:
-            j.data.bcdb._children.pop(self.name)
+        if self.name in j.data.bcdb._instances:
+            j.data.bcdb._instances.pop(self.name)
         j.data.bcdb._config_write()
         for key in j.core.db.keys("bcdb:%s:*" % self.name):
             j.core.db.delete(key)
