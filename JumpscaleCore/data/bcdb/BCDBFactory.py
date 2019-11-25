@@ -34,7 +34,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     def _init(self, **kwargs):
 
         self._log_debug("bcdb starts")
-
+        self._loaded = False
         self._path = j.sal.fs.getDirName(os.path.abspath(__file__))
 
         self._code_generation_dir_ = None
@@ -49,11 +49,12 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         # will make sure the toml schema's are loaded
         j.data.schema.add_from_path("%s/models_system" % self._dirpath)
 
-        self.__loaded = False
-
     def _load(self):
 
-        if not self.__loaded:
+        if not self._loaded or self._instances == {}:
+
+            self._loaded = True
+            print("LOAD CONFIG BCDB")
 
             storclient = j.clients.sqlitedb.client_get(namespace="system")
             # storclient = j.clients.rdb.client_get(namespace="system")
@@ -72,8 +73,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             else:
                 self._config = {}
 
-            self.__loaded = True
-
     @property
     def system(self):
         self._load()
@@ -85,8 +84,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         stops the threebot sonic & zdb
         :return:
         """
-        j.servers.threebot.default.zdb.stop()
-        j.servers.sonic.default.stop()
+
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 9900):
+            j.servers.threebot.default.zdb.stop()
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 1491):
+            j.servers.sonic.default.stop()
 
         assert j.sal.process.checkProcessRunning("zdb") == False
         assert j.sal.process.checkProcessRunning("sonic") == False
@@ -195,10 +197,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         will remove all remembered connections
         :return:
         """
-        self._load()
+        # self._load()
         j.sal.fs.remove(self._config_data_path)
         self._config = {}
         self._instances = j.baseclasses.dict()
+        self._loaded = False
 
     def destroy_all(self):
         """
@@ -236,6 +239,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         for key in j.core.db.keys("queue*"):
             j.core.db.delete(key)
 
+        self._loaded = False
         self._load()
         assert self._config == {}
 
@@ -271,6 +275,33 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if name in self._config:
             self._config.pop(name)
             self._config_write()
+
+        self._loaded = False
+
+    def get_for_threebot(self, namespace, ttype, instance):
+        if ttype not in ["zdb", "sqlite", "redis"]:
+            raise j.exceptions.Input("ttype can only be zdb or sqlite")
+
+        name = "threebot_%s_%s" % (ttype, namespace)
+
+        if j.data.bcdb.exists(name=name):
+            return j.data.bcdb.get(name=name)
+        else:
+            if ttype == "zdb":
+                adminsecret_ = j.data.hash.md5_string(j.threebot.servers.core.adminsecret_)
+                self._log_debug("get zdb admin client")
+                zdb_admin = j.threebot.servers.core.zdb.client_admin_get()
+                if not zdb_admin.namespace_exists(namespace):
+                    zdb_admin.namespace_new(namespace, secret=adminsecret_, maxsize=0, die=True)
+                storclient = j.threebot.servers.core.zdb.client_get(namespace, adminsecret_)
+            elif ttype == "sqlite":
+                storclient = j.clients.sqlitedb.client_get(namespace=namespace)
+            elif ttype == "redis":
+                storclient = j.clients.rdb.client_get(namespace=namespace)
+            else:
+                raise j.exceptions.Input("only redis, slqite and zdb supported")
+
+            return j.data.bcdb.get(name=name, storclient=storclient)
 
     def get(self, name, storclient=None, reset=False):
         """

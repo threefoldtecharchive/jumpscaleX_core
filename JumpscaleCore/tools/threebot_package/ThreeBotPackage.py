@@ -15,7 +15,7 @@ class ThreeBotPackage(JSConfigBase):
         status = "init,config,installed,disabled,error" (E)
         source = (O) !jumpscale.threebot.package.source.1
         actor = (O) !jumpscale.threebot.package.actor.1
-        bcdb = (LO) !jumpscale.threebot.package.bcdb.1
+        bcdbs = (LO) !jumpscale.threebot.package.bcdb.1
 
         @url = jumpscale.threebot.package.source.1
         name = ""
@@ -28,7 +28,7 @@ class ThreeBotPackage(JSConfigBase):
 
         @url = jumpscale.threebot.package.bcdb.1
         namespace = ""
-        type = "zdb,sqlite" (E)
+        type = "zdb,sqlite,redis" (E)
         instance = "default"
 
         """
@@ -47,6 +47,7 @@ class ThreeBotPackage(JSConfigBase):
 
     def _init(self, **kwargs):
         self._init_ = False
+        self._bcdb_ = None  # cannot use self._bcdb already used
         if self.status == "init":
             self.config_load()
         self.running = False
@@ -92,21 +93,38 @@ class ThreeBotPackage(JSConfigBase):
                 wiki = j.tools.markdowndocs.load(name=wiki_name, path=wiki_path, pull=False)
                 wiki.write()
 
-            path = self.path + "/wiki"
-            if j.sal.fs.exists(path):
-                name = self.name
-                j.servers.myjobs.schedule(load_wiki, wiki_name=name, wiki_path=path)
+            # path = self.path + "/wiki"
+            # if j.sal.fs.exists(path):
+            #     name = self.name
+            #     j.servers.myjobs.schedule(load_wiki, wiki_name=name, wiki_path=path)
 
             if j.sal.fs.exists(self.path + "/html"):
                 self._web_load("html")
             elif j.sal.fs.exists(self.path + "/frontend"):
                 self._web_load("frontend")
 
-            if j.sal.fs.exists(self.path + "/bottle"):
-                # load webserver
-                j.shell()
+            # if j.sal.fs.exists(self.path + "/bottle"):
+            #     # load webserver
+            #     j.shell()
 
         self._init_ = True
+
+    @property
+    def bcdb(self):
+        if not self._bcdb_:
+            ##GET THE BCDB, ONLY 1 support for now
+            if len(self.bcdbs) == 1:
+                config = self.bcdbs[0]
+                assert config.instance == "default"  # for now we don't support anything else
+                self._bcdb = j.data.bcdb.get_for_threebot(
+                    namespace=config.namespace, ttype=config.type, instance=config.instance
+                )
+            if len(self.bcdbs) == 0:
+                self._bcdb_ = j.data.bcdb.system
+            else:
+                raise j.exceptions.Bug("multiple bcdb not supported yet")
+
+        return self._bcdb_
 
     def _web_load(self, app_type="frontend"):
         for port in (443, 80):
@@ -126,18 +144,11 @@ class ThreeBotPackage(JSConfigBase):
             locations.configure()
             website.configure()
 
-    @property
-    def bcdb(self):
-        """
-        will only return bcdb if only 1
-        :return:
-        """
-        j.shell()
-        return self._package_author.bcdb
-
     def config_load(self):
         self._log_info("load package.toml config", data=self)
         tomlfile = f"{self.path}/package.toml"
+        assert self.path
+        assert j.sal.fs.exists(self.path)
         if not j.sal.fs.exists(tomlfile):
             raise j.exceptions.Input("cannot find config file on:%s" % tomlfile)
         config = j.data.serializers.toml.loads(j.sal.fs.readFile(tomlfile))

@@ -501,6 +501,7 @@ def threebotbuilder(push=False, base=False, cont=False, production=False):
     installer.repos_get(pull=False)
 
     docker.jumpscale_install(branch=DEFAULT_BRANCH, redo=delete, pull=False, threebot=True)
+    docker.install_tcprouter()
 
     docker.save(clean_runtime=True, image=dest + "dev")
     if push:

@@ -29,6 +29,8 @@ class ThreeBotPackageBase(JSBase):
         self._package = kwargs["package"]
         self.package_root = self._package.path
 
+        self.bcdb = self._package.bcdb
+
         self.gedis_server = j.threebot.servers.gedis
         self.gevent_rack = j.threebot.servers.gevent_rack
         self.openresty = j.threebot.servers.web

@@ -223,6 +223,10 @@ class GitClient(j.baseclasses.object):
         :param all: don't check previous state, list all
         :param untracked:  also add the untracked files
         :return:  (lastrevision,changes)
+
+        this is the method to use to e.g. find documents ready to process since last processing step,
+        just need to remember the revision from last successful run
+
         """
 
         if not from_revision and all == False:
@@ -534,7 +538,7 @@ class GitClient(j.baseclasses.object):
 
     def patchGitignore(self):
         gitignore = """
-        
+
             logs
             *.log
             npm-debug.log*
@@ -560,12 +564,12 @@ class GitClient(j.baseclasses.object):
             *.tgz
             .yarn-integrity
             .env
-            .next        
-            
+            .next
+
             __pycache__/
-            *.py[cod]            
+            *.py[cod]
             *.so
-            
+
             .Python
             develop-eggs/
             eggs/
@@ -574,28 +578,28 @@ class GitClient(j.baseclasses.object):
             *.egg-info/
             .installed.cfg
             *.egg
-            
+
             pip-log.txt
             pip-delete-this-directory.txt
-            
+
             .tox/
             .coverage
             .cache
             nosetests.xml
             coverage.xml
-            
+
             # Translations
             *.mo
-            
+
             .mr.developer.cfg
             .project
             .pydevproject
-            .ropeproject            
+            .ropeproject
             *.pot
-            
-            docs/_build/            
+
+            docs/_build/
             errors.md
-            
+
             """
 
         gitignore = j.core.tools.text_strip(gitignore)

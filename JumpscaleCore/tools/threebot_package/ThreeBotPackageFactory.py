@@ -43,6 +43,7 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
                 name = config["source"]["threebot"].rstrip(".") + "." + config["source"]["name"]
                 if True or not self.exists(name=name):
                     p = self.get(name=name, path=j.sal.fs.getDirName(path))
+                    assert p.path
 
             return
 

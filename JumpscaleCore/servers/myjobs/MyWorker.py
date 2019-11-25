@@ -11,7 +11,7 @@ class MyWorker(j.baseclasses.object_config):
 
     def _init(self, **kwargs):
         # important to check (at least for now)
-        assert self._bcdb.storclient._check_cat == "myjobs"
+
         if "nr" in kwargs:
             self.nr = kwargs["nr"]
             self.name = "w%s" % self.nr

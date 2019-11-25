@@ -102,30 +102,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             self._openresty_server.install()
         return self._openresty_server
 
-    def bcdb_get(self, namespace, ttype, instance):
-        if ttype not in ["zdb", "sqlite"]:
-            raise j.exceptions.Input("ttype can only be zdb or sqlite")
-
-        name = "threebot_%s_%s" % (ttype, namespace)
-
-        if j.data.bcdb.exists(name=name):
-            bcdb = j.data.bcdb.get(name=name)
-            if bcdb.storclient.type == "zdb":
-                if not ttype == "zdb":
-                    raise j.exceptions.Base("type of storclient needs to be zdb")
-                zdb_admin = j.clients.zdb.client_admin_get()
-                zdb_namespace_exists = zdb_admin.namespace_exists(name)
-                if not zdb_namespace_exists:
-                    # can't we put logic into the bcdb-new to use existing namespace if its there and recreate the index
-                    raise j.exceptions.Base("serious issue bcdb exists, zdb namespace does not")
-            else:
-                if not ttype == "sqlite":
-                    raise j.exceptions.Base("type of storclient needs to be sqlite")
-
-            return bcdb
-
-        return j.data.bcdb.new(name=name)
-
     @property
     def zdb(self):
         if not self._zdb:
@@ -242,9 +218,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             self.rack_server.start(wait=False)
 
-            # j.servers.myjobs.workers_tmux_start(2, in3bot=True)
-            j.servers.myjobs._workers_gipc_nr_max = 10
-            j.servers.myjobs.workers_subprocess_start()
+            self.myjobs_start()
 
             self._log_info("start workers done")
 
@@ -325,16 +299,26 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         return self.client
 
+    def myjobs_start(self):
+        return
+        j.servers.myjobs.workers_tmux_start(2, in3bot=True)
+        # j.servers.myjobs._workers_gipc_nr_max = 10
+        # j.servers.myjobs.workers_subprocess_start()
+
     def _packages_install(self):
 
         if not j.tools.threebot_packages.exists(name="threefold.webinterface"):
             j.tools.threebot_packages.load()
 
-        names = ["webinterface", "wiki", "chat", "myjobs", "packagemanagerui"]
-        names = ["webinterface"]  # TODO: TEST REMOVE
+        names = ["webinterface", "wiki_web", "chat_ui", "myjobs_ui", "packagemanager_ui", "crudgenerator", "oauth2"]
+
         for name in names:
-            p = j.tools.threebot_packages.get(name=f"threefold.{name}")
+            name2 = f"threefold.{name}"
+            if not j.tools.threebot_packages.exists(name=name2):
+                raise j.exceptions.Input("Could not find package:%s" % name2)
+            p = j.tools.threebot_packages.get(name=name2)
             p.install()
+            p.save()
 
     # def _packages_walk(self):
     #

@@ -34,6 +34,7 @@ def delete(name=None, all=False):
     if all:
         if j.tools.console.askYesNo("Are you sure you want to destroy all BCDB's"):
             j.data.bcdb.destroy_all()
+            j.data.bcdb.threebot_stop()
     else:
         if j.tools.console.askYesNo("Are you sure you want to destroy:%s" % name):
             do(name)
