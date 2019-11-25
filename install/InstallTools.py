@@ -5135,6 +5135,12 @@ class DockerContainer:
             ". /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_default(); j.servers.threebot.default.stop()'"
         )
 
+    def install_tcprouter(self):
+        """
+        Install tcprouter builder to be part of the image
+        """
+        self.sshexec(". /sandbox/env.sh; kosmos 'j.builders.network.tcprouter.install()'")
+
     def jumpscale_install(
         self, secret=None, privatekey=None, redo=False, threebot=True, pull=False, branch=None, prebuilt=False
     ):
