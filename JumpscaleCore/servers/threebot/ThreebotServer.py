@@ -311,12 +311,12 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.tools.threebot_packages.load()
 
         names = ["webinterface", "wiki_web", "chat_ui", "myjobs_ui", "packagemanager_ui", "crudgenerator", "oauth2"]
-
         for name in names:
             name2 = f"threefold.{name}"
             if not j.tools.threebot_packages.exists(name=name2):
                 raise j.exceptions.Input("Could not find package:%s" % name2)
             p = j.tools.threebot_packages.get(name=name2)
+
             p.install()
             p.save()
 
