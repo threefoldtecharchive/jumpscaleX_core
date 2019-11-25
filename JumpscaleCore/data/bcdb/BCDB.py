@@ -152,10 +152,6 @@ class BCDB(j.baseclasses.object):
             j.sal.fs.remove(path)
         j.sal.fs.createDir(path)
 
-        if self.name != "system":
-            bcdbconfig = j.data.bcdb._config[self.name]
-            j.shell()
-
         for m in self.models:
             print("export model: ", m)
             dpath = f"{path}/{m.schema.url}"
@@ -236,23 +232,14 @@ class BCDB(j.baseclasses.object):
                     data_bin = j.data.nacl.default.decryptSymmetric(data2)
                     obj = j.data.serializers.jsxdata.loads(data_bin)
                     print(f"data decrypted {data}")
-                    try:
-                        data[obj.id] = (url, obj._ddict)
-                    except:
-                        raise j.exceptions.Base("can't get a new data obj based on binary data: %s" % (item))
+                    data[obj.id] = (url, obj._ddict)
                 elif ext in ["toml", "yaml"]:
                     if ext == "toml":
                         self._log("toml:%s" % item)
-                        try:
-                            datadict = j.data.serializers.toml.load(item)
-                        except Exception as e:
-                            print(f"ERR TOML: {e} {item}")
+                        datadict = j.data.serializers.toml.load(item)
                     if ext == "yaml":
                         self._log("yaml:%s" % item)
-                        try:
-                            datadict = j.data.serializers.yaml.load(item)
-                        except Exception as e:
-                            print(f"ERR YAML: {e} {item}")
+                        datadict = j.data.serializers.yaml.load(item)
 
                     data[datadict["id"]] = (url, datadict)
                 else:
@@ -260,6 +247,12 @@ class BCDB(j.baseclasses.object):
                     continue
 
         max_id = max(list(data.keys()) or [0])
+        dummy_schema = """
+        @url = jumpscale.dummy.object
+        name** = (S)
+        """
+        schema = j.data.schema.get_from_text(dummy_schema, url="jumpscale.dummy.object", multiple=False)
+        dummy_model = self.model_get(schema=schema)
 
         print(f"MAX: {max_id}")
         # have to import it in the exact same order
@@ -267,16 +260,16 @@ class BCDB(j.baseclasses.object):
             print(f"i: {i}")
             if i not in data:
                 print(f" {i} doesn't exist in data.. ")
-                gap_obj = model.new()
-                if hasattr(gap_obj, "name"):
-                    gap_obj.name = j.data.idgenerator.generateGUID() + "_TOREMOVE"
-                    gap_obj.id = None
-                    gap_obj.save()
+                gap_obj = dummy_model.new()
+                gap_obj.name = j.data.idgenerator.generateGUID()
+                gap_obj.id = None
+                gap_obj.save()
             else:
                 url, obj_data = data[i]
                 model = models[url]
                 obj = model.new()
-                obj.name = obj_data["name"]
+                if "name" in obj_data:
+                    obj.name = obj_data["name"]
                 obj.id = None
                 obj.save()
                 print(f"setting obj {obj_data} on obj with id {obj.id} using {model.schema.url}")
@@ -284,12 +277,8 @@ class BCDB(j.baseclasses.object):
 
                 assert obj.id == i
 
-        for _, model in models.items():
-            objects = model.find()
-            for o in objects:
-                if o.name.endswith("_TOREMOVE"):
-                    print(f"Cleaning up object {o.name}")
-                    o.delete()
+        print("Cleaning up dummy objects")
+        dummy_model.destroy()
 
     @property
     def sqlite_index_client(self):
