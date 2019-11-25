@@ -15,7 +15,7 @@ class ThreeBotPackage(JSConfigBase):
         status = "init,config,installed,disabled,error" (E)
         source = (O) !jumpscale.threebot.package.source.1
         actor = (O) !jumpscale.threebot.package.actor.1
-        bcdb = (LO) !jumpscale.threebot.package.bcdb.1
+        bcdbs = (LO) !jumpscale.threebot.package.bcdb.1
 
         @url = jumpscale.threebot.package.source.1
         name = ""
@@ -28,7 +28,7 @@ class ThreeBotPackage(JSConfigBase):
 
         @url = jumpscale.threebot.package.bcdb.1
         namespace = ""
-        type = "zdb,sqlite" (E)
+        type = "zdb,sqlite,redis" (E)
         instance = "default"
 
         """
@@ -47,6 +47,7 @@ class ThreeBotPackage(JSConfigBase):
 
     def _init(self, **kwargs):
         self._init_ = False
+        self._bcdb = None
         if self.status == "init":
             self.config_load()
         self.running = False
@@ -108,6 +109,21 @@ class ThreeBotPackage(JSConfigBase):
 
         self._init_ = True
 
+    @property
+    def bcdb(self):
+        if not self._bcdb:
+            ##GET THE BCDB, ONLY 1 support for now
+            if len(self.bcdbs) == 1:
+                config = self.bcdbs[0]
+                assert config.instance == "default"  # for now we don't support anything else
+                self._bcdb = self.threebot_server.bcdb_get(
+                    namespace=config.namespace, ttype=config.type, instance=config.instance
+                )
+            else:
+                raise j.exceptions.Bug("multiple bcdb not supported yet")
+
+        return self._bcdb
+
     def _web_load(self, app_type="frontend"):
         for port in (443, 80):
             website = self.openresty.get_from_port(port)
@@ -126,18 +142,11 @@ class ThreeBotPackage(JSConfigBase):
             locations.configure()
             website.configure()
 
-    @property
-    def bcdb(self):
-        """
-        will only return bcdb if only 1
-        :return:
-        """
-        j.shell()
-        return self._package_author.bcdb
-
     def config_load(self):
         self._log_info("load package.toml config", data=self)
         tomlfile = f"{self.path}/package.toml"
+        assert self.path
+        assert j.sal.fs.exists(self.path)
         if not j.sal.fs.exists(tomlfile):
             raise j.exceptions.Input("cannot find config file on:%s" % tomlfile)
         config = j.data.serializers.toml.loads(j.sal.fs.readFile(tomlfile))

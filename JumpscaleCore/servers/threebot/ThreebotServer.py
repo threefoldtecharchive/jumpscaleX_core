@@ -103,24 +103,32 @@ class ThreeBotServer(j.baseclasses.object_config):
         return self._openresty_server
 
     def bcdb_get(self, namespace, ttype, instance):
-        if ttype not in ["zdb", "sqlite"]:
+        if ttype not in ["zdb", "sqlite", "redis"]:
             raise j.exceptions.Input("ttype can only be zdb or sqlite")
 
         name = "threebot_%s_%s" % (ttype, namespace)
 
         if j.data.bcdb.exists(name=name):
-            bcdb = j.data.bcdb.get(name=name)
-            if bcdb.storclient.type == "zdb":
-                if not ttype == "zdb":
-                    raise j.exceptions.Base("type of storclient needs to be zdb")
+            return j.data.bcdb.get(name=name)
+        else:
+            if ttype == "zdb":
+                j.shell()
+                adminsecret_ = j.data.hash.md5_string(self.adminsecret_)
                 zdb_admin = j.clients.zdb.client_admin_get()
-                zdb_namespace_exists = zdb_admin.namespace_exists(name)
+                if not zdb_admin.namespace_exists(namespace):
+                    zdb_admin.namespace_new(namespace, secret=adminsecret_, maxsize=0, die=True)
+                zdb_namespace_exists = zdb_admin.namespace_exists(namespace)
                 if not zdb_namespace_exists:
                     # can't we put logic into the bcdb-new to use existing namespace if its there and recreate the index
                     raise j.exceptions.Base("serious issue bcdb exists, zdb namespace does not")
+            elif ttype == "sqlite":
+                storclient = j.clients.sqlitedb.client_get(namespace=bcdb.namespace)
+            elif ttype == "redis":
+                storclient = j.clients.rdb.client_get(namespace=bcdb.namespace)
             else:
-                if not ttype == "sqlite":
-                    raise j.exceptions.Base("type of storclient needs to be sqlite")
+                raise j.exceptions.Input("only slqite and zdb supported")
+
+            return j.data.bcdb.get(name=name, storclient=storclient)
 
             return bcdb
 
@@ -324,6 +332,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         return self.client
 
     def myjobs_start(self):
+        return
         j.servers.myjobs.workers_tmux_start(2, in3bot=True)
         # j.servers.myjobs._workers_gipc_nr_max = 10
         # j.servers.myjobs.workers_subprocess_start()
@@ -333,15 +342,14 @@ class ThreeBotServer(j.baseclasses.object_config):
         if not j.tools.threebot_packages.exists(name="threefold.webinterface"):
             j.tools.threebot_packages.load()
 
-        names = ["webinterface", "wiki", "chat", "myjobs", "packagemanagerui"]
-        names = ["webinterface"]  # TODO: TEST REMOVE
+        names = ["webinterface", "wiki_web", "chat_ui", "myjobs_ui", "packagemanager_ui", "crudgenerator", "oauth2"]
+        # names = ["webinterface"]  # TODO: TEST REMOVE
         for name in names:
-            p = j.tools.threebot_packages.get(name=f"threefold.{name}")
-            try:
-                p.install()
-            except Exception as e:
-                j.core.tools.log(level=50, exception=e, stdout=True)
-                p.status = "error"
+            name2 = f"threefold.{name}"
+            if not j.tools.threebot_packages.exists(name=name2):
+                raise j.exceptions.Input("Could not find package:%s" % name2)
+            p = j.tools.threebot_packages.get(name=name2)
+            p.install()
             p.save()
 
     # def _packages_walk(self):
