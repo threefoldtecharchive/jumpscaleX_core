@@ -185,9 +185,10 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         if not background:
 
-            j.servers.myjobs.reset_data()
             self.zdb  # will start sonic & zdb
             self.sonic
+            # reset myjobs after zdb is ready
+            j.servers.myjobs.reset_data()
 
             ##SHOULD NOT BE NEEDED
             # j.data.bcdb.check()
