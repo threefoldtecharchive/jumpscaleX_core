@@ -102,9 +102,9 @@ class ThreeBotPackage(JSConfigBase):
             elif j.sal.fs.exists(self.path + "/frontend"):
                 self._web_load("frontend")
 
-            if j.sal.fs.exists(self.path + "/bottle"):
-                # load webserver
-                j.shell()
+            # if j.sal.fs.exists(self.path + "/bottle"):
+            #     # load webserver
+            #     j.shell()
 
         self._init_ = True
 

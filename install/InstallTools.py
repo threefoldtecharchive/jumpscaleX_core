@@ -3177,7 +3177,9 @@ class MyEnv_:
             "REVERSE": "",
         }
 
-        LOGFORMATBASE = "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"  # DO NOT CHANGE COLOR
+        LOGFORMATBASE = (
+            "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"
+        )  # DO NOT CHANGE COLOR
 
         self.LOGFORMAT = {
             "DEBUG": LOGFORMATBASE.replace("{COLOR}", "{CYAN}"),
@@ -3937,6 +3939,7 @@ class BaseInstaller:
                 "pygments-markdown-lexer",
                 "wsgidav",
                 "bottle==0.12.17",  # why this version?
+                "beaker",
             ],
             # level 1: in the middle
             1: [

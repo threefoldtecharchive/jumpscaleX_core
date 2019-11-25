@@ -34,7 +34,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     def _init(self, **kwargs):
 
         self._log_debug("bcdb starts")
-
+        self._loaded = False
         self._path = j.sal.fs.getDirName(os.path.abspath(__file__))
 
         self._code_generation_dir_ = None
@@ -49,11 +49,12 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         # will make sure the toml schema's are loaded
         j.data.schema.add_from_path("%s/models_system" % self._dirpath)
 
-        self.__loaded = False
-
     def _load(self):
 
-        if not self.__loaded:
+        if not self._loaded or self._instances == {}:
+
+            self._loaded = True
+            print("LOAD CONFIG BCDB")
 
             storclient = j.clients.sqlitedb.client_get(namespace="system")
             # storclient = j.clients.rdb.client_get(namespace="system")
@@ -71,8 +72,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                 self._config = j.data.serializers.msgpack.loads(data)
             else:
                 self._config = {}
-
-            self.__loaded = True
 
     @property
     def system(self):
@@ -195,10 +194,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         will remove all remembered connections
         :return:
         """
-        self._load()
+        # self._load()
         j.sal.fs.remove(self._config_data_path)
         self._config = {}
         self._instances = j.baseclasses.dict()
+        self._loaded = False
 
     def destroy_all(self):
         """
@@ -236,6 +236,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         for key in j.core.db.keys("queue*"):
             j.core.db.delete(key)
 
+        self._loaded = False
         self._load()
         assert self._config == {}
 
@@ -271,6 +272,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if name in self._config:
             self._config.pop(name)
             self._config_write()
+
+        self._loaded = False
 
     def get(self, name, storclient=None, reset=False):
         """
