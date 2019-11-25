@@ -119,6 +119,8 @@ class ThreeBotPackage(JSConfigBase):
                 self._bcdb = self.threebot_server.bcdb_get(
                     namespace=config.namespace, ttype=config.type, instance=config.instance
                 )
+            if len(self.bcdbs) == 0:
+                self._bcdb = j.data.bcdb.system
             else:
                 raise j.exceptions.Bug("multiple bcdb not supported yet")
 
