@@ -6,19 +6,19 @@ This client can make the connection to the tcprouter server
 
 ## Usage
 
-- get a client with a proper addresses and secret
+- Get a client with the proper local address, remote address and secret
 
 ```python
-cl = j.clients.tcp_router.get("waleed", local_address="0.0.0.0:18000",remote_address="127.0.0.1:6379", secret="test")
+cl = j.clients.tcp_router.get("test_instance", local_address="0.0.0.0:18000",remote_address="127.0.0.1:6379", secret="test")
 ```
 
-- to connect
+- To connect to tcprouter backend
 
 ```python
 cl.connect()
 ```
 
-- to stop connection
+- To stop connection
 
 ```python
 cl.stop()
