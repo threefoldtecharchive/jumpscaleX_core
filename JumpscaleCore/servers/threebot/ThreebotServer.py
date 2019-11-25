@@ -242,9 +242,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             self.rack_server.start(wait=False)
 
-            # j.servers.myjobs.workers_tmux_start(2, in3bot=True)
-            j.servers.myjobs._workers_gipc_nr_max = 10
-            j.servers.myjobs.workers_subprocess_start()
+            self.myjobs_start()
 
             self._log_info("start workers done")
 
@@ -325,6 +323,11 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         return self.client
 
+    def myjobs_start(self):
+        # j.servers.myjobs.workers_tmux_start(2, in3bot=True)
+        j.servers.myjobs._workers_gipc_nr_max = 10
+        j.servers.myjobs.workers_subprocess_start()
+
     def _packages_install(self):
 
         if not j.tools.threebot_packages.exists(name="threefold.webinterface"):
@@ -334,7 +337,12 @@ class ThreeBotServer(j.baseclasses.object_config):
         names = ["webinterface"]  # TODO: TEST REMOVE
         for name in names:
             p = j.tools.threebot_packages.get(name=f"threefold.{name}")
-            p.install()
+            try:
+                p.install()
+            except Exception as e:
+                j.core.tools.log(level=50, exception=e, stdout=True)
+                p.status = "error"
+            p.save()
 
     # def _packages_walk(self):
     #
