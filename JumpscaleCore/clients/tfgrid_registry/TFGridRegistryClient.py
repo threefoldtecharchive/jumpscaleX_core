@@ -41,7 +41,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         self.gedis_client.reload()
         self.registry_client = self.gedis_client.actors.registry
         self.nacl = self.me.nacl
-        self.bcdb = j.data.bcdb.get("threebot_registery")
+        self.bcdb = j.data.bcdb.get("threebot_registry")
 
     def register(
         self,
