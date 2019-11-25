@@ -84,8 +84,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         stops the threebot sonic & zdb
         :return:
         """
-        j.servers.threebot.default.zdb.stop()
-        j.servers.sonic.default.stop()
+
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 9900):
+            j.servers.threebot.default.zdb.stop()
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 1491):
+            j.servers.sonic.default.stop()
 
         assert j.sal.process.checkProcessRunning("zdb") == False
         assert j.sal.process.checkProcessRunning("sonic") == False
@@ -274,6 +277,31 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             self._config_write()
 
         self._loaded = False
+
+    def get_for_threebot(self, namespace, ttype, instance):
+        if ttype not in ["zdb", "sqlite", "redis"]:
+            raise j.exceptions.Input("ttype can only be zdb or sqlite")
+
+        name = "threebot_%s_%s" % (ttype, namespace)
+
+        if j.data.bcdb.exists(name=name):
+            return j.data.bcdb.get(name=name)
+        else:
+            if ttype == "zdb":
+                adminsecret_ = j.data.hash.md5_string(j.threebot.servers.core.adminsecret_)
+                self._log_debug("get zdb admin client")
+                zdb_admin = j.threebot.servers.core.zdb.client_admin_get()
+                if not zdb_admin.namespace_exists(namespace):
+                    zdb_admin.namespace_new(namespace, secret=adminsecret_, maxsize=0, die=True)
+                storclient = j.threebot.servers.core.zdb.client_get(namespace, adminsecret_)
+            elif ttype == "sqlite":
+                storclient = j.clients.sqlitedb.client_get(namespace=namespace)
+            elif ttype == "redis":
+                storclient = j.clients.rdb.client_get(namespace=namespace)
+            else:
+                raise j.exceptions.Input("only redis, slqite and zdb supported")
+
+            return j.data.bcdb.get(name=name, storclient=storclient)
 
     def get(self, name, storclient=None, reset=False):
         """

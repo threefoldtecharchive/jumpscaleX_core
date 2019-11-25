@@ -47,7 +47,7 @@ class ThreeBotPackage(JSConfigBase):
 
     def _init(self, **kwargs):
         self._init_ = False
-        self._bcdb = None
+        self._bcdb_ = None  # cannot use self._bcdb already used
         if self.status == "init":
             self.config_load()
         self.running = False
@@ -111,20 +111,20 @@ class ThreeBotPackage(JSConfigBase):
 
     @property
     def bcdb(self):
-        if not self._bcdb:
+        if not self._bcdb_:
             ##GET THE BCDB, ONLY 1 support for now
             if len(self.bcdbs) == 1:
                 config = self.bcdbs[0]
                 assert config.instance == "default"  # for now we don't support anything else
-                self._bcdb = self.threebot_server.bcdb_get(
+                self._bcdb = j.data.bcdb.get_for_threebot(
                     namespace=config.namespace, ttype=config.type, instance=config.instance
                 )
             if len(self.bcdbs) == 0:
-                self._bcdb = j.data.bcdb.system
+                self._bcdb_ = j.data.bcdb.system
             else:
                 raise j.exceptions.Bug("multiple bcdb not supported yet")
 
-        return self._bcdb
+        return self._bcdb_
 
     def _web_load(self, app_type="frontend"):
         for port in (443, 80):

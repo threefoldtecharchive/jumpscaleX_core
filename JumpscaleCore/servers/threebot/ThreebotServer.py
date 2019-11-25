@@ -102,38 +102,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             self._openresty_server.install()
         return self._openresty_server
 
-    def bcdb_get(self, namespace, ttype, instance):
-        if ttype not in ["zdb", "sqlite", "redis"]:
-            raise j.exceptions.Input("ttype can only be zdb or sqlite")
-
-        name = "threebot_%s_%s" % (ttype, namespace)
-
-        if j.data.bcdb.exists(name=name):
-            return j.data.bcdb.get(name=name)
-        else:
-            if ttype == "zdb":
-                j.shell()
-                adminsecret_ = j.data.hash.md5_string(self.adminsecret_)
-                zdb_admin = j.clients.zdb.client_admin_get()
-                if not zdb_admin.namespace_exists(namespace):
-                    zdb_admin.namespace_new(namespace, secret=adminsecret_, maxsize=0, die=True)
-                zdb_namespace_exists = zdb_admin.namespace_exists(namespace)
-                if not zdb_namespace_exists:
-                    # can't we put logic into the bcdb-new to use existing namespace if its there and recreate the index
-                    raise j.exceptions.Base("serious issue bcdb exists, zdb namespace does not")
-            elif ttype == "sqlite":
-                storclient = j.clients.sqlitedb.client_get(namespace=bcdb.namespace)
-            elif ttype == "redis":
-                storclient = j.clients.rdb.client_get(namespace=bcdb.namespace)
-            else:
-                raise j.exceptions.Input("only slqite and zdb supported")
-
-            return j.data.bcdb.get(name=name, storclient=storclient)
-
-            return bcdb
-
-        return j.data.bcdb.new(name=name)
-
     @property
     def zdb(self):
         if not self._zdb:
@@ -343,7 +311,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.tools.threebot_packages.load()
 
         names = ["webinterface", "wiki_web", "chat_ui", "myjobs_ui", "packagemanager_ui", "crudgenerator", "oauth2"]
-        # names = ["webinterface"]  # TODO: TEST REMOVE
+
         for name in names:
             name2 = f"threefold.{name}"
             if not j.tools.threebot_packages.exists(name=name2):
