@@ -116,13 +116,11 @@ class ThreeBotPackage(JSConfigBase):
             if len(self.bcdbs) == 1:
                 config = self.bcdbs[0]
                 assert config.instance == "default"  # for now we don't support anything else
-                self._bcdb = j.data.bcdb.get_for_threebot(
+                self._bcdb_ = j.data.bcdb.get_for_threebot(
                     namespace=config.namespace, ttype=config.type, instance=config.instance
                 )
             if len(self.bcdbs) == 0:
                 self._bcdb_ = j.data.bcdb.system
-            else:
-                raise j.exceptions.Bug("multiple bcdb not supported yet")
 
         return self._bcdb_
 
