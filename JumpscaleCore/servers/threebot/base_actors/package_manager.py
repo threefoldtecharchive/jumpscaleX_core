@@ -28,7 +28,6 @@ class package_manager(j.baseclasses.threebot_actor):
             raise j.exceptions.Input("add can only be done by git_url or name but not both")
 
         assert j.threebot.servers.core
-        threebot_server_name = j.threebot.servers.core.name
 
         if git_url:
             p = git_url
@@ -50,11 +49,9 @@ class package_manager(j.baseclasses.threebot_actor):
         name = getname(p)
 
         if git_url:
-            package = j.tools.threebot_packages.get(
-                name=name, giturl=git_url, threebot_server_name=threebot_server_name
-            )
+            package = j.tools.threebot_packages.get(name=name, giturl=git_url)
         elif path:
-            package = j.tools.threebot_packages.get(name=name, path=path, threebot_server_name=threebot_server_name)
+            package = j.tools.threebot_packages.get(name=name, path=path)
         else:
             raise j.exceptions.Input("need to have git_url or path to package")
 
