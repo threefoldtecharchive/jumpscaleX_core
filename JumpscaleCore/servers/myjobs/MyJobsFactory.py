@@ -24,10 +24,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self._mainloop_tmux = None
         self._mainloop_greenlet_redis = None
 
-        storclient = j.clients.rdb.client_get()
-        storclient._check_cat = "myjobs"
-
-        self._bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
+        self._bcdb = self._bcdb_selector()
 
         self.model_action = self._bcdb.model_get(schema=schemas.action)
 
@@ -78,7 +75,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             return True, o
 
     def _bcdb_selector(self):
-        return j.data.bcdb.get("myjobs", storclient=j.clients.rdb.client_get())
+        client = j.clients.rdb.client_get()
+        client.cat = "myjobs"
+        return j.data.bcdb.get("myjobs", storclient=client)
 
     @property
     def _workers_gipc_count(self):

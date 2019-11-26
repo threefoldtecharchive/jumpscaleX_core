@@ -190,6 +190,20 @@ class ThreeBotServer(j.baseclasses.object_config):
             # reset myjobs after zdb is ready
             j.servers.myjobs.reset_data()
 
+            # remove the package
+
+            j.threebot.servers = Servers()
+            j.threebot.servers.zdb = self.zdb
+            j.threebot.servers.zonic = self.sonic
+            j.threebot.servers.gedis = self.gedis_server
+            j.threebot.servers.web = self.openresty_server
+            j.threebot.servers.core = self
+            j.threebot.servers.gevent_rack = self.rack_server
+            j.threebot.myjobs = j.servers.myjobs
+            # j.threebot.bcdb_get = j.servers.threebot.bcdb_get
+            j.threebot.bcdb = BCDBS()
+            j.threebot.bcdb_factory = j.data.bcdb
+
             ##SHOULD NOT BE NEEDED
             # j.data.bcdb.check()
 
@@ -222,20 +236,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.myjobs_start()
 
             self._log_info("start workers done")
-
-            # remove the package
-
-            j.threebot.servers = Servers()
-            j.threebot.servers.zdb = self.zdb
-            j.threebot.servers.zonic = self.sonic
-            j.threebot.servers.gedis = self.gedis_server
-            j.threebot.servers.web = self.openresty_server
-            j.threebot.servers.core = self
-            j.threebot.servers.gevent_rack = self.rack_server
-            j.threebot.myjobs = j.servers.myjobs
-            # j.threebot.bcdb_get = j.servers.threebot.bcdb_get
-            j.threebot.bcdb = BCDBS()
-            j.threebot.bcdb_factory = j.data.bcdb
 
             # j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
             self._maintenance()
@@ -301,7 +301,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         return self.client
 
     def myjobs_start(self):
-        return
         j.servers.myjobs.workers_tmux_start(2, in3bot=True)
         # j.servers.myjobs._workers_gipc_nr_max = 10
         # j.servers.myjobs.workers_subprocess_start()

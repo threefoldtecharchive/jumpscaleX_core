@@ -426,7 +426,7 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
     from Jumpscale import j
 
     try:
-        threebot_client = j.clients.gedis.get("jsx_threebot", port=8901)
+        threebot_client = j.clients.gedis.get("jsx_threebot", namespace="zerobot", port=8901)
         threebot_client.ping()
         threebot_client.reload()
     except (j.exceptions.Base, redis.ConnectionError):

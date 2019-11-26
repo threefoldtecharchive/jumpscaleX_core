@@ -12,7 +12,7 @@ class MyJob(j.baseclasses.object_config):
     def _init(self, method=None, dependencies=None, args_replace=None, **kwargs2):
 
         # leave this check for now please
-        assert self._bcdb.storclient._check_cat == "myjobs"
+        assert self._parent._bcdb.storclient.cat == "myjobs"
 
         if dependencies:
             for dep in dependencies:

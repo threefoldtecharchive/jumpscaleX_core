@@ -150,7 +150,7 @@ class JSXObject(j.baseclasses.object):
                 raise j.exceptions.Input("an indexed (sql) field cannot be empty:%s" % prop.name, data=self)
 
         for prop in self._model.schema.properties_index_text:
-            if not eval(f"self.{prop.name}"):
+            if eval(f"self.{prop.name}") is None:
                 raise j.exceptions.Input("an indexed (text) field cannot be empty:%s" % prop.name, data=self)
 
     def save(self, serialize=False):

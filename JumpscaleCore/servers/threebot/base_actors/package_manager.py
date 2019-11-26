@@ -63,6 +63,7 @@ class package_manager(j.baseclasses.threebot_actor):
         if reload is False and j.tools.threebot_packages.exists(name):
             return "OK"
         try:
+            package.load()
             package.save()
             package.prepare()
             package.status = "INSTALLED"

@@ -93,10 +93,10 @@ class ThreeBotPackage(JSConfigBase):
                 wiki = j.tools.markdowndocs.load(name=wiki_name, path=wiki_path, pull=False)
                 wiki.write()
 
-            # path = self.path + "/wiki"
-            # if j.sal.fs.exists(path):
-            #     name = self.name
-            #     j.servers.myjobs.schedule(load_wiki, wiki_name=name, wiki_path=path)
+            path = self.path + "/wiki"
+            if j.sal.fs.exists(path):
+                name = self.name
+                j.servers.myjobs.schedule(load_wiki, wiki_name=name, wiki_path=path)
 
             if j.sal.fs.exists(self.path + "/html"):
                 self._web_load("html")
@@ -198,3 +198,6 @@ class ThreeBotPackage(JSConfigBase):
         if self.status != "init":
             self.status = "init"
         self.install()
+
+    def prepare(self):
+        self._package_author.prepare()
