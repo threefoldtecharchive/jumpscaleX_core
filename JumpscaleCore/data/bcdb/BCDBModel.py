@@ -453,14 +453,6 @@ class BCDBModel(j.baseclasses.object):
         else:
             obj = self.schema.new(bcdb=self.bcdb)
 
-        for prop in self.schema.properties_index_sql:
-            if not eval(f"obj.{prop.name}"):
-                raise j.exceptions.Input("an indexed (sql) field cannot be empty:%s" % prop.name, data=obj)
-
-        for prop in self.schema.properties_index_text:
-            if not eval(f"obj.{prop.name}"):
-                raise j.exceptions.Input("an indexed (text) field cannot be empty:%s" % prop.name, data=obj)
-
         obj = self._methods_add(obj)
         obj.nid = nid
         obj = self._triggers_call(obj=obj, action="new")
