@@ -228,14 +228,14 @@ class GitClient(j.baseclasses.object):
         just need to remember the revision from last successful run
 
         """
-
+        revision = None
         if not from_revision and all == False:
             from_revision = self.config_3git_get("revision_last_processed")
 
         if from_revision:
-            cmd = "cd %s;git --no-pager log %s --name-status --oneline" % (self.BASEDIR, from_revision)
+            cmd = f"cd {self.BASEDIR};git --no-pager log {from_revision}..HEAD --name-status --oneline"
         else:
-            cmd = "cd %s;git --no-pager log --name-status --oneline" % self.BASEDIR
+            cmd = f"cd {self.BASEDIR};git --no-pager log --name-status --oneline"
 
         rc, out, err = j.tools.executorLocal.execute(cmd)
         # Organize files in lists
@@ -249,7 +249,7 @@ class GitClient(j.baseclasses.object):
                 pre, post, = item.split("\t", 1)
             else:
                 pre, post, = item.split(" ", 1)
-            if len(pre) == 7:
+            if len(pre) == 8:
                 revision = pre
                 msg = post
             else:
@@ -272,6 +272,7 @@ class GitClient(j.baseclasses.object):
                 else:
                     j.shell()
                     w
+
         if untracked:
             for item in self.getModifiedFiles(collapse=True):
                 if item not in result:
