@@ -63,20 +63,14 @@ class package_manager(j.baseclasses.threebot_actor):
         if reload is False and j.tools.threebot_packages.exists(name):
             return "OK"
         try:
-            package.load()
-            package.save()
-            package.prepare()
-            package.status = "INSTALLED"
-            package.save()
-            package.start()
-            package.status = "RUNNING"
+            package.install()
             package.save()
         except Exception as e:
             self._log_error(str(e), exception=e)
             return f"Could not add package {package.name}: {e}"
 
         # reload openresty configuration
-        j.threebot.servers.core.openresty_server.reload()
+        package.openresty.reload()
 
         return "OK"
 

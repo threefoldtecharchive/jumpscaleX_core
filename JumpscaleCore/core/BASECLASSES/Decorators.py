@@ -3,6 +3,10 @@ from Jumpscale import j
 
 
 def actor_method(func):
+    class AdminSession:
+        def admin_check(self):
+            return True
+
     def process_doc_str(func):
         S = None
         schema_in = None
@@ -32,7 +36,7 @@ def actor_method(func):
     def wrapper_action(*args, **kwargs):
         self = args[0]
         if not len(args) == 1:
-            raise j.exceptions.Input("we should not call an actor method with args")
+            raise j.exceptions.Input("actor methods only accept keyword arguments")
         self._log_debug(str(func))
         name = func.__name__
         self._log_debug(name)
@@ -50,7 +54,8 @@ def actor_method(func):
                 for pname in schema_in.propertynames:
                     kwargs[pname] = eval("data.%s" % pname)
 
-            kwargs["user_session"] = None
+            # TODO: need to set user_session as threebot.me session
+            kwargs["user_session"] = AdminSession()
             kwargs["schema_out"] = schema_out
 
         res = func(self, **kwargs)

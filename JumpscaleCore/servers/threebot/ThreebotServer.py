@@ -271,7 +271,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.__dict__.pop("sal_zos")
 
             # reload nginx at the end after loading packages and its config is written
-            j.threebot.servers.core.openresty_server.reload()
+            self.openresty_server.reload()
 
             print("*****************************")
             print("*** 3BOTSERVER IS RUNNING ***")
