@@ -1,6 +1,6 @@
 import logging
 import unittest
-import subprocess
+from subprocess import Popen, PIPE
 from Jumpscale import j
 
 
@@ -12,13 +12,13 @@ class BaseTest(unittest.TestCase):
 
     @staticmethod
     def os_command(command):
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
         output, error = process.communicate()
         return output, error
 
     @staticmethod
-    def rand_num():
-        return j.data.idgenerator.generateRandomInt(100, 1000)
+    def rand_num(start=100, stop=1000):
+        return j.data.idgenerator.generateRandomInt(start, stop)
 
     @staticmethod
     def rand_string():
