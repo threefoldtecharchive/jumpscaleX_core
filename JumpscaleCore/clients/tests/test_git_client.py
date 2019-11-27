@@ -190,8 +190,7 @@ class TestGitClient(BaseTest):
         """
         self.info("Create a new branch and checkout to this new created branch")
         BRANCH_NAME = self.rand_string()
-        output, error = self.os_command("cd {} && git checkout -b {}".format(self.GIT_REPO, BRANCH_NAME))
-        self.assertFalse(error)
+        self.os_command("cd {} && git checkout -b {}".format(self.GIT_REPO, BRANCH_NAME))
         self.assertEqual(BRANCH_NAME, self.get_current_branch_name())
 
         self.info("Checkout to master branch")
