@@ -16,6 +16,10 @@ class ThreeBotPackage(JSConfigBase):
         source = (O) !jumpscale.threebot.package.source.1
         actor = (O) !jumpscale.threebot.package.actor.1
         bcdbs = (LO) !jumpscale.threebot.package.bcdb.1
+        actor_names = (LS)
+        chat_names = (LS)
+        wiki_names = (LS)
+        model_urls = (LS)
 
         @url = jumpscale.threebot.package.source.1
         name = ""
@@ -52,8 +56,34 @@ class ThreeBotPackage(JSConfigBase):
             self.config_load()
         self.running = False
 
-    def load(self):
+    def _cruds_load(self):
+        actors_dir = f"{j.dirs.VARDIR}/codegen/actors/{self.name}/"
+        if j.sal.fs.exists(actors_dir):
+            j.sal.fs.remove(actors_dir)
+        j.sal.fs.createDir(actors_dir)
 
+        for model_url in self.model_urls:
+            # Exclude bcdb meta data models
+            model = self.bcdb.model_get(url=model_url)
+            if model.schema.url.startswith("jumpscale.bcdb."):
+                continue
+            j.tools.jinja2.file_render(
+                self._dirpath + "/templates/template.py",
+                dest=actors_dir + model.schema.key + "_model.py",
+                model=model,
+                fields_schema=self._model_get_fields_schema(model),
+            )
+
+        self.actor_names.extend(self.gedis_server.actors_add(actors_dir))
+        self.save()
+
+    def _model_get_fields_schema(self, model):
+        lines = model.schema.text.splitlines()
+        if lines[0].strip().startswith("@url"):
+            lines.pop(0)
+        return "\n        ".join(lines)
+
+    def load(self):
         if not "bcdb" in j.threebot.__dict__:
             # means we are not in a threebot server, should not allow the following to happen
             raise j.exceptions.Base("cannot use threebot package data model from process out of threebot")
@@ -78,15 +108,17 @@ class ThreeBotPackage(JSConfigBase):
 
             path = self.path + "/models"
             if j.sal.fs.exists(path):
-                self.bcdb.models_add(path)
+                self.model_urls = self.bcdb.models_add(path)
+
 
             path = self.path + "/actors"
             if j.sal.fs.exists(path):
-                self.gedis_server.actors_add(path, namespace=self._package_author.actors_namespace)
+                self.actor_names = self.gedis_server.actors_add(path, namespace=self._package_author.actors_namespace)
 
             path = self.path + "/chatflows"
             if j.sal.fs.exists(path):
-                self.gedis_server.chatbot.chatflows_load(path)
+                self.chat_names = self.gedis_server.chatbot.chatflows_load(path)
+
 
             def load_wiki(wiki_name=None, wiki_path=None):
                 """we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
@@ -96,8 +128,11 @@ class ThreeBotPackage(JSConfigBase):
             path = self.path + "/wiki"
             if j.sal.fs.exists(path):
                 name = self.name
+                if not name in self.wiki_names:
+                    self.wiki_names.append(name)
                 j.servers.myjobs.schedule(load_wiki, wiki_name=name, wiki_path=path)
 
+            self.save()
             if j.sal.fs.exists(self.path + "/html"):
                 self._web_load("html")
             elif j.sal.fs.exists(self.path + "/frontend"):
@@ -171,6 +206,8 @@ class ThreeBotPackage(JSConfigBase):
         if self.status != "installed":
             self.install()
         self.load()
+        # should be merged into load method later on
+        self._cruds_load()
         self._package_author.start()
         self.running = True
         self.save()

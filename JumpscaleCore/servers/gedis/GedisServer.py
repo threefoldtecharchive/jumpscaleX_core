@@ -129,6 +129,7 @@ class GedisServer(JSBaseConfig):
         :param path: of the actor file
         :return:
         """
+        actor_names = []
         if not j.sal.fs.isDir(path):
             raise j.exceptions.Value("actor_add: path needs to point to an existing directory")
 
@@ -140,7 +141,9 @@ class GedisServer(JSBaseConfig):
             basepath = j.sal.fs.getBaseName(file_path)
             if "__" in basepath or basepath.startswith("test"):
                 continue
+            actor_names.append(basepath[:-3])
             self.actor_add(file_path, namespace=namespace)
+        return actor_names
 
     def actor_add(self, path, namespace="default"):
         """

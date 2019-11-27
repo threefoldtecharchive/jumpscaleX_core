@@ -593,6 +593,7 @@ class BCDB(j.baseclasses.object):
         :param path:
         :return: None
         """
+        models_urls = []
         self._log_debug("models_add:%s" % path)
 
         if not j.sal.fs.isDir(path):
@@ -619,6 +620,8 @@ class BCDB(j.baseclasses.object):
             schema_text = j.sal.fs.readFile(schemapath)
             try:
                 model = self.model_get(schema=schema_text)
+                if model._schema_url not in models_urls:
+                    models_urls.append(model._schema_url)
             except Exception as e:
                 if schemapath not in errored:
                     errored[schemapath] = 0
@@ -639,7 +642,10 @@ class BCDB(j.baseclasses.object):
             if pyfile_base.startswith("_"):
                 continue
             path2 = "%s/%s.py" % (path, pyfile_base)
-            self.model_get_from_file(path2)
+            model = self.model_get_from_file(path2)
+            if model._schema_url not in models_urls:
+                models_urls.append(model._schema_url)
+        return models_urls
 
     def _unserialize(self, id, data, return_as_capnp=False, schema=None):
         """
