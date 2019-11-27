@@ -30,23 +30,23 @@ class ScheduledJob(j.baseclasses.object):
         check if the job is running well, if there was timeout or error
         :return:
         """
-        now = j.data.time.epoch
 
+        now = j.data.time.epoch
         if self.done:
             return
-        if self.greenlet:
+        if self.greenlet != None:
             if self.timeout:
                 self._log_debug("timeout:%s" % self.name)
                 if self.time_start + self.timeout > now:
                     self.raise_error("timeout")
                     return self._stop()
+
             if self.greenlet.exception:
                 self._log_debug("exception:%s" % self.name)
                 # error happened in the greelet
                 self.raise_error()
                 return self._stop()
             if self.greenlet.successful():
-                j.shell()
                 self._log_debug("ok:%s" % self.name)
                 self.error = None
                 self.result = self.greenlet.value
@@ -67,7 +67,7 @@ class ScheduledJob(j.baseclasses.object):
         :return:
         """
         if self.greenlet:
-            return self.raise_error("cannot run, is already running")
+            return
         self.greenlet = Greenlet(self.method, *self.args, **self.kwargs)
 
     def run(self):

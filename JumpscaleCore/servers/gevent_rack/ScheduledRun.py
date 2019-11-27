@@ -36,6 +36,7 @@ class ScheduledRun(j.baseclasses.object):
         :param self:
         :param name:
         :param method: method to execute
+        :param event: number of nr to wait untill finished (waitgroup like in GOLANG)
         :param period: recurring period in seconds, 0 means only run once
         :param start_time: time to start in epoch, in <100000 then will do current epoch + this time
         :param timeout: in seconds after start
@@ -53,7 +54,6 @@ class ScheduledRun(j.baseclasses.object):
             name_ = name + str(nr)
 
         name = name_
-
         self.nr_scheduled += 1
         sj = ScheduledJob(
             name=name,
@@ -80,9 +80,12 @@ class ScheduledRun(j.baseclasses.object):
                         # means we cannot start yet
                         continue
                 gs.check()
+                if gs.done:
+                    self.nr_done += 1
 
     def event_get(self, name):
         self.events[name] = self.nr_scheduled
+        return self.events[name]
 
     def stop(self):
         self.mainloop.kill()
