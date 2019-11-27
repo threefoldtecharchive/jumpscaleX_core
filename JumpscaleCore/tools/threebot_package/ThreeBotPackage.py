@@ -178,8 +178,8 @@ class ThreeBotPackage(JSConfigBase):
     def config_load(self):
         self._log_info("load package.toml config", data=self)
         tomlfile = f"{self.path}/package.toml"
-        assert self.path
-        assert j.sal.fs.exists(self.path)
+        if not j.sal.fs.exists(tomlfile):
+            raise j.exceptions.NotFound(f"cannot find package path of {self.path}")
         if not j.sal.fs.exists(tomlfile):
             raise j.exceptions.Input("cannot find config file on:%s" % tomlfile)
         config = j.data.serializers.toml.loads(j.sal.fs.readFile(tomlfile))

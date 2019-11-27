@@ -34,19 +34,23 @@ class package_manager(j.baseclasses.threebot_actor):
         else:
             p = path
 
-        def getname(p):
-            path = j.clients.git.getContentPathFromURLorPath(p)
-            path2 = "%s/meta.toml"
-            name = None
-            if j.sal.fs.exists(path2):
-                meta = j.data.serializers.toml.loads(path2)
-                if "name" in meta:
-                    name = meta["name"]
-            if not name:
-                name = j.sal.fs.getBaseName(path).lower().strip()
-            return name
+        def getfullname(p):
+            tomlpath = j.sal.fs.joinPaths(j.clients.git.getContentPathFromURLorPath(p), "package.toml")
+            name_from_path = j.sal.fs.getBaseName(path).lower().strip()
 
-        name = getname(p)
+            if j.sal.fs.exists(tomlpath):
+                meta = j.data.serializers.toml.load(tomlpath)
+                source = meta.get("source", {})
+                author = source.get("author", "")
+                name = source.get("name")
+                if not name:
+                    return name_from_path
+                if author:
+                    return f"{author}.{name}"
+                return name
+            return name_from_path
+
+        name = getfullname(p)
 
         if git_url:
             package = j.tools.threebot_packages.get(name=name, giturl=git_url)
