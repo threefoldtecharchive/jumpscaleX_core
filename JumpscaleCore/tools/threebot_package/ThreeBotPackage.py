@@ -110,7 +110,6 @@ class ThreeBotPackage(JSConfigBase):
             if j.sal.fs.exists(path):
                 self.model_urls = self.bcdb.models_add(path)
 
-
             path = self.path + "/actors"
             if j.sal.fs.exists(path):
                 self.actor_names = self.gedis_server.actors_add(path, namespace=self._package_author.actors_namespace)
@@ -118,7 +117,6 @@ class ThreeBotPackage(JSConfigBase):
             path = self.path + "/chatflows"
             if j.sal.fs.exists(path):
                 self.chat_names = self.gedis_server.chatbot.chatflows_load(path)
-
 
             def load_wiki(wiki_name=None, wiki_path=None):
                 """we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
