@@ -167,7 +167,7 @@ class ThreeBotPackage(JSConfigBase):
                 website_location = locations.locations_static.new()
 
             website_location.name = self.name
-            website_location.path_url = f"/{self.name}"
+            website_location.path_url = f"/{self.source.threebot}/{self.source.name}"
             website_location.use_jumpscale_weblibs = False
             fullpath = j.sal.fs.joinPaths(self.path, f"{app_type}/")
             website_location.path_location = fullpath
