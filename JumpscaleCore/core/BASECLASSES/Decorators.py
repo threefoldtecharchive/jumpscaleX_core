@@ -50,7 +50,11 @@ def actor_method(func):
             schema_in, schema_out = self._schemas[name]
 
             if schema_in:
-                data = schema_in.new(datadict=kwargs)
+                if kwargs:
+                    data = schema_in.new(datadict=kwargs)
+                else:
+                    data = schema_in.new()
+
                 for pname in schema_in.propertynames:
                     kwargs[pname] = eval("data.%s" % pname)
 
