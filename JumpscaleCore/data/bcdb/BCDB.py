@@ -457,7 +457,8 @@ class BCDB(j.baseclasses.object):
     def _schema_process_threebot_package(self, schema, package_source_threebot=None, package_source_name=None):
         if package_source_threebot:
             assert package_source_name
-            j.shell()
+            return schema
+            # TODO: needs to be implemented
         return schema
 
     def model_get(
