@@ -87,12 +87,10 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         client = self.default.start(background=background)
 
-        client.actors.package_manager.package_add(
-            path=j.core.tools.text_replace(
-                "{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform/"
+        if explorer_debug:
+            client.actors.package_manager.package_add(
+                path="{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform/"
             )
-        )
-        if packages_add:
             client.actors.package_manager.package_add(
                 git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/tfgrid/phonebook"
             )

@@ -22,6 +22,7 @@ class package_manager(j.baseclasses.threebot_actor):
         it will not update if its already there
 
         """
+
         user_session.admin_check()  # means will give error when not an admin user
 
         if git_url and path:
@@ -33,6 +34,8 @@ class package_manager(j.baseclasses.threebot_actor):
             p = git_url
         else:
             p = path
+
+        p = j.core.tools.text_replace(p)
 
         if git_url:
             package = j.tools.threebot_packages.get(name=name, giturl=git_url)
