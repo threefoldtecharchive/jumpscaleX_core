@@ -86,9 +86,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         """
 
         if j.sal.nettools.tcpPortConnectionTest("localhost", 9900):
-            j.servers.threebot.default.zdb.stop()
+            zdb = j.servers.zdb.get(name="threebot")
+            zdb.stop()
         if j.sal.nettools.tcpPortConnectionTest("localhost", 1491):
-            j.servers.sonic.default.stop()
+            s = j.servers.sonic.get(name="threebot")
+            s.stop()
 
         assert j.sal.process.checkProcessRunning("zdb") == False
         assert j.sal.process.checkProcessRunning("sonic") == False
@@ -212,28 +214,32 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         """
         self._load()
         names = [name for name in self._config.keys()]
-        j.servers.tmux.window_kill("sonic")
+
+        self.threebot_stop()  # stop the threebot ones
+        j.servers.tmux.kill()  # kill all tmux sessions
+
         self._instances = j.baseclasses.dict()
         storclients = []
         for name in names:
             try:
                 cl = self._get_storclient(name)
             except:
-                self._log_warning("cannot connect storclient:%s" % name)
                 continue
             if cl not in storclients:
                 storclients.append(cl)
         for cl in storclients:
-            if cl.type == "SDB":
-                cl.sqlitedb.close()
-            cl.flush()
-        for key in j.core.db.keys("bcdb:*"):
-            j.core.db.delete(key)
+            if cl.type == "ZDB" and cl.addr not in ["127.0.0.1", "localhost"]:
+                raise j.exceptions.NotImplemented("TODO: need to delete remote namespace")
         j.sal.fs.remove(j.core.tools.text_replace("{DIR_VAR}/bcdb"))
+        j.sal.fs.remove(j.core.tools.text_replace("{DIR_VAR}/zdb"))
+        j.sal.fs.remove(j.core.tools.text_replace("{DIR_VAR}/sonic_db"))
         j.sal.fs.remove(self._config_data_path)
         j.sal.fs.remove(j.core.tools.text_replace("{DIR_VAR}/codegen"))
         j.sal.fs.remove(j.core.tools.text_replace("{DIR_VAR}/capnp"))
 
+        # leftovers in redis
+        for key in j.core.db.keys("bcdb:*"):
+            j.core.db.delete(key)
         for key in j.core.db.keys("rdb*"):
             j.core.db.delete(key)
         for key in j.core.db.keys("queue*"):

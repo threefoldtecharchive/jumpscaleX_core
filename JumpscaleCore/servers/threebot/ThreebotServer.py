@@ -220,9 +220,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.threebot.bcdb = BCDBS()
             j.threebot.bcdb_factory = j.data.bcdb
 
-            ##SHOULD NOT BE NEEDED
-            # j.data.bcdb.check()
-
             # add system actors and basic chat flows
             self.gedis_server.actors_add("%s/base_actors" % self._dirpath)
             self.gedis_server.chatbot.chatflows_load("%s/base_chatflows" % self._dirpath)
@@ -326,7 +323,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         if not j.tools.threebot_packages.exists(name="threefold.webinterface"):
             j.tools.threebot_packages.load()
 
-        names = ["webinterface", "myjobs_ui", "packagemanager_ui", "oauth2"]
+        names = ["webinterface", "myjobs_ui", "packagemanager", "oauth2"]
         for name in names:
             name2 = f"threefold.{name}"
             if not j.tools.threebot_packages.exists(name=name2):
