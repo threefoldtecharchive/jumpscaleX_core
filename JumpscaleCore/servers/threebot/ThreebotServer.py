@@ -221,8 +221,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.threebot.bcdb_factory = j.data.bcdb
 
             # add system actors and basic chat flows
-            self.gedis_server.actors_add("%s/base_actors" % self._dirpath)
-            self.gedis_server.chatbot.chatflows_load("%s/base_chatflows" % self._dirpath)
             self.rack_server.add("gedis", self.gedis_server.gevent_server)
 
             # needed for myjobs
@@ -310,7 +308,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         if not j.sal.nettools.waitConnectionTest("127.0.0.1", 8901, timeout=600):
             raise j.exceptions.Timeout("Could not start threebot server")
 
-        self.client = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
+        self.client = j.clients.gedis.get(name="threebot", port=8901)
         # TODO: will have to authenticate myself
 
         self.client.reload()
@@ -328,7 +326,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         if not j.tools.threebot_packages.exists(name="threefold.webinterface"):
             j.tools.threebot_packages.load()
 
-        names = ["webinterface", "myjobs_ui", "packagemanager", "oauth2"]
+        names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2"]
         for name in names:
             name2 = f"threefold.{name}"
             if not j.tools.threebot_packages.exists(name=name2):

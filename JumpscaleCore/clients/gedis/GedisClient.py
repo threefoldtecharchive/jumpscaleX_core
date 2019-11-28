@@ -94,7 +94,7 @@ class GedisClient(JSConfigBase):
         cmds_meta = self._redis.execute_command("api_meta_get", self.namespace)
         cmds_meta = j.data.serializers.msgpack.loads(cmds_meta)
         if cmds_meta["cmds"] == {}:
-            raise j.exceptions.Base("did not find any actors in namespace:%s" % self.namespace)
+            return
         for key, data in cmds_meta["cmds"].items():
             if "__model_" in key:
                 raise j.exceptions.Base("aa")
@@ -206,4 +206,3 @@ class GedisClient(JSConfigBase):
                 res.append(i)
 
         return res
-
