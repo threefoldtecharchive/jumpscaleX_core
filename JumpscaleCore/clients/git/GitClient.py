@@ -216,7 +216,7 @@ class GitClient(j.baseclasses.object):
             self.config_3git[name] = val
             self.config_3git_save()
 
-    def logChanges(self, from_revision=None, all=False, untracked=True):
+    def logChanges(self, from_revision=None, all=False, untracked=True, path=None):
         """
 
         :param from_revision:
@@ -231,15 +231,16 @@ class GitClient(j.baseclasses.object):
         revision = None
         if not from_revision and all == False:
             from_revision = self.config_3git_get("revision_last_processed")
-
+        path = path or self.BASEDIR
         if from_revision:
-            cmd = f"cd {self.BASEDIR};git --no-pager log {from_revision}..HEAD --name-status --oneline"
+            cmd = f"cd {path};git --no-pager log {from_revision}..HEAD --name-status --oneline --reverse {path}"
         else:
-            cmd = f"cd {self.BASEDIR};git --no-pager log --name-status --oneline"
+            cmd = f"cd {path};git --no-pager log --name-status --oneline --reverse {path}"
 
         rc, out, err = j.tools.executorLocal.execute(cmd)
         # Organize files in lists
         result = []
+        to_delete = []
         for item in out.split("\n"):
             item = item.strip()
             if item == "":
@@ -262,22 +263,29 @@ class GitClient(j.baseclasses.object):
                     from_, to_ = post.split("\t")
                     if from_ in result:
                         result.pop(result.index(from_))
+                        to_delete.append(from_)
                     if _file not in result:
                         result.append(_file)
                 elif state == "D":
                     # delete
                     if _file in result:
                         result.pop(result.index(_file))
+                        print("_file", _file)
+                        to_delete.append(_file)
 
                 else:
+                    print("state", state)
+                    # TODO: handle other states codes
                     j.shell()
                     w
-
         if untracked:
             for item in self.getModifiedFiles(collapse=True):
                 if item not in result:
                     result.append(item)
-        return (revision, result)
+
+        if not revision:
+            revision = from_revision
+        return (revision, result, to_delete)
 
     def logChangesRevisionSet(self, revision):
         """

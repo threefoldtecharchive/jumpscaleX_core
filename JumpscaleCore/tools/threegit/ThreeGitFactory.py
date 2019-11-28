@@ -20,6 +20,7 @@ class ThreeGitFactory(j.baseclasses.object):
         self._macros_modules = {}  # key is the path
         self._macros = {}  # key is the name
         self.docsites = {}
+        self._git_repos = {}
 
     def macros_load(self, path_or_url=None):
         # TODO: ADD current macros [filesystem changes]
@@ -62,6 +63,16 @@ class ThreeGitFactory(j.baseclasses.object):
             return docs_path
         return path
 
+    def _git_get(self, path):
+        if path not in self._git_repos:
+            try:
+                gc = j.clients.git.get(path)
+            except Exception as e:
+                print("cannot load git:%s error %s" % path, e)
+                return
+            self._git_repos[path] = gc
+        return self._git_repos[path]
+
     def load(self, path="", name="", dest="", base_path="docs", pull=False, download=False):
         self.macros_load()
         if path.startswith("http"):
@@ -79,20 +90,15 @@ class ThreeGitFactory(j.baseclasses.object):
         self.docsites[ds.name] = ds
         return self.docsites[ds.name]
 
-    def process(self, path_source, path_dest, check=True, force=True):
+    def process(self, name, path_source, path_dest=None, check=True, reset=False):
         """
-        # 1- TODO: Load macros
-        # 2- TODO: write docsites [integrate with 3git configs]
-        # 3- TODO: process docsites with macros
-        # 4- TODO: if check = True
-                # Load latest files changes
-        # 5- TODO: if force = True
-               # Reload all docsites
+        Load docsites. process it with macros, writes it to filesystem
         :param path_source: source of gitrepo / docsite files
         :param path_dest: destination to save docsites files in it
-        :param check: reload changed files in docsite since last ref
+        :param check: reload changed files in docsite since last revision
         :param force: Reload all docsites files and reparse them
         :return:
         """
-
-        j.shell()
+        docsite = self.load(name=name, path=path_source, dest=path_dest, base_path="docs")
+        docsite.write(check=check, reset=reset)
+        print("LOADING DONE")

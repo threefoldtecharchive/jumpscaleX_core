@@ -42,13 +42,7 @@ class Doc(j.baseclasses.object):
         name_dot = "%s/%s" % (self.path_dir_rel, self.name)
         self.name_dot_lower = self._clean("%s/%s" % (self.path_dir_rel, self.name))
 
-        # self.markdown_source = ""
-        # self.show = True
         self.errors = []
-
-        # if j.sal.fs.getDirName(self.path).strip("/").split("/")[-1][0] == "_":
-        #     # means the subdir starts with _
-        #     self.show = False
 
         self._processed = False
 
@@ -60,9 +54,6 @@ class Doc(j.baseclasses.object):
 
         self._content = None
 
-        # self._images = []
-        # self._links_external = []
-        # self._links_doc = []
         self._links = []
         self.render_obj = None
         if self.sonic_client:
@@ -96,23 +87,6 @@ class Doc(j.baseclasses.object):
         name = name.strip(".")
         return j.core.text.convert_to_snake_case(name)
 
-    # def _get_file_path_new(self,name="",extension="jpeg"):
-    #     nr=0
-    #     if name=="":
-    #         name=self.name
-    #     dest = "%s/%s.%s"%(self.path_dir,name,extension)
-    #     found = j.sal.fs.exists(dest)
-    #     while found:
-    #         nr+=1
-    #         name = "%s_%s"%(name,nr) #to make sure we have a unique name
-    #         dest = "%s/%s.%s"%(self.path_dir,name,extension)
-    #         fname= "%s.%s"%(name,extension)
-    #         found = j.sal.fs.exists(dest) or fname in self.docsite._files
-    #     fname= "%s.%s"%(name,extension)
-    #     self.docsite._files[fname]=dest
-    #
-    #     return name,dest
-
     @property
     def links(self):
         if self._links == []:
@@ -138,19 +112,6 @@ class Doc(j.baseclasses.object):
 
     def error_raise(self, msg):
         return self.docsite.error_raise(msg, doc=self)
-
-    # def htmlpage_get(self,htmlpage=None):
-    #     if htmlpage is None:
-    #         htmlpage = j.data.html.page_get()
-    #     htmlpage = self.markdown_obj.htmlpage_get(htmlpage=htmlpage, webparts=True)
-    #     return htmlpage
-    #
-    # def html_get(self,htmlpage=None):
-    #     return str(self.htmlpage_get(htmlpage=htmlpage))
-    #
-    # @property
-    # def html(self):
-    #     return self.html_get()
 
     @property
     def data(self):
@@ -186,15 +147,6 @@ class Doc(j.baseclasses.object):
     def markdown_obj(self):
         if not self._md:
             self._md = j.data.markdown.document_get(self.markdown_source)
-            # try:
-            #     self._md = j.data.markdown.document_get(self.markdown_source)
-            # except Exception as e:
-            #     j.shell()
-            #     w
-            #     msg = "Could not parse markdown (obj) of %s, an error happened in the markdown document parser"%self
-            #     msg += str(e)
-            #     self.error_raise(msg)
-            #     self._md = j.data.markdown.document_get(content="```\n%s\n```\n"%msg)
         return self._md
 
     def header_get(self, level=1, nr=0):
@@ -204,16 +156,6 @@ class Doc(j.baseclasses.object):
         for header in res:
             if header.level == level:
                 return header
-
-    # def dynamic_process(self,url):
-    #     self.kwargs = {}
-    #     if "?" in url:
-    #         # query=url.split("?",1)[1]
-    #         query=urlparse(url).query
-    #         kwargs=parse_qsl(query)
-    #         for key,val in kwargs:
-    #             self.kwargs[key]=val
-    #     return self.markdown
 
     def _process(self):
         if not self._processed:
@@ -228,13 +170,6 @@ class Doc(j.baseclasses.object):
         """
         self._process()
         res = self.markdown_obj.markdown
-        # try:
-        #     res = self.markdown_obj.markdown
-        # except Exception as e:
-        #     msg = "Could not parse markdown of %s"%self
-        #     msg += str(e)
-        #     self.error_raise(msg)
-        #     res = msg
 
         if "{{" in res:
             # TODO:*1 rendering does not seem to be ok

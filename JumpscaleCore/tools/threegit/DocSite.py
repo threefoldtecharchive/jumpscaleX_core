@@ -42,14 +42,17 @@ class DocSite(j.baseclasses.object):
 
         self.links_verify = False
 
-        self.error_file_path = self.path + "/errors.md"
-
         self.outpath = dest or f"/docsites/{self.name}"
+        self.error_file_path = f"{self.outpath}/errors.md"
 
         self._log_level = 1
 
         self._git = None
         self._loaded = False
+
+        # add git changed files
+        self.revision = None
+        self._files_changed = None
 
         self._log_info("found:%s" % self)
 
@@ -64,8 +67,7 @@ class DocSite(j.baseclasses.object):
     @classmethod
     def get_from_name(cls, name):
         name = prepare_name(name)
-        # TODO: change with path
-        meta_path = f"/docsites/{name}/.data"
+        meta_path = f"{cls.outpath}/.data"
         repo_meta = j.sal.fs.readFile(meta_path).decode()
         repo_data = j.data.serializers.json.loads(repo_meta)
         repo_args = j.clients.git.getGitRepoArgs(repo_data["repo"])
@@ -79,11 +81,10 @@ class DocSite(j.baseclasses.object):
             gitpath = j.clients.git.findGitPath(self.path, die=False)
             if not gitpath:
                 return
-                # if gitpath not in self.docgen._git_repos:
-                # TODO: ADD GIT CHANGED FILES HERE
-                j.debug()
-                # self._git = j.tools.threegit._git_get(gitpath)
-                # self.docgen._git_repos[gitpath] = self.git
+
+            if gitpath not in self.docgen._git_repos:
+                self._git = j.tools.threegit._git_get(gitpath)
+                self.docgen._git_repos[gitpath] = self.git
 
         if not self._git:
             self._log_debug(f"docsite of {self.path} has not git repo")
@@ -234,26 +235,24 @@ class DocSite(j.baseclasses.object):
         rdirpath = rdirpath.strip("/").strip().strip("/")
         self.data_default[rdirpath] = data
 
-    def load(self, reset=False):
+    def load(self, reset=False, check=False):
         """
         walk in right order over all files which we want to potentially use (include)
         and remember their paths
 
         if duplicate only the first found will be used
-
         """
-        if reset == False and self._loaded:
+        if reset == False and self._loaded and check == False:
             return
 
-        self._files = {}
-        self._docs = {}
-        self._sidebars = {}
+        if reset == True:
+            j.sal.fs.remove(self.error_file_path)
+            git_client = j.clients.git.get(self.path)
+            self.revision = git_client.config_3git_set("revision_last_processed", "")
 
         path = self.path
         if not j.sal.fs.exists(path=path):
             raise j.exceptions.NotFound("Cannot find source path in load:'%s'" % path)
-
-        j.sal.fs.remove(self.path + "/errors.md")
 
         def callbackForMatchDir(path, arg):
             base = j.sal.fs.getBaseName(path).lower()
@@ -295,38 +294,40 @@ class DocSite(j.baseclasses.object):
                 self._log_debug("found md:%s" % path)
                 base = base[:-3]  # remove extension
                 doc = Doc(path, base, docsite=self, sonic_client=self.sonic_client)
-                # if base not in self.docs:
-                #     self.docs[base.lower()] = doc
                 self._docs[doc.name_dot_lower] = doc
             elif ext in ["html", "htm"]:
                 self._log_debug("found html:%s" % path)
                 l = len(ext) + 1
                 base = base[:-l]  # remove extension
                 doc = Doc(path, base, docsite=self, sonic_client=self.sonic_client)
-                # if base not in self.htmlpages:
-                #     self.htmlpages[base.lower()] = doc
                 self.htmlpages[doc.name_dot_lower] = doc
             else:
                 self.file_add(path)
-                # else:
-                #     self._log_debug("found other:%s"%path)
-                #     l = len(ext)+1
-                #     base = base[:-l]  # remove extension
-                #     doc = DocBase(path, base, docsite=self)
-                #     if base not in self.others:
-                #         self.others[base.lower()] = doc
-                #     self.others[doc.name_dot_lower] = doc
+
+        # check changed files and process it using 3git tool
+        git_client = j.clients.git.get(self.path)
+        self.revision = git_client.config_3git_get("revision_last_processed")
+        revision, self._files_changed, old_files = git_client.logChanges(path=self.path, from_revision=self.revision)
 
         callbackFunctionDir(self.path, "")  # to make sure we use first data.yaml in root
-        j.sal.fswalker.walkFunctional(
-            self.path,
-            callbackFunctionFile=callbackFunctionFile,
-            callbackFunctionDir=callbackFunctionDir,
-            arg="",
-            callbackForMatchDir=callbackForMatchDir,
-            callbackForMatchFile=callbackForMatchFile,
-        )
+        for item in self._files_changed:
+            item = f"{git_client.BASEDIR}/{item}"
+            if j.sal.fs.exists(item):
+                if j.sal.fs.isFile(item):
+                    if callbackForMatchFile(item, ""):
+                        callbackFunctionFile(item, "")
 
+                if j.sal.fs.isDir(item):
+                    if callbackForMatchDir(item, ""):
+                        callbackFunctionDir(item, "")
+
+        if old_files:
+            for ditem in old_files:
+                item_path = j.sal.fs.joinPaths(self.outpath, j.sal.fs.getBaseName(ditem))
+                j.sal.fs.remove(item_path)
+
+        git_client.logChangesRevisionSet(revision)
+        print("git revision set with value: ", revision)
         self._loaded = True
 
     def file_add(self, path, duplication_test=False):
@@ -616,8 +617,8 @@ class DocSite(j.baseclasses.object):
 
         return out
 
-    def verify(self):
-        self.load(reset=True)
+    def verify(self, reset=False):
+        self.load(reset=reset)
         keys = [item for item in self.docs.keys()]
         keys.sort()
         for key in keys:
@@ -674,18 +675,13 @@ class DocSite(j.baseclasses.object):
     def metadata_path(self):
         return self.outpath + "/.data"
 
-    def write(self, reset=False):
-        self.load()
-        self.verify()
-
+    def write(self, reset=False, check=True):
+        self.load(check=check, reset=reset)
+        self.verify(reset=reset)
         if reset:
             j.sal.fs.remove(self.outpath)
 
         j.sal.fs.createDir(self.outpath)
-
-        # copy errors file into the generated docs to be able to serve it using /wiki/<WIKI_NAME>#/errors
-        if j.sal.fs.exists(self.error_file_path):
-            j.sal.fs.copyFile(self.error_file_path, self.outpath)
 
         self.write_metadata()
 
