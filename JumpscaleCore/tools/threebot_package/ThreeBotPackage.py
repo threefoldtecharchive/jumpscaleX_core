@@ -181,7 +181,7 @@ class ThreeBotPackage(JSConfigBase):
             self.path = j.clients.git.getContentPathFromURLorPath(self.giturl, branch=self.branch)
         tomlfile = f"{self.path}/package.toml"
         if not j.sal.fs.exists(tomlfile):
-            raise j.exceptions.NotFound(f"cannot find package path of {self.path}")
+            raise j.exceptions.NotFound(f"cannot find package.toml in path")
         if not j.sal.fs.exists(tomlfile):
             raise j.exceptions.Input("cannot find config file on:%s" % tomlfile)
         config = j.data.serializers.toml.loads(j.sal.fs.readFile(tomlfile))
