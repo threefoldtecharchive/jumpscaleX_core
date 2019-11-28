@@ -6,7 +6,7 @@ from time import sleep
 from Jumpscale import j
 from parameterized import parameterized
 from loguru import logger
-from redis import ResponseError
+from redis import ResponseError, AuthenticationError
 
 from base_test import BaseTest
 
@@ -111,7 +111,7 @@ class TestRedisConfig(BaseTest):
             self.assertTrue(cl.ping())
         else:
             self.redis_client = j.clients.redis_config.get(name=name, unixsocket="/tmp/redis.sock", port=0, addr=None)
-            with self.assertRaises(ResponseError) as e:
+            with self.assertRaises((ResponseError, AuthenticationError)) as e:
                 cl = self.redis_client.redis
             self.assertIn("Authentication required", e.exception.args[0])
 
