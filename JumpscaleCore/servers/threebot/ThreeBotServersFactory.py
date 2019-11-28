@@ -40,34 +40,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    # def local_start_zerobot_default(self, packages_add=False):
-    #     """
-    #
-    #     kosmos -p 'j.servers.threebot.local_start_zerobot_default(packages_add=True)'
-    #
-    #     tbot_client = j.servers.threebot.local_start_zerobot_default()
-    #
-    #     will check if there is already one running, will create client to localhost & return
-    #     gedis client
-    #     :param timeout: you can increase the timeout to make sure you server runs on slow machines
-    #     :return:
-    #     """
-    #     if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
-    #         self.install()
-    #         self.default.stop()
-    #
-    #     client = self.default.start(background=True)
-    #
-    #     if packages_add:
-    #         client.actors.package_manager.package_add(
-    #             git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/tfgrid/phonebook"
-    #         )
-    #
-    #         client.reload()
-    #
-    #     return client
-
-    def local_start_default(self, explorer_debug=False, background=True, ssl=None):
+    def local_start_default(self, explorer_debug=False, ssl=None):
         """
 
         kosmos -p 'j.servers.threebot.local_start_default(explorer_debug=True)'
@@ -85,7 +58,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             self.install()
             self.default.stop()
 
-        client = self.default.start(background=background)
+        client = self.default.start(background=False)
 
         if explorer_debug:
             client.actors.package_manager.package_add(
@@ -107,7 +80,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         """
 
         # gedis_client = j.servers.threebot.local_start_default()
-        gedis_client = j.servers.threebot.local_start_zerobot_default(packages_add=True)
+        gedis_client = j.servers.threebot.local_start_default(packages_add=True)
 
         cl = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
 

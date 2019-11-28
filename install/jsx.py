@@ -734,10 +734,10 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         if not docker.config.done_get("start_cmd"):
             if web:
                 docker.sshexec(
-                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_zerobot_default(packages_add=True)';jsx wiki-load"
+                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_default(packages_add=True)';jsx wiki-load"
                 )
             else:
-                start_cmd = "j.servers.threebot.local_start_zerobot_default(packages_add=True)"
+                start_cmd = "j.servers.threebot.local_start_default(packages_add=True)"
                 docker.jsxexec(start_cmd)
         docker.config.done_set("start_cmd")
         if not docker.config.done_get("config"):
