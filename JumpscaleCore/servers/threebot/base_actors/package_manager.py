@@ -41,12 +41,12 @@ class package_manager(j.baseclasses.threebot_actor):
             if j.sal.fs.exists(tomlpath):
                 meta = j.data.serializers.toml.load(tomlpath)
                 source = meta.get("source", {})
-                author = source.get("author", "")
+                threebot = source.get("threebot", "")
                 name = source.get("name")
                 if not name:
                     return name_from_path
-                if author:
-                    return f"{author}.{name}"
+                if threebot:
+                    return f"{threebot}.{name}"
                 return name
             return name_from_path
 
