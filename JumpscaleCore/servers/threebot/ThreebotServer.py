@@ -255,6 +255,9 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             self._packages_install()
             # add user added packages
+
+            j.threebot.__dict__["packages"] = Packages()
+
             for package in j.tools.threebot_packages.find():
                 # if package.status == "INIT":
                 #     self._log_warning("PREPARE:%s" % package.name)
@@ -273,6 +276,8 @@ class ThreeBotServer(j.baseclasses.object_config):
                         j.core.tools.log(level=50, exception=e, stdout=True)
                         package.status = "error"
                     package.save()
+
+                j.threebot.packages.__dict__[package.name.replace(".", "__")] = package
 
             j.threebot.__dict__.pop("package")
             # LETS NOT DO SERVERS YET, STILL BREAKS TOO MUCH
@@ -332,17 +337,6 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p.install()
             p.save()
-
-    # def _packages_walk(self):
-    #
-    #     j.threebot.__dict__["packages"] = Packages()
-    #     if not name in j.threebot.packages.__dict__:
-    #         if j.tools.threebot_packages.exists(name):
-    #             p = j.tools.threebot_packages.get(name)
-    #             # DONT START, has already been done up
-    #             j.threebot.packages.__dict__[name] = p
-    #         else:
-    #             j.threebot.packages.__dict__[name] = PackageInstall(name=name, path=path)
 
     def stop(self):
         """
