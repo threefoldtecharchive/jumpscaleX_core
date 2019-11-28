@@ -108,7 +108,9 @@ class ThreeBotPackage(JSConfigBase):
 
             path = self.path + "/models"
             if j.sal.fs.exists(path):
-                self.model_urls = self.bcdb.models_add(path)
+                self.model_urls = self.bcdb.models_add(
+                    path, package_source_threebot=self.source.threebot, package_source_name=self.source.name
+                )
 
             path = self.path + "/actors"
             if j.sal.fs.exists(path):
