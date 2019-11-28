@@ -454,25 +454,13 @@ class BCDB(j.baseclasses.object):
         for key, model in self._schema_url_to_model.items():
             yield model
 
-    def _schema_process_threebot_package(self, schema, package_source_threebot=None, package_source_name=None):
-        if package_source_threebot:
-            assert package_source_name
-            return schema
-            # TODO: needs to be implemented
-        return schema
-
-    def model_get(
-        self, schema=None, md5=None, url=None, reset=False, package_source_threebot=None, package_source_name=None
-    ):
+    def model_get(self, schema=None, md5=None, url=None, reset=False):
         """
         will return the latest model found based on url, md5 or schema
         :param url:
         :return:
         """
         schema = self.schema_get(schema=schema, md5=md5, url=url)
-        schema = self._schema_process_threebot_package(
-            schema, package_source_threebot=package_source_threebot, package_source_name=package_source_name
-        )
         if schema.url in self._schema_url_to_model:
             model = self._schema_url_to_model[schema.url]
             model.schema_change(schema)
@@ -534,7 +522,7 @@ class BCDB(j.baseclasses.object):
 
         return schema
 
-    def model_add(self, model, package_source_threebot=None, package_source_name=None):
+    def model_add(self, model):
         """
 
         :param model: is the model object  : inherits of self.MODEL_CLASS
@@ -542,10 +530,6 @@ class BCDB(j.baseclasses.object):
         """
         if not isinstance(model, j.data.bcdb._BCDBModelClass):
             raise j.exceptions.Base("model needs to be of type:%s" % self._BCDBModelClass)
-
-        model.schema = self._schema_process_threebot_package(
-            model.schema, package_source_threebot=package_source_threebot, package_source_name=package_source_name
-        )
 
         if model.schema.url not in self._schema_url_to_model:
             self.meta._schema_set(model.schema)
@@ -583,7 +567,7 @@ class BCDB(j.baseclasses.object):
 
         return done
 
-    def model_get_from_file(self, path, package_source_threebot=None, package_source_name=None):
+    def model_get_from_file(self, path):
         """
         add model to BCDB
         is path to python file which represents the model
@@ -593,13 +577,13 @@ class BCDB(j.baseclasses.object):
         obj_key = j.sal.fs.getBaseName(path)[:-3]
         cl = j.tools.codeloader.load(obj_key=obj_key, path=path, reload=False)
         model = cl(self)
-        self.model_add(model, package_source_threebot=package_source_threebot, package_source_name=package_source_name)
+        self.model_add(model)
         return model
 
     def models_add_threebot(self):
         self.models_add(self._dirpath + "/models_threebot")
 
-    def models_add(self, path, package_source_threebot=None, package_source_name=None):
+    def models_add(self, path):
         """
         will walk over directory and each class needs to be a model
         when overwrite used it will overwrite the generated models (careful)
@@ -635,11 +619,7 @@ class BCDB(j.baseclasses.object):
             dest = "%s/%s.py" % (path, bname)
             schema_text = j.sal.fs.readFile(schemapath)
             try:
-                model = self.model_get(
-                    schema=schema_text,
-                    package_source_threebot=package_source_threebot,
-                    package_source_name=package_source_name,
-                )
+                model = self.model_get(schema=schema_text)
                 if model._schema_url not in models_urls:
                     models_urls.append(model._schema_url)
             except Exception as e:
@@ -662,9 +642,7 @@ class BCDB(j.baseclasses.object):
             if pyfile_base.startswith("_"):
                 continue
             path2 = "%s/%s.py" % (path, pyfile_base)
-            model = self.model_get_from_file(
-                path2, package_source_threebot=package_source_threebot, package_source_name=package_source_name
-            )
+            model = self.model_get_from_file(path2)
             if model._schema_url not in models_urls:
                 models_urls.append(model._schema_url)
         return models_urls
