@@ -37,6 +37,13 @@ class ThreeBotPackage(JSConfigBase):
 
         """
 
+    def _init(self, **kwargs):
+        self._init_ = False
+        self._bcdb_ = None  # cannot use self._bcdb already used
+        if self.status == "init":
+            self.config_load()
+        self.running = False
+
     @property
     def threebot_server(self):
         return j.threebot.servers.core
@@ -48,13 +55,6 @@ class ThreeBotPackage(JSConfigBase):
     @property
     def openresty(self):
         return j.threebot.servers.web
-
-    def _init(self, **kwargs):
-        self._init_ = False
-        self._bcdb_ = None  # cannot use self._bcdb already used
-        if self.status == "init":
-            self.config_load()
-        self.running = False
 
     def _cruds_load(self):
         actors_dir = f"{j.dirs.VARDIR}/codegen/actors/{self.name}/"
@@ -177,6 +177,8 @@ class ThreeBotPackage(JSConfigBase):
 
     def config_load(self):
         self._log_info("load package.toml config", data=self)
+        if self.giturl:
+            self.path = j.clients.git.getContentPathFromURLorPath(self.giturl, branch=self.branch)
         tomlfile = f"{self.path}/package.toml"
         if not j.sal.fs.exists(tomlfile):
             raise j.exceptions.NotFound(f"cannot find package path of {self.path}")
@@ -191,8 +193,6 @@ class ThreeBotPackage(JSConfigBase):
 
     def install(self):
         self.load()
-        if self.giturl:
-            self.path = j.clients.git.getContentPathFromURLorPath(self.giturl, branch=self.branch)
         if self.status != "config":  # make sure we load the config is not that state yet
             self.config_load()
         self._package_author.prepare()

@@ -53,10 +53,8 @@ class ThreeBotServer(j.baseclasses.object_config):
         @url = jumpscale.threebot_server.1
         name** = "main" (S)
         executor = tmux,corex (E)
-        adminsecret_ = "123456"  (S)
+        adminsecret_ = ""  (S)
         state = "init,installed"
-        ssl = (B)
-        web =  (B)
         """
 
     def _init(self, **kwargs):
@@ -75,8 +73,13 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.tools.threebot_packages.load()
             self.state = "installed"
 
+        if self.executor == "corex":
+            raise j.exceptions.Input("only tmux supported for now")
+
     @property
     def secret(self):
+        if self.adminsecret_ == "":
+            raise j.exceptions.Input("please use ")
         return self.adminsecret_
 
     @property

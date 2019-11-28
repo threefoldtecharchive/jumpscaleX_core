@@ -34,24 +34,6 @@ class package_manager(j.baseclasses.threebot_actor):
         else:
             p = path
 
-        def getfullname(p):
-            tomlpath = j.sal.fs.joinPaths(j.clients.git.getContentPathFromURLorPath(p), "package.toml")
-            name_from_path = j.sal.fs.getBaseName(path).lower().strip()
-
-            if j.sal.fs.exists(tomlpath):
-                meta = j.data.serializers.toml.load(tomlpath)
-                source = meta.get("source", {})
-                threebot = source.get("threebot", "")
-                name = source.get("name")
-                if not name:
-                    return name_from_path
-                if threebot:
-                    return f"{threebot}.{name}"
-                return name
-            return name_from_path
-
-        name = getfullname(p)
-
         if git_url:
             package = j.tools.threebot_packages.get(name=name, giturl=git_url)
         elif path:
@@ -59,12 +41,9 @@ class package_manager(j.baseclasses.threebot_actor):
         else:
             raise j.exceptions.Input("need to have git_url or path to package")
 
-        if j.tools.threebot_packages.exists(name):
-            package2 = j.tools.threebot_packages.get(name)
-            if not package.path == package2.path:
-                raise j.exceptions.Input("package name is not unique:%s for %s" % (name, p))
+        assert j.tools.threebot_packages.exists(name=package.name)
 
-        if reload is False and j.tools.threebot_packages.exists(name):
+        if reload is False and package.status in ["installed"]:
             return "OK"
         try:
             package.install()
@@ -166,6 +145,7 @@ class package_manager(j.baseclasses.threebot_actor):
         """
         packages = []
         for package in j.tools.threebot_packages.find():
+            # TODO: this does not seem to be ok, should use the main config in the package, not separate toml file
             if frontend:
                 mdp = j.sal.fs.joinPaths(package.path, "meta.toml")
                 if j.sal.fs.exists(mdp):
