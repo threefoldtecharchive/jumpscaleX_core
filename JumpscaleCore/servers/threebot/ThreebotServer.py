@@ -220,9 +220,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.threebot.bcdb = BCDBS()
             j.threebot.bcdb_factory = j.data.bcdb
 
-            ##SHOULD NOT BE NEEDED
-            # j.data.bcdb.check()
-
             # add system actors and basic chat flows
             self.gedis_server.actors_add("%s/base_actors" % self._dirpath)
             self.gedis_server.chatbot.chatflows_load("%s/base_chatflows" % self._dirpath)
@@ -258,6 +255,9 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             self._packages_install()
             # add user added packages
+
+            j.threebot.__dict__["packages"] = Packages()
+
             for package in j.tools.threebot_packages.find():
                 # if package.status == "INIT":
                 #     self._log_warning("PREPARE:%s" % package.name)
@@ -276,6 +276,8 @@ class ThreeBotServer(j.baseclasses.object_config):
                         j.core.tools.log(level=50, exception=e, stdout=True)
                         package.status = "error"
                     package.save()
+
+                j.threebot.packages.__dict__[package.name.replace(".", "__")] = package
 
             j.threebot.__dict__.pop("package")
             # LETS NOT DO SERVERS YET, STILL BREAKS TOO MUCH
@@ -326,7 +328,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         if not j.tools.threebot_packages.exists(name="threefold.webinterface"):
             j.tools.threebot_packages.load()
 
-        names = ["webinterface", "myjobs_ui", "packagemanager_ui", "oauth2"]
+        names = ["webinterface", "myjobs_ui", "packagemanager", "oauth2"]
         for name in names:
             name2 = f"threefold.{name}"
             if not j.tools.threebot_packages.exists(name=name2):
@@ -335,17 +337,6 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p.install()
             p.save()
-
-    # def _packages_walk(self):
-    #
-    #     j.threebot.__dict__["packages"] = Packages()
-    #     if not name in j.threebot.packages.__dict__:
-    #         if j.tools.threebot_packages.exists(name):
-    #             p = j.tools.threebot_packages.get(name)
-    #             # DONT START, has already been done up
-    #             j.threebot.packages.__dict__[name] = p
-    #         else:
-    #             j.threebot.packages.__dict__[name] = PackageInstall(name=name, path=path)
 
     def stop(self):
         """
