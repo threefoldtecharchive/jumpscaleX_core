@@ -3,7 +3,6 @@ from Jumpscale import j
 from base_test import BaseTest
 
 
-@unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/250")
 class SonicClient(BaseTest):
     @classmethod
     def setUpClass(cls):
@@ -21,6 +20,7 @@ class SonicClient(BaseTest):
         self.info("Test case : {}".format(self._testMethodName))
 
         RAND_NUM = self.rand_num()
+        self.RAND_STRING = self.rand_string()
         self.sub_word = "comman"
         self.RAND_STRING_1 = self.rand_string()
         self.RAND_STRING_2 = self.sub_word + self.rand_string()
@@ -45,7 +45,6 @@ class SonicClient(BaseTest):
         self.info("Flush all data in {} collection".format(self.COLLECTION))
         self.client.flush(self.COLLECTION)
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/271")
     def test001_push_collection_bucket(self):
         """
         TC 522
@@ -60,12 +59,11 @@ class SonicClient(BaseTest):
         self.assertTrue(self.flag)
 
         self.info("check the count of indexed search data in the collection and bucket")
-        self.assertEquals(self.client.count(self.COLLECTION, self.BUCKET), len(self.data))
+        self.assertEquals(self.client.count(self.COLLECTION, self.BUCKET), len(self.data) + 1)
 
         self.info("Use count method non valid collection and bucket name, the output should equal to 0")
-        self.assertEqual(self.client.count("RANDOM_COLLECTION", "RANDOM_BUCKET"), 0)
+        self.assertEqual(self.client.count(self.rand_string(), self.rand_string()), 0)
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/272")
     def test002_query_collection_bucket(self):
         """
         TC 526
@@ -82,11 +80,9 @@ class SonicClient(BaseTest):
             sorted(self.client.query(self.COLLECTION, self.BUCKET, self.RAND_STRING_1)), ["post:1", "post:2", "post:3"]
         )
 
-        # need to check the correct behaviour for this query.
         self.info("Query for non valid collection and bucket, should raise an error")
-        self.assertEqual(len(self.client.query("RANDOM_COLLECTION", "RANDOM_BUCKET", self.rand_string())), 0)
+        self.assertEqual(len(self.client.query(self.rand_string(), self.rand_string(), self.rand_string())), 0)
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/272")
     def test003_suggest_collection_bucket(self):
         """
         TC 528
@@ -104,32 +100,31 @@ class SonicClient(BaseTest):
             [self.RAND_STRING_2, self.RAND_STRING_3],
         )
 
-        # need to check the correct behaviour for this query.
         self.info("Use suggest method with non valid collection and bucket name")
-        self.assertIn("PENDING", self.client.suggest("RANDOM_COLLECTION", "RANDOM_COLLECTION", self.rand_string()))
+        self.assertIn("PENDING", self.client.suggest(self.rand_string(), self.rand_string(), self.rand_string()))
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/272")
     def test004_pop_collection_bucket(self):
         """
         TC 532
         Test Case to pop method with certain collection and bucket.
-
         **Test scenario**
-        #. Push data to sonic server
-        #. Use pop method with non valid data, the count of data shouldn't change.
-        #. Use pop method to pop certain index, the output shouldn't be 0.
-        #. Use count method to check that output, should equal to the length of tha original data -1.
+        #. Push data to sonic server.
+        #. Use flush to remove certain object.
+        #. Use pop to get the object back, and check the existing of this object.
+        #. Use pop method with non valid data, the output should be 0.
         """
-        self.info("Use pop method with non valid data, the count of data shouldn't change")
-        self.client.pop(self.COLLECTION, self.BUCKET, "post:15", "test")
+        self.info("Use flush to remove certain object")
+        self.client.flush_object(self.COLLECTION, self.BUCKET, "post:4")
 
-        self.info("Use pop method to pop an object")
-        self.client.pop(self.COLLECTION, self.BUCKET, "post:2", "{}".format(self.RAND_STRING_1))
+        self.info("Use pop to get the object back, and check the existing of this object")
+        self.assertNotEqual(self.client.pop(self.COLLECTION, self.BUCKET, "post:3", self.RAND_STRING_1), 0)
+        self.assertEqual(
+            sorted(self.client.query(self.COLLECTION, self.BUCKET, self.RAND_STRING_1)), ["post:1", "post:2", "post:3"]
+        )
 
-        self.info("Use count method to check the length of data after pop")
-        self.assertEqual(self.client.count(self.COLLECTION, self.BUCKET), len(self.data) - 1)
+        self.info("Use pop method with non valid data, the output should be 0")
+        self.assertEqual(self.client.pop(self.COLLECTION, self.BUCKET, "post:3", self.RAND_STRING_1), 0)
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/272")
     def test005_flush_collection_and_bucket(self):
         """
         TC 534
@@ -148,10 +143,9 @@ class SonicClient(BaseTest):
         self.assertEqual(self.client.count(self.COLLECTION, self.BUCKET), 0)
 
         self.info("Use flush to flush non existing collection with certain bucket")
-        self.client.flush("RANDOM_COLLECTION", "RANDOM_BUCKET")
+        self.client.flush(self.rand_string(), self.rand_string())
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/272")
-    def test007_flush_object_using_collection_bucket(self):
+    def test006_flush_object_using_collection_bucket(self):
         """
         TC 536
         Test Case for flush_object method for certain object in certain collection with certain bucket.
@@ -166,9 +160,6 @@ class SonicClient(BaseTest):
 
         self.info("Use query to check that this record is flushed")
         self.assertEqual(self.client.query(self.COLLECTION, self.BUCKET, self.sub_word), ["post:5"])
-
-        self.info("Use flush_object to flush non existing object in collection with certain bucket")
-        self.client.flush_object("RANDOM_COLLECTION", "RANDOM_BUCKET", "RANDOM_OBJECT")
 
     def test007_flush_bucket_for_certain_collection(self):
         """
