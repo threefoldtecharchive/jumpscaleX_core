@@ -181,7 +181,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         if not nr_fixed_workers:
             self._mainloop_gipc = gevent.spawn(self._main_loop_subprocess)
         else:
-            for i in range(nr_fixed_workers):
+            for i in range(nr_fixed_workers + 1):
                 self.worker_subprocess_start(nr=i, debug=debug)
 
     def workers_check(self, kill_workers_in_error=True):

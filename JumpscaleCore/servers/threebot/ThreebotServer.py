@@ -341,9 +341,9 @@ class ThreeBotServer(j.baseclasses.object_config):
         return p.__dict__[actor_name]
 
     def myjobs_start(self):
-        j.servers.myjobs.workers_tmux_start(2, in3bot=True)
+        # j.servers.myjobs.workers_tmux_start(2, in3bot=True)
         # j.servers.myjobs._workers_gipc_nr_max = 10
-        # j.servers.myjobs.workers_subprocess_start()
+        j.servers.myjobs.workers_subprocess_start(nr_fixed_workers=10)
 
     def _packages_core_init(self):
 
