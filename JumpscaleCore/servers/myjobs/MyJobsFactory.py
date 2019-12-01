@@ -559,6 +559,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         return jobs
 
     def wait_queues(self, queue_names, size, timeout=120, die=True):
+        if size == 0:
+            return []
+
         queue = None
         queues = []
         res = []
@@ -586,6 +589,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             return res
 
     def results(self, ids=None, return_queues=None, timeout=100, die=True):
+        if ids is None or len(ids) == 0:
+            return []
         if not return_queues:
             jobs = self.wait(ids=ids, timeout=timeout, die=die)
         else:
@@ -596,7 +601,10 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         return res
 
     def wait_queue(self, queue_name, size=1, timeout=120, die=True):
-        return self.wait_queues(queue_names=[queue_name], size=size, timeout=timeout, die=die)
+        res = self.wait_queues(queue_names=[queue_name], size=size, timeout=timeout, die=die)
+        if res:
+            return res[0]
+
 
     def test(self, name="", **kwargs):
         """
