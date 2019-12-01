@@ -250,7 +250,7 @@ class GitClient(j.baseclasses.object):
                 pre, post, = item.split("\t", 1)
             else:
                 pre, post, = item.split(" ", 1)
-            if len(pre) == 8:
+            if len(pre) > 6:
                 revision = pre
                 msg = post
             else:
@@ -259,6 +259,7 @@ class GitClient(j.baseclasses.object):
                 if state in ["N", "M", "A"]:
                     if _file not in result:
                         result.append(_file)
+                        self._log_info(f"File {_file} created")
                 elif state == "R":
                     from_, to_ = post.split("\t")
                     if from_ in result:
@@ -266,18 +267,19 @@ class GitClient(j.baseclasses.object):
                         to_delete.append(from_)
                     if _file not in result:
                         result.append(_file)
+                    self._log_info(f"File {_file} renamed")
                 elif state == "D":
                     # delete
                     if _file in result:
                         result.pop(result.index(_file))
-                        print("_file", _file)
+                        self._log_info(f"File {_file} deleted")
                         to_delete.append(_file)
 
-                else:
-                    print("state", state)
-                    # TODO: handle other states codes
-                    j.shell()
-                    w
+                # else:
+                #     print("state", state, item)
+                #     # TODO: handle other states codes
+                #     j.shell()
+                #     w
         if untracked:
             for item in self.getModifiedFiles(collapse=True):
                 if item not in result:

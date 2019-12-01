@@ -37,12 +37,13 @@ class SystemProps:
 
 
 class Schema(j.baseclasses.object):
-    def _init(self, text, md5=None, url=None):
+    def _init(self, text, md5=None, url=None, package=None):
         self.properties = []
         self._systemprops = {}
         self._obj_class = None
         self._capnp = None
         self._index_list = None
+        self.package = package
 
         self.systemprops = SystemProps()
 
@@ -57,9 +58,14 @@ class Schema(j.baseclasses.object):
             self._md5 = j.data.schema._md5(text)
 
         self._schema_from_text(text)
+
         if not self.url:
             self.url = j.data.hash.md5_string(text)
+
+        self.url = j.data.schema._urlclean(self.url, package=package)
+
         self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
+
         # if self.url:
         #     self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
         # else:
@@ -218,6 +224,7 @@ class Schema(j.baseclasses.object):
                 line_wo_proptype = line.split("(")[0].strip()  # before the (
 
                 if pointer_type:
+                    pointer_type = j.data.schema._urlclean(pointer_type, package=self.package)
                     default = pointer_type
                     # means the default is a link to another object
                 else:

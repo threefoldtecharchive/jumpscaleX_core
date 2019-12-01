@@ -18,7 +18,7 @@ class DocSite(j.baseclasses.object):
         JSBASE.__init__(self)
         self._j = j
 
-        self.docgen = j.tools.threegit
+        self.docgen = j.tools.threegit.get(name)
         # init initial arguments
 
         self.path = path
@@ -83,7 +83,7 @@ class DocSite(j.baseclasses.object):
                 return
 
             if gitpath not in self.docgen._git_repos:
-                self._git = j.tools.threegit._git_get(gitpath)
+                self._git = j.tools.threegit.get(self.name)._git_get(gitpath)
                 self.docgen._git_repos[gitpath] = self.git
 
         if not self._git:
@@ -246,13 +246,14 @@ class DocSite(j.baseclasses.object):
             return
 
         if reset == True:
-            j.sal.fs.remove(self.error_file_path)
             git_client = j.clients.git.get(self.path)
             self.revision = git_client.config_3git_set("revision_last_processed", "")
 
         path = self.path
         if not j.sal.fs.exists(path=path):
             raise j.exceptions.NotFound("Cannot find source path in load:'%s'" % path)
+
+        j.sal.fs.remove(self.error_file_path)
 
         def callbackForMatchDir(path, arg):
             base = j.sal.fs.getBaseName(path).lower()

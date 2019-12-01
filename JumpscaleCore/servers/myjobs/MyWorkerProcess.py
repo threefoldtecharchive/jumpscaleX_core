@@ -106,11 +106,11 @@ class MyWorkerProcess(j.baseclasses.object):
         # use model_schema to give the object
         return self._redis_get(id, self.model_job)
 
-    def _redis_get(self, id, schema):
-        key = f"{self.bcdb.name}:data:1:{schema._schema_url}"
+    def _redis_get(self, id, model):
+        key = f"{self.bcdb.name}:data:1:{model.schema.url}"
         data = self.bcdbclient.hget(key, str(id))
         ddata = j.data.serializers.json.loads(data)
-        return schema.new(ddata)
+        return model.new(ddata)
 
     def _redis_set(self, obj):
         key = f"{self.bcdb.name}:data:1:{obj._schema.url}"

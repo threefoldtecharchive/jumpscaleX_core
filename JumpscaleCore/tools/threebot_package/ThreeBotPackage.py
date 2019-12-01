@@ -11,15 +11,13 @@ class ThreeBotPackage(JSConfigBase):
         @url = jumpscale.threebot.package.1
         name** = "main"
         giturl = "" (S)  #if empty then local
+        branch = "" (S)
         path = ""
         status = "init,config,installed,disabled,error" (E)
         source = (O) !jumpscale.threebot.package.source.1
         actor = (O) !jumpscale.threebot.package.actor.1
         bcdbs = (LO) !jumpscale.threebot.package.bcdb.1
-        actor_names = (LS)
-        chat_names = (LS)
-        wiki_names = (LS)
-        model_urls = (LS)
+
 
         @url = jumpscale.threebot.package.source.1
         name = ""
@@ -43,6 +41,18 @@ class ThreeBotPackage(JSConfigBase):
         if self.status == "init":
             self.config_load()
         self.running = False
+        if self.giturl and not self.branch:
+            self.branch = "master"
+
+        # should not be part of our DB object
+        self._actors = None
+        self._models = None
+        self._wikis = None
+        self._chatflows = None
+
+        # self.chat_names = []
+        # self.wiki_names = []
+        # self.model_urls = []
 
     @property
     def threebot_server(self):
@@ -55,27 +65,6 @@ class ThreeBotPackage(JSConfigBase):
     @property
     def openresty(self):
         return j.threebot.servers.web
-
-    def _cruds_load(self):
-        actors_dir = f"{j.dirs.VARDIR}/codegen/actors/{self.name}/"
-        if j.sal.fs.exists(actors_dir):
-            j.sal.fs.remove(actors_dir)
-        j.sal.fs.createDir(actors_dir)
-
-        for model_url in self.model_urls:
-            # Exclude bcdb meta data models
-            model = self.bcdb.model_get(url=model_url)
-            if model.schema.url.startswith("jumpscale.bcdb."):
-                continue
-            j.tools.jinja2.file_render(
-                self._dirpath + "/templates/template.py",
-                dest=actors_dir + model.schema.key + "_model.py",
-                model=model,
-                fields_schema=self._model_get_fields_schema(model),
-            )
-
-        self.actor_names.extend(self.gedis_server.actors_add(actors_dir))
-        self.save()
 
     def _model_get_fields_schema(self, model):
         lines = model.schema.text.splitlines()
@@ -106,31 +95,6 @@ class ThreeBotPackage(JSConfigBase):
             klass = j.tools.codeloader.load(obj_key="Package", path=self._path_package, reload=False)
             self._package_author = klass(package=self)
 
-            path = self.path + "/models"
-            if j.sal.fs.exists(path):
-                self.model_urls = self.bcdb.models_add(path)
-
-            path = self.path + "/actors"
-            if j.sal.fs.exists(path):
-                self.actor_names = self.gedis_server.actors_add(path, namespace=self._package_author.actors_namespace)
-
-            path = self.path + "/chatflows"
-            if j.sal.fs.exists(path):
-                self.chat_names = self.gedis_server.chatbot.chatflows_load(path)
-
-            def load_wiki(wiki_name=None, wiki_path=None):
-                """we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
-                wiki = j.tools.markdowndocs.load(name=wiki_name, path=wiki_path, pull=False)
-                wiki.write()
-
-            path = self.path + "/wiki"
-            if j.sal.fs.exists(path):
-                name = self.name
-                if not name in self.wiki_names:
-                    self.wiki_names.append(name)
-                j.servers.myjobs.schedule(load_wiki, wiki_name=name, wiki_path=path)
-
-            self.save()
             if j.sal.fs.exists(self.path + "/html"):
                 self._web_load("html")
             elif j.sal.fs.exists(self.path + "/frontend"):
@@ -140,7 +104,121 @@ class ThreeBotPackage(JSConfigBase):
             #     # load webserver
             #     j.shell()
 
+            def load_wiki(wiki_name=None, wiki_path=None):
+                """we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
+                wiki = j.tools.markdowndocs.load(name=wiki_name, path=wiki_path, pull=False)
+                wiki.write()
+
+            if self._wikis is None:
+                self._wikis = j.baseclasses.dict()
+
+            path = self.path + "/wiki"
+            if j.sal.fs.exists(path):
+                j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=path)
+                self._wikis[self.name] = path
+
         self._init_ = True
+
+    @property
+    def actors(self):
+        def actors_crud_generate():
+            for model_url in self.model_urls:
+                found = True
+                # Exclude bcdb meta data models
+                model = self.bcdb.model_get(url=model_url, package=self)
+                if model.schema.url.startswith("jumpscale.bcdb."):
+                    continue
+                assert model_url.startswith(self.name)
+
+                shorturl = model_url[len(self.name) + 1 :].replace(".", "_")
+                dest = self.path + "/actors/" + shorturl + "_model.py"
+                # for now generate all the time TODO: change later
+                if True or not j.sal.fs.exists(dest):
+                    j.tools.jinja2.file_render(
+                        self._dirpath + "/templates/ThreebotModelCrudActorTemplate.py",
+                        dest=dest,
+                        model=model,
+                        fields_schema=self._model_get_fields_schema(model),
+                        shorturl=shorturl,
+                    )
+
+        if self._actors is None:
+            self._actors = j.baseclasses.dict()
+            actors_crud_generate()  # will generate the actors for the model
+            path = self.path + "/actors"
+            if j.sal.fs.exists(path):
+
+                for fpath in j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py", followSymlinks=True):
+                    try:
+                        cl = j.tools.codeloader.load(obj_key=None, path=fpath, reload=False, md5=None)
+                    except Exception as e:
+                        errormsg = "****ERROR HAPPENED IN LOADING ACTOR: %s\n%s" % (fpath, e)
+                        self._log_error(errormsg)
+                        print(errormsg)
+                        raise e
+                    name = j.tools.codeloader._basename(fpath).lower()
+                    try:
+                        self._actors[name] = cl(package=self)
+                    except Exception as e:
+                        errormsg = "****ERROR HAPPENED IN LOADING ACTOR: %s\n%s" % (fpath, e)
+                        self._log_error(errormsg)
+                        print(errormsg)
+                        raise e
+
+        return self._actors
+
+    def gedis_activate(self, server):
+        path = self.path + "/actors"
+        if j.sal.fs.exists(path):
+            server.actors_add(path, package=self)
+
+    @property
+    def actor_names(self):
+        return [item.name for item in self.actors.values()]
+
+    @property
+    def models(self):
+        if self._models is None:
+            self._models = j.baseclasses.dict()
+            path = self.path + "/models"
+            if j.sal.fs.exists(path):
+                model_urls = self.bcdb.models_add(path, package=self)
+                for model_url in model_urls:
+                    m = self.bcdb.model_get(url=model_url)
+                    if model_url.startswith(self.name):
+                        model_url2 = model_url[len(self.name) + 1 :]
+                    else:
+                        model_url2 = model_url
+                    model_url3 = model_url2.replace(".", "__")
+                    self._models[model_url3] = m
+        return self._models
+
+    @property
+    def model_urls(self):
+        return [item.schema.url for item in self.models.values()]
+
+    @property
+    def chatflows(self):
+        if self._chatflows is None:
+            self._chatflows = j.baseclasses.dict()
+            path = self.path + "/chatflows"
+            if j.sal.fs.exists(path):
+                self._chatflows = self.gedis_server.chatbot.chatflows_load(path)
+        return self._chatflows
+
+    @property
+    def chat_names(self):
+        return [item for item in self.chatflows]
+
+    @property
+    def wikis(self):
+        # lazy-loading of wikis would take time, user will wait for too long
+        # and need to refresh to see loaded wikis
+        return self._wikis
+
+    @property
+    def wiki_names(self):
+        return [item for item in self.wikis.keys()]
 
     @property
     def bcdb(self):
@@ -205,7 +283,6 @@ class ThreeBotPackage(JSConfigBase):
             self.install()
         self.load()
         # should be merged into load method later on
-        self._cruds_load()
         self._package_author.start()
         self.running = True
         self.save()
