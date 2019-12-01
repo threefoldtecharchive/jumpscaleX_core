@@ -104,6 +104,19 @@ class ThreeBotPackage(JSConfigBase):
             #     # load webserver
             #     j.shell()
 
+            def load_wiki(wiki_name=None, wiki_path=None):
+                """we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
+                wiki = j.tools.markdowndocs.load(name=wiki_name, path=wiki_path, pull=False)
+                wiki.write()
+
+            if self._wikis is None:
+                self._wikis = j.baseclasses.dict()
+
+            path = self.path + "/wiki"
+            if j.sal.fs.exists(path):
+                j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=path)
+                self._wikis[self.name] = path
+
         self._init_ = True
 
     @property
@@ -190,9 +203,7 @@ class ThreeBotPackage(JSConfigBase):
             self._chatflows = j.baseclasses.dict()
             path = self.path + "/chatflows"
             if j.sal.fs.exists(path):
-                chatflows = self.gedis_server.chatbot.chatflows_load(path)
-                j.shell()
-                w
+                self.gedis_server.chatbot.chatflows_load(path)
 
         return self._chatflows
 
@@ -202,24 +213,13 @@ class ThreeBotPackage(JSConfigBase):
 
     @property
     def wikis(self):
-        def load_wiki(wiki_name=None, wiki_path=None):
-            """we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
-            wiki = j.tools.markdowndocs.load(name=wiki_name, path=wiki_path, pull=False)
-            wiki.write()
-
-        if self._wikis is None:
-            self._wikis = j.baseclasses.dict()
-            path = self.path + "/wiki"
-            if j.sal.fs.exists(path):
-                j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=path)
-                j.shell()
-                w
-
+        # lazy-loading of wikis would take time, user will wait for too long
+        # and need to refresh to see loaded wikis
         return self._wikis
 
     @property
     def wiki_names(self):
-        return [item for item in self.wikis]
+        return [item for item in self.wikis.keys()]
 
     @property
     def bcdb(self):

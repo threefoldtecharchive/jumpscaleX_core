@@ -341,9 +341,9 @@ class ThreeBotServer(j.baseclasses.object_config):
         return p.__dict__[actor_name]
 
     def myjobs_start(self):
-        # j.servers.myjobs.workers_tmux_start(2, in3bot=True)
-        j.servers.myjobs._workers_gipc_nr_max = 10
-        j.servers.myjobs.workers_subprocess_start()
+        j.servers.myjobs.workers_tmux_start(2, in3bot=True)
+        # j.servers.myjobs._workers_gipc_nr_max = 10
+        # j.servers.myjobs.workers_subprocess_start()
 
     def _packages_core_init(self):
 
@@ -360,6 +360,9 @@ class ThreeBotServer(j.baseclasses.object_config):
             if p.status in ["config", "init"]:
                 p.install()
                 p.save()
+
+            # start should be called everytime server starts
+            p.start()
 
             if name in ["base"]:
                 p.actors  # will trigger the actors

@@ -44,7 +44,7 @@ class Application(object):
             self._admin_session = UserSessionAdmin()
             self._admin_session.threebot_id = self._j.tools.threebot.me.default.tid
             self._admin_session.threebot_name = self._j.tools.threebot.me.default.tname
-            if not self._admin_session.threebot_id or not self._admin_session.threebot_name:
+            if self._admin_session.threebot_id is None or not self._admin_session.threebot_name:
                 raise self._j.exceptions.Input("initialize your threebot")
         return self._admin_session
 

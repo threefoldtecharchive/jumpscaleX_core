@@ -146,7 +146,8 @@ class JSXObject(j.baseclasses.object):
 
     def check_empty_indexed_fields(self):
         for prop in self._model.schema.properties_index_sql:
-            if not eval(f"self.{prop.name}"):
+            value = eval(f"self.{prop.name}")
+            if not value and not isinstance(value, (int, float, complex)):
                 raise j.exceptions.Input("an indexed (sql) field cannot be empty:%s" % prop.name, data=self)
 
         for prop in self._model.schema.properties_index_text:
