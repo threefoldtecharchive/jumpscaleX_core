@@ -11,6 +11,7 @@ class ThreeBotPackage(JSConfigBase):
         @url = jumpscale.threebot.package.1
         name** = "main"
         giturl = "" (S)  #if empty then local
+        branch = "" (S)
         path = ""
         status = "init,config,installed,disabled,error" (E)
         source = (O) !jumpscale.threebot.package.source.1
@@ -40,6 +41,8 @@ class ThreeBotPackage(JSConfigBase):
         if self.status == "init":
             self.config_load()
         self.running = False
+        if self.giturl and not self.branch:
+            self.branch = "master"
 
         # should not be part of our DB object
         self._actors = None
