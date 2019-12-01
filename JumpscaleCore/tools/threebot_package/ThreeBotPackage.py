@@ -203,13 +203,12 @@ class ThreeBotPackage(JSConfigBase):
             self._chatflows = j.baseclasses.dict()
             path = self.path + "/chatflows"
             if j.sal.fs.exists(path):
-                self.gedis_server.chatbot.chatflows_load(path)
-
+                self._chatflows = self.gedis_server.chatbot.chatflows_load(path)
         return self._chatflows
 
     @property
     def chat_names(self):
-        return [item.name for item in self.chatflows]
+        return [item for item in self.chatflows]
 
     @property
     def wikis(self):
