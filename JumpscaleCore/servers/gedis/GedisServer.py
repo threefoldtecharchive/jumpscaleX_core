@@ -13,6 +13,36 @@ from .GedisCmds import GedisCmds
 from .handlers import Handler
 
 JSBaseConfig = j.baseclasses.object_config
+from Jumpscale.tools.threebot_package.ThreeBotPackage import ThreeBotPackage
+
+SCHEMA = """
+@url = jumpscale.gedis.api
+namespace = ""
+name** = ""
+cmds = (LO) !jumpscale.gedis.cmd
+schemas = (LO) !jumpscale.gedis.schema
+
+@url = jumpscale.gedis.cmd
+name** = ""
+comment = ""
+schema_in_url = ""
+schema_out_url = ""
+args = (ls)
+public = False
+rights = (O) !jumpscale.gedis.cmd.rights
+
+#full rights to the cmd for the threebots & circles mentioned
+@url = jumpscale.gedis.cmd.rights
+public = False (B)
+threebots = (LS)
+circles = (LS)
+
+@url = jumpscale.gedis.schema
+name** = ""
+md5 = ""
+url = ""
+content = ""
+"""
 
 
 class Actors:
@@ -42,7 +72,6 @@ class GedisServer(JSBaseConfig):
         self._sig_handler = []
 
         self.cmds_meta = {}  # is the metadata of the actor
-        self.actors = {}  # the code as set by the gediscmds class = actor cmds
         self.schema_urls = []  # used at python client side
 
         self.address = "{}:{}".format(self.host, self.port)
@@ -55,8 +84,10 @@ class GedisServer(JSBaseConfig):
         self.namespaces = ["system", "default"]
         self._threebot_server = None
 
-        j.threebot.actors = Actors()
-        j.threebot.actors_add = self.actors_add
+        j.data.schema.get_from_text(SCHEMA)
+
+        # j.threebot.actors = Actors()
+        # j.threebot.actors_add = self.actors_add
         # j.threebot.actors_list = self.actors_list
 
         # hook to allow external servers to find this gedis
@@ -72,11 +103,6 @@ class GedisServer(JSBaseConfig):
         # now add the one for the server
         if self.code_generated_dir not in sys.path:
             sys.path.append(self.code_generated_dir)
-
-        # add the system actors
-        path = j.sal.fs.joinPaths(j.servers.gedis._dirpath, "systemactors")
-
-        self.actors_add(namespace="system", path=path)
 
         for sig in [signal.SIGINT, signal.SIGTERM]:
             self._sig_handler.append(gevent.signal(sig, self.stop))
@@ -121,7 +147,7 @@ class GedisServer(JSBaseConfig):
 
         return gedis_server
 
-    def actors_add(self, path, namespace="default"):
+    def actors_add(self, path, package):
         """
         add commands from 1 actor (or other python) file
 
@@ -130,22 +156,24 @@ class GedisServer(JSBaseConfig):
         :return:
         """
         actor_names = []
+        assert isinstance(package, ThreeBotPackage)
         if not j.sal.fs.isDir(path):
             raise j.exceptions.Value("actor_add: path needs to point to an existing directory")
 
         path = j.data.types.string.clean(path)
-        namespace = j.data.types.string.clean(namespace)
+        namespace = j.data.types.string.clean(package.source.threebot)
+        assert len(namespace) > 5
 
         files = j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py")
+        actors = j.baseclasses.dict()
         for file_path in files:
             basepath = j.sal.fs.getBaseName(file_path)
             if "__" in basepath or basepath.startswith("test"):
                 continue
             actor_names.append(basepath[:-3])
             self.actor_add(file_path, namespace=namespace)
-        return actor_names
 
-    def actor_add(self, path, namespace="default"):
+    def actor_add(self, path, namespace):
         """
         add commands from 1 actor (or other python) file
 
@@ -160,11 +188,13 @@ class GedisServer(JSBaseConfig):
             raise j.exceptions.Value("actor_add: cannot find actor at %s" % path)
 
         self._log_debug("actor_add:%s:%s", namespace, path)
-        name = actor_name(path, namespace)
-        key = actor_key(name, namespace)
+        name = self._actor_name_get(path, namespace)
+        key = self._actor_key_get(name, namespace)
         # if key not in self.actors.keys():
         #     self.actors_data.append("%s:%s" % (namespace, path))
         self.cmds_meta[key] = GedisCmds(server=self, path=path, name=name, namespace=namespace)
+
+        # return self.cmds_meta[key]
 
     ####################################################################
 
@@ -319,35 +349,33 @@ class GedisServer(JSBaseConfig):
 
     __str__ = __repr__
 
+    def _actor_name_get(path, namespace):
+        """
+        extract the name of an actor based on its path and namespace used
 
-def actor_name(path, namespace):
-    """
-    extract the name of an actor based on its path and namespace used
+        :param path: path of the actor file
+        :type path: str
+        :param namespace: 0-db namespace used by this actor
+        :type namespace: str
+        :return: key used to keep the actor in memory
+        :rtype: str
+        """
+        name, _ = os.path.splitext(os.path.basename(path))
+        if namespace in name and name.startswith("model"):
+            name = "model_%s" % name.split(namespace, 1)[1].strip("_")
+        return name
 
-    :param path: path of the actor file
-    :type path: str
-    :param namespace: 0-db namespace used by this actor
-    :type namespace: str
-    :return: key used to keep the actor in memory
-    :rtype: str
-    """
-    name, _ = os.path.splitext(os.path.basename(path))
-    if namespace in name and name.startswith("model"):
-        name = "model_%s" % name.split(namespace, 1)[1].strip("_")
-    return name
-
-
-def actor_key(name, namespace):
-    """
-    generate the key used to key the actor in memory bases
-    on the actor path and namespace used
+    def _actor_key_get(name, namespace):
+        """
+        generate the key used to key the actor in memory bases
+        on the actor path and namespace used
 
 
-    :param name: name of the actor
-    :type name: str
-    :param namespace: 0-db namespace used by this actor
-    :type namespace: str
-    :return: key used to keep the actor in memory
-    :rtype: str
-    """
-    return "%s__%s" % (namespace, name)
+        :param name: name of the actor
+        :type name: str
+        :param namespace: 0-db namespace used by this actor
+        :type namespace: str
+        :return: key used to keep the actor in memory
+        :rtype: str
+        """
+        return "%s__%s" % (namespace, name)

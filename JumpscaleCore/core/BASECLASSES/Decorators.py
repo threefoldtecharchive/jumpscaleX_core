@@ -3,10 +3,6 @@ from Jumpscale import j
 
 
 def actor_method(func):
-    class AdminSession:
-        def admin_check(self):
-            return True
-
     def process_doc_str(func):
         S = None
         schema_in = None
@@ -58,8 +54,7 @@ def actor_method(func):
                 for pname in schema_in.propertynames:
                     kwargs[pname] = eval("data.%s" % pname)
 
-            # TODO: need to set user_session as threebot.me session
-            kwargs["user_session"] = AdminSession()
+            kwargs["user_session"] = j.application.admin_session
             kwargs["schema_out"] = schema_out
 
         res = func(self, **kwargs)

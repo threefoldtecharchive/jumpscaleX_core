@@ -62,7 +62,10 @@ class SerializerJSXObject(SerializerBase):
             md5 = md5bin.hex()
             data2 = data[21:]
             if not schema:
-                schema = j.data.schema.get_from_md5(md5)
+                schema_md5 = j.data.schema.get_from_md5(md5)
+                schema = j.data.schema.get_from_url(
+                    schema_md5.url
+                )  # this will get us the newest version, not the one stored
             else:
                 if md5 != schema._md5:
                     # lets put a test in to make sure the schema url's correspond
