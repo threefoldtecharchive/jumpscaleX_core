@@ -6,7 +6,7 @@ def main(self):
     """
     kosmos -p 'j.servers.myjobs.test("workers")'
     """
-
+    self.stop(reset=True)
     self.reset()
     self.workers_subprocess_start(nr_fixed_workers=10)
 
@@ -41,10 +41,6 @@ def main(self):
     jobs = self.jobs.find()
 
     assert len(jobs) == 1
-    job = jobs[0]
-    assert len(job.error.keys()) > 0
-    assert job.state == "ERROR"
-    assert job.time_stop > 0
 
     # lets start from scratch, now we know the super basic stuff is working
 
@@ -53,7 +49,8 @@ def main(self):
         job = self.schedule(add, return_queues=["queue_a"], a=1, b=2)
         ids.append(job.id)
 
-    j.servers.myjobs.schedule(add_error, return_queues=["queue_a"], return_queues_reset=True, a=1, b=2)
+    job = j.servers.myjobs.schedule(add_error, return_queues=["queue_a"], return_queues_reset=True, a=1, b=2)
+    ids.append(job.id)
 
     jobs = self.jobs.find()
 
@@ -63,41 +60,83 @@ def main(self):
     wait_2sec()
 
     assert self.queue_jobs_start.qsize() == 0  # there need to be 0 jobs in queue (all executed by now)
-    res = self.results(ids=ids, return_queues=["queue_a"], die=False)
-    assert len(res) == 11
+
+    for jid in ids[:-1]:
+        job = self.jobs.get(id=jid)
+
+        assert job.state == "OK"
+
+        assert len(job.error.keys()) == 0
+        assert job.time_stop > 0
+
+    job = self.jobs.get(id=ids[-1])
+
+    assert job.state == "ERROR"
+    assert len(job.error.keys()) > 0
+    assert job.state == "ERROR"
+    assert job.time_stop > 0
 
     # 3rd test
+    ids = []
     for x in range(20):
-        self.schedule(wait_2sec, return_queues=["queue_b"])
+        job = self.schedule(wait_2sec, return_queues=["queue_b"])
+        ids.append(job.id)
 
-    j.servers.myjobs.schedule(wait_2sec, return_queues=["queue_b"], timeout=1)
-    j.servers.myjobs.schedule(add_error, return_queues=["queue_b"], a=1, b=2)
+    job = j.servers.myjobs.schedule(wait_2sec, return_queues=["queue_b"], timeout=1)
+    ids.append(job.id)
+    job = j.servers.myjobs.schedule(add_error, return_queues=["queue_b"], a=1, b=2)
+    ids.append(job.id)
 
     print("there should be 10 workers, so wait is max 5 sec")
 
-    # up to now we have 33 jobs in total
+    gevent.sleep(5)
+
+    # up to now we have 34 jobs in total
     jobs = self.jobs.find()
     assert len(jobs) == 34
 
     gevent.sleep(5)
-    import ipdb
 
-    ipdb.set_trace()
+
+    for jid in ids[:-2]:
+        job = self.jobs.get(id=jid)
+
+        assert job.state == "OK"
+
+        assert len(job.error.keys()) == 0
+        assert job.time_stop > 0
+
+    job = self.jobs.get(id=ids[-2])
+
+    assert job.state == "ERROR"
+    assert len(job.error.keys()) > 0
+    assert job.state == "ERROR"
+    assert job.time_stop > 0
+
+    job = self.jobs.get(id=ids[-1])
+
+    assert job.state == "ERROR"
+    assert len(job.error.keys()) > 0
+    assert job.state == "ERROR"
+    assert job.time_stop > 0
+
+    jobs = self.jobs.find()
+
     completed = [job for job in jobs if job.time_stop]
 
-    assert len(completed) == 22
+    assert len(completed) == 34
 
     errors = [job for job in jobs if job.error != {}]
-    assert len(errors) == 2
+    assert len(errors) == 4
 
     errors = [job for job in jobs if job.state == "ERROR"]
-    assert len(errors) == 2
+    assert len(errors) == 4
 
     errors = [job for job in jobs if job.error_cat == "TIMEOUT"]
     assert len(errors) == 1
 
     jobs = [job for job in jobs if job.state == "OK"]
-    assert len(jobs) == 20
+    assert len(jobs) == 30
 
     self.stop(reset=True)
 

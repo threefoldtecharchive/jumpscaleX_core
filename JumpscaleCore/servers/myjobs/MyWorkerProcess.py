@@ -173,7 +173,7 @@ class MyWorkerProcess(j.baseclasses.object):
             """
             for queue_name in job.return_queues:
                 queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)
-                data = {"id": job.id, "result": job.result}
+                data = {"id": job.id, "result": job.result, "state": job.state._string}
                 queue.put(j.data.serializers.json.dumps(data))
 
         while True:
