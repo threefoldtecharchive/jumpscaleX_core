@@ -175,7 +175,7 @@ class ThreeBotPackage(JSConfigBase):
 
     @property
     def actor_names(self):
-        return [item.name for item in self.actors.values()]
+        return list(self.actors.keys())
 
     @property
     def models(self):

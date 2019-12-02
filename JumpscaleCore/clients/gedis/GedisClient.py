@@ -21,7 +21,7 @@ class GedisClient(JSConfigBase):
     name** = "main"
     host = "127.0.0.1" (S)
     port = 8900 (ipport)
-    namespace = "default" (S)
+    package_name = "" (S)
     threebot_local_profile = "default"
     password_ = ""
     # ssl = False (B)
@@ -72,13 +72,10 @@ class GedisClient(JSConfigBase):
     #     res = self._redis.execute_command(cmd)
     #     return res
 
-    def reload(self, namespace=None):
+    def reload(self):
         self._log_info("reload")
         self._reset()
         assert self.ping()
-
-        if namespace:
-            self.namespace = namespace
 
         self._actorsmeta = {}
         self._actors = GedisClientActors()
@@ -99,7 +96,8 @@ class GedisClient(JSConfigBase):
             if "__model_" in key:
                 raise j.exceptions.Base("aa")
             actor_name = key.split(".")[-1]
-            self._actorsmeta[actor_name] = j.servers.gedis._cmds_get(key, data)
+            if not self.package_name or key.startswith(self.package_name):
+                self._actorsmeta[actor_name] = j.servers.gedis._cmds_get(key, data)
 
         # at this point the schema's are loaded only for the namespace identified (is all part of metadata)
         for actorname, actormeta in self._actorsmeta.items():
