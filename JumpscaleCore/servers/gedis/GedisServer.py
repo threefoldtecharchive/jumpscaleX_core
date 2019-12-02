@@ -81,7 +81,7 @@ class GedisServer(JSBaseConfig):
 
         self.chatbot = GedisChatBotFactory()
 
-        self.namespaces = ["system", "default"]
+        # self.namespaces = ["system", "default"]
         self._threebot_server = None
 
         j.data.schema.get_from_text(SCHEMA)
@@ -147,7 +147,33 @@ class GedisServer(JSBaseConfig):
 
         return gedis_server
 
-    def actors_add(self, path, package):
+    # def actors_add(self, path, package):
+    #     """
+    #     add commands from 1 actor (or other python) file
+    #
+    #     :param name:  each set of cmds need to have a unique name
+    #     :param path: of the actor file
+    #     :return:
+    #     """
+    #     actor_names = []
+    #     assert isinstance(package, ThreeBotPackage)
+    #     if not j.sal.fs.isDir(path):
+    #         raise j.exceptions.Value("actor_add: path needs to point to an existing directory")
+    #
+    #     path = j.data.types.string.clean(path)
+    #     namespace = j.data.types.string.clean(package.source.threebot)
+    #     assert len(namespace) > 5
+    #
+    #     files = j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py")
+    #     actors = j.baseclasses.dict()
+    #     for file_path in files:
+    #         basepath = j.sal.fs.getBaseName(file_path)
+    #         if "__" in basepath or basepath.startswith("test"):
+    #             continue
+    #         actor_names.append(basepath[:-3])
+    #         self.actor_add(file_path, package=package)
+
+    def actor_add(self, name, path, package):
         """
         add commands from 1 actor (or other python) file
 
@@ -155,61 +181,33 @@ class GedisServer(JSBaseConfig):
         :param path: of the actor file
         :return:
         """
-        actor_names = []
+        assert name
         assert isinstance(package, ThreeBotPackage)
-        if not j.sal.fs.isDir(path):
-            raise j.exceptions.Value("actor_add: path needs to point to an existing directory")
-
-        path = j.data.types.string.clean(path)
-        namespace = j.data.types.string.clean(package.source.threebot)
-        assert len(namespace) > 5
-
-        files = j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py")
-        actors = j.baseclasses.dict()
-        for file_path in files:
-            basepath = j.sal.fs.getBaseName(file_path)
-            if "__" in basepath or basepath.startswith("test"):
-                continue
-            actor_names.append(basepath[:-3])
-            self.actor_add(file_path, namespace=namespace)
-
-    def actor_add(self, path, namespace):
-        """
-        add commands from 1 actor (or other python) file
-
-        :param name:  each set of cmds need to have a unique name
-        :param path: of the actor file
-        :return:
-        """
-        if namespace not in self.namespaces:
-            self.namespaces.append(namespace)
 
         if not j.sal.fs.exists(path):
             raise j.exceptions.Value("actor_add: cannot find actor at %s" % path)
 
-        self._log_debug("actor_add:%s:%s", namespace, path)
-        name = self._actor_name_get(path, namespace)
-        key = self._actor_key_get(name, namespace)
+        self._log_debug("actor_add:%s:%s", package.name, path)
+        key = "%s.%s" % (package.name, name)
         # if key not in self.actors.keys():
         #     self.actors_data.append("%s:%s" % (namespace, path))
-        self.cmds_meta[key] = GedisCmds(server=self, path=path, name=name, namespace=namespace)
+        self.cmds_meta[key] = GedisCmds(path=path, name=name, package=package)
 
         # return self.cmds_meta[key]
 
     ####################################################################
 
-    def actors_list(self, namespace="default"):
+    def actors_list(self, threebotauthor="threebot", package="base"):
         """
         list all actors loaded in the server
         optinally filter base on namespace
 
-        :param namespace: if specified filer the actors based on the namespace used, defaults to "default"
-        :param namespace: str, optional
         :return: list of actors
         :rtype: list
         """
         res = []
         for key, cmds in self.cmds_meta.items():
+            raise  # TODO
             if not namespace or key.startswith("%s__" % namespace):
                 res.append(key)
         return res
@@ -318,15 +316,16 @@ class GedisServer(JSBaseConfig):
     #         key = actor_key(name, namespace)
     #         if key not in self.actors.keys():
     #             self.actor_add(path, namespace)
-
-    def start(self):
-        """
-        this method is only used when not used in digitalme
-        """
-        # WHEN USED OVER WEB, USE THE DIGITALME FRAMEWORK
-        self._log_info("start Server on {0} - PORT: {1}".format(self.host, self.port))
-        self._log_info("%s RUNNING", str(self))
-        self.gevent_server.serve_forever()
+    #
+    # def start(self):
+    #     """
+    #     this method is only used when not used in digitalme
+    #     """
+    #     # WHEN USED OVER WEB, USE THE DIGITALME FRAMEWORK
+    #     self._log_info("start Server on {0} - PORT: {1}".format(self.host, self.port))
+    #     self._log_info("%s RUNNING", str(self))
+    #     self.gevent_server.serve_forever()
+    #
 
     def stop(self):
         """
@@ -348,34 +347,3 @@ class GedisServer(JSBaseConfig):
         return "<Gedis Server address=%s  generated_code_dir=%s)" % (self.address, self.code_generated_dir)
 
     __str__ = __repr__
-
-    def _actor_name_get(path, namespace):
-        """
-        extract the name of an actor based on its path and namespace used
-
-        :param path: path of the actor file
-        :type path: str
-        :param namespace: 0-db namespace used by this actor
-        :type namespace: str
-        :return: key used to keep the actor in memory
-        :rtype: str
-        """
-        name, _ = os.path.splitext(os.path.basename(path))
-        if namespace in name and name.startswith("model"):
-            name = "model_%s" % name.split(namespace, 1)[1].strip("_")
-        return name
-
-    def _actor_key_get(name, namespace):
-        """
-        generate the key used to key the actor in memory bases
-        on the actor path and namespace used
-
-
-        :param name: name of the actor
-        :type name: str
-        :param namespace: 0-db namespace used by this actor
-        :type namespace: str
-        :return: key used to keep the actor in memory
-        :rtype: str
-        """
-        return "%s__%s" % (namespace, name)

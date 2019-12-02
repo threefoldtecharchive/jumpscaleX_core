@@ -38,8 +38,11 @@ class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtoo
         """
         # we don't support running gevent as stdallone any longer
 
-        # make sure we have a threebot life
-        cl = j.servers.threebot.local_start_default()
+        if not j.sal.nettools.tcpPortConnectionTest("localhost", 8901):
+            # make sure we have a threebot life
+            cl = j.servers.threebot.local_start_default()
+        else:
+            j.clients.gedis.new(name="test", port=8901)
 
         cl.actors.package_manager.package_add(
             "threebot_phonebook",

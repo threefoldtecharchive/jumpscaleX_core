@@ -165,12 +165,9 @@ class ThreeBotPackage(JSConfigBase):
                         print(errormsg)
                         raise e
 
-        return self._actors
+                    self.gedis_server.actor_add(name=name, path=fpath, package=self)
 
-    def gedis_activate(self, server):
-        path = self.path + "/actors"
-        if j.sal.fs.exists(path):
-            server.actors_add(path, package=self)
+        return self._actors
 
     @property
     def actor_names(self):

@@ -302,7 +302,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
 
-            j.shell()  # DO NOT REMOVE THIS SHELL
+            # j.shell()  # DO NOT REMOVE THIS SHELL
             forever = event.Event()
             try:
                 forever.wait()
@@ -332,7 +332,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         tbot = j.threebot.packages.__dict__[author3bot]
         if package_name not in tbot.__dict__:
             raise j.exceptions.Input("cannot find package with name:'%s' of threebot:'%s'" % (package_name, author3bot))
-        return tbot.__dict__[author3bot]
+        return tbot.__dict__[package_name]
 
     def actor_get(self, author3bot, package_name, actor_name):
         p = self.package_get(author3bot=author3bot, package_name=package_name)
@@ -341,7 +341,9 @@ class ThreeBotServer(j.baseclasses.object_config):
         return p.__dict__[actor_name]
 
     def myjobs_start(self):
-        j.servers.myjobs.workers_subprocess_start(nr_fixed_workers=10)
+        j.servers.myjobs.workers_tmux_start(2, in3bot=True)
+        # j.servers.myjobs._workers_gipc_nr_max = 10
+        # j.servers.myjobs.workers_subprocess_start()
 
     def _packages_core_init(self):
 
@@ -360,6 +362,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                 p.save()
 
             # start should be called everytime server starts
+            # TODO: NOT THE INTENTION !!!!
             p.start()
 
             if name in ["base"]:

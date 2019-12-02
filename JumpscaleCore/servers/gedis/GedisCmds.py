@@ -16,14 +16,16 @@ class GedisCmds(JSBASE):
     cmds understood by gedis server
     """
 
-    def __init__(self, server=None, namespace="default", name="", path="", data=None):
+    def __init__(self, package=None, name="", path="", data=None):
         JSBASE.__init__(self)
 
         if path is "" and data is None:
             raise j.exceptions.Base("path cannot be None")
 
         self.path = path
-        self.server = server
+        # self.server = server
+
+        self.package = package
 
         schema = j.data.schema.get_from_url(url="jumpscale.gedis.api")
         self.model = j.data.bcdb.system.model_get(schema=schema)
@@ -33,22 +35,26 @@ class GedisCmds(JSBASE):
             self.data = self.model.new(data=data)
             self.cmds
         else:
-            cname = j.sal.fs.getBaseName(path)[:-3]
-            klass = j.tools.codeloader.load(obj_key=cname, path=path, reload=False)
-            kobj = klass(gedis_server=self.server)  # this is the actor obj
+            # cname = j.sal.fs.getBaseName(path)[:-3]
+            # klass = j.tools.codeloader.load(obj_key=cname, path=path, reload=False)
+            # kobj = klass(gedis_server=self.server)  # this is the actor obj
+            #
+            # key = "%s__%s" % (namespace, cname.replace(".", "_"))
+            #
+            # self.server.actors[key] = kobj  # as used in gedis server (when serving the commands)
+            #
+            # if not namespace in j.threebot.actors.__dict__:
+            #     j.threebot.actors.__dict__[namespace] = ActorNamespace()
 
-            key = "%s__%s" % (namespace, cname.replace(".", "_"))
-
-            self.server.actors[key] = kobj  # as used in gedis server (when serving the commands)
-
-            if not namespace in j.threebot.actors.__dict__:
-                j.threebot.actors.__dict__[namespace] = ActorNamespace()
-
-            j.threebot.actors.__dict__[namespace].__dict__[cname.replace(".", "_")] = self.server.actors[key]
+            # j.threebot.actors.__dict__[namespace].__dict__[cname.replace(".", "_")] = self.server.actors[key]
 
             self.data = self.model.new()
             self.data.name = name
-            self.data.namespace = namespace
+            self.data.namespace = self.package.name
+
+            actor = self.package._actors[name]
+
+            klass = actor.__class__
 
             for member_name, item in inspect.getmembers(klass):
                 if member_name.startswith("_"):

@@ -8,7 +8,7 @@ JSBASE = j.baseclasses.object
 from .UserSession import UserSession
 
 
-def _command_split(cmd, author3botname="zerobot", packagename="system"):
+def _command_split(cmd, author3botname="zerobot", packagename="base"):
     """
     :param cmd: command is in form x.x.x.x split in parts
     :param: author3botname is the default
@@ -39,10 +39,7 @@ def _command_split(cmd, author3botname="zerobot", packagename="system"):
         if "__" in actor:
             actor = actor.split("__", 1)[1]
         cmd = cmd_parts[1]
-        if actor == "system":
-            packagename = "system"
     elif len(cmd_parts) == 1:
-        packagename = "system"
         actor = "system"
         cmd = cmd_parts[0]
     else:
@@ -245,7 +242,7 @@ class Handler(JSBASE):
             self._handle_gedis_session(gedis_socket, address, user_session=user_session)
         except Exception as e:
             gedis_socket.on_disconnect()
-            self._log_error("connection closed: %s" % str(e), context="%s:%s" % address)
+            self._log_error("connection closed: %s" % str(e), context="%s:%s" % address, exception=e)
 
     def _handle_gedis_session(self, gedis_socket, address, user_session=None):
         """
@@ -347,12 +344,12 @@ class Handler(JSBASE):
             return None, "OK"
 
         self._log_debug(
-            "command received %s %s %s" % (request.command.namespace, request.command.actor, request.command.command),
+            "command received %s %s %s" % (request.command.author3bot, request.command.actor, request.command.command),
             context="%s:%s" % address,
         )
 
         # cmd is cmd metadata + cmd.method is what needs to be executed
-        cmd, cmd_method = self._cmd_obj_get(cmd=request.command)
+        cmd, cmd_method = self._cmd_obj_get(request.command)
 
         is_authorized, reason = self._authorized(cmd_obj=cmd, user_session=user_session)
         if not is_authorized:
@@ -520,7 +517,7 @@ class Handler(JSBASE):
         self._log_debug("command cache miss:%s" % request_cmd.key_method)
 
         if request_cmd.key_actor not in self.cmds_meta:
-            raise j.exceptions.Input("Cannot find actor in metadata of geventserver %s" % request_cmd.key_actor)
+            raise j.exceptions.Input("Cannot find actor '%s' of geventserver." % request_cmd.key_actor)
 
         meta = self.cmds_meta[request_cmd.key_actor]
 
@@ -531,7 +528,7 @@ class Handler(JSBASE):
         cmd_obj = meta.cmds[request_cmd.command]
 
         actor = j.threebot.actor_get(
-            threebot_name=request_cmd.author3bot, package_name=request_cmd.package, actor_name=request_cmd.actor
+            author3bot=request_cmd.author3bot, package_name=request_cmd.package, actor_name=request_cmd.actor
         )
 
         try:
