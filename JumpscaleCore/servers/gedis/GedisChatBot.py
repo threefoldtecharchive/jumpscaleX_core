@@ -29,7 +29,10 @@ class GedisChatBotFactory(JSBASE):
 
         query_params = html.unescape(query_params)
         query_params = query_params.replace("'", '"')
-        query_params = j.data.serializers.json.loads(query_params)
+        try:
+            query_params = j.data.serializers.json.loads(query_params)
+        except Exception as e:
+            self._log_debug(f"parsing query params faild could be empty, {e}")
         kwargs.update(query_params)
         session_id = str(uuid.uuid4())
         topic_method = self.chat_flows[topic]
