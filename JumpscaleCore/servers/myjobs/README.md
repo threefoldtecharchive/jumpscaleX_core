@@ -23,10 +23,14 @@ else:
     print("Job failed")
 ```
 
-A method needs to be self contained no globals or imports are reused from the module the method was originated in.
-Methods need to be inside a file not in a repl (kosmos or ipython).
-
+- Notes:
+  - A method needs to be self contained no globals or imports are reused from the module the method was originated in.
+  - Methods need to be inside a file not in a repl (kosmos or ipython).
+  - `job.wait()` does not work when  workers are in different process for this you need to `schedule()` task and provide a `queue` for results
+  then you can wait on a queue using `results()`, [Examples found here](./tests/11_wait_queues.py): 
+  
 See the [tests](tests) for more examples.
+
 
 ## Workers
 
