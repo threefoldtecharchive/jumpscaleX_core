@@ -747,7 +747,7 @@ class StartupCMD(j.baseclasses.object_config):
                 assert self.pid == y["pid"]
                 self.corex_id = y["id"]
             else:
-                self.pid = 0
+                self.pid = 2147483647
                 self.state = "init"
         processlist = self._corex_client.process_list()
         for x in processlist:

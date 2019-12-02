@@ -2,7 +2,8 @@
 import click
 import os
 import shutil
-
+import urllib
+import requests
 from urllib.request import urlopen
 from importlib import util
 
@@ -465,6 +466,42 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
     print("You'll find the wiki(s) loaded at https://<container or 3bot hostname>/wiki")
 
 
+@click.command(name="threebot-flist")
+@click.option("-i", "--app_id", default=None, help="application id of it's your online")
+@click.option("-s", "--secret", default=None, help="secret of it's your it's your online account")
+@click.option("-u", "--username", default=None, help="username of it's your online account")
+def threebot_flist(username=None, secret=None, app_id=None):
+    """
+    create flist of 3bot docker image
+    ex: jsx threebot-flist -i APP_ID -s SECRET -u USER_NAME
+    """
+    if not username and not app_id and not secret:
+        raise RuntimeError("should add it's your online creds")
+
+    url = urllib.parse.urljoin("https://itsyou.online/api", "/v1/oauth/access_token")
+    params = {
+        "grant_type": "client_credentials",
+        "client_id": app_id,
+        "client_secret": secret,
+        "response_type": "id_token",
+        "scope": "",
+        "validity": None,
+    }
+
+    resp = requests.post(url, params=params)
+    resp.raise_for_status()
+    jwt = resp.content.decode("utf8")
+
+    params = {"image": "threefoldtech/3bot"}
+    url = "https://hub.grid.tf/api/flist/me/docker"
+    headers = {"Authorization": "Bearer %s" % jwt}
+    requests.post(url, headers=headers, data=params)
+    print("uploaded 3bot flist , wait for 3bot-production flist")
+    params = {"image": "threefoldtech/3bot-production"}
+    requests.post(url, headers=headers, data=params)
+    print("uploaded 3bot-production flist ")
+
+
 @click.command(name="wiki-reload")
 @click.option("-n", "--name", default=None, help="name of the wiki, you're given name", required=True)
 def wiki_reload(name=None):
@@ -897,6 +934,7 @@ if __name__ == "__main__":
         cli.add_command(container_save, "container-save")
         cli.add_command(basebuilder, "basebuilder")
         cli.add_command(threebotbuilder, "threebotbuilder")
+        cli.add_command(threebot_flist, "threebot-flist")
         cli.add_command(containers)
         cli.add_command(threebot_test, "threebot-test")
 
