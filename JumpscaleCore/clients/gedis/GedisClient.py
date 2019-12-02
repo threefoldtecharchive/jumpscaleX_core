@@ -136,11 +136,12 @@ class GedisClient(JSConfigBase):
 
     @property
     def actors(self):
-        if self._actors is None:
-            try:
-                self.reload()
-            except AttributeError as e:
-                raise j.exceptions.Input(e)
+        # FIXME: restore caching _actors.
+        # if self._actors is None:
+        try:
+            self.reload()
+        except AttributeError as e:
+            raise j.exceptions.Input(e)
 
         return self._actors
 

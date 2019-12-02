@@ -395,6 +395,7 @@ class Handler(JSBASE):
 
         self._log_debug("params cmd %s %s" % (params_list, params_dict))
         try:
+            # print(f"params_list: {params_list}, params_dict: {params_dict}")
             result = cmd_method(*params_list, user_session=user_session, **params_dict)
             logdict = None
         except Exception as e:

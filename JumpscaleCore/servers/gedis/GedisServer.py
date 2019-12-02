@@ -184,8 +184,12 @@ class GedisServer(JSBaseConfig):
         key = "%s.%s" % (package.name, name)
         # if key not in self.actors.keys():
         #     self.actors_data.append("%s:%s" % (namespace, path))
-        self.cmds_meta[key] = GedisCmds(path=path, name=name, package=package)
 
+        try:
+            self.cmds_meta[key] = GedisCmds(path=path, name=name, package=package)
+        except Exception as e:
+            print(e)
+            j.debug()
         # return self.cmds_meta[key]
 
     ####################################################################
@@ -198,10 +202,7 @@ class GedisServer(JSBaseConfig):
         :return: list of actors
         :rtype: list
         """
-        res = []
-        for key, cmds in self.cmds_meta.items():
-            res.append(key)
-        return res
+        return list(self.cmds_meta.keys())
 
     def actors_methods_list(self, namespace="default"):
         """

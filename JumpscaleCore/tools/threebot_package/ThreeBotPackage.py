@@ -163,7 +163,7 @@ class ThreeBotPackage(JSConfigBase):
                         self._log_error(errormsg)
                         print(errormsg)
                         raise e
-
+                    # print(f"adding actor {name} {fpath} {self.name}")
                     self.gedis_server.actor_add(name=name, path=fpath, package=self)
         return self._actors
 
