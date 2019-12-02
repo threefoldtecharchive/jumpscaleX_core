@@ -15,7 +15,7 @@ The RPC interface are define by creating a python class. All the public methods 
 
 ### Actor methods
 
-An actor method signature can have no or multiple arguments.  
+An actor method signature can have no or multiple arguments.
 If you don't need any type validation, you can just use normal arguments. example:
 
 ```python
@@ -101,11 +101,17 @@ server.start()
 ```python
 # create a client
 # during the connection, the client will receive the generated code for the actor
-client = j.clients.gedis.new(name='test', host='192.168.10.10', port=8889, namespace='demo', ssl=False)
+client = j.clients.gedis.new(name='test', host='192.168.10.10', port=8889, ssl=False)
 
 # use the client
 client.actors.actor.ping() # note if your actor name is xactor, then client.actors.xactor.ping()
 # result will be b'pong'
+
 ```
 
+to get a client for a specific package you can pass the package name to gedis client get method, this will only load actors from this package
+Example:
+```
+client = j.clients.gedis.new(name='test', host='192.168.10.10', port=8889, ssl=False, package_name="zerobot.base")
+```
 **to see more usage examples please read the tests in [gedis_factory class](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/servers/gedis/GedisFactory.py)**
