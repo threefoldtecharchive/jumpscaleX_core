@@ -1,5 +1,4 @@
 import imaplib
-import unittest
 from Jumpscale import j
 from testconfig import config
 from base_test import BaseTest
@@ -85,5 +84,5 @@ class MailClient(BaseTest):
             files=["/tmp/test_{}".format(RAND_NUM)],
         )
 
-        self.info("Make sure that message has been sent correctly, and check the existing of the file")
+        self.info("Make sure that message has been sent correctly, and check the existence of the file")
         self.assertTrue(self.check_inbox('attachment; filename="test_{}"'.format(RAND_NUM)))
