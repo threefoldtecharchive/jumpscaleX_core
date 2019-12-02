@@ -5,97 +5,85 @@ from testconfig import config
 from base_test import BaseTest
 
 
-@unittest.skip
-class EmailClient(BaseTest):
+class MailClient(BaseTest):
 
     username = config["mail"]["username"]
     password = config["mail"]["password"]
 
-    # @classmethod
-    # def setUpClass(cls):
-    #     cls.info("Start SMTP server in tmux using JSX")
-    #     cmd = "kosmos 'j.servers.smtp.start()'"
-    #     cls.info("Execute {} in tmux main session".format(cmd))
-    #     cls.pan = j.servers.tmux.execute(cmd=cmd)
-    #     cls.info("Wait for 30s to make sure that the server is running")
-    #     sleep(30)
-
     def setUp(self):
         self.info("Create Mail client")
         self.RAND_STRING = self.rand_string()
-        self.MAIL_CLIENT = j.clients.email.new(self.RAND_STRING, smtp_server="smtp.gmail.com", smtp_port=587)
+        self.mail_client = j.clients.email.new(
+            self.RAND_STRING,
+            smtp_server="smtp.gmail.com",
+            smtp_port=587,
+            Email_from=self.username,
+            password=self.password,
+        )
 
     def tearDown(self):
         self.info("Delete Mail client")
-        self.MAIL_CLIENT.delete()
+        self.mail_client.delete()
 
-    # @classmethod
-    # def tearDownClass(cls):
-    #     cls.info("Stop the running SMTP server")
-    #     cls.pan.kill()
-
-    def check_inbox(self, message_subject):
+    def check_inbox(self, data_query):
         """
-        Check inbox in the mail to make sure that my message is sent.
-        :param message_subject: message subject.
+        Check inbox in the email to make sure that my message has been sent correctly.
+        :param data_query: message subject.
         """
         mail = imaplib.IMAP4_SSL("smtp.gmail.com")
         mail.login(self.username, self.password)
         mail.select("inbox")
-        typ, data = mail.search(None, "ALL")
+        status, data = mail.search(None, "ALL")
         mail_ids = data[0]
         id_list = mail_ids.split()
         latest_email_id = int(id_list[-1])
         for i in range(latest_email_id, latest_email_id - 10, -1):
-            typ, data = mail.fetch(i, "(RFC822)")
-            if message_subject in str(data):
+            status, data = mail.fetch(str(i), "(RFC822)")
+            if data_query in str(data[0][1]):
                 return True
-            else:
-                return False
+        return False
 
     def test001_send_mail(self):
         """
         TC 567
-        Test send method in mail client.
+        Test for sending a message to an email.
 
         **Test scenario**
-        #. Send a message to email using send method in mail client.
-        #. Make sure that message sent correctly.
+        #. Send a message to an email using send method in mail client.
+        #. Make sure that the message has been sent correctly.
         """
-        # self.info("Check the SMTP server is running")
-        # self.assertTrue(self.pan.cmd_running)
 
-        self.info("Send a message to the server")
+        self.info("Send a message to an email using send method in mail client")
         RAND_NUM = self.rand_num()
-        self.MAIL_CLIENT.send(
+        self.mail_client.send(
             self.username, subject="test_{}".format(RAND_NUM), message="test new message {}".format(RAND_NUM)
         )
 
-        self.info("Make sure that message sent correctly")
+        self.info("Make sure that the message has been sent correctly")
         self.assertTrue(self.check_inbox("test_{}".format(RAND_NUM)))
 
     def test002_send_method_with_file_option(self):
         """
         TC 569
-        Test send method with file attached.
+        Test for sending an attached file to an email.
 
         **Test scenario**
-        #. Create a file locally under /tmp/.
+        #. Create a file locally.
         #. Send a message to email using send method in mail client with file attached.
-        #. Make sure that message sent correctly, and check that file is attached.
+        #. Make sure that message has been sent correctly, and check the existing of the file.
         """
         RAND_NUM = self.rand_num()
 
-        self.info("Create a file locally under /tmp/")
+        self.info("Create a file locally")
         with open("/tmp/test_{}".format(RAND_NUM), "a") as out:
             out.write("test mail client" + "\n")
 
-        self.MAIL_CLIENT.send(
+        self.mail_client.send(
             self.username,
             subject="test_{}".format(RAND_NUM),
             message="test new message {}".format(RAND_NUM),
             files=["/tmp/test_{}".format(RAND_NUM)],
         )
 
-        self.info("Make sure that message sent correctly, and check that file is attached")
-        self.assertTrue(self.check_inbox("attachment; filename=test_{}".format(RAND_NUM)))
+        self.info("Make sure that message has been sent correctly, and check the existing of the file")
+        self.assertTrue(self.check_inbox('attachment; filename="test_{}"'.format(RAND_NUM)))

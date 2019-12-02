@@ -1,4 +1,3 @@
-import unittest
 from Jumpscale import j
 from base_test import BaseTest
 
