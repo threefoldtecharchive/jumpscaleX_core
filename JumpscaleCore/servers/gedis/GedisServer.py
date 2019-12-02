@@ -29,13 +29,6 @@ schema_in_url = ""
 schema_out_url = ""
 args = (ls)
 public = False
-rights = (O) !jumpscale.gedis.cmd.rights
-
-#full rights to the cmd for the threebots & circles mentioned
-@url = jumpscale.gedis.cmd.rights
-public = False (B)
-threebots = (LS)
-circles = (LS)
 
 @url = jumpscale.gedis.schema
 name** = ""

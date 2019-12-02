@@ -471,9 +471,10 @@ class BCDB(j.baseclasses.object):
         self._log_info("load model:%s" % schema.url)
 
         model = BCDBModel(bcdb=self, schema_url=schema.url, reset=reset)
-
-        self.model_add(model)
-
+        try:
+            self.model_add(model)
+        except:
+            self._log_error(f"Couldn't load model with schema url: {schema.url}")
         return model
 
     def schema_get(self, schema=None, md5=None, url=None, package=None):
