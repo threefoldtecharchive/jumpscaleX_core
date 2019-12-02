@@ -75,6 +75,7 @@ class GedisChatBotFactory(JSBASE):
         looks for the chat flows exist in `chatflows_dir` to import and load them under self.chat_flows
         :param chatflows_dir: the dir path need to look for chatflows into it
         """
+        chatflow_names = []
         for chatflow in j.sal.fs.listFilesInDir(chatflows_dir, recursive=True, filter="*.py", followSymlinks=True):
             dir_path = j.sal.fs.getDirName(chatflow)
             if dir_path not in sys.path:
@@ -86,6 +87,8 @@ class GedisChatBotFactory(JSBASE):
             loaded_chatflow = import_module(module_name)
             # Each chatflow file must have `chat` method which contains all logic/questions
             self.chat_flows[module_name] = loaded_chatflow.chat
+            chatflow_names.append(module_name)
+        return chatflow_names
 
     def chatflows_list(self):
         """

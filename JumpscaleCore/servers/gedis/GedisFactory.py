@@ -27,8 +27,8 @@ class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtoo
         """
         Used in client only, starts from data (python client)
         """
-        namespace, name = key.split("__")
-        return GedisCmds(namespace=namespace, name=name, data=data)
+        name = key
+        return GedisCmds(name=name, data=data)
 
     def test(self, name="basic"):
         """
@@ -38,12 +38,13 @@ class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtoo
         """
         # we don't support running gevent as stdallone any longer
 
-        # make sure we have a threebot life
-        cl = j.servers.threebot.local_start_default()
-
+        if not j.sal.nettools.tcpPortConnectionTest("localhost", 8901):
+            # make sure we have a threebot life
+            cl = j.servers.threebot.local_start_default()
+        else:
+            cl = j.clients.gedis.get(name="test", port=8901)
         cl.actors.package_manager.package_add(
-            "threebot_phonebook",
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development_actorsimprovement/ThreeBotPackages/tfgrid/phonebook"
         )
 
         self._threebot_client_default = cl

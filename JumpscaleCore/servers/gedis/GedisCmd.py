@@ -18,7 +18,9 @@ class GedisCmd(JSBASE):
         # comment = ""
         # schema_in = ""
         # schema_out = ""
+        # rights =...
         # args = (ls)
+
         self.cmdobj = cmd
 
         # self.data = cmd._data
@@ -34,8 +36,6 @@ class GedisCmd(JSBASE):
             self.schema_out = j.data.schema.get_from_url(url=cmd.schema_out_url)
         else:
             self.schema_out = None
-
-        # self._method = None
 
     @property
     def args(self):

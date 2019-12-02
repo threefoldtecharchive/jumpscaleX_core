@@ -10,6 +10,10 @@ import os
 JSConfigs = j.baseclasses.object_config_collection
 
 
+class ThreeBotRoot:
+    pass
+
+
 class Actors:
     pass
 
@@ -53,10 +57,8 @@ class ThreeBotServer(j.baseclasses.object_config):
         @url = jumpscale.threebot_server.1
         name** = "main" (S)
         executor = tmux,corex (E)
-        adminsecret_ = "123456"  (S)
+        adminsecret_ = ""  (S)
         state = "init,installed"
-        ssl = (B)
-        web =  (B)
         """
 
     def _init(self, **kwargs):
@@ -69,14 +71,33 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.web = False
         self.ssl = False
         self.client = None
+        j.threebot = ThreeBotRoot()
         j.servers.threebot.current = self
+
+        if "adminsecret" in kwargs:
+            secret = kwargs["adminsecret"]
+        elif "adminsecret_" in kwargs:
+            secret = kwargs["adminsecret_"]
+        elif "secret" in kwargs:
+            secret = kwargs["secret"]
+        else:
+            secret = j.core.myenv.adminsecret
+
+        if not self.adminsecret_:
+            self.adminsecret_ = secret
+            assert self.adminsecret_
 
         if self.state == "init":
             j.tools.threebot_packages.load()
             self.state = "installed"
 
+        if self.executor == "corex":
+            raise j.exceptions.Input("only tmux supported for now")
+
     @property
     def secret(self):
+        if self.adminsecret_ == "":
+            raise j.exceptions.Input("please use ")
         return self.adminsecret_
 
     @property
@@ -158,7 +179,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                         j.threebot.myjobs.jobs._children.pop(job.name)
 
     def _maintenance_day(self):
-
+        day1 = 24 * 3600
         while True:
             # remove jobs older than 1 day
             for job in j.threebot.myjobs.jobs.find():
@@ -201,15 +222,14 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.threebot.servers.gevent_rack = self.rack_server
             j.threebot.myjobs = j.servers.myjobs
             # j.threebot.bcdb_get = j.servers.threebot.bcdb_get
-            j.threebot.bcdb = BCDBS()
-            j.threebot.bcdb_factory = j.data.bcdb
+            # j.threebot.bcdb = BCDBS()
+            j.threebot.bcdb = j.data.bcdb
 
-            ##SHOULD NOT BE NEEDED
-            # j.data.bcdb.check()
+            # to allow gedis server to get the right package
+            j.threebot.package_get = self.package_get
+            j.threebot.actor_get = self.actor_get
 
             # add system actors and basic chat flows
-            self.gedis_server.actors_add("%s/base_actors" % self._dirpath)
-            self.gedis_server.chatbot.chatflows_load("%s/base_chatflows" % self._dirpath)
             self.rack_server.add("gedis", self.gedis_server.gevent_server)
 
             # needed for myjobs
@@ -240,18 +260,12 @@ class ThreeBotServer(j.baseclasses.object_config):
             # j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
             self._maintenance()
 
-            self._packages_install()
-            # add user added packages
+            self._packages_core_init()
+
+            j.threebot.__dict__["packages"] = Packages()
+
             for package in j.tools.threebot_packages.find():
-                # if package.status == "INIT":
-                #     self._log_warning("PREPARE:%s" % package.name)
-                #     try:
-                #         package.prepare()
-                #         package.status = "INSTALLED"
-                #         package.save()
-                #     except Exception as e:
-                #         self._log_error("could not install package:%s" % package.name)
-                #         j.core.tools.log(level=50, exception=e, stdout=True)
+
                 if package.status in ["installed", "error"]:
                     self._log_warning("START:%s" % package.name)
                     try:
@@ -261,7 +275,16 @@ class ThreeBotServer(j.baseclasses.object_config):
                         package.status = "error"
                     package.save()
 
-            j.threebot.__dict__.pop("package")
+                class PackageGroup:
+                    pass
+
+                if package.source.threebot not in j.threebot.packages.__dict__:
+                    j.threebot.packages.__dict__[package.source.threebot] = PackageGroup()
+                g = j.threebot.packages.__dict__[package.source.threebot]
+                g.__dict__[package.source.name.replace(".", "__")] = package
+
+            if "package" in j.threebot.__dict__:
+                j.threebot.__dict__.pop("package")
             # LETS NOT DO SERVERS YET, STILL BREAKS TOO MUCH
             # j.__dict__.pop("servers")
             j.__dict__.pop("builders")
@@ -276,6 +299,9 @@ class ThreeBotServer(j.baseclasses.object_config):
             print("*****************************")
             print("*** 3BOTSERVER IS RUNNING ***")
             print("*****************************")
+
+            p = j.threebot.packages
+
             j.shell()  # DO NOT REMOVE THIS SHELL
             forever = event.Event()
             try:
@@ -292,7 +318,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         if not j.sal.nettools.waitConnectionTest("127.0.0.1", 8901, timeout=600):
             raise j.exceptions.Timeout("Could not start threebot server")
 
-        self.client = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
+        self.client = j.clients.gedis.get(name="threebot", port=8901)
         # TODO: will have to authenticate myself
 
         self.client.reload()
@@ -300,36 +326,45 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         return self.client
 
+    def package_get(self, author3bot, package_name):
+        if author3bot not in j.threebot.packages.__dict__:
+            raise j.exceptions.Input("cannot find package from threebot:%s in threebotserver" % author3bot)
+        tbot = j.threebot.packages.__dict__[author3bot]
+        if package_name not in tbot.__dict__:
+            raise j.exceptions.Input("cannot find package with name:'%s' of threebot:'%s'" % (package_name, author3bot))
+        return tbot.__dict__[package_name]
+
+    def actor_get(self, author3bot, package_name, actor_name):
+        p = self.package_get(author3bot=author3bot, package_name=package_name)
+        if actor_name not in p.__dict__["_actors"].keys():
+            raise j.exceptions.Input(f"cannot find package from threebot:{author3bot}:{package_name}:{actor_name}")
+        return p.__dict__["_actors"][actor_name]
+
     def myjobs_start(self):
         j.servers.myjobs.workers_tmux_start(2, in3bot=True)
         # j.servers.myjobs._workers_gipc_nr_max = 10
         # j.servers.myjobs.workers_subprocess_start()
 
-    def _packages_install(self):
+    def _packages_core_init(self):
 
-        if not j.tools.threebot_packages.exists(name="threefold.webinterface"):
+        if not j.tools.threebot_packages.exists(name="zerobot.webinterface"):
             j.tools.threebot_packages.load()
 
-        names = ["webinterface", "wiki_web", "chat_ui", "myjobs_ui", "packagemanager_ui", "crudgenerator", "oauth2"]
+        names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta_ui"]
         for name in names:
-            name2 = f"threefold.{name}"
+            name2 = f"zerobot.{name}"
             if not j.tools.threebot_packages.exists(name=name2):
                 raise j.exceptions.Input("Could not find package:%s" % name2)
             p = j.tools.threebot_packages.get(name=name2)
 
-            p.install()
-            p.save()
+            if p.status in ["config", "init"]:
+                p.install()
+                p.save()
 
-    # def _packages_walk(self):
-    #
-    #     j.threebot.__dict__["packages"] = Packages()
-    #     if not name in j.threebot.packages.__dict__:
-    #         if j.tools.threebot_packages.exists(name):
-    #             p = j.tools.threebot_packages.get(name)
-    #             # DONT START, has already been done up
-    #             j.threebot.packages.__dict__[name] = p
-    #         else:
-    #             j.threebot.packages.__dict__[name] = PackageInstall(name=name, path=path)
+            # start should be called everytime server starts
+            # TODO: NOT THE INTENTION !!!!
+            p.actors_reload()
+            p.start()
 
     def stop(self):
         """

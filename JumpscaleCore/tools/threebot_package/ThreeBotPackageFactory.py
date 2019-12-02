@@ -50,6 +50,7 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
         def callbackForMatchDir(path, arg):
             if j.sal.fs.getBaseName(path) in [
                 "frontend",
+                "node_modules",
                 "packagemanagerui",
                 "__pycache__",
                 "wiki",

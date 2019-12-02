@@ -1,7 +1,5 @@
 from Jumpscale import j
-
-
-REPO = "https://github.com/threefoldfoundation/data_team/tree/master/team"
+from JumpscaleLibs.tools.markdowndocs.Link import MarkdownLinkParser
 
 
 def filter_on(data, attr, values):
@@ -36,18 +34,44 @@ def filter_on_mapping(mapping, data):
     return new_data
 
 
-def get_data(path, projects=None, contribution_types=None):
+def team(doc, link, order="random", projects=None, contribution_types=None, pull=False, **kwargs):
+    """generate the json requried for docify team plugin
+       for the full list of project ids, contribution types, also the toml data see
+       https://github.com/threefoldfoundation/data_team/tree/master/README.md
+
+    :param doc: current doc
+    :type doc: Doc
+    :param link: a link to team data repository, e.g. https://github.com/threefoldfoundation/data_team/tree/master/team
+    :type link: str
+    :param order: listing order, either 'random' or 'rank', defaults to 'random'
+    :type order: str, optional
+    :param projects: project ids to filter by, defaults to None, will include all projects
+    :type projects: [int], optional
+    :param contribution_types: contribution types to filter by
+    :type contribution_types: [int], optional
+    :return: a codeblock content with type `team`
+    :rtype: str
+    """
+
+    repo = doc.docsite.get_real_source(MarkdownLinkParser(link))
+    path = j.clients.git.getContentPathFromURLorPath(repo, pull=pull)
+
+    # options passed to team plugin (docsify)
+    options = {"order": order}
+
     data = []
     for directory in j.sal.fs.listDirsInDir(path):
         person_data = {}
-        name = j.sal.fs.getBaseName(directory)
+
         for filepath in j.sal.fs.listFilesInDir(directory):
             basename = j.sal.fs.getBaseName(filepath).lower()
             extname = j.sal.fs.getFileExtension(filepath)
             if basename.startswith("publicinfo") and extname == "toml":
                 person_data.update(j.data.serializers.toml.load(filepath))
-            elif extname in ("png", "jpg", "jpeg", "svg"):
-                person_data["avatar"] = j.sal.fs.joinPaths(name, basename)
+            elif extname in ("png", "jpg", "jpeg"):
+                person_data["avatar"] = j.sal.fs.joinPaths(doc.path_dir_rel, basename)
+                dest = j.sal.fs.joinPaths(doc.docsite.outpath, doc.path_dir_rel, basename)
+                j.sal.fs.copyFile(filepath, dest)
 
         if person_data:
             data.append(person_data)
@@ -62,37 +86,6 @@ def get_data(path, projects=None, contribution_types=None):
             # so will show 1:1 (project:contribution_type) and 2:4
             mapping = list(zip(projects, contribution_types))
             data = filter_on_mapping(mapping, data)
-    return data
 
-
-class team(j.baseclasses.threebot_actor):
-    def _init(self, **kwargs):
-        self.path = None
-
-    @j.baseclasses.actor_method
-    def clone_repo(self):
-        self.path = j.clients.git.getContentPathFromURLorPath(REPO, pull=True)
-
-    @j.baseclasses.actor_method
-    def list_members(self, projects, contribution_types, user_session):
-        """
-        ```in
-            projects = (LI)
-            contribution_types = (LI)
-        ```
-        """
-
-        def get_team_members():
-            if not self.path:
-                try:
-                    self.clone_repo()
-                except j.exceptions.Base as e:
-                    j.errorhandler.exception_handle(e, die=False)
-                    return "{}"
-
-            data = get_data(self.path, projects=projects, contribution_types=contribution_types)
-            return j.data.serializers.json.dumps(data)
-
-        key = f"members_actor_{projects}_{contribution_types}"
-        # cache for 5 mins
-        return self._cache.get(key, method=get_team_members, expire=300)
+    options["dataset"] = data
+    return "```team\n%s```" % j.data.serializers.json.dumps(options)

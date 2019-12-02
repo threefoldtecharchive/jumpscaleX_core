@@ -3407,8 +3407,6 @@ class MyEnv_:
         :param config: configuration arguments which go in the config file
         :param readonly: specific mode of operation where minimal changes will be done while using JSX
         :param codedir: std $sandboxdir/code
-        :param sshkey: name of the sshkey to use if there are more than 1 in ssh-agent
-        :param sshagent_use: needs to be True if sshkey used
         :return:
         """
 
@@ -3427,8 +3425,8 @@ class MyEnv_:
             configdir = args["configdir"]
         if codedir is None and "codedir" in args:
             codedir = args["codedir"]
-        if sshkey is None and "sshkey" in args:
-            sshkey = args["sshkey"]
+        # if sshkey is None and "sshkey" in args:
+        #     sshkey = args["sshkey"]
 
         if readonly is None and "readonly" in args:
             readonly = True
@@ -3437,6 +3435,7 @@ class MyEnv_:
             sshagent_use = False
         else:
             sshagent_use = True
+
         if debug_configure is None and "debug_configure" in args:
             debug_configure = True
 
@@ -3537,6 +3536,12 @@ class MyEnv_:
 
         self.config_save()
         self.init(configdir=configdir)
+
+    @property
+    def adminsecret(self):
+        if not self.config["SECRET"]:
+            self.secret_set()
+        return self.config["SECRET"]
 
     def secret_set(self, secret=None):
         if self.interactive:
