@@ -23,7 +23,7 @@ class UserSessionAdmin(UserSessionBase):
 class UserSession(UserSessionBase):
     def _init(self):
         self._admin = None
-        self.threebot_id = None
+        self.threebot_id = 0
         self.threebot_name = None
         self.threebot_circles = []
         self.kwargs = []
@@ -39,11 +39,11 @@ class UserSession(UserSessionBase):
     @property
     def admin(self):
         if self._admin == None:
-            if self.threebot_name == j.tools.threebot.me.tname:
+            if self.threebot_name == j.tools.threebot.me.default.tname:
                 self._admin = True
-            if int(self.threebot_id) == j.tools.threebot.me.tid:
+            elif int(self.threebot_id) == j.tools.threebot.me.default.tid:
                 self._admin = True
-            if self.threebot_name in j.tools.threebot.me.default.admins:
+            elif self.threebot_name in j.tools.threebot.me.default.admins:
                 self._admin = True
         return self._admin
 

@@ -119,8 +119,7 @@ class ThreeBotPackage(JSConfigBase):
 
         self._init_ = True
 
-    @property
-    def actors(self):
+    def actors_reload(self, reset=False):
         def actors_crud_generate():
             for model_url in self.model_urls:
                 found = True
@@ -142,7 +141,7 @@ class ThreeBotPackage(JSConfigBase):
                         shorturl=shorturl,
                     )
 
-        if self._actors is None:
+        if self._actors is None or reset:
             self._actors = j.baseclasses.dict()
             actors_crud_generate()  # will generate the actors for the model
             path = self.path + "/actors"
@@ -166,7 +165,12 @@ class ThreeBotPackage(JSConfigBase):
                         raise e
 
                     self.gedis_server.actor_add(name=name, path=fpath, package=self)
+        return self._actors
 
+    @property
+    def actors(self):
+        if self._actors is None:
+            self._actors = self.actors_reload()
         return self._actors
 
     @property

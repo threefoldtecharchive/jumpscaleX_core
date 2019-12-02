@@ -207,9 +207,7 @@ class GedisServer(JSBaseConfig):
         """
         res = []
         for key, cmds in self.cmds_meta.items():
-            raise  # TODO
-            if not namespace or key.startswith("%s__" % namespace):
-                res.append(key)
+            res.append(key)
         return res
 
     def actors_methods_list(self, namespace="default"):
@@ -234,11 +232,10 @@ class GedisServer(JSBaseConfig):
         """
         res = {}
         for key, actor in self.cmds_meta.items():
-            if not namespace or key.startswith("%s__" % namespace):
-                res[actor.name] = {
-                    "schema": str(actor.schema),
-                    "cmds": {cmd.name: str(cmd.args) for cmd in actor.cmds.values()},
-                }
+            res[actor.name] = {
+                "schema": str(actor.data.schemas),
+                "cmds": {cmd.name: str(cmd.args) for cmd in actor.cmds.values()},
+            }
         return res
 
     ##########################CLIENT FROM SERVER #######################

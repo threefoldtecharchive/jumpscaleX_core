@@ -91,14 +91,14 @@ class GedisClient(JSConfigBase):
             schema_text, schema_url = data
             if not j.data.schema.exists(md5=key):
                 j.data.schema.get_from_text(schema_text, url=schema_url)
-        cmds_meta = self._redis.execute_command("api_meta_get", self.namespace)
+        cmds_meta = self._redis.execute_command("api_meta_get")
         cmds_meta = j.data.serializers.msgpack.loads(cmds_meta)
         if cmds_meta["cmds"] == {}:
             return
         for key, data in cmds_meta["cmds"].items():
             if "__model_" in key:
                 raise j.exceptions.Base("aa")
-            actor_name = key.split("__")[1]
+            actor_name = key.split(".")[-1]
             self._actorsmeta[actor_name] = j.servers.gedis._cmds_get(key, data)
 
         # at this point the schema's are loaded only for the namespace identified (is all part of metadata)
