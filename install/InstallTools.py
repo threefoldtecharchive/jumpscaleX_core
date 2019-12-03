@@ -5181,12 +5181,9 @@ class DockerContainer:
             cmd += args_txt
         else:
             print(" - copy installer over from where I install from")
-            dirpath2 = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/"
-            if not Tools.exists(dirpath2):
-                dirpath2 = dirpath
 
             for item in ["jsx", "InstallTools.py"]:
-                src1 = "%s/%s" % (dirpath2, item)
+                src1 = "%s/%s" % (dirpath, item)
                 cmd = "scp -P {} -o StrictHostKeyChecking=no \
                     -o UserKnownHostsFile=/dev/null \
                     -r {} root@localhost:/tmp/".format(
