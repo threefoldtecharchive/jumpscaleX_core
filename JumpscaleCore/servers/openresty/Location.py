@@ -34,6 +34,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
 
         @url = jumpscale.openresty.location_proxy
         name = "" (S)
+        path_url = ""
         ipaddr_dest = (S)
         port_dest = (I)
         path_dest = "" (S)

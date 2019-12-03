@@ -24,10 +24,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self._mainloop_tmux = None
         self._mainloop_greenlet_redis = None
 
-        storclient = j.clients.rdb.client_get()
-        storclient._check_cat = "myjobs"
-
-        self._bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
+        self._bcdb = self._bcdb_selector()
 
         self.model_action = self._bcdb.model_get(schema=schemas.action)
 
@@ -78,7 +75,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             return True, o
 
     def _bcdb_selector(self):
-        return j.data.bcdb.get("myjobs", storclient=j.clients.rdb.client_get())
+        client = j.clients.rdb.client_get()
+        client.cat = "myjobs"
+        return j.data.bcdb.get("myjobs", storclient=client)
 
     @property
     def _workers_gipc_count(self):
@@ -182,7 +181,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         if not nr_fixed_workers:
             self._mainloop_gipc = gevent.spawn(self._main_loop_subprocess)
         else:
-            for i in range(nr_fixed_workers):
+            for i in range(nr_fixed_workers + 1):
                 self.worker_subprocess_start(nr=i, debug=debug)
 
     def workers_check(self, kill_workers_in_error=True):
@@ -409,6 +408,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         wait=False,
         die=True,
         args_replace=None,
+        return_queues=None,
+        return_queues_reset=None,
         **kwargs,
     ):
         """
@@ -432,7 +433,13 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         if "self" in kwargs:
             kwargs.pop("self")
         job = self.jobs.new(
-            name=name, method=method, kwargs=kwargs, dependencies=dependencies, args_replace=args_replace
+            name=name,
+            method=method,
+            kwargs=kwargs,
+            dependencies=dependencies,
+            args_replace=args_replace,
+            return_queues=return_queues,
+            return_queues_reset=return_queues_reset,
         )
 
         job.time_start = j.data.time.epoch
@@ -443,8 +450,16 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self.scheduled_ids.append(job.id)
         self.events[job.id] = gevent.event.Event()
         self.queue_jobs_start.put(job.id)
+
+        # never timeout
+        if timeout == 0:
+            timeout = None
+
         if wait:
-            return job.wait(die=die)
+            if not return_queues:
+                return job.wait(die=die, timeout=timeout)
+            return self.wait_queues(queue_names=return_queues, size=len([job.id]), die=die, timeout=timeout)
+
         assert job._data._autosave == True
         return job
 
@@ -543,32 +558,53 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 job.wait(die=die)
         return jobs
 
-    def results(self, ids=None, timeout=100, die=True):
-        jobs = self.wait(ids=ids, timeout=timeout, die=die)
+    def wait_queues(self, queue_names, size, timeout=120, die=True):
+        if size == 0:
+            return []
+
+        queue = None
+        queues = []
+        res = []
+        with gevent.Timeout(timeout, False):
+            for queue_name in queue_names:
+                queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)
+                queues.append(queue)
+                while queue.qsize() < size:
+                    gevent.sleep(0)
+            jobid = True
+            while jobid:
+                job = queue.get_nowait()
+                if job:
+                    job = j.data.serializers.json.loads(job.decode())
+                    jobid = job["id"]
+                    job = self.jobs.get(id=jobid)
+                    if job.error and die:
+                        raise j.exceptions.Base(f"job failed: {job.id}", data=self)
+                    res.append(job)
+                else:
+                    jobid = False
+            # make sure all queues are reset
+            for queue in queues:
+                queue.reset()
+            return res
+
+    def results(self, ids=None, return_queues=None, timeout=100, die=True):
+        if ids is None or len(ids) == 0:
+            return []
+        if not return_queues:
+            jobs = self.wait(ids=ids, timeout=timeout, die=die)
+        else:
+            jobs = self.wait_queues(queue_names=return_queues, size=len(ids), timeout=timeout, die=die)
         res = {}
         for job in jobs:
             res[job.id] = job.result
         return res
 
-    def wait_queue(self, queue_name, size, timeout=120, returnjobs=True):
-        queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)
-        with gevent.Timeout(timeout, False):
-            while True:
-                if queue.qsize() < size:
-                    gevent.sleep(0)
-                    continue
-                res = []
-                jobid = True
-                while jobid:
-                    jobid = queue.get_nowait()
-                    if jobid:
-                        jobid = int(jobid.decode())
-                        if returnjobs:
-                            res.append(self.jobs.get(jobid))
-                        else:
-                            res.append(jobid)
-                    time.sleep(0.3)
-                return res
+    def wait_queue(self, queue_name, size=1, timeout=120, die=True):
+        res = self.wait_queues(queue_names=[queue_name], size=size, timeout=timeout, die=die)
+        if res:
+            return res[0]
+
 
     def test(self, name="", **kwargs):
         """

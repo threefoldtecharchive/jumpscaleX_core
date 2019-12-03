@@ -39,7 +39,7 @@ class MyWorkerProcess(j.baseclasses.object):
 
         if not onetime:
             # make sure all traces of existing clients are gone
-            j.data.bcdb._children = j.baseclasses.dict()
+            j.data.bcdb._instances = j.baseclasses.dict()
             j.application.subprocess_prepare()
             j.clients.redis._cache_clear()  # make sure we have redis connections empty, because comes from parent
 
@@ -106,11 +106,11 @@ class MyWorkerProcess(j.baseclasses.object):
         # use model_schema to give the object
         return self._redis_get(id, self.model_job)
 
-    def _redis_get(self, id, schema):
-        key = f"{self.bcdb.name}:data:1:{schema._schema_url}"
+    def _redis_get(self, id, model):
+        key = f"{self.bcdb.name}:data:1:{model.schema.url}"
         data = self.bcdbclient.hget(key, str(id))
         ddata = j.data.serializers.json.loads(data)
-        return schema.new(ddata)
+        return model.new(ddata)
 
     def _redis_set(self, obj):
         key = f"{self.bcdb.name}:data:1:{obj._schema.url}"
@@ -165,6 +165,17 @@ class MyWorkerProcess(j.baseclasses.object):
         self.worker_obj.pid = os.getpid()
         self.worker_obj.save()
         last_info_push = j.data.time.epoch
+
+        def queue_results(job):
+            """
+            add job results to queues, if there
+            :param job: job obj
+            """
+            for queue_name in job.return_queues:
+                queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)
+                data = {"id": job.id, "result": job.result, "state": job.state._string}
+                queue.put(j.data.serializers.json.dumps(data))
+
         while True:
             res = None
 
@@ -256,6 +267,8 @@ class MyWorkerProcess(j.baseclasses.object):
                             job.time_stop = j.data.time.epoch
                             job.save()
 
+                            queue_results(job)
+
                             if self.debug:
                                 pudb.post_mortem(tb)
 
@@ -284,6 +297,8 @@ class MyWorkerProcess(j.baseclasses.object):
                             job.error = logdict
                             job.save()
 
+                            queue_results(job)
+
                             if self.debug:
                                 pudb.post_mortem(tb)
 
@@ -302,6 +317,7 @@ class MyWorkerProcess(j.baseclasses.object):
                             job.state = "ERROR"
                             job.time_stop = j.data.time.epoch
                             job.save()
+                            queue_results(job)
                             if self.showout:
                                 self._log_error("ERROR:%s" % e, exception=e, data=job)
                             if self.onetime:
@@ -315,7 +331,7 @@ class MyWorkerProcess(j.baseclasses.object):
                             self._log("OK", data=job)
 
                         job.save()
-
+                        queue_results(job)
                         if self.queue_jobs_start.qsize() == 0:
                             # make sure we already set here, otherwise no need because a new job is waiting anyhow
                             self._state_set()

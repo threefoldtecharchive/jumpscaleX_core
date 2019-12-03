@@ -11,8 +11,6 @@ class Jinja2(j.baseclasses.object):
 
     def _init(self, **kwargs):
         self._codegendir = j.core.tools.text_replace("{DIR_VAR}/codegen")
-
-        #
         self.reset(destroyall=False)
 
     def reset(self, destroyall=True):

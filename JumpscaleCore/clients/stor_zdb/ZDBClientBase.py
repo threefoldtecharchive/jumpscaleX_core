@@ -48,6 +48,7 @@ class ZDBClientBase(j.baseclasses.object_config):
             self._redis = _patch_redis_client(
                 j.clients.redis.get(ipaddr=self.addr, port=self.port, fromcache=False, ping=False)
             )
+            self._select_namespace(self.nsname)
         return self._redis
 
     def _select_namespace(self, nsname=None):

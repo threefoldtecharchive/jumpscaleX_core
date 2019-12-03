@@ -34,58 +34,104 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     def _init(self, **kwargs):
 
         self._log_debug("bcdb starts")
-
+        self._loaded = False
         self._path = j.sal.fs.getDirName(os.path.abspath(__file__))
 
         self._code_generation_dir_ = None
 
         j.clients.redis.core_get()  # just to make sure the redis got started
 
-        self.children = self._children  # j.baseclasses.dict(name="BCDBS")
+        self._instances = j.baseclasses.dict(name="BCDBS")
+        self.children = self._instances
 
         self._BCDBModelClass = BCDBModel  # j.data.bcdb._BCDBModelClass
 
         # will make sure the toml schema's are loaded
         j.data.schema.add_from_path("%s/models_system" % self._dirpath)
 
-        self._load()
-
     def _load(self):
 
-        self._config_data_path = j.core.tools.text_replace("{DIR_CFG}/bcdb_config")
-        if j.sal.fs.exists(self._config_data_path):
-            data_encrypted = j.sal.fs.readFile(self._config_data_path, binary=True)
-            try:
-                data = j.data.nacl.default.decryptSymmetric(data_encrypted)
-            except Exception as e:
-                if str(e).find("Ciphertext failed") != -1:
-                    raise j.exceptions.Base("%s cannot be decrypted with secret" % self._config_data_path)
-                raise e
-            self._config = j.data.serializers.msgpack.loads(data)
-        else:
-            self._config = {}
+        if not self._loaded or self._instances == {}:
 
-        self._system = None
+            self._loaded = True
+            print("LOAD CONFIG BCDB")
+
+            storclient = j.clients.sqlitedb.client_get(namespace="system")
+            # storclient = j.clients.rdb.client_get(namespace="system")
+            self._instances["system"] = BCDB(storclient=storclient, name="system", reset=False)
+
+            self._config_data_path = j.core.tools.text_replace("{DIR_CFG}/bcdb_config")
+            if j.sal.fs.exists(self._config_data_path):
+                data_encrypted = j.sal.fs.readFile(self._config_data_path, binary=True)
+                try:
+                    data = j.data.nacl.default.decryptSymmetric(data_encrypted)
+                except Exception as e:
+                    if str(e).find("Ciphertext failed") != -1:
+                        raise j.exceptions.Base("%s cannot be decrypted with secret" % self._config_data_path)
+                    raise e
+                self._config = j.data.serializers.msgpack.loads(data)
+            else:
+                self._config = {}
 
     @property
     def system(self):
-        return self.get_system()
+        self._load()
+        return self._instances["system"]
 
-    def get_system(self, reset=False):
+    def threebot_stop(self):
         """
-        sqlite based BCDB, don't need ZDB for this
+        kosmos 'j.data.bcdb.threebot_stop()'
+        stops the threebot sonic & zdb
         :return:
         """
 
-        if not self._system:
-            storclient = j.clients.sqlitedb.client_get(namespace="system")
-            # storclient = j.clients.rdb.client_get(namespace="system")
-            self._system = self._get("system", storclient=storclient, reset=reset)
-        return self._system
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 9900):
+            zdb = j.servers.zdb.get(name="threebot")
+            zdb.stop()
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 1491):
+            s = j.servers.sonic.get(name="threebot")
+            s.stop()
+
+        assert j.sal.process.checkProcessRunning("zdb") == False
+        assert j.sal.process.checkProcessRunning("sonic") == False
+
+    def threebot_zdb_sonic_start(self, reset=False):
+        """
+        kosmos 'j.data.bcdb.threebot_zdb_sonic_start()'
+
+        starts all required services for the BCDB to work for threebot
+        :return: (sonic, zdb) server instance
+        """
+        self.system
+        # because will be visible on filesystem
+        adminsecret_ = j.data.hash.md5_string(j.servers.threebot.default.adminsecret_)
+
+        if reset:
+            zdb = j.servers.zdb.get(name="threebot")
+            zdb.destroy()
+            s = j.servers.sonic.get(name="threebot")
+            s.destroy()
+
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 9900) == False:
+            z = j.servers.zdb.get(name="threebot", adminsecret_=adminsecret_)
+            z.start()
+
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 1491) == False:
+            s = j.servers.sonic.get(name="threebot", port=1491, adminsecret_=adminsecret_)
+            s.start()
+
+        s = j.servers.sonic.get(name="threebot")
+        assert s.adminsecret_ == adminsecret_
+        z = j.servers.zdb.get(name="threebot")
+        assert z.adminsecret_ == adminsecret_
+
+        # TODO: would be best to login into the ZDB through admin interface and check that the passwd is ok
+
+        return (s, z)
 
     def get_test(self, reset=False):
         bcdb = j.data.bcdb.new(name="testbcdb")
-        bcdb2 = j.data.bcdb._children["testbcdb"]
+        bcdb2 = j.data.bcdb._instances["testbcdb"]
         assert bcdb2.storclient == None
         return bcdb
 
@@ -101,13 +147,17 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
     @property
     def instances(self):
-        res = []
-        config = self._config.copy()
-        for name, data in config.items():
-            self._log_debug(data)
-            bcdb = self.get(name)
-            res.append(bcdb)
-        return res
+        self._load()
+        keys = [i for i in self._config.keys()]
+
+        for name in keys:
+            if name == "system":
+                continue
+            storclient = self._get_storclient(name)
+            bcdb = self._get(name, storclient)
+            self._instances[name] = bcdb
+
+        return self._instances
 
     def index_rebuild(self, name=None, storclient=None):
         """
@@ -140,6 +190,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         not implemented yet, will check the indexes & data
         :return:
         """
+        self._load()
         # TODO:
         pass
 
@@ -148,9 +199,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         will remove all remembered connections
         :return:
         """
+        # self._load()
         j.sal.fs.remove(self._config_data_path)
         self._config = {}
-        self._children = j.baseclasses.dict()
+        self._instances = j.baseclasses.dict()
+        self._loaded = False
 
     def destroy_all(self):
         """
@@ -159,45 +212,53 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         all data will be lost
         :return:
         """
+        self._load()
         names = [name for name in self._config.keys()]
-        j.servers.tmux.window_kill("sonic")
-        self._children = j.baseclasses.dict()
+
+        self.threebot_stop()  # stop the threebot ones
+        j.servers.tmux.kill()  # kill all tmux sessions
+
+        self._instances = j.baseclasses.dict()
         storclients = []
         for name in names:
             try:
                 cl = self._get_storclient(name)
             except:
-                self._log_warning("cannot connect storclient:%s" % name)
                 continue
             if cl not in storclients:
                 storclients.append(cl)
         for cl in storclients:
-            if cl.type == "SDB":
-                cl.sqlitedb.close()
-            cl.flush()
-        for key in j.core.db.keys("bcdb:*"):
-            j.core.db.delete(key)
+            if cl.type == "ZDB" and cl.addr not in ["127.0.0.1", "localhost"]:
+                raise j.exceptions.NotImplemented("TODO: need to delete remote namespace")
         j.sal.fs.remove(j.core.tools.text_replace("{DIR_VAR}/bcdb"))
+        j.sal.fs.remove(j.core.tools.text_replace("{DIR_VAR}/zdb"))
+        j.sal.fs.remove(j.core.tools.text_replace("{DIR_VAR}/sonic_db"))
         j.sal.fs.remove(self._config_data_path)
         j.sal.fs.remove(j.core.tools.text_replace("{DIR_VAR}/codegen"))
         j.sal.fs.remove(j.core.tools.text_replace("{DIR_VAR}/capnp"))
 
+        # leftovers in redis
+        for key in j.core.db.keys("bcdb:*"):
+            j.core.db.delete(key)
         for key in j.core.db.keys("rdb*"):
             j.core.db.delete(key)
         for key in j.core.db.keys("queue*"):
             j.core.db.delete(key)
 
+        self._loaded = False
         self._load()
         assert self._config == {}
 
     def exists(self, name):
-        if name in self._children:
+        self._load()
+        if name in self.instances:
             assert name in self._config
             return True
 
         return name in self._config
 
     def destroy(self, name):
+        self._load()
         assert name
         assert isinstance(name, str)
 
@@ -214,12 +275,39 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if storclient:
             dontuse = BCDB(storclient=storclient, name=name, reset=True)
 
-        if name in self._children:
-            self._children.pop(name)
+        if name in self._instances:
+            self._instances.pop(name)
 
         if name in self._config:
             self._config.pop(name)
             self._config_write()
+
+        self._loaded = False
+
+    def get_for_threebot(self, namespace, ttype, instance):
+        if ttype not in ["zdb", "sqlite", "redis"]:
+            raise j.exceptions.Input("ttype can only be zdb or sqlite")
+
+        name = "threebot_%s_%s" % (ttype, namespace)
+
+        if j.data.bcdb.exists(name=name):
+            return j.data.bcdb.get(name=name)
+        else:
+            if ttype == "zdb":
+                adminsecret_ = j.data.hash.md5_string(j.threebot.servers.core.adminsecret_)
+                self._log_debug("get zdb admin client")
+                zdb_admin = j.threebot.servers.core.zdb.client_admin_get()
+                if not zdb_admin.namespace_exists(namespace):
+                    zdb_admin.namespace_new(namespace, secret=adminsecret_, maxsize=0, die=True)
+                storclient = j.threebot.servers.core.zdb.client_get(namespace, adminsecret_)
+            elif ttype == "sqlite":
+                storclient = j.clients.sqlitedb.client_get(namespace=namespace)
+            elif ttype == "redis":
+                storclient = j.clients.rdb.client_get(namespace=namespace)
+            else:
+                raise j.exceptions.Input("only redis, slqite and zdb supported")
+
+            return j.data.bcdb.get(name=name, storclient=storclient)
 
     def get(self, name, storclient=None, reset=False):
         """
@@ -231,13 +319,16 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             e.g. j.clients.zdb.client_get() would be a zdb client
         :return:
         """
-        if name in self._children:
-            bcdb = self._children[name]
-            assert name in self._config
+        self._load()
+        if name in self._instances:
+            bcdb = self._instances[name]
+            if name != "system" and not name in self._config:
+                raise j.exceptions.Input(f"cannot find config for bcdb:{name}")
             return bcdb
 
         if name in self._config and not storclient:
             storclient = self._get_storclient(name)
+
         if not self.exists(name=name):
             return self.new(name=name, storclient=storclient, reset=reset)
         else:
@@ -246,7 +337,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     def _get_vfs(self):
         from .BCDBVFS import BCDBVFS
 
-        return BCDBVFS(self._children)
+        return BCDBVFS(self.instances)
 
     def _get_storclient(self, name):
         data = self._config[name]
@@ -280,9 +371,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if reset:
             # its the only 100% safe way to get all out for now
             dontuse = BCDB(storclient=storclient, name=name, reset=reset)
-        self._children[name] = BCDB(storclient=storclient, name=name)
+        self._instances[name] = BCDB(storclient=storclient, name=name)
 
-        return self._children[name]
+        return self._instances[name]
 
     def _config_write(self):
         data = j.data.serializers.msgpack.dumps(self._config)
@@ -357,6 +448,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         return self._code_generation_dir_
 
     def migrate(self, base_url, second_url, bcdb="system", **kwargs):
+        """
+        #TODO: what is this doing?
+        """
         bcdb_instance = self.get(bcdb)
         base_model = bcdb_instance.model_get(url=base_url)
         second_model = bcdb_instance.model_get(url=second_url)
@@ -489,20 +583,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             assert len(model.find()) == 3
 
         return bcdb, model
-
-    def _instance_names(self, prefix=None):
-        items = []
-        # items = [key for key in self.__dict__.keys() if not key.startswith("_")]
-        for bcdb in self.instances:
-            items.append(bcdb.name)
-        items.sort()
-        # print(items)
-        return items
-
-    def __setattr__(self, key, value):
-        if key in ["system", "test"]:
-            raise j.exceptions.Base("no system or test allowed")
-        self.__dict__[key] = value
 
     def __str__(self):
 

@@ -22,7 +22,7 @@ class GIPCProcess(JSConfigClient):
         self.greenlet = None
 
     def _bcdb(self):
-        return j.application.bcdb_system
+        return j.data.bcdb.system
 
     def start(self):
         self.greenlet = gevent.spawn(self._start)

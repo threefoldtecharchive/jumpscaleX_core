@@ -6,7 +6,7 @@
 - zdb                                         (port:9900)
 - sonic                                       (port:1491)
 - gedis                                       (port:8901)
-- bcdb redis interface                       (port:6380)
+- bcdb redis interface                        (port:6380)
 
 ```
 if web:

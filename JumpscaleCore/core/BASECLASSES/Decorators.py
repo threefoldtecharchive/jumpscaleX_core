@@ -7,22 +7,24 @@ def actor_method(func):
         S = None
         schema_in = None
         schema_out = None
-        for line in func.__doc__.split("\n"):
-            line = line.strip()
-            if line.startswith("```in") or line.startswith("'''in"):
-                S = "in"
-                schema_text = ""
-            elif line.startswith("```out") or line.startswith("'''out"):
-                S = "out"
-                schema_text = ""
-            elif line.startswith("```") or line.startswith("'''"):
-                if S == "in":
-                    schema_in = j.data.schema.get_from_text(schema_text)
-                else:
-                    schema_out = j.data.schema.get_from_text(schema_text)
-                S = None
-            elif S:
-                schema_text += line + "\n"
+
+        if func.__doc__:
+            for line in func.__doc__.split("\n"):
+                line = line.strip()
+                if line.startswith("```in") or line.startswith("'''in"):
+                    S = "in"
+                    schema_text = ""
+                elif line.startswith("```out") or line.startswith("'''out"):
+                    S = "out"
+                    schema_text = ""
+                elif line.startswith("```") or line.startswith("'''"):
+                    if S == "in":
+                        schema_in = j.data.schema.get_from_text(schema_text)
+                    else:
+                        schema_out = j.data.schema.get_from_text(schema_text)
+                    S = None
+                elif S:
+                    schema_text += line + "\n"
 
         return (schema_in, schema_out)
 
@@ -30,7 +32,7 @@ def actor_method(func):
     def wrapper_action(*args, **kwargs):
         self = args[0]
         if not len(args) == 1:
-            raise j.exceptions.Input("we should not call an actor method with args")
+            raise j.exceptions.Input("actor methods only accept keyword arguments")
         self._log_debug(str(func))
         name = func.__name__
         self._log_debug(name)
@@ -44,11 +46,15 @@ def actor_method(func):
             schema_in, schema_out = self._schemas[name]
 
             if schema_in:
-                data = schema_in.new(datadict=kwargs)
+                if kwargs:
+                    data = schema_in.new(datadict=kwargs)
+                else:
+                    data = schema_in.new()
+
                 for pname in schema_in.propertynames:
                     kwargs[pname] = eval("data.%s" % pname)
 
-            kwargs["user_session"] = None
+            kwargs["user_session"] = j.application.admin_session
             kwargs["schema_out"] = schema_out
 
         res = func(self, **kwargs)

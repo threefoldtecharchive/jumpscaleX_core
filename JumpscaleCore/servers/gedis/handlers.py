@@ -5,38 +5,30 @@ from .protocol import RedisCommandParser, RedisResponseWriter
 
 JSBASE = j.baseclasses.object
 
-
-class Session(j.baseclasses.object):
-    def _init(self):
-        self.admin = False
-        self.threebot_id = None
-        self.threebot_name = None
-        self.threebot_circles = []
-        self.kwargs = []
-        self.response_type = j.data.types.get("e", default="auto,json,msgpack").clean(0)
-        self.content_type = j.data.types.get("e", default="auto,json,msgpack").clean(0)
-
-    @property
-    def threebot_client(self):
-        if not self.threebot_name:
-            return
-        return j.clients.threebot.client_get(threebot=self.threebot_id)
-
-    def admin_check(self):
-        return True
-        if not self.admin:
-            raise j.exceptions.Permission("only admin user can access this method")
+from .UserSession import UserSession
 
 
-def _command_split(cmd, namespace="system"):
+def _command_split(cmd, author3botname="zerobot", packagename="base"):
     """
-    :param cmd: command is in form x.x.x split in parts
-    :param namespace: is the default namespace
-    :return: (namespace, actor, cmd)
+    :param cmd: command is in form x.x.x.x split in parts
+    :param: author3botname is the default
+    :param packagename: is the default packagename
+    :return: (author3botname, packagename, actorname, cmd)
+
+
+
     """
     cmd_parts = cmd.split(".")
-    if len(cmd_parts) == 3:
-        namespace = cmd_parts[0]
+
+    if len(cmd_parts) == 4:
+        author3botname = cmd_parts[0]
+        packagename = cmd_parts[1]
+        actor = cmd_parts[2]
+        if "__" in actor:
+            actor = actor.split("__", 1)[2]
+        cmd = cmd_parts[3]
+    elif len(cmd_parts) == 3:
+        packagename = cmd_parts[0]
         actor = cmd_parts[1]
         if "__" in actor:
             actor = actor.split("__", 1)[1]
@@ -47,33 +39,35 @@ def _command_split(cmd, namespace="system"):
         if "__" in actor:
             actor = actor.split("__", 1)[1]
         cmd = cmd_parts[1]
-        if actor == "system":
-            namespace = "system"
     elif len(cmd_parts) == 1:
-        namespace = "system"
         actor = "system"
         cmd = cmd_parts[0]
     else:
         raise j.exceptions.Base("cmd not properly formatted")
 
-    return namespace, actor, cmd
+    return author3botname, packagename, actor, cmd
 
 
 class Command:
     """
     command is an object representing a string gedis command
-    it has 3 part
-    - namespace
+    it has 4 part
+    - author3botname
+    - packagename
     - actor
     - command name
     """
 
     def __init__(self, command):
-        self._namespace, self._actor, self._command = _command_split(command)
+        self._author3botname, self._packagename, self._actor, self._command = _command_split(command)
 
     @property
-    def namespace(self):
-        return self._namespace
+    def author3bot(self):
+        return self._author3botname
+
+    @property
+    def package(self):
+        return self._packagename
 
     @property
     def actor(self):
@@ -83,11 +77,18 @@ class Command:
     def command(self):
         return self._command
 
-    def __str__(self):
-        return self.command
+    @property
+    def key_actor(self):
+        return "%s.%s.%s" % (self.author3bot, self.package, self.actor)
 
-    def __repr__(self):
-        return self.command
+    @property
+    def key_method(self):
+        return "%s.%s.%s.%s" % (self.author3bot, self.package, self.actor, self.command)
+
+    def __str__(self):
+        return self.key_method
+
+    __repr__ = __str__
 
 
 class Request:
@@ -225,10 +226,8 @@ class Handler(JSBASE):
         JSBASE.__init__(self)
         self.gedis_server = gedis_server
         self.cmds = {}  # caching of commands
-        self.actors = self.gedis_server.actors
+        # will hold classes of type GedisCmds,key is the self.gedis_server._actorkey_get(
         self.cmds_meta = self.gedis_server.cmds_meta
-        self.api_model = j.data.bcdb.system.model_get(url="jumpscale.gedis.api")
-        self.session = Session()
 
     def handle_gedis(self, socket, address):
 
@@ -237,13 +236,13 @@ class Handler(JSBASE):
         # raise j.exceptions.Base("d")
         gedis_socket = GedisSocket(socket)
 
-        user_session = Session()
+        user_session = UserSession()
 
         try:
             self._handle_gedis_session(gedis_socket, address, user_session=user_session)
         except Exception as e:
             gedis_socket.on_disconnect()
-            self._log_error("connection closed: %s" % str(e), context="%s:%s" % address)
+            self._log_error("connection closed: %s" % str(e), context="%s:%s" % address, exception=e)
 
     def _handle_gedis_session(self, gedis_socket, address, user_session=None):
         """
@@ -276,7 +275,7 @@ class Handler(JSBASE):
                 # close the connection
                 return
 
-    def _authorized(self, actor_name, cmd_name, threebot_id):
+    def _authorized(self, cmd_obj, user_session):
         """
         checks if the current session is authorized to access the requested command
         Notes:
@@ -284,23 +283,21 @@ class Handler(JSBASE):
         * threebot_id should be in the session otherwise it can only access the public methods only
         :return: (True, None) if authorized else (False, reason)
         """
-        if actor_name == "system":
+
+        if user_session.admin:
             return True, None
-        try:
-            actor_obj = self.api_model.get_by_name(actor_name)
-        except:
-            return False, f"Couldn't find actor with name: {actor_name}"
-        for cmd in actor_obj.cmds:
-            if cmd.name == cmd_name:
-                if cmd.public:
-                    return True, None
-                elif not threebot_id:
-                    return False, "No user is authenticated on this session and the command isn't public"
-                else:
-                    user = j.data.bcdb.system.user.find(threebot_id=threebot_id)
-                    if not user:
-                        return False, f"Couldn't find user with threebot_id {threebot_id}"
-                    return actor_obj.acl.rights_check(userids=[user[0].id], rights=[cmd_name]), None
+        elif cmd_obj.rights.public:
+            return True, None
+        elif not user_session.threebot_id:
+            return False, "No user is authenticated on this session and the command isn't public"
+        else:
+            j.shell()
+            w
+            # TODO: needs to be reimplemented (despiegk)
+            # user = j.data.bcdb.system.user.find(threebot_id=user_session.threebot_id)
+            # if not user:
+            #     return False, f"Couldn't find user with threebot_id {threebot_id}"
+            # return actor_obj.acl.rights_check(userids=[user[0].id], rights=[cmd_name]), None
 
         return False, "Command not found"
 
@@ -327,6 +324,7 @@ class Handler(JSBASE):
             return None, "OK"
 
         elif request.command.command == "auth":
+            # TODO: this has not been done properly !!! check Kristof
             tid, seed, signature = request.arguments
             tid = int(tid)
             try:
@@ -346,31 +344,22 @@ class Handler(JSBASE):
             return None, "OK"
 
         self._log_debug(
-            "command received %s %s %s" % (request.command.namespace, request.command.actor, request.command.command),
+            "command received %s %s %s" % (request.command.author3bot, request.command.actor, request.command.command),
             context="%s:%s" % address,
         )
 
         # cmd is cmd metadata + cmd.method is what needs to be executed
-        try:
-            is_authorized, reason = self._authorized(
-                request.command.actor, request.command.command, user_session.threebot_id
-            )
-            if is_authorized:
-                cmd = self._cmd_obj_get(
-                    cmd=request.command.command, namespace=request.command.namespace, actor=request.command.actor
-                )
-            else:
-                not_authorized_err = {
-                    "message": f"not authorized {reason}",
-                    "actor_name": request.command.actor,
-                    "cmd_name": request.command.command,
-                    "threebot_id": user_session.threebot_id,
-                }
-                return (j.data.serializers.json.dumps(not_authorized_err), None)
+        cmd, cmd_method = self._cmd_obj_get(request.command)
 
-        except Exception as e:
-            logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
-            return (logdict, None)
+        is_authorized, reason = self._authorized(cmd_obj=cmd, user_session=user_session)
+        if not is_authorized:
+            not_authorized_err = {
+                "message": f"not authorized {reason}",
+                "actor_name": request.command.actor,
+                "cmd_name": request.command.command,
+                "threebot_id": user_session.threebot_id,
+            }
+            return (j.data.serializers.json.dumps(not_authorized_err), None)
 
         params_list = []
         params_dict = {}
@@ -406,7 +395,8 @@ class Handler(JSBASE):
 
         self._log_debug("params cmd %s %s" % (params_list, params_dict))
         try:
-            result = cmd.method(*params_list, user_session=user_session, **params_dict)
+            # print(f"params_list: {params_list}, params_dict: {params_dict}")
+            result = cmd_method(*params_list, user_session=user_session, **params_dict)
             logdict = None
         except Exception as e:
             logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
@@ -431,7 +421,7 @@ class Handler(JSBASE):
         def capnp_decode(request, command, die=True):
             try:
                 id, data = j.data.serializers.msgpack.loads(request.arguments[0])
-            except:
+            except Exception as e:
                 if die:
                     raise j.exceptions.Value(
                         "the content is not valid capnp while you provided content_type=capnp\n%s\n%s"
@@ -514,59 +504,42 @@ class Handler(JSBASE):
 
         return params
 
-    def _cmd_obj_get(self, namespace, actor, cmd):
+    def _cmd_obj_get(self, request_cmd):
         """
         arguments come from self._command_split()
         will do caching of the populated command
-        :param namespace:
-        :param actor:
-        :param cmd:
         :return: the cmd object, cmd.method is the method to be executed
         """
-        key = "%s__%s" % (namespace, actor)
-        key_cmd = "%s__%s" % (key, cmd)
 
         # caching so we don't have to eval every time
-        if key_cmd in self.cmds:
-            return self.cmds[key_cmd]
+        if request_cmd.key_method in self.cmds:
+            return self.cmds[request_cmd.key_method]
 
-        self._log_debug("command cache miss:%s %s %s" % (namespace, actor, cmd))
-        if namespace == "system" and key not in self.actors:
-            # we will now check if the info is in default namespace
-            key = "default__%s" % actor
-        if namespace == "default" and key not in self.actors:
-            # we will now check if the info is in system namespace
-            key = "system__%s" % actor
+        self._log_debug("command cache miss:%s" % request_cmd.key_method)
 
-        self._log_debug(key)
-        print(key)
+        if request_cmd.key_actor not in self.cmds_meta:
+            raise j.exceptions.Input("Cannot find actor '%s' of geventserver." % request_cmd.key_actor)
 
-        if key not in self.actors:
-            raise j.exceptions.Input("Cannot find cmd with key:%s in actors" % key)
-
-        if key not in self.cmds_meta:
-            raise j.exceptions.Input("Cannot find cmd with key:%s in cmds_meta" % key)
-
-        meta = self.cmds_meta[key]
+        meta = self.cmds_meta[request_cmd.key_actor]
 
         # check cmd exists in the metadata
-        if cmd not in meta.cmds:
-            raise j.exceptions.Input("Cannot find method with name:%s in namespace:%s" % (cmd, namespace))
+        if request_cmd.command not in meta.cmds:
+            raise j.exceptions.Input("Cannot find actor method in metadata of geventserver %s" % request_cmd.key_method)
 
-        cmd_obj = meta.cmds[cmd]
+        cmd_obj = meta.cmds[request_cmd.command]
+
+        actor = j.threebot.actor_get(
+            author3bot=request_cmd.author3bot, package_name=request_cmd.package, actor_name=request_cmd.actor
+        )
 
         try:
-            cl = self.actors[key]
-            cmd_method = getattr(cl, cmd)
+            cmd_method = getattr(actor, request_cmd.command)
         except Exception as e:
-            raise j.exceptions.Input(
-                "Could not execute code of method '%s' in namespace '%s'\n%s" % (key, namespace, e)
-            )
+            raise j.exceptions.Input("Could not execute code of method '%s' in gedis server" % request_cmd.key_method)
 
-        cmd_obj.method = cmd_method
-        self.cmds[key_cmd] = cmd_obj
+        self.cmds[request_cmd.key_method] = (cmd_obj, cmd_method)
 
-        return self.cmds[key_cmd]
+        return self.cmds[request_cmd.key_method]
 
 
 def _result_encode(cmd, response_type, item):
@@ -591,26 +564,26 @@ def _result_encode(cmd, response_type, item):
         return item
 
 
-def dm_verify(dm_id, epoch, signed_message):
-    """
-    retrieve the verify key of the threebot identified by bot_id
-    from tfchain
-
-    :param dm_id: threebot identification, can be one of the name or the unique integer
-                    of a threebot
-    :type dm_id: string
-    :param epoch: the epoch param that is signed
-    :type epoch: str
-    :param signed_message: the epoch param signed by the private key
-    :type signed_message: str
-    :return: True if the verification succeeded
-    :rtype: bool
-    :raises: PermissionError in case of wrong message
-    """
-    tfchain = j.clients.tfchain.new("3bot", network_type="TEST")
-    record = tfchain.threebot.record_get(dm_id)
-    verify_key = nacl.signing.VerifyKey(str(record.public_key.hash), encoder=nacl.encoding.HexEncoder)
-    if verify_key.verify(signed_message) != epoch:
-        raise j.exceptions.Permission("You couldn't authenticate your 3bot: {}".format(dm_id))
-
-    return True
+# def dm_verify(dm_id, epoch, signed_message):
+#     """
+#     retrieve the verify key of the threebot identified by bot_id
+#     from tfchain
+#
+#     :param dm_id: threebot identification, can be one of the name or the unique integer
+#                     of a threebot
+#     :type dm_id: string
+#     :param epoch: the epoch param that is signed
+#     :type epoch: str
+#     :param signed_message: the epoch param signed by the private key
+#     :type signed_message: str
+#     :return: True if the verification succeeded
+#     :rtype: bool
+#     :raises: PermissionError in case of wrong message
+#     """
+#     tfchain = j.clients.tfchain.new("3bot", network_type="TEST")
+#     record = tfchain.threebot.record_get(dm_id)
+#     verify_key = nacl.signing.VerifyKey(str(record.public_key.hash), encoder=nacl.encoding.HexEncoder)
+#     if verify_key.verify(signed_message) != epoch:
+#         raise j.exceptions.Permission("You couldn't authenticate your 3bot: {}".format(dm_id))
+#
+#     return True

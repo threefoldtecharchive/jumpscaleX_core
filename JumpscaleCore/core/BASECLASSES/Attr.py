@@ -25,6 +25,7 @@ from Jumpscale import j
 
 class Attr:
     def _init_post_attr(self, **kwargs):
+        self._inspect()
         self._protected = True
 
     def __getattr__(self, name):

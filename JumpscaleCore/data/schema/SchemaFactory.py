@@ -80,15 +80,16 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         else:
             raise j.exceptions.Input("Could not find schema with md5:%s" % md5)
 
-    def get_from_url(self, url, die=True):
+    def get_from_url(self, url, die=True, package=None):
         """
         :param url: url is e.g. jumpscale.bcdb.user.1
         :return: will return the most recent schema, there can be more than 1 schema with same url (changed over time)
         """
         assert isinstance(url, str)
-        url = self._urlclean(url)
+        url = self._urlclean(url, package=package)
         if url in self._url_to_md5:
             s = self.get_from_md5(self._url_to_md5[url])
+            s.url = url
             self.schemas._add(s.url, s)
             return s
         if die:
@@ -105,7 +106,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         blocks = self._schema_blocks_get(schema_text)
         return len(blocks) > 1
 
-    def get_from_text(self, schema_text, url=None, multiple=False):
+    def get_from_text(self, schema_text, url=None, multiple=False, package=None):
         """
         will return the first schema specified if more than 1
 
@@ -119,7 +120,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         if len(blocks) > 1 and url:
             raise j.exceptions.Input("cannot support add from text with url if more than 1 block")
         for block in blocks:
-            res.append(self._get_from_text_single(block, url=url))
+            res.append(self._get_from_text_single(block, url=url, package=package))
         if multiple:
             return res
         return res[0]
@@ -130,7 +131,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
             raise j.exceptions.JSBUG("can only add 1 schema in text", data=schema_text)
         return res[0]
 
-    def _get_from_text_single(self, schema_text, url=None):
+    def _get_from_text_single(self, schema_text, url=None, package=None):
         """
         can only be 1 schema
 
@@ -138,7 +139,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
             Schema
         """
         assert isinstance(schema_text, str)
-        md5, schema = self._add_text_to_schema_obj(schema_text=schema_text, url=url)
+        md5, schema = self._add_text_to_schema_obj(schema_text=schema_text, url=url, package=package)
         return self.get_from_md5(md5)
 
     def _md5(self, text):
@@ -150,13 +151,18 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         # print("*****\n%s\n***********\n"%(ascii_text))
         return j.data.hash.md5_string(original_text)
 
-    def _urlclean(self, url):
+    def _urlclean(self, url, package=None):
         """
         url = j.data.schema._urlclean(url)
         :param url:
         :return:
         """
-        return url.strip().strip("'\"").strip()
+        url = url.strip().strip("'\"").strip()
+        if package:
+            if not url.startswith(package.name):
+                url = f"%s.{url}" % package.name
+                url = url.replace("..", ".")
+        return url
 
     def _schema_blocks_get(self, schema_text):
         """
@@ -194,7 +200,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         if self.models_in_use:
             raise j.exceptions.JSBUG("should not modify schema's when models used through this interface")
 
-    def _add_text_to_schema_obj(self, schema_text, url=None):
+    def _add_text_to_schema_obj(self, schema_text, url=None, package=None):
         """
         add the text to our structure and convert to schema object
         :param schema_text:
@@ -205,7 +211,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         if md5 in self._md5_to_schema and not isinstance(self._md5_to_schema[md5], str):
             return md5, self._md5_to_schema[md5]
 
-        s = Schema(text=schema_text, md5=md5, url=url)
+        s = Schema(text=schema_text, md5=md5, url=url, package=package)
 
         # here we always update the md5 because if we are here it means
         # that we have added a new schema

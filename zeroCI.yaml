@@ -20,7 +20,7 @@ script:
     --nologcapture --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=Test_wikis
   - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v --nologcapture --with-noseexclude
     --exclude-dir=JumpscaleCore/servers/ JumpscaleCore/ --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
-    --tc-file=/sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/clients/test/config.ini
+    --tc-file=/sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/clients/tests/config.ini
     --tc=ssh.addr:$ssh_addr --tc=ssh.port:$ssh_port --tc=ssh.login:$ssh_login --tc=ssh.passwd:$ssh_passwd
   - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v test_loader.py:CoreTests 
     --nologcapture --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core

@@ -3,9 +3,10 @@ import atexit
 import psutil
 import traceback
 
-
 import gc
 import sys
+
+from Jumpscale.servers.gedis.UserSession import UserSessionAdmin
 
 
 class Application(object):
@@ -34,6 +35,18 @@ class Application(object):
 
         self.exception_handle = self._j.core.myenv.exception_handle
         self._log2fs_session_name = None
+
+        self._admin_session = None
+
+    @property
+    def admin_session(self):
+        if not self._admin_session:
+            self._admin_session = UserSessionAdmin()
+            self._admin_session.threebot_id = self._j.tools.threebot.me.default.tid
+            self._admin_session.threebot_name = self._j.tools.threebot.me.default.tname
+            if self._admin_session.threebot_id is None or not self._admin_session.threebot_name:
+                raise self._j.exceptions.Input("initialize your threebot")
+        return self._admin_session
 
     @property
     def appname(self):
@@ -70,22 +83,13 @@ class Application(object):
 
     @property
     def bcdb_system(self):
-        # try:
-        #     self._j.data.nacl.default
-        # except Exception as e:
-        #     if str(e).find("could not find the path of the private key") != -1:
-        #         print("WARNING:cannot find the private key")
-        #         self._j.data.nacl.configure()
-        #     raise e
-        return self._j.data.bcdb.get_system(reset=False)
+        return self._j.data.bcdb.system
 
     def bcdb_system_destroy(self):
-        s = self._j.data.bcdb.get_system()
+        s = self.bcdb_system
         s.destroy()
-        self._bcdb_system = None
 
     def subprocess_prepare(self):
-        self._bcdb_system = None
         self._debug = None
         self._systempid = None
         self._j.core.db_reset(self._j)
@@ -221,9 +225,9 @@ class Application(object):
         the std debug is only set in memory, if you want to have on config file use this one
         :return:
         """
-        value = j.data.types.bool.clean(value)
-        j.core.myenv.config["DEBUG"] = True
-        j.core.myenv.config.config_save()
+        value = self._j.data.types.bool.clean(value)
+        self._j.core.myenv.config["DEBUG"] = True
+        self._j.core.myenv.config.config_save()
 
     def break_into_jshell(self, msg="DEBUG NOW"):
         if self.debug is True:
@@ -437,7 +441,7 @@ class Application(object):
 
     def _setWriteExitcodeOnExit(self, value):
         if not self._j.data.types.bool.check(value):
-            raise j.exceptions.Value
+            raise self._j.exceptions.Value
         self._writeExitcodeOnExit = value
 
     def _getWriteExitcodeOnExit(self):
@@ -517,7 +521,7 @@ class Application(object):
             pass
 
         try:
-            j.application.bcdb_system
+            j.data.bcdb.system
         except Exception as e:
             if str(e).find("Ciphertext failed") != -1:
                 print("COULD NOT GET DATA FROM BCDB, PROB ENCRYPTED WITH OTHER PRIVATE KEY AS WHAT IS NOW ON SYSTEM")
@@ -526,7 +530,7 @@ class Application(object):
                 print("COULD NOT DECRYPT THE METADATA FOR BCDB, DIFFERENT ENCRYPTION KEY USED")
                 if j.tools.console.askYesNo("Ok to delete this metadata, will prob be rebuild"):
                     j.sal.fs.remove(j.core.tools.text_replace("{DIR_CFG}/bcdb_config"))
-                    j.application.bcdb_system
+                    j.data.bcdb.system
 
         j.data.bcdb.check()
 

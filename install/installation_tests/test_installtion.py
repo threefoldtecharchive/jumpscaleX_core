@@ -243,7 +243,7 @@ class TestInstallationInDocker(BaseTest):
         self.assertIn("installed successfully", output.decode())
 
         self.info("Check that same container exist with bcdb data and removed pacakage exist.")
-        command = "source /sandbox/env.sh && kosmos 'j.application.bcdb_system.get_all()'"
+        command = "source /sandbox/env.sh && kosmos 'j.data.bcdb.system.get_all()'"
         output, error = self.docker_command(command)
         self.assertTrue(data for data in output.decode() if data.name == client_name)
 
@@ -269,7 +269,7 @@ class TestInstallationInDocker(BaseTest):
         self.assertIn("installed successfully", output.decode())
 
         self.info("Check that new contianer installed without new data .")
-        command = "source /sandbox/env.sh && kosmos 'j.application.bcdb_system.get_all()'"
+        command = "source /sandbox/env.sh && kosmos 'j.data.bcdb.system.get_all()'"
         output, error = self.docker_command(command)
         self.assertFalse(data for data in output.decode() if data.name == client_name)
 
@@ -655,7 +655,7 @@ class TestInstallationInSystem(BaseTest):
         """
         test TC205, TC206
         ** test check option on Linux and Mac OS **
-        #. test that check option is working correctly.  
+        #. test that check option is working correctly.
         #. check option ,ake sure that secret, private key, bcdband kosmos are working fine.
         """
 
@@ -701,7 +701,7 @@ class TestInstallationInSystem(BaseTest):
     def Test08_wiki_load(self):
         """
         ** test wikis-load  option **
-        #. test that wikis-load option is working correctly.  
+        #. test that wikis-load option is working correctly.
         """
 
         self.info("Install jumpscale on {}".format(self.os_type))
@@ -724,4 +724,3 @@ class TestInstallationInSystem(BaseTest):
         r = requests.get("https://127.0.0.1/wiki/test_presentaion.md", verify=False)
         self.assertEqual(r.status_code, 200)
         self.assertIn("includes 1", r.content.decode())
-

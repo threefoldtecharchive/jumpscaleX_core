@@ -18,7 +18,8 @@ class SonicFactory(JSConfigs):
         j.clients.sonic.get_client_bcdb()
         :return:
         """
-        return self.get("bcdb", host="127.0.0.1", port=1491, password="123456")  # default passwd also not ok
+        adminsecret_ = j.data.hash.md5_string(j.servers.threebot.default.adminsecret_)
+        return self.get("bcdb", host="127.0.0.1", port=1491, password=adminsecret_)  # default passwd also not ok
 
     def test(self):
         """

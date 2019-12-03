@@ -42,16 +42,14 @@ class system(JSBASE):
     def actors_add_path(self, namespace, path, user_session=None):
         self._gedis_server.actors_add(path, namespace)
 
-    def api_meta_get(self, namespace, user_session=None):
+    def api_meta_get(self, user_session=None):
         """
         return the api meta information
 
         """
-        namespace = namespace.decode()
         res = {"cmds": {}}
         for key, item in self._gedis_server.cmds_meta.items():
-            if item.namespace == namespace:
-                res["cmds"][key] = item.data._data
+            res["cmds"][key] = item.data._data
         return j.data.serializers.msgpack.dumps(res)
 
     # def filemonitor_paths(self, schema_out=None, user_session=None):

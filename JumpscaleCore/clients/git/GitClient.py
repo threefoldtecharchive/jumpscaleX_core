@@ -216,26 +216,31 @@ class GitClient(j.baseclasses.object):
             self.config_3git[name] = val
             self.config_3git_save()
 
-    def logChanges(self, from_revision=None, all=False, untracked=True):
+    def logChanges(self, from_revision=None, all=False, untracked=True, path=None):
         """
 
         :param from_revision:
         :param all: don't check previous state, list all
         :param untracked:  also add the untracked files
         :return:  (lastrevision,changes)
-        """
 
+        this is the method to use to e.g. find documents ready to process since last processing step,
+        just need to remember the revision from last successful run
+
+        """
+        revision = None
         if not from_revision and all == False:
             from_revision = self.config_3git_get("revision_last_processed")
-
+        path = path or self.BASEDIR
         if from_revision:
-            cmd = "cd %s;git --no-pager log %s --name-status --oneline" % (self.BASEDIR, from_revision)
+            cmd = f"cd {path};git --no-pager log {from_revision}..HEAD --name-status --oneline --reverse {path}"
         else:
-            cmd = "cd %s;git --no-pager log --name-status --oneline" % self.BASEDIR
+            cmd = f"cd {path};git --no-pager log --name-status --oneline --reverse {path}"
 
         rc, out, err = j.tools.executorLocal.execute(cmd)
         # Organize files in lists
         result = []
+        to_delete = []
         for item in out.split("\n"):
             item = item.strip()
             if item == "":
@@ -245,7 +250,7 @@ class GitClient(j.baseclasses.object):
                 pre, post, = item.split("\t", 1)
             else:
                 pre, post, = item.split(" ", 1)
-            if len(pre) == 7:
+            if len(pre) > 6:
                 revision = pre
                 msg = post
             else:
@@ -254,25 +259,35 @@ class GitClient(j.baseclasses.object):
                 if state in ["N", "M", "A"]:
                     if _file not in result:
                         result.append(_file)
+                        self._log_info(f"File {_file} created")
                 elif state == "R":
                     from_, to_ = post.split("\t")
                     if from_ in result:
                         result.pop(result.index(from_))
+                        to_delete.append(from_)
                     if _file not in result:
                         result.append(_file)
+                    self._log_info(f"File {_file} renamed")
                 elif state == "D":
                     # delete
                     if _file in result:
                         result.pop(result.index(_file))
+                        self._log_info(f"File {_file} deleted")
+                        to_delete.append(_file)
 
-                else:
-                    j.shell()
-                    w
+                # else:
+                #     print("state", state, item)
+                #     # TODO: handle other states codes
+                #     j.shell()
+                #     w
         if untracked:
             for item in self.getModifiedFiles(collapse=True):
                 if item not in result:
                     result.append(item)
-        return (revision, result)
+
+        if not revision:
+            revision = from_revision
+        return (revision, result, to_delete)
 
     def logChangesRevisionSet(self, revision):
         """
@@ -534,7 +549,7 @@ class GitClient(j.baseclasses.object):
 
     def patchGitignore(self):
         gitignore = """
-        
+
             logs
             *.log
             npm-debug.log*
@@ -560,12 +575,12 @@ class GitClient(j.baseclasses.object):
             *.tgz
             .yarn-integrity
             .env
-            .next        
-            
+            .next
+
             __pycache__/
-            *.py[cod]            
+            *.py[cod]
             *.so
-            
+
             .Python
             develop-eggs/
             eggs/
@@ -574,28 +589,28 @@ class GitClient(j.baseclasses.object):
             *.egg-info/
             .installed.cfg
             *.egg
-            
+
             pip-log.txt
             pip-delete-this-directory.txt
-            
+
             .tox/
             .coverage
             .cache
             nosetests.xml
             coverage.xml
-            
+
             # Translations
             *.mo
-            
+
             .mr.developer.cfg
             .project
             .pydevproject
-            .ropeproject            
+            .ropeproject
             *.pot
-            
-            docs/_build/            
+
+            docs/_build/
             errors.md
-            
+
             """
 
         gitignore = j.core.tools.text_strip(gitignore)

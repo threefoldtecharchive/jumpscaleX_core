@@ -1,5 +1,6 @@
 from Jumpscale import j
 from .SSHClient import SSHClient
+
 from .SSHClientParamiko import SSHClientParamiko
 from .SSHClientBase import SSHClientBase
 
@@ -25,7 +26,8 @@ class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
             # return SSHClientParamiko
             return SSHClient
         else:
-            return SSHClientParamiko
+            return SSHClient
+            # return SSHClientParamiko
 
     def test(self):
         """

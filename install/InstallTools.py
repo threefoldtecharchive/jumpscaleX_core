@@ -3177,7 +3177,9 @@ class MyEnv_:
             "REVERSE": "",
         }
 
-        LOGFORMATBASE = "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"  # DO NOT CHANGE COLOR
+        LOGFORMATBASE = (
+            "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"
+        )  # DO NOT CHANGE COLOR
 
         self.LOGFORMAT = {
             "DEBUG": LOGFORMATBASE.replace("{COLOR}", "{CYAN}"),
@@ -3405,8 +3407,6 @@ class MyEnv_:
         :param config: configuration arguments which go in the config file
         :param readonly: specific mode of operation where minimal changes will be done while using JSX
         :param codedir: std $sandboxdir/code
-        :param sshkey: name of the sshkey to use if there are more than 1 in ssh-agent
-        :param sshagent_use: needs to be True if sshkey used
         :return:
         """
 
@@ -3425,8 +3425,8 @@ class MyEnv_:
             configdir = args["configdir"]
         if codedir is None and "codedir" in args:
             codedir = args["codedir"]
-        if sshkey is None and "sshkey" in args:
-            sshkey = args["sshkey"]
+        # if sshkey is None and "sshkey" in args:
+        #     sshkey = args["sshkey"]
 
         if readonly is None and "readonly" in args:
             readonly = True
@@ -3435,6 +3435,7 @@ class MyEnv_:
             sshagent_use = False
         else:
             sshagent_use = True
+
         if debug_configure is None and "debug_configure" in args:
             debug_configure = True
 
@@ -3535,6 +3536,12 @@ class MyEnv_:
 
         self.config_save()
         self.init(configdir=configdir)
+
+    @property
+    def adminsecret(self):
+        if not self.config["SECRET"]:
+            self.secret_set()
+        return self.config["SECRET"]
 
     def secret_set(self, secret=None):
         if self.interactive:
@@ -3933,10 +3940,11 @@ class BaseInstaller:
                 # "bpython",
                 "pbkdf2",
                 "ptpython==2.0.4",
-                "prompt-toolkit>=2.0.9",
+                "prompt-toolkit==2.0.9",
                 "pygments-markdown-lexer",
                 "wsgidav",
                 "bottle==0.12.17",  # why this version?
+                "beaker",
             ],
             # level 1: in the middle
             1: [
@@ -5132,6 +5140,12 @@ class DockerContainer:
             ". /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_default(); j.servers.threebot.default.stop()'"
         )
 
+    def install_tcprouter(self):
+        """
+        Install tcprouter builder to be part of the image
+        """
+        self.sshexec(". /sandbox/env.sh; kosmos 'j.builders.network.tcprouter.install()'")
+
     def jumpscale_install(
         self, secret=None, privatekey=None, redo=False, threebot=True, pull=False, branch=None, prebuilt=False
     ):
@@ -5167,11 +5181,9 @@ class DockerContainer:
             cmd += args_txt
         else:
             print(" - copy installer over from where I install from")
-            dirpath2 = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/"
-            if not Tools.exists(dirpath2):
-                dirpath2 = dirpath
+
             for item in ["jsx", "InstallTools.py"]:
-                src1 = "%s/%s" % (dirpath2, item)
+                src1 = "%s/%s" % (dirpath, item)
                 cmd = "scp -P {} -o StrictHostKeyChecking=no \
                     -o UserKnownHostsFile=/dev/null \
                     -r {} root@localhost:/tmp/".format(

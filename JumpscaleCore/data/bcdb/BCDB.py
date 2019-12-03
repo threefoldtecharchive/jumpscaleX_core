@@ -103,7 +103,7 @@ class BCDB(j.baseclasses.object):
     def _init_system_objects(self):
 
         assert self.name
-        j.data.bcdb._children[self.name] = self
+        j.data.bcdb._instances[self.name] = self
 
         if not j.data.types.string.check(self.name):
             raise j.exceptions.Base("name needs to be string")
@@ -145,117 +145,140 @@ class BCDB(j.baseclasses.object):
             # there is no other way we can do this because without iterator the rebuild index cannot be done
             self.index_rebuild()
 
-    def export(self, path=None, encrypt=True):
+    def export(self, path=None, encrypt=True, reset=False):
         if not path:
             raise j.exceptions.Base("export no path")
-        for o in self.meta.schema_dicts:
-            m = self.model_get(schema=o["text"])
-            # to make schema export ID deterministic we add the mid at the beginning of the file name
-            dpath = "%s/%s__%s__%s" % (path, m.mid, m.schema.url, m.schema._md5)
+        if reset:
+            j.sal.fs.remove(path)
+        j.sal.fs.createDir(path)
+
+        for m in self.models:
+            print("export model: ", m)
+            dpath = f"{path}/{m.schema.url}"
+            print("  datapath: ", dpath)
             j.sal.fs.createDir(dpath)
-            dpath_file = "%s/meta.schema" % (dpath)
-            j.sal.fs.writeFile(dpath_file, m.schema.text)
+            j.sal.fs.writeFile(f"{dpath}/_schema.toml", m.schema.text)
             for obj in list(m.iterate()):
-                if obj._model.schema.url == o["url"]:
-                    json = obj._json
-                    if encrypt:
-                        ext = ".encr"
-                        json = j.data.nacl.default.encryptSymmetric(json)
+                print("  writing object: ", obj)
+
+                assert obj._model.schema.url == m.schema.url
+                assert obj._model.schema._md5 == obj._schema._md5
+
+                if encrypt:
+                    data = obj._data
+                    print("OBJ._DATA:", data)
+                    data2 = j.data.nacl.default.encryptSymmetric(data)
+                    print(" - %s:%s" % (obj._schema.url, obj.id))
+                    j.sal.fs.writeFile("%s/%s.data" % (dpath, obj.id), data2)
+                else:
+                    try:
+                        C = j.data.serializers.toml.dumps(obj._ddict)
+                        ext = "toml"
+                    except:
+                        C = j.data.serializers.yaml.dumps(obj._ddict)
+                        ext = "yaml"
+                    if "name" in obj._ddict and "/" not in obj.name:
+                        print(" - %s:%s" % (obj._schema.url, obj.name))
+                        dpath_file = "%s/%s.%s" % (dpath, obj.name, ext)
                     else:
-                        ext = ""
-                    if "name" in obj._ddict:
-                        dpath_file = "%s/%s__%s.json%s" % (dpath, obj.name, obj.id, ext)
-                    else:
-                        dpath_file = "%s/%s.json%s" % (dpath, obj.id, ext)
-                    j.sal.fs.writeFile(dpath_file, json)
+                        print(" - %s:%s" % (obj._schema.url, obj.id))
+                        dpath_file = "%s/%s.%s" % (dpath, obj.id, ext)
+                    try:
+                        j.sal.fs.writeFile(dpath_file, C)
+                    except Exception as e:
+                        j.shell()
 
     def import_(self, path=None, reset=True):
-        if not path:
-            raise j.exceptions.Base("export no path")
+        if not path or not j.sal.fs.exists(path):
+            raise j.exceptions.Base("import no path, or does not exist")
         if reset:
             self.reset()
             if self.storclient:
                 assert self.storclient.list() == [0]
+                assert self.storclient.nsinfo["entries"] == 1
+
         self._log_info("Load bcdb:%s from %s" % (self.name, path))
         assert j.sal.fs.exists(path)
 
         data = {}
         models = {}
-        max = 0
-        # first load all schemas
-        for schema_id in j.sal.fs.listDirsInDir(path, False, dirNameOnly=True):
-            mid, url, md5 = schema_id.split("__")
-            schema_path = "%s/%s" % (path, schema_id)
-            schema_text = j.sal.fs.readFile("%s/meta.schema" % schema_path)
-            schema = j.data.schema.get_from_text(schema_text, multiple=False)
-            model = self.model_get(schema=schema)
-            models[md5] = model
-        # now load the data
-        for schema_id in j.sal.fs.listDirsInDir(path, False, dirNameOnly=True):
-            schema_path = "%s/%s" % (path, schema_id)
-            mid, url, md5 = schema_id.split("__")
-            # print("MD5: %s" % md5)
-            model = models[md5]
-            assert model.schema._md5 == md5
-            for item in j.sal.fs.listFilesInDir(schema_path, False):
-                if j.sal.fs.getFileExtension(item) == "encr":
+        schemas = {}
+        paths = j.sal.fs.listDirsInDir(path, False, dirNameOnly=False)
+
+        for url_path in paths:
+            # load all schemas first to make sure all children schemas are loaded when refrenced by parent schemas
+            print(f"processing {url_path}")
+            schema_text = j.sal.fs.readFile("%s/_schema.toml" % url_path)
+            url = j.sal.fs.getBaseName(url_path)
+            schema = j.data.schema.get_from_text(schema_text, url=url, multiple=False)
+            schemas[url] = schema
+
+        for url_path in paths:
+            print(f"processing {url_path}")
+            url = j.sal.fs.getBaseName(url_path)
+            model = self.model_get(schema=schemas[url])
+            models[url] = model
+            if model._index_:
+                model._index_.destroy()
+            for item in j.sal.fs.listFilesInDir(url_path, False):
+                print(f"item {item}")
+                if item.endswith("_schema.toml"):
+                    continue
+                print(f"processing item: {item}")
+                ext = j.sal.fs.getFileExtension(item)
+                if ext == "data":
                     self._log("encr:%s" % item)
-                    encr = True
-                elif j.sal.fs.getFileExtension(item) == "json":
-                    self._log("json:%s" % item)
-                    encr = False
+                    data2 = j.sal.fs.readFile(item, binary=True)
+                    data_bin = j.data.nacl.default.decryptSymmetric(data2)
+                    obj = j.data.serializers.jsxdata.loads(data_bin)
+                    print(f"data decrypted {data}")
+                    data[obj.id] = (url, obj._ddict)
+                elif ext in ["toml", "yaml"]:
+                    if ext == "toml":
+                        self._log("toml:%s" % item)
+                        datadict = j.data.serializers.toml.load(item)
+                    if ext == "yaml":
+                        self._log("yaml:%s" % item)
+                        datadict = j.data.serializers.yaml.load(item)
+
+                    data[datadict["id"]] = (url, datadict)
                 else:
                     self._log("skip:%s" % item)
                     continue
-                base = j.sal.fs.getBaseName(item)
-                if base.find("__") != -1:
-                    obj_id = int(base.split("__")[1].split(".")[0])
-                else:
-                    obj_id = int(base.split(".")[0])
-                if obj_id in data:
-                    raise j.exceptions.Base("id's need to be unique, cannot import")
-                json = j.sal.fs.readFile(item, binary=encr)
-                if encr:
-                    json = j.data.nacl.default.decryptSymmetric(json)
-                data[obj_id] = (md5, json)
-                if obj_id > max:
-                    max = obj_id
 
-        if self.storclient:
-            assert self.storclient.nsinfo["entries"] == 1
-            lastid = 1
+        max_id = max(list(data.keys()) or [0])
+        dummy_schema = """
+        @url = jumpscale.dummy.object
+        name** = (S)
+        """
+        schema = j.data.schema.get_from_text(dummy_schema, url="jumpscale.dummy.object", multiple=False)
+        dummy_model = self.model_get(schema=schema)
 
+        print(f"MAX: {max_id}")
         # have to import it in the exact same order
-        for i in range(1, max + 1):
-            self._log("import: %s" % json)
-            if self.storclient:
-                if self.storclient.get(key=i - 1) is None:
-                    obj = model.new()
-                    if hasattr(obj, "name"):
-                        obj.name = j.data.idgenerator.generateGUID()
-                    obj.id = None
-                    obj.save()
-            if i in data:
-                md5, json = data[i]
-                model = models[md5]
-                if self.storclient:
-                    if self.storclient.get(key=i) is None:
-                        # does not exist yet
-                        try:
-                            obj = model.new(data=json)
-                        except:
-                            raise j.exceptions.Base("can't get a new model based on json data:%s" % json)
-                        if self.storclient:
-                            obj.id = None
-                    else:
-                        obj = model.get(obj.id)
-                        # means it exists, need to update, need to check if data is different only save if y
-                else:
-                    obj = model.get(i, die=False)
-                    if not obj:
-                        obj = model.new(data=json)
+        for i in range(1, max_id + 1):
+            print(f"i: {i}")
+            if i not in data:
+                print(f" {i} doesn't exist in data.. ")
+                gap_obj = dummy_model.new()
+                gap_obj.name = j.data.idgenerator.generateGUID()
+                gap_obj.id = None
+                gap_obj.save()
+            else:
+                url, obj_data = data[i]
+                model = models[url]
+                obj = model.new()
+                if "name" in obj_data:
+                    obj.name = obj_data["name"]
+                obj.id = None
                 obj.save()
+                print(f"setting obj {obj_data} on obj with id {obj.id} using {model.schema.url}")
+                obj = model.set_dynamic(obj_data, obj.id)
+
                 assert obj.id == i
+
+        print("Cleaning up dummy objects")
+        dummy_model.destroy()
 
     @property
     def sqlite_index_client(self):
@@ -287,9 +310,9 @@ class BCDB(j.baseclasses.object):
         else:
             raise j.exceptions.RuntimeError("Failed to wait for redisserver")
 
-    def redis_server_get(self, port=6380, secret="123456"):
-        self.redis_server = RedisServer(bcdb=self, port=port, secret=secret, addr="0.0.0.0")
-        self.redis_server._init2(bcdb=self, port=port, secret=secret, addr="0.0.0.0")
+    def redis_server_get(self, port=6380, secret="123456", addr="127.0.0.1"):
+        self.redis_server = RedisServer(bcdb=self, port=port, secret=secret, addr=addr)
+        self.redis_server._init2(bcdb=self, port=port, secret=secret, addr=addr)
         return self.redis_server
 
     def _data_process(self):
@@ -380,8 +403,8 @@ class BCDB(j.baseclasses.object):
         self.reset()
         if self.name in j.data.bcdb._config:
             j.data.bcdb._config.pop(self.name)
-        if self.name in j.data.bcdb._children:
-            j.data.bcdb._children.pop(self.name)
+        if self.name in j.data.bcdb._instances:
+            j.data.bcdb._instances.pop(self.name)
         j.data.bcdb._config_write()
         for key in j.core.db.keys("bcdb:%s:*" % self.name):
             j.core.db.delete(key)
@@ -431,13 +454,13 @@ class BCDB(j.baseclasses.object):
         for key, model in self._schema_url_to_model.items():
             yield model
 
-    def model_get(self, schema=None, md5=None, url=None, reset=False):
+    def model_get(self, schema=None, md5=None, url=None, reset=False, package=None):
         """
         will return the latest model found based on url, md5 or schema
         :param url:
         :return:
         """
-        schema = self.schema_get(schema=schema, md5=md5, url=url)
+        schema = self.schema_get(schema=schema, md5=md5, url=url, package=package)
         if schema.url in self._schema_url_to_model:
             model = self._schema_url_to_model[schema.url]
             model.schema_change(schema)
@@ -448,12 +471,13 @@ class BCDB(j.baseclasses.object):
         self._log_info("load model:%s" % schema.url)
 
         model = BCDBModel(bcdb=self, schema_url=schema.url, reset=reset)
-
-        self.model_add(model)
-
+        try:
+            self.model_add(model)
+        except:
+            self._log_error(f"Couldn't load model with schema url: {schema.url}")
         return model
 
-    def schema_get(self, schema=None, md5=None, url=None):
+    def schema_get(self, schema=None, md5=None, url=None, package=None):
         """
 
         once a bcdb is known we should ONLY get a schema from the bcdb
@@ -471,7 +495,7 @@ class BCDB(j.baseclasses.object):
             if j.data.types.string.check(schema):
                 schema_text = schema
                 j.data.schema.models_in_use = False
-                schema = j.data.schema.get_from_text(schema_text)
+                schema = j.data.schema.get_from_text(schema_text, package=package)
                 j.data.schema.models_in_use = True
                 self._log_debug("model get from schema:%s, original was text." % schema.url)
             else:
@@ -480,6 +504,7 @@ class BCDB(j.baseclasses.object):
                     raise j.exceptions.Base("schema needs to be of type: j.data.schema.SCHEMA_CLASS")
         else:
             if url:
+                url = j.data.schema._urlclean(url, package=package)
                 assert md5 == None
                 if not j.data.schema.exists(url=url):
                     # means we don't know it and it is not in BCDB either because the load has already happened
@@ -489,7 +514,8 @@ class BCDB(j.baseclasses.object):
                 assert url == None
                 if not j.data.schema.exists(md5=md5):
                     raise j.exceptions.Input("we could not find model from:%s, was not in bcdb meta" % md5)
-                schema = j.data.schema.get_from_md5(md5=md5)
+                schema_md5 = j.data.schema.get_from_md5(md5=md5)
+                schema = j.data.schema.get_from_url(schema_md5.url)
             else:
                 raise j.exceptions.Input("need to specify md5 or url")
 
@@ -544,7 +570,7 @@ class BCDB(j.baseclasses.object):
 
         return done
 
-    def model_get_from_file(self, path):
+    def model_get_from_file(self, path, package=None):
         """
         add model to BCDB
         is path to python file which represents the model
@@ -553,14 +579,14 @@ class BCDB(j.baseclasses.object):
         self._log_debug("model get from file:%s" % path)
         obj_key = j.sal.fs.getBaseName(path)[:-3]
         cl = j.tools.codeloader.load(obj_key=obj_key, path=path, reload=False)
-        model = cl(self)
+        model = cl(self, package=package)
         self.model_add(model)
         return model
 
     def models_add_threebot(self):
         self.models_add(self._dirpath + "/models_threebot")
 
-    def models_add(self, path):
+    def models_add(self, path, package=None):
         """
         will walk over directory and each class needs to be a model
         when overwrite used it will overwrite the generated models (careful)
@@ -568,8 +594,9 @@ class BCDB(j.baseclasses.object):
         support for *.py and *.toml files
 
         :param path:
-        :return: None
+        :return: urls of the models
         """
+        models_urls = []
         self._log_debug("models_add:%s" % path)
 
         if not j.sal.fs.isDir(path):
@@ -595,7 +622,9 @@ class BCDB(j.baseclasses.object):
             dest = "%s/%s.py" % (path, bname)
             schema_text = j.sal.fs.readFile(schemapath)
             try:
-                model = self.model_get(schema=schema_text)
+                model = self.model_get(schema=schema_text, package=package)
+                if model.schema.url not in models_urls:
+                    models_urls.append(model.schema.url)
             except Exception as e:
                 if schemapath not in errored:
                     errored[schemapath] = 0
@@ -616,7 +645,10 @@ class BCDB(j.baseclasses.object):
             if pyfile_base.startswith("_"):
                 continue
             path2 = "%s/%s.py" % (path, pyfile_base)
-            self.model_get_from_file(path2)
+            model = self.model_get_from_file(path2, package=package)
+            if model.schema.url not in models_urls:
+                models_urls.append(model.schema.url)
+        return models_urls
 
     def _unserialize(self, id, data, return_as_capnp=False, schema=None):
         """

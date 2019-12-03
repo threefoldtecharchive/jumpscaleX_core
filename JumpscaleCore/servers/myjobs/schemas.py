@@ -27,9 +27,9 @@ code = ""
 job = """
 @url = jumpscale.myjobs.job
 name** = ""
-category**= ""
-time_start** = 0 (T)
-time_stop** = 0 (T)
+category = "default"
+time_start = 0 (T)
+time_stop = 0 (T)
 state** = "NEW,ERROR,OK,RUNNING,DONE" (E)
 error_cat** = "NA,TIMEOUT,CRASH,HALTED,ERROR"  (E)
 timeout = 0
@@ -40,5 +40,5 @@ error = (dict)
 die = false (B)
 #will not execute this one before others done
 dependencies = (LI)
-
+return_queues = (LS)
 """

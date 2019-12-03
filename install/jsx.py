@@ -127,7 +127,7 @@ def cli():
     help="24 words, use '' around the private key if secret specified and private_key not then will ask in -y mode will autogenerate",
 )
 @click.option(
-    "--secret", default=None, help="secret for the private key (to keep secret), default will get from ssh-key"
+    "--secret", default=None, help="secret for the private key (to keep secret, also used for admin secret on rbot)"
 )
 def configure(
     codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey=None, secret=None
@@ -427,7 +427,7 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
     from Jumpscale import j
 
     try:
-        threebot_client = j.clients.gedis.get("jsx_threebot", port=8901)
+        threebot_client = j.clients.gedis.get("jsx_threebot", namespace="zerobot", port=8901)
         threebot_client.ping()
         threebot_client.reload()
     except (j.exceptions.Base, redis.ConnectionError):
@@ -538,6 +538,7 @@ def threebotbuilder(push=False, base=False, cont=False, production=False):
     installer.repos_get(pull=False)
 
     docker.jumpscale_install(branch=DEFAULT_BRANCH, redo=delete, pull=False, threebot=True)
+    docker.install_tcprouter()
 
     docker.save(clean_runtime=True, image=dest + "dev")
     if push:
@@ -658,7 +659,7 @@ def kosmos(name="3bot", target="auto"):
     n = j.data.nacl.get(load=False)  # important to make sure private key is loaded
     if n.load(die=False) is False:
         n.configure()
-    j.application.bcdb_system  # needed to make sure we have bcdb running, needed for code completion
+    j.data.bcdb.system  # needed to make sure we have bcdb running, needed for code completion
     j.shell(loc=False, locals_=locals(), globals_=globals())
 
 
@@ -770,10 +771,10 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         if not docker.config.done_get("start_cmd"):
             if web:
                 docker.sshexec(
-                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_zerobot_default(packages_add=True)';jsx wiki-load"
+                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_default(packages_add=True)';jsx wiki-load"
                 )
             else:
-                start_cmd = "j.servers.threebot.local_start_zerobot_default(packages_add=True)"
+                start_cmd = "j.servers.threebot.local_start_default(packages_add=True)"
                 docker.jsxexec(start_cmd)
         docker.config.done_set("start_cmd")
         if not docker.config.done_get("config"):

@@ -23,18 +23,18 @@ from .JSConfigBCDB import JSConfigBCDB
 from .JSConfigsBCDB import JSConfigsBCDB
 from .JSConfigBCDBBase import JSConfigBCDBBase
 from .ThreeBotActorBase import ThreeBotActorBase
-from .ThreeBotCRUDActorBase import ThreeBotCRUDActorBase
 from .ThreeBotPackageBase import ThreeBotPackageBase
 from .ThreeBotFactoryBase import ThreeBotFactoryBase
 from .TestTools import TestTools
 from .JSFactory import JSFactory
 from .JSDict import JSDict
 from .Decorators import actor_method
+from .Attr import Attr
 
 
 class BaseClasses(JSBase, TestTools):
     def __init__(self):
-        pass
+        self.attr = Attr
 
     @property
     def actor_method(self):
@@ -148,15 +148,6 @@ class BaseClasses(JSBase, TestTools):
         :return:
         """
         return ThreeBotActorBase
-
-    @property
-    def threebot_crud_actor(self):
-        """
-        the base class for developing actors in threebot
-
-        :return:
-        """
-        return ThreeBotCRUDActorBase
 
     @property
     def threebot_package(self):

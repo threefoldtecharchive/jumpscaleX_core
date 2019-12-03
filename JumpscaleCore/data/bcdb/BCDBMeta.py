@@ -71,12 +71,19 @@ class BCDBMeta(j.baseclasses.object):
         self._reset_runtime_metadata()
         serializeddata = self._bcdb.storclient.get(0)
         if serializeddata is None:
-            self._bcdb.storclient.flush()
-            self._log_debug("save, empty schema")
-            data = {"url": {}, "md5": {}}
-            serializeddata = j.data.serializers.msgpack.dumps(data)
-            self._bcdb.storclient.set(serializeddata)
-            self._data = data
+            if self._bcdb.storclient.count == 0:
+                self._log_error("could not find metadata in the storclient")
+                # self._bcdb.storclient.flush()
+                self._log_debug("save, empty schema")
+                data = {"url": {}, "md5": {}}
+                serializeddata = j.data.serializers.msgpack.dumps(data)
+                self._bcdb.storclient.set(serializeddata)
+                self._data = data
+            else:
+                raise j.exceptions.Value(
+                    "storclient did not return  get(0) but still there is data, means corruption.",
+                    data=self._bcdb.storclient,
+                )
             assert self._bcdb.storclient.get(0) == serializeddata
         else:
             self._log_debug("schemas load from db")

@@ -100,4 +100,3 @@ class ZDBServer(j.baseclasses.object_config):
         assert cl.ping()
 
         return cl
-

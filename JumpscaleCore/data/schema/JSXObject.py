@@ -144,12 +144,25 @@ class JSXObject(j.baseclasses.object):
             out += "- %-30s: %s\n" % (key, item)
         return out
 
+    def check_empty_indexed_fields(self):
+        for prop in self._model.schema.properties_index_sql:
+            value = eval(f"self.{prop.name}")
+            if not value and not isinstance(value, (int, float, complex)):
+                raise j.exceptions.Input("an indexed (sql) field cannot be empty:%s" % prop.name, data=self)
+
+        for prop in self._model.schema.properties_index_text:
+            if eval(f"self.{prop.name}") is None:
+                raise j.exceptions.Input("an indexed (text) field cannot be empty:%s" % prop.name, data=self)
+
     def save(self, serialize=False):
         if self._changed:
             self._capnp_obj  # makes sure we get back to binary form
             if serialize:
                 self._deserialized_items = {}  # need to go back to smallest form
+
         if self._model:
+            self.check_empty_indexed_fields()
+
             if not self._model._classname == "acl" and self._acl is not None:
                 if self.acl.id is None:
                     self.acl.save()

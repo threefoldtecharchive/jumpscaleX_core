@@ -39,6 +39,8 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :param kwargs:
         :return:
         """
+        if not name:
+            raise j.exceptions.Input("name needs to be specified on a config mgmt obj")
         if self.exists(name=name):
             raise j.exceptions.Base(f"cannot do new object, {name} exists")
         jsconfig = self._new(name=name, jsxobject=jsxobject, autosave=autosave, **kwargs)
@@ -47,7 +49,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
     def _check_children(self):
         if not self._cache_use:
-            assert self._children == {}
+            assert self._children == j.baseclasses.dict()
 
     def _check(self, jsconfig):
         if jsconfig._id is None:
@@ -68,6 +70,8 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :param kwargs: the data elements which will be given to JSXObject underneith (given to constructor)
         :return: the service
         """
+        if not name:
+            raise j.exceptions.Input("name needs to be specified on a config mgmt obj")
         kwargs_to_class = {}
         if not jsxobject:
             if kwargs:
@@ -104,6 +108,8 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         :param name: of the object
         """
+        if not name:
+            raise j.exceptions.Input("name needs to be specified on a config mgmt obj")
 
         # will reload if needed (not in self._children)
         rc, jsconfig = self._get(name=name, id=id, die=needexist, reload=reload)
