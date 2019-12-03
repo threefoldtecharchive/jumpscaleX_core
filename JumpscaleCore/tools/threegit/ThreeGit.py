@@ -50,7 +50,7 @@ class ThreeGit(j.baseclasses.object_config):
     def find_docs_path(self, path, base_path="docs"):
         """try to find docs path from base_path inside a given repo path and return it if exists
 
-        :param path: repo path, e.g. `/sandbox/code/github/threefoldfoundation/info_foundation`
+        :param path: path, e.g. `/sandbox/code/github/threefoldfoundation/info_foundation`
         :param base_path: dir inside the repo which has the md files will be joined with repo path
         :type path: str
         """
@@ -64,6 +64,10 @@ class ThreeGit(j.baseclasses.object_config):
         return path
 
     def _git_get(self, path):
+        """
+        git the git client used for 3git log tools
+        param: path: path of the docsite repo
+        """
         if path not in self._git_repos:
             try:
                 gc = j.clients.git.get(path)
@@ -73,7 +77,15 @@ class ThreeGit(j.baseclasses.object_config):
             self._git_repos[path] = gc
         return self._git_repos[path]
 
-    def load(self, path="", name="", dest="", base_path="docs", pull=False, download=False):
+    def load(self, path="", name="", dest="", base_path="docs", pull=False):
+        """
+        loads docsite and process it with macros
+        path: source of docsite
+        dest: dest of output processed files
+        name: name of docsite/wiki
+        base_path: docsite/wiki dir inside the repo which has the md files will be joined with repo path
+        pull: pull the docsite repo
+        """
         self.macros_load()
         if path.startswith("http"):
             # check if we already have a git repo, then the current checked-out branch
@@ -92,7 +104,7 @@ class ThreeGit(j.baseclasses.object_config):
 
     def process(self, check=True, reset=False):
         """
-        Load docsites. process it with macros, writes it to filesystem
+        Process docsites it with macros, writes it to filesystem
         :param check: reload changed files in docsite since last revision
         :param force: Reload all docsites files and reparse them
         :return:
