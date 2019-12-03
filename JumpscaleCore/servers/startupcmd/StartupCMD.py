@@ -40,7 +40,7 @@ class StartupCMD(j.baseclasses.object_config):
         timeout = 120
         process_strings = (ls)
         process_strings_regex = (ls)
-        pid = 0
+        pid = (I)
         executor = "tmux,corex,foreground,background" (E)
         daemon = true (b)
         hardkill = false (b)
@@ -56,6 +56,7 @@ class StartupCMD(j.baseclasses.object_config):
         time_stop = (T)
 
         """
+    DEFAULT_PROCESS_ID = 2147483647
 
     def _init(self, **kwargs):
         self._pane_ = None
@@ -63,7 +64,7 @@ class StartupCMD(j.baseclasses.object_config):
         self._logger_enable()
         if self.path == "":
             self.path = "/tmp"
-        self._pid = 0
+        self._pid = self.DEFAULT_PROCESS_ID
 
         self.cmd_start = j.core.tools.text_strip(self.cmd_start)
 
@@ -76,7 +77,7 @@ class StartupCMD(j.baseclasses.object_config):
         self.time_stop = 0
         self.state = "init"
         self.corex_id = ""
-        self._pid = 0
+        self._pid = self.DEFAULT_PROCESS_ID
 
     @property
     def pid(self):
@@ -136,10 +137,10 @@ class StartupCMD(j.baseclasses.object_config):
                 self._notify_state("down")
             return p
 
-        if self.pid:
+        if self.pid != self.DEFAULT_PROCESS_ID:
             p = j.sal.process.getProcessObject(self.pid, die=False)
             if not p:
-                self.pid = 0
+                self.pid = self.DEFAULT_PROCESS_ID
             else:
                 return notify_p(p)
 
@@ -148,7 +149,7 @@ class StartupCMD(j.baseclasses.object_config):
             if len(ps) == 1:
                 return notify_p(ps[0])
 
-        if not self.pid:
+        if self.pid == self.DEFAULT_PROCESS_ID:
             return
 
         return j.sal.process.getProcessObject(self.pid)
@@ -237,7 +238,7 @@ class StartupCMD(j.baseclasses.object_config):
 
         # will try to use process manager but this only works for local
         if self._local:
-            if self.pid and self.pid > 0:
+            if self.pid and self.pid != self.DEFAULT_PROCESS_ID:
                 self._log_info("found process to stop:%s" % self.pid)
                 p = self.process
                 if p and self.state in ["running", "stopping"]:
@@ -490,7 +491,7 @@ class StartupCMD(j.baseclasses.object_config):
                     if (
                         self.process_strings == []
                         and self.process_strings_regex == []
-                        and self.pid == 0
+                        and self.pid == self.DEFAULT_PROCESS_ID
                         and self.ports == []
                         and self.ports_udp == []
                     ):
@@ -741,13 +742,13 @@ class StartupCMD(j.baseclasses.object_config):
         assert str(res["id"]) == self.corex_id
 
     def _corex_clean(self):
-        if self.pid:
+        if self.pid != self.DEFAULT_PROCESS_ID:
             y = self._corex_client.process_info_get(pid=self.pid)
             if y:
                 assert self.pid == y["pid"]
                 self.corex_id = y["id"]
             else:
-                self.pid = 2147483647
+                self.pid = self.DEFAULT_PROCESS_ID
                 self.state = "init"
         processlist = self._corex_client.process_list()
         for x in processlist:
