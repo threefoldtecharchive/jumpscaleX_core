@@ -116,9 +116,9 @@ def cli():
 
 # CONFIGURATION (INIT) OF JUMPSCALE ENVIRONMENT
 @click.command()
-# @click.option("--codedir", default=None, help="path where the github code will be checked out, default sandbox/code")
-# @click.option("--no-sshagent", is_flag=True, help="do you want to use an ssh-agent")
-# @click.option("--sshkey", default=None, help="if more than 1 ssh-key in ssh-agent, specify here")
+@click.option("--codedir", default=None, help="path where the github code will be checked out, default sandbox/code")
+@click.option("--no-sshagent", is_flag=True, help="do you want to use an ssh-agent")
+@click.option("--sshkey", default=None, help="if more than 1 ssh-key in ssh-agent, specify here")
 @click.option("--debug", is_flag=True, help="do you want to put kosmos in debug mode?")
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive")
 @click.option(
@@ -137,10 +137,10 @@ def configure(
     """
 
     return _configure(
-        # codedir=codedir,
+        codedir=codedir,
         debug=debug,
-        # sshkey=sshkey,
-        # no_sshagent=no_sshagent,
+        sshkey=sshkey,
+        no_sshagent=no_sshagent,
         no_interactive=no_interactive,
         privatekey_words=privatekey,
         secret=secret,
