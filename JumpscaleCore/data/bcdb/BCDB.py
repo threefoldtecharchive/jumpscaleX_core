@@ -234,6 +234,9 @@ class BCDB(j.baseclasses.object):
             url = j.sal.fs.getBaseName(url_path)
             schema = j.data.schema.get_from_text(schema_text, url=url, multiple=False)
             schemas[url] = schema
+            self.meta._schema_set(schema, save=False)
+
+        self.meta._save()
 
         for url_path in paths:
             print(f"processing {url_path}")

@@ -72,7 +72,6 @@ def main(self):
             bcdb = j.data.bcdb.get(name=namespace)
 
         farm_model = bcdb.model_get(schema)
-        node_model = bcdb.model_get(schema2)
 
         for i in range(10):
             farm = farm_model.new()
@@ -81,8 +80,7 @@ def main(self):
             farm.name = str(i)
             farm.save()
 
-        farm_model.find()[0].delete()
-        farm_model.find()[0].delete()
+        node_model = bcdb.model_get(schema2)
 
         for i in range(10):
             node = node_model.new()
@@ -100,7 +98,7 @@ def main(self):
 
             bcdb.export(f"/tmp/bcdb_export/{namespace}", encrypt=encrypt)
 
-            assert len(farm_model.find()) == 8
+            assert len(farm_model.find()) == 10
             assert len(node_model.find()) == 8
 
             bcdb.reset()
@@ -108,11 +106,11 @@ def main(self):
 
             bcdb.import_(f"/tmp/bcdb_export/{namespace}", interactive=False)
 
-            assert len(farm_model.find()) == 8
+            assert len(farm_model.find()) == 10
             assert len(node_model.find()) == 8
 
-    export_import(encrypt=False)
     export_import(encrypt=True)
+    export_import(encrypt=False)
 
     cleanup()
 
