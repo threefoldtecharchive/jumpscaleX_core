@@ -77,7 +77,10 @@ class ThreeBotPackage(JSConfigBase):
 
             try:
                 model_url = line[line.index("!") + 1 :].split("#")[0]
-                if not model_url.startswith(model_prefix):
+                for prefix in ["jumpscale", "zerobot", "tfgrid", "threefold"]:
+                    if model_url.startswith(prefix):
+                        break
+                else:
                     old_model_url = model_url
                     model_url = f"{model_prefix}.{model_url}"
                     line = line.replace(old_model_url, model_url)

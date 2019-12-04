@@ -460,6 +460,30 @@ class BCDB(j.baseclasses.object):
         :param url:
         :return:
         """
+
+        def preprocess_schema(txt, package):
+            lines = []
+            model_prefix = f"{package.source.threebot}.{package.source.name}"
+
+            for line in txt.splitlines():
+                line = line.strip().lower()
+                if "!" in line:
+                    try:
+                        model_url = line[line.index("!") + 1 :].split("#")[0]
+                        for prefix in ["jumpscale", "zerobot", "tfgrid", "threefold"]:
+                            if model_url.startswith(prefix):
+                                break
+                        else:
+                            old_model_url = model_url
+                            model_url = f"{model_prefix}.{model_url}"
+                            line = line.replace(old_model_url, model_url)
+                    except Exception as e:
+                        print("Error")
+                lines.append(line)
+            return "\n".join(lines)
+
+        if package and isinstance(schema, str):
+            schema = preprocess_schema(schema, package)
         schema = self.schema_get(schema=schema, md5=md5, url=url, package=package)
         if schema.url in self._schema_url_to_model:
             model = self._schema_url_to_model[schema.url]
