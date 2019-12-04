@@ -44,7 +44,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         """
 
         kosmos -p 'j.servers.threebot.local_start_default(explorer_debug=True)'
-        kosmos -p 'j.servers.threebot.local_start_default()'
+        kosmos -p 'j.servers.threebot.local_start_default(background=False)'
 
         tbot_client = j.servers.threebot.local_start_default()
 
