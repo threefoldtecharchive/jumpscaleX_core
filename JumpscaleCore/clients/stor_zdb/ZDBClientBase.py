@@ -1,5 +1,6 @@
 from Jumpscale import j
 import redis
+import struct
 
 
 class ZDBClientBase(j.baseclasses.object_config):
@@ -185,6 +186,15 @@ class ZDBClientBase(j.baseclasses.object_config):
         :return:
         """
         return self.redis.ping()
+
+    @property
+    def next_id(self):
+        """
+        :return: return the next id
+        :rtype: int
+        """
+        id_bytes = struct.pack("<I", int(self.nsinfo["next_internal_id"], 16))
+        return int.from_bytes(id_bytes, byteorder="big", signed=True)
 
 
 def _patch_redis_client(redis):
