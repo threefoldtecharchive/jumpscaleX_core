@@ -99,6 +99,7 @@ class BCDB(j.baseclasses.object):
         self.acl = None
         self.user = None
         self.circle = None
+        self._dummy = None
 
     def _init_system_objects(self):
 
@@ -124,6 +125,9 @@ class BCDB(j.baseclasses.object):
         self.circle = self.model_add(CIRCLE(bcdb=self))
         self.NAMESPACE = self.model_add(NAMESPACE(bcdb=self))
 
+        schema = j.data.schema.get_from_url(url="jumpscale.bcdb.dummy.1")
+        self._dummy = self.model_get(schema=schema)
+
     def check(self):
         """
         at this point we have for sure the metadata loaded now we should see if the last record found can be found in the index
@@ -145,9 +149,16 @@ class BCDB(j.baseclasses.object):
             # there is no other way we can do this because without iterator the rebuild index cannot be done
             self.index_rebuild()
 
-    def export(self, path=None, encrypt=True, reset=False):
-        if not path:
-            raise j.exceptions.Base("export no path")
+    def export(self, path, encrypt=True, reset=True):
+        """Export all models and objects
+
+        :param path: path to export to
+        :type path: str
+        :param encrypt: encrypt data before exporting, defaults to True
+        :type encrypt: bool, optional
+        :param reset: reset the export path before exporting, defaults to True
+        :type reset: bool, optional
+        """
         if reset:
             j.sal.fs.remove(path)
         j.sal.fs.createDir(path)
@@ -186,16 +197,27 @@ class BCDB(j.baseclasses.object):
                     try:
                         j.sal.fs.writeFile(dpath_file, C)
                     except Exception as e:
-                        j.shell()
+                        raise j.exceptions.Base("failed to write object to file")
 
-    def import_(self, path=None, reset=True):
-        if not path or not j.sal.fs.exists(path):
-            raise j.exceptions.Base("import no path, or does not exist")
-        if reset:
-            self.reset()
-            if self.storclient:
-                assert self.storclient.list() == [0]
-                assert self.storclient.nsinfo["entries"] == 1
+    def import_(self, path, interactive=True):
+        """Import models and objects from path.
+
+        :param path: path to import data from
+        :type path: str
+        :param interactive: interactively ask user, defaults to True
+        :type interactive: bool, optional
+        """
+        if not j.sal.fs.exists(path):
+            raise j.exceptions.Base("path does not exist")
+
+        if interactive:
+            if not j.core.tools.ask_yes_no("Importing will reset your BCDB. Are you sure you want to continue?"):
+                return
+
+        self.reset()
+        if self.storclient:
+            assert self.storclient.list() == [0]
+            assert self.storclient.nsinfo["entries"] == 1
 
         self._log_info("Load bcdb:%s from %s" % (self.name, path))
         assert j.sal.fs.exists(path)
@@ -247,38 +269,32 @@ class BCDB(j.baseclasses.object):
                     continue
 
         max_id = max(list(data.keys()) or [0])
-        dummy_schema = """
-        @url = jumpscale.dummy.object
-        name** = (S)
-        """
-        schema = j.data.schema.get_from_text(dummy_schema, url="jumpscale.dummy.object", multiple=False)
-        dummy_model = self.model_get(schema=schema)
 
-        print(f"MAX: {max_id}")
         # have to import it in the exact same order
         for i in range(1, max_id + 1):
             print(f"i: {i}")
             if i not in data:
-                print(f" {i} doesn't exist in data.. ")
-                gap_obj = dummy_model.new()
+                if isinstance(self.storclient, ZDBClientBase):
+                    if i < self.storclient.next_id:
+                        continue
+
+                print(f"{i} doesn't exist in data.. ")
+                gap_obj = self._dummy.new()
                 gap_obj.name = j.data.idgenerator.generateGUID()
-                gap_obj.id = None
                 gap_obj.save()
             else:
                 url, obj_data = data[i]
                 model = models[url]
-                obj = model.new()
-                if "name" in obj_data:
-                    obj.name = obj_data["name"]
-                obj.id = None
-                obj.save()
-                print(f"setting obj {obj_data} on obj with id {obj.id} using {model.schema.url}")
-                obj = model.set_dynamic(obj_data, obj.id)
 
+                print(f"setting obj {obj_data} using {model.schema.url}, id should be {i}")
+
+                del obj_data["id"]
+                obj = model.new(data=obj_data)
+                obj.save()
                 assert obj.id == i
 
         print("Cleaning up dummy objects")
-        dummy_model.destroy()
+        self._dummy.destroy()
 
     @property
     def sqlite_index_client(self):

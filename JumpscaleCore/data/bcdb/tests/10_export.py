@@ -27,84 +27,94 @@ def main(self):
     kosmos 'j.data.bcdb.test(name="export")'
 
     """
+    namespaces = ["testexport_zdb", "testexport_sqlite"]
 
-    j.servers.zdb.test_instance_start()
+    def cleanup():
+        for namespace in namespaces:
+            if namespace in j.data.bcdb.instances:
+                bcdb = j.data.bcdb.instances[namespace]
+                bcdb.destroy()
 
-    SCHEMA = """
-    @url = threefoldtoken.wallet.test
-    name** = "wallet"
-    addr = ""                   # Address
-    ipaddr = (ipaddr)           # IP Address
-    email = "" (S)              # Email address
-    username = "" (S)           # User name
-    
+    cleanup()
+
+    schema_text = """
+    @url = farm.1
+    name** = (S)
+    resource_prices = (LO) !node.resource.price.1
+
+    @url = node.resource.price.1
+    currency = "EUR,USD,TFT,AED,GBP" (E)
+    cru = (F)
+    mru = (F)
+    hru = (F)
+    sru = (F)
+    nru = (F)
     """
-    bcdb = j.data.bcdb.new("test_export", reset=True)
-
-    m = bcdb.model_get(schema=SCHEMA)
-    # model ID will go from 1 to 10
-    for i in range(10):
-        o = m.new()
-        assert o._model.schema.url == "threefoldtoken.wallet.test"
-        o.addr = "something:%s" % i
-        o.email = "myemail"
-        o.name = "myuser_%s" % i
-        o.save()
-
-    SCHEMA2 = """
-    @url = threefoldtoken.wallet.test2
-    lastname** = "lienard"
-    firstname = ""                   # Address    
+    schema_text2 = """
+    @url = node.1
+    size = (I)
     """
+    schema = j.data.schema.get_from_text(schema_text)
+    schema2 = j.data.schema.get_from_text(schema_text2)
 
-    m2 = bcdb.model_get(schema=SCHEMA2)
-    # model ID will go from 11 to 20
-    for i in range(10):
-        o = m2.new()
-        assert o._model.schema.url == "threefoldtoken.wallet.test2"
-        o.firstname = "firstname:%s" % i
-        o.lastname = "lastname:%s" % i
-        o.save()
+    zdb = j.servers.zdb.test_instance_start()
 
-    p = "/tmp/bcdb_export"
+    for namespace in namespaces:
+        if namespace == "testexport_zdb":
+            adminsecret_ = j.data.hash.md5_string(zdb.adminsecret_)
+            zdb_admin = zdb.client_admin_get()
 
-    def export_import(encr=False, export=True, remove=False):
-        if export:
-            j.sal.fs.remove(p)
-            bcdb.export(path=p, encrypt=encr)
+            if not zdb_admin.namespace_exists(namespace):
+                zdb_admin.namespace_new(namespace, secret=adminsecret_, maxsize=0, die=True)
+            storclient = zdb.client_get(namespace, adminsecret_)
+            bcdb = j.data.bcdb.get(name=namespace, storclient=storclient)
+        else:
+            bcdb = j.data.bcdb.get(name=namespace)
 
-        obj = m2.get(13)  # because we check the second model that starts with id 11
-        bcdb.reset()
+        farm_model = bcdb.model_get(schema)
+        node_model = bcdb.model_get(schema2)
 
-        try:
-            m2.get(13)
-            raise j.exceptions.Base("should not exist")
-        except:
-            pass
+        for i in range(10):
+            farm = farm_model.new()
+            farm.threebot_id = i
+            farm.iyo_organization = str(i)
+            farm.name = str(i)
+            farm.save()
 
-        bcdb.import_(path=p)
-        m3 = bcdb.model_get(schema=SCHEMA2)
+        farm_model.find()[0].delete()
+        farm_model.find()[0].delete()
 
-        obj2 = m3.get(13)
+        for i in range(10):
+            node = node_model.new()
+            node.size = i
+            node.save()
 
-        assert obj2._ddict_hr == obj._ddict_hr
-        # data contains schema ID which should be the same as import export is ID deterministic
-        assert obj2._ddict_json_hr == obj._ddict_json_hr
+        node_model.find()[0].delete()
+        node_model.find()[0].delete()
 
-        assert obj._schema == obj2._schema
+    def export_import(encrypt=False):
+        for namespace in namespaces:
+            bcdb = j.data.bcdb.get(name=namespace)
+            farm_model = bcdb.model_get(schema)
+            node_model = bcdb.model_get(schema2)
 
-        if remove:
-            j.sal.fs.remove(p)
+            bcdb.export(f"/tmp/bcdb_export/{namespace}", encrypt=encrypt)
 
-    export_import(encr=False, export=True, remove=False)
-    # will now test if we can import
-    export_import(False, export=False, remove=True)
-    # now do other test because there will be stuff changed
-    export_import(encr=False, export=True, remove=True)
+            assert len(farm_model.find()) == 8
+            assert len(node_model.find()) == 8
 
-    # now test with encryption
-    export_import(encr=True, export=True, remove=False)
-    export_import(encr=True, export=False, remove=True)
+            bcdb.reset()
+            assert bcdb.storclient.count == 1
+
+            bcdb.import_(f"/tmp/bcdb_export/{namespace}", interactive=False)
+
+            assert len(farm_model.find()) == 8
+            assert len(node_model.find()) == 8
+
+    export_import(encrypt=False)
+    export_import(encrypt=True)
+
+    cleanup()
 
     self._log_info("TEST DONE")
     return "OK"
