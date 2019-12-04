@@ -95,23 +95,19 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         cl = j.servers.threebot.local_start_default(packages=packages)
 
-        j.shell()
+        # if fileserver:
+        #     gedis_client.actors.package_manager.package_add(
+        #         git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threebot/fileserver"
+        #     )
+        #
+        # if wiki:
+        #     gedis_client.actors.package_manager.package_add(
+        #         git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/threebot/wiki"
+        #     )
+        #
+        # gedis_client.reload()
 
-        if fileserver:
-            gedis_client.actors.package_manager.package_add(
-                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threebot/fileserver"
-            )
-
-        if wiki:
-            gedis_client.actors.package_manager.package_add(
-                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/threebot/wiki"
-            )
-
-        gedis_client.reload()
-
-        if not name == "onlystart":
-
-            self._test_run(name=name)
+        self._test_run(name=name)
 
     def _docker_jumpscale_get(self, name="3bot", delete=True):
         docker = j.core.dockerfactory.container_get(name=name, delete=delete)
