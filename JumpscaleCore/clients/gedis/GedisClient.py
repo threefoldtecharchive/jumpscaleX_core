@@ -21,7 +21,7 @@ class GedisClient(JSConfigBase):
     name** = "main"
     host = "127.0.0.1" (S)
     port = 8900 (ipport)
-    package_name = "" (S)
+    package_name = "" (S)  #is the full package name e.g. threebot.blog
     threebot_local_profile = "default"
     password_ = ""
     # ssl = False (B)
@@ -93,8 +93,6 @@ class GedisClient(JSConfigBase):
         if cmds_meta["cmds"] == {}:
             return
         for key, data in cmds_meta["cmds"].items():
-            if "__model_" in key:
-                raise j.exceptions.Base("aa")
             actor_name = key.split(".")[-1]
             if not self.package_name or key.startswith(self.package_name):
                 self._actorsmeta[actor_name] = j.servers.gedis._cmds_get(key, data)
