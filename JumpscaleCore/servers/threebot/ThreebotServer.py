@@ -302,7 +302,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
 
-            # j.shell()  # DO NOT REMOVE THIS SHELL
+            j.shell()  # DO NOT REMOVE THIS SHELL
             forever = event.Event()
             try:
                 forever.wait()

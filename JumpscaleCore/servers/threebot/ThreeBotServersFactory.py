@@ -40,7 +40,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def local_start_default(self, explorer_debug=False, ssl=None):
+    def local_start_default(self, explorer_debug=False, background=False, ssl=None):
         """
 
         kosmos -p 'j.servers.threebot.local_start_default(explorer_debug=True)'
@@ -58,7 +58,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             self.install()
             self.default.stop()
 
-        client = self.default.start(background=False)
+        client = self.default.start(background=background)
 
         if explorer_debug:
             client.actors.package_manager.package_add(
