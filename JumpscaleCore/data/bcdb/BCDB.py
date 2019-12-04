@@ -509,13 +509,13 @@ class BCDB(j.baseclasses.object):
                 if not j.data.schema.exists(url=url):
                     # means we don't know it and it is not in BCDB either because the load has already happened
                     raise j.exceptions.Input("we could not find model from:%s, was not in bcdb or j.data.schema" % url)
-                schema = j.data.schema.get_from_url(url)
+                schema = j.data.schema.get_from_url(url, package=package)
             elif md5:
                 assert url == None
                 if not j.data.schema.exists(md5=md5):
                     raise j.exceptions.Input("we could not find model from:%s, was not in bcdb meta" % md5)
                 schema_md5 = j.data.schema.get_from_md5(md5=md5)
-                schema = j.data.schema.get_from_url(schema_md5.url)
+                schema = j.data.schema.get_from_url(schema_md5.url, package=package)
             else:
                 raise j.exceptions.Input("need to specify md5 or url")
 

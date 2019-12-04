@@ -63,7 +63,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         elif url:
             return url in self._url_to_md5
 
-    def get_from_md5(self, md5):
+    def get_from_md5(self, md5, package=None):
         """
         :param md5: each schema has a unique md5 which is its identification string
         :return: Schema
@@ -74,7 +74,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
             if isinstance(schema_text_or_obj, str):
                 if schema_text_or_obj.strip() == "":
                     raise j.exceptions.JSBUG("schema should never be empty string")
-                md5, schema = self._add_text_to_schema_obj(schema_text_or_obj)
+                md5, schema = self._add_text_to_schema_obj(schema_text_or_obj, package=package)
             assert isinstance(self._md5_to_schema[md5], j.data.schema.SCHEMA_CLASS)
             return self._md5_to_schema[md5]
         else:
@@ -88,7 +88,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         assert isinstance(url, str)
         url = self._urlclean(url, package=package)
         if url in self._url_to_md5:
-            s = self.get_from_md5(self._url_to_md5[url])
+            s = self.get_from_md5(self._url_to_md5[url], package=package)
             s.url = url
             self.schemas._add(s.url, s)
             return s
@@ -160,8 +160,8 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         url = url.strip().strip("'\"").strip()
         if package:
             if not url.startswith(package.name):
-                url = f"%s.{url}" % package.name
-                url = url.replace("..", ".")
+                package_name = package.name.rstrip(".")
+                url = f"{package_name}.{url}"
         return url
 
     def _schema_blocks_get(self, schema_text):
@@ -215,14 +215,17 @@ class SchemaFactory(j.baseclasses.factory_testtools):
 
         # here we always update the md5 because if we are here it means
         # that we have added a new schema
-        self._url_to_md5[s.url] = md5
+        if not url:
+            url = s.url
+
+        self._url_to_md5[url] = md5
 
         self._md5_to_schema._add(md5, s)
         self.schemas_md5._add(md5, s)
 
-        self.schemas._add(s.url, s)
+        self.schemas._add(url, s)
 
-        assert s.url
+        assert url
 
         return md5, s
 

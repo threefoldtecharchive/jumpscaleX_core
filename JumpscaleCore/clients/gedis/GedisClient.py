@@ -93,17 +93,19 @@ class GedisClient(JSConfigBase):
         if cmds_meta["cmds"] == {}:
             return
         for key, data in cmds_meta["cmds"].items():
-            if "__model_" in key:
-                raise j.exceptions.Base("aa")
             actor_name = key.split(".")[-1]
             if not self.package_name or key.startswith(self.package_name):
-                self._actorsmeta[actor_name] = j.servers.gedis._cmds_get(key, data)
+                # TODO: send package in here
+                self._actorsmeta[actor_name] = j.servers.gedis._cmds_get(actor_name, data)
 
         # at this point the schema's are loaded only for the namespace identified (is all part of metadata)
         for actorname, actormeta in self._actorsmeta.items():
             tpath = "%s/templates/GedisClientGenerated.py" % (j.clients.gedis._dirpath)
+            # TODO: WRONG
             actorname_ = actormeta.namespace + "_" + actorname
+
             dest = j.core.tools.text_replace("{DIR_BASE}/var/codegen/gedis/%s/client/%s.py") % (self.name, actorname_)
+
             cl = j.tools.jinja2.code_python_render(
                 obj_key="GedisClientGenerated",
                 path=tpath,
