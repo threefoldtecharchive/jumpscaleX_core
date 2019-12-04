@@ -635,11 +635,6 @@ class BCDB(j.baseclasses.object):
                 continue
 
             schema = model.schema
-            toml_path = "%s.toml" % (schema.key)
-            if j.sal.fs.getBaseName(schemapath) != toml_path:
-                toml_path = "%s/%s.toml" % (j.sal.fs.getDirName(schemapath), schema.key)
-                j.sal.fs.renameFile(schemapath, toml_path)
-                schemapath = toml_path
 
         for pyfile_base in pyfiles_base:
             if pyfile_base.startswith("_"):
