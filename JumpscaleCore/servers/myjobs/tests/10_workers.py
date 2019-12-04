@@ -6,8 +6,6 @@ def main(self):
     """
     kosmos -p 'j.servers.myjobs.test("workers")'
     """
-    self.stop(reset=True)
-    self.reset()
     self.workers_subprocess_start(nr_fixed_workers=10)
 
     j.tools.logger.debug = True
@@ -97,7 +95,6 @@ def main(self):
 
     gevent.sleep(5)
 
-
     for jid in ids[:-2]:
         job = self.jobs.get(id=jid)
 
@@ -138,7 +135,12 @@ def main(self):
     jobs = [job for job in jobs if job.state == "OK"]
     assert len(jobs) == 30
 
-    self.stop(reset=True)
+    job = j.servers.myjobs.schedule(add_error, return_queues=["queue_a"], return_queues_reset=True, a=1, b=2, die=True)
+    try:
+        self.results(ids=[job.id], return_queues=["queue_a"], die=True)
+        raise AssertionError("Should have died")
+    except j.exceptions.Base:
+        pass
 
     print("workers TEST OK")
     print("TEST OK")
