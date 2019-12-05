@@ -129,7 +129,7 @@ class BCDBMeta(j.baseclasses.object):
         serializeddata = j.data.serializers.msgpack.dumps(self._data)
         self._bcdb.storclient.set(serializeddata, 0)  # we can now always set at 0 because is for sure already there
 
-    def _schema_set(self, schema):
+    def _schema_set(self, schema, save=True):
         """
         add the schema to the metadata if it was not done yet
         :param schema:
@@ -185,7 +185,7 @@ class BCDBMeta(j.baseclasses.object):
             d["url"] = schema.url
             self._data["md5"][schema._md5] = d
 
-        if change or change2:
+        if (change or change2) and save:
             self._save()
 
         # don't load the full schema but put the text of schema there, register to factory

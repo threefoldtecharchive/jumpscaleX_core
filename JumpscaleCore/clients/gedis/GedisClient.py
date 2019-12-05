@@ -21,7 +21,7 @@ class GedisClient(JSConfigBase):
     name** = "main"
     host = "127.0.0.1" (S)
     port = 8900 (ipport)
-    package_name = "" (S)
+    package_name = "" (S)  #is the full package name e.g. threebot.blog
     threebot_local_profile = "default"
     password_ = ""
     # ssl = False (B)

@@ -579,6 +579,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                     jobid = job["id"]
                     job = self.jobs.get(id=jobid)
                     if job.error and die:
+                        # make sure all queues are reset
+                        for queue in queues:
+                            queue.reset()
                         raise j.exceptions.Base(f"job failed: {job.id}", data=self)
                     res.append(job)
                 else:
@@ -604,7 +607,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         res = self.wait_queues(queue_names=[queue_name], size=size, timeout=timeout, die=die)
         if res:
             return res[0]
-
 
     def test(self, name="", **kwargs):
         """
