@@ -88,7 +88,7 @@ class ZDBServer(j.baseclasses.object_config):
 
         """
         cl = j.clients.zdb.client_admin_get(
-            name=self.name, addr=self.addr, port=self.port, secret=self.adminsecret_, mode=self.mode
+            name=f"{self.name}_admin", addr=self.addr, port=self.port, secret=self.adminsecret_, mode=self.mode
         )
         return cl
 
