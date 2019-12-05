@@ -60,13 +60,15 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         :return:
         """
+        client = None
         packages = packages or []
         if reload or j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
             self.install()
             self.default.stop()
-            self.default.start(background=background)
+            client = self.default.start(background=background)
 
-        client = j.clients.gedis.client_get(name="system", port=8901, package_name="zerobot.base")
+        if not client:
+            client = j.clients.gedis.client_get(name="threebot", port=8901, package_name="zerobot.base")
 
         if explorer_debug:
             client.actors.package_manager.package_add(
