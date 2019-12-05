@@ -827,11 +827,29 @@ def package_new(name, dest=None):
         dest = j.sal.fs.getcwd()
     capitalized_name = name.capitalize()
     dirs = ["wiki", "models", "actors", "chatflows"]
+    package_toml_path = j.sal.fs.joinPaths(dest, f"{name}/package.toml")
     package_py_path = j.sal.fs.joinPaths(dest, f"{name}/package.py")
     factory_py_path = j.sal.fs.joinPaths(dest, f"{name}/{capitalized_name}Factory.py")
 
     for d in dirs:
         j.sal.fs.createDir(j.sal.fs.joinPaths(dest, name, d))
+
+    package_toml_content = f"""
+[source]
+name = "{name}"
+description = "mypackage"
+threebot = "mybot"
+version = "1.0.0"
+
+
+[[bcdbs]]
+namespace = "mybot"
+type = "zdb"
+instance = "default"
+    """
+
+    with open(package_toml_path, "w") as f:
+        f.write(package_toml_content)
 
     package_py_content = f"""
 from Jumpscale import j
