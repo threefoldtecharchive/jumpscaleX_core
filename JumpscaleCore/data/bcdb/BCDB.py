@@ -479,6 +479,30 @@ class BCDB(j.baseclasses.object):
         :param url:
         :return:
         """
+
+        def preprocess_schema(txt, package):
+            lines = []
+            model_prefix = f"{package.source.threebot}.{package.source.name}"
+
+            for line in txt.splitlines():
+                line = line.strip().lower()
+                if "!" in line:
+                    try:
+                        model_url = line[line.index("!") + 1 :].split("#")[0]
+                        for prefix in ["jumpscale", "zerobot", "tfgrid", "threefold"]:
+                            if model_url.startswith(prefix):
+                                break
+                        else:
+                            old_model_url = model_url
+                            model_url = f"{model_prefix}.{model_url}"
+                            line = line.replace(old_model_url, model_url)
+                    except Exception as e:
+                        print("Error")
+                lines.append(line)
+            return "\n".join(lines)
+
+        if package and isinstance(schema, str):
+            schema = preprocess_schema(schema, package)
         schema = self.schema_get(schema=schema, md5=md5, url=url, package=package)
         if schema.url in self._schema_url_to_model:
             model = self._schema_url_to_model[schema.url]
@@ -528,13 +552,13 @@ class BCDB(j.baseclasses.object):
                 if not j.data.schema.exists(url=url):
                     # means we don't know it and it is not in BCDB either because the load has already happened
                     raise j.exceptions.Input("we could not find model from:%s, was not in bcdb or j.data.schema" % url)
-                schema = j.data.schema.get_from_url(url)
+                schema = j.data.schema.get_from_url(url, package=package)
             elif md5:
                 assert url == None
                 if not j.data.schema.exists(md5=md5):
                     raise j.exceptions.Input("we could not find model from:%s, was not in bcdb meta" % md5)
                 schema_md5 = j.data.schema.get_from_md5(md5=md5)
-                schema = j.data.schema.get_from_url(schema_md5.url)
+                schema = j.data.schema.get_from_url(schema_md5.url, package=package)
             else:
                 raise j.exceptions.Input("need to specify md5 or url")
 

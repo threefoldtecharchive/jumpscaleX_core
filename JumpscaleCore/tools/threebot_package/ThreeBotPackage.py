@@ -67,9 +67,29 @@ class ThreeBotPackage(JSConfigBase):
         return j.threebot.servers.web
 
     def _model_get_fields_schema(self, model):
-        lines = model.schema.text.splitlines()
-        if lines[0].strip().startswith("@url"):
-            lines.pop(0)
+        lines = []
+        model_prefix = f"{self.source.threebot}.{self.source.name}"
+
+        for line in model.schema.text.splitlines():
+            line = line.strip().lower()
+            if line.startswith("@url"):
+                continue
+
+            try:
+                model_url = line[line.index("!") + 1 :].split("#")[0]
+                for prefix in ["jumpscale", "zerobot", "tfgrid", "threefold"]:
+                    if model_url.startswith(prefix):
+                        break
+                else:
+                    old_model_url = model_url
+                    model_url = f"{model_prefix}.{model_url}"
+                    line = line.replace(old_model_url, model_url)
+            except ValueError:
+                # ! is not in line
+                pass
+
+            lines.append(line)
+
         return "\n        ".join(lines)
 
     def load(self):
@@ -185,7 +205,7 @@ class ThreeBotPackage(JSConfigBase):
             if j.sal.fs.exists(path):
                 model_urls = self.bcdb.models_add(path, package=self)
                 for model_url in model_urls:
-                    m = self.bcdb.model_get(url=model_url)
+                    m = self.bcdb.model_get(url=model_url, package=self)
                     if model_url.startswith(self.name):
                         model_url2 = model_url[len(self.name) + 1 :]
                     else:
@@ -235,6 +255,9 @@ class ThreeBotPackage(JSConfigBase):
                 self._bcdb_ = j.data.bcdb.system
 
         return self._bcdb_
+
+    def bcdb_model_get(self, url):
+        return self.bcdb.model_get(url=url, package=self)
 
     def _web_load(self, app_type="frontend"):
         for port in (443, 80):

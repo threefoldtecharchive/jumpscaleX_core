@@ -315,9 +315,9 @@ class ThreeBotServer(j.baseclasses.object_config):
                 self.startup_cmd.start()
                 time.sleep(1)
 
-        if not j.sal.nettools.waitConnectionTest("127.0.0.1", 8901, timeout=600):
+        # wait on lapis to start so we make sure everything is loaded by then.
+        if not j.sal.nettools.waitConnectionTest("127.0.0.1", 80, timeout=600):
             raise j.exceptions.Timeout("Could not start threebot server")
-
         self.client = j.clients.gedis.get(name="threebot", port=8901)
         # TODO: will have to authenticate myself
 

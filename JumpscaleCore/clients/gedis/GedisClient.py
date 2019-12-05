@@ -72,6 +72,11 @@ class GedisClient(JSConfigBase):
     #     res = self._redis.execute_command(cmd)
     #     return res
 
+    @property
+    def package(self):
+        if self.package_name:
+            return j.tools.threebot_packages.get(self.package_name)
+
     def reload(self):
         self._log_info("reload")
         self._reset()
@@ -95,13 +100,15 @@ class GedisClient(JSConfigBase):
         for key, data in cmds_meta["cmds"].items():
             actor_name = key.split(".")[-1]
             if not self.package_name or key.startswith(self.package_name):
-                self._actorsmeta[actor_name] = j.servers.gedis._cmds_get(key, data)
+                self._actorsmeta[actor_name] = j.servers.gedis._cmds_get(actor_name, data, package=self.package)
 
         # at this point the schema's are loaded only for the namespace identified (is all part of metadata)
         for actorname, actormeta in self._actorsmeta.items():
             tpath = "%s/templates/GedisClientGenerated.py" % (j.clients.gedis._dirpath)
             actorname_ = actormeta.namespace + "_" + actorname
+
             dest = j.core.tools.text_replace("{DIR_BASE}/var/codegen/gedis/%s/client/%s.py") % (self.name, actorname_)
+
             cl = j.tools.jinja2.code_python_render(
                 obj_key="GedisClientGenerated",
                 path=tpath,

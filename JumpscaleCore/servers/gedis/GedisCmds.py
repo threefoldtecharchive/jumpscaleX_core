@@ -28,7 +28,7 @@ class GedisCmds(JSBASE):
         self.package = package
 
         schema = j.data.schema.get_from_url(url="jumpscale.gedis.api")
-        self.model = j.data.bcdb.system.model_get(schema=schema)
+        self.model = j.data.bcdb.system.model_get(schema=schema, package=package)
         self._cmds = {}
 
         if data:
