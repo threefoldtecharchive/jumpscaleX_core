@@ -38,10 +38,11 @@ class ZDBClientBase(j.baseclasses.object_config):
             self._select_namespace()
 
         assert self.ping()
+        self._model.trigger_add(self._update_trigger)
 
-    def save(self):
-        self._redis = None
-        j.baseclasses.object_config.save(self)
+    def _update_trigger(self, obj, action, **kwargs):
+        if action in ["save", "change"]:
+            self._redis = None
 
     @property
     def redis(self):

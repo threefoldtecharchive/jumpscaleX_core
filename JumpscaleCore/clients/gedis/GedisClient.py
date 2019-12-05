@@ -42,13 +42,11 @@ class GedisClient(JSConfigBase):
         self._threebot_me_ = None
         self._reset()
         self.reload()
+        self._model.trigger_add(self._update_trigger)
 
-    def save(self):
-        self._redis_ = None
-        JSConfigBase.save(self)
-
-    def _update_trigger(self, key, val):
-        self._reset()
+    def _update_trigger(self, obj, action, **kwargs):
+        if action in ["save", "change"]:
+            self._reset()
 
     def _reset(self):
         self._redis_ = None  # connection to server
