@@ -40,7 +40,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def local_start_default(self, explorer_debug=False, packages=[], reload=False):
+    def local_start_default(self, background=False, explorer_debug=False, packages=None, reload=False):
         """
 
         kosmos -p 'j.servers.threebot.local_start_default(explorer_debug=True)'
@@ -60,11 +60,11 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         :return:
         """
-
+        packages = packages or []
         if reload or j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
             self.install()
             self.default.stop()
-            self.default.start(background=True)
+            self.default.start(background=background)
 
         client = j.clients.gedis.client_get(name="system", port=8901, package_name="zerobot.base")
 
