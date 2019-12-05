@@ -74,7 +74,7 @@ class ThreebotExplorer(j.baseclasses.object):
         """
         self._log_info("register step0: create your wallet under the name of your main threebot: %s" % name)
         data_return_json = self._redis.execute_command(
-            "default.phonebook.wallet_create", j.data.serializers.json.dumps({"name": name})
+            "tfgrid.phonebook.phonebook.wallet_create", j.data.serializers.json.dumps({"name": name})
         )
         data_return = j.data.serializers.json.loads(data_return_json)
         return data_return["wallet_addr"]
@@ -104,8 +104,8 @@ class ThreebotExplorer(j.baseclasses.object):
             wallet_name = name
 
         data_return_json = self._redis.execute_command(
-            "default.phonebook.name_register",
-            j.data.serializers.json.dumps({"name": name, "wallet_name": wallet_name, "pubkey": pubkey}),
+            "tfgrid.phonebook.phonebook.name_register",
+            j.data.serializers.json.dumps({"name": name, "wallet_name": wallet_name, "pubkey": pubkey, "email": email}),
         )
 
         data_return = j.data.serializers.json.loads(data_return_json)
@@ -150,7 +150,7 @@ class ThreebotExplorer(j.baseclasses.object):
         )
         data["sender_signature_hex"] = sender_signature_hex
         data2 = j.data.serializers.json.dumps(data)
-        data_return_json = self._redis.execute_command("default.phonebook.record_register", data2)
+        data_return_json = self._redis.execute_command("tfgrid.phonebook.phonebook.record_register", data2)
         data_return = j.data.serializers.json.loads(data_return_json)
 
         record0 = self.threebot_record_get(tid=data_return["id"])

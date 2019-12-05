@@ -46,9 +46,9 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
             if not email:
                 if interactive:
                     assert j.application.interactive
-                    email = j.tools.console.askString("your threebot email (optional)")
+                    email = j.tools.console.askString("your threebot email")
                 else:
-                    email = ""
+                    raise j.exceptions.Input("please specify email")
             if not description:
                 if interactive:
                     description = j.tools.console.askString("your threebot description (optional)")
