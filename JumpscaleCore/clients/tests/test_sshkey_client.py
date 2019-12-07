@@ -6,7 +6,7 @@ from base_test import BaseTest
 class TestSshKeyClient(BaseTest):
     def setUp(self):
         self.sshkeyclient_name = "ssh_client_{}".format(self.rand_string())
-        self.sshkey_dir = "{}/.ssh/".format(j.core.myenv.config["DIR_HOME"])
+        self.sshkey_dir = "{}/.ssh".format(j.core.myenv.config["DIR_HOME"])
         self.info("Create sshkey client with name {}".format(self.sshkeyclient_name))
         self.sshkey_client = j.clients.sshkey.get(name=self.sshkeyclient_name)
         self.ssh_pubkey = self.sshkey_client.pubkey
