@@ -54,6 +54,9 @@ class ThreeBotPackage(JSConfigBase):
         # self.wiki_names = []
         # self.model_urls = []
 
+        # load current models
+        self.models
+
     @property
     def threebot_server(self):
         return j.threebot.servers.core
