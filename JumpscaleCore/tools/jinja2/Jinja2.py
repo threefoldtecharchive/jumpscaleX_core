@@ -144,11 +144,7 @@ class Jinja2(j.baseclasses.object):
         if True or render:  # TODO: need to be fixed
             BASENAME = j.tools.codeloader._basename(dest)
             # means has not been rendered yet lets do
-            try:
-                out = t.render(j=j, DIRS=j.dirs, BASENAME=BASENAME, **args)
-            except Exception as e:  # THERE NEEDS TO BE A BETTER WAY, WHY DOES ERROR HANDLING NOT WORK HERE
-                self._log_error("template error in:%s" % path)
-                raise j.exceptions.Base(e)
+            out = t.render(j=j, DIRS=j.dirs, BASENAME=BASENAME, **args)
 
             j.sal.fs.writeFile(dest, out)
             if dest_md5 is not None:

@@ -23,12 +23,12 @@ class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtoo
 
         return server.gevent_server
 
-    def _cmds_get(self, key, data):
+    def _cmds_get(self, key, data, package=None):
         """
         Used in client only, starts from data (python client)
         """
         name = key
-        return GedisCmds(name=name, data=data)
+        return GedisCmds(name=name, data=data, package=package)
 
     def test(self, name="basic"):
         """

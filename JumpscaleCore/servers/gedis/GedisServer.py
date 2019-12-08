@@ -189,7 +189,7 @@ class GedisServer(JSBaseConfig):
             self.cmds_meta[key] = GedisCmds(path=path, name=name, package=package)
         except Exception as e:
             print(e)
-            j.debug()
+            raise e
         # return self.cmds_meta[key]
 
     ####################################################################

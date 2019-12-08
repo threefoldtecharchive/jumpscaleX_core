@@ -87,7 +87,9 @@ class ZDBServer(j.baseclasses.object_config):
         """
 
         """
-        cl = j.clients.zdb.client_admin_get(addr=self.addr, port=self.port, secret=self.adminsecret_, mode=self.mode)
+        cl = j.clients.zdb.client_admin_get(
+            name=f"{self.name}_admin", addr=self.addr, port=self.port, secret=self.adminsecret_, mode=self.mode
+        )
         return cl
 
     def client_get(self, nsname="default", secret="1234"):

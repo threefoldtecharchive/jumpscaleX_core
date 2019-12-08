@@ -21,7 +21,7 @@ class GedisClient(JSConfigBase):
     name** = "main"
     host = "127.0.0.1" (S)
     port = 8900 (ipport)
-    package_name = "" (S)
+    package_name = "" (S)  #is the full package name e.g. threebot.blog
     threebot_local_profile = "default"
     password_ = ""
     # ssl = False (B)
@@ -42,13 +42,11 @@ class GedisClient(JSConfigBase):
         self._threebot_me_ = None
         self._reset()
         self.reload()
+        self._model.trigger_add(self._update_trigger)
 
-    def save(self):
-        self._redis_ = None
-        JSConfigBase.save(self)
-
-    def _update_trigger(self, key, val):
-        self._reset()
+    def _update_trigger(self, obj, action, **kwargs):
+        if action in ["save", "change"]:
+            self._reset()
 
     def _reset(self):
         self._redis_ = None  # connection to server
@@ -72,6 +70,11 @@ class GedisClient(JSConfigBase):
     #     res = self._redis.execute_command(cmd)
     #     return res
 
+    @property
+    def package(self):
+        if self.package_name:
+            return j.tools.threebot_packages.get(self.package_name)
+
     def reload(self):
         self._log_info("reload")
         self._reset()
@@ -93,17 +96,17 @@ class GedisClient(JSConfigBase):
         if cmds_meta["cmds"] == {}:
             return
         for key, data in cmds_meta["cmds"].items():
-            if "__model_" in key:
-                raise j.exceptions.Base("aa")
             actor_name = key.split(".")[-1]
             if not self.package_name or key.startswith(self.package_name):
-                self._actorsmeta[actor_name] = j.servers.gedis._cmds_get(key, data)
+                self._actorsmeta[actor_name] = j.servers.gedis._cmds_get(actor_name, data)
 
         # at this point the schema's are loaded only for the namespace identified (is all part of metadata)
         for actorname, actormeta in self._actorsmeta.items():
             tpath = "%s/templates/GedisClientGenerated.py" % (j.clients.gedis._dirpath)
             actorname_ = actormeta.namespace + "_" + actorname
+
             dest = j.core.tools.text_replace("{DIR_BASE}/var/codegen/gedis/%s/client/%s.py") % (self.name, actorname_)
+
             cl = j.tools.jinja2.code_python_render(
                 obj_key="GedisClientGenerated",
                 path=tpath,

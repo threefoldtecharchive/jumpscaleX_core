@@ -57,7 +57,7 @@ class Schema(j.baseclasses.object):
         else:
             self._md5 = j.data.schema._md5(text)
 
-        self._schema_from_text(text)
+        self._schema_from_text(text, package=self.package)
 
         if not self.url:
             self.url = j.data.hash.md5_string(text)
@@ -144,7 +144,7 @@ class Schema(j.baseclasses.object):
         else:
             raise j.exceptions.Base("cannot find type for:%s" % txt)
 
-    def _schema_from_text(self, text):
+    def _schema_from_text(self, text, package=None):
         """
         get schema object from schema text
         """
@@ -181,6 +181,7 @@ class Schema(j.baseclasses.object):
             if "!" in line:
                 line, pointer_type = line.split("!", 1)
                 pointer_type = pointer_type.strip()
+                pointer_type = j.data.schema._urlclean(pointer_type, package=package)
                 line = line.strip()
             else:
                 pointer_type = None
@@ -282,12 +283,12 @@ class Schema(j.baseclasses.object):
 
         for key, val in systemprops.items():
             if key == "url":
-                if self.url:
-                    assert self.url == val
-                else:
-                    self.url = val
+                if self.url and self.package:
+                    assert self.url == j.data.schema._urlclean(val, package=self.package)
+
+                self.url = j.data.schema._urlclean(val, package=self.package)
             else:
-                self.systemprops.__dict__[key] = val
+                self.systemprops.__dict__[key] = self.url
 
         nr = 0
         for s in self.properties:
@@ -424,7 +425,7 @@ class Schema(j.baseclasses.object):
             elif prop.is_jsxobject:
                 for subprop in prop.jumpscaletype._schema.properties_index_sql:
                     sprop = SchemaProperty(
-                        name=f"{prop.name}_{subprop.name}",
+                        name=f"{prop.name}__{subprop.name}",
                         attr=f"{prop.name}.{subprop.name}",
                         jumpscaletype=subprop.jumpscaletype,
                         comment=subprop.comment,
