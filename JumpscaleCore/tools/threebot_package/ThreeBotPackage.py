@@ -167,9 +167,7 @@ class ThreeBotPackage(JSConfigBase):
         if self._actors is None or reset:
             self._actors = j.baseclasses.dict()
             package_toml = j.data.serializers.toml.load(f"{self.path}/package.toml")
-            if "disable_crud" in package_toml and package_toml["disable_crud"]:
-                pass  # Don't generate actors for the model
-            else:
+            if not ("disable_crud" in package_toml and package_toml["source"]["disable_crud"]):
                 actors_crud_generate()  # will generate the actors for the model
 
             path = self.path + "/actors"
