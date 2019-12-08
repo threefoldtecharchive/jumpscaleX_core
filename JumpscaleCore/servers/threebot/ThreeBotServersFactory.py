@@ -90,7 +90,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             client = self.default.start(background=background)
 
         if not client:
-            client = j.clients.gedis.client_get(name="threebot", port=8901, package_name="zerobot.base")
+            client = j.clients.gedis.client_get(name="threebot", port=8901)
 
         for package_path in packages:
             client.actors.package_manager.package_add(path=package_path)
