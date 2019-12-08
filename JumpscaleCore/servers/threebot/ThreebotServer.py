@@ -202,6 +202,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         see: {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/docs/3Bot/web_environment.md
 
         """
+        packages = packages or []
 
         self.save()
 
