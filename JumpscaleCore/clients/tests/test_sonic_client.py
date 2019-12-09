@@ -1,7 +1,9 @@
+import unittest
 from Jumpscale import j
 from base_test import BaseTest
 
 
+@unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/250")
 class SonicClient(BaseTest):
     @classmethod
     def setUpClass(cls):
