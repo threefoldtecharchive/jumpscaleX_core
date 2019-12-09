@@ -327,7 +327,18 @@ class ThreeBotServer(j.baseclasses.object_config):
         if not j.sal.nettools.waitConnectionTest("127.0.0.1", 8901, timeout=60):
             raise j.exceptions.Timeout("Could not start threebot server")
 
-        self.client = j.clients.gedis.get(name="threebot", port=8901)
+        # it happens that the server starts listening but not ready yet will try for 10 times
+        retries = 60
+        last_error = None
+        for _ in range(retries):
+            try:
+                self.client = j.clients.gedis.get(name="threebot", port=8901)
+                break
+            except Exception as e:
+                time.sleep(1)
+                last_error = e
+        else:
+            raise last_error
         # TODO: will have to authenticate myself
 
         self.client.reload()
