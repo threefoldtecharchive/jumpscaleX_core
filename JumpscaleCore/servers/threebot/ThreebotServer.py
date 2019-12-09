@@ -327,7 +327,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         if not j.sal.nettools.waitConnectionTest("127.0.0.1", 8901, timeout=60):
             raise j.exceptions.Timeout("Could not start threebot server")
 
-        # it happens that the server starts listening but not ready yet will try for 10 times
+        # it happens that the server starts listening but not ready yet will try again
         retries = 60
         last_error = None
         for _ in range(retries):
