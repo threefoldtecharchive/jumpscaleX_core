@@ -26,16 +26,15 @@ class BaseTest(unittest.TestCase):
 
     def delete_client_method(self, client, schema_url, client_name):
         """
-        This is method to test deleted in clients
+        This is method to test delete method in clients
         this method take a client_name and schema_url as an input and and delete it from BCDB.
         """
-        self.info("check delete method on {} client".format(client_name))
-        self.info("check the existence of the client in BCDB, it should be exist")
+        self.info("Delete {} client from database".format(client_name))
         model = j.data.bcdb.system.model_get(url=schema_url)
         if model.get_by_name(name=client_name):
-            self.info("try to delete the client using delete method and check again, it shouldn't be exist")
+            self.info("Delete the client from the database using delete method")
             client.delete()
-            self.info("check the existence of the client in BCDB")
+            self.info("Check the existence of {} client in the database".format(client_name))
             try:
                 model.get_by_name(name=client_name)
             except Exception:
