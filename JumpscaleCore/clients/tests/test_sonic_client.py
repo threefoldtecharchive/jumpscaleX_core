@@ -9,7 +9,7 @@ class SonicClient(BaseTest):
         j.builders.apps.sonic.install()
 
         cls.info("Start Sonic server")
-        j.servers.sonic.default.start()
+        j.servers.sonic.get().start()
 
         cls.info("create a Sonic client")
         cls.client = j.clients.sonic.get("test", host="127.0.0.1", port=1491, password="123456")
