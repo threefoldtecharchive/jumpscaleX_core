@@ -761,6 +761,22 @@ class BCDB(j.baseclasses.object):
     def get_all(self):
         return [obj for obj in self.iterate()]
 
+    def migrate_models(self, from_url, to_url):
+        from_model = self.model_get(url=from_url)
+        to_model = self.model_get(url=to_url)
+
+        for obj in from_model.find():
+            new_obj = to_model.new()
+            for prop in to_model.schema.properties:
+                if prop.name in from_model.schema.propertynames and getattr(obj, prop.name):
+                    setattr(new_obj, prop.name, getattr(obj, prop.name))
+                elif prop in to_model.schema.properties_index_sql and not getattr(new_obj, prop.name):
+                    # this is an indexed field and doesn't have a default value so we have to generate some data in it
+                    setattr(new_obj, prop.name, j.data.idgenerator.generateXCharID(20))
+
+            new_obj.save()
+            obj.delete()
+
     def __str__(self):
         out = "bcdb:%s\n" % self.name
         return out
