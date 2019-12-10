@@ -158,34 +158,35 @@ class ThreeBotServer(j.baseclasses.object_config):
 
     def _maintenance(self):
 
-        # check all models are mapped to global namespace
-        for bcdb in j.data.bcdb.instances.values():
-            if bcdb.name not in j.threebot.bcdb.__dict__:
-                j.threebot.bcdb.__dict__[bcdb.name] = bcdb.children
+        # # check all models are mapped to global namespace
+        # for bcdb in j.data.bcdb.instances.values():
+        #     if bcdb.name not in j.threebot.bcdb.__dict__:
+        #         j.threebot.bcdb.__dict__[bcdb.name] = bcdb.children
 
-        # check state workers
-        for key, worker in j.threebot.myjobs.workers._children.items():
-            # get status from worker
-            worker.load()
+        # # check state workers
+        # for key, worker in j.threebot.myjobs.workers._children.items():
+        #     # get status from worker
+        #     worker.load()
 
-        # remove jobs from _children older than 1 day
-        keys = [key for key in j.threebot.myjobs.jobs._children.keys()]
-        for key in keys:
-            if key in j.threebot.myjobs.jobs._children:
-                job = j.threebot.myjobs.jobs._children[key]
-                job.load()
-                if job.time_stop > 0:
-                    if job.time_stop < j.data.time.epoch - 600:
-                        j.threebot.myjobs.jobs._children.pop(job.name)
+        # # remove jobs from _children older than 1 day
+        # keys = [key for key in j.threebot.myjobs.jobs._children.keys()]
+        # for key in keys:
+        #     if key in j.threebot.myjobs.jobs._children:
+        #         job = j.threebot.myjobs.jobs._children[key]
+        #         job.load()
+        #         if job.time_stop > 0:
+        #             if job.time_stop < j.data.time.epoch - 600:
+        #                 j.threebot.myjobs.jobs._children.pop(job.name)
+        pass
 
     def _maintenance_day(self):
         day1 = 24 * 3600
         while True:
-            # remove jobs older than 1 day
-            for job in j.threebot.myjobs.jobs.find():
-                if job.time_stop > 0:
-                    if job.time_stop < j.data.time.epoch - day1:
-                        job.delete()
+            # # remove jobs older than 1 day
+            # for job in j.threebot.myjobs.jobs.find():
+            #     if job.time_stop > 0:
+            #         if job.time_stop < j.data.time.epoch - day1:
+            #             job.delete()
 
             gevent.sleep(day1)
 
@@ -211,7 +212,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.zdb  # will start sonic & zdb
             self.sonic
             # reset myjobs after zdb is ready
-            j.servers.myjobs.reset_data()
+            j.servers.myjobs.reset_jobs_queue()
 
             # remove the package
 

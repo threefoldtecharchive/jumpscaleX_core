@@ -16,10 +16,14 @@ class RDBFactory(j.baseclasses.object_config_collection_testtools):
         :param redisconfig_name: name of the redis config client see j.clients.redis_config
         :return:
         """
+        client = None
         if not redisclient:
             redisclient = j.clients.redis_config.get_client(redisconfig_name, fromcache=fromcache)
             redisclient.redisconfig_name = redisconfig_name
-        return RDBClient(nsname=namespace, redisclient=redisclient)
+        client = j.clients.rdb.get(f"{namespace}_myjobs", nsname=namespace)
+        client._redis = redisclient
+        # client.save()
+        return client
 
     def test(self):
         """

@@ -63,7 +63,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             self.jobs._model.trigger_add(self._job_update)
 
     def action_get(self, key, return_none_if_not_exist=False):
-
+        # print(self.model_action.find())
         res = self.model_action.find(key=key)
         if len(res) > 0:
             o = self.model_action.get(res[0].id)
@@ -77,6 +77,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
     def _bcdb_selector(self):
         client = j.clients.rdb.client_get()
         client.cat = "myjobs"
+        client.save()
         return j.data.bcdb.get("myjobs", storclient=client)
 
     @property
@@ -139,6 +140,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         :return:
         """
+        self.clear_indices()
+
         self._init_pre_schedule(in3bot=in3bot)
         for i in range(nr_workers):
             self.worker_tmux_start(nr=i + 1, debug=debug, startloop=False)
@@ -264,7 +267,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         """
         while True:
             self._log_debug("check workers")
-            for w in self.workers.find(reload=True):
+            for w in self.workers.find():
                 if w.state == "HALTED":
                     w.stop(hard=True)
                     if w.last_update < j.data.time.epoch - 41:
@@ -427,9 +430,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         """
         self._init_pre_schedule()
         if not name:
-            name = "j%s" % j.core.db.incr("myjobs.ourid")
-        if self.jobs.exists(name=name):
-            self.jobs.delete(name=name)
+            name = "j%s" % (self.jobs.count()+1)
+            
         if "self" in kwargs:
             kwargs.pop("self")
         job = self.jobs.new(
@@ -447,9 +449,11 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         job.timeout = timeout
         job.category = category
         job.die = die
+        job.save()
         self.scheduled_ids.append(job.id)
         self.events[job.id] = gevent.event.Event()
         self.queue_jobs_start.put(job.id)
+
 
         # never timeout
         if timeout == 0:
@@ -467,7 +471,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         if self._mainloop_gipc != None:
             self._mainloop_gipc.kill()
 
-        for w in self.workers.find(reload=True):
+        for w in self.workers.find():
             # look for the workers and ask for halt in nice way
             w.stop(hard=reset)
 
@@ -495,22 +499,45 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self._init_pre_schedule_ = False
 
         if reset:
-            # delete the queue
-            while self.queue_jobs_start.get_nowait() != None:
-                pass
-            self.reset_data()
+            try:
+                self.workers._model.destroy()
+                self.workers._model.index.destroy()
+            except Exception as e:
+                self._log_error(e)
+
+            self.scheduled_ids = []
+            self.queue_jobs_start.reset()
+            assert self.queue_jobs_start.qsize() == 0
 
             self._init_ = False
 
     def reset(self):
         # kill leftovers from last time, if any
+        try:
+            self.workers._model.destroy()
+            self.workers._model.index.destroy()
+        except Exception as e:
+            self._log_error(e)
+
         self.stop(graceful=False, reset=True)
         assert self.queue_jobs_start.qsize() == 0
 
+    reset_jobs_queue = reset
+
+    def clear_indices(self):
+        self.workers._model.index.destroy()
+        self.jobs._model.index.destroy()
+        self.model_action.index.destroy()
+
     def reset_data(self):
-        self.model_action.destroy()
         self.jobs.reset()
-        self.workers.reset()
+        try:
+            self.workers._model.destroy()
+            self.workers._model.index.destroy()
+            self.jobs._model.index.destroy()
+            self.model_action.index.destroy()
+        except Exception as e:
+            self._log_error(e)
         self.scheduled_ids = []
         self.queue_jobs_start.reset()
         assert self.queue_jobs_start.qsize() == 0

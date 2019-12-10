@@ -14,7 +14,7 @@ class MyJob(j.baseclasses.object_config):
     ):
 
         # leave this check for now please
-        assert self._parent._bcdb.storclient.cat == "myjobs"
+        assert j.servers.myjobs._bcdb.storclient.cat == "myjobs"
 
         if dependencies:
             for dep in dependencies:
@@ -57,6 +57,8 @@ class MyJob(j.baseclasses.object_config):
             action.key = key
             action.methodname = methodname
             j.servers.myjobs.model_action.set(action)
+
+        action.save()
 
         self.action_id = action.id
         self.save()
