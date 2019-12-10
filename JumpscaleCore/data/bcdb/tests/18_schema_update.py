@@ -47,19 +47,20 @@ def main(self):
     schema_md5 = model.schema._md5
 
     model_obj = model.new()
+    model_obj.name = "one"
+    model_obj.active = True
     model_obj.cost = "10 USD"
     model_obj.save()
 
     exception = False
     try:
-        model_obj.newprop = "a"
+        model_obj.newprop
     except:
         exception = True
-    # assert exception  #TODO: needs to be re-enabled
+
+    assert exception
 
     data = model.get(model_obj.id)
-
-    oldid = model_obj.id + 0  # to have copy for sure
 
     # make sure the data from first one has right schema md5
     assert data._schema._md5 == schema_md5
@@ -78,9 +79,12 @@ def main(self):
 
     model_updated = bcdb.model_get(schema=schema_2)
 
-    data = model_updated.get(oldid)
+    data = model_updated.get(model_obj.id)
     data.enum = "d"
-    data.newprop = "a"
-    assert data.newprop == "a"
+    assert data.newprop == ""
+    assert data.room == []
+
+    model = bcdb.model_get(url="jumpscale.bcdb.test.house")
+    assert model.schema._md5 == model_updated.schema._md5
 
     return "OK"

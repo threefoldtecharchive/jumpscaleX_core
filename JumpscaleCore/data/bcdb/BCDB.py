@@ -68,13 +68,11 @@ class BCDB(j.baseclasses.object):
         self._sqlite_index_dbpath = "%s/sqlite_index.db" % self._data_dir
 
         self._init_props()
+        self.meta = BCDBMeta(self)
 
         if reset:
-            self.meta = None
             self.reset()
             return
-        else:
-            self.meta = BCDBMeta(self)
 
         j.data.nacl.default
 
@@ -506,9 +504,11 @@ class BCDB(j.baseclasses.object):
         schema = self.schema_get(schema=schema, md5=md5, url=url, package=package)
         if schema.url in self._schema_url_to_model:
             model = self._schema_url_to_model[schema.url]
-            model.schema_change(schema)
-            self.meta._schema_set(schema)
-            return model
+            if model.schema._md5 != schema._md5:
+                # schema with the same url has changed, delete the cached one so the model can be added again properly
+                del self._schema_url_to_model[schema.url]
+            else:
+                return model
 
         # model not known yet need to create
         self._log_info("load model:%s" % schema.url)

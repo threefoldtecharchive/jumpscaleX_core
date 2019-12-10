@@ -525,7 +525,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             return storclient
 
         if not j.sal.nettools.tcpPortConnectionTest("localhost", 1491):
-            j.servers.sonic.default.start()
+            j.servers.sonic.get(name="default").start()
 
         if type == "rdb":
             j.core.db

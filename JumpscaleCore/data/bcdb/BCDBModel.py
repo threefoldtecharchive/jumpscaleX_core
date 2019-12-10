@@ -143,7 +143,7 @@ class BCDBModel(j.baseclasses.object):
 
         # make sure model has the latest schema
         if self.schema._md5 != schema._md5:
-            self.schema.url = schema.url
+            self.schema = schema
             self._log_info("schema change")
             self._triggers_call(None, "schema_change", None)
 
