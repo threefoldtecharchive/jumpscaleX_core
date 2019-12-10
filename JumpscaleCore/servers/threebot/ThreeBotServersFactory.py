@@ -59,9 +59,10 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         """
         packages = [
-            "{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/phonebook",
-            "{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/directory",
-            "{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/workloads",
+            f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/phonebook",
+            f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/directory",
+            f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/workloads",
+            f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/threebot_provisioning",
         ]
         return self.local_start_default(background=background, packages=packages, reload=reload)
 
@@ -87,7 +88,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         if reload or j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
             self.install()
             self.default.stop()
-            client = self.default.start(background=background)
+            client = self.default.start(background=background, packages=packages)
 
         if not client:
             client = j.clients.gedis.client_get(name="threebot", port=8901)

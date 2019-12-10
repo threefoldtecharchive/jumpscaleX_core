@@ -189,18 +189,20 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             gevent.sleep(day1)
 
-    def start(self, background=False, restart=False):
+    def start(self, background=False, restart=False, packages=None):
         """
 
         kosmos -p 'j.servers.threebot.default.start(background=True)'
         kosmos -p 'j.servers.threebot.default.start(background=False)'
 
         :param background: if True will start all servers including threebot itself in the background
-
+        :param packages: a list of package paths to load by default
+        :type packages: list of str
         ports & paths used for threebotserver
         see: {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/docs/3Bot/web_environment.md
 
         """
+        packages = packages or []
 
         self.save()
 
@@ -292,6 +294,9 @@ class ThreeBotServer(j.baseclasses.object_config):
             # j.__dict__.pop("shelli")
             j.__dict__.pop("tutorials")
             j.__dict__.pop("sal_zos")
+
+            for path in packages:
+                j.threebot.packages.zerobot.packagemanager.actors.package_manager.package_add(path=path)
 
             # reload nginx at the end after loading packages and its config is written
             self.openresty_server.reload()

@@ -54,6 +54,9 @@ class ThreeBotPackage(JSConfigBase):
         # self.wiki_names = []
         # self.model_urls = []
 
+        # load current models
+        self.models
+
     @property
     def threebot_server(self):
         return j.threebot.servers.core
@@ -163,7 +166,10 @@ class ThreeBotPackage(JSConfigBase):
 
         if self._actors is None or reset:
             self._actors = j.baseclasses.dict()
-            actors_crud_generate()  # will generate the actors for the model
+            package_toml = j.data.serializers.toml.load(f"{self.path}/package.toml")
+            if not ("disable_crud" in package_toml and package_toml["source"]["disable_crud"]):
+                actors_crud_generate()  # will generate the actors for the model
+
             path = self.path + "/actors"
             if j.sal.fs.exists(path):
 
