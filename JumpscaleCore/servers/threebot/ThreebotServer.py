@@ -307,7 +307,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
 
-            j.shell()  # DO NOT REMOVE THIS SHELL
+            # j.shell()  # for now removed otherwise debug does not work
             forever = event.Event()
             try:
                 forever.wait()
