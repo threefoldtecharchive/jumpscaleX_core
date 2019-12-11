@@ -20,6 +20,8 @@ def main(self):
     # next only works because the test is running in the threebot itself, so I can use the installed package code
     ibiza_client = j.threebot.package.ibiza.client_get()
 
+    j.shell()
+
     r0 = ibiza_client.actors.ibiza_actor.info("aaa")
     assert r0 == b"aaa"
 

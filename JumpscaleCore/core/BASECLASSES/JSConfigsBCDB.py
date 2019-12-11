@@ -70,10 +70,16 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :param kwargs: the data elements which will be given to JSXObject underneith (given to constructor)
         :return: the service
         """
+        if jsxobject:
+            if not name:
+                name = jsxobject.name
+            else:
+                assert name == jsxobject.name
         if not name:
             raise j.exceptions.Input("name needs to be specified on a config mgmt obj")
-        kwargs_to_class = {}
-        if not jsxobject:
+
+        def process_kwargs(kwargs):
+            kwargs_to_class = {}
             if kwargs:
                 kwargs_to_obj_new = {}
                 props = [i.name for i in self._model.schema.properties]
@@ -82,6 +88,15 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                         kwargs_to_obj_new[key] = val
                     else:
                         kwargs_to_class[key] = val
+            else:
+                kwargs_to_obj_new = {}
+                kwargs_to_class = {}
+            return kwargs_to_obj_new, kwargs_to_class
+
+        kwargs_to_obj_new, kwargs_to_class = process_kwargs(kwargs)
+
+        if not jsxobject:
+            if kwargs:
                 jsxobject = self._model.new(data=kwargs_to_obj_new)
             else:
                 jsxobject = self._model.new()
@@ -125,16 +140,17 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 j.shell()
             changed = False
             jsconfig._data._autosave = False
+            props = [i.name for i in self._model.schema.properties]
             for key, val in kwargs.items():
+                if key not in props:
+                    raise j.exceptions.Input(
+                        "cannot set property:%s on obj because not part of the schema" % key, data=jsconfig
+                    )
                 if not getattr(jsconfig, key) == val:
                     changed = True
                     setattr(jsconfig, key, val)
             if changed and autosave:
-                try:
-                    jsconfig.save()
-                except Exception as e:
-                    print("CHECK WHY ERROR")
-                    j.shell()
+                jsconfig.save()
 
             jsconfig._autosave = autosave
 
