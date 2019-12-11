@@ -46,6 +46,7 @@ def main(self):
 
     model_obj = model.new()
     model_obj.cost = "10 USD"
+    model_obj.name = 'beautiful_house'
     model_obj.save()
     # model.cache_reset()
     data = model.get(model_obj.id)

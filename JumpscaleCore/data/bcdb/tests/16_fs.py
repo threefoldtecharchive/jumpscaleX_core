@@ -28,6 +28,9 @@ def main(self):
     kosmos 'j.data.bcdb.test(name="fs")'
 
     """
+    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.servers.threebot.default.adminsecret_))
+    sonic.start()
+
     tags = ["color:blue", "color:white", "font:arial", "font:tahoma", "style:italian"]
     types = ["md", "pdf", "xls", "doc", "jpg"]
     contents = ["threefold foundation", "the new internet", "change the world", "digital freedom", "the future of IT"]
@@ -99,3 +102,7 @@ def main(self):
     )
     s.start()
     print("Dav server running on port 4444")
+
+    sonic.stop()
+    s.stop()
+

@@ -32,7 +32,7 @@ def main(self):
     bcdb, _ = self._load_test_model()
 
     assert len(bcdb.get_all()) == 0
-    assert len(bcdb.meta._data["url"]) == 7
+    assert len(bcdb.meta._data["url"]) == 8
 
     s = list(j.data.schema._url_to_md5.keys())
 
@@ -52,7 +52,7 @@ def main(self):
 
     bcdb.meta._schema_set(s)
 
-    assert len(bcdb.meta._data["url"]) == 8
+    assert len(bcdb.meta._data["url"]) == 9
 
     assert "jumpscale.schema.test.a" in j.data.schema._url_to_md5
     assert "jumpscale.bcdb.circle.2" in j.data.schema._url_to_md5
@@ -70,7 +70,7 @@ def main(self):
 
     assert bcdb.get_all() == []  # just to make sure its empty
 
-    assert len(bcdb.meta._data["url"]) == 8
+    assert len(bcdb.meta._data["url"]) == 9
 
     a = model.new()
     a.category = "acat"
@@ -93,7 +93,7 @@ def main(self):
     # lets upgrade schema to float
     s_temp = bcdb.schema_get(schema=schema_text)
 
-    assert len(bcdb.meta._data["url"]) == 8  # should be same because is same schema, should be same md5
+    assert len(bcdb.meta._data["url"]) == 9  # should be same because is same schema, should be same md5
     assert s_temp._md5 == s0._md5
 
     # lets upgrade schema to float
@@ -101,7 +101,7 @@ def main(self):
 
     model2 = bcdb.model_get(schema=s2)
 
-    assert len(bcdb.meta._data["url"]) == 8  # acl, user, circle, despiegktest and the 1 new one
+    assert len(bcdb.meta._data["url"]) == 9  # acl, user, circle, despiegktest and the 1 new one
 
     a3 = model2.new()
     a3.category = "acat3"
@@ -126,6 +126,10 @@ def main(self):
 
     assert a6.id == a3.id
     assert a6.i == a3.i
+
+    # CLEAN STATE
+    j.servers.zdb.test_instance_stop()
+    j.servers.sonic.default.stop()
 
     self._log_info("TEST META DONE")
     return "OK"

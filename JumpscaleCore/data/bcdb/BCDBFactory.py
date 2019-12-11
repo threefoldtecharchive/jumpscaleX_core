@@ -395,9 +395,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         """
 
         self._log_info("new bcdb:%s" % name)
-        if self.exists(name=name):
-            if not reset:
-                raise j.exceptions.Input("cannot create new bcdb '%s' already exists, and reset not used" % name)
 
         if not storclient:
             storclient = j.clients.sqlitedb.client_get(namespace=name)
@@ -421,10 +418,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             data["port"] = storclient.port
             data["secret"] = storclient.secret_
             data["type"] = "zdb"
-
-        self._config[name] = data
-        self._config_write()
         self._load()
+        self._config[name] = data
+
+        if name in self._instances and not reset:
+                raise j.exceptions.Input("cannot create new bcdb '%s' already exists, and reset not used" % name)
 
         bcdb = self._get(name=name, reset=reset, storclient=storclient)
 
@@ -432,6 +430,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         assert bcdb.storclient.type == storclient.type
 
         assert bcdb.name in self._config
+
+        self._config_write()
+        self._load()
+
+
 
         return bcdb
 
@@ -527,6 +530,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if not j.sal.nettools.tcpPortConnectionTest("localhost", 1491):
             j.servers.sonic.get(name="default").start()
 
+
+
         if type == "rdb":
             j.core.db
             storclient = j.clients.rdb.client_get(namespace="test_rdb")  # will be to core redis
@@ -607,7 +612,15 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         """
         print(name)
+        # CLEAN STATE
+        j.servers.zdb.test_instance_stop()
+        j.servers.sonic.default.stop()
+
         self._test_run(name=name)
+
+        # CLEAN STATE
+        j.servers.zdb.test_instance_stop()
+        j.servers.sonic.default.stop()
 
         self._log_info("All TESTS DONE")
         return "OK"

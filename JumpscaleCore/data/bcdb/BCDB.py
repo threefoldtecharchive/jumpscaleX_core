@@ -68,7 +68,8 @@ class BCDB(j.baseclasses.object):
         self._sqlite_index_dbpath = "%s/sqlite_index.db" % self._data_dir
 
         self._init_props()
-        self.meta = BCDBMeta(self)
+
+        self.meta = BCDBMeta(self, reset=reset)
 
         if reset:
             self.reset()
@@ -386,7 +387,6 @@ class BCDB(j.baseclasses.object):
         remove all data but the bcdb instance remains
         :return:
         """
-
         self.stop()  # will stop sqlite client and the dataprocessor
 
         assert self.storclient

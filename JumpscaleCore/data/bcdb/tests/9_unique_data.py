@@ -47,18 +47,20 @@ def main(self):
     test_case = TestCase()
     scm = """
     @url = test.schema.1
-    &name** = "" (S)
+    name** = "" (S)
     new_name = "" (S)
-    &test = "" (S)
-    &number = 0 (I)
+    test = "" (S)
+    number = 0 (I)
     """
 
     bcdb, model = self._load_test_model(type="zdb", schema=scm)
+
     schema_obj = model.new()
     name = "s" + str(uuid4()).replace("-", "")[:10]
     new_name = "s" + str(uuid4()).replace("-", "")[:10]
     test = "s" + str(uuid4()).replace("-", "")[:10]
     number = random.randint(1, 99)
+
     schema_obj.name = name
     schema_obj.new_name = new_name
     schema_obj.test = test
