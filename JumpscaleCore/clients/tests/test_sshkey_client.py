@@ -16,19 +16,8 @@ class TestSshKeyClient(BaseTest):
         self.info("Test case : {}".format(self._testMethodName))
 
     def tearDown(self):
-        self.delete_from_sshdir()
+        self.sshkey_client.delete_from_sshdir()
         self.delete_client_method(self.sshkey_client, "jumpscale.sshkey.client", self.sshkeyclient_name)
-
-    # def delete_ssh_key_from_ssh_directory(self):
-    #     self.info("Check delete ssh key files from ssh directory using delete_from_sshdir method")
-    #     self.sshkey_client.delete_from_sshdir()
-    #     if not (
-    #         os.path.isfile("{}/{}.pub".format(self.sshkey_dir, self.sshkeyclient_name))
-    #         and os.path.isfile("{}/{}".format(self.sshkey_dir, self.sshkeyclient_name))
-    #     ):
-    #         return True
-    #     else:
-    #         return False
 
     def test001_load_sshkey_client_into_database(self):
         """
@@ -48,30 +37,25 @@ class TestSshKeyClient(BaseTest):
         self.assertTrue(
             self.delete_client_method(self.sshkey_client, "jumpscale.sshkey.client", self.sshkeyclient_name)
         )
-        self.info("Load sshkey files from filesystem to database")
+        self.info("Load sshkey client into database")
         self.sshkey_client.load_from_filesystem()
-        self.info("Check the existence of the client in BCDB")
+        self.info("Check the existence of the client in database")
         model = j.data.bcdb.system.model_get(url="jumpscale.sshkey.client")
         self.assertTrue(model.get_by_name(name=self.sshkeyclient_name))
 
-    def test02_generate_key(self):
+    def test02_regenerate_sshkey(self):
         """
         TC 470
-        Test generate ssh key.
+        Test to regenerate sshkey.
 
         **Test scenario**
-        #. Generate with reset=False option, should fail as it has been generated before in sshkey client.
-        #. Use generate with reset=True option, this will regenerate the key.
-        #. Make sure that keys have been regenerated.
+        #. Create sshkey client, which generates public and private keys (pk1, priv_key1).
+        #. Use generate method to regenerate the (public and private) keys, (pk2, priv_key2).
+        #. Check that the keys have been regenerated, make sure that pk1 != pk2 and priv_key1 != priv_key2.
         """
-        self.info("Try generate method with option reset=False")
-        with self.assertRaises(Exception) as error:
-            self.sshkey_client.generate(reset=False)
-            self.assertTrue("cannot generate key because pubkey already known" in error.exception.args[0])
-
-        self.info("Use generate with reset=True option, this will regenerate the key")
+        self.info("Use generate method to regenerate the (public and private) keys")
         self.sshkey_client.generate(reset=True)
-        self.info("Make sure that keys have been regenerated")
+        self.info("Check that the keys have been regenerated")
         self.assertTrue(os.path.isfile("{}/{}".format(self.sshkey_dir, self.sshkeyclient_name)))
         self.assertTrue(os.path.isfile("{}/{}.pub".format(self.sshkey_dir, self.sshkeyclient_name)))
         old_privkey = self.ssh_privkey
@@ -81,48 +65,57 @@ class TestSshKeyClient(BaseTest):
         self.assertNotEqual(old_pubkey, new_pubkey)
         self.assertNotEqual(old_privkey, new_privkey)
 
-    def test003_delete_ssh_key_from_ssh_directory(self):
+    def test003_delete_sshkey_from_ssh_directory(self):
         """
         TC 473
-        Test delete sshkey files locally from ssh directory.
+        Test to delete sshkey files locally from ssh directory.
 
         **Test scenario**
-        #. Use delete_from_sshdir to delete the sshkey files from ssh directory.
-        #. Check the existence of those files in the sshkey directory.
+        #. Create sshkey client.
+        #. Use delete_from_sshdir to delete the sshkey client files from ssh directory.
+        #. Check the existence of those files in the sshkey directory, shouldn't be there.
         """
         self.info("Use delete_from_sshdir to delete the sshkey client files from ssh directory")
-        self.assertTrue(self.delete_from_sshdir())
+        self.sshkey_client.delete_from_sshdir()
+        self.info("Check the existence of those files in the sshkey directory, shouldn't be there")
+        self.assertFalse(
+            os.path.isfile("{}/{}.pub".format(self.sshkey_dir, self.sshkeyclient_name))
+            and os.path.isfile("{}/{}".format(self.sshkey_dir, self.sshkeyclient_name))
+        )
 
-    def test004_write_sshkey_files_from_database_to_ssh_directory(self):
+    def test004_write_sshkey_files_into_ssh_directory(self):
         """
         TC 474
-        Test write sshkey files from database to ssh directory.
+        Test to write sshkey files into ssh directory.
 
         **Test scenario**
+        #. Create sshkey client.
+        #. Check the existence of sshkey files (public [pk1] and private [priv_k1]) in ssh directory, should be there.
         #. Delete sshkey files from ssh directory.
-        #. Use write_to_sshdir method to write sshkey again to the directory from database.
-        #. Check the existence of sshkey files in ssh directory, should be found
-        #. Check the public and private keys values, should be the same as before.
+        #. Use write_to_sshdir method to write sshkey again into the ssh directory.
+        #. Check the existence of sshkey files in ssh directory, should be there.
+        #. Check the public and private keys values, should be the same as (pk1, priv_k1).
         """
         self.info("Delete sshkey files from ssh directory")
-        self.delete_from_sshdir()
-        self.info("Use write_to_sshdir method to write sshkey again to the directory from database")
+        self.sshkey_client.delete_from_sshdir()
+        self.info("Use write_to_sshdir method to write sshkey again into the ssh directory")
         self.sshkey_client.write_to_sshdir()
         self.info("Check the existence of sshkey files in ssh directory")
         self.assertTrue(os.path.isfile("{}/{}.pub".format(self.sshkey_dir, self.sshkeyclient_name)))
         self.assertTrue(os.path.isfile("{}/{}".format(self.sshkey_dir, self.sshkeyclient_name)))
-        self.info("Check the public and private keys values, should be the same as before")
+        self.info("Check the public and private keys values")
         self.assertEqual(self.ssh_pubkey, open("{}/{}.pub".format(self.sshkey_dir, self.sshkeyclient_name)).read())
         self.assertEqual(self.ssh_privkey, open("{}/{}".format(self.sshkey_dir, self.sshkeyclient_name)).read())
 
     def test005_load_sshkey_in_sshagent(self):
         """
         TC 475
-        Test to load method which loads sshkey in sshagent.
+        Test to load sshkey in sshagent.
 
         **Test scenario**
+        #. Create sshkey client.
         #. Load sshkey in sshagent.
-        #. Check if the ssh key has been loaded.
+        #. Check that the sshkey has been loaded.
         """
         self.info("Load sshkey in sshagent")
         self.sshkey_client.load()
@@ -134,37 +127,39 @@ class TestSshKeyClient(BaseTest):
     def test006_unload_sshkey_from_sshagent(self):
         """
         TC 476
-        Test to unload method in sshkey client which unloads sshkey from sshagent.
+        Test to unload sshkey client from sshagent.
 
         **Test scenario**
+        #. Create sshkey client.
         #. Unload the sshkey from sshagent.
-        #. Check that sshkey has been unloaded.
+        #. Check that the sshkey has been unloaded.
         """
-        self.info("Unload the sshkey using the unload method")
+        self.info("Unload the sshkey from sshagent")
         self.sshkey_client.unload()
         self.info("Check that sshkey has been unloaded")
         self.assertFalse(self.sshkey_client.is_loaded())
         output, error = self.os_command("ssh-add -l")
         self.assertNotIn(self.sshkeyclient_name, output.decode())
 
-    def test007_key_is_loaded(self):
+    def test007_sshkey_is_loaded(self):
         """
         TC 477
-        Test to key is loaded method in sshkey client, which checks if sshkey is loaded.
+        Test to check if the sshkey is loaded in the sshagent.
 
         **Test scenario**
+        #. Create sshkey client.
         #. Load the sshkey in the sshagent.
-        #. Check if the key has been loaded.
+        #. Check that the key has been loaded.
         #. Remove the sshkey from sshagent.
-        #. Check if the key has been unloaded.
+        #. Check that the key has been unloaded.
         """
         self.info("Load the sshkey in the sshagent")
         self.sshkey_client.load()
-        self.info("Check if the key has been loaded")
+        self.info("Check that the key has been loaded")
         self.assertTrue(self.sshkey_client.is_loaded())
         self.info("Remove the sshkey from sshagent")
         self.sshkey_client.unload()
-        self.info("Check if the key has been unloaded")
+        self.info("Check that the key has been unloaded")
         self.assertFalse(self.sshkey_client.is_loaded())
 
     def test008_get_public_key(self):
@@ -173,7 +168,7 @@ class TestSshKeyClient(BaseTest):
         Test to get public key in sshkey client.
 
         **Test scenario**
-        #. Create sshkey client, and get the public key (pk1)
+        #. Create sshkey client, and get the public key (pk1).
         #. Check the public key for sshkey client (pk2) using pubkey_only method, should be the same as pk1.
         """
         self.info("Check the public key for sshkey client")
