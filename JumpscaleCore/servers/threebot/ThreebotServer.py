@@ -403,7 +403,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         from gevent import monkey
         monkey.patch_all(subprocess=False)
         from Jumpscale import j
-        server = j.servers.threebot.get("{name}", executor='{executor}', web={web})
+        server = j.servers.threebot.get("{name}", executor='{executor}')
         server.start(background=False)
         """.format(
             name=self.name, executor=self.executor, web=web
