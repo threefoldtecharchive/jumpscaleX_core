@@ -12,13 +12,12 @@ def main(self):
     package_path = j.core.tools.text_replace(
         "{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/ibiza"
     )
-    cl = self._threebot_client_default
+    cl = self._threebot_client_default_packagemanager
     # if reload==False then the package will not be reloaded if its already there
     cl.actors.package_manager.package_add(path=package_path, reload=False)
     cl.reload()
 
-    # next only works because the test is running in the threebot itself, so I can use the installed package code
-    ibiza_client = j.threebot.package.ibiza.client_get()
+    ibiza_client = j.clients.gedis.get("ibiza_client_test", package_name="examples.ibiza")
 
     j.shell()
 

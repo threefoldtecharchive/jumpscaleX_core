@@ -138,6 +138,9 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             if not jsconfig._data._model.schema._md5 == jsconfig._model.schema._md5:
                 # means data came from DB and schema is not same as config mgmt class
                 j.shell()
+                raise j.exceptions.Input(
+                    "models should be same", data=(jsconfig._data._model.schema.text, jsconfig._model.schema.text)
+                )
             changed = False
             jsconfig._data._autosave = False
             props = [i.name for i in self._model.schema.properties]

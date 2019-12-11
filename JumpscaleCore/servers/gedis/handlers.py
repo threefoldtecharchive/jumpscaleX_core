@@ -349,7 +349,12 @@ class Handler(JSBASE):
         )
 
         # cmd is cmd metadata + cmd.method is what needs to be executed
-        cmd, cmd_method = self._cmd_obj_get(request.command)
+        try:
+            cmd, cmd_method = self._cmd_obj_get(request.command)
+            logdict = None
+        except Exception as e:
+            logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+            return (logdict, None)
 
         is_authorized, reason = self._authorized(cmd_obj=cmd, user_session=user_session)
         if not is_authorized:
@@ -517,7 +522,12 @@ class Handler(JSBASE):
 
         self._log_debug("command cache miss:%s" % request_cmd.key_method)
 
+        actor = j.threebot.actor_get(
+            author3bot=request_cmd.author3bot, package_name=request_cmd.package, actor_name=request_cmd.actor
+        )
+
         if request_cmd.key_actor not in self.cmds_meta:
+            j.shell()
             raise j.exceptions.Input("Cannot find actor '%s' of geventserver." % request_cmd.key_actor)
 
         meta = self.cmds_meta[request_cmd.key_actor]
@@ -527,10 +537,6 @@ class Handler(JSBASE):
             raise j.exceptions.Input("Cannot find actor method in metadata of geventserver %s" % request_cmd.key_method)
 
         cmd_obj = meta.cmds[request_cmd.command]
-
-        actor = j.threebot.actor_get(
-            author3bot=request_cmd.author3bot, package_name=request_cmd.package, actor_name=request_cmd.actor
-        )
 
         try:
             cmd_method = getattr(actor, request_cmd.command)
