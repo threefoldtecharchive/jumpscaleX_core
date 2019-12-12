@@ -73,7 +73,7 @@ class GedisClient(JSConfigBase):
     @property
     def package(self):
         if self.package_name:
-            return j.tools.threebot_packages.get(self.package_name.replace(".", "__"))
+            return j.tools.threebot_packages.get(self.package_name)
 
     def reload(self):
         self._log_info("reload")

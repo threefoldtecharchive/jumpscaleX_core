@@ -50,7 +50,7 @@ class GedisCmds(JSBASE):
 
             self.data = self.model.new()
             self.data.name = name
-            self.data.namespace = self.package.fullname
+            self.data.namespace = self.package.name
 
             actor = self.package._actors[name]
 

@@ -480,6 +480,7 @@ class BCDB(j.baseclasses.object):
 
         def preprocess_schema(txt, package):
             lines = []
+            model_prefix = f"{package.source.threebot}.{package.source.name}"
 
             for line in txt.splitlines():
                 line = line.strip().lower()
@@ -491,7 +492,7 @@ class BCDB(j.baseclasses.object):
                                 break
                         else:
                             old_model_url = model_url
-                            model_url = f"{package.fullname}.{model_url}"
+                            model_url = f"{model_prefix}.{model_url}"
                             line = line.replace(old_model_url, model_url)
                     except Exception as e:
                         print("Error")

@@ -159,8 +159,8 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         """
         url = url.strip().strip("'\"").strip()
         if package:
-            if not url.startswith(package.fullname):
-                package_name = package.fullname.rstrip(".")
+            if not url.startswith(package.name):
+                package_name = package.name.rstrip(".")
                 url = f"{package_name}.{url}"
         return url
 

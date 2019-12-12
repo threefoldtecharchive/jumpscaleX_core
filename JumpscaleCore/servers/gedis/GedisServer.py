@@ -180,8 +180,8 @@ class GedisServer(JSBaseConfig):
         if not j.sal.fs.exists(path):
             raise j.exceptions.Value("actor_add: cannot find actor at %s" % path)
 
-        self._log_debug("actor_add:%s:%s", package.fullname, path)
-        key = "%s.%s" % (package.fullname, name)
+        self._log_debug("actor_add:%s:%s", package.name, path)
+        key = "%s.%s" % (package.name, name)
         # if key not in self.actors.keys():
         #     self.actors_data.append("%s:%s" % (namespace, path))
 
