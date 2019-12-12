@@ -26,8 +26,9 @@ class CurrencyLayerFactory(j.baseclasses.object_config):
         self._cur2id = {}
         self.fallback = True
         self.fake = False
-        self.api_key_ = "02fe99e9cefaf1733c299a19eaff1cf6"
+        self.api_key_ = "e69e991a747ed7d8ad62c2d626f174e7"
         self._data_path = "%s/data.toml" % self._dirpath
+        self._quotes = {}
 
     def _write_default(self):
         """
@@ -62,7 +63,7 @@ class CurrencyLayerFactory(j.baseclasses.object_config):
                     c = j.clients.http.connection_get()
 
                     r = c.get(url)
-                    data = j.data.serializers.json.loads(r)["quotes"]
+                    self._quotes = j.data.serializers.json.loads(r)["quotes"]
 
                     def get_crypto_to_usd(name):
                         # Currency layer is not very reliable sometimes it timeout we can just skip this for now
@@ -74,12 +75,12 @@ class CurrencyLayerFactory(j.baseclasses.object_config):
                             self._log_error("can't get price for {}".format(name))
                             return None
 
-                    data["USDETH"] = get_crypto_to_usd("ETH")
-                    data["USDXRP"] = get_crypto_to_usd("XRP")
-                    data["USDBTC"] = get_crypto_to_usd("BTC")
+                    self._quotes["USDETH"] = get_crypto_to_usd("ETH")
+                    self._quotes["USDXRP"] = get_crypto_to_usd("XRP")
+                    self._quotes["USDBTC"] = get_crypto_to_usd("BTC")
 
                     self._log_error("fetch currency from internet")
-                    return data
+                    return self._quotes
                 elif not self.fallback:
                     raise j.exceptions.Base("api key for currency layer " "needs to be specified")
                 else:
@@ -89,10 +90,10 @@ class CurrencyLayerFactory(j.baseclasses.object_config):
             if self.fake or self.fallback:
                 self._log_warning("cannot reach: currencylayer.com, " "use fake local data.")
                 return self._load_default()
-            raise j.exceptions.Base("could not data from currencylayers")
+            raise j.exceptions.Base("could not get data from currencylayers")
 
-        data = self._cache.get("currency_data", get, expire=3600 * 24)
-        for key, item in data.items():
+        self._quotes = self._cache.get("currency_data", get, expire=3600 * 24)
+        for key, item in self._quotes.items():
             if key.startswith("USD"):
                 key = key[3:]
             self._data_cur[key.lower()] = item
@@ -150,6 +151,4 @@ class CurrencyLayerFactory(j.baseclasses.object_config):
         kosmos 'j.clients.currencylayer.test()'
         """
         self.fetch()
-        self.id2cur_print()
-        self._log_info(self.cur2usd)
-        assert "aed" in self.cur2usd
+        assert self._quotes["USDAED"] == self.cur2usd["aed"]
