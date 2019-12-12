@@ -31,6 +31,9 @@ def main(self):
 
     """
 
+    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.servers.threebot.default.adminsecret_))
+    sonic.start()
+
     _, model = self._load_test_model()
 
     def get_obj(i):
@@ -62,6 +65,10 @@ def main(self):
     assert model_obj2._ddict_hr == model_obj._ddict_hr
 
     assert model.bcdb.queue.empty()
+
+    # CLEAN STATE
+    j.servers.zdb.test_instance_stop()
+    j.servers.sonic.default.stop()
 
     self._log_info("TEST ASYNC DONE")
 

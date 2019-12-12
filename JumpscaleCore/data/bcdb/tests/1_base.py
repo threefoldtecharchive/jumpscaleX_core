@@ -209,9 +209,11 @@ def main(self):
     test("RDB", schema, sqlite=False)
 
     test("ZDB", schema_sqlite)
-
     test("SQLITE", schema_sqlite)
 
     # CLEAN STATE
+    j.servers.zdb.test_instance_stop()
+    j.servers.sonic.default.stop()
+
     self._log_info("TEST BASE DONE")
     return "OK"

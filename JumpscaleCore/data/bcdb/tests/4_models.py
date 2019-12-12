@@ -30,6 +30,8 @@ def main(self):
     work with toml files and see if models get generated properly
 
     """
+
+
     mpath = self._dirpath + "/tests/models"
     assert j.sal.fs.exists(mpath)
 
@@ -39,7 +41,7 @@ def main(self):
 
     bcdb, _ = self._load_test_model()
 
-    assert bcdb in j.data.bcdb.instances
+    assert bcdb.name in j.data.bcdb.instances
 
     bcdb.models_add(mpath)
 
@@ -49,6 +51,7 @@ def main(self):
 
     model_obj = model.new()
     model_obj.cost = "10 USD"
+    model_obj.name = 'House'
     model_obj.save()
 
     data = model.get(model_obj.id)
@@ -64,20 +67,23 @@ def main(self):
     @url = jumpscale.bcdb.test.house
     name** = "" (S)
     active** = "" (B)
-    cost** =  (N)
-    newprop = ""
-    room = (LO) !jumpscale.bcdb.test.room
+    cost** = (N)
+    room = (LO) !jumpscale.bcdb.test.room1
     """
 
     ms = model.find()
     assert len(ms) == 1
-    print(ms[0]._schema._md5)
+    md5 = ms[0]._schema._md5
 
     model_updated = bcdb.model_get(schema=schema_updated)
 
     ms = model.find()
     assert len(ms) == 1
-    print(ms[0]._schema._md5)
+
+    assert ms[0]._schema._md5 == md5
+
+    # Update schema
+
     s_updated = model_updated.schema
     assert s_updated._md5 != schema_md5
 
@@ -85,21 +91,18 @@ def main(self):
 
     assert model2.schema._md5 == s_updated._md5
 
-    assert model2 == model
-
     assert len(model2.find()) == 1
 
     model_obj = model_updated.new()
     model_obj.cost = 15
     model_obj.name = "test_name_because_there_is_a_unique_constraint_on_it"
-
     model_obj.save()
 
-    assert len(model2.find()) == 2
-    assert len(model.find()) == 2
+    assert len(model_updated.find()) == 2
 
-    data2 = model.find()[1]
-    assert data2._schema._md5 == s_updated._md5  # needs to be the new md5
+    obj = model_updated.find()[1]
+
+    assert obj._schema._md5 == s_updated._md5  # needs to be the new md5
 
     model.find()[0].cost == "10 USD"
     model.find()[1].cost == 15
@@ -108,6 +111,10 @@ def main(self):
     # the schema's need to be different
 
     res = model.find()
-    assert res[0]._schema._md5 != res[1]._schema._md5
+    # Auto migration!
+    assert res[0]._schema._md5 == res[1]._schema._md5
 
+    # CLEAN STATE
+    j.servers.zdb.test_instance_stop()
+    j.servers.sonic.default.stop()
     return "OK"

@@ -386,7 +386,6 @@ class BCDB(j.baseclasses.object):
         remove all data but the bcdb instance remains
         :return:
         """
-
         self.stop()  # will stop sqlite client and the dataprocessor
 
         assert self.storclient

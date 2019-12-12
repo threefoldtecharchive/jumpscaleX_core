@@ -54,11 +54,13 @@ def main(self):
     """
 
     bcdb, model = self._load_test_model(type="zdb", schema=scm)
+
     schema_obj = model.new()
     name = "s" + str(uuid4()).replace("-", "")[:10]
     new_name = "s" + str(uuid4()).replace("-", "")[:10]
     test = "s" + str(uuid4()).replace("-", "")[:10]
     number = random.randint(1, 99)
+
     schema_obj.name = name
     schema_obj.new_name = new_name
     schema_obj.test = test

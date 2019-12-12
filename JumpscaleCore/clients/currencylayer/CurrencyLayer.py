@@ -26,7 +26,7 @@ class CurrencyLayerFactory(j.baseclasses.object_config):
         self._cur2id = {}
         self.fallback = True
         self.fake = False
-        self.api_key_ = "02fe99e9cefaf1733c299a19eaff1cf6"
+        self.api_key_ = "955ebff5d2c404fcfb383b587a02a97b"
         self._data_path = "%s/data.toml" % self._dirpath
 
     def _write_default(self):

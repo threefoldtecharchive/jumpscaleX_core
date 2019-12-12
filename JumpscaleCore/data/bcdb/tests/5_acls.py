@@ -66,6 +66,8 @@ def main(self):
             u.name = "ikke_%s" % i
             u.email = "user%s@me.com" % i
             u.dm_id = "user%s.ibiza" % i
+            u.threebot_id = 'fake.%s.3bot'%i
+            u.ipaddr = '122.12.21.22'
             u.save()
 
         for i in range(10):
@@ -75,6 +77,7 @@ def main(self):
             g.dm_id = "circle%s.ibiza" % i
             g.circle_members = [x for x in range(12, 14)]
             g.user_members = [x for x in range(1, i + 1)]
+            g.threebot_id = 'fake2.3bot'
             g.save()
 
         assert len(bcdb.user.find()) == 10
@@ -173,6 +176,8 @@ def main(self):
             u.name = "testing_%s" % i
             u.email = "user%s@me.com" % i
             u.dm_id = "user%s.ibiza" % i
+            u.threebot_id = 'fake.%s.3bot' % i
+            u.ipaddr = '10.10.10.10'
             u.save()
             user_ids.append(u.id)
 
@@ -181,6 +186,7 @@ def main(self):
         circle_admins.email = "admina@me.com"
         circle_admins.dm_id = "admins.ibiza"
         circle_admins.user_members = user_ids[4]
+        circle_admins.threebot_id = 'fake.134.3bot'
         circle_admins.save()
 
         circle_publishers = bcdb.circle.new()
@@ -189,6 +195,7 @@ def main(self):
         circle_publishers.dm_id = "publishers.ibiza"
         circle_publishers.user_members = user_ids[2:4]
         circle_publishers.circle_members = [circle_admins.id]
+        circle_publishers.threebot_id = 'fake.135.3bot'
         circle_publishers.save()
 
         circle_guests = bcdb.circle.new()
@@ -197,6 +204,7 @@ def main(self):
         circle_guests.dm_id = "guests.ibiza"
         circle_guests.user_members = user_ids[0:2]
         circle_guests.circle_members = [circle_publishers.id]
+        circle_guests.threebot_id = 'fake.136.3bot'
         circle_guests.save()
 
         aa = m.new()
@@ -228,5 +236,8 @@ def main(self):
 
     test2("RDB")
     test2("SQLITE")
+
+    # CLEAN STATE
+    j.servers.sonic.default.stop()
 
     self._log_info("ACL TESTS ALL DONE")

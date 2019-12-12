@@ -272,7 +272,7 @@ class ThreeBotPackage(JSConfigBase):
     def _web_load(self, app_type="frontend"):
         for port in (443, 80):
             website = self.openresty.get_from_port(port)
-            locations = website.locations.get(f"{self.name}_locations")
+            locations = website.locations.get(f"{self.name}_locations_{port}")
             if app_type == "frontend":
                 website_location = locations.locations_spa.new()
             elif app_type == "html":

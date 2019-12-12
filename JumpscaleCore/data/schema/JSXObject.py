@@ -146,14 +146,9 @@ class JSXObject(j.baseclasses.object):
 
     def check_empty_indexed_fields(self):
         for prop in self._model.schema.properties_index_sql:
-
-            try:
-                value = eval(f"self.{prop.name}")
-            except AttributeError:
-                # nested schemas sperator is __ check properties_index_sql method at schema.py
-                prop_name = prop.name.replace("__", ".")
-                value = eval(f"self.{prop_name}")
-
+            if "." in prop:
+                raise j.exceptions.Input("cannot be . in property")
+            value = eval(f"self.{prop.name}")
             if not value and not isinstance(value, (int, float, complex)):
                 raise j.exceptions.Input("an indexed (sql) field cannot be empty:%s" % prop.name, data=self)
 
@@ -200,16 +195,8 @@ class JSXObject(j.baseclasses.object):
                         raise j.exceptions.Input(msg)
                     elif len(r) == 1:
                         msg = "could not save, was not unique.\n%s." % (args_search)
-                        if self.id:
-                            if not self.id == r[0].id:
-                                raise j.exceptions.Input(msg)
-                        else:
-                            self.id = r[0].id
-                            self._ddict_hr  # to trigger right serialization
-                            if self._data == r[0]._data:
-                                return self  # means data was not changed
-                            else:  # means data is not the same and id not known yet
-                                self.id = r[0].id
+                        if (self.id and not self.id == r[0].id) or not self.id:
+                            raise j.exceptions.Input(msg)
 
                 if not self._nosave:
                     o = self._model.set(self)
