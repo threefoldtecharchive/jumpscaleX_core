@@ -17,7 +17,7 @@ class TestSshKeyClient(BaseTest):
 
     def tearDown(self):
         self.sshkey_client.delete_from_sshdir()
-        self.delete_client_method(self.sshkey_client, "jumpscale.sshkey.client", self.sshkeyclient_name)
+        self.sshkey_client.delete()
 
     def test001_load_sshkey_client_into_database(self):
         """
@@ -33,17 +33,19 @@ class TestSshKeyClient(BaseTest):
         #. Check the existence of the client in database, should be there again.
         """
         self.info("Create sshkey client with name {}".format(self.sshkeyclient_name))
+        model = j.data.bcdb.system.model_get(url="jumpscale.sshkey.client")
+        self.assertTrue(model.get_by_name(name=self.sshkeyclient_name))
         self.info("Delete sshkey files from database".format(self.sshkey_client))
-        self.assertTrue(
-            self.delete_client_method(self.sshkey_client, "jumpscale.sshkey.client", self.sshkeyclient_name)
-        )
+        self.sshkey_client.delete()
+        model = j.data.bcdb.system.model_get(url="jumpscale.sshkey.client")
+        self.assertFalse(model.get_by_name(name=self.sshkeyclient_name))
         self.info("Load sshkey client into database")
         self.sshkey_client.load_from_filesystem()
         self.info("Check the existence of the client in database")
         model = j.data.bcdb.system.model_get(url="jumpscale.sshkey.client")
         self.assertTrue(model.get_by_name(name=self.sshkeyclient_name))
 
-    def test02_regenerate_sshkey(self):
+    def test002_regenerate_sshkey(self):
         """
         TC 470
         Test to regenerate sshkey.
@@ -78,10 +80,8 @@ class TestSshKeyClient(BaseTest):
         self.info("Use delete_from_sshdir to delete the sshkey client files from ssh directory")
         self.sshkey_client.delete_from_sshdir()
         self.info("Check the existence of those files in the sshkey directory, shouldn't be there")
-        self.assertFalse(
-            os.path.isfile("{}/{}.pub".format(self.sshkey_dir, self.sshkeyclient_name))
-            and os.path.isfile("{}/{}".format(self.sshkey_dir, self.sshkeyclient_name))
-        )
+        self.assertFalse(os.path.isfile("{}/{}.pub".format(self.sshkey_dir, self.sshkeyclient_name)))
+        self.assertFalse(os.path.isfile("{}/{}".format(self.sshkey_dir, self.sshkeyclient_name)))
 
     def test004_write_sshkey_files_into_ssh_directory(self):
         """

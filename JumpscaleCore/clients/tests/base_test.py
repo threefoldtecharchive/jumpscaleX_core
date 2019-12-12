@@ -23,22 +23,3 @@ class BaseTest(unittest.TestCase):
     @staticmethod
     def rand_string():
         return j.data.idgenerator.generateXCharID(10)
-
-    def delete_client_method(self, client, schema_url, client_name):
-        """
-        This is method to test delete method in clients
-        this method take a client_name and schema_url as an input and and delete it from BCDB.
-        """
-        self.info("Delete {} client from database".format(client_name))
-        model = j.data.bcdb.system.model_get(url=schema_url)
-        if model.get_by_name(name=client_name):
-            self.info("Delete the client from the database using delete method")
-            client.delete()
-            self.info("Check the existence of {} client in the database".format(client_name))
-            try:
-                model.get_by_name(name=client_name)
-            except Exception:
-                pass
-            return True
-        else:
-            return False
