@@ -43,8 +43,6 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             raise j.exceptions.Input("name needs to be specified on a config mgmt obj")
         if self.exists(name=name):
             raise j.exceptions.Base(f"cannot do new object, {name} exists")
-        if not name.isidentifier():
-            raise j.exceptions.Input(f"name '{name}' is not a valid python identifier")
         jsconfig = self._new(name=name, jsxobject=jsxobject, autosave=autosave, **kwargs)
         self._check(jsconfig)
         return jsconfig
@@ -127,8 +125,6 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         if not name:
             raise j.exceptions.Input("name needs to be specified on a config mgmt obj")
-        if not name.isidentifier():
-            raise j.exceptions.Input("name is not a valid python identifier")
 
         # will reload if needed (not in self._children)
         rc, jsconfig = self._get(name=name, id=id, die=needexist, reload=reload)
