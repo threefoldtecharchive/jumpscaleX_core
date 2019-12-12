@@ -18,7 +18,10 @@ class {{shorturl}}_model(j.baseclasses.threebot_actor):
         res = (O) !{{model.schema.url}}
         ```
         """
-        assert user_session.admin #for now only allow admin
+        if not user_session.admin:
+            pass
+            #check threebot_id rights by check acl of BCDB object
+
         return self.model.set_dynamic(kwargs)
 
     @j.baseclasses.actor_method
@@ -33,7 +36,9 @@ class {{shorturl}}_model(j.baseclasses.threebot_actor):
         ```
         """
         # TODO: use user_session for authentication
-        assert user_session.admin #for now only allow admin
+        if not user_session.admin:
+            pass
+            #check threebot_id rights by check acl of BCDB object
         obj = self.model.get(object_id)
 
         for key, val in values.items():
@@ -53,7 +58,9 @@ class {{shorturl}}_model(j.baseclasses.threebot_actor):
         res = (O) !{{model.schema.url}}
         ```
         """
-        assert user_session.admin #for now only allow admin
+        if not user_session.admin:
+            pass
+            #check threebot_id rights by check acl of BCDB object
         return self.model.get_by_name(name)
 
     @j.baseclasses.actor_method
@@ -66,7 +73,9 @@ class {{shorturl}}_model(j.baseclasses.threebot_actor):
         res = (O) !{{model.schema.url}}
         ```
         """
-        assert user_session.admin #for now only allow admin
+        if not user_session.admin:
+            pass
+            #check threebot_id rights by check acl of BCDB object
         return self.model.get(object_id)
 
     @j.baseclasses.actor_method
@@ -79,7 +88,9 @@ class {{shorturl}}_model(j.baseclasses.threebot_actor):
         res = (LO) !{{model.schema.url}}
         ```
         """
-        assert user_session.admin #for now only allow admin
+        if not user_session.admin:
+            pass
+            #check threebot_id rights by check acl of BCDB object
         return self.model.find(query)
 
     @j.baseclasses.actor_method
@@ -89,12 +100,16 @@ class {{shorturl}}_model(j.baseclasses.threebot_actor):
         object_id = 0
         ```
         """
-        assert user_session.admin #for now only allow admin
+        if not user_session.admin:
+            pass
+            #check threebot_id rights by check acl of BCDB object
         obj = self.model.get(object_id)
         obj.delete()
 
 
     @j.baseclasses.actor_method
     def destroy(self, schema_out=None, user_session=None):
-        assert user_session.admin #for now only allow admin
+        if not user_session.admin:
+            pass
+            #check threebot_id rights by check acl of BCDB object
         return self.model.destroy()
