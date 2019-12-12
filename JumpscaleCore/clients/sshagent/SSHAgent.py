@@ -42,8 +42,8 @@ class SSHAgent(j.baseclasses.object):
     def keys_list(self):
         return MyEnv.sshagent.keys_list()
 
-    def key_load(self):
-        return MyEnv.sshagent.key_load()
+    def key_load(self, path=None, name=None, passphrase=None):
+        return MyEnv.sshagent.key_load(path=path, name=name, passphrase=passphrase)
 
     @property
     def key_default(self):
@@ -159,7 +159,7 @@ class SSHAgent(j.baseclasses.object):
             assert j.clients.sshkey.exists(keyname)
             PRIVKEY = j.clients.sshkey.get(name=keyname).privkey.strip()
         C = """
-        
+
         set -e
         set +x
         echo "{PRIVKEY}" > /tmp/myfile
@@ -167,19 +167,19 @@ class SSHAgent(j.baseclasses.object):
         if [ $(ps ax | grep ssh-agent | wc -l) -gt 1 ]
         then
             echo "[OK] SSHAGENT already loaded"
-        else        
-            set +ex 
+        else
+            set +ex
             killall ssh-agent
             set -e
             rm -f /tmp/sshagent
             rm -f /tmp/sshagent_pid
             eval "$(ssh-agent -a /tmp/sshagent)"
             # echo $SSH_AGENT_PID > /tmp/sshagent_pid
-            
+
         fi
-        
+
         export SSH_AUTH_SOCK=/tmp/sshagent
-        
+
         if [[ $(ssh-add -L | grep /tmp/myfile | wc -l) -gt 0 ]]
         then
             echo "[OK] SSH key already added to ssh-agent"
@@ -189,15 +189,15 @@ class SSHAgent(j.baseclasses.object):
             chmod 600 /tmp/myfile
             ssh-add -t {DURATION} /tmp/myfile
         fi
-        
-        rm -f /tmp/myfile   
-               
+
+        rm -f /tmp/myfile
+
         LINE='export SSH_AUTH_SOCK=/tmp/sshagent'
         FILE='/root/.profile'
-        grep -qF -- "$LINE" "$FILE" || echo "$LINE" >> "$FILE" 
+        grep -qF -- "$LINE" "$FILE" || echo "$LINE" >> "$FILE"
         FILE='/root/.bashrc'
         grep -qF -- "$LINE" "$FILE" || echo "$LINE" >> "$FILE"
-        
+
         """
         C2 = j.core.tools.text_replace(content=j.core.tools.text_strip(C), args=locals())
         # j.sal.fs.writeFile("/tmp/sshagent_load.sh", C2)

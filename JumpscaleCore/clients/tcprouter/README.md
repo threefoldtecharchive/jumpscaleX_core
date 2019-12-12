@@ -9,7 +9,7 @@ This client can make the connection to the tcprouter server
 - Get a client with the proper local address, remote address and secret
 
 ```python
-cl = j.clients.tcp_router.get("test_instance", local_address="0.0.0.0:18000",remote_address="127.0.0.1:6379", secret="test")
+cl = j.clients.tcp_router.get("test_instance", local_ip="0.0.0.0", local_port=18000, remote_ip="127.0.0.1", remote_port=6379, secret="test")
 ```
 
 - To connect to tcprouter backend
