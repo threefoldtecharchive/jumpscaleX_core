@@ -271,13 +271,16 @@ class BCDB(j.baseclasses.object):
 
         max_id = max(list(data.keys()) or [0])
 
+        next_id = 1
+        if isinstance(self.storclient, ZDBClientBase):
+            next_id = self.storclient.next_id
+
         # have to import it in the exact same order
         for i in range(1, max_id + 1):
             print(f"i: {i}")
             if i not in data:
-                if isinstance(self.storclient, ZDBClientBase):
-                    if i < self.storclient.next_id:
-                        continue
+                if i < next_id:
+                    continue
 
                 print(f"{i} doesn't exist in data.. ")
                 gap_obj = self._dummy.new()
