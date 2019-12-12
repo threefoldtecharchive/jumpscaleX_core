@@ -15,7 +15,7 @@ class RegistryTests(BaseTest):
     @classmethod
     def addRegistryPackage(cls):
         # . Start threebot server, add registery package, then reload the client.
-        cl = j.servers.threebot.local_start_default()
+        cl = j.servers.threebot.local_start_default(background=True)
         cl = j.clients.gedis.get("threebot_registery", port=8901)
         cl.actors.package_manager.package_add(
             path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry"
@@ -33,7 +33,6 @@ class RegistryTests(BaseTest):
             @url = threebot.registry.test.schema.1 
             url = "" 
             x = ""
-            y = "" (E)
             tags = (LS)
         """
         randStr = j.data.idgenerator.generateXCharID(10)
