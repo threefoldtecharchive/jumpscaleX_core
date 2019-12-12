@@ -26,6 +26,10 @@ class TestRedisConfig(BaseTest):
         j.clients.redis._cache_clear()
         j.sal.process.killProcessByName("redis-server")
         super().tearDown()
+    
+    @classmethod
+    def tearDownClass(cls):
+        j.clients.redis.core_get(reset=True)
 
     def start_redis_server(self, port=None, password=False):
         if port:
