@@ -68,13 +68,11 @@ class BCDB(j.baseclasses.object):
         self._sqlite_index_dbpath = "%s/sqlite_index.db" % self._data_dir
 
         self._init_props()
+        self.meta = BCDBMeta(self)
 
         if reset:
-            self.meta = None
             self.reset()
             return
-        else:
-            self.meta = BCDBMeta(self)
 
         j.data.nacl.default
 
@@ -506,9 +504,11 @@ class BCDB(j.baseclasses.object):
         schema = self.schema_get(schema=schema, md5=md5, url=url, package=package)
         if schema.url in self._schema_url_to_model:
             model = self._schema_url_to_model[schema.url]
-            model.schema_change(schema)
-            self.meta._schema_set(schema)
-            return model
+            if model.schema._md5 != schema._md5:
+                # schema with the same url has changed, delete the cached one so the model can be added again properly
+                del self._schema_url_to_model[schema.url]
+            else:
+                return model
 
         # model not known yet need to create
         self._log_info("load model:%s" % schema.url)
@@ -760,6 +760,22 @@ class BCDB(j.baseclasses.object):
 
     def get_all(self):
         return [obj for obj in self.iterate()]
+
+    def migrate_models(self, from_url, to_url):
+        from_model = self.model_get(url=from_url)
+        to_model = self.model_get(url=to_url)
+
+        for obj in from_model.find():
+            new_obj = to_model.new()
+            for prop in to_model.schema.properties:
+                if prop.name in from_model.schema.propertynames and getattr(obj, prop.name):
+                    setattr(new_obj, prop.name, getattr(obj, prop.name))
+                elif prop in to_model.schema.properties_index_sql and not getattr(new_obj, prop.name):
+                    # this is an indexed field and doesn't have a default value so we have to generate some data in it
+                    setattr(new_obj, prop.name, j.data.idgenerator.generateXCharID(20))
+
+            new_obj.save()
+            obj.delete()
 
     def __str__(self):
         out = "bcdb:%s\n" % self.name

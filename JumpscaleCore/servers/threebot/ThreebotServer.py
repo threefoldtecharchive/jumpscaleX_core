@@ -189,18 +189,20 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             gevent.sleep(day1)
 
-    def start(self, background=False, restart=False):
+    def start(self, background=False, restart=False, packages=None):
         """
 
         kosmos -p 'j.servers.threebot.default.start(background=True)'
         kosmos -p 'j.servers.threebot.default.start(background=False)'
 
         :param background: if True will start all servers including threebot itself in the background
-
+        :param packages: a list of package paths to load by default
+        :type packages: list of str
         ports & paths used for threebotserver
         see: {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/docs/3Bot/web_environment.md
 
         """
+        packages = packages or []
 
         self.save()
 
@@ -293,6 +295,9 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.__dict__.pop("tutorials")
             j.__dict__.pop("sal_zos")
 
+            for path in packages:
+                j.threebot.packages.zerobot.packagemanager.actors.package_manager.package_add(path=path)
+
             # reload nginx at the end after loading packages and its config is written
             self.openresty_server.reload()
 
@@ -318,7 +323,22 @@ class ThreeBotServer(j.baseclasses.object_config):
         # wait on lapis to start so we make sure everything is loaded by then.
         if not j.sal.nettools.waitConnectionTest("127.0.0.1", 80, timeout=600):
             raise j.exceptions.Timeout("Could not start threebot server")
-        self.client = j.clients.gedis.get(name="threebot", port=8901)
+
+        if not j.sal.nettools.waitConnectionTest("127.0.0.1", 8901, timeout=60):
+            raise j.exceptions.Timeout("Could not start threebot server")
+
+        # it happens that the server starts listening but not ready yet will try again
+        retries = 60
+        last_error = None
+        for _ in range(retries):
+            try:
+                self.client = j.clients.gedis.get(name="threebot", port=8901)
+                break
+            except Exception as e:
+                time.sleep(1)
+                last_error = e
+        else:
+            raise last_error
         # TODO: will have to authenticate myself
 
         self.client.reload()

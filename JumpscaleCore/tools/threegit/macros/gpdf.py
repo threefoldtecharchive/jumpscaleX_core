@@ -26,7 +26,8 @@ def gpdf(doc, link, **kwargs):
         pdf_link = f"/wiki/gdrive/{doc_type}/{file_id}"
         # normal markdown links will be resolved by docsify, won't work
         return f"""```inline_html
-            <a href="{pdf_link}">download as pdf</a>
+        <iframe src="/weblibs/ViewerJS/#../..{pdf_link}"
+                style="width:600px; height:500px;" frameborder="0"></iframe>
         ```
         """
     raise j.exceptions.Value(f"cannot extract document type of id from an invalid link '{link}''")

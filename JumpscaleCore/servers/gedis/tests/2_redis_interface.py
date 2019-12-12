@@ -9,10 +9,12 @@ def main(self):
     """
 
     # lets make sure we have the right package loaded
-    package_path = j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/ibiza")
+    package_path = j.core.tools.text_replace(
+        "{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/ibiza"
+    )
     cl = self._threebot_client_default
     # if reload==False then the package will not be reloaded if its already there
-    cl.actors.package_manager.package_add("ibiza_test", path=package_path, reload=False)
+    cl.actors.package_manager.package_add(path=package_path, reload=False)
     cl.reload()
 
     # next only works because the test is running in the threebot itself, so I can use the installed package code
@@ -57,4 +59,3 @@ def main(self):
 
     data3 = cl.execute_command("ibiza.painter.example3", data2)
     assert data3 == b'{"a": "a", "b": true, "c": 3}'
-
