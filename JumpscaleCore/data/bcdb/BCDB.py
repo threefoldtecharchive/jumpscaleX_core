@@ -68,11 +68,12 @@ class BCDB(j.baseclasses.object):
         self._sqlite_index_dbpath = "%s/sqlite_index.db" % self._data_dir
 
         self._init_props()
-        self.meta = BCDBMeta(self)
 
         if reset:
+            self.meta = None
             self.reset()
-            return
+        else:
+            self.meta = BCDBMeta(self)
 
         j.data.nacl.default
 
@@ -97,7 +98,6 @@ class BCDB(j.baseclasses.object):
         self.acl = None
         self.user = None
         self.circle = None
-        self._dummy = None
 
     def _init_system_objects(self):
 
@@ -122,9 +122,6 @@ class BCDB(j.baseclasses.object):
         self.user = self.model_add(USER(bcdb=self))
         self.circle = self.model_add(CIRCLE(bcdb=self))
         self.NAMESPACE = self.model_add(NAMESPACE(bcdb=self))
-
-        schema = j.data.schema.get_from_url(url="jumpscale.bcdb.dummy.1")
-        self._dummy = self.model_get(schema=schema)
 
     def check(self):
         """
@@ -235,6 +232,7 @@ class BCDB(j.baseclasses.object):
             self.meta._schema_set(schema, save=False)
 
         self.meta._save()
+        self.meta._readonly = True
 
         for url_path in paths:
             print(f"processing {url_path}")

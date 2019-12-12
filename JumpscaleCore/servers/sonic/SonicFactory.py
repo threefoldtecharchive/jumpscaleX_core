@@ -12,9 +12,6 @@ class SonicFactory(JSConfigs):
     __jslocation__ = "j.servers.sonic"
     _CHILDCLASS = SonicServer
 
-    def _init(self, **kwargs):
-        self._default = None
-
     def install(self, reset=False):
         """
         kosmos 'j.servers.sonic.build()'
