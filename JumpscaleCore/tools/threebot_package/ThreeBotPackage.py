@@ -58,6 +58,11 @@ class ThreeBotPackage(JSConfigBase):
         self.models
 
     @property
+    def fullname(self):
+        """get a dot separated fully qualified name of the package"""
+        return f"{self.source.threebot}.{self.source.name}"
+
+    @property
     def threebot_server(self):
         return j.threebot.servers.core
 
@@ -71,7 +76,6 @@ class ThreeBotPackage(JSConfigBase):
 
     def _model_get_fields_schema(self, model):
         lines = []
-        model_prefix = f"{self.source.threebot}.{self.source.name}"
 
         for line in model.schema.text.splitlines():
             line = line.strip().lower()
@@ -85,7 +89,7 @@ class ThreeBotPackage(JSConfigBase):
                         break
                 else:
                     old_model_url = model_url
-                    model_url = f"{model_prefix}.{model_url}"
+                    model_url = f"{self.fullname}.{model_url}"
                     line = line.replace(old_model_url, model_url)
             except ValueError:
                 # ! is not in line
@@ -150,9 +154,9 @@ class ThreeBotPackage(JSConfigBase):
                 model = self.bcdb.model_get(url=model_url, package=self)
                 if model.schema.url.startswith("jumpscale.bcdb."):
                     continue
-                assert model_url.startswith(self.name)
+                assert model_url.startswith(self.fullname)
 
-                shorturl = model_url[len(self.name) + 1 :].replace(".", "_")
+                shorturl = model_url[len(self.fullname) + 1 :].replace(".", "_")
                 dest = self.path + "/actors/" + shorturl + "_model.py"
                 # for now generate all the time TODO: change later
                 if True or not j.sal.fs.exists(dest):
@@ -212,8 +216,8 @@ class ThreeBotPackage(JSConfigBase):
                 model_urls = self.bcdb.models_add(path, package=self)
                 for model_url in model_urls:
                     m = self.bcdb.model_get(url=model_url, package=self)
-                    if model_url.startswith(self.name):
-                        model_url2 = model_url[len(self.name) + 1 :]
+                    if model_url.startswith(self.fullname):
+                        model_url2 = model_url[len(self.fullname) + 1 :]
                     else:
                         model_url2 = model_url
                     model_url3 = model_url2.replace(".", "__")
