@@ -38,7 +38,9 @@ class TestSshKeyClient(BaseTest):
         self.info("Delete sshkey files from database".format(self.sshkey_client))
         self.sshkey_client.delete()
         model = j.data.bcdb.system.model_get(url="jumpscale.sshkey.client")
-        self.assertFalse(model.get_by_name(name=self.sshkeyclient_name))
+        with self.assertRaises(Exception) as error:
+            model.get_by_name(name=self.sshkeyclient_name)
+            self.assertTrue("cannot find data with name" in error.exception.args[0])
         self.info("Load sshkey client into database")
         self.sshkey_client.load_from_filesystem()
         self.info("Check the existence of the client in database")
