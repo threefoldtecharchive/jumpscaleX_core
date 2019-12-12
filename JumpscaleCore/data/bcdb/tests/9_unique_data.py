@@ -47,10 +47,10 @@ def main(self):
     test_case = TestCase()
     scm = """
     @url = test.schema.1
-    name** = "" (S)
+    &name** = "" (S)
     new_name = "" (S)
-    test = "" (S)
-    number = 0 (I)
+    &test = "" (S)
+    &number = 0 (I)
     """
 
     bcdb, model = self._load_test_model(type="zdb", schema=scm)
