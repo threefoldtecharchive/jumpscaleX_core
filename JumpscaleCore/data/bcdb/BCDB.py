@@ -300,7 +300,9 @@ class BCDB(j.baseclasses.object):
     @property
     def sqlite_index_client(self):
         if self._sqlite_index_client is None:
-            self._sqlite_index_client = j.clients.peewee.SqliteDatabase(self._sqlite_index_dbpath)
+            self._sqlite_index_client = j.clients.peewee.SqliteDatabase(
+                self._sqlite_index_dbpath, pragmas={"journal_mode": "wal"}
+            )
         return self._sqlite_index_client
 
     def sqlite_index_client_stop(self):
@@ -710,6 +712,8 @@ class BCDB(j.baseclasses.object):
             return bdata
         else:
             obj = j.data.serializers.jsxdata.loads(bdata, bcdb=self, schema=schema)
+            if schema:
+                assert obj._schema == schema
             obj.nid = nid
             if not obj.id and id:
                 obj.id = id

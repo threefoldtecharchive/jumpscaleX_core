@@ -2,7 +2,8 @@
 
 import sys
 
-if "-p" in sys.argv:
+# lets always monkey patch
+if True or "-p" in sys.argv:
     from gevent import monkey
 
     monkey.patch_all(subprocess=False)

@@ -17,9 +17,7 @@ def main(self):
     cl.actors.package_manager.package_add(path=package_path, reload=False)
     cl.reload()
 
-    ibiza_client = j.clients.gedis.get("ibiza_client_test", package_name="examples.ibiza")
-
-    j.shell()
+    ibiza_client = j.clients.gedis.get("ibiza_client_test", package_name="jumpscale.ibiza")
 
     r0 = ibiza_client.actors.ibiza_actor.info("aaa")
     assert r0 == b"aaa"

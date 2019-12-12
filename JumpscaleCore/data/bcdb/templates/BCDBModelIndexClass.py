@@ -1,5 +1,5 @@
 # Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy) 
+# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
 #   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
 #   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
 # This file is part of jumpscale at <https://github.com/threefoldtech>.
@@ -76,26 +76,16 @@ class {{BASENAME}}(BCDBModelIndex):
         {%- endif %}
         {%- endfor %}
         dd["nid"] = obj.nid
-    
-        #TODO: REEM there need to be other ways, why can peewee update when needed
-        #self.sql.delete().where(reduce(operator.or_, query)).execute()
-        msg = ""
-        for _ in range(10):
-            try:
-                z = self.sql.get_or_none(id=obj.id)
-                if z == None:
-                    dd["id"] = obj.id
-                    self.sql.create(**dd)
-                else:
-                    self.sql.update(**dd).where(self.sql.id==obj.id).execute()
-                break
-            except peewee.OperationalError as e:
-                time.sleep(0.5)
-                msg = str(e)
+
+        z = self.sql.get_or_none(id=obj.id)
+        if z == None:
+            dd["id"] = obj.id
+            self.sql.create(**dd)
         else:
-            raise j.exceptions.Runtime(msg)
-        #TODO: if there is other  unique constraint beside ID and we try to force it then 
-        # the replace function will  delete the row where the constraint is and still update the row 
+            self.sql.update(**dd).where(self.sql.id==obj.id).execute()
+
+        #TODO: if there is other  unique constraint beside ID and we try to force it then
+        # the replace function will  delete the row where the constraint is and still update the row
         # where the id points
 
 
@@ -163,10 +153,3 @@ class {{BASENAME}}(BCDBModelIndex):
         return
 
     {%- endif %}
-
-
-
-
-
-
-

@@ -496,11 +496,11 @@ class BCDBModel(j.baseclasses.object):
                 return None
 
         obj = self.bcdb._unserialize(obj_id, data, return_as_capnp=return_as_capnp, schema=self.schema)
-        if obj._schema.url == self.schema.url:
+        if obj._schema.url == self.schema.url and obj._schema._md5 == self.schema._md5:
             obj = self._triggers_call(obj=obj, action="get")
         else:
             raise j.exceptions.JSBUG(
-                "no object with id {} found in {}, this means the index gave back an id which is not part of this model.".format(
+                "no object with id {} found in {}, this means the index gave back an id which is not part of this model, different schema url.".format(
                     obj_id, self
                 )
             )
