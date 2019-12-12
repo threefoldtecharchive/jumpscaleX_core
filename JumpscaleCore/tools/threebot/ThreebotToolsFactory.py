@@ -46,9 +46,9 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
             if not email:
                 if interactive:
                     assert j.application.interactive
-                    email = j.tools.console.askString("your threebot email (optional)")
+                    email = j.tools.console.askString("your threebot email")
                 else:
-                    email = ""
+                    raise j.exceptions.Input("please specify email")
             if not description:
                 if interactive:
                     description = j.tools.console.askString("your threebot description (optional)")
@@ -305,8 +305,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         """
 
         self.explorer.actors.package_manager.package_add(
-            "threebot_phonebook",
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook"
         )
 
         j.servers.threebot.local_start_default()
@@ -372,8 +371,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         cl = j.servers.threebot.local_start_default()
 
         cl.actors.package_manager.package_add(
-            "threebot_phonebook",
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook"
         )
 
         self._threebot_client_default = cl
