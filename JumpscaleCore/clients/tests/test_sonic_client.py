@@ -1,7 +1,9 @@
+import unittest
 from Jumpscale import j
 from base_test import BaseTest
 
 
+@unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/250")
 class SonicClient(BaseTest):
     @classmethod
     def setUpClass(cls):
@@ -9,7 +11,7 @@ class SonicClient(BaseTest):
         j.builders.apps.sonic.install()
 
         cls.info("Start Sonic server")
-        j.servers.sonic.default.start()
+        j.servers.sonic.get().start()
 
         cls.info("create a Sonic client")
         cls.client = j.clients.sonic.get("test", host="127.0.0.1", port=1491, password="123456")
@@ -27,10 +29,8 @@ class SonicClient(BaseTest):
 
         self.data = {
             "post:1": "{}".format(self.RAND_STRING_1),
-            "post:2": "{}".format(self.RAND_STRING_1),
-            "post:3": "{}".format(self.RAND_STRING_1),
-            "post:4": "{}".format(self.RAND_STRING_2),
-            "post:5": "{}".format(self.RAND_STRING_3),
+            "post:2": "{}".format(self.RAND_STRING_2),
+            "post:3": "{}".format(self.RAND_STRING_3),
         }
 
         self.COLLECTION = "COLL_{}".format(RAND_NUM)
@@ -75,9 +75,7 @@ class SonicClient(BaseTest):
         """
 
         self.info("Query to certain data with valid collection and bucket name, and check the output.")
-        self.assertEqual(
-            sorted(self.client.query(self.COLLECTION, self.BUCKET, self.RAND_STRING_1)), ["post:1", "post:2", "post:3"]
-        )
+        self.assertEqual(sorted(self.client.query(self.COLLECTION, self.BUCKET, self.RAND_STRING_1)), ["post:1"])
 
         self.info("Query for non valid collection and bucket, should raise an error")
         self.assertEqual(len(self.client.query(self.rand_string(), self.rand_string(), self.rand_string())), 0)
@@ -116,10 +114,8 @@ class SonicClient(BaseTest):
         self.client.flush_object(self.COLLECTION, self.BUCKET, "post:4")
 
         self.info("Use pop to get the object back, and check the existing of this object")
-        self.assertNotEqual(self.client.pop(self.COLLECTION, self.BUCKET, "post:3", self.RAND_STRING_1), 0)
-        self.assertEqual(
-            sorted(self.client.query(self.COLLECTION, self.BUCKET, self.RAND_STRING_1)), ["post:1", "post:2", "post:3"]
-        )
+        self.assertNotEqual(self.client.pop(self.COLLECTION, self.BUCKET, "post:3", self.RAND_STRING_3), 0)
+        self.assertEqual(sorted(self.client.query(self.COLLECTION, self.BUCKET, self.RAND_STRING_3)), ["post:3"])
 
         self.info("Use pop method with non valid data, the output should be 0")
         self.assertEqual(self.client.pop(self.COLLECTION, self.BUCKET, "post:3", self.RAND_STRING_1), 0)
