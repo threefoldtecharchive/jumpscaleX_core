@@ -136,6 +136,7 @@ assert obj.abool == False
 
 > ### can see how the type system we use is intelligent, especially if used for things like numerics.
 
+> ### Please don't use "__" in your schema propery name
 
 - for a full example of using schema see the following [test link](../../JumpscaleCore/data/schema/tests)
 

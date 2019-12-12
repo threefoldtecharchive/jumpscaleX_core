@@ -25,11 +25,12 @@ class ThreebotClient(JSConfigBase):
         self._gedis_connections = {}
         assert self.name != ""
 
-    def actors_get(self, namespace="default"):
-        if not namespace in self._gedis_connections:
-            g = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, namespace=namespace)
-            self._gedis_connections[namespace] = g
-        return self._gedis_connections[namespace].actors
+    def actors_get(self, package_name="all"):
+        if not package_name in self._gedis_connections:
+            name = "" if "all" else package_name
+            g = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, package_name=name)
+            self._gedis_connections[package_name] = g
+        return self._gedis_connections[package_name].actors
 
     def reload(self):
         for key, g in self._gedis_connections.items():
@@ -37,15 +38,12 @@ class ThreebotClient(JSConfigBase):
 
     @property
     def _gedis(self):
-        a = self.actors_get("default")
-        return self._gedis_connections["default"]
+        a = self.actors_get("all")
+        return self._gedis_connections["all"]
 
     @property
-    def actors_default(self):
-        return self.actors_get("default")
-
-    def ping(self):
-        return self.client.ping()
+    def actors_all(self):
+        return self.actors_get("all")
 
     def encrypt_for_threebot(self, data, hex=False):
         """

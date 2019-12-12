@@ -25,66 +25,58 @@ def main(self):
     """
     to run:
 
-    kosmos 'j.data.bcdb.test(name="schema_update")'
-
-
+    kosmos 'j.data.bcdb.test(name="migrate_models")'
     """
 
     bcdb, _ = self._load_test_model()
 
     schema_1 = """
-    @url = jumpscale.bcdb.test.house
+    @url = jumpscale.bcdb.test.house.1
     name** = "" (S)
     active** = "" (B)
     enum = "a,b,c" (E)
     cost** =  (N)
-
-    @url = jumpscale.bcdb.test.room1
-    name** = "" (S)
+    notindexed = "" (S)
+    todelete = "" (S)
     """
 
     model = bcdb.model_get(schema=schema_1)
     schema_md5 = model.schema._md5
 
-    model_obj = model.new()
-    model_obj.name = "one"
-    model_obj.active = True
-    model_obj.cost = "10 USD"
-    model_obj.save()
+    obj = model.new()
+    obj.name = "one"
+    obj.active = True
+    obj.cost = "10 USD"
+    obj.save()
 
-    exception = False
-    try:
-        model_obj.newprop
-    except:
-        exception = True
-
-    assert exception
-
-    data = model.get(model_obj.id)
-
-    # make sure the data from first one has right schema md5
-    assert data._schema._md5 == schema_md5
-    assert data.cost_usd == 10
-    assert model_obj.cost_usd == 10
+    assert len(model.find()) == 1
+    assert obj.notindexed == ""
+    assert obj.todelete == ""
 
     schema_2 = """
-    @url = jumpscale.bcdb.test.house
+    @url = jumpscale.bcdb.test.house.2
     name** = "" (S)
     active** = "" (B)
     cost** =  (N)
+    notindexed** = "" (S)
+    newindexed** = "" (S)
+    newenum** = "e,f,g" (E)
     enum = "a,b,c,d" (E)
     newprop = ""
-    room = (LO) !jumpscale.bcdb.test.room1
     """
+    new_model = bcdb.model_get(schema=schema_2)
 
-    model_updated = bcdb.model_get(schema=schema_2)
+    bcdb.migrate_models(model.schema.url, new_model.schema.url)
+    assert len(model.find()) == 0
 
-    data = model_updated.get(model_obj.id)
-    data.enum = "d"
-    assert data.newprop == ""
-    assert data.room == []
+    objs = new_model.find()
+    assert len(objs) == 1
 
-    model = bcdb.model_get(url="jumpscale.bcdb.test.house")
-    assert model.schema._md5 == model_updated.schema._md5
+    obj = objs[0]
+    assert obj.notindexed != ""
+    assert obj.newindexed != ""
+    assert obj.newenum == "E"
+    assert obj.newprop == ""
+    assert not hasattr(obj, "todelete")
 
     return "OK"

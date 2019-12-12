@@ -64,14 +64,14 @@ cl=j.clients.threebot.client_get(threebot="somebot.ibiza")
 #cl=j.clients.threebot.client_get(threebot=10)
 
 # if reload==False then the package will not be reloaded if its already there
-cl.actors_default.package_manager.package_add( path=package_path, reload=False)
+cl.actors_all.package_manager.package_add( path=package_path, reload=False)
 cl.reload() #this will reload the actors (metadata comes from server)
 ```
 
 or from giturl
 
 ```python
-cl.actors_default.package_manager.package_add(
+cl.actors_all.package_manager.package_add(
     git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
 )
 ```
