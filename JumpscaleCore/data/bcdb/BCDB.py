@@ -74,9 +74,9 @@ class BCDB(j.baseclasses.object):
 
         if self.readonly:
             self._log_info("sqlite file is in readonly mode")
-            self._sqlite_index_dbpath = "%s/sqlite_index.db?mode=ro" % self._data_dir
+            self._sqlite_index_dbpath = "file:%s/sqlite_index.db?mode=ro" % self._data_dir
         else:
-            self._sqlite_index_dbpath = "%s/sqlite_index.db" % self._data_dir
+            self._sqlite_index_dbpath = "file:%s/sqlite_index.db" % self._data_dir
 
         self._init_props()
 
@@ -330,8 +330,9 @@ class BCDB(j.baseclasses.object):
     def sqlite_index_client(self):
         if self._sqlite_index_client is None:
             self._sqlite_index_client = j.clients.peewee.SqliteDatabase(
-                self._sqlite_index_dbpath, pragmas={"journal_mode": "wal"}
+                self._sqlite_index_dbpath, uri=True, pragmas={"journal_mode": "wal"}
             )
+
         return self._sqlite_index_client
 
     def sqlite_index_client_stop(self):
