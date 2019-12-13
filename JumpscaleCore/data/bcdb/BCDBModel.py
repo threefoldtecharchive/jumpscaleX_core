@@ -213,6 +213,7 @@ class BCDBModel(j.baseclasses.object):
 
     @queue_method
     def delete(self, obj, force=True):
+        self.bcdb._is_writable_check()
         if not isinstance(obj, j.data.schema._JSXObjectClass):
             if isinstance(obj, int):
                 try:
@@ -249,6 +250,7 @@ class BCDBModel(j.baseclasses.object):
         if obj -> will check of JSOBJ
         if ddict will put inside JSOBJ
         """
+        self.bcdb._is_writable_check()
         if j.data.types.string.check(data):
 
             data = j.data.serializers.json.loads(data)
@@ -314,6 +316,7 @@ class BCDBModel(j.baseclasses.object):
         return res
 
     def upgrade(self, obj):
+        self.bcdb._is_writable_check()
         obj._model.schema_change(obj._model.bcdb.schema_get(url=obj._schema.url))
         j.shell()
         return obj
@@ -325,7 +328,7 @@ class BCDBModel(j.baseclasses.object):
         :return: obj
         """
         self.check(obj)
-
+        self.bcdb._is_writable_check()
         if store:
 
             # later:

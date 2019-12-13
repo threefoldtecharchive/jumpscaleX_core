@@ -53,7 +53,7 @@ class BCDBModelIndex(j.baseclasses.object):
         :param nid:
         :return:
         """
-
+        self.bcdb._is_writable_check()
         # id's are always used, otherwise the iteration does not work
         # self._ids_destroy(nid=nid)
 
@@ -74,6 +74,7 @@ class BCDBModelIndex(j.baseclasses.object):
         :param obj:
         :return:
         """
+        self.bcdb._is_writable_check()
         # if self.index_sql_needed:
         self._sql_index_set(obj)
 
@@ -93,6 +94,7 @@ class BCDBModelIndex(j.baseclasses.object):
         :param obj:
         :return:
         """
+        self.bcdb._is_writable_check()
         assert isinstance(obj_id, int)
         self._sql_index_delete_by_id(obj_id=obj_id)
         if self.index_text_needed:
@@ -104,6 +106,7 @@ class BCDBModelIndex(j.baseclasses.object):
         :param obj:
         :return:
         """
+        self.bcdb._is_writable_check()
         assert not obj_id
         assert not nid
         if obj.id is not None:
@@ -606,6 +609,7 @@ class BCDBModelIndex(j.baseclasses.object):
         :param nid:
         :return:
         """
+        self.bcdb._is_writable_check()
         if nid:
             self.sql.delete().where(self.sql.nid == nid).execute()
         else:
