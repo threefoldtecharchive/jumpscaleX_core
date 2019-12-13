@@ -201,8 +201,8 @@ class JSXObject(j.baseclasses.object):
                 if self._nosave:
                     obj, stop = self._model._triggers_call(obj=self, action="set_pre", propertyname=None)
                 else:
-                    o = self._model.set(self)
-                    self.id = o.id
+                    obj = self._model.set(self)
+                    self.id = obj.id
 
                 return obj
             return self

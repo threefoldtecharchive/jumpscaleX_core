@@ -51,11 +51,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
     def _load(self):
 
-        if not self._loaded or self._instances == {}:
+        if not self._loaded:
 
-            self._loaded = True
             print("LOAD CONFIG BCDB")
-
+            self._loaded = True
             storclient = j.clients.sqlitedb.client_get(namespace="system")
             # storclient = j.clients.rdb.client_get(namespace="system")
             self._instances["system"] = BCDB(storclient=storclient, name="system", reset=False)
@@ -72,6 +71,15 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                 self._config = j.data.serializers.msgpack.loads(data)
             else:
                 self._config = {}
+
+            keys = [i for i in self._config.keys()]
+
+            for name in keys:
+                if name == "system":
+                    continue
+                storclient = self._get_storclient(name)
+                bcdb = self._get(name, storclient)
+                self._instances[name] = bcdb
 
     @property
     def system(self):
@@ -148,15 +156,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     @property
     def instances(self):
         self._load()
-        keys = [i for i in self._config.keys()]
-
-        for name in keys:
-            if name == "system":
-                continue
-            storclient = self._get_storclient(name)
-            bcdb = self._get(name, storclient)
-            self._instances[name] = bcdb
-
         return self._instances
 
     def index_rebuild(self, name=None, storclient=None):
@@ -329,9 +328,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                 raise j.exceptions.Input(f"cannot find config for bcdb:{name}")
             return bcdb
 
-        if name in j._exists:
-            j.shell()
-
         if name in self._config and not storclient:
             storclient = self._get_storclient(name)
 
@@ -341,8 +337,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             b = self._get(name=name, storclient=storclient, reset=reset)
 
         assert b.readonly == readonly
-
-        j._exists[name] = self, b
 
         return b
 
@@ -384,6 +378,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             # its the only 100% safe way to get all out for now
             dontuse = BCDB(storclient=storclient, name=name, reset=reset)
         self._instances[name] = BCDB(storclient=storclient, name=name)
+        b = self._instances[name]
 
         return self._instances[name]
 
@@ -602,7 +597,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         out = "## {GRAY}BCDBS: {BLUE}\n\n"
 
         for bcdb_name in self.instances.keys():
-            out += " = %s" % bcdb_name
+            out += " - %s\n" % bcdb_name
 
         out += "{RESET}"
         out = j.core.tools.text_replace(out)

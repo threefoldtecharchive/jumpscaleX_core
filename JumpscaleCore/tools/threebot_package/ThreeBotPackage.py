@@ -130,7 +130,7 @@ class ThreeBotPackage(JSConfigBase):
             for model_url in self.model_urls:
                 found = True
                 # Exclude bcdb meta data models
-                model = self.bcdb.model_get(url=model_url, package=self)
+                model = self.bcdb.model_get(url=model_url)
                 if model.schema.url.startswith("jumpscale.bcdb."):
                     continue
                 assert model_url.startswith(self.name)

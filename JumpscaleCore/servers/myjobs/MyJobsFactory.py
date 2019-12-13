@@ -76,7 +76,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
     def _bcdb_selector(self):
         client = j.clients.rdb.client_get()
-        client.cat = "myjobs"
         return j.data.bcdb.get("myjobs", storclient=client)
 
     @property
