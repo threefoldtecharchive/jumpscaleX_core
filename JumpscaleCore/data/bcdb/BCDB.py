@@ -405,6 +405,9 @@ class BCDB(j.baseclasses.object):
 
         print("** STOP DATA PROCESSOR FOR :%s" % self.name)
 
+        if not self.readonly:
+            self.lock.release()
+
         if self.dataprocessor_greenlet:
             if self.dataprocessor_greenlet.started and not force:
                 if self.queue.qsize() == 0:
@@ -415,11 +418,8 @@ class BCDB(j.baseclasses.object):
                     # self._log_debug("wait dataprocessor to stop")
                     gevent.sleep(1)
 
-        if not self.readonly:
-            self.lock.release()
-
         self._log_warning("DATAPROCESSOR & SQLITE STOPPED OK")
-        # TODO: JO is this ok that it happens 2x
+
         return True
 
     def reset(self):
