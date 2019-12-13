@@ -213,6 +213,7 @@ class BCDBModel(j.baseclasses.object):
 
     @queue_method
     def delete(self, obj, force=True):
+        self.bcdb._is_writable_check()
         if not isinstance(obj, j.data.schema._JSXObjectClass):
             if isinstance(obj, int):
                 try:
@@ -249,6 +250,7 @@ class BCDBModel(j.baseclasses.object):
         if obj -> will check of JSOBJ
         if ddict will put inside JSOBJ
         """
+        self.bcdb._is_writable_check()
         if j.data.types.string.check(data):
 
             data = j.data.serializers.json.loads(data)
@@ -314,6 +316,7 @@ class BCDBModel(j.baseclasses.object):
         return res
 
     def upgrade(self, obj):
+        self.bcdb._is_writable_check()
         obj._model.schema_change(obj._model.bcdb.schema_get(url=obj._schema.url))
         j.shell()
         return obj
@@ -325,7 +328,7 @@ class BCDBModel(j.baseclasses.object):
         :return: obj
         """
         self.check(obj)
-
+        self.bcdb._is_writable_check()
         if store:
 
             # later:
@@ -496,11 +499,11 @@ class BCDBModel(j.baseclasses.object):
                 return None
 
         obj = self.bcdb._unserialize(obj_id, data, return_as_capnp=return_as_capnp, schema=self.schema)
-        if obj._schema.url == self.schema.url:
+        if obj._schema.url == self.schema.url and obj._schema._md5 == self.schema._md5:
             obj = self._triggers_call(obj=obj, action="get")
         else:
             raise j.exceptions.JSBUG(
-                "no object with id {} found in {}, this means the index gave back an id which is not part of this model.".format(
+                "no object with id {} found in {}, this means the index gave back an id which is not part of this model, different schema url.".format(
                     obj_id, self
                 )
             )

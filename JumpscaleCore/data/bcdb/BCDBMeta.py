@@ -45,7 +45,7 @@ class BCDBMeta(j.baseclasses.object):
 
     """
 
-    def __init__(self, bcdb=None, reset=False):
+    def __init__(self, bcdb=None):
 
         assert bcdb
         self._bcdb = bcdb
@@ -53,17 +53,13 @@ class BCDBMeta(j.baseclasses.object):
         j.baseclasses.object.__init__(self)
 
         self._logger_enable()
-        if reset:
-            self.reset()
-        else:
-            self._load()
+        self._load()
 
     def reset(self):
         # make everything in metadata stor empty
         self._reset_runtime_metadata()
         self._bcdb.storclient.delete(0)  # remove the metadata
         self._data = None
-        self._bcdb.storclient.flush()
         self._load()
 
     def _reset_runtime_metadata(self):

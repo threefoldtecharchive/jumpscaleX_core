@@ -15,6 +15,12 @@ class SonicFactory(JSConfigs):
     def _init(self, **kwargs):
         self._default = None
 
+    @property
+    def default(self):
+        if not self._default:
+            self._default = self.get("default")
+        return self._default
+
     def install(self, reset=False):
         """
         kosmos 'j.servers.sonic.build()'

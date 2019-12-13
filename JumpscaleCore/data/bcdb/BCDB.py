@@ -22,11 +22,13 @@
 
 import gevent
 import time
+import atexit
 from Jumpscale.clients.stor_zdb.ZDBClientBase import ZDBClientBase
 from Jumpscale.clients.stor_rdb.RDBClient import RDBClient
 from Jumpscale.clients.stor_sqlite.DBSQLite import DBSQLite
 from .BCDBModel import BCDBModel
 from .BCDBMeta import BCDBMeta
+
 
 # from .BCDBDecorator import *
 from .connectors.redis.RedisServer import RedisServer
@@ -61,19 +63,28 @@ class BCDB(j.baseclasses.object):
         self.dataprocessor_greenlet = None
 
         self._data_dir = j.sal.fs.joinPaths(j.dirs.VARDIR, "bcdb", self.name)
+        self._lock_file = "%s/lock" % self._data_dir
+        self.lock = j.tools.filelock.lock_get(self._lock_file)
+        self._readonly = None
+        self._lock_checked = False  # we did not check the lock yet
+
         self.storclient = storclient
 
         j.sal.fs.createDir(self._data_dir)
 
-        self._sqlite_index_dbpath = "%s/sqlite_index.db" % self._data_dir
+        if self.readonly:
+            self._log_info("sqlite file is in readonly mode")
+            self._sqlite_index_dbpath = "%s/sqlite_index.db?mode=ro" % self._data_dir
+        else:
+            self._sqlite_index_dbpath = "%s/sqlite_index.db" % self._data_dir
 
         self._init_props()
 
-        self.meta = BCDBMeta(self, reset=reset)
-
         if reset:
+            self.meta = None
             self.reset()
-            return
+        else:
+            self.meta = BCDBMeta(self)
 
         j.data.nacl.default
 
@@ -98,7 +109,6 @@ class BCDB(j.baseclasses.object):
         self.acl = None
         self.user = None
         self.circle = None
-        self._dummy = None
 
     def _init_system_objects(self):
 
@@ -124,8 +134,25 @@ class BCDB(j.baseclasses.object):
         self.circle = self.model_add(CIRCLE(bcdb=self))
         self.NAMESPACE = self.model_add(NAMESPACE(bcdb=self))
 
-        schema = j.data.schema.get_from_url(url="jumpscale.bcdb.dummy.1")
-        self._dummy = self.model_get(schema=schema)
+    def _is_writable_check(self):
+        # check there is write access on bcdb
+        if self._lock_checked and self.readonly == False:
+            return True
+        self.lock.acquire()
+        self._lock_checked = True
+        self._readonly = False
+        return True
+
+    def lock_acquire(self):
+        self.lock.acquire()
+        self._lock_checked = False
+        self.readonly = None
+
+    @property
+    def readonly(self):
+        if self._readonly == None:
+            self._readonly = self.lock.locked
+        return self._readonly
 
     def check(self):
         """
@@ -236,6 +263,7 @@ class BCDB(j.baseclasses.object):
             self.meta._schema_set(schema, save=False)
 
         self.meta._save()
+        self.meta._readonly = True
 
         for url_path in paths:
             print(f"processing {url_path}")
@@ -301,7 +329,9 @@ class BCDB(j.baseclasses.object):
     @property
     def sqlite_index_client(self):
         if self._sqlite_index_client is None:
-            self._sqlite_index_client = j.clients.peewee.SqliteDatabase(self._sqlite_index_dbpath)
+            self._sqlite_index_client = j.clients.peewee.SqliteDatabase(
+                self._sqlite_index_dbpath, pragmas={"journal_mode": "wal"}
+            )
         return self._sqlite_index_client
 
     def sqlite_index_client_stop(self):
@@ -368,7 +398,12 @@ class BCDB(j.baseclasses.object):
             self.dataprocessor_greenlet = gevent.spawn(self._data_process)
             self.dataprocessor_state = "RUNNING"
 
+            # dataprocessor_stop
+            atexit.register(self.dataprocessor_stop)
+
     def dataprocessor_stop(self, force=False):
+
+        print("** STOP DATA PROCESSOR FOR :%s" % self.name)
 
         if self.dataprocessor_greenlet:
             if self.dataprocessor_greenlet.started and not force:
@@ -377,6 +412,9 @@ class BCDB(j.baseclasses.object):
                 while self.queue.qsize() > 0:
                     # self._log_debug("wait dataprocessor to stop")
                     gevent.sleep(1)
+
+        if not self.readonly:
+            self.lock.release()
 
         self._log_warning("DATAPROCESSOR & SQLITE STOPPED OK")
         # TODO: JO is this ok that it happens 2x
@@ -710,6 +748,8 @@ class BCDB(j.baseclasses.object):
             return bdata
         else:
             obj = j.data.serializers.jsxdata.loads(bdata, bcdb=self, schema=schema)
+            if schema:
+                assert obj._schema == schema
             obj.nid = nid
             if not obj.id and id:
                 obj.id = id

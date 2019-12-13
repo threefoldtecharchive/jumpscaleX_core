@@ -205,7 +205,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         packages = packages or []
 
         self.save()
-
         if not background:
 
             self.zdb  # will start sonic & zdb
@@ -348,7 +347,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
     def package_get(self, author3bot, package_name):
         if author3bot not in j.threebot.packages.__dict__:
-            raise j.exceptions.Input("cannot find package from threebot:%s in threebotserver" % author3bot)
+            raise j.exceptions.Input("cannot find package '%s' in threebotserver" % author3bot)
         tbot = j.threebot.packages.__dict__[author3bot]
         if package_name not in tbot.__dict__:
             raise j.exceptions.Input("cannot find package with name:'%s' of threebot:'%s'" % (package_name, author3bot))
@@ -356,9 +355,9 @@ class ThreeBotServer(j.baseclasses.object_config):
 
     def actor_get(self, author3bot, package_name, actor_name):
         p = self.package_get(author3bot=author3bot, package_name=package_name)
-        if actor_name not in p.__dict__["_actors"].keys():
+        if actor_name not in p.actors.keys():
             raise j.exceptions.Input(f"cannot find package from threebot:{author3bot}:{package_name}:{actor_name}")
-        return p.__dict__["_actors"][actor_name]
+        return p.actors[actor_name]
 
     def myjobs_start(self):
         j.servers.myjobs.workers_tmux_start(2, in3bot=True)
@@ -383,8 +382,8 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             # start should be called everytime server starts
             # TODO: NOT THE INTENTION !!!!
-            p.actors_reload()
-            p.start()
+            # p.actors_reload()
+            # p.start()
 
     def stop(self):
         """

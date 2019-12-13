@@ -1,6 +1,6 @@
-import imp
+# import imp
 import os
-
+import redis
 from Jumpscale import j
 from redis.connection import ConnectionError
 
@@ -20,7 +20,7 @@ class GedisClient(JSConfigBase):
     @url = jumpscale.gedis.client
     name** = "main"
     host = "127.0.0.1" (S)
-    port = 8900 (ipport)
+    port = 8901 (ipport)
     package_name = "" (S)  #is the full package name e.g. threebot.blog
     threebot_local_profile = "default"
     password_ = ""
@@ -33,8 +33,15 @@ class GedisClient(JSConfigBase):
     def _init(self, **kwargs):
         # j.clients.gedis.latest = self
         self._actorsmeta = {}
+        if not self.package_name:
+            self.package_name = "zerobot.base"
         self.schemas = None
         self._actors = None
+        if "package_name" in kwargs and kwargs["package_name"] and self.package_name != kwargs["package_name"]:
+            raise j.exceptions.Input(
+                "gedis client with name:%s was configured for other packagename:%s"
+                % (self.name, kwargs["package_name"])
+            )
         self._code_generated_dir = j.sal.fs.joinPaths(j.dirs.VARDIR, "codegen", "gedis", self.name, "client")
         j.sal.fs.createDir(self._code_generated_dir)
         j.sal.fs.touch(j.sal.fs.joinPaths(self._code_generated_dir, "__init__.py"))
@@ -70,10 +77,12 @@ class GedisClient(JSConfigBase):
     #     res = self._redis.execute_command(cmd)
     #     return res
 
-    @property
-    def package(self):
-        if self.package_name:
-            return j.tools.threebot_packages.get(self.package_name)
+    def _redis_cmd_execute(self, *args):
+        try:
+            res = self._redis.execute_command(*args)
+        except redis.ResponseError as e:
+            raise j.clients.gedis._handle_error(e, redis=self._redis)
+        return res
 
     def reload(self):
         self._log_info("reload")
@@ -85,14 +94,18 @@ class GedisClient(JSConfigBase):
         self.schemas = GedisClientSchemas()
 
         # this will make sure we know the core schema's as used on server
-        r = self._redis.execute_command("jsx_schemas_get")
-        r2 = j.data.serializers.msgpack.loads(r)
-        for key, data in r2.items():
-            schema_text, schema_url = data
-            if not j.data.schema.exists(md5=key):
-                j.data.schema.get_from_text(schema_text, url=schema_url)
-        cmds_meta = self._redis.execute_command("api_meta_get")
+        # if system schema's not known, we get them from the server
+        if "jumpscale_bcdb_acl_user_2" not in j.data.schema.schemas:
+            r = self._redis_cmd_execute("jsx_schemas_get")
+            r2 = j.data.serializers.msgpack.loads(r)
+            for key, data in r2.items():
+                schema_text, schema_url = data
+                if not j.data.schema.exists(md5=key):
+                    j.data.schema.get_from_text(schema_text, url=schema_url)
+
+        cmds_meta = self._redis_cmd_execute("api_meta_get", self.package_name)
         cmds_meta = j.data.serializers.msgpack.loads(cmds_meta)
+
         if cmds_meta["cmds"] == {}:
             return
         for key, data in cmds_meta["cmds"].items():

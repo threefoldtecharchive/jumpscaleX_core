@@ -54,9 +54,6 @@ class ThreeBotPackage(JSConfigBase):
         # self.wiki_names = []
         # self.model_urls = []
 
-        # load current models
-        self.models
-
     @property
     def threebot_server(self):
         return j.threebot.servers.core
@@ -78,8 +75,11 @@ class ThreeBotPackage(JSConfigBase):
             if line.startswith("@url"):
                 continue
 
+            # goal is to rewrite url's which are in short notation for sub objects to long notation
             try:
                 model_url = line[line.index("!") + 1 :].split("#")[0]
+                j.shell()
+                w
                 for prefix in ["jumpscale", "zerobot", "tfgrid", "threefold"]:
                     if model_url.startswith(prefix):
                         break
@@ -196,6 +196,7 @@ class ThreeBotPackage(JSConfigBase):
     @property
     def actors(self):
         if self._actors is None:
+            self.load()
             self._actors = self.actors_reload()
         return self._actors
 
@@ -206,6 +207,7 @@ class ThreeBotPackage(JSConfigBase):
     @property
     def models(self):
         if self._models is None:
+            self.load()
             self._models = j.baseclasses.dict()
             path = self.path + "/models"
             if j.sal.fs.exists(path):
@@ -227,6 +229,7 @@ class ThreeBotPackage(JSConfigBase):
     @property
     def chatflows(self):
         if self._chatflows is None:
+            self.load()
             self._chatflows = j.baseclasses.dict()
             path = self.path + "/chatflows"
             if j.sal.fs.exists(path):
@@ -241,6 +244,7 @@ class ThreeBotPackage(JSConfigBase):
     def wikis(self):
         # lazy-loading of wikis would take time, user will wait for too long
         # and need to refresh to see loaded wikis
+        self.load()
         return self._wikis
 
     @property
@@ -268,7 +272,7 @@ class ThreeBotPackage(JSConfigBase):
     def _web_load(self, app_type="frontend"):
         for port in (443, 80):
             website = self.openresty.get_from_port(port)
-            locations = website.locations.get(f"{self.name}_locations")
+            locations = website.locations.get(f"{self.name}_locations_{port}")
             if app_type == "frontend":
                 website_location = locations.locations_spa.new()
             elif app_type == "html":
@@ -322,6 +326,7 @@ class ThreeBotPackage(JSConfigBase):
         self.save()
 
     def uninstall(self):
+        self.load()
         self.stop()
         if self.status != "config":
             self.status = "config"
@@ -329,15 +334,18 @@ class ThreeBotPackage(JSConfigBase):
         self.save()
 
     def disable(self):
+        self.load()
         self.stop()
         if self.status != "disabled":
             self.status = "disabled"
         self.save()
 
     def enable(self):
+        self.load()
         if self.status != "init":
             self.status = "init"
         self.install()
 
     def prepare(self):
+        self.load()
         self._package_author.prepare()

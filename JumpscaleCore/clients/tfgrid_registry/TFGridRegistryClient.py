@@ -42,6 +42,10 @@ class TFGridRegistryClient(j.baseclasses.object):
         self.registry_client = self.gedis_client.actors.registry
         self.nacl = self.me.nacl
         self.bcdb = j.data.bcdb.get("threebot_registry")
+        self.schema_entry_data = j.data.schema.get_from_text(self.registry_client.get_meta_entry_data().decode())
+        self.schema_encrypted_data = j.data.schema.get_from_text(
+            self.registry_client.get_meta_encrypted_data().decode()
+        )
 
     def register(
         self,
@@ -80,7 +84,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         """
         scm = j.data.schema.get_from_text(schema)
         self.registry_client.schema_register(scm.url, schema)
-        model = self.bcdb.model_get(url=scm.url).new()
+
         if is_encrypted_data:
             authors.append(self.me.tid)
             dataobj = self.__add_registry_schema_encrypted_data(
@@ -219,7 +223,6 @@ class TFGridRegistryClient(j.baseclasses.object):
 
     def __add_registry_schema_data(
         self,
-        url="threebot.registry.entry.data.1",
         authors=None,
         new_scm=None,
         model=None,
@@ -235,7 +238,6 @@ class TFGridRegistryClient(j.baseclasses.object):
         """Add data to the registry.
 
         Args:
-            url (string): The url of the schema.
             authors (list): People who contributed in writing the data.
             new_scm (string): Used by BCDB to create the schema for the desired data format by the authors.
             model (object of schema): Actual data stored in BCDB schema.
@@ -245,8 +247,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         Returns:
 
         """
-        scm1 = j.data.schema.get_from_url(url=url)
-        dataobj = self.bcdb.model_get(url=scm1.url).new()
+        dataobj = self.bcdb.model_get(url=self.schema_entry_data.url).new()
         dataobj.authors = authors
         dataobj.schema_url = new_scm
         dataobj.registered_info = model._data
@@ -263,7 +264,6 @@ class TFGridRegistryClient(j.baseclasses.object):
 
     def __add_registry_schema_encrypted_data(
         self,
-        url="threebot.registry.entry.data.1",
         authors=None,
         readers=None,
         new_scm=None,
@@ -293,8 +293,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         Returns:
 
         """
-        scm1 = j.data.schema.get_from_url(url=url)
-        dataobj = self.bcdb.model_get(url=scm1.url).new()
+        dataobj = self.bcdb.model_get(url=self.schema_entry_data.url).new()
         dataobj.authors = authors
         dataobj.readers = readers
         dataobj.schema_url = new_scm.url
@@ -306,7 +305,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         dataobj.location_longitude = location_longitude
         dataobj.location_latitude = location_latitude
         dataobj.description = description
-        encrypted_data_model = j.data.schema.get_from_url(url="threebot.registry.entry.data_encrypted.1").new()
+        encrypted_data_model = j.data.schema.get_from_url(url=self.schema_encrypted_data.url).new()
         encrypted_data_model.tid = threebotclient.tid
         # TODO validate if it will be default or not
         encrypted_data_model.data_ = model._data
