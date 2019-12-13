@@ -407,6 +407,8 @@ class BCDB(j.baseclasses.object):
 
         if self.dataprocessor_greenlet:
             if self.dataprocessor_greenlet.started and not force:
+                if self.queue.qsize() == 0:
+                    return
                 # stop dataprocessor
                 self.queue.put((None, ["STOP"], {}, None, None))
                 while self.queue.qsize() > 0:
