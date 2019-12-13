@@ -290,6 +290,7 @@ j.core.errorhandler = j.errorhandler
 j.exceptions = j.errorhandler.exceptions
 j.core.exceptions = j.exceptions
 
+j._exists = {}
 
 # THIS SHOULD BE THE END OF OUR CORE, EVERYTHING AFTER THIS SHOULD BE LOADED DYNAMICALLY
 

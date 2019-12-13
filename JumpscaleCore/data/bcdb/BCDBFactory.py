@@ -309,7 +309,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
             return j.data.bcdb.get(name=name, storclient=storclient)
 
-    def get(self, name, storclient=None, reset=False):
+    def get(self, name, storclient=None, reset=False, readonly=False):
         """
         will create a new one or an existing one if it exists
         :param name:
@@ -320,19 +320,31 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         :return:
         """
         self._load()
+        assert isinstance(name, str)
+
         if name in self._instances:
+            print("name:'%s' in instances on bcdb" % name)
             bcdb = self._instances[name]
             if name != "system" and not name in self._config:
                 raise j.exceptions.Input(f"cannot find config for bcdb:{name}")
             return bcdb
 
+        if name in j._exists:
+            j.shell()
+
         if name in self._config and not storclient:
             storclient = self._get_storclient(name)
 
         if not self.exists(name=name):
-            return self.new(name=name, storclient=storclient, reset=reset)
+            b = self.new(name=name, storclient=storclient, reset=reset, readonly=readonly)
         else:
-            return self._get(name=name, storclient=storclient, reset=reset)
+            b = self._get(name=name, storclient=storclient, reset=reset)
+
+        assert b.readonly == readonly
+
+        j._exists[name] = self, b
+
+        return b
 
     def _get_vfs(self):
         from .BCDBVFS import BCDBVFS
@@ -380,7 +392,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         data_encrypted = j.data.nacl.default.encryptSymmetric(data)
         j.sal.fs.writeFile(self._config_data_path, data_encrypted)
 
-    def new(self, name, storclient=None, reset=False):
+    def new(self, name, storclient=None, reset=False, readonly=False):
         """
         create a new instance
         :param name:
@@ -422,6 +434,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             data["secret"] = storclient.secret_
             data["type"] = "zdb"
 
+        data["readonly"] = readonly
         self._config[name] = data
         self._config_write()
         self._load()
@@ -588,8 +601,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         out = "## {GRAY}BCDBS: {BLUE}\n\n"
 
-        for bcdb in self.instances:
-            out += " = %s" % bcdb.name
+        for bcdb_name in self.instances.keys():
+            out += " = %s" % bcdb_name
 
         out += "{RESET}"
         out = j.core.tools.text_replace(out)

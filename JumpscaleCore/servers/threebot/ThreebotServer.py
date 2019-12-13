@@ -209,6 +209,10 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             self.zdb  # will start sonic & zdb
             self.sonic
+
+            j.servers.myjobs._bcdb.lock.acquire()
+            j.data.bcdb.system.lock.acquire()
+
             # reset myjobs after zdb is ready
             j.servers.myjobs.reset_data()
 

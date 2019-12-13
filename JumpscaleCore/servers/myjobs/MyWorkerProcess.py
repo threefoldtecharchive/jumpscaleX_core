@@ -59,7 +59,7 @@ class MyWorkerProcess(j.baseclasses.object):
         # important, test we're using the right redis client
         assert storclient._redis.source == "worker"
 
-        self.bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
+        self.bcdb = j.data.bcdb.get("myjobs", storclient=storclient, readonly=True)
         self.model_job = self.bcdb.model_get(schema=schemas.job)
         self.model_action = self.bcdb.model_get(schema=schemas.action)
         self.model_worker = self.bcdb.model_get(schema=schemas.worker)
@@ -93,6 +93,7 @@ class MyWorkerProcess(j.baseclasses.object):
         self.worker_obj.last_update = j.data.time.epoch
         self.worker_obj.halt = False
         self.worker_obj.pid = 0
+        self._redis_set(self.worker_obj)
         self.worker_obj.save()
         if not self.onetime:
             self._log_info("WORKER REMOVE SELF:%s" % self.id, data=self)
@@ -137,16 +138,18 @@ class MyWorkerProcess(j.baseclasses.object):
             # if dont exists, quit
 
     def _worker_set(self, obj, action="save", propertyname=None, **kwargs):
-        if action == "save":
+        if action == "set_pre":
             self._redis_set(obj)
             # call through redis client the local BCDB
             # get data as json (from _data) and use redis client to set to server
+            return obj, True
 
     def _job_set(self, obj, action="save", propertyname=None, **kwargs):
-        if action == "save":
+        if action == "set_pre":
             # call through redis client the local BCDB
             # get data as json (from _data) and use redis client to set to server
             self._redis_set(obj)
+            return obj, True
 
     ################
 

@@ -31,7 +31,7 @@ from .BCDBIndexMeta import BCDBIndexMeta
 
 
 class BCDBModel(j.baseclasses.object):
-    def __init__(self, bcdb, schema_url=None, reset=False, package=None):
+    def __init__(self, bcdb, schema_url=None, reset=False):
         """
 
         delivers interface how to deal with data in 1 schema
@@ -50,10 +50,10 @@ class BCDBModel(j.baseclasses.object):
 
         # we should have a schema
         if schema_url:
-            self.schema = j.data.schema.get_from_url(schema_url, package=package)
+            self.schema = j.data.schema.get_from_url(schema_url)
         else:
             if hasattr(self, "_SCHEMA"):  # what is that _schema ?
-                self.schema = j.data.schema.get_from_text(self._SCHEMA, package=package)
+                self.schema = j.data.schema.get_from_text(self._SCHEMA)
             else:
                 self.schema = self._schema_get()  # _schema_get is overrided by classes like ACL USER CIRCLE NAMESPACE
                 if not self.schema:
@@ -182,15 +182,20 @@ class BCDBModel(j.baseclasses.object):
         """
         model = self
         kosmosinstance = self._kosmosinstance
+        stop = False
         for method in self._triggers:
             obj2 = method(model=model, obj=obj, kosmosinstance=kosmosinstance, action=action, propertyname=propertyname)
+            if isinstance(obj2, list) or isinstance(obj2, tuple):
+                obj2, stop = obj2
+                if stop:
+                    return obj, stop
             if isinstance(obj2, j.data.schema._JSXObjectClass):
                 # only replace if right one returned, otherwise ignore
                 obj = obj2
             else:
                 if obj2 is not None:
                     raise j.exceptions.Base("obj return from action needs to be a JSXObject or None")
-        return obj
+        return obj, stop
 
     # def cache_reset(self):
     #     self.obj_cache = {}
@@ -365,7 +370,9 @@ class BCDBModel(j.baseclasses.object):
             l = [obj.nid, obj.acl_id, bdata_encrypted]
             data = j.data.serializers.msgpack.dumps(l)
 
-            obj = self._triggers_call(obj, action="set_pre")
+            obj, stop = self._triggers_call(obj, action="set_pre")
+            if stop:
+                return
 
             # PUT DATA IN DB
             if obj.id is None:
@@ -402,7 +409,7 @@ class BCDBModel(j.baseclasses.object):
                     raise j.exceptions.Input("Could not insert object, unique constraint failed:%s" % e, data=obj)
                 raise
 
-        obj = self._triggers_call(obj=obj, action="set_post")
+        obj, stop = self._triggers_call(obj=obj, action="set_post")
 
         # if self.storclient.type == "RDB":
         #     # TODO: should be part of the storclient itself and we should use lua code on the redis, is much faster
@@ -458,7 +465,7 @@ class BCDBModel(j.baseclasses.object):
 
         obj = self._methods_add(obj)
         obj.nid = nid
-        obj = self._triggers_call(obj=obj, action="new")
+        obj, stop = self._triggers_call(obj=obj, action="new")
         return obj
 
     def _methods_add(self, obj):
@@ -500,7 +507,7 @@ class BCDBModel(j.baseclasses.object):
 
         obj = self.bcdb._unserialize(obj_id, data, return_as_capnp=return_as_capnp, schema=self.schema)
         if obj._schema.url == self.schema.url and obj._schema._md5 == self.schema._md5:
-            obj = self._triggers_call(obj=obj, action="get")
+            obj, stop = self._triggers_call(obj=obj, action="get")
         else:
             raise j.exceptions.JSBUG(
                 "no object with id {} found in {}, this means the index gave back an id which is not part of this model, different schema url.".format(
