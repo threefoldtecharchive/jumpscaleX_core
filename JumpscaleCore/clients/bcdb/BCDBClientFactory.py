@@ -7,7 +7,7 @@ class BCDBClient(j.baseclasses.object):
         self.bcdb = j.data.bcdb.get(name=self.name)
         self.model = self.bcdb.model_get(url=kwargs["url"])
         self.schema = self.model.schema
-        self._rediscl_ = j.clients.redis.get(port=6380)
+        self._rediscl__ = None
 
         self.iterate = self.model.iterate
         self.search = self.model.search
@@ -16,18 +16,27 @@ class BCDBClient(j.baseclasses.object):
         self.exists = self.model.exists
         self.find_ids = self.model.find_ids
         self.get_by_name = self.model.get_by_name
+        self.index = self.model.index
+
+        if not self.bcdb.readonly:
+            self.trigger_add = self.model.trigger_add
 
         if self.bcdb.readonly:
             self.model.trigger_add(self._set_trigger)
 
-    def get(self, id=None):
+    def _rediscl_(self):
+        if not self._rediscl__:
+            self._rediscl__ = j.clients.redis.get(port=6380)
+        return self._rediscl__
+
+    def get(self, id):
         if self.bcdb.readonly:
             key = f"{self.name}:data:1:{self.model.schema.url}"
             data = self._rediscl_.hget(key, str(id))
             ddata = j.data.serializers.json.loads(data)
             return self.model.new(ddata)
         else:
-            return self.model.get(id=id)
+            return self.model.get(id)
 
     def set(self, obj):
         if self.bcdb.readonly:
@@ -39,6 +48,14 @@ class BCDBClient(j.baseclasses.object):
                 j.shell()
         else:
             return self.model.set(obj=obj)
+
+    def delete(self, obj):
+        if self.bcdb.readonly:
+            key = f"{self.name}:data:1:{obj._schema.url}"
+            assert obj.id
+            self._rediscl_.delete(key, str(obj.id))
+        else:
+            return self.model.delete(obj=obj)
 
     def _set_trigger(self, obj, action="set_pre", propertyname=None, **kwargs):
         if action == "set_pre":
@@ -67,9 +84,10 @@ class BCDBClientFactory(j.baseclasses.object):
             url = schema.url
         if not name:
             name = "system"
-        if name not in self._clients:
-            self._clients[name] = BCDBClient(name=name, url=url)
-        return self._clients[name]
+        key = f"{name}_{url}"
+        if key not in self._clients:
+            self._clients[key] = BCDBClient(name=name, url=url)
+        return self._clients[key]
 
     def test(self):
         """

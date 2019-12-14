@@ -207,10 +207,11 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         self._log_debug("reset all data")
         for item in self.find():
-            try:
-                item.delete()
-            except Exception as e:
-                j.shell()
+            item.delete()
+            # try:
+            #     item.delete()
+            # except Exception as e:
+            #     j.shell()
 
         if not self._mother_id_get():
             self._model.index.destroy()

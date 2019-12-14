@@ -85,12 +85,12 @@ class JSConfigBCDBBase(JSBase, Attr):
 
             t = self._process_schematext(t2)
 
-            # if j.core.text.strip_to_ascii_dense(t) != j.core.text.strip_to_ascii_dense(s):
-            #     from pudb import set_trace
-            #
-            #     set_trace()
-            self._model_ = j.clients.bcdb.get(name=self._bcdb.name, schema=t)
-            # self._model_ = self._bcdb.model_get(schema=t)
+            self._model_ = self._bcdb.model_get(schema=t)
+            if self._model_.readonly:
+                self._model_ = j.clients.bcdb.get(name=self._bcdb.name, schema=t)
+
+            if not self._model_.schema._md5 == j.data.schema._md5(t):
+                j.shell()
 
             assert self._model_.schema._md5 == j.data.schema._md5(t)
 
