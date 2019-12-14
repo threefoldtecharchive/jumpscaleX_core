@@ -54,7 +54,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if not self._loaded:
 
             print("LOAD CONFIG BCDB")
-            self._loaded = True
             storclient = j.clients.sqlitedb.client_get(namespace="system")
             # storclient = j.clients.rdb.client_get(namespace="system")
             self._instances["system"] = BCDB(storclient=storclient, name="system", reset=False)
@@ -72,14 +71,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             else:
                 self._config = {}
 
-            keys = [i for i in self._config.keys()]
-
-            for name in keys:
-                if name == "system":
-                    continue
-                storclient = self._get_storclient(name)
-                bcdb = self._get(name, storclient)
-                self._instances[name] = bcdb
+            self._loaded = True
 
     @property
     def system(self):
@@ -156,6 +148,18 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     @property
     def instances(self):
         self._load()
+        keys = [i for i in self._config.keys()]
+        for name in keys:
+            # don't reload the bcdb instance because its already
+            if name in self._instances:
+                continue
+            if name == "system":
+                continue
+            storclient = self._get_storclient(name)
+            if storclient:
+                bcdb = self._get(name, storclient)
+                self._instances[name] = bcdb
+
         return self._instances
 
     def index_rebuild(self, name=None, storclient=None):
@@ -249,11 +253,12 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         assert self._config == {}
 
     def exists(self, name):
+        """
+        does the bcdb instance exist in the configuration
+        :param name:
+        :return:
+        """
         self._load()
-        if name in self.instances:
-            assert name in self._config
-            return True
-
         return name in self._config
 
     def destroy(self, name):
@@ -290,7 +295,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         name = "threebot_%s_%s" % (ttype, namespace)
 
         if j.data.bcdb.exists(name=name):
-            return j.data.bcdb.get(name=name)
+            return self.get(name=name)
         else:
             if ttype == "zdb":
                 adminsecret_ = j.data.hash.md5_string(j.threebot.servers.core.adminsecret_)
@@ -306,9 +311,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             else:
                 raise j.exceptions.Input("only redis, slqite and zdb supported")
 
-            return j.data.bcdb.get(name=name, storclient=storclient)
+            return self.get(name=name, storclient=storclient)
 
-    def get(self, name, storclient=None, reset=False, readonly=False):
+    def get(self, name, storclient=None, reset=False):
         """
         will create a new one or an existing one if it exists
         :param name:
@@ -321,6 +326,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         self._load()
         assert isinstance(name, str)
 
+        if name == "myjobs":
+            j.debug()
+
         if name in self._instances:
             print("name:'%s' in instances on bcdb" % name)
             bcdb = self._instances[name]
@@ -332,11 +340,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             storclient = self._get_storclient(name)
 
         if not self.exists(name=name):
-            b = self.new(name=name, storclient=storclient, reset=reset, readonly=readonly)
+            b = self.new(name=name, storclient=storclient, reset=reset)
         else:
             b = self._get(name=name, storclient=storclient, reset=reset)
 
-        assert b.readonly == readonly
+        assert name in self._instances
 
         return b
 
@@ -347,16 +355,17 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
     def _get_storclient(self, name):
         data = self._config[name]
-
+        storclient = None
         if data["type"] == "zdb":
-            storclient = j.clients.zdb.client_get(
-                name=name,
-                namespace=data["namespace"],
-                addr=data["addr"],
-                port=data["port"],
-                secret=data["secret"],
-                mode="seq",
-            )
+            if j.sal.nettools.tcpPortConnectionTest(ipaddr=data["addr"], port=data["port"]):
+                storclient = j.clients.zdb.client_get(
+                    name=name,
+                    namespace=data["namespace"],
+                    addr=data["addr"],
+                    port=data["port"],
+                    secret=data["secret"],
+                    mode="seq",
+                )
         elif data["type"] == "rdb":
             storclient = j.clients.rdb.client_get(namespace=data["namespace"], redisconfig_name="core")
         elif data["type"] == "sdb":
@@ -402,6 +411,13 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         """
 
         self._log_info("new bcdb:%s" % name)
+
+        if name in self._instances:
+            return self._instances[name]
+
+        if name == "myjobs":
+            j.debug()
+
         if self.exists(name=name):
             if not reset:
                 raise j.exceptions.Input("cannot create new bcdb '%s' already exists, and reset not used" % name)
@@ -440,6 +456,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         assert bcdb.storclient.type == storclient.type
 
         assert bcdb.name in self._config
+
+        assert name in self._instances
 
         return bcdb
 
@@ -538,16 +556,16 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if type == "rdb":
             j.core.db
             storclient = j.clients.rdb.client_get(namespace="test_rdb")  # will be to core redis
-            bcdb = j.data.bcdb.new(name="test", storclient=storclient, reset=True)
+            bcdb = self.new(name="test", storclient=storclient, reset=True)
         elif type == "sqlite":
             storclient = j.clients.sqlitedb.client_get(namespace="test_sdb")
-            bcdb = j.data.bcdb.new(name="test", storclient=storclient, reset=True)
+            bcdb = self.new(name="test", storclient=storclient, reset=True)
         elif type == "zdb":
             storclient = startZDB()
             storclient.flush()
             assert storclient.nsinfo["public"] == "no"
             assert storclient.ping()
-            bcdb = j.data.bcdb.new(name="test", storclient=storclient, reset=True)
+            bcdb = self.new(name="test", storclient=storclient, reset=True)
         else:
             raise j.exceptions.Base("only rdb,zdb,sqlite for stor")
 

@@ -45,11 +45,8 @@ class BCDB(j.baseclasses.object):
         :param storclient: if storclient == None then will use sqlite db
         """
 
-        self._redis_index = j.clients.redis.core
         if name is None:
             raise j.exceptions.Base("name needs to be specified")
-
-        self.children = j.baseclasses.dict(name="BCDBMODELS")
 
         assert storclient
         if (
@@ -60,13 +57,13 @@ class BCDB(j.baseclasses.object):
             raise j.exceptions.Base("storclient needs to be type: clients.zdb or clients.rdb or clients.sqlitedb")
 
         self.name = name
-        self.dataprocessor_greenlet = None
 
+        self._init_props_()
+
+        self._redis_index = j.clients.redis.core
         self._data_dir = j.sal.fs.joinPaths(j.dirs.VARDIR, "bcdb", self.name)
         self._lock_file = "%s/lock" % self._data_dir
         self.lock = j.tools.filelock.lock_get(self._lock_file)
-        self._readonly = None
-        self._lock_checked = False  # we did not check the lock yet
 
         self.storclient = storclient
 
@@ -78,8 +75,6 @@ class BCDB(j.baseclasses.object):
         else:
             self._sqlite_index_dbpath = "file:%s/sqlite_index.db" % self._data_dir
 
-        self._init_props()
-
         if reset:
             self.meta = None
             self.reset()
@@ -87,18 +82,44 @@ class BCDB(j.baseclasses.object):
             self.meta = BCDBMeta(self)
 
         j.data.nacl.default
-
         self.dataprocessor_start()
-        self._init_system_objects()
 
         # all the models are loaded at this point
         self.check()
 
+        # dataprocessor_stop
+        atexit.register(self.stop)
         self._log_info("BCDB INIT DONE:%s" % self.name)
 
-    def _init_props(self):
+    def stop(self):
+        """
+        make sure the bcdb is initialized with default values & all is stopped
+        """
+        print(" * STOP BCDB: %s" % self.name)
+        if not self.readonly:
+            self.lock.release()
+        self.dataprocessor_stop()
+        self.sqlite_index_client_stop()
+        if self.storclient.type == "SDB":
+            cl = self.storclient.sqlitedb
+            if not cl.is_closed():
+                cl.close()
+            self.storclient.sqlitedb = None
+        self._init_props_()
+        self._shutdown_ = True
+        if not self.readonly:
+            self.lock.release()
+
+    def _init_props_(self):
 
         self._sqlite_index_client = None
+
+        self.dataprocessor_greenlet = None
+
+        self._readonly = None
+        self._lock_checked = False  # we did not check the lock yet
+
+        self._shutdown_ = False  # if set it means we should not use bcdb any more
 
         self._schema_url_to_model = {}
 
@@ -109,6 +130,8 @@ class BCDB(j.baseclasses.object):
         self.acl = None
         self.user = None
         self.circle = None
+
+        self.children = j.baseclasses.dict(name="BCDBMODELS")
 
     def _init_system_objects(self):
 
@@ -185,6 +208,7 @@ class BCDB(j.baseclasses.object):
         :param reset: reset the export path before exporting, defaults to True
         :type reset: bool, optional
         """
+        assert self._shutdown_ is False
         if reset:
             j.sal.fs.remove(path)
         j.sal.fs.createDir(path)
@@ -401,15 +425,9 @@ class BCDB(j.baseclasses.object):
             self.dataprocessor_greenlet = gevent.spawn(self._data_process)
             self.dataprocessor_state = "RUNNING"
 
-            # dataprocessor_stop
-            atexit.register(self.dataprocessor_stop)
-
     def dataprocessor_stop(self, force=False):
 
-        print("** STOP DATA PROCESSOR FOR :%s" % self.name)
-
-        if not self.readonly:
-            self.lock.release()
+        # print("** STOP DATA PROCESSOR FOR :%s" % self.name)
 
         if self.dataprocessor_greenlet:
             if self.dataprocessor_greenlet.started and not force:
@@ -419,7 +437,9 @@ class BCDB(j.baseclasses.object):
                 self.queue.put((None, ["STOP"], {}, None, None))
                 while self.queue.qsize() > 0:
                     # self._log_debug("wait dataprocessor to stop")
-                    gevent.sleep(1)
+                    gevent.sleep(0.1)
+
+        self.dataprocessor_greenlet = None
 
         self._log_warning("DATAPROCESSOR & SQLITE STOPPED OK")
 
@@ -475,17 +495,6 @@ class BCDB(j.baseclasses.object):
         for key in self._redis_index.keys("bcdb:%s*" % self.name):
             self._redis_index.delete(key)
 
-    def stop(self):
-        self._log_info("STOP BCDB")
-        self.dataprocessor_stop(force=True)
-        self.sqlite_index_client_stop()
-
-        if self.storclient.type == "SDB":
-            cl = self.storclient.sqlitedb
-            if not cl.is_closed():
-                cl.close()
-            self.storclient.sqlitedb = None
-
     def index_rebuild(self):
         self._log_warning("REBUILD INDEX FOR ALL OBJECTS")
         # IF WE DO A FULL BLOWN REBUILD THEN WE NEED TO ITERATE OVER ALL OBJECTS AND CANNOT START FROM THE ITERATOR PER MODEL
@@ -506,6 +515,7 @@ class BCDB(j.baseclasses.object):
     @property
     def models(self):
         # this needs to happen to make sure all models are loaded because there is lazy loading now
+        assert self._shutdown_ is False
         for s in self.meta.schema_dicts:
             if s["url"] not in self._schema_url_to_model:
                 assert s["url"]
@@ -520,6 +530,7 @@ class BCDB(j.baseclasses.object):
         :param url:
         :return:
         """
+        assert self._shutdown_ is False
         schema = self.schema_get(schema=schema, md5=md5, url=url)
         if schema.url in self._schema_url_to_model:
             model = self._schema_url_to_model[schema.url]
@@ -550,7 +561,7 @@ class BCDB(j.baseclasses.object):
         :param die:
         :return:
         """
-
+        assert self._shutdown_ is False
         if schema:
             assert md5 == None
             assert url == None
@@ -593,6 +604,7 @@ class BCDB(j.baseclasses.object):
         :param model: is the model object  : inherits of self.MODEL_CLASS
         :return: the model added or found in cache
         """
+        assert self._shutdown_ is False
         if not isinstance(model, j.data.bcdb._BCDBModelClass):
             raise j.exceptions.Base("model needs to be of type:%s" % self._BCDBModelClass)
 
@@ -638,6 +650,7 @@ class BCDB(j.baseclasses.object):
         is path to python file which represents the model
 
         """
+        assert self._shutdown_ is False
         self._log_debug("model get from file:%s" % path)
         obj_key = j.sal.fs.getBaseName(path)[:-3]
         cl = j.tools.codeloader.load(obj_key=obj_key, path=path, reload=False)
@@ -646,6 +659,7 @@ class BCDB(j.baseclasses.object):
         return model
 
     def models_add_threebot(self):
+        assert self._shutdown_ is False
         self.models_add(self._dirpath + "/models_threebot")
 
     def models_add(self, path):
@@ -658,6 +672,7 @@ class BCDB(j.baseclasses.object):
         :param path:
         :return: urls of the models
         """
+        assert self._shutdown_ is False
         models_urls = []
         self._log_debug("models_add:%s" % path)
 
@@ -759,6 +774,7 @@ class BCDB(j.baseclasses.object):
         :param keyonly: bool, optional
         :raises e: [description]
         """
+        assert self._shutdown_ is False
         if self.storclient:
             db = self.storclient
             for key, data in db.iterate(key_start=key_start, reverse=reverse, keyonly=keyonly):

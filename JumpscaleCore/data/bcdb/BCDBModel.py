@@ -438,6 +438,7 @@ class BCDBModel(j.baseclasses.object):
         return ddict
 
     def new(self, data=None, nid=1, **kwargs):
+
         if kwargs != {}:
             data = kwargs
         if data and isinstance(data, dict):
@@ -472,6 +473,7 @@ class BCDBModel(j.baseclasses.object):
         return obj
 
     def exists(self, obj_id):
+        assert self._shutdown_ is False
         return self.get(obj_id=obj_id, die=False) != None
 
     @queue_method_results
@@ -482,7 +484,6 @@ class BCDBModel(j.baseclasses.object):
                no hook will be done !
         @RETURN obj    (.index is in obj)
         """
-
         if obj_id in [None, 0, "0", b"0"]:
             raise j.exceptions.Base("id cannot be None or 0")
 
@@ -519,6 +520,7 @@ class BCDBModel(j.baseclasses.object):
         return obj
 
     def destroy(self, nid=1):
+        assert self._shutdown_ is False
         self._log_warning("destroy: %s nid:%s" % (self, nid))
         assert isinstance(nid, int)
         assert nid > 0
