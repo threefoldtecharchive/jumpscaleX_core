@@ -150,7 +150,10 @@ class RedisServer(j.baseclasses.object):
                     return
 
                 method = getattr(self, redis_cmd)
-                method(response, *args)
+                try:
+                    method(response, *args)
+                except:
+                    j.shell()
 
                 continue
 
@@ -216,13 +219,14 @@ class RedisServer(j.baseclasses.object):
             except:
                 response.error("cannot set, key:'%s' not supported" % key)
         else:
+            bcdb_name, url, id = self._parse_key(key)
+            model = j.clients.bcdb.get(name=bcdb_name, url=url)
             try:
-                j.shell()
-                tree = self.vfs.get(parse_key)
-                r = tree.set(val)
+                obj = model.new(data=val)
+                obj.save()
+                assert obj.id
                 if new:
-                    j.shell()
-                    response.encode(r)
+                    response.encode(obj.id)
                 else:
                     response.encode("OK")
                 return
@@ -230,27 +234,29 @@ class RedisServer(j.baseclasses.object):
                 response.error("cannot set, key:'%s' not supported" % key)
         return
 
-    def get(self, response, key):
-        parse_key = key.replace(":", "/")
-        parse_key = parse_key.replace("_", ".")
-        try:
-            vfs_objs = self.vfs.get(self.bcdb.name + "/" + parse_key)
-            if not isinstance(vfs_objs.get(), str):
-                objs = [i for i in vfs_objs.list()]
-                response._array(["0", objs])
-            else:
-                objs = vfs_objs.get()
+    def _parse_key(self, key):
+        s = key.split(":")
+        assert len(s) == 4
+        bcdb_name, _, _, url_id = s
+        url, id = url_id.split("/")
+        id = int(id)
+        bcdb_name = bcdb_name.lower().strip()
+        return bcdb_name, url, id
 
-                response.encode(objs)
-            return
+    def get(self, response, key):
+        bcdb_name, url, id = self._parse_key(key)
+        model = j.clients.bcdb.get(name=bcdb_name, url=url)
+        try:
+            obj = model.get(id)
         except:
-            response.error("cannot get, key:'%s' not found" % parse_key)
+            response.error("cannot get, key:'%s' not found" % key)
+        response.encode(obj._json)
 
     def delete(self, response, key):
-
-        parse_key = key.replace(":", "/")
+        bcdb_name, url, id = self._parse_key(key)
+        model = j.clients.bcdb.get(name=bcdb_name, url=url)
         try:
-            self.vfs.delete(self.bcdb.name + "/" + parse_key)
+            model.delete(id)
             response.encode(1)
             return
         except:

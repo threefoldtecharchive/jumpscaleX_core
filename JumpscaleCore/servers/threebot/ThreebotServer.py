@@ -211,9 +211,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.sonic
 
             j.data.bcdb.system.lock.acquire()
-            # reset myjobs after zdb is ready
-            j.servers.myjobs.reset_data()
-            assert j.data.bcdb.instances.myjobs.lock.fd
             j.data.bcdb.instances.myjobs.lock.acquire()
             assert j.data.bcdb.instances.myjobs.lock.fd
 
@@ -311,8 +308,8 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
 
-            j.shell()  # for now removed otherwise debug does not work
-            sys.exit()
+            # j.shell()  # for now removed otherwise debug does not work
+            # sys.exit()
 
             forever = event.Event()
             try:
