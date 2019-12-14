@@ -150,11 +150,7 @@ class RedisServer(j.baseclasses.object):
                     return
 
                 method = getattr(self, redis_cmd)
-                try:
-                    method(response, *args)
-                except Exception as e:
-                    j.shell()
-
+                method(response, *args)
                 continue
 
     def bcdb_model_init(self, response, bcdbname, url):
