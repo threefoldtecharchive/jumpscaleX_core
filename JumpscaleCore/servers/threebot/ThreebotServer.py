@@ -3,7 +3,7 @@ import os
 import gevent
 import time
 from gevent import event
-import os
+import sys
 
 # from .OpenPublish import OpenPublish
 
@@ -311,13 +311,17 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
 
-            # j.shell()  # for now removed otherwise debug does not work
+            j.shell()  # for now removed otherwise debug does not work
+            sys.exit()
+
             forever = event.Event()
             try:
                 forever.wait()
             except KeyboardInterrupt:
-                self.stop()
-            return
+                print("KEYB INTERUPT")
+            sys.exit()
+
+            # dont call stop
 
         else:
             if not self.startup_cmd.is_running():

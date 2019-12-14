@@ -83,14 +83,15 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         :return:
         """
-        client = None
-        packages = packages or []
-        if reload or j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
-            self.install()
-            self.default.stop()
-            client = self.default.start(background=background, packages=packages)
 
-        if not client:
+        packages = packages or []
+        if reload:
+            self.default.stop()
+
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
+            self.install()
+            client = self.default.start(background=background, packages=packages)
+        else:
             client = j.clients.gedis.client_get(name="threebot", port=8901)
 
         for package_path in packages:
