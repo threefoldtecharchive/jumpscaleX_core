@@ -42,6 +42,8 @@ class FileLock(object):
         start_time = time.time()
         while True:
             if self.locked:
+                if self.fd:
+                    return
                 if timeout is None:
                     raise FileLockException("Could not acquire lock on {}".format(self.file_name))
                 if (time.time() - start_time) >= timeout:

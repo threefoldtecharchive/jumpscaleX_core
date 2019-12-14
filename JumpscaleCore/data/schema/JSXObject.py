@@ -198,11 +198,11 @@ class JSXObject(j.baseclasses.object):
                         if (self.id and not self.id == r[0].id) or not self.id:
                             raise j.exceptions.Input(msg)
 
-                if not self._nosave:
-                    o = self._model.set(self)
-                    self.id = o.id
-
-                obj = self._model._triggers_call(obj=self, action="save", propertyname=None)
+                if self._nosave:
+                    obj, stop = self._model._triggers_call(obj=self, action="set_pre", propertyname=None)
+                else:
+                    obj = self._model.set(self)
+                    self.id = obj.id
 
                 return obj
             return self
