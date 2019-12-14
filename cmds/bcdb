@@ -62,6 +62,7 @@ def _unlock(name=None):
         lock_path = f"/sandbox/var/bcdb/{instance}/lock"
         if j.sal.fs.exists(lock_path):
             j.sal.fs.remove(lock_path)
+            print(f"BCDB instance {instance} unlocked")
 
 
 # @click.command()
