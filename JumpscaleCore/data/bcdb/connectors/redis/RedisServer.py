@@ -243,7 +243,7 @@ class RedisServer(j.baseclasses.object):
 
     def _parse_key(self, key):
         s = key.split(":")
-        assert len(s) == 4
+        assert len(s) == 5
         bcdb_name, _, _, url_id = s
         url, id = url_id.split("/")
         id = int(id)

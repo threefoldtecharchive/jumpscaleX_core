@@ -77,7 +77,8 @@ class BCDBMeta(j.baseclasses.object):
                 self._log_debug("save, empty schema")
                 data = {"url": {}, "md5": {}}
                 serializeddata = j.data.serializers.msgpack.dumps(data)
-                self._bcdb.storclient.set(serializeddata)
+                r=self._bcdb.storclient.set(serializeddata)
+                assert r == 0
                 self._data = data
             else:
                 raise j.exceptions.Value(

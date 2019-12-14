@@ -75,11 +75,9 @@ class BCDB(j.baseclasses.object):
         else:
             self._sqlite_index_dbpath = "file:%s/sqlite_index.db" % self._data_dir
 
+        self.meta = BCDBMeta(self)
         if reset:
-            self.meta = None
             self.reset()
-        else:
-            self.meta = BCDBMeta(self)
 
         j.data.nacl.default
         self.dataprocessor_start()
@@ -454,11 +452,9 @@ class BCDB(j.baseclasses.object):
 
         assert self.storclient
 
-        if self.storclient.type != "SDB":
-            self.storclient.flush()  # not needed for sqlite because closed and dir will be deleted
+        self.storclient.flush()  # Always flush store client, making sure it's empty!
 
         self._redis_reset()
-
         j.sal.fs.remove(self._data_dir)
         j.sal.fs.createDir(self._data_dir)
         # all data is now removed, can be done because sqlite client should be None
@@ -467,10 +463,7 @@ class BCDB(j.baseclasses.object):
         # so it can do its things and re-connect properly
         self.storclient._init(nsname=self.storclient.nsname)
 
-        self._init_props()
-        if not self.meta:
-            self.meta = BCDBMeta(self)
-
+        self._init_props_()
         self.meta.reset()  # will make sure the record 0 is written with empty metadata
         self._init_system_objects()
 
