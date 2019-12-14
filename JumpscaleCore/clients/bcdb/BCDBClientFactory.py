@@ -16,10 +16,13 @@ class BCDBClient(j.baseclasses.object):
         self.exists = self.model.exists
         self.find_ids = self.model.find_ids
         self.get_by_name = self.model.get_by_name
-        self.index = self.model.index
 
         if not self.bcdb.readonly:
             self.trigger_add = self.model.trigger_add
+        else:
+            self._rediscl_.execute_command("bcdb_model_init", self.bcdb.name, self.model.schema.url)
+
+        self.index = self.model.index
 
         if self.bcdb.readonly:
             self.model.trigger_add(self._set_trigger)
@@ -32,7 +35,7 @@ class BCDBClient(j.baseclasses.object):
 
     def get(self, id):
         if self.bcdb.readonly:
-            key = f"{self.name}:data:1:{self.model.schema.url}"
+            key = f"{self.name}:data:{self.model.schema.url}"
             data = self._rediscl_.hget(key, str(id))
             ddata = j.data.serializers.json.loads(data)
             return self.model.new(ddata)
@@ -41,7 +44,7 @@ class BCDBClient(j.baseclasses.object):
 
     def set(self, obj):
         if self.bcdb.readonly:
-            key = f"{self.name}:data:1:{obj._schema.url}"
+            key = f"{self.name}:data:{obj._schema.url}"
             if obj.id:
                 self._rediscl_.hset(key, str(obj.id), obj._json)
             else:
@@ -53,7 +56,7 @@ class BCDBClient(j.baseclasses.object):
 
     def delete(self, obj):
         if self.bcdb.readonly:
-            key = f"{self.name}:data:1:{obj._schema.url}"
+            key = f"{self.name}:data:{obj._schema.url}"
             assert obj.id
             self._rediscl_.delete(key, str(obj.id))
         else:
@@ -88,6 +91,8 @@ class BCDBClientFactory(j.baseclasses.object):
             name = "system"
         key = f"{name}_{url}"
         if key not in self._clients:
+            if name != "system" and not j.data.bcdb.exists(name):
+                raise j.exceptions.Input("bcdb:'%s' has not been configured yet" % name)
             self._clients[key] = BCDBClient(name=name, url=url)
         return self._clients[key]
 

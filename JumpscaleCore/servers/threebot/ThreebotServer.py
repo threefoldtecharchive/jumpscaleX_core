@@ -211,10 +211,12 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.sonic
 
             j.data.bcdb.system.lock.acquire()
-            j.data.bcdb.instances.myjobs.lock.acquire()
+            j.core.db.redisconfig_name = "core"
+            storclient = j.clients.rdb.client_get(redisclient=j.core.db)
+            myjobs_bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
+            myjobs_bcdb.lock.acquire()
+            j.servers.myjobs
             assert j.data.bcdb.instances.myjobs.lock.fd
-
-            # remove the package
 
             j.threebot.servers = Servers()
             j.threebot.servers.zdb = self.zdb
@@ -238,7 +240,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             # needed for myjobs
             bcdb = j.data.bcdb.system
             adminsecret_ = j.data.hash.md5_string(self.adminsecret_)
-            redis_server = bcdb.redis_server_get(port=6380, secret=adminsecret_)
+            redis_server = j.data.bcdb.redis_server_get(port=6380, secret=adminsecret_)
             # just to make sure we don't have it open to external
             assert redis_server.host == "127.0.0.1"
             assert redis_server.secret == adminsecret_
@@ -369,6 +371,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         j.servers.myjobs.workers_tmux_start(2, in3bot=True)
         # j.servers.myjobs._workers_gipc_nr_max = 10
         # j.servers.myjobs.workers_subprocess_start()
+        pass
 
     def _packages_core_init(self):
 

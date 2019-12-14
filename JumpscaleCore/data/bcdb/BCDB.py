@@ -31,7 +31,6 @@ from .BCDBMeta import BCDBMeta
 
 
 # from .BCDBDecorator import *
-from .connectors.redis.RedisServer import RedisServer
 from Jumpscale import j
 import sys
 
@@ -180,6 +179,9 @@ class BCDB(j.baseclasses.object):
         at this point we have for sure the metadata loaded now we should see if the last record found can be found in the index
         :return:
         """
+
+        if self.readonly:
+            return
 
         def index_ok():
             for m in self.models:
@@ -381,11 +383,6 @@ class BCDB(j.baseclasses.object):
         else:
             raise j.exceptions.RuntimeError("Failed to wait for redisserver")
 
-    def redis_server_get(self, port=6380, secret="123456", addr="127.0.0.1"):
-        self.redis_server = RedisServer(bcdb=self, port=port, secret=secret, addr=addr)
-        self.redis_server._init2(bcdb=self, port=port, secret=secret, addr=addr)
-        return self.redis_server
-
     def _data_process(self):
         # needs gevent loop to process incoming data
         # self._log_info("DATAPROCESSOR STARTS")
@@ -541,6 +538,7 @@ class BCDB(j.baseclasses.object):
             self.model_add(model)
         except:
             self._log_error(f"Couldn't load model with schema url: {schema.url}")
+        model.index  # make sure index is loaded
         return model
 
     def schema_get(self, schema=None, md5=None, url=None):

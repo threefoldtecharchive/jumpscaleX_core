@@ -44,22 +44,21 @@ def delete(name=None, all=False):
 
 
 @click.command()
-@click.option(
-    "--name", default="system", help="specify which bcdb you want to unlock, if not specified will unlock all"
-)
+@click.option("--name", help="specify which bcdb you want to unlock, if not specified will unlock all")
 def unlock(name=None):
     _unlock(name=name)
 
 
 def _unlock(name=None):
+    base_path = j.core.tools.text_replace("{DIR_VAR}/bcdb/")
+    instances = []
     if name:
         instances = [name]
     else:
-        instances = [
-            j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir("/sandbox/var/bcdb/")
-        ]
+        if j.sal.fs.exists(base_path):
+            instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
     for instance in instances:
-        lock_path = f"/sandbox/var/bcdb/{instance}/lock"
+        lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
         if j.sal.fs.exists(lock_path):
             j.sal.fs.remove(lock_path)
             print(f"BCDB instance {instance} unlocked")
