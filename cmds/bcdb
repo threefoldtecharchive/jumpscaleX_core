@@ -33,11 +33,35 @@ def delete(name=None, all=False):
 
     if all:
         if j.tools.console.askYesNo("Are you sure you want to destroy all BCDB's"):
+            _unlock()
             j.data.bcdb.threebot_stop()
             j.data.bcdb.destroy_all()
+
     else:
         if j.tools.console.askYesNo("Are you sure you want to destroy:%s" % name):
+            _unlock(name)
             do(name)
+
+
+@click.command()
+@click.option(
+    "--name", default="system", help="specify which bcdb you want to unlock, if not specified will unlock all"
+)
+def unlock(name=None):
+    _unlock(name=name)
+
+
+def _unlock(name=None):
+    if name:
+        instances = [name]
+    else:
+        instances = [
+            j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir("/sandbox/var/bcdb/")
+        ]
+    for instance in instances:
+        lock_path = f"/sandbox/var/bcdb/{instance}/lock"
+        if j.sal.fs.exists(lock_path):
+            j.sal.fs.remove(lock_path)
 
 
 # @click.command()
@@ -85,5 +109,6 @@ if __name__ == "__main__":
     cli.add_command(delete)
     cli.add_command(check)
     cli.add_command(rebuild)
+    cli.add_command(unlock)
 
     cli()
