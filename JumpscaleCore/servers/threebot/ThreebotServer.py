@@ -240,7 +240,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             # needed for myjobs
             bcdb = j.data.bcdb.system
             adminsecret_ = j.data.hash.md5_string(self.adminsecret_)
-            redis_server = bcdb.redis_server_get(port=6380, secret=adminsecret_)
+            redis_server = j.data.bcdb.redis_server_get(port=6380, secret=adminsecret_)
             # just to make sure we don't have it open to external
             assert redis_server.host == "127.0.0.1"
             assert redis_server.secret == adminsecret_

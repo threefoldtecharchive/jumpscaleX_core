@@ -25,6 +25,7 @@ from .BCDBModel import BCDBModel
 
 import os
 import sys
+from .connectors.redis.RedisServer import RedisServer
 
 
 class BCDBFactory(j.baseclasses.factory_testtools):
@@ -484,6 +485,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         schema = bcdb_instance.schema_get(url=second_url)
 
         bcdb_instance.meta._migrate_meta(schema)
+
+    def redis_server_get(self, port=6380, secret="123456", addr="127.0.0.1"):
+        self.redis_server = RedisServer(bcdb=self, port=port, secret=secret, addr=addr)
+        self.redis_server._init2(bcdb=self, port=port, secret=secret, addr=addr)
+        return self.redis_server
 
     def _load_test_model(self, type="zdb", schema=None, datagen=False):
         """

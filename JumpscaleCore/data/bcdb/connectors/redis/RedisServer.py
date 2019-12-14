@@ -40,9 +40,6 @@ class RedisServer(j.baseclasses.object):
         self.ssl = False
         # j.clients.redis.core_check()  #need to make sure we have a core redis
 
-        if self.bcdb.models is None:
-            raise j.exceptions.Base("models are not filled in")
-
         self.init()
 
     def init(self, **kwargs):
@@ -155,7 +152,7 @@ class RedisServer(j.baseclasses.object):
                 method = getattr(self, redis_cmd)
                 try:
                     method(response, *args)
-                except:
+                except Exception as e:
                     j.shell()
 
                 continue
@@ -204,6 +201,7 @@ class RedisServer(j.baseclasses.object):
         len_splitted = len(splitted)
         m = ""
         key = ""
+        bcdb_name = splitted[0]
         if "schemas" in splitted[:2]:
             idx = splitted.index("schemas")
             cat = "schemas"
@@ -211,6 +209,7 @@ class RedisServer(j.baseclasses.object):
         else:
             if len_splitted == 3:
                 cat = splitted[1]
+                url = splitted[2]
             elif len_splitted == 4:
                 cat = splitted[1]
                 url = splitted[3]
@@ -222,19 +221,13 @@ class RedisServer(j.baseclasses.object):
             # If we have a url we should be able to get the corresponding model if we already have seen that model
             # otherwise we leave the model to an empty string because it is tested further on to know that we have to set
             # this schema
-            for schema in self.bcdb.meta.schema_dicts:
-                if url == schema["url"]:
-                    m = self.bcdb.model_get(url=schema["url"])
-                    break
-                elif url == schema["md5"]:
-                    m = self.bcdb.model_get(url=schema["url"])
-                    break
+            m = self.bcdb.get(bcdb_name).model_get(url=url)
 
         return (cat, url, key, m)
 
     def set(self, response, key, val, new=False):
-        if "schemas" in key:
-            j.shell()
+        parse_key = key.replace(":", "/")
+        if "schemas" in parse_key:
             try:
                 self.vfs.add_schemas(val)
                 response.encode("OK")
@@ -295,18 +288,17 @@ class RedisServer(j.baseclasses.object):
         """
         # in first version will only do 1 page, so ignore scan
         res = []
-        raise RuntimeError("not implemented, use bcdb to scan")
-        # for i in self.vfs._bcdb_names:
-        #     """ bcdb_instance = j.data.bcdb.get(i) """
-        #     sch_urls = self.vfs.get("%s/schemas" % i)
-        #     if len(sch_urls.items) > 0:
-        #         for url in sch_urls.items:
-        #             res.append("{}:schemas:{}".format(i, url))
-        #             res.append("{}:data:1:{}".format(i, url))
-        #     else:
-        #         res.append("%s:schemas" % i)
-        #         res.append("%s:data" % i)
-        # response._array(["0", res])
+        for bcdb in self.bcdb.instances.values():
+            name = bcdb.name
+            if not bcdb.models:
+                res.append("%s:schemas" % name)
+                res.append("%s:data" % name)
+            else:
+                for model in bcdb.models:
+                    res.append("{}:schemas:{}".format(name, model.schema.url))
+                    res.append("{}:data:{}".format(name, model.schema.url))
+
+        response._array(["0", res])
 
     def hset(self, response, key, id, val):
         key = f"{key}/{id}"
@@ -325,13 +317,9 @@ class RedisServer(j.baseclasses.object):
         return self.delete(response, key)
 
     def hlen(self, response, key):
-        parse_key = key.replace(":", "/")
-        raise RuntimeError("not implemented, use bcdb")
-        vfs_objs = self.vfs.get(self.bcdb.name + "/" + parse_key)
-        if isinstance(vfs_objs.get(), str):
-            response.encode(1)
-            return
-        response.encode(len(vfs_objs.items))
+        bcdb_name, cat, model_url = key.split(":")
+        model = self.bcdb.get(bcdb_name).model_get(url=model_url)
+        response.encode(model.count())
         return
 
     def ttl(self, response, key):
@@ -352,25 +340,19 @@ class RedisServer(j.baseclasses.object):
         return urls
 
     def hscan(self, response, key, startid, count=10000):
-        _, _, _, model = self._split(key)
-        # objs = model.get_all()
-        raise RuntimeError("not implemented, use bcdb to scan")
         res = []
-
-        if "schemas" in key:
+        cat, url, key, model = self._split(key)
+        if cat == "schemas":
             res.append(model.mid)
             res.append(model.schema.text)
-            response._array(["0", res])
-            return
+
         else:
-            key = key.replace(":", "/")
-            objs = self.vfs.get("/%s" % key)
-            for obj in objs.list():
-                schema = j.data.serializers.json.loads(obj)
-                res.append(schema["id"])
-                res.append(obj)
+            for obj in model.find():
+                res.append(obj.id)
+                res.append(obj._json)
 
         response._array(["0", res])
+        return
 
     def info_internal(self, response, *args):
         C = """
@@ -499,7 +481,7 @@ class RedisServer(j.baseclasses.object):
         response.encode(C)
 
     def __str__(self):
-        out = "redisserver:bcdb:%s\n" % self.bcdb.name
+        out = "redisserver:bcdb"
         return out
 
     __repr__ = __str__
