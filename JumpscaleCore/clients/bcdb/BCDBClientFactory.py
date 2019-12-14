@@ -35,7 +35,7 @@ class BCDBClient(j.baseclasses.object):
 
     def get(self, id):
         if self.bcdb.readonly:
-            key = f"{self.name}:1:{self.model.schema.url}"
+            key = f"{self.name}:data:{self.model.schema.url}"
             data = self._rediscl_.hget(key, str(id))
             ddata = j.data.serializers.json.loads(data)
             return self.model.new(ddata)
@@ -44,7 +44,7 @@ class BCDBClient(j.baseclasses.object):
 
     def set(self, obj):
         if self.bcdb.readonly:
-            key = f"{self.name}:1:{obj._schema.url}"
+            key = f"{self.name}:data:{obj._schema.url}"
             if obj.id:
                 self._rediscl_.hset(key, str(obj.id), obj._json)
             else:
@@ -56,7 +56,7 @@ class BCDBClient(j.baseclasses.object):
 
     def delete(self, obj):
         if self.bcdb.readonly:
-            key = f"{self.name}:1:{obj._schema.url}"
+            key = f"{self.name}:data:{obj._schema.url}"
             assert obj.id
             self._rediscl_.delete(key, str(obj.id))
         else:
