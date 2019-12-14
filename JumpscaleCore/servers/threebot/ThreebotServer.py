@@ -311,8 +311,8 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
 
-            j.shell()  # for now removed otherwise debug does not work
-            sys.exit()
+            # j.shell()  # for now removed otherwise debug does not work
+            # sys.exit()
 
             forever = event.Event()
             try:

@@ -334,7 +334,6 @@ class BCDBModel(j.baseclasses.object):
         """
         self.check(obj)
         if store:
-
             obj, stop = self._triggers_call(obj, action="set_pre")
             if stop:
                 return obj

@@ -24,6 +24,7 @@ class BCDBClient(j.baseclasses.object):
         if self.bcdb.readonly:
             self.model.trigger_add(self._set_trigger)
 
+    @property
     def _rediscl_(self):
         if not self._rediscl__:
             self._rediscl__ = j.clients.redis.get(port=6380)
@@ -99,16 +100,16 @@ class BCDBClientFactory(j.baseclasses.object):
 
         b = j.clients.bcdb.get(url="jumpscale.sshclient.1")
 
-        # print(b.find())
+        print(b.find())
 
         obj = b.find()[0]
 
         obj = b.get(id=obj.id)
-        obj.addr = "localhost"
-
+        obj.addr = "localhost:%s" % j.data.idgenerator.generateRandomInt(1, 100000)
         obj.save()
 
         obj2 = b.get(id=obj.id)
+
         assert obj2.addr == obj.addr
 
         print("TEST OK")

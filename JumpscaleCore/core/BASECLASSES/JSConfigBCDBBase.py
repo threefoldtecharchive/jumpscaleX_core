@@ -88,6 +88,7 @@ class JSConfigBCDBBase(JSBase, Attr):
             self._model_ = self._bcdb.model_get(schema=t)
             if self._model_.readonly:
                 self._model_ = j.clients.bcdb.get(name=self._bcdb.name, schema=t)
+                self._bcdb_ = self._model.bcdb
 
             if not self._model_.schema._md5 == j.data.schema._md5(t):
                 j.shell()
