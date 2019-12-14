@@ -304,7 +304,7 @@ class RedisServer(j.baseclasses.object):
 
     def hlen(self, response, key):
         parse_key = key.replace(":", "/")
-        raise RuntimeError("not implemented, use bcdb to scan")
+        raise RuntimeError("not implemented, use bcdb")
         vfs_objs = self.vfs.get(self.bcdb.name + "/" + parse_key)
         if isinstance(vfs_objs.get(), str):
             response.encode(1)
