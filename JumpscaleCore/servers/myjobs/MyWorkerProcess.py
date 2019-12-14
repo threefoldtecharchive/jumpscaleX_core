@@ -70,7 +70,7 @@ class MyWorkerProcess(j.baseclasses.object):
             # TODO: need to check this in the processing loop that this is not True
             j.servers.myjobs._i_am_worker = True
 
-        self.worker_obj = self._worker_get(worker_id)
+        self.worker_obj = self.model_worker.get(worker_id)
 
         self.start()
 
@@ -134,7 +134,7 @@ class MyWorkerProcess(j.baseclasses.object):
             else:
                 res = self.queue_jobs_start.get(timeout=20)
 
-            self.worker_obj = self._worker_get(self.id)
+            self.worker_obj = self.model_worker.get(self.id)
             if self.worker_obj.halt or res == b"halt":
                 return self.stop()
 
@@ -147,7 +147,7 @@ class MyWorkerProcess(j.baseclasses.object):
             else:
                 # self._log_debug("queue has data")
                 jobid = int(res)
-                job = self.job_get(jobid)
+                job = self.model_job.get(jobid)
                 self.job = job
                 job.time_start = j.data.time.epoch
                 skip = False
@@ -188,7 +188,7 @@ class MyWorkerProcess(j.baseclasses.object):
                         j.shell()
                     else:
                         # now have job
-                        action = self._action_get(job.action_id)
+                        action = self.model_action.get(job.action_id)
                         kwargs = job.kwargs
 
                         self.worker_obj.last_update = j.data.time.epoch
