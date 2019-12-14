@@ -45,8 +45,9 @@ class BCDBClient(j.baseclasses.object):
             if obj.id:
                 self._rediscl_.hset(key, str(obj.id), obj._json)
             else:
-                r = self._rediscl_.execute_command("hsetnew", obj._json)
-                j.shell()
+                r = self._rediscl_.execute_command("hsetnew", key, "0", obj._json)
+                obj.id = int(r)
+                return obj
         else:
             return self.model.set(obj=obj)
 

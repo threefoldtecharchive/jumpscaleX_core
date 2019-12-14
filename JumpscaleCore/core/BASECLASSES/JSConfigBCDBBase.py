@@ -86,7 +86,7 @@ class JSConfigBCDBBase(JSBase, Attr):
             t = self._process_schematext(t2)
 
             self._model_ = self._bcdb.model_get(schema=t)
-            if self._model_.readonly:
+            if self._bcdb.readonly:
                 self._model_ = j.clients.bcdb.get(name=self._bcdb.name, schema=t)
                 self._bcdb_ = self._model.bcdb
 

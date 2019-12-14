@@ -153,7 +153,10 @@ class RedisServer(j.baseclasses.object):
                     return
 
                 method = getattr(self, redis_cmd)
-                method(response, *args)
+                try:
+                    method(response, *args)
+                except:
+                    j.shell()
 
                 continue
 
@@ -277,17 +280,17 @@ class RedisServer(j.baseclasses.object):
         # in first version will only do 1 page, so ignore scan
         res = []
         raise RuntimeError("not implemented, use bcdb to scan")
-        for i in self.vfs._bcdb_names:
-            """ bcdb_instance = j.data.bcdb.get(i) """
-            sch_urls = self.vfs.get("%s/schemas" % i)
-            if len(sch_urls.items) > 0:
-                for url in sch_urls.items:
-                    res.append("{}:schemas:{}".format(i, url))
-                    res.append("{}:data:1:{}".format(i, url))
-            else:
-                res.append("%s:schemas" % i)
-                res.append("%s:data" % i)
-        response._array(["0", res])
+        # for i in self.vfs._bcdb_names:
+        #     """ bcdb_instance = j.data.bcdb.get(i) """
+        #     sch_urls = self.vfs.get("%s/schemas" % i)
+        #     if len(sch_urls.items) > 0:
+        #         for url in sch_urls.items:
+        #             res.append("{}:schemas:{}".format(i, url))
+        #             res.append("{}:data:1:{}".format(i, url))
+        #     else:
+        #         res.append("%s:schemas" % i)
+        #         res.append("%s:data" % i)
+        # response._array(["0", res])
 
     def hset(self, response, key, id, val):
         key = f"{key}/{id}"

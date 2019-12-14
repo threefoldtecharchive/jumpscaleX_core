@@ -473,7 +473,7 @@ class BCDBModel(j.baseclasses.object):
         return obj
 
     def exists(self, obj_id):
-        assert self._shutdown_ is False
+        # assert self._shutdown_ is False
         return self.get(obj_id=obj_id, die=False) != None
 
     @queue_method_results
