@@ -50,7 +50,7 @@ def unlock(name=None):
 
 
 def _unlock(name=None):
-    base_path = "/sandbox/var/bcdb/"
+    base_path = j.core.tools.text_replace("{DIR_VAR}/bcdb/")
     instances = []
     if name:
         instances = [name]
