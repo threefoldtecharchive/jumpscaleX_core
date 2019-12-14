@@ -95,7 +95,6 @@ class BCDB(j.baseclasses.object):
         """
         make sure the bcdb is initialized with default values & all is stopped
         """
-        print(" * STOP BCDB: %s" % self.name)
         if not self.readonly:
             self.lock.release()
         self.dataprocessor_stop()
@@ -109,6 +108,7 @@ class BCDB(j.baseclasses.object):
         self._shutdown_ = True
         if not self.readonly:
             self.lock.release()
+        print(" * STOP BCDB: %s" % self.name)
 
     def _init_props_(self):
 

@@ -520,7 +520,6 @@ class BCDBModel(j.baseclasses.object):
         return obj
 
     def destroy(self, nid=1):
-        assert self._shutdown_ is False
         self._log_warning("destroy: %s nid:%s" % (self, nid))
         assert isinstance(nid, int)
         assert nid > 0

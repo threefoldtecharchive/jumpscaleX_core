@@ -54,9 +54,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if not self._loaded:
 
             print("LOAD CONFIG BCDB")
-            storclient = j.clients.sqlitedb.client_get(namespace="system")
-            # storclient = j.clients.rdb.client_get(namespace="system")
-            self._instances["system"] = BCDB(storclient=storclient, name="system", reset=False)
 
             self._config_data_path = j.core.tools.text_replace("{DIR_CFG}/bcdb_config")
             if j.sal.fs.exists(self._config_data_path):
@@ -75,7 +72,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
     @property
     def system(self):
-        self._load()
+        if "system" not in self._instances:
+            storclient = j.clients.sqlitedb.client_get(namespace="system")
+            self._instances["system"] = self._get(name="system", storclient=storclient)
         return self._instances["system"]
 
     def threebot_stop(self):
@@ -231,7 +230,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             if cl not in storclients:
                 storclients.append(cl)
         for cl in storclients:
-            if cl.type == "ZDB" and cl.addr not in ["127.0.0.1", "localhost"]:
+            if cl and cl.type == "ZDB" and cl.addr not in ["127.0.0.1", "localhost"]:
                 raise j.exceptions.NotImplemented("TODO: need to delete remote namespace")
         j.sal.fs.remove(j.core.tools.text_replace("{DIR_VAR}/bcdb"))
         j.sal.fs.remove(j.core.tools.text_replace("{DIR_VAR}/zdb"))
@@ -266,29 +265,27 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         assert name
         assert isinstance(name, str)
 
-        if name in self._config:
-            try:
-                storclient = self._get_storclient(name)
-            except Exception as e:
-                self._log_warning("could not create BCDB to destroy, will go without")
-                # logdict = j.core.tools.log(tb=tb, level=50, exception=e, stdout=True)
-                storclient = None
-        else:
-            raise RuntimeError("there should always be a storclient")
+        if self.exists(name):
 
-        if storclient:
-            dontuse = BCDB(storclient=storclient, name=name, reset=True)
+            bcdb = self.get(name=name)
+            bcdb.reset()
 
-        if name in self._instances:
-            self._instances.pop(name)
+            if name in self._instances:
+                self._instances.pop(name)
 
-        if name in self._config:
             self._config.pop(name)
             self._config_write()
 
         self._loaded = False
 
     def get_for_threebot(self, namespace, ttype, instance):
+        """
+        used by actors in threebot
+        :param namespace:
+        :param ttype:
+        :param instance:
+        :return:
+        """
         if ttype not in ["zdb", "sqlite", "redis"]:
             raise j.exceptions.Input("ttype can only be zdb or sqlite")
 
@@ -326,23 +323,17 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         self._load()
         assert isinstance(name, str)
 
-        if name == "myjobs":
-            j.debug()
-
         if name in self._instances:
-            print("name:'%s' in instances on bcdb" % name)
-            bcdb = self._instances[name]
-            if name != "system" and not name in self._config:
-                raise j.exceptions.Input(f"cannot find config for bcdb:{name}")
-            return bcdb
+            # print("name:'%s' in instances on bcdb" % name)
+            return self._instances[name]
 
         if name in self._config and not storclient:
             storclient = self._get_storclient(name)
 
         if not self.exists(name=name):
-            b = self.new(name=name, storclient=storclient, reset=reset)
-        else:
-            b = self._get(name=name, storclient=storclient, reset=reset)
+            self._new(name=name, storclient=storclient)  # we create object in config of bcdb factory
+
+        b = self._get(name=name, storclient=storclient, reset=reset)  # make instance of bcdb
 
         assert name in self._instances
 
@@ -382,13 +373,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         :return:
         """
         # DO NOT CHANGE if_not_exist_die NEED TO BE TRUE
-
-        if reset:
-            # its the only 100% safe way to get all out for now
-            dontuse = BCDB(storclient=storclient, name=name, reset=reset)
-        self._instances[name] = BCDB(storclient=storclient, name=name)
-        b = self._instances[name]
-
+        assert name not in self._instances
+        self._instances[name] = BCDB(storclient=storclient, name=name, reset=reset)
         return self._instances[name]
 
     def _config_write(self):
@@ -396,7 +382,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         data_encrypted = j.data.nacl.default.encryptSymmetric(data)
         j.sal.fs.writeFile(self._config_data_path, data_encrypted)
 
-    def new(self, name, storclient=None, reset=False, readonly=False):
+    def _new(self, name, storclient=None):
         """
         create a new instance
         :param name:
@@ -412,15 +398,13 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         self._log_info("new bcdb:%s" % name)
 
-        if name in self._instances:
-            return self._instances[name]
-
-        if name == "myjobs":
-            j.debug()
-
-        if self.exists(name=name):
-            if not reset:
-                raise j.exceptions.Input("cannot create new bcdb '%s' already exists, and reset not used" % name)
+        # if name in self._instances:
+        #     print("name:'%s' in instances on bcdb (new)" % name)
+        #     return self._instances[name]
+        #
+        # if self.exists(name=name):
+        #     if not reset:
+        #         raise j.exceptions.Input("cannot create new bcdb '%s' already exists, and reset not used" % name)
 
         if not storclient:
             storclient = j.clients.sqlitedb.client_get(namespace=name)
@@ -445,21 +429,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             data["secret"] = storclient.secret_
             data["type"] = "zdb"
 
-        data["readonly"] = readonly
         self._config[name] = data
         self._config_write()
         self._load()
-
-        bcdb = self._get(name=name, reset=reset, storclient=storclient)
-
-        assert bcdb.storclient
-        assert bcdb.storclient.type == storclient.type
-
-        assert bcdb.name in self._config
-
-        assert name in self._instances
-
-        return bcdb
 
     @property
     def _code_generation_dir(self):
