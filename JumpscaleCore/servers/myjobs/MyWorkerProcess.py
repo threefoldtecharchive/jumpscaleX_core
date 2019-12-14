@@ -59,21 +59,16 @@ class MyWorkerProcess(j.baseclasses.object):
         # important, test we're using the right redis client
         assert storclient._redis.source == "worker"
 
-        self.bcdb = j.data.bcdb.get("myjobs", storclient=storclient, readonly=True)
-        self.model_job = self.bcdb.model_get(schema=schemas.job)
-        self.model_action = self.bcdb.model_get(schema=schemas.action)
-        self.model_worker = self.bcdb.model_get(schema=schemas.worker)
+        self.bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
+        self.model_job = j.clients.bcdb.get(name=self.bcdb.name, schema=schemas.job)
+        self.model_action = j.clients.bcdb.get(name=self.bcdb.name, schema=schemas.action)
+        self.model_worker = j.clients.bcdb.get(name=self.bcdb.name, schema=schemas.worker)
 
         if not self.onetime:
             # if not onetime then will send all to queue which will be processed on parent process (the myjobs manager)
             # makes sure that we cannot start by coincidence the data processing loop
             # TODO: need to check this in the processing loop that this is not True
             j.servers.myjobs._i_am_worker = True
-            self.model_job.nosave = True
-            self.model_worker.nosave = True
-
-        self.model_worker.trigger_add(self._worker_set)
-        self.model_job.trigger_add(self._job_set)
 
         self.worker_obj = self._worker_get(worker_id)
 
@@ -99,57 +94,6 @@ class MyWorkerProcess(j.baseclasses.object):
             self._log_info("WORKER REMOVE SELF:%s" % self.id, data=self)
         else:
             self._log_info("WORKER ONETIME DONE")
-
-    # DATA LOGIC
-    def job_get(self, id):
-        # call through redis client the local BCDB
-        # get data as json
-        # use model_schema to give the object
-        return self._redis_get(id, self.model_job)
-
-    def _redis_get(self, id, model):
-        key = f"{self.bcdb.name}:data:1:{model.schema.url}"
-        data = self.bcdbclient.hget(key, str(id))
-        ddata = j.data.serializers.json.loads(data)
-        return model.new(ddata)
-
-    def _redis_set(self, obj):
-        key = f"{self.bcdb.name}:data:1:{obj._schema.url}"
-        self.bcdbclient.hset(key, str(obj.id), obj._json)
-
-    def _action_get(self, id):
-        if self.onetime:
-            return self.model_action.get(id, die=True)
-        else:
-            # call through redis client the local BCDB
-            # get data as json
-            # use model_schema
-            return self._redis_get(id, self.model_action)
-
-    def _worker_get(self, id):
-        if self.onetime:
-            return self.model_worker.get(id, die=True)
-        else:
-            return self._redis_get(id, self.model_worker)
-            # call through redis client the local BCDB
-            # get data as json
-            # use model_schema
-            # if exists put on self.worker_obj & return this one
-            # if dont exists, quit
-
-    def _worker_set(self, obj, action="save", propertyname=None, **kwargs):
-        if action == "set_pre":
-            self._redis_set(obj)
-            # call through redis client the local BCDB
-            # get data as json (from _data) and use redis client to set to server
-            return obj, True
-
-    def _job_set(self, obj, action="save", propertyname=None, **kwargs):
-        if action == "set_pre":
-            # call through redis client the local BCDB
-            # get data as json (from _data) and use redis client to set to server
-            self._redis_set(obj)
-            return obj, True
 
     ################
 

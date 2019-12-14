@@ -52,6 +52,7 @@ def queue_method_results(func):
     def wrapper_queue_method(*args, **kwargs):
         self = args[0]
         if self.bcdb.dataprocessor_greenlet is None:
+            raise j.exceptions.Base("dataprocessor not running")
             self.bcdb.dataprocessor_start()
         # self._log_debug(str(func))
         if skip_for_debug or "noqueue" in kwargs:

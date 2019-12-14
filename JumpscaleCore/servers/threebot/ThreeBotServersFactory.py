@@ -68,7 +68,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
     def local_start_default(self, background=False, packages=None, reload=False):
         """
-        kosmos -p 'j.servers.threebot.local_start_default()'
+        kosmos -p 'j.servers.threebot.local_start_default(background=True)'
 
         REMARK: if you want to run a threebot in non background do following first:
             kosmos -p 'j.servers.threebot.default.start()'

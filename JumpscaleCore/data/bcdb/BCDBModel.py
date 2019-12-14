@@ -326,15 +326,20 @@ class BCDBModel(j.baseclasses.object):
         j.shell()
         return obj
 
-    # @queue_method_results
+    @queue_method_results
     def set(self, obj, index=True, store=True):
         """
         :param obj
         :return: obj
         """
         self.check(obj)
-        self.bcdb._is_writable_check()
         if store:
+
+            obj, stop = self._triggers_call(obj, action="set_pre")
+            if stop:
+                return obj
+
+            self.bcdb._is_writable_check()
 
             # later:
             if obj.acl_id is None:
@@ -369,10 +374,6 @@ class BCDBModel(j.baseclasses.object):
             assert obj.nid > 0
             l = [obj.nid, obj.acl_id, bdata_encrypted]
             data = j.data.serializers.msgpack.dumps(l)
-
-            obj, stop = self._triggers_call(obj, action="set_pre")
-            if stop:
-                return
 
             # PUT DATA IN DB
             if obj.id is None:
@@ -477,7 +478,7 @@ class BCDBModel(j.baseclasses.object):
         return self.get(obj_id=obj_id, die=False) != None
 
     @queue_method_results
-    def get(self, obj_id, return_as_capnp=False, usecache=True, die=True):
+    def get(self, obj_id, return_as_capnp=False, die=True):
         """
         @PARAM id is an int or a key
         @PARAM capnp if true will return data as capnp binary object,

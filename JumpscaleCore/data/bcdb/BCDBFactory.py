@@ -345,6 +345,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         return BCDBVFS(self.instances)
 
     def _get_storclient(self, name):
+
+        if name == "system":
+            return j.clients.sqlitedb.client_get(namespace="system")
+
         data = self._config[name]
         storclient = None
         if data["type"] == "zdb":

@@ -60,7 +60,7 @@ class RedisServer(j.baseclasses.object):
             )
         else:
             self.gevent_server = StreamServer((self.host, self.port), spawn=Pool(), handle=self.handle_redis)
-        self.vfs = j.data.bcdb._get_vfs()
+        # self.vfs = j.data.bcdb._get_vfs()
 
     def start(self):
         self._log_info("RUNNING")
@@ -213,7 +213,7 @@ class RedisServer(j.baseclasses.object):
 
         return (cat, url, key, m)
 
-    def set(self, response, key, val):
+    def set(self, response, key, val, new=False):
         parse_key = key.replace(":", "/")
         if "schemas" in parse_key:
             try:
@@ -224,9 +224,14 @@ class RedisServer(j.baseclasses.object):
                 response.error("cannot set, key:'%s' not supported" % key)
         else:
             try:
+                j.shell()
                 tree = self.vfs.get(parse_key)
-                tree.set(val)
-                response.encode("OK")
+                r = tree.set(val)
+                if new:
+                    j.shell()
+                    response.encode(r)
+                else:
+                    response.encode("OK")
                 return
             except:
                 response.error("cannot set, key:'%s' not supported" % key)
@@ -268,7 +273,7 @@ class RedisServer(j.baseclasses.object):
         """
         # in first version will only do 1 page, so ignore scan
         res = []
-
+        raise RuntimeError("not implemented, use bcdb to scan")
         for i in self.vfs._bcdb_names:
             """ bcdb_instance = j.data.bcdb.get(i) """
             sch_urls = self.vfs.get("%s/schemas" % i)
@@ -285,6 +290,10 @@ class RedisServer(j.baseclasses.object):
         key = f"{key}/{id}"
         return self.set(response, key, val)
 
+    def hsetnew(self, response, key, id, val):
+        key = f"{key}/{id}"
+        return self.set(response, key, val, new=True)
+
     def hget(self, response, key, id):
         key = f"{key}/{id}"
         return self.get(response, key)
@@ -295,6 +304,7 @@ class RedisServer(j.baseclasses.object):
 
     def hlen(self, response, key):
         parse_key = key.replace(":", "/")
+        raise RuntimeError("not implemented, use bcdb to scan")
         vfs_objs = self.vfs.get(self.bcdb.name + "/" + parse_key)
         if isinstance(vfs_objs.get(), str):
             response.encode(1)
@@ -322,6 +332,7 @@ class RedisServer(j.baseclasses.object):
     def hscan(self, response, key, startid, count=10000):
         _, _, _, model = self._split(key)
         # objs = model.get_all()
+        raise RuntimeError("not implemented, use bcdb to scan")
         res = []
 
         if "schemas" in key:
