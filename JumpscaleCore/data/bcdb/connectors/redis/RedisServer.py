@@ -152,7 +152,7 @@ class RedisServer(j.baseclasses.object):
                 method = getattr(self, redis_cmd)
                 try:
                     method(response, *args)
-                except:
+                except Exception as e:
                     j.shell()
 
                 continue
