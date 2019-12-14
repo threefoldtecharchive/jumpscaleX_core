@@ -43,23 +43,22 @@ class MyWorkerProcess(j.baseclasses.object):
             j.application.subprocess_prepare()
             j.clients.redis._cache_clear()  # make sure we have redis connections empty, because comes from parent
 
-        # MAKE SURE YOU DON'T REUSE SOCKETS FROM MOTHER PROCESSS
-        j.core.db.source = "worker"  # this allows us to test
         self.redisclient = j.core.db
-        self.bcdbclient = j.clients.redis.get(port=j.servers.myjobs.BCDB_CONNECTOR_PORT)
 
         self.queue_jobs_start = j.clients.redis.queue_get(
             redisclient=self.redisclient, key="queue:jobs:start", fromcache=False
         )
-        # self.queue_return = j.clients.redis.queue_get(redisclient=redisclient, key="queue:jobs:return", fromcache=False)
 
         j.errorhandler.handlers.append(self.error_handler)
 
-        storclient = j.clients.rdb.client_get(redisclient=self.redisclient)
-        # important, test we're using the right redis client
-        assert storclient._redis.source == "worker"
+        found = j.data.bcdb.exists("myjobs")
+        while not found:
+            found = j.data.bcdb.exists("myjobs")
+            time.sleep(0.1)
 
-        self.bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
+        self.bcdb = j.data.bcdb.get("myjobs")
+        self.bcdb._readonly = True
+
         self.model_job = j.clients.bcdb.get(name=self.bcdb.name, schema=schemas.job)
         self.model_action = j.clients.bcdb.get(name=self.bcdb.name, schema=schemas.action)
         self.model_worker = j.clients.bcdb.get(name=self.bcdb.name, schema=schemas.worker)

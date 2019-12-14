@@ -183,6 +183,9 @@ class BCDB(j.baseclasses.object):
         :return:
         """
 
+        if self.readonly:
+            return
+
         def index_ok():
             for m in self.models:
                 if m.schema.hasdata:
@@ -548,6 +551,7 @@ class BCDB(j.baseclasses.object):
             self.model_add(model)
         except:
             self._log_error(f"Couldn't load model with schema url: {schema.url}")
+        model.index  # make sure index is loaded
         return model
 
     def schema_get(self, schema=None, md5=None, url=None):

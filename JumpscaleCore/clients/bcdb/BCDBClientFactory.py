@@ -16,10 +16,13 @@ class BCDBClient(j.baseclasses.object):
         self.exists = self.model.exists
         self.find_ids = self.model.find_ids
         self.get_by_name = self.model.get_by_name
-        self.index = self.model.index
 
         if not self.bcdb.readonly:
             self.trigger_add = self.model.trigger_add
+        else:
+            self._rediscl_.execute_command("bcdb_model_init", self.bcdb.name, self.model.schema.url)
+
+        self.index = self.model.index
 
         if self.bcdb.readonly:
             self.model.trigger_add(self._set_trigger)
@@ -88,6 +91,8 @@ class BCDBClientFactory(j.baseclasses.object):
             name = "system"
         key = f"{name}_{url}"
         if key not in self._clients:
+            if name != "system" and not j.data.bcdb.exists(name):
+                raise j.exceptions.Input("bcdb:'%s' has not been configured yet" % name)
             self._clients[key] = BCDBClient(name=name, url=url)
         return self._clients[key]
 

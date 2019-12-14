@@ -160,6 +160,22 @@ class RedisServer(j.baseclasses.object):
 
                 continue
 
+    def bcdb_model_init(self, response, bcdbname, url):
+
+        if not j.data.bcdb.exists(bcdbname):
+            response.error("COULD NOT FIND BCDB:%s" % bcdbname)
+            return
+
+        bcdb = j.data.bcdb.get(bcdbname)
+        if not j.data.schema.exists(url=url):
+            response.error("COULD NOT FIND SCHEMA WITH URL:%s" % url)
+            return
+
+        model = bcdb.model_get(url=url)
+        model.index.sql_index_count()
+
+        response.encode("OK")
+
     def info(self):
         return b"NO INFO YET"
 
