@@ -39,7 +39,7 @@ brew install curl python3 git rsync
 Make sure the pip3 package is installed
 ```bash
 apt install python3-pip
-pip3 install click
+pip3 install click requests
 ```
 
 #### ssh-agent
