@@ -44,6 +44,10 @@ def delete(name=None, all=False):
 
 
 @click.command()
+def unlock():
+    _unlock()
+
+
 def _unlock():
     # we now do all or nothing
     j.data.bcdb.unlock()
