@@ -47,6 +47,12 @@ class BCDB(j.baseclasses.object):
             raise j.exceptions.Base("name needs to be specified")
 
         assert storclient
+
+        if not storclient.get(0):
+            r = storclient.set(b"INIT")
+            # this is to not have id 0, otherwise certain tests which check on value in 0 get confused
+            assert storclient.get(0)
+
         if (
             not isinstance(storclient, ZDBClientBase)
             and not isinstance(storclient, RDBClient)
@@ -179,20 +185,21 @@ class BCDB(j.baseclasses.object):
         if self.readonly:
             return
 
-        def index_ok():
-            for m in self.models:
-                if m.schema.hasdata:
-                    # we need to check that the id iterator has at least 1 item, its not a perfect check but better than nothing
-                    if not m.index._ids_exists():
-                        # means there is a real issue with an iterator
-                        return False
-            return True
+        # def index_ok():
+        #     for m in self.models:
+        #         # we need to check that the id iterator has at least 1 item, its not a perfect check but better than nothing
+        #         if not m.index._ids_exists():
+        #             # means there is a real issue with an iterator
+        #             return False
+        #     return True
+        #
+        # if not index_ok():
+        #     # the index rebuild needs to completely remove the index, show a warning sign
+        #     self._log_warning("we need to rebuild the full index because iterator was not complete")
+        #     # there is no other way we can do this because without iterator the rebuild index cannot be done
+        #     self.index_rebuild()
 
-        if not index_ok():
-            # the index rebuild needs to completely remove the index, show a warning sign
-            self._log_warning("we need to rebuild the full index because iterator was not complete")
-            # there is no other way we can do this because without iterator the rebuild index cannot be done
-            self.index_rebuild()
+        return
 
     def export(self, path, encrypt=True, reset=True):
         """Export all models and objects
@@ -456,7 +463,6 @@ class BCDB(j.baseclasses.object):
         self.storclient._init(nsname=self.storclient.nsname)
 
         self._init_props_()
-        self.meta.reset()  # will make sure the record 0 is written with empty metadata
         self._init_system_objects()
 
     def destroy(self):
@@ -519,7 +525,9 @@ class BCDB(j.baseclasses.object):
         schema = self.schema_get(schema=schema, md5=md5, url=url)
 
         if schema.url in self.models:
-            return self.models[schema.url]
+            # check that we don't cache the wrong one
+            if schema._md5 == self.models[schema.url].schema._md5:
+                return self.models[schema.url]
 
         # model not known yet need to create
         self._log_info("load model:%s" % schema.url)

@@ -37,6 +37,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         self._log_debug("bcdb starts")
         self._loaded = False
         self._path = j.sal.fs.getDirName(os.path.abspath(__file__))
+        self._config_data_path = j.core.tools.text_replace("{DIR_CFG}/bcdb_config")
 
         self._code_generation_dir_ = None
 
@@ -93,7 +94,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
             print("LOAD CONFIG BCDB")
 
-            self._config_data_path = j.core.tools.text_replace("{DIR_CFG}/bcdb_config")
             if j.sal.fs.exists(self._config_data_path):
                 data_encrypted = j.sal.fs.readFile(self._config_data_path, binary=True)
                 try:
@@ -141,7 +141,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         """
         self.system
         # because will be visible on filesystem
-        adminsecret_ = j.data.hash.md5_string(j.servers.threebot.default.adminsecret_)
+        adminsecret_ = j.data.hash.md5_string(j.core.myenv.adminsecret)
 
         if reset:
             zdb = j.servers.zdb.get(name="threebot")
@@ -167,7 +167,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         return (s, z)
 
     def get_test(self, reset=False):
-        bcdb = j.data.bcdb.new(name="testbcdb")
+        bcdb = j.data.bcdb.get(name="testbcdb")
         bcdb2 = j.data.bcdb._instances["testbcdb"]
         assert bcdb2.storclient == None
         return bcdb
@@ -234,7 +234,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         # TODO:
         pass
 
-    def reset(self):
+    def reset_connections(self):
         """
         will remove all remembered connections
         :return:
@@ -481,7 +481,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         self._config_write()
         self._load()
 
-        if self._master:
+        if not self._master:
             # we have changed the config of bcdb, need to make sure server knows about it
             j.clients.bcdbmodel.server_config_reload()
 
@@ -604,8 +604,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         bcdb.reset()  # empty
 
-        assert bcdb.storclient.get(0)
-        assert bcdb.storclient.count == 1
+        assert bcdb.storclient.count == 0
 
         assert bcdb.name == "test"
 
@@ -616,7 +615,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         if type.lower() in ["zdb"]:
             # print(model.storclient.nsinfo["entries"])
-            assert model.storclient.nsinfo["entries"] == 1
+            assert model.storclient.nsinfo["entries"] == 0
 
         assert len(model.find()) == 0
 

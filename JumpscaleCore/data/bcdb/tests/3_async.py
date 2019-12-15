@@ -31,7 +31,7 @@ def main(self):
 
     """
 
-    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.servers.threebot.default.adminsecret_))
+    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.core.myenv.adminsecret))
     sonic.start()
 
     _, model = self._load_test_model()

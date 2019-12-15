@@ -48,8 +48,6 @@ class Schema(j.baseclasses.object):
 
         self.url = url
 
-        self.hasdata = False  # only used in BCDB, this tells us if the ID iterator should be there
-
         if md5:
             self._md5 = md5
             assert j.data.schema._md5(text) == self._md5
@@ -63,15 +61,15 @@ class Schema(j.baseclasses.object):
 
         self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
 
-    # @property
-    # def url_str(self):
-    #     u = self.url + ""
-    #     # self._log_debug(u)
-    #     if "schema" in u:
-    #         u = u.split("schema", 1)[1]
-    #     if "jumpscale" in u:
-    #         u = u.split("jumpscale", 1)[1]
-    #     return u
+    @property
+    def url_str(self):
+        u = self.url + ""
+        # self._log_debug(u)
+        if "schema" in u:
+            u = u.split("schema", 1)[1]
+        if "jumpscale" in u:
+            u = u.split("jumpscale", 1)[1]
+        return u
 
     # @property
     # def _path(self):
@@ -132,7 +130,6 @@ class Schema(j.baseclasses.object):
 
         systemprops = {}
         self.properties = []
-        # self._systemprops = systemprops
 
         def process(line):
             def _getdefault(txt):
@@ -259,7 +256,7 @@ class Schema(j.baseclasses.object):
             if key == "url":
                 self.url = j.data.schema._urlclean(val)
             else:
-                self.systemprops.__dict__[key] = self.url
+                self.systemprops.__dict__[key] = val
 
         nr = 0
         for s in self.properties:

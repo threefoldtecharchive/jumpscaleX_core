@@ -39,14 +39,9 @@ class SchemaMeta(j.baseclasses.object):
 
     def reset(self):
         # make everything in metadata stor empty
-        self._reset_runtime_metadata()
         self._data = None
+        j.sal.fs.remove(self._data_path)
         self.load()
-
-    def _reset_runtime_metadata(self):
-        # reset the metadata which we can afford to loose
-        # all of this can be rebuild from the serialized information of the metastor
-        self._data = None
 
     def load(self):
         if j.sal.fs.exists(self._data_path):

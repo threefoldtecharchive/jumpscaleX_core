@@ -58,7 +58,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         name** = "main" (S)
         executor = tmux,corex (E)
         adminsecret_ = ""  (S)
-        state = "init,installed"
+        state = "init,installed" (E)
         """
 
     def _init(self, **kwargs):
@@ -86,10 +86,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         if not self.adminsecret_:
             self.adminsecret_ = secret
             assert self.adminsecret_
-
-        if self.state == "init":
-            j.tools.threebot_packages.load()
-            self.state = "installed"
 
         if self.executor == "corex":
             raise j.exceptions.Input("only tmux supported for now")
@@ -264,6 +260,10 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             # j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
             self._maintenance()
+
+            if self.state == "init":
+                j.tools.threebot_packages.load()
+                self.state = "installed"
 
             self._packages_core_init()
 
