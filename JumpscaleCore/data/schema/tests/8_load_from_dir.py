@@ -34,7 +34,7 @@ def main(self):
     j.data.schema.add_from_path(mpath)
 
     assert len(j.data.schema._url_to_md5) == 4
-    assert len(j.data.schema._md5_to_schema) == 4
+    assert len(j.data.schema.schemas) == 4
 
     s = j.data.schema.get_from_url("threefoldtoken.wallet")
 
@@ -53,9 +53,9 @@ def main(self):
     prop:ipaddr                    ipaddr
     prop:email                     string
     prop:username                  string
-    
+
     ### systemprops:
-    
+
     importance:true
     systemprop:1
     """

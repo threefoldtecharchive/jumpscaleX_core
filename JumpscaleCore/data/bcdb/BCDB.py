@@ -27,7 +27,6 @@ from Jumpscale.clients.stor_zdb.ZDBClientBase import ZDBClientBase
 from Jumpscale.clients.stor_rdb.RDBClient import RDBClient
 from Jumpscale.clients.stor_sqlite.DBSQLite import DBSQLite
 from .BCDBModel import BCDBModel
-from .BCDBMeta import BCDBMeta
 
 
 # from .BCDBDecorator import *
@@ -61,8 +60,9 @@ class BCDB(j.baseclasses.object):
 
         self._redis_index = j.clients.redis.core
         self._data_dir = j.sal.fs.joinPaths(j.dirs.VARDIR, "bcdb", self.name)
-        self._lock_file = "%s/lock" % self._data_dir
-        self.lock = j.tools.filelock.lock_get(self._lock_file)
+
+        # self._lock_file = "%s/lock" % self._data_dir
+        # self.lock = j.tools.filelock.lock_get(self._lock_file)
 
         self.storclient = storclient
 
@@ -74,7 +74,6 @@ class BCDB(j.baseclasses.object):
         else:
             self._sqlite_index_dbpath = "file:%s/sqlite_index.db" % self._data_dir
 
-        self.meta = BCDBMeta(self)
         if reset:
             self.reset()
 
@@ -92,8 +91,6 @@ class BCDB(j.baseclasses.object):
         """
         make sure the bcdb is initialized with default values & all is stopped
         """
-        if not self.readonly:
-            self.lock.release()
         self.dataprocessor_stop()
         self.sqlite_index_client_stop()
         if self.storclient.type == "SDB":
@@ -102,9 +99,7 @@ class BCDB(j.baseclasses.object):
                 cl.close()
             self.storclient.sqlitedb = None
         self._init_props_()
-        self._shutdown_ = True
-        if not self.readonly:
-            self.lock.release()
+        # self._shutdown_ = True
         print(" * STOP BCDB: %s" % self.name)
 
     def _init_props_(self):
@@ -116,9 +111,7 @@ class BCDB(j.baseclasses.object):
         self._readonly = None
         self._lock_checked = False  # we did not check the lock yet
 
-        self._shutdown_ = False  # if set it means we should not use bcdb any more
-
-        self._schema_url_to_model = {}
+        # self._shutdown_ = False  # if set it means we should not use bcdb any more
 
         # needed for async processing
         self.results = {}
@@ -128,7 +121,7 @@ class BCDB(j.baseclasses.object):
         self.user = None
         self.circle = None
 
-        self.children = j.baseclasses.dict(name="BCDBMODELS")
+        self.models = j.baseclasses.dict(name="BCDBMODELS")  # is model based on url as key
 
     def _init_system_objects(self):
 
@@ -211,7 +204,7 @@ class BCDB(j.baseclasses.object):
         :param reset: reset the export path before exporting, defaults to True
         :type reset: bool, optional
         """
-        assert self._shutdown_ is False
+
         if reset:
             j.sal.fs.remove(path)
         j.sal.fs.createDir(path)
@@ -281,7 +274,7 @@ class BCDB(j.baseclasses.object):
         paths = j.sal.fs.listDirsInDir(path, False, dirNameOnly=False)
 
         for url_path in paths:
-            # load all schemas first to make sure all children schemas are loaded when refrenced by parent schemas
+            # load all schemas first to make sure all models schemas are loaded when refrenced by parent schemas
             print(f"processing {url_path}")
             schema_text = j.sal.fs.readFile("%s/_schema.toml" % url_path)
             url = j.sal.fs.getBaseName(url_path)
@@ -505,17 +498,17 @@ class BCDB(j.baseclasses.object):
             model = self.model_get(schema=jsxobj._schema)
             model.set(jsxobj, store=False, index=True)
 
-    @property
-    def models(self):
-        # this needs to happen to make sure all models are loaded because there is lazy loading now
-        assert self._shutdown_ is False
-        for s in self.meta.schema_dicts:
-            if s["url"] not in self._schema_url_to_model:
-                assert s["url"]
-                schema = j.data.schema.get_from_url(s["url"])
-                self.model_get(schema=schema)
-        for key, model in self._schema_url_to_model.items():
-            yield model
+    # @property
+    # def models(self):
+    #     # this needs to happen to make sure all models are loaded because there is lazy loading now
+    #
+    #     for s in self.meta.schema_dicts:
+    #         if s["url"] not in self._schema_url_to_model:
+    #             assert s["url"]
+    #             schema = j.data.schema.get_from_url(s["url"])
+    #             self.model_get(schema=schema)
+    #     for key, model in self.models.items():
+    #         yield model
 
     def model_get(self, schema=None, md5=None, url=None, reset=False):
         """
@@ -523,25 +516,18 @@ class BCDB(j.baseclasses.object):
         :param url:
         :return:
         """
-        assert self._shutdown_ is False
+
         schema = self.schema_get(schema=schema, md5=md5, url=url)
-        if schema.url in self._schema_url_to_model:
-            model = self._schema_url_to_model[schema.url]
-            if model.schema._md5 != schema._md5:
-                # schema with the same url has changed, delete the cached one so the model can be added again properly
-                del self._schema_url_to_model[schema.url]
-            else:
-                return model
+
+        if schema.url in self.models:
+            return self.models[schema.url]
 
         # model not known yet need to create
         self._log_info("load model:%s" % schema.url)
 
         model = BCDBModel(bcdb=self, schema_url=schema.url, reset=reset)
-        try:
-            self.model_add(model)
-        except:
-            self._log_error(f"Couldn't load model with schema url: {schema.url}")
-        model.index  # make sure index is loaded
+        self.model_add(model)
+
         return model
 
     def schema_get(self, schema=None, md5=None, url=None):
@@ -555,15 +541,15 @@ class BCDB(j.baseclasses.object):
         :param die:
         :return:
         """
-        assert self._shutdown_ is False
+
         if schema:
             assert md5 == None
             assert url == None
             if j.data.types.string.check(schema):
                 schema_text = schema
-                j.data.schema.models_in_use = False
+                # j.data.schema.models_in_use = False
                 schema = j.data.schema.get_from_text(schema_text)
-                j.data.schema.models_in_use = True
+                # j.data.schema.models_in_use = True
                 self._log_debug("model get from schema:%s, original was text." % schema.url)
             else:
                 self._log_debug("model get from schema:%s" % schema.url)
@@ -586,10 +572,7 @@ class BCDB(j.baseclasses.object):
             else:
                 raise j.exceptions.Input("need to specify md5 or url")
 
-        mid = self.meta._schema_set(schema)
-
         assert isinstance(schema, j.data.schema.SCHEMA_CLASS)
-
         return schema
 
     def model_add(self, model):
@@ -598,18 +581,18 @@ class BCDB(j.baseclasses.object):
         :param model: is the model object  : inherits of self.MODEL_CLASS
         :return: the model added or found in cache
         """
-        assert self._shutdown_ is False
+
         if not isinstance(model, j.data.bcdb._BCDBModelClass):
             raise j.exceptions.Base("model needs to be of type:%s" % self._BCDBModelClass)
 
-        if model.schema.url not in self._schema_url_to_model:
-            self.meta._schema_set(model.schema)
-            self._schema_property_add_if_needed(model.schema)
-            self._schema_url_to_model[model.schema.url] = model
+        if not j.data.schema.exists(md5=model.schema._md5):
+            # means has not been set in model yet, lets find out why
+            j.shell()
 
-            self.children._add(model.schema.url, model)
+        self._schema_property_add_if_needed(model.schema)
+        self.models[model.schema.url] = model
 
-        return self._schema_url_to_model[model.schema.url]
+        return self.models[model.schema.url]
 
     def _schema_property_add_if_needed(self, schema, done=[]):
         """
@@ -630,12 +613,13 @@ class BCDB(j.baseclasses.object):
                     done = self._schema_property_add_if_needed(s)
             elif prop.jumpscaletype.NAME == "jsxobject":
                 s = prop.jumpscaletype._schema
-                self.meta._schema_set(s)
+                if s.url not in j.data.schema.schemas_url:
+                    # should be there lets see why not
+                    j.shell()
                 # now see if more subtypes
                 if s._md5 not in done:
                     done.append(s._md5)
                     done = self._schema_property_add_if_needed(s)
-
         return done
 
     def model_get_from_file(self, path):
@@ -644,7 +628,7 @@ class BCDB(j.baseclasses.object):
         is path to python file which represents the model
 
         """
-        assert self._shutdown_ is False
+
         self._log_debug("model get from file:%s" % path)
         obj_key = j.sal.fs.getBaseName(path)[:-3]
         cl = j.tools.codeloader.load(obj_key=obj_key, path=path, reload=False)
@@ -653,7 +637,7 @@ class BCDB(j.baseclasses.object):
         return model
 
     def models_add_threebot(self):
-        assert self._shutdown_ is False
+
         self.models_add(self._dirpath + "/models_threebot")
 
     def models_add(self, path):
@@ -666,7 +650,7 @@ class BCDB(j.baseclasses.object):
         :param path:
         :return: urls of the models
         """
-        assert self._shutdown_ is False
+
         models_urls = []
         self._log_debug("models_add:%s" % path)
 
@@ -768,7 +752,7 @@ class BCDB(j.baseclasses.object):
         :param keyonly: bool, optional
         :raises e: [description]
         """
-        assert self._shutdown_ is False
+
         if self.storclient:
             db = self.storclient
             for key, data in db.iterate(key_start=key_start, reverse=reverse, keyonly=keyonly):

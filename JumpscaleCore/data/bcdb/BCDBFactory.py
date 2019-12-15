@@ -52,6 +52,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         self.__master = None
 
+    @property
     def _master(self):
         if self.__master == None:
             if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
@@ -250,6 +251,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         all data will be lost
         :return:
         """
+        if not self._master:
+            raise j.exceptions.Base("cannot destory BCDB when not master")
+
         self._load()
         names = [name for name in self._config.keys()]
 
@@ -299,6 +303,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         return name in self._config
 
     def destroy(self, name):
+        if not self._master:
+            raise j.exceptions.Base("cannot destory BCDB when not master")
         self._load()
         assert name
         assert isinstance(name, str)
@@ -474,6 +480,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         self._config_write()
         self._load()
 
+        if self._master():
+            # we have changed the config of bcdb, need to make sure server knows about it
+            j.clients.bcdbmodel.server_config_reload()
+
     @property
     def _code_generation_dir(self):
         if not self._code_generation_dir_:
@@ -488,7 +498,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
     def migrate(self, base_url, second_url, bcdb="system", **kwargs):
         """
-        #TODO: what is this doing?
         """
         bcdb_instance = self.get(bcdb)
         base_model = bcdb_instance.model_get(url=base_url)
