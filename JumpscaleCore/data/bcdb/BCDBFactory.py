@@ -481,7 +481,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         self._config_write()
         self._load()
 
-        if self._master():
+        if self._master:
             # we have changed the config of bcdb, need to make sure server knows about it
             j.clients.bcdbmodel.server_config_reload()
 
