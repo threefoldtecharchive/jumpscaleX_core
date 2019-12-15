@@ -16,9 +16,9 @@ install:
   - source /sandbox/env.sh; kosmos "j.builders.runtimes.lua.install_autossl()"
 
 script:
-  - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v --nologcapture --with-noseexclude
-    --exclude-dir=JumpscaleCore/servers/ JumpscaleCore/ JumpscaleCore/clients/tests/test_ssh_client.py  --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
-    --tc-file=/sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/clients/tests/config.ini
-    --tc=git.name:$git_name  --tc=git.email:$git_mail --tc=git.passwd:$git_passwd --tc=git.token:$git_token --tc=mail.username:$mail_username --tc=mail.password:$mail_passwd
+  - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v JumpscaleCore/ --nologcapture --with-noseexclude
+    --exclude-dir=JumpscaleCore/servers/ --exclude-dir=JumpscaleCore/clients/tests/manual --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
+    --tc-file=/sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/clients/tests/config.ini --tc=git.name:$git_name 
+    --tc=git.email:$git_mail --tc=git.passwd:$git_passwd --tc=git.token:$git_token --tc=mail.username:$mail_username --tc=mail.password:$mail_passwd
   - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v test_loader.py:CoreTests 
     --nologcapture --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
