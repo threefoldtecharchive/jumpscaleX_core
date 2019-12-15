@@ -83,7 +83,7 @@ class SchemaMeta(j.baseclasses.object):
         elif url:
             return url in self._data["url"]
         else:
-            raise j.exceptions.Input(f"cannot find md5:{md5} or url:{url}")
+            return False
 
     @property
     def schema_urls(self):

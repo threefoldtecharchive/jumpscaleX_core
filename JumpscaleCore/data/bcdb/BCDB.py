@@ -280,10 +280,9 @@ class BCDB(j.baseclasses.object):
             url = j.sal.fs.getBaseName(url_path)
             schema = j.data.schema.get_from_text(schema_text, url=url, multiple=False)
             schemas[url] = schema
-            self.meta._schema_set(schema, save=False)
-
-        self.meta._save()
-        self.meta._readonly = True
+            raise RuntimeError("not implemented")
+            # need to put in j.data.schema
+            # self.meta._schema_set(schema, save=False)
 
         for url_path in paths:
             print(f"processing {url_path}")
@@ -606,7 +605,9 @@ class BCDB(j.baseclasses.object):
             if prop.jumpscaletype.NAME == "list" and isinstance(prop.jumpscaletype.SUBTYPE, j.data.types._jsxobject):
                 # now we know that there is a subtype, we need to store it in the bcdb as well
                 s = prop.jumpscaletype.SUBTYPE._schema
-                self.meta._schema_set(s)
+                if s.url not in j.data.schema.schemas_url:
+                    # should be there lets see why not
+                    j.shell()
                 # now see if more subtypes
                 if s._md5 not in done:
                     done.append(s._md5)

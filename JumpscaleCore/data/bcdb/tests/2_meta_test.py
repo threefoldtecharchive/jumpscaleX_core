@@ -34,7 +34,7 @@ def main(self):
     assert len(bcdb.get_all()) == 0
     assert len(bcdb.meta._data["url"]) == 7
 
-    s = list(j.data.schema._url_to_md5.keys())
+    s = list(j.data.schema.schemas.keys())
 
     assert "despiegk.test" in s
 
@@ -54,14 +54,14 @@ def main(self):
 
     assert len(bcdb.meta._data["url"]) == 8
 
-    assert "jumpscale.schema.test.a" in j.data.schema._url_to_md5
-    assert "jumpscale.bcdb.circle.2" in j.data.schema._url_to_md5
+    assert "jumpscale.schema.test.a" in j.data.schema.schemas
+    assert "jumpscale.bcdb.circle.2" in j.data.schema.schemas
 
     schema = bcdb.model_get(url="jumpscale.schema.test.a")
     o = schema.new()
 
-    assert "jumpscale.schema.test.a" in j.data.schema._url_to_md5
-    assert "jumpscale.bcdb.circle.2" in j.data.schema._url_to_md5
+    assert "jumpscale.schema.test.a" in j.data.schema.schemas
+    assert "jumpscale.bcdb.circle.2" in j.data.schema.schemas
 
     s0 = bcdb.schema_get(url="jumpscale.schema.test.a")
     s0md5 = s0._md5 + ""

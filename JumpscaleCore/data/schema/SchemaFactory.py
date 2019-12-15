@@ -58,6 +58,15 @@ class SchemaFactory(j.baseclasses.factory_testtools):
                 return True
         return self.meta.exists(md5=None, url=None)
 
+    def schema_cache_remove(self, url):
+        if url in self._schemas:
+            self._schemas.pop(url)
+        if url in self.schemas_url:
+            s = self.schemas_url[url]
+            self.schemas_url.pop(url)
+            if s._md5 in self.schemas_md5:
+                self.schemas_md5.pop(s._md5)
+
     def get(self, md5=None, url=None, text=""):
         """
         get the schema, caching happens

@@ -183,8 +183,8 @@ class RedisServer(j.baseclasses.object):
                 schema = None
             else:
                 # means we don't know it yet, need to make sure schema based on url is removed out of cache
-                if url and url in j.data.schema._url_to_md5:
-                    j.data.schema._url_to_md5.pop(url)
+                if url and url in j.data.schema.schemas:
+                    j.data.schema.schema_cache_remove(url)
 
         if schema:
             assert isinstance(schema, str)

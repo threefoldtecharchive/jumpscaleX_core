@@ -528,7 +528,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                 # create new one
         schema = bcdb_instance.schema_get(url=second_url)
 
-        bcdb_instance.meta._migrate_meta(schema)
+        raise RuntimeError("not implemented")
+        # bcdb_instance.meta._migrate_meta(schema)
 
     def redis_server_get(self, port=6380, secret="123456", addr="127.0.0.1"):
         self.redis_server = RedisServer(bcdb=self, port=port, secret=secret, addr=addr)

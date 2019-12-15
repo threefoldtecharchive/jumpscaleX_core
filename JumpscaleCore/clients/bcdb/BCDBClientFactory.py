@@ -8,7 +8,8 @@ class BCDBModelClient(j.baseclasses.object):
         self.model = self.bcdb.model_get(url=kwargs["url"])
         self.schema = self.model.schema
 
-        self._rediscl_ = j.clients.bcdbmodel._rediscl_
+        if self.bcdb.readonly:
+            self._rediscl_ = j.clients.bcdbmodel._rediscl_
 
         self.iterate = self.model.iterate
         self.search = self.model.search
