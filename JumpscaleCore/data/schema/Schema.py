@@ -281,7 +281,7 @@ class Schema(j.baseclasses.object):
 
     @property
     def _capnp_schema_text(self):
-        tpath = "%s/templates/schema.capnp" % self._path
+        tpath = "%s/templates/schema.capnp" % self._dirpath
         # j.shell()
         _capnp_schema_text = j.tools.jinja2.template_render(path=tpath, reload=False, obj=self, objForHash=self._md5)
         return _capnp_schema_text
@@ -296,7 +296,7 @@ class Schema(j.baseclasses.object):
             for prop in self.properties:
                 self._log_debug("prop for obj gen: %s:%s" % (prop, prop.js_typelocation))
 
-            tpath = "%s/templates/JSXObject2.py" % self._path
+            tpath = "%s/templates/JSXObject2.py" % self._dirpath
 
             # lets do some tests to see if it will render well, jinja doesn't show errors propertly
             for prop in self.properties:

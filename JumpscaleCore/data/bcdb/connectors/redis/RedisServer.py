@@ -381,7 +381,7 @@ class RedisServer(j.baseclasses.object):
         res = []
         cat, url, key, model = self._split(key)
         if cat == "schemas":
-            res.append(model.mid)
+            res.append(model.key)
             res.append(model.schema.text)
 
         else:

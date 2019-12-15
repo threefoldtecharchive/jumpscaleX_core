@@ -72,7 +72,7 @@ class BCDBModel(j.baseclasses.object):
             self.key = "%s_%s" % (self.storclient.nsname, self.schema.url)
         else:
             self.key = self.schema.url
-        self.key = self.key.replace(".", "_")
+        self.key = self.schema.key
 
         self._data_dir = j.sal.fs.joinPaths(self.bcdb._data_dir, self.key)
         j.sal.fs.createDir(self._data_dir)
@@ -134,9 +134,9 @@ class BCDBModel(j.baseclasses.object):
     #             self._index_ = None
     #     return self.schema
 
-    @property
-    def mid(self):
-        return self.bcdb.meta._mid_from_url(self.schema.url)
+    # @property
+    # def mid(self):
+    #     return self.bcdb.meta._mid_from_url(self.schema.url)
 
     def schema_change(self, schema):
         assert isinstance(schema, j.data.schema.SCHEMA_CLASS)
@@ -312,7 +312,7 @@ class BCDBModel(j.baseclasses.object):
 
     def search(self, text, property_name=None):
         # FIXME: get the real nids
-        objs = self.sonic_client.query(self.bcdb.name, "1:{}".format(self.mid), text)
+        objs = self.sonic_client.query(self.bcdb.name, "1:{}".format(self.key), text)
         res = []
         for obj in objs:
             parts = obj.split(":")

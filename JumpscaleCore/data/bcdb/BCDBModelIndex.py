@@ -169,7 +169,7 @@ class BCDBModelIndex(j.baseclasses.object):
                 self._clean_text_for_sonic(val),
             )
         else:
-            return self.bcdb.name, "{}:{}".format(nid, self.model.mid), "{}:{}".format(obj_id, property_name)
+            return self.bcdb.name, "{}:{}".format(nid, self.model.key), "{}:{}".format(obj_id, property_name)
 
     def _text_index_set_(self, property_name, val, obj_id, nid=1):
         if not nid:

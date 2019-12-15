@@ -40,7 +40,7 @@ class {{BASENAME}}(BCDBModelIndex):
                 # print("*%s"%db)
                 database = self.db
 
-        class Index_{{schema.key}}_{{model.mid}}(BaseModel):
+        class Index_{{schema.key}}(BaseModel):
             id = p.IntegerField(unique=True)
             nid = p.IntegerField(index=True) #need to store the namespace id
             {%- for field in index.fields %}
@@ -51,11 +51,11 @@ class {{BASENAME}}(BCDBModelIndex):
             {%- endif %}
             {%- endfor %}
 
-        self.sql = Index_{{schema.key}}_{{model.mid}}
+        self.sql = Index_{{schema.key}}
         self.sql.create_table(safe=True)
         self._schema_md5_generated = "{{schema._md5}}"
 
-        self.sql_table_name = "index_{{schema.key}}_{{model.mid}}".lower()
+        self.sql_table_name = "index_{{schema.key}}".lower()
 
 
     def _sql_index_set(self,obj):
