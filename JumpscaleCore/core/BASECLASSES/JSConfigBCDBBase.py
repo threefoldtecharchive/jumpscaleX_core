@@ -74,33 +74,22 @@ class JSConfigBCDBBase(JSBase, Attr):
                 else:
                     raise j.exceptions.JSBUG("cannot find _SCHEMATEXT on childclass or class itself")
 
-            schema = j.data.schema.get_from_text(s)
+            first_schema_text = j.data.schema._schema_blocks_get(s)[0]
+            first_schema_text2 = self._process_schematext(first_schema_text)
+            first_schema = j.data.schema.get_from_text(first_schema_text2)
 
-            # if schema.url == "jumpscale.servers.gipc.process.1":
-            #     from pudb import set_trace
-            #
-            #     set_trace()
+            j.data.schema.get_from_text(s, skipfirst=True)
 
-            t2 = j.data.schema._schema_blocks_get(s)[0]
-
-            t = self._process_schematext(t2)
-
-            self._model_ = self._bcdb.model_get(schema=t)
-            if self._bcdb.readonly:
-                self._model_ = j.clients.bcdbmodel.get(name=self._bcdb.name, schema=t)
+            if j.data.bcdb._master:
+                self._model_ = self._bcdb.model_get(schema=first_schema)
+            else:
+                self._model_ = j.clients.bcdbmodel.get(name=self._bcdb.name, schema=first_schema)
                 self._bcdb_ = self._model.bcdb
 
-            if not self._model_.schema._md5 == j.data.schema._md5(t):
+            if not self._model_.schema._md5 == j.data.schema._md5(first_schema.text):
                 j.shell()
 
-            assert self._model_.schema._md5 == j.data.schema._md5(t)
-
-            # if self._model_.schema._md5 != j.data.schema._md5(t2):
-            #     from pudb import set_trace
-            #
-            #     set_trace()
-
-            assert self._model_.schema._md5 in self._bcdb.meta._data["md5"]
+            assert self._model_.schema._md5 == j.data.schema._md5(first_schema.text)
 
         return self._model_
 
