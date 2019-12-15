@@ -68,12 +68,13 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     def unlock(self):
         base_path = j.core.tools.text_replace("{DIR_BASE}/var/bcdb/")
         instances = []
-        instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
-        for instance in instances:
-            lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
-            if j.sal.fs.exists(lock_path):
-                j.sal.fs.remove(lock_path)
-                self._log_info(f"BCDB instance {instance} unlocked")
+        if j.sal.fs.exists(base_path):
+            instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
+            for instance in instances:
+                lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
+                if j.sal.fs.exists(lock_path):
+                    j.sal.fs.remove(lock_path)
+                    self._log_info(f"BCDB instance {instance} unlocked")
 
     def lock(self):
         base_path = j.core.tools.text_replace("{DIR_BASE}/var/bcdb/")
