@@ -210,13 +210,13 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.zdb  # will start sonic & zdb
             self.sonic
 
-            j.data.bcdb.system.lock.acquire()
+            # will make sure all BCDB's are locked
+            j.data.bcdb.lock()
+
+            # make sure client for myjobs properly configured
             j.core.db.redisconfig_name = "core"
             storclient = j.clients.rdb.client_get(redisclient=j.core.db)
             myjobs_bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
-            myjobs_bcdb.lock.acquire()
-            j.servers.myjobs
-            assert j.data.bcdb.instances.myjobs.lock.fd
 
             j.threebot.servers = Servers()
             j.threebot.servers.zdb = self.zdb
@@ -310,8 +310,8 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
 
-            # j.shell()  # for now removed otherwise debug does not work
-            # sys.exit()
+            j.shell()  # for now removed otherwise debug does not work
+            sys.exit()
 
             forever = event.Event()
             try:

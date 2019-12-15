@@ -157,23 +157,26 @@ class BCDB(j.baseclasses.object):
         self.NAMESPACE = self.model_add(NAMESPACE(bcdb=self))
 
     def _is_writable_check(self):
+        return not self.readonly
         # check there is write access on bcdb
-        if self._lock_checked and self.readonly == False:
-            return True
-        self.lock.acquire()
-        self._lock_checked = True
-        self._readonly = False
-        return True
+        # if self._lock_checked and self.readonly == False:
+        #     return True
+        # self.lock.acquire()
+        # self._lock_checked = True
+        # self._readonly = False
+        # return True
 
     def lock_acquire(self):
         self.lock.acquire()
         self._lock_checked = False
-        self.readonly = None
+        self._readonly = None
 
     @property
     def readonly(self):
         if self._readonly == None:
-            self._readonly = self.lock.locked
+            # simplified logic
+            return not j.data.bcdb._master
+            # self._readonly = self.lock.locked
         return self._readonly
 
     def check(self):

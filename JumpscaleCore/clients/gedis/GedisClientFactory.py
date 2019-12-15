@@ -28,16 +28,16 @@ class GedisClientFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.clients.gedis"
     _CHILDCLASS = GedisClient
 
-    def get(self, name="base", host="localhost", port=8901, package_name=None, **kwargs):
-        """
-
-        :param host:
-        :param port:
-        :param package_name: needs to be the full name which is $threebotauthor.$packagename
-        :return:
-        """
-
-        return super().get(name=name, host=host, port=port, package_name=package_name, **kwargs)
+    # def get(self, name="base", host="localhost", port=8901, package_name=None, **kwargs):
+    #     """
+    #
+    #     :param host:
+    #     :param port:
+    #     :param package_name: needs to be the full name which is $threebotauthor.$packagename
+    #     :return:
+    #     """
+    #
+    #     return super().get(name=name, host=host, port=port, package_name=package_name, **kwargs)
 
     def _handle_error(self, e, source=None, cmd_name=None, redis=None):
 

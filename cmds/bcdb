@@ -50,18 +50,7 @@ def unlock(name=None):
 
 
 def _unlock(name=None):
-    base_path = "/sandbox/var/bcdb/"
-    instances = []
-    if name:
-        instances = [name]
-    else:
-        if j.sal.fs.exists(base_path):
-            instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
-    for instance in instances:
-        lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
-        if j.sal.fs.exists(lock_path):
-            j.sal.fs.remove(lock_path)
-            print(f"BCDB instance {instance} unlocked")
+    j.data.bcdb.unlock()
 
 
 # @click.command()

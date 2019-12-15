@@ -50,6 +50,41 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         # will make sure the toml schema's are loaded
         j.data.schema.add_from_path("%s/models_system" % self._dirpath)
 
+        self.__master = None
+
+    def _master(self):
+        if self.__master == None:
+            if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
+                self.__master = False
+            else:
+                self.__master = True
+        return self.__master
+
+    def config_reload(self):
+        self._loaded = False
+        self._load()
+
+    def unlock(self):
+        base_path = j.core.tools.text_replace("{DIR_BASE}/var/bcdb/")
+        instances = []
+        instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
+        for instance in instances:
+            lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
+            if j.sal.fs.exists(lock_path):
+                j.sal.fs.remove(lock_path)
+                self._log_info(f"BCDB instance {instance} unlocked")
+
+    def lock(self):
+        base_path = j.core.tools.text_replace("{DIR_BASE}/var/bcdb/")
+        instances = []
+        instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
+        for instance in instances:
+            lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
+            if not j.sal.fs.exists(lock_path):
+                j.sal.fs.touch(lock_path)
+                self._log_info(f"BCDB instance {instance} unlocked")
+        self.__master = True
+
     def _load(self):
 
         if not self._loaded:
