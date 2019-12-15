@@ -44,12 +44,8 @@ def delete(name=None, all=False):
 
 
 @click.command()
-@click.option("--name", help="specify which bcdb you want to unlock, if not specified will unlock all")
-def unlock(name=None):
-    _unlock(name=name)
-
-
-def _unlock(name=None):
+def _unlock():
+    # we now do all or nothing
     j.data.bcdb.unlock()
 
 
