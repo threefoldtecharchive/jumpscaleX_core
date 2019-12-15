@@ -231,5 +231,3 @@ class RedisFactory(j.baseclasses.factory_testtools):
 
         """
         self._test_run(name=name)
-
-

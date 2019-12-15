@@ -184,4 +184,3 @@ def main(self):
     # DO NOTE: the data stored in the SQLITE is NOT encrypted !!!!
 
     print("TEST OK")
-

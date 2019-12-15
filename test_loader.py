@@ -4,7 +4,9 @@ from parameterized import parameterized
 from unittest import TestCase
 
 locations = []
-for root, dirs, files in os.walk(j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore")):
+for root, dirs, files in os.walk(
+    j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore")
+):
     for file in files:
         if file.endswith(".py"):
             file_path = os.path.join(root, file)
@@ -41,4 +43,3 @@ class CoreTests(TestCase):
     )
     def test(self, cmd):
         eval(cmd)
-

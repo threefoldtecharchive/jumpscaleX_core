@@ -13,6 +13,11 @@ class RegistryTests(BaseTest):
         cls.cl = cls.addRegistryPackage()
 
     @classmethod
+    def tearDownClass(cls):
+        j.servers.threebot.default.stop()
+        j.sal.process.killall("tmux")
+
+    @classmethod
     def addRegistryPackage(cls):
         # . Start threebot server, add registery package, then reload the client.
         cl = j.servers.threebot.local_start_default(background=True)
