@@ -43,7 +43,7 @@ class SonicClient(BaseTest):
     def tearDown(self):
         self.info("Flush all data in {} collection".format(self.COLLECTION))
         self.client.flush(self.COLLECTION)
-    
+
     @classmethod
     def tearDownClass(cls):
         j.servers.sonic.main.stop()
