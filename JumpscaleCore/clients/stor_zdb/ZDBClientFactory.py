@@ -91,7 +91,7 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
 
         cl = self.client_admin_get(port=9901)
         assert cl.ping()
-        cl.namespace_delete("admin")
+
         self._test_run(name="base")
         self._test_run(name="admin")
 
