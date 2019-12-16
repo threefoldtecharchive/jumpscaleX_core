@@ -112,8 +112,12 @@ class ThreeBotPackage(JSConfigBase):
 
             def load_wiki(wiki_name=None, wiki_path=None):
                 """we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
-                wiki = j.tools.markdowndocs.load(name=wiki_name, path=wiki_path, pull=False)
-                wiki.write()
+                path_dest = f"/docsites/{wiki_name}"
+
+                threegit_tool = j.tools.threegit.get(name=wiki_name, path_source=wiki_path, path_dest=path_dest)
+                j.sal.fs.createDir(path_dest)
+
+                threegit_tool.process(reset=True)
 
             if self._wikis is None:
                 self._wikis = j.baseclasses.dict()
