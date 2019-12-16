@@ -451,11 +451,11 @@ class BCDB(j.baseclasses.object):
 
         assert self.storclient
 
-        self.storclient.flush()  # Always flush store client, making sure it's empty!
-
         self._redis_reset()
         j.sal.fs.remove(self._data_dir)
         j.sal.fs.createDir(self._data_dir)
+        if self.storclient.type != "SDB":
+            self.storclient.flush()  # not needed for sqlite because closed and dir will be deleted
         # all data is now removed, can be done because sqlite client should be None
 
         # since delete the data directory above, we have to re-init the storclient

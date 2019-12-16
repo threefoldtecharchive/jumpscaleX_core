@@ -153,11 +153,9 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         blocks = self._schema_blocks_get(schema_text)
         if len(blocks) > 1 and url:
             raise j.exceptions.Input("cannot support add from text with url if more than 1 block")
-        nr = 0
-        for block in blocks:
-            if nr is 0 and skipfirst:
+        for i, block in enumerate(blocks):
+            if i == 0 and skipfirst:
                 continue
-            nr += 1
             res.append(self._get_from_text_single(block, url=url))
         if not multiple:
             if len(res) > 0:
