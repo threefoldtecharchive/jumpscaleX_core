@@ -140,7 +140,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         blocks = self._schema_blocks_get(schema_text)
         return len(blocks) > 1
 
-    def get_from_text(self, schema_text, url=None, skipfirst=False):
+    def get_from_text(self, schema_text, url=None, skipfirst=False, multiple=False):
         """
         will return the first schema specified if more than 1
 
@@ -159,8 +159,11 @@ class SchemaFactory(j.baseclasses.factory_testtools):
                 continue
             nr += 1
             res.append(self._get_from_text_single(block, url=url))
-        if not skipfirst:
-            return res[0]
+        if not multiple:
+            if len(res) > 0:
+                return res[0]
+        else:
+            return res
 
     def _get_from_text_single(self, schema_text, url=None):
         """
