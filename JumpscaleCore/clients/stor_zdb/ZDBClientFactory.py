@@ -81,18 +81,16 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
         assert self.exists(name=name)
         return cl
 
-    def test(self):
+    def test(self, name=""):
         """
         kosmos 'j.clients.zdb.test()'
 
         """
 
-        j.servers.zdb.test_instance_start()
+        zdb = j.servers.zdb.test_instance_start()
 
-        cl = self.client_admin_get(port=9901)
+        cl = zdb.client_admin_get()
         assert cl.ping()
         cl.namespace_delete("admin")
-        self._test_run(name="base")
-        self._test_run(name="admin")
-
+        self._test_run(name=name)
         j.servers.zdb.test_instance_stop()
