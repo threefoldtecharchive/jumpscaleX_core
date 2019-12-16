@@ -310,7 +310,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
 
-            # j.shell()  # for now removed otherwise debug does not work
+            j.shell()  # for now removed otherwise debug does not work
 
             forever = event.Event()
             try:

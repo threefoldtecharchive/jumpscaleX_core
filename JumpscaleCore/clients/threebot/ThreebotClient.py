@@ -11,8 +11,8 @@ from nacl.public import PrivateKey, PublicKey, SealedBox
 class ThreebotClient(JSConfigBase):
     _SCHEMATEXT = """
     @url = jumpscale.threebot.client
-    name** = ""                      #is the bot dns
-    tid** =  0 (I)                     #threebot id
+    name** = ""                     #is the bot dns
+    tid** =  0 (I)                  #threebot id
     host = "127.0.0.1" (S)          #for caching purposes
     port = 8901 (ipport)            #for caching purposes
     pubkey = ""                     #for caching purposes
@@ -25,9 +25,26 @@ class ThreebotClient(JSConfigBase):
         self._gedis_connections = {}
         assert self.name != ""
 
+    @property
+    def actors_system(self):
+        pass
+        # TODO: need to use right gedis client
+
+    @property
+    def actors_explorer_proxy(self):
+        """
+        allows every 3bot to be used to talk to the explorer(s)
+        :return:
+        """
+        pass
+        # TODO: need to use right gedis client
+
     def actors_get(self, package_name="all"):
         if not package_name in self._gedis_connections:
             name = "" if "all" else package_name
+            if package_name == "all":
+                raise RuntimeError("not implemented")
+                # TODO: need to query the package manager (there is actor for it on package manager) and see which actors there are (for 1 package or for all)
             g = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, package_name=name)
             self._gedis_connections[package_name] = g
         return self._gedis_connections[package_name].actors

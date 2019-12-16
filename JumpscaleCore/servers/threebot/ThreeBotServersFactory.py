@@ -54,7 +54,10 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         return self.local_start_default(background=background, packages=packages, reload=reload)
 
     def local_start_explorer(self, background=False, reload=False):
-        """starts 3bot with phonebook, directory, workloads packages.
+        """
+
+        starts 3bot with phonebook, directory, workloads packages.
+
         kosmos -p 'j.servers.threebot.local_start_explorer()'
 
         """

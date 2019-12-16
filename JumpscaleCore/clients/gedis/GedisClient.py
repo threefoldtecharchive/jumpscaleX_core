@@ -33,9 +33,9 @@ class GedisClient(JSConfigBase):
     def _init(self, **kwargs):
         # j.clients.gedis.latest = self
         self._actorsmeta = {}
-        # if not self.package_name:
-        #     self.package_name = "zerobot.base"
-        #     self.save()
+        if not self.package_name:
+            self.package_name = "zerobot.base"
+            self.save()
         assert self.package_name
         assert "." in self.package_name
         self.schemas = None
