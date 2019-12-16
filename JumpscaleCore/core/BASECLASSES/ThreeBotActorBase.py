@@ -8,6 +8,7 @@ class ThreeBotActorBase(JSBase):
         self._schemas = {}
         assert "package" in kwargs
         self.package = kwargs["package"]
+        self.bcdb = self.package.bcdb
 
     @property
     def scheduler(self):

@@ -36,13 +36,13 @@ def main(self):
     ipaddr = (ipaddr)           # IP Address
     email = "" (S)              # Email address
     username = "" (S)           # User name
-    
+
     """
     # md5 = "cbf134f55d0c7149ef188cf8a52db0eb"
     # sid = "7"
 
     testname = "testvfs"
-    bcdb = j.data.bcdb.new(testname, reset=True)
+    bcdb = j.data.bcdb.get(testname, reset=True)
 
     vfs = j.data.bcdb._get_vfs()
 
@@ -141,13 +141,13 @@ def main(self):
     @url = ben.pc.test
     description** =  "top_pc"
     cpu = "6ghz" (S)            # power
-    ram =  (LI)                   
-    enable = true (B)  
+    ram =  (LI)
+    enable = true (B)
     @url = ben.pc.test.2
     description** =  "super_top_pc"
     cpu = "12ghz" (S)            # power
-    ram =  (LI)                   
-    enable = false (B)            
+    ram =  (LI)
+    enable = false (B)
     """
     res = vfs.add_schemas(SCHEMAS)
     assert len(res) == 2

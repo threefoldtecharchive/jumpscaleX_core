@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 
 
@@ -32,9 +12,8 @@ def main(self):
     bcdb, _ = self._load_test_model()
 
     assert len(bcdb.get_all()) == 0
-    assert len(bcdb.meta._data["url"]) == 7
 
-    s = list(j.data.schema._url_to_md5.keys())
+    s = list(j.data.schema.schemas.keys())
 
     assert "despiegk.test" in s
 
@@ -50,18 +29,14 @@ def main(self):
 
     assert s.properties_unique == []
 
-    bcdb.meta._schema_set(s)
-
-    assert len(bcdb.meta._data["url"]) == 8
-
-    assert "jumpscale.schema.test.a" in j.data.schema._url_to_md5
-    assert "jumpscale.bcdb.circle.2" in j.data.schema._url_to_md5
+    assert "jumpscale.schema.test.a" in j.data.schema.schemas
+    assert "jumpscale.bcdb.circle.2" in j.data.schema.schemas
 
     schema = bcdb.model_get(url="jumpscale.schema.test.a")
     o = schema.new()
 
-    assert "jumpscale.schema.test.a" in j.data.schema._url_to_md5
-    assert "jumpscale.bcdb.circle.2" in j.data.schema._url_to_md5
+    assert "jumpscale.schema.test.a" in j.data.schema.schemas
+    assert "jumpscale.bcdb.circle.2" in j.data.schema.schemas
 
     s0 = bcdb.schema_get(url="jumpscale.schema.test.a")
     s0md5 = s0._md5 + ""
@@ -70,7 +45,8 @@ def main(self):
 
     assert bcdb.get_all() == []  # just to make sure its empty
 
-    assert len(bcdb.meta._data["url"]) == 8
+    j.shell()
+    assert len(j.data.schema.meta._data["url"]) == 8
 
     a = model.new()
     a.category = "acat"
@@ -93,15 +69,12 @@ def main(self):
     # lets upgrade schema to float
     s_temp = bcdb.schema_get(schema=schema_text)
 
-    assert len(bcdb.meta._data["url"]) == 8  # should be same because is same schema, should be same md5
     assert s_temp._md5 == s0._md5
 
     # lets upgrade schema to float
     s2 = bcdb.schema_get(schema=schema_text)
 
     model2 = bcdb.model_get(schema=s2)
-
-    assert len(bcdb.meta._data["url"]) == 8  # acl, user, circle, despiegktest and the 1 new one
 
     a3 = model2.new()
     a3.category = "acat3"
@@ -126,6 +99,10 @@ def main(self):
 
     assert a6.id == a3.id
     assert a6.i == a3.i
+
+    # CLEAN STATE
+    j.servers.zdb.test_instance_stop()
+    j.servers.sonic.default.stop()
 
     self._log_info("TEST META DONE")
     return "OK"

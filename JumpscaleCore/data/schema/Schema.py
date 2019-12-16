@@ -37,19 +37,16 @@ class SystemProps:
 
 
 class Schema(j.baseclasses.object):
-    def _init(self, text, md5=None, url=None, package=None):
+    def _init(self, text, md5=None, url=None):
         self.properties = []
         self._systemprops = {}
         self._obj_class = None
         self._capnp = None
         self._index_list = None
-        self.package = package
 
         self.systemprops = SystemProps()
 
         self.url = url
-
-        self.hasdata = False  # only used in BCDB, this tells us if the ID iterator should be there
 
         if md5:
             self._md5 = md5
@@ -60,34 +57,9 @@ class Schema(j.baseclasses.object):
         self._schema_from_text(text)
 
         if not self.url:
-            self.url = j.data.hash.md5_string(text)
-
-        self.url = j.data.schema._urlclean(self.url, package=package)
+            raise j.exceptions.Input("url needs to be specified", data=text)
 
         self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
-
-        # if self.url:
-        #     self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
-        # else:
-        #     raise j.exceptions.Input("url not defined in schema", data=text)
-
-        # urls = self.url.split(".")
-        # if len(urls) > 0:
-        #     try:
-        #         v = int(urls[-1])
-        #     except:
-        #         v = None
-        #         self.version = 1
-        #         self.url = self.url
-        #     if v is not None:
-        #         self.version = urls.pop(len(urls) - 1)
-        #         self.url = ".".join(urls)
-        #     # if self.url in j.data.schema.schemas_versionless:
-        #     #     if j.data.schema.schemas_versionless[self.url].version < self.version + 1:
-        #     #         # version itself can be replaced as well, there could be an update
-        #     #         j.data.schema.schemas_versionless[self.url] = self
-        #     # else:
-        #     #     j.data.schema.schemas_versionless[self.url] = self
 
     @property
     def url_str(self):
@@ -99,9 +71,9 @@ class Schema(j.baseclasses.object):
             u = u.split("jumpscale", 1)[1]
         return u
 
-    @property
-    def _path(self):
-        return j.sal.fs.getDirName(os.path.abspath(__file__))
+    # @property
+    # def _path(self):
+    #     return j.sal.fs.getDirName(os.path.abspath(__file__))
 
     def _error_raise(self, msg, e=None, schema=None):
         if self.url == "" and "url" in self._systemprops:
@@ -158,7 +130,6 @@ class Schema(j.baseclasses.object):
 
         systemprops = {}
         self.properties = []
-        # self._systemprops = systemprops
 
         def process(line):
             def _getdefault(txt):
@@ -181,6 +152,7 @@ class Schema(j.baseclasses.object):
             if "!" in line:
                 line, pointer_type = line.split("!", 1)
                 pointer_type = pointer_type.strip()
+                pointer_type = j.data.schema._urlclean(pointer_type)
                 line = line.strip()
             else:
                 pointer_type = None
@@ -224,7 +196,7 @@ class Schema(j.baseclasses.object):
                 line_wo_proptype = line.split("(")[0].strip()  # before the (
 
                 if pointer_type:
-                    pointer_type = j.data.schema._urlclean(pointer_type, package=self.package)
+                    pointer_type = j.data.schema._urlclean(pointer_type)
                     default = pointer_type
                     # means the default is a link to another object
                 else:
@@ -282,10 +254,7 @@ class Schema(j.baseclasses.object):
 
         for key, val in systemprops.items():
             if key == "url":
-                if self.url:
-                    assert self.url == val
-                else:
-                    self.url = val
+                self.url = j.data.schema._urlclean(val)
             else:
                 self.systemprops.__dict__[key] = val
 
@@ -309,7 +278,7 @@ class Schema(j.baseclasses.object):
 
     @property
     def _capnp_schema_text(self):
-        tpath = "%s/templates/schema.capnp" % self._path
+        tpath = "%s/templates/schema.capnp" % self._dirpath
         # j.shell()
         _capnp_schema_text = j.tools.jinja2.template_render(path=tpath, reload=False, obj=self, objForHash=self._md5)
         return _capnp_schema_text
@@ -324,7 +293,7 @@ class Schema(j.baseclasses.object):
             for prop in self.properties:
                 self._log_debug("prop for obj gen: %s:%s" % (prop, prop.js_typelocation))
 
-            tpath = "%s/templates/JSXObject2.py" % self._path
+            tpath = "%s/templates/JSXObject2.py" % self._dirpath
 
             # lets do some tests to see if it will render well, jinja doesn't show errors propertly
             for prop in self.properties:
@@ -424,7 +393,7 @@ class Schema(j.baseclasses.object):
             elif prop.is_jsxobject:
                 for subprop in prop.jumpscaletype._schema.properties_index_sql:
                     sprop = SchemaProperty(
-                        name=f"{prop.name}_{subprop.name}",
+                        name=f"{prop.name}__{subprop.name}",
                         attr=f"{prop.name}.{subprop.name}",
                         jumpscaletype=subprop.jumpscaletype,
                         comment=subprop.comment,

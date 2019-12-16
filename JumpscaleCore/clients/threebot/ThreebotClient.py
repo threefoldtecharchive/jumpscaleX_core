@@ -11,8 +11,8 @@ from nacl.public import PrivateKey, PublicKey, SealedBox
 class ThreebotClient(JSConfigBase):
     _SCHEMATEXT = """
     @url = jumpscale.threebot.client
-    name** = ""                      #is the bot dns
-    tid** =  0 (I)                     #threebot id
+    name** = ""                     #is the bot dns
+    tid** =  0 (I)                  #threebot id
     host = "127.0.0.1" (S)          #for caching purposes
     port = 8901 (ipport)            #for caching purposes
     pubkey = ""                     #for caching purposes
@@ -25,11 +25,29 @@ class ThreebotClient(JSConfigBase):
         self._gedis_connections = {}
         assert self.name != ""
 
-    def actors_get(self, namespace="default"):
-        if not namespace in self._gedis_connections:
-            g = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, namespace=namespace)
-            self._gedis_connections[namespace] = g
-        return self._gedis_connections[namespace].actors
+    @property
+    def actors_system(self):
+        pass
+        # TODO: need to use right gedis client
+
+    @property
+    def actors_explorer_proxy(self):
+        """
+        allows every 3bot to be used to talk to the explorer(s)
+        :return:
+        """
+        pass
+        # TODO: need to use right gedis client
+
+    def actors_get(self, package_name="all"):
+        if not package_name in self._gedis_connections:
+            name = "" if package_name is "all" else package_name
+            if package_name == "all":
+                raise RuntimeError("not implemented")
+                # TODO: need to query the package manager (there is actor for it on package manager) and see which actors there are (for 1 package or for all)
+            g = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, package_name=name)
+            self._gedis_connections[package_name] = g
+        return self._gedis_connections[package_name].actors
 
     def reload(self):
         for key, g in self._gedis_connections.items():
@@ -37,15 +55,12 @@ class ThreebotClient(JSConfigBase):
 
     @property
     def _gedis(self):
-        a = self.actors_get("default")
-        return self._gedis_connections["default"]
+        a = self.actors_get("all")
+        return self._gedis_connections["all"]
 
     @property
-    def actors_default(self):
-        return self.actors_get("default")
-
-    def ping(self):
-        return self.client.ping()
+    def actors_all(self):
+        return self.actors_get("all")
 
     def encrypt_for_threebot(self, data, hex=False):
         """
@@ -95,12 +110,10 @@ class ThreebotClient(JSConfigBase):
             self._verifykey_obj = VerifyKey(verifykey)
         return self._verifykey_obj
 
-    # def auth(self, bot_id):
-    #     nacl_cl = j.data.nacl.get()
-    #     nacl_cl._load_privatekey()
-    #     signing_key = nacl.signing.SigningKey(nacl_cl.privkey.encode())
-    #     epoch = str(j.data.time.epoch)
-    #     signed_message = signing_key.sign(epoch.encode())
-    #     cmd = "auth {} {} {}".format(bot_id, epoch, signed_message)
-    #     res = self._redis.execute_command(cmd)
-    #     return res
+    def test_auth(self, bot_id):
+        nacl_cl = j.data.nacl.get()
+        nacl_cl._load_singing_key()
+        epoch = str(j.data.time.epoch)
+        signed_message = nacl_cl.sign(epoch.encode()).hex()
+        cmd = "auth {} {} {}".format(bot_id, epoch, signed_message)
+        return self._gedis._redis.execute_command(cmd)

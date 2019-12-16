@@ -67,9 +67,15 @@ class ThreeBotPackage(JSConfigBase):
         return j.threebot.servers.web
 
     def _model_get_fields_schema(self, model):
-        lines = model.schema.text.splitlines()
-        if lines[0].strip().startswith("@url"):
-            lines.pop(0)
+        lines = []
+        model_prefix = f"{self.source.threebot}.{self.source.name}"
+
+        for line in model.schema.text.splitlines():
+            line = line.strip().lower()
+            if line.startswith("@url"):
+                continue
+            lines.append(line)
+
         return "\n        ".join(lines)
 
     def load(self):
@@ -124,7 +130,7 @@ class ThreeBotPackage(JSConfigBase):
             for model_url in self.model_urls:
                 found = True
                 # Exclude bcdb meta data models
-                model = self.bcdb.model_get(url=model_url, package=self)
+                model = self.bcdb.model_get(url=model_url)
                 if model.schema.url.startswith("jumpscale.bcdb."):
                     continue
                 assert model_url.startswith(self.name)
@@ -143,7 +149,10 @@ class ThreeBotPackage(JSConfigBase):
 
         if self._actors is None or reset:
             self._actors = j.baseclasses.dict()
-            actors_crud_generate()  # will generate the actors for the model
+            package_toml = j.data.serializers.toml.load(f"{self.path}/package.toml")
+            if not ("disable_crud" in package_toml and package_toml["source"]["disable_crud"]):
+                actors_crud_generate()  # will generate the actors for the model
+
             path = self.path + "/actors"
             if j.sal.fs.exists(path):
 
@@ -170,6 +179,7 @@ class ThreeBotPackage(JSConfigBase):
     @property
     def actors(self):
         if self._actors is None:
+            self.load()
             self._actors = self.actors_reload()
         return self._actors
 
@@ -180,10 +190,11 @@ class ThreeBotPackage(JSConfigBase):
     @property
     def models(self):
         if self._models is None:
+            self.load()
             self._models = j.baseclasses.dict()
             path = self.path + "/models"
             if j.sal.fs.exists(path):
-                model_urls = self.bcdb.models_add(path, package=self)
+                model_urls = self.bcdb.models_add(path)
                 for model_url in model_urls:
                     m = self.bcdb.model_get(url=model_url)
                     if model_url.startswith(self.name):
@@ -201,6 +212,7 @@ class ThreeBotPackage(JSConfigBase):
     @property
     def chatflows(self):
         if self._chatflows is None:
+            self.load()
             self._chatflows = j.baseclasses.dict()
             path = self.path + "/chatflows"
             if j.sal.fs.exists(path):
@@ -215,6 +227,7 @@ class ThreeBotPackage(JSConfigBase):
     def wikis(self):
         # lazy-loading of wikis would take time, user will wait for too long
         # and need to refresh to see loaded wikis
+        self.load()
         return self._wikis
 
     @property
@@ -236,10 +249,13 @@ class ThreeBotPackage(JSConfigBase):
 
         return self._bcdb_
 
+    def bcdb_model_get(self, url):
+        return self.bcdb.model_get(url=url, package=self)
+
     def _web_load(self, app_type="frontend"):
         for port in (443, 80):
             website = self.openresty.get_from_port(port)
-            locations = website.locations.get(f"{self.name}_locations")
+            locations = website.locations.get(f"{self.name}_locations_{port}")
             if app_type == "frontend":
                 website_location = locations.locations_spa.new()
             elif app_type == "html":
@@ -260,9 +276,7 @@ class ThreeBotPackage(JSConfigBase):
             self.path = j.clients.git.getContentPathFromURLorPath(self.giturl, branch=self.branch)
         tomlfile = f"{self.path}/package.toml"
         if not j.sal.fs.exists(tomlfile):
-            raise j.exceptions.NotFound(f"cannot find package.toml in path")
-        if not j.sal.fs.exists(tomlfile):
-            raise j.exceptions.Input("cannot find config file on:%s" % tomlfile)
+            raise j.exceptions.Input(f"cannot find config file in path {tomlfile} for package {self.name}")
         config = j.data.serializers.toml.loads(j.sal.fs.readFile(tomlfile))
         self._data._data_update(config)
 
@@ -295,6 +309,7 @@ class ThreeBotPackage(JSConfigBase):
         self.save()
 
     def uninstall(self):
+        self.load()
         self.stop()
         if self.status != "config":
             self.status = "config"
@@ -302,15 +317,18 @@ class ThreeBotPackage(JSConfigBase):
         self.save()
 
     def disable(self):
+        self.load()
         self.stop()
         if self.status != "disabled":
             self.status = "disabled"
         self.save()
 
     def enable(self):
+        self.load()
         if self.status != "init":
             self.status = "init"
         self.install()
 
     def prepare(self):
+        self.load()
         self._package_author.prepare()

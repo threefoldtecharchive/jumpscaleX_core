@@ -7,8 +7,8 @@ def main(self):
     """
 
     print("[*] testing echo")
-    client = j.clients.gedis.get("system_test", port=8901, namespace="system")
-    client.actors.system.ping()
+    client = j.clients.gedis.get("system_test", port=8901, package_name="zerobot.base")
+    assert client.actors.system.ping() == b"PONG"
 
     actors_path = j.core.tools.text_replace(
         "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/ibiza/actors"

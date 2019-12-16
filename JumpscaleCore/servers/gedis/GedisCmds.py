@@ -172,10 +172,10 @@ class GedisCmds(JSBASE):
 
         # cmd.code = j.core.text.strip(code)
         cmd.comment = j.core.text.strip(comment)
-        s = self._schema_process(cmd, schema_in)
+        s = self._schema_process(cmd, schema_in, cat="in")
         if s:
             cmd.schema_in_url = s.url
-        s = self._schema_process(cmd, schema_out)
+        s = self._schema_process(cmd, schema_out, cat="out")
         if s:
             cmd.schema_out_url = s.url
         if acl_config:
@@ -249,14 +249,13 @@ class GedisCmds(JSBASE):
             s.url = url
             s.content = content
 
-    def _schema_process(self, cmd, txt):
+    def _schema_process(self, cmd, txt, cat):
         txt = j.core.tools.text_strip(txt).strip()
         if txt.strip() == "":
             return None
         if not txt.strip().startswith("!"):
             if txt.find("@url") == -1:
-                md5 = j.data.hash.md5_string(txt.strip())
-                url = "actors.%s.%s.%s.%s" % (self.data.namespace, self.data.name, cmd.name, md5)
+                url = "actors.%s.%s.%s.%s" % (self.data.namespace, self.data.name, cmd.name, cat)
                 schema = j.data.schema.get_from_text(schema_text=txt, url=url)
             else:
                 schema = j.data.schema.get_from_text(schema_text=txt)

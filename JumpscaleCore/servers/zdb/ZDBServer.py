@@ -87,7 +87,9 @@ class ZDBServer(j.baseclasses.object_config):
         """
 
         """
-        cl = j.clients.zdb.client_admin_get(addr=self.addr, port=self.port, secret=self.adminsecret_, mode=self.mode)
+        cl = j.clients.zdb.client_admin_get(
+            name=f"{self.name}_admin", addr=self.addr, port=self.port, secret=self.adminsecret_, mode=self.mode
+        )
         return cl
 
     def client_get(self, nsname="default", secret="1234"):
@@ -95,7 +97,10 @@ class ZDBServer(j.baseclasses.object_config):
         get client to zdb
 
         """
-        cl = j.clients.zdb.client_get(name=nsname, addr=self.addr, port=self.port, secret=secret, mode=self.mode)
+        name = f"{self.name}_{nsname}"
+        cl = j.clients.zdb.client_get(
+            name=name, namespace=nsname, addr=self.addr, port=self.port, secret=secret, mode=self.mode
+        )
 
         assert cl.ping()
 
