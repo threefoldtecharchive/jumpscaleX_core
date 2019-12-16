@@ -12,10 +12,10 @@ class SchemaFactory(j.baseclasses.factory_testtools):
     def _init(self, **kwargs):
 
         self.__code_generation_dir = None
-        self.reset()
+        self.meta = SchemaMeta()
+        self._reset_state()
         self._JSXObjectClass = JSXObject
         self.models_in_use = False  # if this is set then will not allow certain actions to happen here
-        self.meta = SchemaMeta()
         self._schemas = None
 
     @property
@@ -34,9 +34,14 @@ class SchemaFactory(j.baseclasses.factory_testtools):
             self.__code_generation_dir = path
         return self.__code_generation_dir
 
-    def reset(self):
+    def _reset_state(self):
+        """
+        be very careful because this will probably make your install corrupt, schema's will not be found
+        :return:
+        """
         self.schemas_md5 = j.baseclasses.dict(name="SCHEMASMD5")  # is md5 to schema
         self.schemas_url = j.baseclasses.dict(name="SCHEMASURL")  # is url to schema
+        self._schemas = None
 
     @property
     def schemas(self):
@@ -114,7 +119,14 @@ class SchemaFactory(j.baseclasses.factory_testtools):
             if not self.meta.exists(url=url):
                 raise j.exceptions.Input("Could not find schema with url:%s" % url)
             data = self.meta.schema_get(url=url)
-            self.get_from_text(data["text"])
+            self.get_from_text(data["text"], url=data["url"])
+            # return self.schemas_url[data["url"]]
+        if not url in self.schemas_url:
+            raise j.exceptions.Base("url schould be same as data[url]")
+            # j.debug()
+            # s = self.get_from_text(data["text"], url=url)
+            # j.shell()
+            # w
         return self.schemas_url[url]
 
     def is_multiple_schema_from_text(self, schema_text):
@@ -161,7 +173,9 @@ class SchemaFactory(j.baseclasses.factory_testtools):
 
         md5 = self._md5(schema_text)
         if md5 in self.schemas_md5:
-            return self.schemas_md5[md5]
+            s = self.schemas_md5[md5]
+            self.set_schema(s)
+            return s
 
         s = Schema(text=schema_text, md5=md5, url=url)
 

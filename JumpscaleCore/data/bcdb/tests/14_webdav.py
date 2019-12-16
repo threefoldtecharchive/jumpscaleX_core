@@ -33,9 +33,9 @@ def main(self):
     # sid = "7"
     test_cmd = """
     from Jumpscale import j
-    bcdb = j.data.bcdb.new("test", reset=True)
+    bcdb = j.data.bcdb.get("test", reset=True)
     vfs = j.data.bcdb._get_vfs()
-    
+
     SCHEMA = \"\"\"
     @url = threefoldtoken.wallet.test
     name** = "wallet"
@@ -43,7 +43,7 @@ def main(self):
     ipaddr = (ipaddr)           # IP Address
     email = "" (S)              # Email address
     username = "" (S)           # User name
-    
+
     \"\"\"
     m_wallet_test = bcdb.model_get(schema=SCHEMA)
     for i in range(10):
@@ -54,7 +54,7 @@ def main(self):
         o.name = "myuser_%s" % i
         o.username = "nothing here_%s" % i
         o.save()
-    
+
     from Jumpscale.data.bcdb.connectors.webdav.BCDBResourceProvider import BCDBResourceProvider
     rack = j.servers.rack.get()
     rack.webdav_server_add(webdavprovider=BCDBResourceProvider())
@@ -76,7 +76,7 @@ def main(self):
     assert data["name"] == "myuser_0"
     assert data["id"] == 1
 
-    """  
+    """
     data["email"] = "yolo@nofear.com"
     session.auth = requests.auth.HTTPBasicAuth("root", "root")
     put = session.put("http://0.0.0.0:4443/test/data/1/threefoldtoken.wallet.test/1", data)

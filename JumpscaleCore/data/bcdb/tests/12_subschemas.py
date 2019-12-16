@@ -106,9 +106,6 @@ def main(self):
         md5 = j.data.schema.schemas[url]._md5
         s = bcdb.schema_get(md5=md5)  # need to start from bcdb
         assert s._md5 == md5
-
-        bcdb.meta._schema_exists(s._md5)
-        assert s._md5 == md5
         assert s.url == url
 
     return "OK"

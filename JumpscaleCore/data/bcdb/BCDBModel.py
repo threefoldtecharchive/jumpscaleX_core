@@ -336,6 +336,7 @@ class BCDBModel(j.baseclasses.object):
         if store:
             obj, stop = self._triggers_call(obj, action="set_pre")
             if stop:
+                assert obj.id
                 return obj
 
             self.bcdb._is_writable_check()
@@ -378,6 +379,10 @@ class BCDBModel(j.baseclasses.object):
             if obj.id is None:
                 # means a new one
                 obj.id = self.storclient.set(data)
+                if obj.id == 0:
+                    # need to skip the first one
+                    obj.id = self.storclient.set(data)
+
                 new = True
                 # self._log_debug("NEW:\n%s" % obj)
             else:

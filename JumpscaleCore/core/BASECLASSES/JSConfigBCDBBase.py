@@ -74,20 +74,22 @@ class JSConfigBCDBBase(JSBase, Attr):
                 else:
                     raise j.exceptions.JSBUG("cannot find _SCHEMATEXT on childclass or class itself")
 
-            first_schema_text = j.data.schema._schema_blocks_get(s)[0]
-            first_schema_text2 = self._process_schematext(first_schema_text)
-            first_schema = j.data.schema.get_from_text(first_schema_text2)
+            first_schema = None
+            res = []
+            for block in j.data.schema._schema_blocks_get(s):
+                if not first_schema and block:
+                    block = self._process_schematext(block)  # will add parent and other properties to first part
+                    first_schema = block
+                res.append(block)
+            s2 = "\n".join(res)
 
-            j.data.schema.get_from_text(s, skipfirst=True)
+            j.data.schema.get_from_text(s2)
 
             if j.data.bcdb._master:
                 self._model_ = self._bcdb.model_get(schema=first_schema)
             else:
                 self._model_ = j.clients.bcdbmodel.get(name=self._bcdb.name, schema=first_schema)
                 self._bcdb_ = self._model.bcdb
-
-            if not self._model_.schema._md5 == j.data.schema._md5(first_schema.text):
-                j.shell()
 
             assert self._model_.schema._md5 == j.data.schema._md5(first_schema.text)
 
