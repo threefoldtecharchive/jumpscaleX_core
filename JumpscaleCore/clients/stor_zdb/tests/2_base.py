@@ -5,15 +5,17 @@ import os
 def main(self):
     """
     to run:
-    
+
     kosmos 'j.clients.zdb._test_run(name="base")'
 
     """
 
-    c = self.client_admin_get(port=9901)
+    test = j.servers.zdb.test_instance
+
+    c = test.client_admin_get()
     c.namespace_new("test", secret="1234")
 
-    cl = self.client_get(name="test", addr="localhost", port=9901, secret="1234")
+    cl = test.client_get(nsname="test", secret="1234")
     cl.ping()
     cl.flush()
     nr = cl.nsinfo["entries"]
@@ -85,11 +87,11 @@ def main(self):
 
     nsname = "newnamespace"
 
-    c = self.client_admin_get(name="admin", port=9901)
+    c = test.client_admin_get()
 
     c.namespace_new(nsname, secret="1234", maxsize=1000)
 
-    ns = self.get(name=nsname, nsname=nsname, secret_="1234", port=9901)
+    ns = test.client_get(nsname=nsname, secret="1234")
     ns.flush()
 
     assert ns.nsinfo["data_limits_bytes"] == 1000

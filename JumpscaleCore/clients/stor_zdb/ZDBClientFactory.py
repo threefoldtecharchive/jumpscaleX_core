@@ -58,11 +58,11 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
     def client_admin_get(self, name="admin", addr="localhost", port=9901, secret="123456", mode="seq"):
         if self.exists(name=name):
             cl = self.get(name=name)
-            # we should make sure AUTH has been launched as zdb client admin comes from config
-            # and if we instanciated a new zdb server the AUTH command will not be executed
-            cl.auth()
         else:
             cl = self.get(name=name, nsname=name, addr=addr, port=port, secret_=secret, mode=mode, admin=True)
+        # we should make sure AUTH has been launched as zdb client admin comes from config
+        # and if we instanciated a new zdb server the AUTH command will not be executed
+        cl.auth()
         assert cl.admin == True
         assert self.exists(name=name)
         return cl
