@@ -217,9 +217,9 @@ class JSXObject2(j.data.schema._JSXObjectClass):
     def _str_get(self, ansi=True):
         out = ""
         if ansi:
-            out += "{BLUE}## %s\n{RESET}" % self._schema.url_str
+            out += "{BLUE}## %s\n{RESET}" % self._schema.url
         else:
-            out += "## %s\n" % self._schema.url_str
+            out += "## %s\n" % self._schema.url
         if self.id:
             if ansi:
                 out += "{GREEN}ID: %s\n{RESET}" % self.id
@@ -256,11 +256,3 @@ class JSXObject2(j.data.schema._JSXObjectClass):
             out += "{RESET}"
         out = j.core.tools.text_strip(out, replace=True,die_if_args_left=False)
         return out
-
-
-
-
-
-
-
-
