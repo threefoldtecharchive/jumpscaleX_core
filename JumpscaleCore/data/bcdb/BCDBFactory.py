@@ -48,9 +48,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         self._BCDBModelClass = BCDBModel  # j.data.bcdb._BCDBModelClass
 
-        # will make sure the toml schema's are loaded
-        j.data.schema.add_from_path("%s/models_system" % self._dirpath)
-
         self.__master = None
 
     @property
@@ -93,6 +90,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if not self._loaded:
 
             print("LOAD CONFIG BCDB")
+
+            # will make sure the toml schema's are loaded
+            j.data.schema.add_from_path("%s/models_system" % self._dirpath)
 
             if j.sal.fs.exists(self._config_data_path):
                 data_encrypted = j.sal.fs.readFile(self._config_data_path, binary=True)
@@ -287,6 +287,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             j.core.db.delete(key)
         for key in j.core.db.keys("queue*"):
             j.core.db.delete(key)
+
+        j.sal.fs.remove(j.core.tools.text_replace("{DIR_CFG}/schema_meta.msgpack"))
 
         self._loaded = False
         self._load()

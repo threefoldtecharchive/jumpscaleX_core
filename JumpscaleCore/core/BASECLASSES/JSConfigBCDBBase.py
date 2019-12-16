@@ -74,13 +74,12 @@ class JSConfigBCDBBase(JSBase, Attr):
                 else:
                     raise j.exceptions.JSBUG("cannot find _SCHEMATEXT on childclass or class itself")
 
-            first = True
+            first_schema = None
             res = []
             for block in j.data.schema._schema_blocks_get(s):
-                if first:
+                if not first_schema and block:
+                    block = self._process_schematext(block)  # will add parent and other properties to first part
                     first_schema = block
-                    block = self._process_schematext(first_schema)  # will add parent and other properties to first part
-                    first = False
                 res.append(block)
             s2 = "\n".join(res)
 

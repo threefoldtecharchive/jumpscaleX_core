@@ -105,7 +105,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         return client
 
-    def test(self, restart=False):
+    def test(self, name=None, restart=False):
         """
 
         kosmos -p 'j.servers.threebot.test()'
@@ -129,6 +129,16 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         # gedis_client.reload()
 
         self._test_run(name=name)
+
+    def test_explorer(self):
+        """
+
+        kosmos -p 'j.servers.threebot.test_explorer()'
+        :return:
+        """
+
+        j.servers.threebot.local_start_explorer(background=True)
+        j.shell()
 
     def _docker_jumpscale_get(self, name="3bot", delete=True):
         docker = j.core.dockerfactory.container_get(name=name, delete=delete)

@@ -57,7 +57,7 @@ class Schema(j.baseclasses.object):
         self._schema_from_text(text)
 
         if not self.url:
-            self.url = j.data.hash.md5_string(text)
+            raise j.exceptions.Input("url needs to be specified", data=text)
 
         self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
 

@@ -119,7 +119,14 @@ class SchemaFactory(j.baseclasses.factory_testtools):
             if not self.meta.exists(url=url):
                 raise j.exceptions.Input("Could not find schema with url:%s" % url)
             data = self.meta.schema_get(url=url)
-            self.get_from_text(data["text"])
+            self.get_from_text(data["text"], url=data["url"])
+            # return self.schemas_url[data["url"]]
+        if not url in self.schemas_url:
+            raise j.exceptions.Base("url schould be same as data[url]")
+            # j.debug()
+            # s = self.get_from_text(data["text"], url=url)
+            # j.shell()
+            # w
         return self.schemas_url[url]
 
     def is_multiple_schema_from_text(self, schema_text):
