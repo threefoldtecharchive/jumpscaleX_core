@@ -47,7 +47,6 @@ class SonicClient(BaseTest):
     @classmethod
     def tearDownClass(cls):
         j.servers.sonic.main.stop()
-        j.sal.process.killall("tmux")
 
     def test001_push_collection_bucket(self):
         """

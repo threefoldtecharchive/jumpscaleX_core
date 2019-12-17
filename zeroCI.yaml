@@ -1,6 +1,5 @@
 prequisties:
   - jsx
-  - docker
 
 install:
   - apt-get update
