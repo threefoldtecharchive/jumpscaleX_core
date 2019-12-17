@@ -20,7 +20,7 @@ class BCDBModelClient(j.baseclasses.object):
         self.find_ids = self.model.find_ids
         self.get_by_name = self.model.get_by_name
 
-        if not self.bcdb.readonly:
+        if j.data.bcdb._master:
             self.trigger_add = self.model.trigger_add
         else:
             self._rediscl_.execute_command(
@@ -29,7 +29,7 @@ class BCDBModelClient(j.baseclasses.object):
 
         self.index = self.model.index
 
-        if self.bcdb.readonly:
+        if not j.data.bcdb._master:
             self.model.trigger_add(self._set_trigger)
 
     def get(self, id):
