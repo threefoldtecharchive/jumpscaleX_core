@@ -60,15 +60,9 @@ class TesterFactory(j.baseclasses.factory_testtools):
 
         try:
             j.servers.myjobs.schedule(self._start_libs(), die=False)
-        except Exception as e:
-            raise j.exceptions.RuntimeError("problem in my jobs %s", str(e))
-        try:
             j.servers.myjobs.schedule(self._start_core(), die=False)
-        except Exception as e:
-            raise j.exceptions.RuntimeError("problem in my jobs %s", str(e))
-        try:
             j.servers.myjobs.schedule(self._start_threebot(), die=False)
-        except:
+        except Exception as e:
             raise j.exceptions.RuntimeError("problem in my jobs %s", str(e))
 
         print("ALL TEST OK")
