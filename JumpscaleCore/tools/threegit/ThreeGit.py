@@ -23,18 +23,12 @@ class ThreeGit(j.baseclasses.object_config):
         self.docsites = {}
         self._git_repos = {}
 
-    def macros_load(self, path_or_url=None):
-        """
-        @param path_or_url can be existing path or url
-        """
-        self._log_info("load macros:%s" % path_or_url)
+    def macros_load(self, path=None):
+        """load all macros code dynamically"""
+        self._log_info("load macros...")
 
-        if not path_or_url:
-            path_or_url = (
-                "https://github.com/threefoldtech/jumpscaleX_libs/tree/*/JumpscaleLibs/tools/markdowndocs/macros"
-            )
-
-        path = j.clients.git.getContentPathFromURLorPath(path_or_url)
+        if not path:
+            path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), "macros")
 
         if path not in self._macros_modules:
 
@@ -98,7 +92,7 @@ class ThreeGit(j.baseclasses.object_config):
                 current_branch = j.clients.git.getCurrentBranch(repo_dest)
                 path = Linker.replace_branch(path, current_branch, host)
             path = self.find_docs_path(j.clients.git.getContentPathFromURLorPath(path, pull=pull), base_path)
-        ds = DocSite(path=path, name=name, dest=dest)
+        ds = DocSite(path=path, name=name, dest=dest, threegit=self)
         self.docsites[ds.name] = ds
         return self.docsites[ds.name]
 

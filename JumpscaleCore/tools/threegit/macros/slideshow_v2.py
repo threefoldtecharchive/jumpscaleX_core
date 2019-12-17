@@ -123,7 +123,7 @@ def slideshow_v2(doc, **kwargs):
         dest = j.sal.fs.joinPaths(
             doc.docsite.outpath, doc.path_dir_rel, slide.presentation_guid, str(slide.order) + ".png"
         )
-        j.sal.fs.copyFIle(filepath, dest)
+        j.sal.fs.copyFile(filepath, dest)
         image_tag = """
         <img src="$path{dest}" alt='{slide_name}'"/>
         """.format(
