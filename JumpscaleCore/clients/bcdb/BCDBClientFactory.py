@@ -56,7 +56,7 @@ class BCDBModelClient(j.baseclasses.object):
         if self.bcdb.readonly:
             key = f"{self.name}:data:{obj._schema.url}"
             assert obj.id
-            self._rediscl_.delete(key, str(obj.id))
+            self._rediscl_.hdel(key, str(obj.id))
         else:
             return self.model.delete(obj=obj)
 
@@ -107,6 +107,16 @@ class BCDBModelClientFactory(j.baseclasses.object):
                 raise j.exceptions.Input("bcdb:'%s' has not been configured yet" % name)
             self._clients[key] = BCDBModelClient(name=name, url=url)
         return self._clients[key]
+
+    @property
+    def schemas(self):
+        res = {}
+        for name, bcdb in j.data.bcdb.instances.items():
+            models = res.get(name, [])
+            for model in bcdb.models:
+                models.append(model)
+            res[name] = models
+        return res
 
     def test(self):
         """
