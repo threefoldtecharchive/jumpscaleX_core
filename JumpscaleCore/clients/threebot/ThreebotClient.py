@@ -40,14 +40,30 @@ class ThreebotClient(JSConfigBase):
         return self._gedis_connections[packagename]
 
     def actors_get(self, package_name="all"):
+        actors = []
+        all_gedis_connections = []
         if not package_name in self._gedis_connections:
             name = "" if package_name is "all" else package_name
             if package_name == "all":
-                raise RuntimeError("not implemented")
-                # TODO: need to query the package manager (there is actor for it on package manager) and see which actors there are (for 1 package or for all)
-            g = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, package_name=name)
-            self._gedis_connections[package_name] = g
-        return self._gedis_connections[package_name].actors
+                package_manager_actor = j.clients.gedis.get(
+                    name=self.name, host=self.host, port=self.port, package_name="zerobot.packagemanager"
+                ).actors.package_manager
+                all_gedis_connections = []
+                for package in package_manager_actor.packages_list().packages:
+                    name = package.name
+                    g = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, package_name=name)
+                    all_gedis_connections.append(g)
+                    actors.append(g.actors)
+            else:
+                g = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, package_name=name)
+                all_gedis_connections.append(g)
+                actors = g.actors
+            self._gedis_connections[package_name] = all_gedis_connections
+        else:
+            gedis_connections = self._gedis_connections[package_name]
+            for gedis_connection in gedis_connections:
+                actors.append(gedis_connection.actors)
+        return actors
 
     def reload(self):
         for key, g in self._gedis_connections.items():
