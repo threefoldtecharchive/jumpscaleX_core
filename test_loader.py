@@ -42,4 +42,13 @@ class CoreTests(TestCase):
         ]
     )
     def test(self, cmd):
-        eval(cmd)
+        if cmd == "j.data.bcdb.test()":
+            self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/340") 
+        elif cmd == "j.data.schema.test()":
+            self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/356") 
+        elif cmd == "j.clients.zdb.test()":
+            self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/361") 
+        elif cmd == "j.servers.myjobs.test()":
+            self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/342") 
+        else:
+            eval(cmd)
