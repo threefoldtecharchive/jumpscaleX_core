@@ -298,6 +298,15 @@ class RedisServer(j.baseclasses.object):
         return bcdb_name, url, id
 
     def get(self, response, key):
+        if key == "schemas":
+            res = {}
+            for name, bcdb in self.bcdb.instances.items():
+                res2 = []
+                for model in bcdb.models:
+                    res2.append(model.schema.text)
+                res[name] = res2
+            response.encode(j.data.serializers.json.dumps(res))
+            return
         bcdb_name, url, id = self._parse_key(key)
         model = j.clients.bcdbmodel.get(name=bcdb_name, url=url)
         try:

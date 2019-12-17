@@ -268,12 +268,6 @@ class BCDBVFS(j.baseclasses.object):
             self._dirs_cache[key] = res
         return key
 
-    def _force_schema_add(self, schema_hash):
-        if j.data.schema.exists(schema_hash):
-            self._bcdb.meta._schema_set(j.data.schema.get_from_md5(schema_hash))
-        else:
-            raise Exception("Can't find schema with hash:%s" % (schema_hash), 5)
-
     def _find_schema_by_url(self, url):
         # TODO OPTIMIZE OR FIND ANOTHER WAY
         s = self._bcdb.schema_get(url=url)
@@ -305,15 +299,13 @@ class BCDBVFS(j.baseclasses.object):
 
     def _add_schema(self, schema):
 
-        self._bcdb.meta._schema_set(schema)  # add the schema to the bcdb meta
-        self._bcdb.model_get(schema=schema)  # should create the model based on the schema
-        s_obj = self._find_schema_by_url(schema.url)
-        key_url = "%s_schemas_%s" % (self.current_bcbd_name, s_obj.url)
+        s = j.clients.bcdbmodel.get(schema=schema)  # add the schema
+        key_url = "%s_schemas_%s" % (self.current_bcbd_name, s.schema.url)
 
         # we do not check if it exist as anyway it will
         # replace the latest schema with this url
-        self._dirs_cache[key_url] = BCDBVFS_Schema(self, key=key_url, item=s_obj)
-        return s_obj
+        self._dirs_cache[key_url] = BCDBVFS_Schema(self, key=key_url, item=s.schema)
+        return s
 
     def add_schemas(self, schemas_text=None, bcdb_name=None):
         """set a new schema based on their text to the current bcdb
@@ -330,7 +322,7 @@ class BCDBVFS(j.baseclasses.object):
             multiple = False
             if j.data.schema.is_multiple_schema_from_text(schemas_text):
                 multiple = True
-            schemas = j.data.schema.get_from_text(schemas_text, multiple=multiple)
+            schemas = j.data.schema.get_from_text(schemas_text, multiple=True)
             if schemas:
                 if not multiple:
                     self._add_schema(schemas)

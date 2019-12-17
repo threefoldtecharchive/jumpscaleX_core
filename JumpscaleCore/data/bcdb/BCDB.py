@@ -369,7 +369,7 @@ class BCDB(j.baseclasses.object):
             self._sqlite_index_client = None
 
     def redis_server_start(self, port=6380, secret="123456"):
-        self.redis_server_get(port=port, secret=secret)
+        self.redis_server = j.data.bcdb.redis_server_get(port=port, secret=secret)
         self.redis_server.start()
 
     def redis_server_wait_up(self, port, timeout=60):
@@ -451,11 +451,11 @@ class BCDB(j.baseclasses.object):
 
         assert self.storclient
 
-        self.storclient.flush()  # Always flush store client, making sure it's empty!
-
         self._redis_reset()
         j.sal.fs.remove(self._data_dir)
         j.sal.fs.createDir(self._data_dir)
+        if self.storclient.type != "SDB":
+            self.storclient.flush()  # not needed for sqlite because closed and dir will be deleted
         # all data is now removed, can be done because sqlite client should be None
 
         # since delete the data directory above, we have to re-init the storclient
@@ -492,7 +492,7 @@ class BCDB(j.baseclasses.object):
         # this always needs to work, independent of state of index
         for model in self.models:
             # make sure indexes are empty
-            model.index.destroy()
+            j.clients.bcdbmodel.get(model).index.destroy()
         first = True
 
         for id, data in self.storclient.iterate():
@@ -502,18 +502,6 @@ class BCDB(j.baseclasses.object):
             jsxobj = self._unserialize(id, data)
             model = self.model_get(schema=jsxobj._schema)
             model.set(jsxobj, store=False, index=True)
-
-    # @property
-    # def models(self):
-    #     # this needs to happen to make sure all models are loaded because there is lazy loading now
-    #
-    #     for s in self.meta.schema_dicts:
-    #         if s["url"] not in self._schema_url_to_model:
-    #             assert s["url"]
-    #             schema = j.data.schema.get_from_url(s["url"])
-    #             self.model_get(schema=schema)
-    #     for key, model in self.models.items():
-    #         yield model
 
     def model_get(self, schema=None, md5=None, url=None, reset=False):
         """
