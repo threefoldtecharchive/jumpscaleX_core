@@ -18,7 +18,7 @@ class ThreebotExplorer(j.baseclasses.object):
 
     @property
     def actors(self):
-        return self._client.actors_all
+        return self._client.actors_get("tfgrid.phonebook")
 
     def reload(self):
         self._client.reload()

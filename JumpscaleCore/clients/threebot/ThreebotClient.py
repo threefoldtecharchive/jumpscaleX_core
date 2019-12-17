@@ -41,7 +41,7 @@ class ThreebotClient(JSConfigBase):
 
     def actors_get(self, package_name="all"):
         if not package_name in self._gedis_connections:
-            name = "" if "all" else package_name
+            name = "" if package_name is "all" else package_name
             if package_name == "all":
                 raise RuntimeError("not implemented")
                 # TODO: need to query the package manager (there is actor for it on package manager) and see which actors there are (for 1 package or for all)
