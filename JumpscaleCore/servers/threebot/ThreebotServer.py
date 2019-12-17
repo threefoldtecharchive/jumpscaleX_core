@@ -292,7 +292,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                 j.threebot.__dict__.pop("package")
             # LETS NOT DO SERVERS YET, STILL BREAKS TOO MUCH
             # j.__dict__.pop("servers")
-            j.__dict__.pop("builders")
+            # j.__dict__.pop("builders")
             # j.__dict__.pop("shell")
             # j.__dict__.pop("shelli")
             j.__dict__.pop("tutorials")
