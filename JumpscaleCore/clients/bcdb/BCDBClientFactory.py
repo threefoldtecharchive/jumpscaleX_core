@@ -56,7 +56,7 @@ class BCDBModelClient(j.baseclasses.object):
         if self.bcdb.readonly:
             key = f"{self.name}:data:{obj._schema.url}"
             assert obj.id
-            self._rediscl_.delete(key, str(obj.id))
+            self._rediscl_.hdel(key, str(obj.id))
         else:
             return self.model.delete(obj=obj)
 

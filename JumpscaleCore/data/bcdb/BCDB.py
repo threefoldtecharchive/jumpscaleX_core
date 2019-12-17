@@ -461,7 +461,8 @@ class BCDB(j.baseclasses.object):
         # since delete the data directory above, we have to re-init the storclient
         # so it can do its things and re-connect properly
         self.storclient._init(nsname=self.storclient.nsname)
-
+        if self.storclient.type == "SDB":
+            self.storclient.flush()
         self._init_props_()
         self._init_system_objects()
 
