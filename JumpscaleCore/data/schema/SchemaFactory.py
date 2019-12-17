@@ -140,7 +140,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         blocks = self._schema_blocks_get(schema_text)
         return len(blocks) > 1
 
-    def get_from_text(self, schema_text, url=None, skipfirst=False, multiple=False):
+    def get_from_text(self, schema_text, url=None):
         """
         will return the first schema specified if more than 1
 
@@ -151,17 +151,16 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         self._check_bcdb_is_not_used()
         res = []
         blocks = self._schema_blocks_get(schema_text)
-        if len(blocks) > 1 and url:
-            raise j.exceptions.Input("cannot support add from text with url if more than 1 block")
         for i, block in enumerate(blocks):
-            if i == 0 and skipfirst:
-                continue
-            res.append(self._get_from_text_single(block, url=url))
-        if not multiple:
-            if len(res) > 0:
-                return res[0]
-        else:
-            return res
+            if i == 0:
+                # first one can take url
+                res.append(self._get_from_text_single(block, url=url))
+            else:
+                # 2nd one needs to have url specified
+                res.append(self._get_from_text_single(block))
+
+        if len(res) > 0:
+            return res[0]
 
     def _get_from_text_single(self, schema_text, url=None):
         """
