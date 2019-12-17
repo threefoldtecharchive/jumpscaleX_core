@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 
 
@@ -66,8 +46,8 @@ def main(self):
             u.name = "ikke_%s" % i
             u.email = "user%s@me.com" % i
             u.dm_id = "user%s.ibiza" % i
-            u.threebot_id = 'fake.%s.3bot'%i
-            u.ipaddr = '122.12.21.22'
+            u.threebot_id = "fake.%s.3bot" % i
+            u.ipaddr = "122.12.21.22"
             u.save()
 
         for i in range(10):
@@ -77,7 +57,7 @@ def main(self):
             g.dm_id = "circle%s.ibiza" % i
             g.circle_members = [x for x in range(12, 14)]
             g.user_members = [x for x in range(1, i + 1)]
-            g.threebot_id = 'fake2.3bot'
+            g.threebot_id = "fake2.3bot"
             g.save()
 
         assert len(bcdb.user.find()) == 10
@@ -176,8 +156,8 @@ def main(self):
             u.name = "testing_%s" % i
             u.email = "user%s@me.com" % i
             u.dm_id = "user%s.ibiza" % i
-            u.threebot_id = 'fake.%s.3bot' % i
-            u.ipaddr = '10.10.10.10'
+            u.threebot_id = "fake.%s.3bot" % i
+            u.ipaddr = "10.10.10.10"
             u.save()
             user_ids.append(u.id)
 
@@ -186,7 +166,7 @@ def main(self):
         circle_admins.email = "admina@me.com"
         circle_admins.dm_id = "admins.ibiza"
         circle_admins.user_members = user_ids[4]
-        circle_admins.threebot_id = 'fake.134.3bot'
+        circle_admins.threebot_id = "fake.134.3bot"
         circle_admins.save()
 
         circle_publishers = bcdb.circle.new()
@@ -195,7 +175,7 @@ def main(self):
         circle_publishers.dm_id = "publishers.ibiza"
         circle_publishers.user_members = user_ids[2:4]
         circle_publishers.circle_members = [circle_admins.id]
-        circle_publishers.threebot_id = 'fake.135.3bot'
+        circle_publishers.threebot_id = "fake.135.3bot"
         circle_publishers.save()
 
         circle_guests = bcdb.circle.new()
@@ -204,7 +184,7 @@ def main(self):
         circle_guests.dm_id = "guests.ibiza"
         circle_guests.user_members = user_ids[0:2]
         circle_guests.circle_members = [circle_publishers.id]
-        circle_guests.threebot_id = 'fake.136.3bot'
+        circle_guests.threebot_id = "fake.136.3bot"
         circle_guests.save()
 
         aa = m.new()

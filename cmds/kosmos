@@ -12,10 +12,11 @@ if True or "-p" in sys.argv:
     # monkey.patch_socket()
     # monkey.patch_time()
 
-
 import sys
 from Jumpscale import j
 
+if "-s" in sys.argv:
+    j.application.__slave = True
 
 # j.tools.bash.get().profile.locale_check()
 

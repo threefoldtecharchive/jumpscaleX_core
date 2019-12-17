@@ -153,18 +153,60 @@ class RedisServer(j.baseclasses.object):
                 method(response, *args)
                 continue
 
-    def bcdb_model_init(self, response, bcdbname, url):
+    def bcdb_model_init(self, response, bcdbname, url, md5, schema):
 
         if not j.data.bcdb.exists(bcdbname):
             response.error("COULD NOT FIND BCDB:%s" % bcdbname)
             return
 
+        if bcdbname in [None, "", b""]:
+            bcdbname = None
+
+        if url in [None, "", b""]:
+            url = None
+
+        if md5 in [None, "", b""]:
+            md5 = None
+
+        if schema in [None, "", b""]:
+            schema = None
+
+        if not bcdbname:
+            # means we can only reload
+            j.data.bcdb.config_reload()
+            response.encode("OK")
+            return
+
+        if md5:
+            if md5 in j.data.schema.schemas:
+                # means we know it schema not needed
+                schema = None
+            else:
+                # means we don't know it yet, need to make sure schema based on url is removed out of cache
+                if url and url in j.data.schema.schemas:
+                    j.data.schema.schema_cache_remove(url)
+
+        if schema:
+            assert isinstance(schema, str)
+            schema = j.data.schema.get_from_text(schema, url=url)
+            url = schema.url
+
+        assert url
+
+        if not j.data.bcdb.exists(bcdbname):
+            # need to make sure to load, because maybe a slave has added a new one
+            j.data.bcdb.config_reload()
+
         bcdb = j.data.bcdb.get(bcdbname)
+
         if not j.data.schema.exists(url=url):
             response.error("COULD NOT FIND SCHEMA WITH URL:%s" % url)
             return
 
         model = bcdb.model_get(url=url)
+        if md5:
+            # double check schema is ok
+            assert model.schema._md5 == md5
         model.index.sql_index_count()
 
         response.encode("OK")
@@ -232,7 +274,7 @@ class RedisServer(j.baseclasses.object):
                 response.error("cannot set, key:'%s' not supported" % key)
         else:
             bcdb_name, url, id = self._parse_key(key)
-            model = j.clients.bcdb.get(name=bcdb_name, url=url)
+            model = j.clients.bcdbmodel.get(name=bcdb_name, url=url)
             try:
                 obj = model.new(data=val)
                 obj.save()
@@ -256,8 +298,17 @@ class RedisServer(j.baseclasses.object):
         return bcdb_name, url, id
 
     def get(self, response, key):
+        if key == "schemas":
+            res = {}
+            for name, bcdb in self.bcdb.instances.items():
+                res2 = []
+                for model in bcdb.models:
+                    res2.append(model.schema.text)
+                res[name] = res2
+            response.encode(j.data.serializers.json.dumps(res))
+            return
         bcdb_name, url, id = self._parse_key(key)
-        model = j.clients.bcdb.get(name=bcdb_name, url=url)
+        model = j.clients.bcdbmodel.get(name=bcdb_name, url=url)
         try:
             obj = model.get(id)
         except:
@@ -266,7 +317,7 @@ class RedisServer(j.baseclasses.object):
 
     def delete(self, response, key):
         bcdb_name, url, id = self._parse_key(key)
-        model = j.clients.bcdb.get(name=bcdb_name, url=url)
+        model = j.clients.bcdbmodel.get(name=bcdb_name, url=url)
         try:
             model.delete(id)
             response.encode(1)
@@ -339,7 +390,7 @@ class RedisServer(j.baseclasses.object):
         res = []
         cat, url, key, model = self._split(key)
         if cat == "schemas":
-            res.append(model.mid)
+            res.append(model.key)
             res.append(model.schema.text)
 
         else:

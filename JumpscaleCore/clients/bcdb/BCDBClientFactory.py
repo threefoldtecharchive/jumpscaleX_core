@@ -1,13 +1,15 @@
 from Jumpscale import j
 
 
-class BCDBClient(j.baseclasses.object):
+class BCDBModelClient(j.baseclasses.object):
     def _init(self, **kwargs):
         self.name = kwargs["name"]
         self.bcdb = j.data.bcdb.get(name=self.name)
         self.model = self.bcdb.model_get(url=kwargs["url"])
         self.schema = self.model.schema
-        self._rediscl__ = None
+
+        if self.bcdb.readonly:
+            self._rediscl_ = j.clients.bcdbmodel._rediscl_
 
         self.iterate = self.model.iterate
         self.search = self.model.search
@@ -20,18 +22,14 @@ class BCDBClient(j.baseclasses.object):
         if not self.bcdb.readonly:
             self.trigger_add = self.model.trigger_add
         else:
-            self._rediscl_.execute_command("bcdb_model_init", self.bcdb.name, self.model.schema.url)
+            self._rediscl_.execute_command(
+                "bcdb_model_init", self.bcdb.name, self.model.schema.url, self.model.schema._md5, self.model.schema.text
+            )
 
         self.index = self.model.index
 
         if self.bcdb.readonly:
             self.model.trigger_add(self._set_trigger)
-
-    @property
-    def _rediscl_(self):
-        if not self._rediscl__:
-            self._rediscl__ = j.clients.redis.get(port=6380)
-        return self._rediscl__
 
     def get(self, id):
         if self.bcdb.readonly:
@@ -71,12 +69,22 @@ class BCDBClient(j.baseclasses.object):
         return obj, False
 
 
-class BCDBClientFactory(j.baseclasses.object):
+class BCDBModelClientFactory(j.baseclasses.object):
 
-    __jslocation__ = "j.clients.bcdb"
+    __jslocation__ = "j.clients.bcdbmodel"
 
     def _init(self, **kwargs):
         self._clients = j.baseclasses.dict()
+        self._rediscl__ = None
+
+    @property
+    def _rediscl_(self):
+        if not self._rediscl__:
+            self._rediscl__ = j.clients.redis.get(port=6380)
+        return self._rediscl__
+
+    def server_config_reload(self):
+        r = self._rediscl_.execute_command("bcdb_model_init", "", "", "", "")
 
     def get(self, url=None, schema=None, name=None):
         """
@@ -85,26 +93,30 @@ class BCDBClientFactory(j.baseclasses.object):
         """
         if schema:
             assert not url
-            schema = j.data.schema.get_from_text(schema)
+            if isinstance(schema, str):
+                schema = j.data.schema.get_from_text(schema)
+
             url = schema.url
         if not name:
             name = "system"
+        if not url and not schema:
+            url = "jumpscale.bcdb.user.2"
         key = f"{name}_{url}"
         if key not in self._clients:
             if name != "system" and not j.data.bcdb.exists(name):
                 raise j.exceptions.Input("bcdb:'%s' has not been configured yet" % name)
-            self._clients[key] = BCDBClient(name=name, url=url)
+            self._clients[key] = BCDBModelClient(name=name, url=url)
         return self._clients[key]
 
     def test(self):
         """
-        kosmos -p 'j.clients.bcdb.test()'
+        kosmos -p 'j.clients.bcdbmodel.test()'
         :return:
         """
 
         # j.servers.threebot.local_start_default(background=True)
 
-        b = j.clients.bcdb.get(url="jumpscale.sshclient.1")
+        b = j.clients.bcdbmodel.get(url="jumpscale.sshclient.1")
 
         print(b.find())
 

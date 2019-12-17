@@ -54,7 +54,10 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         return self.local_start_default(background=background, packages=packages, reload=reload)
 
     def local_start_explorer(self, background=False, reload=False):
-        """starts 3bot with phonebook, directory, workloads packages.
+        """
+
+        starts 3bot with phonebook, directory, workloads packages.
+
         kosmos -p 'j.servers.threebot.local_start_explorer()'
 
         """
@@ -62,7 +65,6 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/phonebook",
             f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/directory",
             f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/workloads",
-            f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/threebot_provisioning",
         ]
         return self.local_start_default(background=background, packages=packages, reload=reload)
 
@@ -91,17 +93,21 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
             self.install()
             client = self.default.start(background=background, packages=packages)
+            assert "." in client.package_name
         else:
-            client = j.clients.gedis.client_get(name="threebot", port=8901)
+            client = j.clients.gedis.get(name="threebot", port=8901)
+            if not "." in client.package_name:
+                j.shell()
+            assert "." in client.package_name
 
         for package_path in packages:
             client.actors.package_manager.package_add(path=package_path)
 
-        client.reload()  # normally reload should be done already in the client_get...
+        client.reload()
 
         return client
 
-    def test(self, restart=False):
+    def test(self, name=None, restart=False):
         """
 
         kosmos -p 'j.servers.threebot.test()'
@@ -125,6 +131,16 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         # gedis_client.reload()
 
         self._test_run(name=name)
+
+    def test_explorer(self):
+        """
+
+        kosmos -p 'j.servers.threebot.test_explorer()'
+        :return:
+        """
+
+        j.servers.threebot.local_start_explorer(background=True)
+        j.shell()
 
     def _docker_jumpscale_get(self, name="3bot", delete=True):
         docker = j.core.dockerfactory.container_get(name=name, delete=delete)

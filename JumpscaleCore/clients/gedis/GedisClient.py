@@ -21,7 +21,7 @@ class GedisClient(JSConfigBase):
     name** = "main"
     host = "127.0.0.1" (S)
     port = 8901 (ipport)
-    package_name = "" (S)  #is the full package name e.g. threebot.blog
+    package_name = "zerobot.base" (S)  #is the full package name e.g. threebot.blog
     threebot_local_profile = "default"
     password_ = ""
     # ssl = False (B)
@@ -35,6 +35,9 @@ class GedisClient(JSConfigBase):
         self._actorsmeta = {}
         if not self.package_name:
             self.package_name = "zerobot.base"
+            self.save()
+        assert self.package_name
+        assert "." in self.package_name
         self.schemas = None
         self._actors = None
         if "package_name" in kwargs and kwargs["package_name"] and self.package_name != kwargs["package_name"]:
@@ -49,11 +52,14 @@ class GedisClient(JSConfigBase):
         self._threebot_me_ = None
         self._reset()
         self.reload()
-        self._model.trigger_add(self._update_trigger)
 
-    def _update_trigger(self, obj, action, **kwargs):
-        if action in ["save", "change"]:
-            self._reset()
+        # TODO: KRISTOF URGENT
+
+    #     self._model.trigger_add(self._update_trigger)
+    #
+    # def _update_trigger(self, obj, action, **kwargs):
+    #     if action in ["save", "change"]:
+    #         self._reset()
 
     def _reset(self):
         self._redis_ = None  # connection to server

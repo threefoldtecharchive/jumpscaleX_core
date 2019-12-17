@@ -1,21 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
 
 
 from Jumpscale import j
@@ -40,7 +22,7 @@ class {{BASENAME}}(BCDBModelIndex):
                 # print("*%s"%db)
                 database = self.db
 
-        class Index_{{schema.key}}_{{model.mid}}(BaseModel):
+        class Index_{{schema.key}}(BaseModel):
             id = p.IntegerField(unique=True)
             nid = p.IntegerField(index=True) #need to store the namespace id
             {%- for field in index.fields %}
@@ -51,11 +33,11 @@ class {{BASENAME}}(BCDBModelIndex):
             {%- endif %}
             {%- endfor %}
 
-        self.sql = Index_{{schema.key}}_{{model.mid}}
+        self.sql = Index_{{schema.key}}
         self.sql.create_table(safe=True)
         self._schema_md5_generated = "{{schema._md5}}"
 
-        self.sql_table_name = "index_{{schema.key}}_{{model.mid}}".lower()
+        self.sql_table_name = "index_{{schema.key}}".lower()
 
 
     def _sql_index_set(self,obj):

@@ -29,7 +29,7 @@ def main(self):
 
     """
     j.servers.sonic.default.stop()
-    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.servers.threebot.default.adminsecret_))
+    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.core.myenv.adminsecret))
     sonic.start()
 
     data = [

@@ -370,8 +370,12 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
 
         cl = j.servers.threebot.local_start_default()
 
+        cl.reload()
+
+        j.shell()
+
         cl.actors.package_manager.package_add(
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook"
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/tfgrid/phonebook"
         )
 
         self._threebot_client_default = cl

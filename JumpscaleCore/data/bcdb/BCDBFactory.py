@@ -37,6 +37,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         self._log_debug("bcdb starts")
         self._loaded = False
         self._path = j.sal.fs.getDirName(os.path.abspath(__file__))
+        self._config_data_path = j.core.tools.text_replace("{DIR_CFG}/bcdb_config")
 
         self._code_generation_dir_ = None
 
@@ -47,8 +48,42 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         self._BCDBModelClass = BCDBModel  # j.data.bcdb._BCDBModelClass
 
-        # will make sure the toml schema's are loaded
-        j.data.schema.add_from_path("%s/models_system" % self._dirpath)
+        self.__master = None
+
+    @property
+    def _master(self):
+        if self.__master == None:
+            if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
+                self.__master = False
+            else:
+                self.__master = True
+        return self.__master
+
+    def config_reload(self):
+        self._loaded = False
+        self._load()
+
+    def unlock(self):
+        base_path = j.core.tools.text_replace("{DIR_BASE}/var/bcdb/")
+        instances = []
+        if j.sal.fs.exists(base_path):
+            instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
+            for instance in instances:
+                lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
+                if j.sal.fs.exists(lock_path):
+                    j.sal.fs.remove(lock_path)
+                    self._log_info(f"BCDB instance {instance} unlocked")
+
+    def lock(self):
+        base_path = j.core.tools.text_replace("{DIR_BASE}/var/bcdb/")
+        instances = []
+        instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
+        for instance in instances:
+            lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
+            if not j.sal.fs.exists(lock_path):
+                j.sal.fs.touch(lock_path)
+                self._log_info(f"BCDB instance {instance} unlocked")
+        self.__master = True
 
     def _load(self):
 
@@ -56,7 +91,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
             print("LOAD CONFIG BCDB")
 
-            self._config_data_path = j.core.tools.text_replace("{DIR_CFG}/bcdb_config")
+            # will make sure the toml schema's are loaded
+            j.data.schema.add_from_path("%s/models_system" % self._dirpath)
+
             if j.sal.fs.exists(self._config_data_path):
                 data_encrypted = j.sal.fs.readFile(self._config_data_path, binary=True)
                 try:
@@ -104,7 +141,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         """
         self.system
         # because will be visible on filesystem
-        adminsecret_ = j.data.hash.md5_string(j.servers.threebot.default.adminsecret_)
+        adminsecret_ = j.data.hash.md5_string(j.core.myenv.adminsecret)
 
         if reset:
             zdb = j.servers.zdb.get(name="threebot")
@@ -130,7 +167,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         return (s, z)
 
     def get_test(self, reset=False):
-        bcdb = j.data.bcdb.new(name="testbcdb")
+        bcdb = j.data.bcdb.get(name="testbcdb")
         bcdb2 = j.data.bcdb._instances["testbcdb"]
         assert bcdb2.storclient == None
         return bcdb
@@ -197,7 +234,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         # TODO:
         pass
 
-    def reset(self):
+    def reset_connections(self):
         """
         will remove all remembered connections
         :return:
@@ -215,6 +252,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         all data will be lost
         :return:
         """
+        if not self._master:
+            raise j.exceptions.Base("cannot destory BCDB when not master")
+
         self._load()
         names = [name for name in self._config.keys()]
 
@@ -248,6 +288,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         for key in j.core.db.keys("queue*"):
             j.core.db.delete(key)
 
+        j.sal.fs.remove(j.core.tools.text_replace("{DIR_CFG}/schema_meta.msgpack"))
+
         self._loaded = False
         self._load()
         assert self._config == {}
@@ -264,6 +306,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         return name in self._config
 
     def destroy(self, name):
+        if not self._master:
+            raise j.exceptions.Base("cannot destory BCDB when not master")
         self._load()
         assert name
         assert isinstance(name, str)
@@ -334,7 +378,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if name in self._config and not storclient:
             storclient = self._get_storclient(name)
 
-        if not self.exists(name=name) :
+        if not self.exists(name=name):
             self._new(name=name, storclient=storclient)  # we create object in config of bcdb factory
 
         b = self._get(name=name, storclient=storclient, reset=reset)  # make instance of bcdb
@@ -439,6 +483,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         self._config_write()
         self._load()
 
+        if not self._master:
+            # we have changed the config of bcdb, need to make sure server knows about it
+            j.clients.bcdbmodel.server_config_reload()
+
     @property
     def _code_generation_dir(self):
         if not self._code_generation_dir_:
@@ -453,7 +501,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
     def migrate(self, base_url, second_url, bcdb="system", **kwargs):
         """
-        #TODO: what is this doing?
         """
         bcdb_instance = self.get(bcdb)
         base_model = bcdb_instance.model_get(url=base_url)
@@ -484,7 +531,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                 # create new one
         schema = bcdb_instance.schema_get(url=second_url)
 
-        bcdb_instance.meta._migrate_meta(schema)
+        raise RuntimeError("not implemented")
+        # bcdb_instance.meta._migrate_meta(schema)
 
     def redis_server_get(self, port=6380, secret="123456", addr="127.0.0.1"):
         self.redis_server = RedisServer(bcdb=self, port=port, secret=secret, addr=addr)
@@ -558,8 +606,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         bcdb.reset()  # empty
 
-        assert bcdb.storclient.get(0)
-        assert bcdb.storclient.count == 1
+        assert bcdb.storclient.count == 0
 
         assert bcdb.name == "test"
 
@@ -570,7 +617,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         if type.lower() in ["zdb"]:
             # print(model.storclient.nsinfo["entries"])
-            assert model.storclient.nsinfo["entries"] == 1
+            assert model.storclient.nsinfo["entries"] == 0
 
         assert len(model.find()) == 0
 

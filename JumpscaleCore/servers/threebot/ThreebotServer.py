@@ -58,7 +58,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         name** = "main" (S)
         executor = tmux,corex (E)
         adminsecret_ = ""  (S)
-        state = "init,installed"
+        state = "init,installed" (E)
         """
 
     def _init(self, **kwargs):
@@ -86,10 +86,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         if not self.adminsecret_:
             self.adminsecret_ = secret
             assert self.adminsecret_
-
-        if self.state == "init":
-            j.tools.threebot_packages.load()
-            self.state = "installed"
 
         if self.executor == "corex":
             raise j.exceptions.Input("only tmux supported for now")
@@ -161,7 +157,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         # check all models are mapped to global namespace
         for bcdb in j.data.bcdb.instances.values():
             if bcdb.name not in j.threebot.bcdb.__dict__:
-                j.threebot.bcdb.__dict__[bcdb.name] = bcdb.children
+                j.threebot.bcdb.__dict__[bcdb.name] = bcdb.models
 
         # check state workers
         for key, worker in j.threebot.myjobs.workers._children.items():
@@ -210,13 +206,13 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.zdb  # will start sonic & zdb
             self.sonic
 
-            j.data.bcdb.system.lock.acquire()
+            # will make sure all BCDB's are locked
+            j.data.bcdb.lock()
+
+            # make sure client for myjobs properly configured
             j.core.db.redisconfig_name = "core"
             storclient = j.clients.rdb.client_get(redisclient=j.core.db)
             myjobs_bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
-            myjobs_bcdb.lock.acquire()
-            j.servers.myjobs
-            assert j.data.bcdb.instances.myjobs.lock.fd
 
             j.threebot.servers = Servers()
             j.threebot.servers.zdb = self.zdb
@@ -265,6 +261,10 @@ class ThreeBotServer(j.baseclasses.object_config):
             # j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
             self._maintenance()
 
+            if self.state == "init":
+                j.tools.threebot_packages.load()
+                self.state = "installed"
+
             self._packages_core_init()
 
             j.threebot.__dict__["packages"] = Packages()
@@ -292,7 +292,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                 j.threebot.__dict__.pop("package")
             # LETS NOT DO SERVERS YET, STILL BREAKS TOO MUCH
             # j.__dict__.pop("servers")
-            j.__dict__.pop("builders")
+            # j.__dict__.pop("builders")
             # j.__dict__.pop("shell")
             # j.__dict__.pop("shelli")
             j.__dict__.pop("tutorials")
@@ -310,8 +310,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
 
-            # j.shell()  # for now removed otherwise debug does not work
-            # sys.exit()
+            j.shell()  # for now removed otherwise debug does not work
 
             forever = event.Event()
             try:

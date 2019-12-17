@@ -26,9 +26,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         self._bcdb = self._bcdb_selector()
 
-        self.model_action = j.clients.bcdb.get(name="myjobs", schema=schemas.action)
-        j.clients.bcdb.get(name="myjobs", schema=schemas.worker)
-        j.clients.bcdb.get(name="myjobs", schema=schemas.job)
+        self.model_action = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.action)
+        j.clients.bcdbmodel.get(name="myjobs", schema=schemas.worker)
+        j.clients.bcdbmodel.get(name="myjobs", schema=schemas.job)
 
         self.scheduled_ids = []
         self.events = {}
@@ -45,9 +45,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
     def _init_models_readonly(self):
         self._bcdb._readonly = True
-        m1 = j.clients.bcdb.get(name="myjobs", schema=schemas.action)
-        m2 = j.clients.bcdb.get(name="myjobs", schema=schemas.job)
-        m3 = j.clients.bcdb.get(name="myjobs", schema=schemas.worker)
+        m1 = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.action)
+        m2 = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.job)
+        m3 = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.worker)
 
     def _init_pre_schedule(self, in3bot=False):
         if not self._init_pre_schedule_:

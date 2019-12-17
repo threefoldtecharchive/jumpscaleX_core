@@ -59,9 +59,9 @@ class MyWorkerProcess(j.baseclasses.object):
         self.bcdb = j.data.bcdb.get("myjobs")
         self.bcdb._readonly = True
 
-        self.model_job = j.clients.bcdb.get(name=self.bcdb.name, schema=schemas.job)
-        self.model_action = j.clients.bcdb.get(name=self.bcdb.name, schema=schemas.action)
-        self.model_worker = j.clients.bcdb.get(name=self.bcdb.name, schema=schemas.worker)
+        self.model_job = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.job)
+        self.model_action = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.action)
+        self.model_worker = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.worker)
 
         if not self.onetime:
             # if not onetime then will send all to queue which will be processed on parent process (the myjobs manager)

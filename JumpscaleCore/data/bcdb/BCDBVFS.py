@@ -27,7 +27,7 @@ class BCDBVFS(j.baseclasses.object):
     """
     Virtual File System
     navigate through the BCDB like it was a file system
-    the root directory is the bcdb name 
+    the root directory is the bcdb name
     Here is the file system directories
     / should list all the bcdbs
      /$(bcdb_name)
@@ -43,8 +43,8 @@ class BCDBVFS(j.baseclasses.object):
     eg. test/data/2/ben.test.1/object1
     if bcdb name is set eg. data/1/ben.test.1/object2,
 
-    On each level we can do 
-    - get 
+    On each level we can do
+    - get
         retrieve a file or a directory given the specified path
     - len
         file length if the current path is a file
@@ -52,12 +52,12 @@ class BCDBVFS(j.baseclasses.object):
     - set
         set a file inside the current path
         throws if the current path is a directory
-    - list 
+    - list
         List the files of a directory
         throws if the current path is a file
     - delete
         delete a file or a directory given the specified path
- 
+
 
     Attributes:
         _dirs_cache: dictionnary of cached directories.
@@ -96,15 +96,15 @@ class BCDBVFS(j.baseclasses.object):
     def _split_clean_path(self, path):
         """split the path into elements and returns the element list
         if the path starts with a bcdbname it sets the current bcdb accordingly
-        TODO encode the elements so that we can't have characters like underscore 
+        TODO encode the elements so that we can't have characters like underscore
         that can crash the key generation
-        
+
         Arguments:
             path {[type]} -- [description]
-        
+
         Raises:
             Exception: [description]
-        
+
         Returns:
             [type] -- [description]
         """
@@ -141,9 +141,9 @@ class BCDBVFS(j.baseclasses.object):
             return []
 
         """return the bcdb name or root directory of the path
-        if the path begins by data or schemas we will return the 
+        if the path begins by data or schemas we will return the
         current bcdb name
-        
+
         Arguments:
             path {sting} -- path
 
@@ -194,7 +194,7 @@ class BCDBVFS(j.baseclasses.object):
                 # second element must be the nid e.g. /data/5/
                 key = "%s_data_%s" % (self.current_bcbd_name, nid)
                 if not key in self._dirs_cache:
-                    self._dirs_cache[key] = BCDBVFS_Data_Dir(self, key=key, items=j.data.schema._url_to_md5.keys())
+                    self._dirs_cache[key] = BCDBVFS_Data_Dir(self, key=key, items=j.data.schema.schemas.keys())
             else:
                 url = splitted[2]
                 if path_length == 3:
@@ -243,13 +243,13 @@ class BCDBVFS(j.baseclasses.object):
 
     def _get_schemas(self, splitted, path):
         """find schema(s) corresponding to the path splitted in list elements
-        
+
         Arguments:
             splitted {[list of string]} -- [path splitted in list elements]
-        
+
         Raises:
             Exception: [when elements in path are not correct]
-        
+
         Returns:
             [string] -- [key inserted in the _dirs_cache dictionnary linked to the schema(s) ]
         """
@@ -258,7 +258,7 @@ class BCDBVFS(j.baseclasses.object):
         if len(splitted) == 1:
             key = "schemas"
             if not key in self._dirs_cache:
-                res = BCDBVFS_Schema_Dir(self, items=j.data.schema._url_to_md5.keys())
+                res = BCDBVFS_Schema_Dir(self, items=j.data.schema.schemas.keys())
         else:
             url = splitted[1]
             key = "schemas_%s" % (url)
@@ -267,12 +267,6 @@ class BCDBVFS(j.baseclasses.object):
         if res is not None:
             self._dirs_cache[key] = res
         return key
-
-    def _force_schema_add(self, schema_hash):
-        if j.data.schema.exists(schema_hash):
-            self._bcdb.meta._schema_set(j.data.schema.get_from_md5(schema_hash))
-        else:
-            raise Exception("Can't find schema with hash:%s" % (schema_hash), 5)
 
     def _find_schema_by_url(self, url):
         # TODO OPTIMIZE OR FIND ANOTHER WAY
@@ -293,7 +287,7 @@ class BCDBVFS(j.baseclasses.object):
     def add_datas(self, data_items, nid, url, bcdb_name=None):
         """set new data items. To set data we need the bcdb name, namespace id and schema url
         Arguments:
-            data_items {list(JSXObject) | JSXObject} -- items to be added in the specified directory 
+            data_items {list(JSXObject) | JSXObject} -- items to be added in the specified directory
             bcdb_name {string} -- the bcdb name to be added to if None will use the current one
             nid {integer} -- the namespace to be added to
             url {string} -- the schema url that the objects follow
@@ -305,15 +299,13 @@ class BCDBVFS(j.baseclasses.object):
 
     def _add_schema(self, schema):
 
-        self._bcdb.meta._schema_set(schema)  # add the schema to the bcdb meta
-        self._bcdb.model_get(schema=schema)  # should create the model based on the schema
-        s_obj = self._find_schema_by_url(schema.url)
-        key_url = "%s_schemas_%s" % (self.current_bcbd_name, s_obj.url)
+        s = j.clients.bcdbmodel.get(schema=schema)  # add the schema
+        key_url = "%s_schemas_%s" % (self.current_bcbd_name, s.schema.url)
 
         # we do not check if it exist as anyway it will
         # replace the latest schema with this url
-        self._dirs_cache[key_url] = BCDBVFS_Schema(self, key=key_url, item=s_obj)
-        return s_obj
+        self._dirs_cache[key_url] = BCDBVFS_Schema(self, key=key_url, item=s.schema)
+        return s
 
     def add_schemas(self, schemas_text=None, bcdb_name=None):
         """set a new schema based on their text to the current bcdb
@@ -330,7 +322,7 @@ class BCDBVFS(j.baseclasses.object):
             multiple = False
             if j.data.schema.is_multiple_schema_from_text(schemas_text):
                 multiple = True
-            schemas = j.data.schema.get_from_text(schemas_text, multiple=multiple)
+            schemas = j.data.schema.get_from_text(schemas_text, multiple=True)
             if schemas:
                 if not multiple:
                     self._add_schema(schemas)
@@ -404,9 +396,9 @@ class BCDBVFS(j.baseclasses.object):
 
     def _extract_info_from_key(self, key, info_dict=None):
         """ Extract and return an informations dictionnary about the provided key
-        if the info_dict parameter is sent then we will update this information dictionnary. 
+        if the info_dict parameter is sent then we will update this information dictionnary.
         Informations are bcdb_name, nid, type(schemas data or info), url, obj_id, is_dir
-        
+
         Arguments:
             key {string} -- an object key
             info_dict {Dict} -- [informations dictionnary about the key]
@@ -494,11 +486,11 @@ class BCDBVFS(j.baseclasses.object):
     def _remove_all_data_related(self, key, item, model):
         """will remove all the keys that points to the data identified by the key
         First delete the specified item with the model and link to the key provided
-        then it will remove the others related data 
-        
+        then it will remove the others related data
+
         Arguments:
             key {[string]} -- [key that point to data]
-        
+
         Returns:
             [BCDBVFS_Obj] -- [description]
         """
@@ -523,10 +515,10 @@ class BCDBVFS(j.baseclasses.object):
             raise Exception("key:%s is not a data key. Update cache data can only work with data keys" % key)
 
     def _insert_data_and_update_cache(self, key, obj_data, model):
-        """will change or add the data objects item based on its key 
-        and then update the cache for all the possible keys. For instance let's take an 
+        """will change or add the data objects item based on its key
+        and then update the cache for all the possible keys. For instance let's take an
         object with id=18 url=test.1. The provided key is
-        data_1_test.1_18. We will update the object and the cache for the keys 
+        data_1_test.1_18. We will update the object and the cache for the keys
         test_data_1_url_test.1_18. if there is no id at the end of the key we will create a new object
 
         Arguments:
@@ -589,7 +581,7 @@ class BCDBVFS_Data_Dir:
         returns the updated or added items
         Arguments:
             items_data {[type]} -- [description]
-        
+
         Returns:
             [type] -- [description]
         """
@@ -737,7 +729,7 @@ class BCDBVFS_Data:
             if item_data contains an id it will not be taken into account
         Arguments:
             item_data {[type]} -- [description]
-        
+
         Returns:
             [type] -- [description]
         """

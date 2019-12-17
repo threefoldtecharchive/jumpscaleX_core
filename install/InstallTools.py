@@ -3949,6 +3949,7 @@ class BaseInstaller:
             # level 1: in the middle
             1: [
                 "zerotier>=1.1.2",
+                "python-digitalocean",
                 "python-jose>=2.0.1",
                 "itsdangerous>=0.24",
                 "jsonschema>=2.5.1",
