@@ -129,9 +129,11 @@ class JSXObject(j.baseclasses.object):
             if "." in prop.name:
                 raise j.exceptions.Input("cannot be . in property")
             if "__" in prop.name:
+                # handle indexed subobject field
                 props = prop.name.split("__")
                 value = eval(f"self.{props[0]}.{props[1]}")
             else:
+                # handle indexed object field
                 value = eval(f"self.{prop.name}")
             if not value and not isinstance(value, (int, float, complex)):
                 raise j.exceptions.Input("an indexed (sql) field cannot be empty:%s" % prop.name, data=self)
