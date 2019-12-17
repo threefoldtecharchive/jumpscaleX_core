@@ -282,7 +282,10 @@ class RedisServer(j.baseclasses.object):
         assert len(s) == 3
         bcdb_name, _, url_id = s
         url, id = url_id.split("/")
-        id = int(id)
+        # * means all ids
+        if id != '*':
+            id = int(id)
+
         bcdb_name = bcdb_name.lower().strip()
         return bcdb_name, url, id
 
@@ -291,16 +294,22 @@ class RedisServer(j.baseclasses.object):
         model = j.clients.bcdbmodel.get(name=bcdb_name, url=url)
         try:
             obj = model.get(id)
+            response.encode(obj._json)
         except:
             response.error("cannot get, key:'%s' not found" % key)
-        response.encode(obj._json)
 
     def delete(self, response, key):
         bcdb_name, url, id = self._parse_key(key)
         model = j.clients.bcdbmodel.get(name=bcdb_name, url=url)
+
         try:
-            model.delete(id)
-            response.encode(1)
+            if id == '*':
+                count = model.count()
+                model.destroy()
+                response.encode(count)
+            else:
+                model.delete(id)
+                response.encode(1)
             return
         except:
             response.error("cannot delete, key:'%s'" % key)
