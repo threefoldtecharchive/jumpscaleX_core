@@ -43,66 +43,25 @@ def main(self):
             schema_obj = m.new()
             schema_obj.nr = i
             schema_obj.name = "somename%s" % i
+            schema_obj.date_start = j.data.time.epoch
+            schema_obj.email = "info%s@something.com" % i
             return schema_obj
 
         redis_cl = j.clients.redis.get(ipaddr="localhost", port=6380)
 
-        self._log_debug("set schema to 'despiegk.test2'")
-        print(redis_cl.get("schemas"))
+        key = f"{bcdb.name}:data:despiegk.test2"
 
-        redis_cl.set("schemas:despiegk.test2", m.schema.text)
-        print(redis_cl.get("schemas:despiegk.test2"))
-        print(redis_cl.get("schemas"))
         for i in range(1, 11):
             print(i)
             o = get_obj(i)
             print("set model 1:despiegk.test2 num:%s" % i)
-            redis_cl.set("data:1:despiegk.test2", o._json)
+            redis_cl.execute_command('hsetnew',key, "0", o._json)
 
-        print(redis_cl.get("data:1:despiegk.test2"))
+        assert redis_cl.hlen(key) == 10
 
-        self._log_debug("compare schema")
-        schema2 = redis_cl.get("schemas:despiegk.test2")
-        # test schemas are same
+        for i in range(1, 11):
+            print(redis_cl.hget(key, i))
 
-        assert j.data.serializers.json.loads(schema2)["url"] == "despiegk.test2"
-        assert j.data.serializers.json.loads(schema2)["llist2"] == "list"
-        assert j.data.serializers.json.loads(schema2)["cost_estimate"] == "float"
-        # assert redis_cl.hlen("schemas:url") == 9
-        assert redis_cl.hlen("schemas:despiegk.test2") == 1
-        assert redis_cl.hlen("data:1:despiegk.test2") == 10
-
-        if zdb:
-            self._log_debug("validate list")
-            print("zbd enabled c list:%s" % cl.list())
-            assert len(cl.list()) == 11
-
-        self._log_debug("validate added objects")
-
-        items = redis_cl.get("data:1:despiegk.test2")
-        item0 = j.data.serializers.json.loads(items[1][0])
-        item1 = j.data.serializers.json.loads(items[1][1])
-        print(redis_cl.delete("data:1:despiegk.test2:%s" % item0["id"]))
-
-        print(redis_cl.get("data:1:despiegk.test2:%s" % item1["id"]))
-        # it's deleted
-        with test_case.assertRaises(Exception) as cm:
-            redis_cl.get("data:1:despiegk.test2:%s" % item0["id"])
-        ex = cm.exception
-        assert "cannot get, key:'data/1/despiegk.test2/%s' not found" % item0["id"] in str(ex.args[0])
-
-        assert redis_cl.hlen("data:1:despiegk.test2:%s" % item1["id"]) == 1
-
-        assert redis_cl.hlen("data:1:despiegk.test2") == 9
-
-        # there should be 10 items now there
-        if zdb:
-            self._log_debug("validate list2")
-            assert len(cl.list()) == 10
-
-        self._cmd.stop()
-        self._cmd.wait_stopped()
-        return
 
     def sqlite_test(schema):
         # SQLITE BACKEND
@@ -135,8 +94,8 @@ def main(self):
         """
 
     zdb_test(schema)
-    rdb_test(schema)
     sqlite_test(schema)
+    rdb_test(schema)
 
     redis = j.servers.startupcmd.get("redis_6380")
     redis.stop()

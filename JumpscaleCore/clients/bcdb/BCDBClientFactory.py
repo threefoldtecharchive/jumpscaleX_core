@@ -108,6 +108,16 @@ class BCDBModelClientFactory(j.baseclasses.object):
             self._clients[key] = BCDBModelClient(name=name, url=url)
         return self._clients[key]
 
+    @property
+    def schemas(self):
+        res = {}
+        for name, bcdb in j.data.bcdb.instances.items():
+            models = res.get(name, [])
+            for model in bcdb.models:
+                models.append(model)
+            res[name] = models
+        return res
+
     def test(self):
         """
         kosmos -p 'j.clients.bcdbmodel.test()'
