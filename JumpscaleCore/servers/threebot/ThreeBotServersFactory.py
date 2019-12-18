@@ -102,8 +102,9 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
                 j.shell()
             assert "." in client.package_name
 
+        gediscl = j.clients.gedis.get("pkggedis", package_name="zerobot.packagemanager")
         for package_path in packages:
-            client.actors.package_manager.package_add(path=package_path)
+            gediscl.actors.package_manager.package_add(path=package_path)
 
         client.reload()
 
