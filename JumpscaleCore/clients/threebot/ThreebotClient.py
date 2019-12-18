@@ -8,6 +8,7 @@ from nacl.signing import VerifyKey
 from nacl.public import PrivateKey, PublicKey, SealedBox
 from Jumpscale.clients.gedis.GedisClient import GedisClientActors
 
+
 class ThreebotClient(JSConfigBase):
     _SCHEMATEXT = """
     @url = jumpscale.threebot.client
@@ -39,36 +40,35 @@ class ThreebotClient(JSConfigBase):
             self._gedis_connections[packagename] = cl
         return self._gedis_connections[packagename]
 
-    def actors_get(self, package_name="all", reload=True):
+    def actors_get(self, package_name="all"):
         """Get actors for package_name given. If package_name="all" then all the actors will be returned
 
         :param package_name: name of package to be loaded that has the actors needed. If value is "all" then all actors from all packages are retrieved
         :type package_name: str
-        :param reload: if True and package_name is "all", will reload packages to get newly addded packages as well
-        :type reload: boolean
         :return: actors of package(s)
-        :type return: list of actors
+        :type return: GedisClientActors (contains all the actors as properties)
         """
         if package_name is "all":
             actors = GedisClientActors()
-            if not reload:
-                for gedis_connection in self._gedis_connections.values():
-                    for k, v in gedis_connection.actors._ddict.items():
-                        setattr(actors, k, v)
-                return actors
-            else:
-                package_manager_actor = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, package_name="zerobot.packagemanager").actors.package_manager
-                for package in package_manager_actor.packages_list().packages:
-                    name = package.name
-                    if name not in self._gedis_connections:
-                        g = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, package_name=name)
-                        self._gedis_connections[name] = g
-                    for k, v in self._gedis_connections[name].actors._ddict.items():
-                        setattr(actors, k, v)
-                return actors
+
+            package_manager_actor = j.clients.gedis.get(
+                name="packagemanager", host=self.host, port=self.port, package_name="zerobot.packagemanager"
+            ).actors.package_manager
+            for package in package_manager_actor.packages_list().packages:
+                name = package.name
+                if name not in self._gedis_connections:
+                    g = j.clients.gedis.get(
+                        name=f"{name}_{self.name}", host=self.host, port=self.port, package_name=name
+                    )
+                    self._gedis_connections[name] = g
+                for k, v in self._gedis_connections[name].actors._ddict.items():
+                    setattr(actors, k, v)
+            return actors
         else:
             if package_name not in self._gedis_connections:
-                g = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, package_name=package_name)
+                g = j.clients.gedis.get(
+                    name=f"{package_name}_{self.name}", host=self.host, port=self.port, package_name=package_name
+                )
                 self._gedis_connections[package_name] = g
             return self._gedis_connections[package_name].actors
 
