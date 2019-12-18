@@ -266,11 +266,11 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         raises exceptions if decryption or signature fails
 
         """
-        assert len(verifykey_hex) == 128
+        assert len(verifykey_hex) == 64
         if not nacl:
             nacl = self._nacl
         # decrypt data
-        data_dec_ser = nacl.decrypt(data)
+        data_dec_ser = nacl.decrypt(data[1])
         # unserialize data
         data_dec = self._unserialize(data_dec_ser, serialization_format=serialization_format)
         # verify the signature against the provided pubkey and the decrypted data
@@ -368,7 +368,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
 
         """
 
-        cl = j.servers.threebot.local_start_explorer()
+        cl = j.servers.threebot.local_start_explorer(background=True)
 
         cl.reload()
 
