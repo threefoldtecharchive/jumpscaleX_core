@@ -16,12 +16,12 @@ def dot(doc, **kwargs):
     if name_cached != name:
         path = j.sal.fs.getTmpFilePath()
         j.sal.fs.writeFile(filename=path, contents=content)
-        dest = j.sal.fs.joinPaths(j.sal.fs.getDirName(doc.path), "%s.png" % name)
+        dest = j.sal.fs.joinPaths(j.sal.fs.getDirName(doc.docsite.outpath), doc.path_dir_rel, "%s.png" % name)
         j.sal.process.execute("dot '%s' -Tpng > '%s'" % (path, dest))
         j.sal.fs.remove(path)
-        j.sal.fs.copyFile(dest, "%s.png" % name)
+        j.sal.fs.copyFile(dest, "%s.png" % name, createDirIfNeeded=True)
         j.core.db.set("docsite:dot:%s" % name, md5)
 
-    doc.link_add(link_src)
+    # doc.link_add(link_src)
 
     return link_src
