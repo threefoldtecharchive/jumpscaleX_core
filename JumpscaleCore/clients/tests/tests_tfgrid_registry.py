@@ -10,7 +10,7 @@ class RegistryTests(BaseTest):
 
     @classmethod
     def setUpClass(cls):
-        try:    
+        try:
             cls.cl = cls.addRegistryPackage()
         except Exception:
             cls.tearDownClass()
