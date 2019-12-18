@@ -105,6 +105,10 @@ def main(self):
         for i in range(1, 11):
             print(redis_cl.hget(key, i))
 
+        key = f"{bcdb.name}:data:despiegk.test2"
+        redis_cl.hdel(key, 1)
+        assert redis_cl.hlen(key) == 9
+
     schema = """
         @url = despiegk.test2
         llist2 = "" (LS)
