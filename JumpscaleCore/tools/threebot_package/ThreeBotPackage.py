@@ -266,7 +266,7 @@ class ThreeBotPackage(JSConfigBase):
         return self._bcdb_
 
     def bcdb_model_get(self, url):
-        return self.bcdb.model_get(url=url, package=self)
+        return self.bcdb.model_get(url=url)
 
     def _web_load(self, app_type="frontend"):
         for port in (443, 80):

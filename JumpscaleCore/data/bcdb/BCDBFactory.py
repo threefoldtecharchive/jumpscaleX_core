@@ -384,11 +384,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                 # print("name:'%s' in instances on bcdb" % name)
                 return self._instances[name]
 
-        if name in self._config and not storclient:
-            storclient = self._get_storclient(name)
-
         if not self.exists(name=name):
             self._new(name=name, storclient=storclient)  # we create object in config of bcdb factory
+        if name in self._config and not storclient:
+            storclient = self._get_storclient(name)
 
         b = self._get(name=name, storclient=storclient, reset=reset)  # make instance of bcdb
 
