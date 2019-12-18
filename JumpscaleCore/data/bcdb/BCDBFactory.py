@@ -46,7 +46,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         self._instances = j.baseclasses.dict(name="BCDBS")
         self.children = self._instances
 
-        self._BCDBModelClass = BCDBModel  # j.data.bcdb._BCDBModelClass
+        self._BCDBModelClass = BCDBModel  # j.data.bcdb._BCDBModelClasses
+        self._config = {}
 
         self.__master = None
 
