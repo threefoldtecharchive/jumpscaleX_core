@@ -39,30 +39,42 @@ class ThreebotClient(JSConfigBase):
             self._gedis_connections[packagename] = cl
         return self._gedis_connections[packagename]
 
-    def actors_get(self, package_name="all"):
+    def actors_get(self, package_name="all", reload=True):
+        """Get actors for package_name given. If package_name="all" then all the actors will be returned
+
+        :param package_name: name of package to be loaded that has the actors needed. If value is "all" then all actors from all packages are retrieved
+        :type package_name: str
+        :param reload: if True and package_name is "all", will reload packages to get newly addded packages as well
+        :type reload: boolean
+        :return: actors of package(s)
+        :type return: list of actors
+        """
         actors = []
-        all_gedis_connections = []
+        if package_name is "all" and not reload:
+            for gedis_connection in self._gedis_connections.values():
+                actors += list(gedis_connection.actors._ddict.values())
+            return actors
         if not package_name in self._gedis_connections:
             name = "" if package_name is "all" else package_name
             if package_name == "all":
                 package_manager_actor = j.clients.gedis.get(
                     name=self.name, host=self.host, port=self.port, package_name="zerobot.packagemanager"
                 ).actors.package_manager
-                all_gedis_connections = []
                 for package in package_manager_actor.packages_list().packages:
                     name = package.name
+                    if name in self._gedis_connections:
+                        continue
                     g = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, package_name=name)
-                    all_gedis_connections.append(g)
-                    actors.append(g.actors)
+                    self._gedis_connections[name] = g
+                    actors += list(g.actors._ddict.values())
+
             else:
                 g = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, package_name=name)
-                all_gedis_connections.append(g)
-                actors = g.actors
-            self._gedis_connections[package_name] = all_gedis_connections
+                self._gedis_connections[package_name] = g
+                actors = list(g.actors._ddict.values())
         else:
-            gedis_connections = self._gedis_connections[package_name]
-            for gedis_connection in gedis_connections:
-                actors.append(gedis_connection.actors)
+            gedis_connection = self._gedis_connections[package_name]
+            actors += list(gedis_connection.actors._ddict.values())
         return actors
 
     def reload(self):
