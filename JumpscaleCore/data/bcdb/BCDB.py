@@ -118,6 +118,7 @@ class BCDB(j.baseclasses.object):
             raise j.exceptions.Base("name needs to be string")
 
         # need to do this to make sure we load the classes from scratch
+        ## TODO: make sure to load meta.toml.
         for item in ["ACL", "USER", "GROUP"]:
             key = "Jumpscale.data.bcdb.models_system.%s" % item
             if key in sys.modules:
@@ -196,7 +197,7 @@ class BCDB(j.baseclasses.object):
             j.sal.fs.remove(path)
         j.sal.fs.createDir(path)
 
-        for m in self.models:
+        for m in self.models.values():
             print("export model: ", m)
             dpath = f"{path}/{m.schema.url}"
             print("  datapath: ", dpath)
