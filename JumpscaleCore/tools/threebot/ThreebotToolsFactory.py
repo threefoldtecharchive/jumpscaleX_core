@@ -235,7 +235,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         if isinstance(data2, str):
             data2 = data2.encode()
         signature = nacl.sign(data2)
-        signature_hex = binascii.hexlify(signature)
+ 
         if threebot:
             threebot_client = j.clients.threebot.client_get(threebot)
             data3 = threebot_client.encrypt_for_threebot(data2)
@@ -248,7 +248,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
                 data3 = nacl.encrypt(data2, public_key=pubkey)
             else:
                 data3 = data2
-        return [tid, data3, signature_hex]
+        return [tid, data3, signature]
 
     def _deserialize_check_decrypt(
         self, data, serialization_format="json", verifykey_hex=None, nacl=None, threebot=None
