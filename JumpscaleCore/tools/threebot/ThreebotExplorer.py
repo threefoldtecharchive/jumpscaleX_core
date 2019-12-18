@@ -14,7 +14,7 @@ class ThreebotExplorer(j.baseclasses.object):
 
     @property
     def _redis(self):
-        return j.clients.threebot.explorer_redis
+        return j.clients.threebot._explorer_redis
 
     @property
     def actors(self):
