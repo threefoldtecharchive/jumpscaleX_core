@@ -1,7 +1,9 @@
+import unittest
 from Jumpscale import j
 from base_test import BaseTest
 
 
+@unittest.skip("need to merge with development_fixes branch")
 class TestSshAgentClient(BaseTest):
     def setUp(self):
         self.SSHKEYCLIENT_NAME = "ssh_client_{}".format(self.rand_string())
@@ -54,7 +56,7 @@ class TestSshAgentClient(BaseTest):
         self.info("Check that ssh key is unloaded")
         self.assertFalse(self.sshkey_client.is_loaded())
 
-    def test002_list_of_ssh_keys_in_sshagent_and_public_key_path(self):
+    def test002_list_of_ssh_keys_in_sshagent(self):
         """
         TC 571
         Test to list of ssh keys in sshagent, and public key path.
