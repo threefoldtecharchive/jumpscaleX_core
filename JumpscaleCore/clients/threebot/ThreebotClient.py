@@ -28,10 +28,8 @@ class ThreebotClient(JSConfigBase):
 
     @property
     def actors_base(self):
-        cl = self.client_get("zerobot.base")
+        cl = j.clients.gedis.get(name=self.name, host=self.host, port=self.port, package_name="zerobot.base")
         return cl.actors
-        pass
-        # TODO: need to use right gedis client
 
     def client_get(self, packagename):
         if not packagename in self._gedis_connections:
