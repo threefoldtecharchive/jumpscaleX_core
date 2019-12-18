@@ -134,32 +134,41 @@ class ThreeBotPackage(JSConfigBase):
             self._wikis[self.name] = path
 
     def actors_reload(self, reset=False):
-        def actors_crud_generate():
-            for model_url in self.model_urls:
-                found = True
-                # Exclude bcdb meta data models
-                model = self.bcdb.model_get(url=model_url)
-                if model.schema.url.startswith("jumpscale.bcdb."):
-                    continue
-                assert model_url.startswith(self.name)
+        # def actors_crud_generate():
+        #     for model_url in self.model_urls:
+        #         found = True
+        #         # Exclude bcdb meta data models
+        #         model = self.bcdb.model_get(url=model_url)
+        #         if model.schema.url.startswith("jumpscale.bcdb."):
+        #             continue
+        #         assert model_url.startswith(self.name)
+        #
+        #         shorturl = model_url[len(self.name) + 1 :].replace(".", "_")
+        #         dest = self.path + "/actors/" + shorturl + "_model.py"
+        #         # for now generate all the time TODO: change later
+        #         if True or not j.sal.fs.exists(dest):
+        #             j.tools.jinja2.file_render(
+        #                 self._dirpath + "/templates/ThreebotModelCrudActorTemplate.py",
+        #                 dest=dest,
+        #                 model=model,
+        #                 fields_schema=self._model_get_fields_schema(model),
+        #                 shorturl=shorturl,
+        #             )
 
-                shorturl = model_url[len(self.name) + 1 :].replace(".", "_")
-                dest = self.path + "/actors/" + shorturl + "_model.py"
-                # for now generate all the time TODO: change later
-                if True or not j.sal.fs.exists(dest):
-                    j.tools.jinja2.file_render(
-                        self._dirpath + "/templates/ThreebotModelCrudActorTemplate.py",
-                        dest=dest,
-                        model=model,
-                        fields_schema=self._model_get_fields_schema(model),
-                        shorturl=shorturl,
-                    )
+        # def actors_crud_delete():
+        #     for model_url in self.model_urls:
+        #         model = self.bcdb.model_get(url=model_url)
+        #         shorturl = model_url[len(self.name) + 1 :].replace(".", "_")
+        #         dest = self.path + "/actors/" + shorturl + "_model.py"
+        #         j.sal.fs.remove(dest)
 
         if self._actors is None or reset:
             self._actors = j.baseclasses.dict()
             package_toml = j.data.serializers.toml.load(f"{self.path}/package.toml")
-            if not ("disable_crud" in package_toml and package_toml["source"]["disable_crud"]):
-                actors_crud_generate()  # will generate the actors for the model
+            # if not ("disable_crud" in package_toml and package_toml["source"]["disable_crud"]):
+            #     actors_crud_generate()  # will generate the actors for the model
+
+            # actors_crud_delete()
 
             path = self.path + "/actors"
             if j.sal.fs.exists(path):
@@ -182,10 +191,12 @@ class ThreeBotPackage(JSConfigBase):
                         raise e
                     # print(f"adding actor {name} {fpath} {self.name}")
                     self.gedis_server.actor_add(name=name, path=fpath, package=self)
+
         return self._actors
 
     @property
     def actors(self):
+        self.models  # always need to have the models
         if self._actors is None:
             self.load()
             self._actors = self.actors_reload()
@@ -193,7 +204,12 @@ class ThreeBotPackage(JSConfigBase):
 
     @property
     def actor_names(self):
-        return list(self.actors.keys())
+        res = []
+        path = self.path + "actors"
+        if j.sal.fs.exists(path):
+            for fpath in j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py", followSymlinks=True):
+                res.append(j.sal.fs.getBaseName(fpath)[:-3])
+        return res
 
     @property
     def models(self):
@@ -291,6 +307,9 @@ class ThreeBotPackage(JSConfigBase):
         if self.status == "init":  # should only move the config status if in init
             self.status = "config"
             self.save()
+        #
+        # if self.source.name == "system_bcdb":
+        #     j.shell()
 
     def install(self):
         self.load()

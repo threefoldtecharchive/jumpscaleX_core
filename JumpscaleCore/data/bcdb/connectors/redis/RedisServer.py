@@ -57,7 +57,6 @@ class RedisServer(j.baseclasses.object):
             )
         else:
             self.gevent_server = StreamServer((self.host, self.port), spawn=Pool(), handle=self.handle_redis)
-        # self.vfs = j.data.bcdb._get_vfs()
 
     def start(self):
         self._log_info("RUNNING")
@@ -264,36 +263,29 @@ class RedisServer(j.baseclasses.object):
         return (cat, url, key, m)
 
     def set(self, response, key, val, new=False):
-        parse_key = key.replace(":", "/")
-        if "schemas" in parse_key:
-            try:
-                self.vfs.add_schemas(val)
+        bcdb_name, url, id = self._parse_key(key)
+        model = j.clients.bcdbmodel.get(name=bcdb_name, url=url)
+        try:
+            obj = model.new(data=val)
+            obj.save()
+            assert obj.id
+            if new:
+                response.encode(obj.id)
+            else:
                 response.encode("OK")
-                return
-            except:
-                response.error("cannot set, key:'%s' not supported" % key)
-        else:
-            bcdb_name, url, id = self._parse_key(key)
-            model = j.clients.bcdbmodel.get(name=bcdb_name, url=url)
-            try:
-                obj = model.new(data=val)
-                obj.save()
-                assert obj.id
-                if new:
-                    response.encode(obj.id)
-                else:
-                    response.encode("OK")
-                return
-            except:
-                response.error("cannot set, key:'%s' not supported" % key)
-        return
+            return
+        except Exception as e:
+            response.error("cannot set, key:'%s' not supported" % key)
 
     def _parse_key(self, key):
         s = key.split(":")
         assert len(s) == 3
         bcdb_name, _, url_id = s
         url, id = url_id.split("/")
-        id = int(id)
+        # * means all ids
+        if id != '*':
+            id = int(id)
+
         bcdb_name = bcdb_name.lower().strip()
         return bcdb_name, url, id
 
@@ -302,16 +294,22 @@ class RedisServer(j.baseclasses.object):
         model = j.clients.bcdbmodel.get(name=bcdb_name, url=url)
         try:
             obj = model.get(id)
+            response.encode(obj._json)
         except:
             response.error("cannot get, key:'%s' not found" % key)
-        response.encode(obj._json)
 
     def delete(self, response, key):
         bcdb_name, url, id = self._parse_key(key)
         model = j.clients.bcdbmodel.get(name=bcdb_name, url=url)
+
         try:
-            model.delete(id)
-            response.encode(1)
+            if id == '*':
+                count = model.count()
+                model.destroy()
+                response.encode(count)
+            else:
+                model.delete(id)
+                response.encode(1)
             return
         except:
             response.error("cannot delete, key:'%s'" % key)
@@ -355,7 +353,7 @@ class RedisServer(j.baseclasses.object):
         return self.delete(response, key)
 
     def hlen(self, response, key):
-        bcdb_name, cat, model_url = key.split(":")
+        bcdb_name, _, model_url = key.split(":")
         model = self.bcdb.get(bcdb_name).model_get(url=model_url)
         response.encode(model.count())
         return

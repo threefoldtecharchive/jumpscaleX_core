@@ -13,6 +13,8 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     _CHILDCLASS = ThreeBotServer
 
     def _init(self, **kwargs):
+        j.core.db.set("threebot.starting", ex=120, value="1")
+        j.data.bcdb._master_set()
         self._default = None
         self.current = None
         self.client = None
@@ -65,7 +67,6 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/phonebook",
             f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/directory",
             f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/workloads",
-            f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/threebot_provisioning",
         ]
         return self.local_start_default(background=background, packages=packages, reload=reload)
 

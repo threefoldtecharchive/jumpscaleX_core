@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 # from importlib import import_module
 
 import gevent
@@ -138,6 +118,7 @@ class BCDB(j.baseclasses.object):
             raise j.exceptions.Base("name needs to be string")
 
         # need to do this to make sure we load the classes from scratch
+        ## TODO: make sure to load meta.toml.
         for item in ["ACL", "USER", "GROUP"]:
             key = "Jumpscale.data.bcdb.models_system.%s" % item
             if key in sys.modules:
@@ -216,7 +197,7 @@ class BCDB(j.baseclasses.object):
             j.sal.fs.remove(path)
         j.sal.fs.createDir(path)
 
-        for m in self.models:
+        for m in self.models.values():
             print("export model: ", m)
             dpath = f"{path}/{m.schema.url}"
             print("  datapath: ", dpath)
@@ -369,7 +350,7 @@ class BCDB(j.baseclasses.object):
             self._sqlite_index_client = None
 
     def redis_server_start(self, port=6380, secret="123456"):
-        self.redis_server_get(port=port, secret=secret)
+        self.redis_server = j.data.bcdb.redis_server_get(port=port, secret=secret)
         self.redis_server.start()
 
     def redis_server_wait_up(self, port, timeout=60):
@@ -451,17 +432,18 @@ class BCDB(j.baseclasses.object):
 
         assert self.storclient
 
-        self.storclient.flush()  # Always flush store client, making sure it's empty!
-
         self._redis_reset()
         j.sal.fs.remove(self._data_dir)
         j.sal.fs.createDir(self._data_dir)
+        if self.storclient.type != "SDB":
+            self.storclient.flush()  # not needed for sqlite because closed and dir will be deleted
         # all data is now removed, can be done because sqlite client should be None
 
         # since delete the data directory above, we have to re-init the storclient
         # so it can do its things and re-connect properly
         self.storclient._init(nsname=self.storclient.nsname)
-
+        if self.storclient.type == "SDB":
+            self.storclient.flush()
         self._init_props_()
         self._init_system_objects()
 
@@ -492,7 +474,7 @@ class BCDB(j.baseclasses.object):
         # this always needs to work, independent of state of index
         for model in self.models:
             # make sure indexes are empty
-            model.index.destroy()
+            j.clients.bcdbmodel.get(model).index.destroy()
         first = True
 
         for id, data in self.storclient.iterate():
@@ -502,18 +484,6 @@ class BCDB(j.baseclasses.object):
             jsxobj = self._unserialize(id, data)
             model = self.model_get(schema=jsxobj._schema)
             model.set(jsxobj, store=False, index=True)
-
-    # @property
-    # def models(self):
-    #     # this needs to happen to make sure all models are loaded because there is lazy loading now
-    #
-    #     for s in self.meta.schema_dicts:
-    #         if s["url"] not in self._schema_url_to_model:
-    #             assert s["url"]
-    #             schema = j.data.schema.get_from_url(s["url"])
-    #             self.model_get(schema=schema)
-    #     for key, model in self.models.items():
-    #         yield model
 
     def model_get(self, schema=None, md5=None, url=None, reset=False):
         """

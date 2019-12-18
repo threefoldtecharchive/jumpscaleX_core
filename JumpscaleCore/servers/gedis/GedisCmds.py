@@ -117,7 +117,7 @@ class GedisCmds(JSBASE):
 
         for line in txt.split("\n"):
             lstrip = line.strip().lower()
-            if lstrip.startswith("@"):
+            if lstrip.startswith("@j.baseclasses"):
                 continue
             if state == "START" and lstrip.startswith("def"):
                 state = "DEF"
@@ -250,15 +250,19 @@ class GedisCmds(JSBASE):
             s.content = content
 
     def _schema_process(self, cmd, txt, cat):
+
         txt = j.core.tools.text_strip(txt).strip()
         if txt.strip() == "":
             return None
         if not txt.strip().startswith("!"):
-            if txt.find("@url") == -1:
-                url = "actors.%s.%s.%s.%s" % (self.data.namespace, self.data.name, cmd.name, cat)
-                schema = j.data.schema.get_from_text(schema_text=txt, url=url)
-            else:
-                schema = j.data.schema.get_from_text(schema_text=txt)
+            for i, block in enumerate(j.data.schema._schema_blocks_get(txt)):
+                if block.find("@url") == -1:
+                    url = "actors.%s.%s.%s.%s" % (self.data.namespace, self.data.name, cmd.name, cat)
+                    schema_ = j.data.schema.get_from_text(schema_text=block, url=url)
+                else:
+                    schema_ = j.data.schema.get_from_text(schema_text=block)
+                if i == 0:
+                    schema = schema_  # only the first one needs to be returned
         else:
             url = txt.strip().lstrip("!")
             schema = j.data.schema.get_from_url(url=url)

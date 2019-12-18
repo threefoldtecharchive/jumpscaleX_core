@@ -38,6 +38,8 @@ class BCDBModelIndex(j.baseclasses.object):
         if self.index_key_needed:
             self.bcdb._redis_index.ping()
 
+        # if master will try to create the index table and set .sql property
+        # if not: will set .sql property only, check BCDBModelIndexClass
         self._sql_index_init()
 
         if self.index_text_needed:
@@ -164,7 +166,7 @@ class BCDBModelIndex(j.baseclasses.object):
         if val:
             return (
                 self.bcdb.name,
-                "{}:{}".format(nid, self.model.mid),
+                "{}:{}".format(nid, self.model.key),
                 "{}:{}".format(obj_id, property_name),
                 self._clean_text_for_sonic(val),
             )

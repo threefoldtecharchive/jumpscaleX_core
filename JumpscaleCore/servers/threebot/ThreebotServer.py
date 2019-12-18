@@ -292,13 +292,14 @@ class ThreeBotServer(j.baseclasses.object_config):
                 j.threebot.__dict__.pop("package")
             # LETS NOT DO SERVERS YET, STILL BREAKS TOO MUCH
             # j.__dict__.pop("servers")
-            j.__dict__.pop("builders")
+            # j.__dict__.pop("builders")
             # j.__dict__.pop("shell")
             # j.__dict__.pop("shelli")
             j.__dict__.pop("tutorials")
             j.__dict__.pop("sal_zos")
 
             for path in packages:
+                # j.debug()
                 j.threebot.packages.zerobot.packagemanager.actors.package_manager.package_add(path=path)
 
             # reload nginx at the end after loading packages and its config is written
@@ -310,7 +311,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
 
-            j.shell()  # for now removed otherwise debug does not work
+            # j.shell()  # for now removed otherwise debug does not work
 
             forever = event.Event()
             try:
@@ -320,6 +321,8 @@ class ThreeBotServer(j.baseclasses.object_config):
             sys.exit()
 
             # dont call stop
+            # delete the fact that maybe we are still in starting mode
+            j.core.db.delete("threebot.starting")
 
         else:
             if not self.startup_cmd.is_running():
@@ -387,7 +390,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             if p.status in ["config", "init"]:
                 p.install()
                 p.save()
-
             # start should be called everytime server starts
             # TODO: NOT THE INTENTION !!!!
             # p.actors_reload()
@@ -398,6 +400,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         :return:
         """
         self.startup_cmd.stop(waitstop=False, force=True)
+        j.core.db.delete("threebot.starting")
         self.openresty_server.stop()
 
     @property

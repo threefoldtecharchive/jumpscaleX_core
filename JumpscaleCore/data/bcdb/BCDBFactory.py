@@ -56,8 +56,16 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
                 self.__master = False
             else:
-                self.__master = True
+                if j.core.db.get("threebot.starting"):
+                    print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
+                    j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60)
+                    self.__master = False
+                else:
+                    self.__master = True
         return self.__master
+
+    def _master_set(self):
+        self.__master = True
 
     def config_reload(self):
         self._loaded = False
