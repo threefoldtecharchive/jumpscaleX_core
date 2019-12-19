@@ -5,14 +5,14 @@ from Jumpscale import j
 JSConfigBase = j.baseclasses.object_config
 
 
-def load_wiki(wiki_name=None, wiki_path=None):
+def load_wiki(wiki_name=None, wiki_path=None, reset=False):
     """we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
     path_dest = f"/docsites/{wiki_name}"
 
     threegit_tool = j.tools.threegit.get(name=wiki_name, path_source=wiki_path, path_dest=path_dest)
     j.sal.fs.createDir(path_dest)
 
-    threegit_tool.process(check=True)
+    threegit_tool.process(reset=reset)
 
 
 class ThreeBotPackage(JSConfigBase):
@@ -124,13 +124,13 @@ class ThreeBotPackage(JSConfigBase):
 
         self._init_ = True
 
-    def load_wiki(self):
+    def load_wiki(self, reset=False):
         if self._wikis is None:
             self._wikis = j.baseclasses.dict()
 
         path = self.path + "/wiki"
         if j.sal.fs.exists(path):
-            j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=path)
+            j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=path, reset=reset)
             self._wikis[self.name] = path
 
     def actors_reload(self, reset=False):
