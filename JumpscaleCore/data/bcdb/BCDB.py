@@ -129,10 +129,10 @@ class BCDB(j.baseclasses.object):
         from .models_system.CIRCLE import CIRCLE
         from .models_system.NAMESPACE import NAMESPACE
 
-
-        system_meta_path = j.core.tools.text_replace("{DIR_CODE}/github/threefoldtech/jumpscaleX_core/JumpscaleCore/data/bcdb/models_system/meta.toml")
+        system_meta_path = j.core.tools.text_replace(
+            "{DIR_CODE}/github/threefoldtech/jumpscaleX_core/JumpscaleCore/data/bcdb/models_system/meta.toml"
+        )
         j.data.schema.add_from_path(system_meta_path)
-
 
         self.acl = self.model_add(ACL(bcdb=self))
         self.user = self.model_add(USER(bcdb=self))

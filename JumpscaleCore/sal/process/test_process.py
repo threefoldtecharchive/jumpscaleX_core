@@ -1,3 +1,4 @@
+import os
 from .base_test import BaseTest
 from Jumpscale import j
 import random, unittest, time
@@ -5,8 +6,9 @@ from parameterized import parameterized
 
 
 class PROCESS(BaseTest):
-    def setUp(self):
-        pass
+    @classmethod
+    def setUpClass(cls):
+        os.system("tmux kill-session")
 
     def tearDown(self):
         output, error = self.os_command("ps -aux | grep -v -e grep -e tmux | grep 'tail -f' | awk '{{print $2}}'")
