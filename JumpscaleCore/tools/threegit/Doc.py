@@ -360,7 +360,7 @@ class Doc(j.baseclasses.object):
             if link.filename:
                 dest_file = j.sal.fs.joinPaths(self.docsite.outpath, self.path_dir_rel, link.filename)
 
-                if link.filepath:
+                if link.filepath and not j.sal.fs.exists(dest_file):
                     # make sure parent dir of dest_file exists
                     j.sal.fs.createDir(j.sal.fs.getParent(dest_file))
                     j.sal.fs.copyFile(link.filepath, dest_file)
@@ -374,6 +374,7 @@ class Doc(j.baseclasses.object):
             md = link.replace_in_txt(md)
 
         dest = j.sal.fs.joinPaths(self.docsite.outpath, self.path_dir_rel, self.name) + ".md"
+
         j.sal.fs.writeFile(dest, md, append=False)
 
     def _link_exists(self, link):
