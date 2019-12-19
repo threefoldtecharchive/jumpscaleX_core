@@ -12,9 +12,9 @@ class UserSessionAdmin(UserSessionBase):
         self.threebot_name = None
         self.threebot_circles = []
         self.kwargs = []
-        self.response_type = None
+        self.response_type = j.data.types.get("e", default="auto,json,msgpack").clean(0)
         self.content_type = j.data.types.get("e", default="auto,json,msgpack").clean(0)
-        self.threebot_client = j.data.types.get("e", default="auto,json,msgpack").clean(0)
+        self.threebot_client = None
 
     def admin_check(self):
         return True
