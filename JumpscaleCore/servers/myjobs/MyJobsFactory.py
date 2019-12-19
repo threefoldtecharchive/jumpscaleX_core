@@ -69,7 +69,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 self._log_warning("waiting for redis interface of threebotserver to come up")
                 self._bcdb.redis_server_wait_up(self.BCDB_CONNECTOR_PORT)
             self._init_pre_schedule_ = True
-            self.jobs._model.trigger_add(self._job_update)
+            if j.data.bcdb._master:
+                self.jobs._model.trigger_add(self._job_update)
 
     def action_get(self, key, return_none_if_not_exist=False):
 

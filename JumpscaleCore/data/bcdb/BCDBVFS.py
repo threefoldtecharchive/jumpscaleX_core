@@ -297,9 +297,10 @@ class BCDBVFS(j.baseclasses.object):
         data_dir = self.get("/%s/data/%s/%s" % (bcdb_name, nid, url))
         return data_dir.set(data_items)
 
-    def _add_schema(self, schema):
-
-        s = j.clients.bcdbmodel.get(schema=schema)  # add the schema
+    def add_schema(self, schema,bcdb_name=None):
+        if bcdb_name:
+            self.change_current_bcdb(bcdb_name)
+        s = j.clients.bcdbmodel.get(name=bcdb_name, schema=schema)  # add the schema
         key_url = "%s_schemas_%s" % (self.current_bcbd_name, s.schema.url)
 
         # we do not check if it exist as anyway it will
@@ -307,32 +308,7 @@ class BCDBVFS(j.baseclasses.object):
         self._dirs_cache[key_url] = BCDBVFS_Schema(self, key=key_url, item=s.schema)
         return s
 
-    def add_schemas(self, schemas_text=None, bcdb_name=None):
-        """set a new schema based on their text to the current bcdb
-        Keyword Arguments:
-            schemas_text {string} -- can be one or several schema text
-        Returns:
-             list: all the schema path added to the cache
-        """
 
-        if bcdb_name:
-            self.change_current_bcdb(bcdb_name)
-
-        if schemas_text:
-            multiple = False
-            if j.data.schema.is_multiple_schema_from_text(schemas_text):
-                multiple = True
-            schemas = j.data.schema.get_from_text(schemas_text, multiple=True)
-            if schemas:
-                if not multiple:
-                    self._add_schema(schemas)
-                    return [schemas]
-                else:
-                    added_schemas = []
-                    for s in schemas:
-                        added_schemas.append(self._add_schema(s))
-                    return added_schemas
-        return None
 
     def delete(self, path):
         split = self._split_clean_path(path)
