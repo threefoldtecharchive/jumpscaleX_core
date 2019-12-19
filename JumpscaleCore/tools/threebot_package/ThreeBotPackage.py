@@ -12,7 +12,7 @@ def load_wiki(wiki_name=None, wiki_path=None):
     threegit_tool = j.tools.threegit.get(name=wiki_name, path_source=wiki_path, path_dest=path_dest)
     j.sal.fs.createDir(path_dest)
 
-    threegit_tool.process(reset=True)
+    threegit_tool.process(check=True)
 
 
 class ThreeBotPackage(JSConfigBase):
