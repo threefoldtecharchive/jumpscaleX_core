@@ -118,6 +118,7 @@ class BCDB(j.baseclasses.object):
             raise j.exceptions.Base("name needs to be string")
 
         # need to do this to make sure we load the classes from scratch
+        ## TODO: make sure to load meta.toml.
         for item in ["ACL", "USER", "GROUP"]:
             key = "Jumpscale.data.bcdb.models_system.%s" % item
             if key in sys.modules:
@@ -127,6 +128,11 @@ class BCDB(j.baseclasses.object):
         from .models_system.USER import USER
         from .models_system.CIRCLE import CIRCLE
         from .models_system.NAMESPACE import NAMESPACE
+
+
+        system_meta_path = j.core.tools.text_replace("{DIR_CODE}/github/threefoldtech/jumpscaleX_core/JumpscaleCore/data/bcdb/models_system/meta.toml")
+        j.data.schema.add_from_path(system_meta_path)
+
 
         self.acl = self.model_add(ACL(bcdb=self))
         self.user = self.model_add(USER(bcdb=self))
@@ -196,7 +202,7 @@ class BCDB(j.baseclasses.object):
             j.sal.fs.remove(path)
         j.sal.fs.createDir(path)
 
-        for m in self.models:
+        for m in self.models.values():
             print("export model: ", m)
             dpath = f"{path}/{m.schema.url}"
             print("  datapath: ", dpath)
@@ -248,9 +254,9 @@ class BCDB(j.baseclasses.object):
                 return
 
         self.reset()
-        if self.storclient:
-            assert self.storclient.list() == [0]
-            assert self.storclient.nsinfo["entries"] == 1
+        # if self.storclient:
+        #     assert self.storclient.list() == [0]
+        #     assert self.storclient.nsinfo["entries"] == 1
 
         self._log_info("Load bcdb:%s from %s" % (self.name, path))
         assert j.sal.fs.exists(path)
@@ -306,13 +312,16 @@ class BCDB(j.baseclasses.object):
 
         max_id = max(list(data.keys()) or [0])
 
+        next_id = 1
+        if isinstance(self.storclient, ZDBClientBase):
+            next_id = self.storclient.next_id
+
         # have to import it in the exact same order
         for i in range(1, max_id + 1):
             print(f"i: {i}")
             if i not in data:
-                if isinstance(self.storclient, ZDBClientBase):
-                    if i < self.storclient.next_id:
-                        continue
+                if i < next_id:
+                    continue
 
                 print(f"{i} doesn't exist in data.. ")
                 gap_obj = self._dummy.new()

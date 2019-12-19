@@ -369,7 +369,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
 
         """
 
-        cl = j.servers.threebot.local_start_default()
+        cl = j.servers.threebot.local_start_explorer()
 
         self._add_phonebook()
 

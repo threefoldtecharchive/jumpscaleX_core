@@ -7,6 +7,7 @@ class BCDBModelClient(j.baseclasses.object):
         self.bcdb = j.data.bcdb.get(name=self.name)
         self.model = self.bcdb.model_get(url=kwargs["url"])
         self.schema = self.model.schema
+        self.count = self.model.count
 
         if self.bcdb.readonly:
             self._rediscl_ = j.clients.bcdbmodel._rediscl_
@@ -56,9 +57,16 @@ class BCDBModelClient(j.baseclasses.object):
         if self.bcdb.readonly:
             key = f"{self.name}:data:{obj._schema.url}"
             assert obj.id
-            self._rediscl_.hdel(key, str(obj.id))
+            return self._rediscl_.hdel(key, str(obj.id))
         else:
             return self.model.delete(obj=obj)
+
+    def destroy(self):
+        if self.bcdb.readonly:
+            key = f"{self.name}:data:"
+            self._rediscl_.hdel(key, '*')
+        else:
+            return j.data.bcdb.instances.get(self.name).destroy()
 
     def _set_trigger(self, obj, action="set_pre", propertyname=None, **kwargs):
         if action == "set_pre":

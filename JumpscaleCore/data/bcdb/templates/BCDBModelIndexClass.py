@@ -34,7 +34,9 @@ class {{BASENAME}}(BCDBModelIndex):
             {%- endfor %}
 
         self.sql = Index_{{schema.key}}
-        self.sql.create_table(safe=True)
+        if j.data.bcdb._master:
+            self.sql.create_table(safe=True)
+
         self._schema_md5_generated = "{{schema._md5}}"
 
         self.sql_table_name = "index_{{schema.key}}".lower()

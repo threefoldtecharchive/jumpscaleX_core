@@ -5,6 +5,16 @@ from Jumpscale import j
 JSConfigBase = j.baseclasses.object_config
 
 
+def load_wiki(wiki_name=None, wiki_path=None):
+    """we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
+    path_dest = f"/docsites/{wiki_name}"
+
+    threegit_tool = j.tools.threegit.get(name=wiki_name, path_source=wiki_path, path_dest=path_dest)
+    j.sal.fs.createDir(path_dest)
+
+    threegit_tool.process(reset=True)
+
+
 class ThreeBotPackage(JSConfigBase):
 
     _SCHEMATEXT = """
@@ -110,20 +120,18 @@ class ThreeBotPackage(JSConfigBase):
             #     # load webserver
             #     j.shell()
 
-            def load_wiki(wiki_name=None, wiki_path=None):
-                """we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
-                wiki = j.tools.markdowndocs.load(name=wiki_name, path=wiki_path, pull=False)
-                wiki.write()
-
-            if self._wikis is None:
-                self._wikis = j.baseclasses.dict()
-
-            path = self.path + "/wiki"
-            if j.sal.fs.exists(path):
-                j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=path)
-                self._wikis[self.name] = path
+            self.load_wiki()
 
         self._init_ = True
+
+    def load_wiki(self):
+        if self._wikis is None:
+            self._wikis = j.baseclasses.dict()
+
+        path = self.path + "/wiki"
+        if j.sal.fs.exists(path):
+            j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=path)
+            self._wikis[self.name] = path
 
     def actors_reload(self, reset=False):
         # def actors_crud_generate():
@@ -266,7 +274,7 @@ class ThreeBotPackage(JSConfigBase):
         return self._bcdb_
 
     def bcdb_model_get(self, url):
-        return self.bcdb.model_get(url=url, package=self)
+        return self.bcdb.model_get(url=url)
 
     def _web_load(self, app_type="frontend"):
         for port in (443, 80):

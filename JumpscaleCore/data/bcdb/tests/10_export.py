@@ -20,7 +20,11 @@
 
 from Jumpscale import j
 
+####
 
+# To Be reviewed in jumpscale 10.3
+
+###
 def main(self):
     """
     to run:
@@ -30,6 +34,7 @@ def main(self):
     zdb = j.servers.zdb.test_instance_start()
 
     namespaces = ["testexport_zdb", "testexport_sqlite"]
+
     def cleanup():
         for namespace in namespaces:
             if namespace in j.data.bcdb.instances:
@@ -57,8 +62,6 @@ def main(self):
     """
     schema = j.data.schema.get_from_text(schema_text)
     schema2 = j.data.schema.get_from_text(schema_text2)
-
-
 
     for namespace in namespaces:
         if namespace == "testexport_zdb":

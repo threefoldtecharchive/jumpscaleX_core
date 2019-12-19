@@ -56,7 +56,8 @@ class LoggerBase(j.baseclasses.object_config):
 
     def _init(self, **kwargs):
         self._reset()
-        self._model.trigger_add(self._data_update_prop)
+        if j.data.bcdb._master:
+            self._model.trigger_add(self._data_update_prop)
 
     @staticmethod
     def _data_update_prop(model, obj, kosmosinstance=None, action=None, propertyname=None):

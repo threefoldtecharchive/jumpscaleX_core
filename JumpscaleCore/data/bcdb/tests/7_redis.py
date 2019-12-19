@@ -17,30 +17,73 @@ def main(self):
 
     """
 
-    def do(bcdb, m, zdb=False):
-        cmd = """
-        . {DIR_BASE}/env.sh;
-        kosmos 'j.data.bcdb.get("test").redis_server_start(port=6380)'
-        """
-        test_case = TestCase()
-        # WARNING bcdb get rest=true will delete and restore the db file
-        # this need to be executed BEFORE the redis server startup as it will connect to the same
-        # database and if the file is deleted before we end up with readonly error
-        # see https://techblog.dorogin.com/sqlite-error-8-attempt-to-write-a-readonly-database-62b80cc6c9db
-        # bcdb = j.data.bcdb.get("test", reset=True)
+    def load(schema, type="zdb"):
+        # CLEAN STATE
+        j.servers.zdb.test_instance_stop()
+        j.servers.sonic.default.stop()
+
+        redis = j.servers.startupcmd.get("redis_6380")
+        redis.stop()
+        redis.wait_stopped()
+
+        type = type.lower()
+
+        def startZDB():
+            zdb = j.servers.zdb.test_instance_start()
+            storclient_admin = zdb.client_admin_get()
+            assert storclient_admin.ping()
+            secret = "1234"
+            storclient = storclient_admin.namespace_new(name="test_zdb", secret=secret)
+            return storclient
+
+        if type == "rdb":
+            j.core.db
+            storclient = j.clients.rdb.client_get(namespace="test_rdb")  # will be to core redis
+            bcdb = self.get(name="test", storclient=storclient, reset=True)
+        elif type == "sqlite":
+            storclient = j.clients.sqlitedb.client_get(namespace="test_sdb")
+            bcdb = self.get(name="test", storclient=storclient, reset=True)
+        elif type == "zdb":
+            storclient = startZDB()
+            storclient.flush()
+            assert storclient.nsinfo["public"] == "no"
+            assert storclient.ping()
+            bcdb = self.get(name="test", storclient=storclient, reset=True)
+        else:
+            raise j.exceptions.Base("only rdb,zdb,sqlite for stor")
+
+        cmd = (
+            """
+                       . {DIR_BASE}/env.sh;
+                       kosmos 'j.data.bcdb.get(name="%s").redis_server_start(port=6380)'
+                       """
+            % type
+        )
 
         self._cmd = j.servers.startupcmd.get(name="redis_6380", cmd_start=cmd, ports=[6380], executor="tmux")
         self._cmd.start()
         j.sal.nettools.waitConnectionTest("127.0.0.1", port=6380, timeout=15)
 
-        if zdb:
-            cl = j.clients.zdb.client_get(name="test", namespace="test_zdb", port=9901)
+        assert bcdb.storclient == storclient
 
-        # schema = j.core.text.strip(schema)
-        # m = bcdb.model_get(schema=schema)
+        assert bcdb.name == "test"
+
+        # bcdb.reset()  # empty
+
+        assert bcdb.storclient.count == 0
+
+        assert bcdb.name == "test"
+
+        model = bcdb.model_get(schema=schema)
+
+        return bcdb, model
+
+    def do(schema, type="zdb"):
+
+        bcdb, model = load(schema=schema, type=type)
 
         def get_obj(i):
-            schema_obj = m.new()
+            schema_obj = model.new()
             schema_obj.nr = i
             schema_obj.name = "somename%s" % i
             schema_obj.date_start = j.data.time.epoch
@@ -55,29 +98,16 @@ def main(self):
             print(i)
             o = get_obj(i)
             print("set model 1:despiegk.test2 num:%s" % i)
-            redis_cl.execute_command('hsetnew',key, "0", o._json)
+            redis_cl.execute_command("hsetnew", key, "0", o._json)
 
         assert redis_cl.hlen(key) == 10
 
         for i in range(1, 11):
             print(redis_cl.hget(key, i))
 
-
-    def sqlite_test(schema):
-        # SQLITE BACKEND
-        bcdb, m = self._load_test_model(type="sqlite", schema=schema)
-        do(bcdb, m, zdb=False)
-
-    def rdb_test(schema):
-        # RDB test
-        bcdb, m = self._load_test_model(type="rdb", schema=schema)
-        do(bcdb, m, zdb=False)
-
-    def zdb_test(schema):
-        # ZDB test
-        bcdb, m = self._load_test_model(type="zdb", schema=schema)
-        c = j.clients.zdb.client_admin_get(port=9901)
-        do(bcdb, m, zdb=True)
+        key = f"{bcdb.name}:data:despiegk.test2"
+        redis_cl.hdel(key, 1)
+        assert redis_cl.hlen(key) == 9
 
     schema = """
         @url = despiegk.test2
@@ -93,10 +123,13 @@ def main(self):
         llist4 = "1,2,3" (L)
         """
 
-    zdb_test(schema)
-    sqlite_test(schema)
-    rdb_test(schema)
+    do(schema, type="zdb")
+    do(schema, type="rdb")
+    do(schema, type="sqlite")
 
+    # CLEAN STATE
+    j.servers.zdb.test_instance_stop()
+    j.servers.sonic.default.stop()
     redis = j.servers.startupcmd.get("redis_6380")
     redis.stop()
     redis.wait_stopped()
