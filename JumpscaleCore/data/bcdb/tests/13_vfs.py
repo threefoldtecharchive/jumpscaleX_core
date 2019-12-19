@@ -291,5 +291,6 @@ def main(self):
     # CLEAN STATE
     j.servers.zdb.test_instance_stop()
     j.servers.sonic.default.stop()
+    vfs._bcdb.destroy()
     self._log_info("TEST DONE")
     return "OK"

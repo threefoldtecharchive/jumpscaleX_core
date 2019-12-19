@@ -675,8 +675,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         """
         print(name)
-
         # CLEAN STATE
+
+        redis = j.servers.startupcmd.get("redis_6380")
+        redis.stop()
+        redis.wait_stopped()
         j.servers.zdb.test_instance_stop()
         j.servers.sonic.default.stop()
 
@@ -685,14 +688,23 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         except:
             # clean after errors
             # CLEAN STATE
+            redis = j.servers.startupcmd.get("redis_6380")
+            redis.stop()
+            redis.wait_stopped()
             j.servers.zdb.test_instance_stop()
             j.servers.sonic.default.stop()
+
 
             raise
         else:
             # CLEAN STATE
+            redis = j.servers.startupcmd.get("redis_6380")
+            redis.stop()
+            redis.wait_stopped()
             j.servers.zdb.test_instance_stop()
             j.servers.sonic.default.stop()
-
+        bcdb = j.data.bcdb.get("test", reset=True)
+        bcdb.reset()
+        bcdb.destroy()
         self._log_info("All TESTS DONE")
         return "OK"
