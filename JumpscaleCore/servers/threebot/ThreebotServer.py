@@ -371,9 +371,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
     def myjobs_start(self):
         j.servers.myjobs.workers_tmux_start(2, in3bot=True)
-        # j.servers.myjobs._workers_gipc_nr_max = 10
-        # j.servers.myjobs.workers_subprocess_start()
-        pass
+        # j.servers.myjobs.workers_subprocess_start(2, in3bot=True)
 
     def _packages_core_init(self):
 

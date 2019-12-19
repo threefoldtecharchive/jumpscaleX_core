@@ -235,7 +235,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         if isinstance(data2, str):
             data2 = data2.encode()
         signature = nacl.sign(data2)
-        signature_hex = binascii.hexlify(signature)
+ 
         if threebot:
             threebot_client = j.clients.threebot.client_get(threebot)
             data3 = threebot_client.encrypt_for_threebot(data2)
@@ -248,7 +248,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
                 data3 = nacl.encrypt(data2, public_key=pubkey)
             else:
                 data3 = data2
-        return [tid, data3, signature_hex]
+        return [tid, data3, signature]
 
     def _deserialize_check_decrypt(
         self, data, serialization_format="json", verifykey_hex=None, nacl=None, threebot=None
@@ -266,11 +266,11 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         raises exceptions if decryption or signature fails
 
         """
-        assert len(verifykey_hex) == 128
+        assert len(verifykey_hex) == 64
         if not nacl:
             nacl = self._nacl
         # decrypt data
-        data_dec_ser = nacl.decrypt(data)
+        data_dec_ser = nacl.decrypt(data[1])
         # unserialize data
         data_dec = self._unserialize(data_dec_ser, serialization_format=serialization_format)
         # verify the signature against the provided pubkey and the decrypted data
@@ -304,11 +304,9 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         :return:
         """
 
-        self.explorer.actors.package_manager.package_add(
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook"
-        )
-
         j.servers.threebot.local_start_default()
+
+        self._add_phonebook()
 
         nacl1 = j.data.nacl.configure(name="test_client")
         nacl2 = j.data.nacl.configure(name="test_server")
@@ -323,14 +321,17 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
 
         return nacl1, nacl2, threebot1, threebot2
 
-    def test_register_nacl_threebots(self):
-        self.explorer.actors.package_manager.package_add(
-            "threebot_phonebook",
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
+    def _add_phonebook(self):
+        pm = j.clients.gedis.get(
+            name="threebot", port=8901, package_name="zerobot.packagemanager"
+        ).actors.package_manager
+        pm.package_add(
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/tfgrid/phonebook"
         )
 
-        # need to make sure to reload the client, because we added a package
-        self.explorer._client.reload()
+    def test_register_nacl_threebots(self):
+
+        self._add_phonebook()
 
         nacl1 = j.data.nacl.get(name="test_client")
         nacl2 = j.data.nacl.get(name="test_server")
@@ -339,7 +340,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         threebot_me_client = j.tools.threebot.init_my_threebot(
             myidentity="test_client",
             name="test_client",
-            email=None,
+            email="someting@sss.com",
             description=None,
             ipaddr="localhost",
             interactive=False,
@@ -347,7 +348,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         threebot_me_server = j.tools.threebot.init_my_threebot(
             myidentity="test_server",
             name="test_server",
-            email=None,
+            email="somethingelse@ddd.com",
             description=None,
             ipaddr="localhost",
             interactive=False,
@@ -368,15 +369,14 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
 
         """
 
-        cl = j.servers.threebot.local_start_explorer()
+        cl = j.servers.threebot.local_start_explorer(background=True)
 
-        cl.reload()
+        self._add_phonebook()
 
+        e = j.clients.threebot.explorer
 
-        # j.shell()
-
-
-        self._threebot_client_default = cl
+        # get actors to phonebook
+        self.actor_phonebook = e.actors_get("tfgrid.phonebook").phonebook
 
         self.me
 

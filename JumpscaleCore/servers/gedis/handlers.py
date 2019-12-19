@@ -7,7 +7,7 @@ import binascii
 
 JSBASE = j.baseclasses.object
 
-from .UserSession import UserSession
+from .UserSession import UserSession, UserSessionAdmin
 
 
 def _command_split(cmd, author3botname="zerobot", packagename="base"):
@@ -238,7 +238,7 @@ class Handler(JSBASE):
         # raise j.exceptions.Base("d")
         gedis_socket = GedisSocket(socket)
 
-        user_session = UserSession()
+        user_session = UserSessionAdmin()
 
         try:
             self._handle_gedis_session(gedis_socket, address, user_session=user_session)
@@ -326,6 +326,7 @@ class Handler(JSBASE):
             return None, "OK"
 
         elif request.command.command == "auth":
+            return None, "OK"
             # TODO: this has not been done properly !!! check Kristof
             tid, seed, signature = request.arguments
             tid = int(tid)
