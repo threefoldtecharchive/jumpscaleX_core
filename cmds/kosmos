@@ -15,8 +15,10 @@ if True or "-p" in sys.argv:
 import sys
 from Jumpscale import j
 
+if "-m" in sys.argv:
+    j.data.bcdb._master_set()
 if "-s" in sys.argv:
-    j.application.__slave = True
+    j.data.bcdb._master_set(Falsee)
 
 # j.tools.bash.get().profile.locale_check()
 
