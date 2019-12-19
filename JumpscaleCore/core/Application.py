@@ -270,7 +270,7 @@ class Application(object):
 
         # self._log_info("***Application started***: %s" % self.appname)
 
-    def stop(self, exitcode=0, stop=True):
+    def stop(self, exitcode=0):
         """Stop the application cleanly using a given exitcode
 
         @param exitcode: Exit code to use
@@ -278,12 +278,12 @@ class Application(object):
         """
         import sys
 
-        # TODO: should we check the status (e.g. if application wasnt started,
-        # we shouldnt call this method)
-        if self.state == "UNKNOWN":
-            # Consider this a normal exit
-            self.state = "HALTED"
-            sys.exit(exitcode)
+        # # TODO: should we check the status (e.g. if application wasnt started,
+        # # we shouldnt call this method)
+        # if self.state == "UNKNOWN":
+        #     # Consider this a normal exit
+        #     self.state = "HALTED"
+        #     sys.exit(exitcode)
 
         # Since we call os._exit, the exithandler of IPython is not called.
         # We need it to save command history, and to clean up temp files used by
@@ -297,25 +297,14 @@ class Application(object):
         self._calledexit = True
         # to remember that this is correct behavior we set this flag
 
-        # tell gridmaster the process stopped
-
         # TODO: this SHOULD BE WORKING AGAIN, now processes are never removed
 
-        if stop:
-            sys.exit(exitcode)
+        sys.exit(exitcode)
 
     def _exithandler(self):
-        # Abnormal exit
-        # You can only come here if an application has been started, and if
-        # an abnormal exit happened, i.e. somebody called sys.exit or the end of script was reached
-        # Both are wrong! One should call self._j.application.stop(<exitcode>)
-        # TODO: can we get the line of code which called sys.exit here?
+        j.shell()
 
-        # self._self._log_debug("UNCLEAN EXIT OF APPLICATION, SHOULD HAVE USED self._j.application.stop()", 4)
-        import sys
-
-        if not self._calledexit:
-            self.stop(stop=False)
+        self.stop()
 
     # def getCPUUsage(self):
     #     """

@@ -51,27 +51,30 @@ def queue_method(func):
 def queue_method_results(func):
     def wrapper_queue_method(*args, **kwargs):
         self = args[0]
-        if self.bcdb.dataprocessor_greenlet is None:
-            self.bcdb.dataprocessor_start()
-        # self._log_debug(str(func))
-        if skip_for_debug or "noqueue" in kwargs:
-            if "noqueue" in kwargs:
-                kwargs.pop("noqueue")
-            res = func(*args, **kwargs)
-            return res
+        if self.bcdb.readonly:
+            return func(*args, **kwargs)
         else:
-            event = Event()
-            id = j.data.bcdb.latest.results_id + 1  # +1 makes we have copy
-            if id == 100000:
-                id = 0
-                self.results_id = 0
-            # print("need to find bcdb through self")
-            self.bcdb.results_id += 1
-            self.bcdb.queue.put((func, args, kwargs, event, id))
-            event.wait(1000.0)  # will wait for processing
-            # self._log_debug("OK")
-            res = self.bcdb.results[id]
-            self.bcdb.results.pop(id)
-            return res
+            if self.bcdb.dataprocessor_greenlet is None:
+                self.bcdb.dataprocessor_start()
+            # self._log_debug(str(func))
+            if skip_for_debug or "noqueue" in kwargs:
+                if "noqueue" in kwargs:
+                    kwargs.pop("noqueue")
+                res = func(*args, **kwargs)
+                return res
+            else:
+                event = Event()
+                id = j.data.bcdb.latest.results_id + 1  # +1 makes we have copy
+                if id == 100000:
+                    id = 0
+                    self.results_id = 0
+                # print("need to find bcdb through self")
+                self.bcdb.results_id += 1
+                self.bcdb.queue.put((func, args, kwargs, event, id))
+                event.wait(1000.0)  # will wait for processing
+                # self._log_debug("OK")
+                res = self.bcdb.results[id]
+                self.bcdb.results.pop(id)
+                return res
 
     return wrapper_queue_method

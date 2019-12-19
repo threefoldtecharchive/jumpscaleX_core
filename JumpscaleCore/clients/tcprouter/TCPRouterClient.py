@@ -8,8 +8,10 @@ class TCPRouterClient(JSConfigClient):
     _SCHEMATEXT = """
         @url =  jumpscale.tcp_router.client.1
         name** = "" (S)
-        local_address = "" (S)
-        remote_address = "" (S)
+        local_ip =  (ipaddr)
+        local_port =  (ipport)
+        remote_ip =  (ipaddr)
+        remote_port = (ipport)
         secret = "" (S)
         """
 
@@ -20,7 +22,8 @@ class TCPRouterClient(JSConfigClient):
         """
         connect to tcprouter backend
         """
-        cmd = f"trc -local {self.local_address} -remote {self.remote_address} -secret {self.secret}"
+        cmd = f"trc -local {self.local_ip}:{self.local_port} -remote {self.remote_ip}:{self.remote_port} -secret {self.secret}"
+        print(">>", cmd)
         self.trc_server.cmd_start = cmd
         if not self.trc_server.is_running():
             self.trc_server.start()

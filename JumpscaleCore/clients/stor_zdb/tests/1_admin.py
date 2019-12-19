@@ -9,7 +9,7 @@ def main(self):
 
     """
 
-    c = self.client_admin_get(port=9901)
+    c = j.servers.zdb.test_instance.client_admin_get()
     c.reset()
 
     c.namespaces_list()

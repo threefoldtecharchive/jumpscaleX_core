@@ -235,7 +235,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         if isinstance(data2, str):
             data2 = data2.encode()
         signature = nacl.sign(data2)
-        signature_hex = binascii.hexlify(signature)
+ 
         if threebot:
             threebot_client = j.clients.threebot.client_get(threebot)
             data3 = threebot_client.encrypt_for_threebot(data2)
@@ -248,7 +248,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
                 data3 = nacl.encrypt(data2, public_key=pubkey)
             else:
                 data3 = data2
-        return [tid, data3, signature_hex]
+        return [tid, data3, signature]
 
     def _deserialize_check_decrypt(
         self, data, serialization_format="json", verifykey_hex=None, nacl=None, threebot=None
@@ -266,11 +266,11 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         raises exceptions if decryption or signature fails
 
         """
-        assert len(verifykey_hex) == 128
+        assert len(verifykey_hex) == 64
         if not nacl:
             nacl = self._nacl
         # decrypt data
-        data_dec_ser = nacl.decrypt(data)
+        data_dec_ser = nacl.decrypt(data[1])
         # unserialize data
         data_dec = self._unserialize(data_dec_ser, serialization_format=serialization_format)
         # verify the signature against the provided pubkey and the decrypted data
@@ -368,11 +368,13 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
 
         """
 
-        cl = j.servers.threebot.local_start_default()
+        cl = j.servers.threebot.local_start_explorer(background=True)
 
-        cl.actors.package_manager.package_add(
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook"
-        )
+        cl.reload()
+
+
+        # j.shell()
+
 
         self._threebot_client_default = cl
 

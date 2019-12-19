@@ -13,9 +13,6 @@ class MyJob(j.baseclasses.object_config):
         self, method=None, dependencies=None, args_replace=None, return_queues=None, return_queues_reset=None, **kwargs2
     ):
 
-        # leave this check for now please
-        assert self._parent._bcdb.storclient.cat == "myjobs"
-
         if dependencies:
             for dep in dependencies:
                 if isinstance(dep, j.data.schema._JSXObjectClass):

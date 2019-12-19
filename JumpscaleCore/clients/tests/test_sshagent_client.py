@@ -1,9 +1,7 @@
-import unittest
 from Jumpscale import j
 from base_test import BaseTest
 
 
-@unittest.skip("need to merge with development_fixes branch")
 class TestSshAgentClient(BaseTest):
     def setUp(self):
         self.SSHKEYCLIENT_NAME = "ssh_client_{}".format(self.rand_string())

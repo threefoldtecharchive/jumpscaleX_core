@@ -30,7 +30,7 @@ j.data.schema.get_from_text(
 @url = proj.simple
 attr1** = "" (S)
 attr2** = 0 (I)
-list_mychars** =  (LS) 
+list_mychars** =  (LS)
 """
 )
 
@@ -118,7 +118,7 @@ class BCDB(BackendMixin):
         try:
             self.bcdb = j.data.bcdb.get(name=name)
         except:
-            self.bcdb = j.data.bcdb.new(name=name)
+            self.bcdb = j.data.bcdb.get(name=name)
 
         self.bcdb.reset()
 

@@ -14,13 +14,14 @@ class DocSite(j.baseclasses.object):
     """
     """
 
-    def __init__(self, path, name="", dest="", sonic_client=None):
+    def __init__(self, path, name="", dest="", sonic_client=None, threegit=None):
         JSBASE.__init__(self)
         self._j = j
 
         self.docgen = j.tools.threegit.get(name)
         # init initial arguments
 
+        self.threegit = threegit
         self.path = path
         if not j.sal.fs.exists(path):
             raise j.exceptions.Base("Cannot find path:%s" % path)
@@ -618,8 +619,7 @@ class DocSite(j.baseclasses.object):
 
         return out
 
-    def verify(self, reset=False):
-        self.load(reset=reset)
+    def verify(self):
         keys = [item for item in self.docs.keys()]
         keys.sort()
         for key in keys:
@@ -677,10 +677,11 @@ class DocSite(j.baseclasses.object):
         return self.outpath + "/.data"
 
     def write(self, reset=False, check=True):
-        self.load(check=check, reset=reset)
-        self.verify(reset=reset)
         if reset:
             j.sal.fs.remove(self.outpath)
+
+        self.load(check=check, reset=reset)
+        self.verify()
 
         j.sal.fs.createDir(self.outpath)
 
