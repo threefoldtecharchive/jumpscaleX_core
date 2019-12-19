@@ -129,10 +129,10 @@ class BCDB(j.baseclasses.object):
         from .models_system.CIRCLE import CIRCLE
         from .models_system.NAMESPACE import NAMESPACE
 
-
-        system_meta_path = j.core.tools.text_replace("{DIR_CODE}/github/threefoldtech/jumpscaleX_core/JumpscaleCore/data/bcdb/models_system/meta.toml")
+        system_meta_path = j.core.tools.text_replace(
+            "{DIR_CODE}/github/threefoldtech/jumpscaleX_core/JumpscaleCore/data/bcdb/models_system/meta.toml"
+        )
         j.data.schema.add_from_path(system_meta_path)
-
 
         self.acl = self.model_add(ACL(bcdb=self))
         self.user = self.model_add(USER(bcdb=self))
@@ -271,7 +271,7 @@ class BCDB(j.baseclasses.object):
             print(f"processing {url_path}")
             schema_text = j.sal.fs.readFile("%s/_schema.toml" % url_path)
             url = j.sal.fs.getBaseName(url_path)
-            schema = j.data.schema.get_from_text(schema_text, url=url, multiple=False)
+            schema = j.data.schema.get_from_text(schema_text, url=url)
             schemas[url] = schema
             raise RuntimeError("not implemented")
             # need to put in j.data.schema

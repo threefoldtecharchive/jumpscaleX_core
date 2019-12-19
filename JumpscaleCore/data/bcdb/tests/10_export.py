@@ -106,7 +106,7 @@ def main(self):
             assert len(node_model.find()) == 8
 
             bcdb.reset()
-            assert bcdb.storclient.count == 1
+            assert bcdb.storclient.count == 0
             bcdb.import_(f"/tmp/bcdb_export/{namespace}", interactive=False)
 
             assert len(farm_model.find()) == 10
