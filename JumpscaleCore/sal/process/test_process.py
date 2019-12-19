@@ -145,9 +145,6 @@ class PROCESS(BaseTest):
         #. Get process[P] PID.
         #. Use getProcessByPort to get P or getPidsByPort to get PID, should succeed.
         """
-        if result_type == "pids":
-            self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/122")
-
         self.info("Start process [P] in specific port [PT]")
         PT = random.randint(10, 800)
         P = "SimpleHTTPServer"
@@ -165,7 +162,7 @@ class PROCESS(BaseTest):
         elif result_type == "pids":
             self.info("Use getPidsByPort to get PID, should succeed.")
             process_pid = j.sal.process.getPidsByPort(PT)
-            self.assertEqual(PID, process_pid)
+            self.assertEqual(PID, process_pid[0])
         output, error = self.os_command("kill -9 {} ".format(PID))
 
     def test06_getDefunctProcesses(self):
@@ -250,35 +247,34 @@ class PROCESS(BaseTest):
         with self.assertRaises(Exception):
             process_object = j.sal.process.getProcessObject(PID)
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/122")
     def test09_getProcessPid_and_getProcessPidsFromUser(self):
         """ TC 409
         Test case to test getProcessPid. 
 
         **Test scenario**
         #. Start process [P] with python get its user and pid.
-        #. Use getProcessPid to get process pid [PID], Check that it returs right PID.
+        #. Use getProcessPid to get process pid [PID], Check that it returns right PID.
         #. Use getProcessPidsFromUser to get process pid [PID], Check that it returs right PID.
         """
         self.info("Start process [p1] with python.")
         P = "python -m SimpleHTTPServer {}".format(random.randint(1000, 2000))
         output, error = self.os_command("tmux  new -d -s {} '{}'  ".format(self.rand_string(), P))
         time.sleep(2)
-        output, error = self.os_command(
-            " ps -aux | grep -v -e grep -e tmux | grep SimpleHTTPServer | awk '{print $1 \" \" $2 }'"
-        )
-        result = output.decode().split()
-        self.assertEqual(len(result), 2, "Process is not started")
-        user = result[0]
-        PID = result[1]
+        output, error = self.os_command("ps ax | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'")
+        pids = output.decode().split()
+        pids = list(map(int, pids))
+        self.assertEqual(len(pids), 2, "Process is not started")
 
-        self.info("Use getProcessPid to get process pid [PID], Check that it returs right PID.")
-        self.assertEqual(PID, j.sal.process.getProcessPid(P))
+        output, error = self.os_command("ps -aux | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'| tail -n+2")
+        user = output.decode().strip()
+
+        self.info("Use getProcessPid to get process pid [PID], Check that it returns right PID.")
+        self.assertEqual(pids, j.sal.process.getProcessPid(P))
 
         self.info("Use getProcessPidsFromUser to get process pid [PID], Check that it returs right PID.")
-        self.assertIn(PID, j.sal.process.getProcessPidsFromUser(user))
+        self.assertTrue(set(pids).issubset(set(j.sal.process.getProcessPidsFromUser(user))))
 
-        output, error = self.os_command("kill -9 {} ".format(PID))
+        output, error = self.os_command("kill -9 {} {}".format(pids[0], pids[1]))
 
     def test10_isPidAlive(self):
         """TC410
@@ -322,9 +318,6 @@ class PROCESS(BaseTest):
         #. Kill the process using one of kill methods ["kill", "killProcessByName", "killUserProcesses", "killall"].
         #. Check that process killed successfully.
         """
-        if filter in ["killProcessByName", "killUserProcesses"]:
-            self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/123")
-
         self.info("Start process [p1].")
         P1 = "tail -f /dev/null"
         output, error = self.os_command("tmux  new -d -s {} '{}'  ".format(self.rand_string(), P1))
