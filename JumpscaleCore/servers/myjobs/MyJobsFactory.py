@@ -91,14 +91,14 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
     def _workers_gipc_count(self):
         return len(self._workers_gipc.values())
 
-    def worker_inprocess_start(self, nr=1, debug=False):
+    def worker_inprocess_start(self, nr=1, debug=False, in3bot=False):
         """
 
         :param nr: is the nr of the worker 1 to x will be a child with name w$nr e.g. w3
         :param debug:
         :return:
         """
-        self._init_pre_schedule()
+        self._init_pre_schedule(in3bot=in3bot)
         if not nr:
             nr = self._worker_next_get()
         w = self.workers.get(name="w%s" % nr)
@@ -154,7 +154,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         if not self._mainloop_tmux:
             self._mainloop_tmux = gevent.spawn(self._main_loop_tmux)
 
-    def worker_subprocess_start(self, nr=None, debug=False, in3bot=True):
+    def worker_subprocess_start(self, nr=None, debug=False, in3bot=False):
         """
         :param nr: is the nr of the worker 1 to x will be a child with name w$nr e.g. w3
         :param debug:
@@ -176,7 +176,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 last = i.nr
         return last + 1
 
-    def workers_subprocess_start(self, nr_fixed_workers=None, debug=False):
+    def workers_subprocess_start(self, nr_fixed_workers=None, debug=False, in3bot=False):
         """
 
         run the workers in subprocess
@@ -187,7 +187,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         :return:
         """
         self._init_models_readonly()
-        self._init_pre_schedule()
+        self._init_pre_schedule(in3bot=in3bot)
         if not nr_fixed_workers:
             self._mainloop_gipc = gevent.spawn(self._main_loop_subprocess)
         else:
