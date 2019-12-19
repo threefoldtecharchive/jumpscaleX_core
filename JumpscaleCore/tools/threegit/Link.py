@@ -460,7 +460,7 @@ class Link(j.baseclasses.object):
             import requests
 
             response = requests.get(self.link_source_original, stream=True)
-            j.sal.fs.writeFile(dest, response, append=False)
+            j.sal.fs.writeFile(dest, response.content, append=False)
 
     def should_skip(self):
         return any(link in self.link_source for link in SKIPPED_LINKS) or j.data.types.email.check(self.link_source)
