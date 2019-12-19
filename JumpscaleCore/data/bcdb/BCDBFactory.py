@@ -671,15 +671,25 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         """
         print(name)
-        # CLEAN STATE
-        j.servers.zdb.test_instance_stop()
-        j.servers.sonic.default.stop()
-
-        self._test_run(name=name)
 
         # CLEAN STATE
         j.servers.zdb.test_instance_stop()
         j.servers.sonic.default.stop()
+
+
+        try:
+            self._test_run(name=name)
+        except:
+            # clean after errors
+            # CLEAN STATE
+            j.servers.zdb.test_instance_stop()
+            j.servers.sonic.default.stop()
+
+            raise
+        else:
+            # CLEAN STATE
+            j.servers.zdb.test_instance_stop()
+            j.servers.sonic.default.stop()
 
         self._log_info("All TESTS DONE")
         return "OK"
