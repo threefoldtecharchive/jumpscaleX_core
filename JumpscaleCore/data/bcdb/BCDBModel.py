@@ -210,7 +210,6 @@ class BCDBModel(j.baseclasses.object):
 
     @queue_method
     def index_rebuild(self, nid=1):
-        self.stop()
         self.index.destroy(nid=nid)
         self._log_warning("will rebuild index for:%s" % self)
         for obj in self.iterate(nid=nid):

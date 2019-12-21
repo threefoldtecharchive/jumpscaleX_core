@@ -3878,7 +3878,8 @@ class BaseInstaller:
 
         pips = {
             # level 0: most basic needed
-            0: ["cmake",
+            0: [
+                "cmake",
                 "scikit-build",
                 "blosc>=1.5.1",
                 "Brotli>=0.6.0",
@@ -3966,6 +3967,7 @@ class BaseInstaller:
                 "Pillow>=4.1.1",
                 "bottle==0.12.17",
                 "bottle-websocket==0.2.9",
+                "stellar-sdk",
             ],
             # level 2: full install
             2: [
