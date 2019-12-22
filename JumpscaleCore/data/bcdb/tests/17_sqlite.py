@@ -85,7 +85,8 @@ def main(self):
             i = model.Index_MyTest.create(id=obj.id, nid=obj.nid, name=obj.name, weight=w)
             i.save()
 
-    m.trigger_add(post_save)
+    if j.data.bcdb._master:
+        m.trigger_add(post_save)
 
     o = m.new()
     assert o._autosave == False

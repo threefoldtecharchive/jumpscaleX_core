@@ -89,7 +89,7 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         kosmos 'j.clients.threebot.test()'
         :return:
         """
-        e = self.explorer
+        e = j.clients.threebot.explorer
         a = e.actors_base
         assert a.system.ping() == b"PONG"
 

@@ -38,7 +38,8 @@ class ZDBClientBase(j.baseclasses.object_config):
             self._select_namespace()
 
         assert self.ping()
-        self._model.trigger_add(self._update_trigger)
+        if j.data.bcdb._master:
+            self._model.trigger_add(self._update_trigger)
 
     def _update_trigger(self, obj, action, **kwargs):
         if action in ["save", "change"]:

@@ -271,7 +271,7 @@ class BCDB(j.baseclasses.object):
             print(f"processing {url_path}")
             schema_text = j.sal.fs.readFile("%s/_schema.toml" % url_path)
             url = j.sal.fs.getBaseName(url_path)
-            schema = j.data.schema.get_from_text(schema_text, url=url, multiple=False)
+            schema = j.data.schema.get_from_text(schema_text, url=url)
             schemas[url] = schema
             raise RuntimeError("not implemented")
             # need to put in j.data.schema

@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 
 from .BCDB import BCDB
@@ -57,7 +37,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
                 self.__master = False
             else:
-                if j.core.db.get("threebot.starting"):
+                if j.core.db and j.core.db.get("threebot.starting"):
                     print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
                     j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60)
                     self.__master = False
@@ -65,8 +45,12 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                     self.__master = True
         return self.__master
 
-    def _master_set(self):
-        self.__master = True
+    def _master_set(self, val=True):
+        if True:
+            j.core.db.set("threebot.starting", ex=120, value="1")
+        else:
+            j.core.db.delete("threebot.starting")
+        self.__master = val
 
     def config_reload(self):
         self._loaded = False
@@ -671,15 +655,24 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         """
         print(name)
-        # CLEAN STATE
-        j.servers.zdb.test_instance_stop()
-        j.servers.sonic.default.stop()
-
-        self._test_run(name=name)
 
         # CLEAN STATE
         j.servers.zdb.test_instance_stop()
         j.servers.sonic.default.stop()
+
+        try:
+            self._test_run(name=name)
+        except:
+            # clean after errors
+            # CLEAN STATE
+            j.servers.zdb.test_instance_stop()
+            j.servers.sonic.default.stop()
+
+            raise
+        else:
+            # CLEAN STATE
+            j.servers.zdb.test_instance_stop()
+            j.servers.sonic.default.stop()
 
         self._log_info("All TESTS DONE")
         return "OK"

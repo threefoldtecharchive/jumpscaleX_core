@@ -370,10 +370,13 @@ class ThreeBotServer(j.baseclasses.object_config):
         return p.actors[actor_name]
 
     def myjobs_start(self):
+        # rebuild indexes before starting the workers to make sure they're up-to-date
+        j.servers.myjobs.model_action.model.index_rebuild()
+        j.servers.myjobs.workers._model.index_rebuild()
+        j.servers.myjobs.jobs._model.index_rebuild()
+
         j.servers.myjobs.workers_tmux_start(2, in3bot=True)
-        # j.servers.myjobs._workers_gipc_nr_max = 10
-        # j.servers.myjobs.workers_subprocess_start()
-        pass
+        # j.servers.myjobs.workers_subprocess_start(2, in3bot=True)
 
     def _packages_core_init(self):
 
