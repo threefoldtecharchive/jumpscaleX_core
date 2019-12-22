@@ -42,7 +42,7 @@ class ThreeBotFactoryBase(JSBase, TestTools):
         path = path.rstrip("/")
         splitted = path.split("/")
         u = splitted.index("ThreeBotPackages")
-        name = "__".join(splitted[u + 1:])
+        name = "__".join(splitted[u + 1 :])
         return name
 
     def _connect(self):

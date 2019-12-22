@@ -44,6 +44,10 @@ class SonicClient(BaseTest):
         self.info("Flush all data in {} collection".format(self.COLLECTION))
         self.client.flush(self.COLLECTION)
 
+    @classmethod
+    def tearDownClass(cls):
+        j.servers.sonic.main.stop()
+
     def test001_push_collection_bucket(self):
         """
         TC 522

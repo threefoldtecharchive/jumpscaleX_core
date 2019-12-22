@@ -3,8 +3,8 @@ from base_test import BaseTest
 import random, requests, uuid, unittest
 
 
-ACTORS_PATH = (
-    j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/servers/gedis/pytests/test_package/actors")
+ACTORS_PATH = j.core.tools.text_replace(
+    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/servers/gedis/pytests/test_package/actors"
 )
 ACTOR_FILE_1 = "simple"
 ACTOR_FILE_2 = "actor"
@@ -129,4 +129,3 @@ class TestGedisServer(BaseTest):
         arg_2 = random.randint(66, 99)
         result = getattr(cl.actors, ACTOR_FILE_2).args_in(arg_1, arg_2)
         self.assertEqual("{} {} ".format(arg_1, arg_2), result.decode())
-

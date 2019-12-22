@@ -64,7 +64,7 @@ class BCDBModelClient(j.baseclasses.object):
     def destroy(self):
         if self.bcdb.readonly:
             key = f"{self.name}:data:"
-            self._rediscl_.hdel(key, '*')
+            self._rediscl_.hdel(key, "*")
         else:
             return j.data.bcdb.instances.get(self.name).destroy()
 

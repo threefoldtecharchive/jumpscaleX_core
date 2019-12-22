@@ -4,7 +4,9 @@ from parameterized import parameterized
 from unittest import TestCase
 
 locations = []
-for root, dirs, files in os.walk(j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore")):
+for root, dirs, files in os.walk(
+    j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore")
+):
     for file in files:
         if file.endswith(".py"):
             file_path = os.path.join(root, file)
@@ -40,5 +42,15 @@ class CoreTests(TestCase):
         ]
     )
     def test(self, cmd):
-        eval(cmd)
-
+        if cmd == "j.data.bcdb.test()":
+            self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/340")
+        elif cmd == "j.data.schema.test()":
+            self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/356")
+        elif cmd == "j.clients.zdb.test()":
+            self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/361")
+        elif cmd == "j.servers.myjobs.test()":
+            self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/342")
+        elif cmd == "j.servers.openresty.test()":
+            self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/364")
+        else:
+            eval(cmd)

@@ -106,4 +106,3 @@ class TestServers(BaseTest):
         self.info("* Check that can't connect to server anymore.")
         output, error = self.os_command("netstat -nltp | grep {}".format(server_element))
         self.assertFalse(output)
-
