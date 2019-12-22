@@ -8,7 +8,6 @@ def main(self):
 
     j.tools.logger.debug = True
 
-    self.reset()
 
     def add(a=None, b=None):
         assert a
@@ -45,9 +44,6 @@ def main(self):
     # print(self.results([job]))
 
     self._log_info("basic error test done")
-
-    # self.stop(reset=False)
-    self.stop(reset=True)
 
     print("Simple_error TEST OK")
     print("TEST OK")

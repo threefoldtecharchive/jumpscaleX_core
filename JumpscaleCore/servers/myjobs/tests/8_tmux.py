@@ -10,7 +10,6 @@ def main(self):
     kosmos -p 'j.servers.myjobs.test("tmux")'
     """
 
-    self.stop(reset=True)  # will make sure all tmux are gone
     assert len(self.workers.find()) == 0
 
     self.workers_tmux_start(2)
@@ -39,9 +38,9 @@ def main(self):
         ids.append(job_sch.id)
 
     res = self.results(ids)
-    for id in ids:
-        assert res[id] == "OK"
-
+    for item in res:
+        assert item == "OK"
+    assert len(res) == len(ids)
     self.workers_tmux_start(2)
 
     assert self.workers.w1.state == "WAITING"

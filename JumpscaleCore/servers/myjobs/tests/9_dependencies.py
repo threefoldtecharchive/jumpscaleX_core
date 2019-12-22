@@ -3,7 +3,6 @@ def main(self):
     kosmos -p 'j.servers.myjobs.test("dependencies")'
     """
 
-    self.stop(reset=True)  # will make sure all tmux are gone
     assert len(self.workers.find()) == 0
 
     nrworkers = 3

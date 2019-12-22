@@ -14,7 +14,6 @@ def main(self, count=20):
     for x in range(count):
         self.schedule(wait_2sec)
 
-    self.stop(reset=True)
     assert self._mainloop_gipc.ready()
 
     print("start2 TEST OK")

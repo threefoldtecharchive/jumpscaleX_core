@@ -654,6 +654,5 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self._test_run(name=name, **kwargs)
         redis = j.servers.startupcmd.get("redis_6380")
         redis.stop()
-        redis.wait_stopped()
 
         print("TEST OK ALL PASSED")

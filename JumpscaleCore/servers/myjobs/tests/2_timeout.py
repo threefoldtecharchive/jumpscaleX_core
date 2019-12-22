@@ -9,8 +9,6 @@ def main(self):
 
     j.tools.logger.debug = True
 
-    self.reset()
-
     def add(a=None, b=None):
         gevent.sleep(2)
         assert a
@@ -23,9 +21,6 @@ def main(self):
     job = self.wait([job.id], die=False)[0]
     assert job.state == "ERROR"
     assert job.error_cat == "TIMEOUT"
-
-    # self.stop(reset=False)
-    self.stop(reset=True)
 
     print("timeout TEST OK")
     print("TEST OK")

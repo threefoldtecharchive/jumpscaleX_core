@@ -13,7 +13,6 @@ def main(self, reset=False):
 
     queue_a.reset()
     queue_b.reset()
-    self.reset()
     self.workers_tmux_start()
 
     def add(a=None, b=None):
