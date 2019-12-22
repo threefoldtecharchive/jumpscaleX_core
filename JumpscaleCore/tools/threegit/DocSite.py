@@ -1,13 +1,15 @@
+import copy
+import sys
+import traceback
+
 from urllib.parse import urlparse
+
 from Jumpscale import j
+
 from .Doc import Doc
 from .Link import Linker, MarkdownLinkParser
 
 JSBASE = j.baseclasses.object
-
-import copy
-
-import sys
 
 
 class DocSite(j.baseclasses.object):
@@ -174,8 +176,11 @@ class DocSite(j.baseclasses.object):
             new_link = Linker.to_custom_link(repo, host)
             # to match any path, start with root `/`
             url = Linker(host, new_link.account, new_link.repo).tree("/")
-            docsite = j.tools.threegit.load(url, name=new_link.repo)
+            docsite = self.threegit.load(url, name=new_link.repo, base_path="")
             custom_link = new_link
+
+        docsite.load(reset=True)
+        # docsite.write()
 
         try:
             included_doc = docsite.doc_get(custom_link.path)
@@ -404,7 +409,6 @@ class DocSite(j.baseclasses.object):
 
         name = name.replace("/", ".").strip(".")
 
-        self.load()
         name = self._clean(name)
 
         name = name.strip("/")
@@ -628,7 +632,7 @@ class DocSite(j.baseclasses.object):
             try:
                 doc.markdown  # just to trigger the error checking
             except Exception as e:
-                msg = "unknown error to get markdown for doc, error:\n%s" % e
+                msg = "unknown error to get markdown for doc, error:\n%s\n%s" % (e, traceback.format_exc())
                 self.error_raise(msg, doc=doc)
             # doc.html
         return self.errors
