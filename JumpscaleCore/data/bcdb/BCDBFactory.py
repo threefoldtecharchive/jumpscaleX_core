@@ -673,8 +673,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             redis.wait_stopped()
             j.servers.zdb.test_instance_stop()
             j.servers.sonic.default.stop()
-
-
             raise
         else:
             # CLEAN STATE

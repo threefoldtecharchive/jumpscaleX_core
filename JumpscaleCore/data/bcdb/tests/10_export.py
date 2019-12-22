@@ -13,19 +13,9 @@ def main(self):
     kosmos 'j.data.bcdb.test(name="export")'
 
     """
-    return
-
     zdb = j.servers.zdb.test_instance_start()
 
     namespaces = ["testexport_zdb", "testexport_sqlite"]
-
-    def cleanup():
-        for namespace in namespaces:
-            if namespace in j.data.bcdb.instances:
-                bcdb = j.data.bcdb.instances[namespace]
-                bcdb.destroy()
-
-    cleanup()
 
     schema_text = """
     @url = farm.1
@@ -58,6 +48,8 @@ def main(self):
             bcdb = j.data.bcdb.get(name=namespace, storclient=storclient)
         else:
             bcdb = j.data.bcdb.get(name=namespace)
+
+        bcdb.reset()
 
         farm_model = bcdb.model_get(schema)
 
@@ -98,7 +90,11 @@ def main(self):
 
     export_import(encrypt=True)
     export_import(encrypt=False)
-    cleanup()
+
+    for namespace in namespaces:
+        bcdb = j.data.bcdb.get(name=namespace)
+        bcdb.destroy()
+
     j.servers.zdb.test_instance_stop()
     self._log_info("TEST DONE")
     return "OK"

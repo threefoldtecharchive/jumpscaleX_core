@@ -254,9 +254,6 @@ class BCDB(j.baseclasses.object):
                 return
 
         self.reset()
-        # if self.storclient:
-        #     assert self.storclient.list() == [0]
-        #     assert self.storclient.nsinfo["entries"] == 1
 
         self._log_info("Load bcdb:%s from %s" % (self.name, path))
         assert j.sal.fs.exists(path)
@@ -273,9 +270,6 @@ class BCDB(j.baseclasses.object):
             url = j.sal.fs.getBaseName(url_path)
             schema = j.data.schema.get_from_text(schema_text, url=url)
             schemas[url] = schema
-            raise RuntimeError("not implemented")
-            # need to put in j.data.schema
-            # self.meta._schema_set(schema, save=False)
 
         for url_path in paths:
             print(f"processing {url_path}")
@@ -316,17 +310,19 @@ class BCDB(j.baseclasses.object):
         if isinstance(self.storclient, ZDBClientBase):
             next_id = self.storclient.next_id
 
+        to_remove = []
+
         # have to import it in the exact same order
         for i in range(1, max_id + 1):
             print(f"i: {i}")
             if i not in data:
                 if i < next_id:
                     continue
-
                 print(f"{i} doesn't exist in data.. ")
-                gap_obj = self._dummy.new()
+                gap_obj = model.new()
                 gap_obj.name = j.data.idgenerator.generateGUID()
                 gap_obj.save()
+                to_remove.append(gap_obj)
             else:
                 url, obj_data = data[i]
                 model = models[url]
@@ -338,8 +334,9 @@ class BCDB(j.baseclasses.object):
                 obj.save()
                 assert obj.id == i
 
-        print("Cleaning up dummy objects")
-        self._dummy.destroy()
+        print("Cleaning up gap objects")
+        for obj in to_remove:
+            obj.delete()
 
     @property
     def sqlite_index_client(self):
@@ -452,6 +449,12 @@ class BCDB(j.baseclasses.object):
         self.storclient._init(nsname=self.storclient.nsname)
         if self.storclient.type == "SDB":
             self.storclient.flush()
+
+        if not self.storclient.get(0):
+            r = self.storclient.set(b"INIT")
+            # this is to not have id 0, otherwise certain tests which check on value in 0 get confused
+            assert self.storclient.get(0)
+
         self._init_props_()
         self._init_system_objects()
 
