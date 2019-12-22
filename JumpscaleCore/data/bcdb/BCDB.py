@@ -156,9 +156,7 @@ class BCDB(j.baseclasses.object):
 
     @property
     def readonly(self):
-        if self._readonly == None:
-            self._readonly = not j.data.bcdb._master
-        return self._readonly
+        return not j.data.bcdb._master
 
     def check(self):
         """
