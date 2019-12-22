@@ -598,7 +598,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         bcdb.reset()  # empty
 
-        assert bcdb.storclient.count == 0
+        assert bcdb.storclient.count == 1
 
         assert bcdb.name == "test"
 
@@ -609,7 +609,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         if type.lower() in ["zdb"]:
             # print(model.storclient.nsinfo["entries"])
-            assert model.storclient.nsinfo["entries"] == 0
+            assert model.storclient.nsinfo["entries"] == 1
 
         assert len(model.find()) == 0
 
