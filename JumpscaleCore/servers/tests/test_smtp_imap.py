@@ -4,7 +4,6 @@ from smtplib import SMTP
 from imbox import Imbox
 from imapclient import IMAPClient
 from time import sleep
-import unittest
 
 
 class TestSMTPIMAP(BaseTest):
@@ -52,7 +51,6 @@ class TestSMTPIMAP(BaseTest):
         self.info("Destroy the database")
         db.destroy()
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_libs/issues/41")
     def test002_imapclient_can_create_folder_in_imap(self):
         """
         Client can create folders in his mail.
@@ -85,7 +83,6 @@ class TestSMTPIMAP(BaseTest):
         self.info("Assert that the new box has been created")
         self.assertIn(box_name, str(box.folders()[-1][0]))
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_libs/issues/41")
     def test003_imapClient_get_messages_from_database(self):
         """
          Client can create folders in his mail.
