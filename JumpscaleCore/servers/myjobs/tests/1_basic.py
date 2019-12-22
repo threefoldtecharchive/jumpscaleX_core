@@ -8,7 +8,7 @@ def main(self):
 
     j.tools.logger.debug = True
 
-    self.reset()
+    # self.reset()
 
     def add(a=None, b=None):
         assert a
@@ -37,9 +37,8 @@ def main(self):
 
     res = self.results()
 
-    v = [i for i in res.values()]
-    assert len(res.values()) == 1
-    assert v[0] == 3
+    assert len(res) == 1
+    assert res[0] == 3
 
     job = self.jobs.find()[0]
     assert job.error == {}
@@ -52,15 +51,13 @@ def main(self):
     self.worker_inprocess_start()
 
     res = self.results([jobid])
-    v = [i for i in res.values()]
+    v = [i for i in res]
     assert v[0] == 7
 
     job = self.schedule(add, a=3, b=4)
     self.worker_inprocess_start()
     res = job.wait()
     assert res
-
-    self.stop(reset=True)
 
     print("Basic TEST OK")
     print("TEST OK")

@@ -8,9 +8,7 @@ class BCDBModelClient(j.baseclasses.object):
         self.model = self.bcdb.model_get(url=kwargs["url"])
         self.schema = self.model.schema
         self.count = self.model.count
-
-        if self.bcdb.readonly:
-            self._rediscl_ = j.clients.bcdbmodel._rediscl_
+        self.index = self.model.index
 
         self.iterate = self.model.iterate
         self.search = self.model.search
@@ -23,17 +21,14 @@ class BCDBModelClient(j.baseclasses.object):
         if j.data.bcdb._master:
             self.trigger_add = self.model.trigger_add
         else:
+            self._rediscl_ = j.clients.bcdbmodel._rediscl_
             self._rediscl_.execute_command(
                 "bcdb_model_init", self.bcdb.name, self.model.schema.url, self.model.schema._md5, self.model.schema.text
             )
-
-        self.index = self.model.index
-
-        if not j.data.bcdb._master:
             self.model.trigger_add(self._set_trigger)
 
     def get(self, id):
-        if self.bcdb.readonly:
+        if not j.data.bcdb._master:
             key = f"{self.name}:data:{self.model.schema.url}"
             data = self._rediscl_.hget(key, str(id))
             ddata = j.data.serializers.json.loads(data)
@@ -42,7 +37,7 @@ class BCDBModelClient(j.baseclasses.object):
             return self.model.get(id)
 
     def set(self, obj):
-        if self.bcdb.readonly:
+        if not j.data.bcdb._master:
             key = f"{self.name}:data:{obj._schema.url}"
             if obj.id:
                 self._rediscl_.hset(key, str(obj.id), obj._json)
@@ -54,7 +49,7 @@ class BCDBModelClient(j.baseclasses.object):
             return self.model.set(obj=obj)
 
     def delete(self, obj):
-        if self.bcdb.readonly:
+        if not j.data.bcdb._master:
             key = f"{self.name}:data:{obj._schema.url}"
             assert obj.id
             return self._rediscl_.hdel(key, str(obj.id))
@@ -62,7 +57,7 @@ class BCDBModelClient(j.baseclasses.object):
             return self.model.delete(obj=obj)
 
     def destroy(self):
-        if self.bcdb.readonly:
+        if not j.data.bcdb._master:
             key = f"{self.name}:data:"
             self._rediscl_.hdel(key, "*")
         else:

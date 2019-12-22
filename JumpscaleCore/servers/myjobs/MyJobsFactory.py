@@ -85,7 +85,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             return True, o
 
     def _bcdb_selector(self):
-        assert j.data.bcdb.exists("myjobs")
+        # assert j.data.bcdb.exists("myjobs")
         return j.data.bcdb.get("myjobs")
 
     @property
@@ -604,16 +604,14 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             return res
 
     def results(self, ids=None, return_queues=None, timeout=100, die=True):
-        if ids is None or len(ids) == 0:
+        if ids is None:
+            ids = self.scheduled_ids
+        elif len(ids) == 0:
             return []
         if not return_queues:
-            jobs = self.wait(ids=ids, timeout=timeout, die=die)
+            return [job.result for job in self.wait(ids=ids, timeout=timeout, die=die)]
         else:
-            jobs = self.wait_queues(queue_names=return_queues, size=len(ids), timeout=timeout, die=die)
-        res = {}
-        for job in jobs:
-            res[job.id] = job.result
-        return res
+            return [job.result for job in self.wait_queues(queue_names=return_queues, size=len(ids), timeout=timeout, die=die)]
 
     def wait_queue(self, queue_name, size=1, timeout=120, die=True):
         res = self.wait_queues(queue_names=[queue_name], size=size, timeout=timeout, die=die)
@@ -626,6 +624,36 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         kosmos 'j.servers.myjobs.test()'
 
         """
+
+        # make sure client for myjobs properly configured
+        j.core.db.redisconfig_name = "core"
+        storclient = j.clients.rdb.client_get(redisclient=j.core.db)
+        myjobs_bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
+        bcdb = j.data.bcdb.system
+        adminsecret_ = j.data.hash.md5_string(j.core.myenv.adminsecret)
+        redis_server = j.data.bcdb.redis_server_get(port=6380, secret=adminsecret_)
+        # just to make sure we don't have it open to external
+
+        j.servers.myjobs.model_action.model.index_rebuild()
+        j.servers.myjobs.workers._model.index_rebuild()
+        j.servers.myjobs.jobs._model.index_rebuild()
+
+        redis = j.servers.startupcmd.get("redis_6380")
+        redis.stop()
+        redis.wait_stopped()
+
+        cmd = """
+        . {DIR_BASE}/env.sh;
+        kosmos 'j.data.bcdb.get("myjobs").redis_server_start(port=6380)'
+        """
+
+        self._cmd = j.servers.startupcmd.get(name="redis_6380", cmd_start=cmd, ports=[6380], executor="tmux")
+        self._cmd.start()
+        j.sal.nettools.waitConnectionTest("127.0.0.1", port=6380, timeout=15)
+
         self._test_run(name=name, **kwargs)
+        redis = j.servers.startupcmd.get("redis_6380")
+        redis.stop()
+        redis.wait_stopped()
 
         print("TEST OK ALL PASSED")
