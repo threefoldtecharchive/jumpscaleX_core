@@ -3,6 +3,7 @@ def main(self):
     kosmos -p 'j.servers.myjobs.test("dependencies")'
     """
 
+    self.test_setup()
     assert len(self.workers.find()) == 0
 
     nrworkers = 3
@@ -27,7 +28,7 @@ def main(self):
 
     job1 = self.schedule(do_ok, wait_do=1)
     job2 = self.schedule(do_ok, wait_do=1)
-    job3 = self.schedule(do_ok, wait_do=1, dependencies=[job1.id, job2.id], timeout=30, die=True)
+    job3 = self.schedule(do_ok, dependencies=[job1.id, job2.id], timeout=30, die=True, wait_do=1)
 
     job3.wait()
     assert job3.state == "OK"
@@ -45,5 +46,5 @@ def main(self):
     assert job3.error["dependency_failure"] == job2.id
     assert job2.state == "ERROR"
     assert job1.state == "OK"
-
+    self.test_teardown()
     print("TEST OK FOR dependencies")

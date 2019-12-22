@@ -6,6 +6,8 @@ def main(self):
     """
     kosmos -p 'j.servers.myjobs.test("workers")'
     """
+    self.test_setup()
+    j.servers.myjobs.jobs.reset()
     self.workers_subprocess_start(nr_fixed_workers=10)
 
     j.tools.logger.debug = True
@@ -135,7 +137,7 @@ def main(self):
     jobs = [job for job in jobs if job.state == "OK"]
     assert len(jobs) == 30
 
-    job = j.servers.myjobs.schedule(add_error, return_queues=["queue_a"], return_queues_reset=True, a=1, b=2, die=True)
+    job = j.servers.myjobs.schedule(add_error, return_queues=["queue_a"], return_queues_reset=True, die=True, a=1, b=2)
     try:
         self.results(ids=[job.id], return_queues=["queue_a"], die=True)
         raise AssertionError("Should have died")

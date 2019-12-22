@@ -7,6 +7,7 @@ def main(self, reset=False):
     """
     kosmos -p 'j.servers.myjobs.test("wait")'
     """
+    self.test_setup()
 
     self.workers_tmux_start()
 
@@ -49,6 +50,6 @@ def main(self, reset=False):
         pass
 
     assert len(res) == 0
-
+    self.test_teardown()
     print("wait TEST OK")
     print("TEST OK")

@@ -1,3 +1,4 @@
+import sys
 from Jumpscale import j
 import gipc
 import gevent
@@ -609,30 +610,30 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         if not return_queues:
             return [job.result for job in self.wait(ids=ids, timeout=timeout, die=die)]
         else:
-            return [job.result for job in self.wait_queues(queue_names=return_queues, size=len(ids), timeout=timeout, die=die)]
+            return [
+                job.result
+                for job in self.wait_queues(queue_names=return_queues, size=len(ids), timeout=timeout, die=die)
+            ]
 
     def wait_queue(self, queue_name, size=1, timeout=120, die=True):
         res = self.wait_queues(queue_names=[queue_name], size=size, timeout=timeout, die=die)
         if res:
             return res[0]
 
-    def test(self, name="", **kwargs):
-        """
-        it's run all tests
-        kosmos 'j.servers.myjobs.test()'
-
-        """
-
-        def clean():
-            j.servers.myjobs.stop(timeout=10, reset=False, graceful=False)
+    def test_teardown(self):
+        j.servers.myjobs.stop(timeout=10, reset=False, graceful=False)
+        try:
             redis = j.servers.startupcmd.get("redis_6380")
-            try:
-                redis.stop()
-                redis.wait_stopped()
-            except:
-                j.sal.process.killProcessByPort(6380)
+            redis.stop()
+            redis.wait_stopped()
+        except:
+            j.sal.process.killProcessByPort(6380)
 
+        j.servers.myjobs.workers.reset()
+
+    def test_setup(self):
         # make sure client for myjobs properly configured
+
         j.core.db.redisconfig_name = "core"
         storclient = j.clients.rdb.client_get(redisclient=j.core.db)
         myjobs_bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
@@ -645,21 +646,25 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         j.servers.myjobs.workers._model.index_rebuild()
         j.servers.myjobs.jobs._model.index_rebuild()
 
-
-
         cmd = """
-        . {DIR_BASE}/env.sh;
-        kosmos 'j.data.bcdb.get("myjobs").redis_server_start(port=6380)'
-        """
+                . {DIR_BASE}/env.sh;
+                kosmos 'j.data.bcdb.get("myjobs").redis_server_start(port=6380)'
+                """
 
         self._cmd = j.servers.startupcmd.get(name="redis_6380", cmd_start=cmd, ports=[6380], executor="tmux")
         self._cmd.start()
         j.sal.nettools.waitConnectionTest("127.0.0.1", port=6380, timeout=15)
 
+    def test(self, name="", **kwargs):
+        """
+        it's run all tests
+        kosmos 'j.servers.myjobs.test()'
+
+        """
+
         try:
             self._test_run(name=name, **kwargs)
-            clean()
         except:
-            clean()
+            self.test_teardown()
             raise
         print("TEST OK ALL PASSED")

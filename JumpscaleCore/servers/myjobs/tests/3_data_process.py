@@ -6,6 +6,8 @@ def main(self, count=20):
     """
     kosmos -p 'j.servers.myjobs.test("data_process")'
     """
+    self.test_setup()
+
     def wait_1sec():
         gevent.sleep(1)
         return "OK"
@@ -60,6 +62,6 @@ def main(self, count=20):
 
     for job in jobs:
         assert job.result == "OK"
-
+    self.test_teardown()
     print("Data_process TEST OK")
     print("TEST OK")
