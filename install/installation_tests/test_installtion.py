@@ -464,7 +464,7 @@ class TestInstallationInDocker(BaseTest):
         self.os_command(command)
 
         self.info("Add sshkey ")
-        self.os_command('ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa')
+        self.os_command('ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa <<< y')
         self.os_command("eval `ssh-agent -s`  &&  ssh-add")
 
         self.info("Configure the no-interactive option")
