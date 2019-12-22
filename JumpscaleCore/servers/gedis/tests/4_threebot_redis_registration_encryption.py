@@ -40,7 +40,9 @@ def main(self):
     # if there would be no authentication it would fail
     args = {}
     args["name"] = "ibiza_test"
-    args["path"] = j.core.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/ibiza")
+    args["path"] = j.core.tools.text_replace(
+        "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/ibiza"
+    )
 
     data_return_json = cl.execute_command("default.package_manager.package_add", j.data.serializers.json.dumps(args))
 
@@ -55,4 +57,3 @@ def main(self):
     j.shell()
 
     print("**DONE**")
-

@@ -20,13 +20,19 @@
 
 from Jumpscale import j
 
+####
 
+# To Be reviewed in jumpscale 10.3
+
+###
 def main(self):
     """
     to run:
     kosmos 'j.data.bcdb.test(name="export")'
 
     """
+    zdb = j.servers.zdb.test_instance_start()
+
     namespaces = ["testexport_zdb", "testexport_sqlite"]
 
     def cleanup():
@@ -56,8 +62,6 @@ def main(self):
     """
     schema = j.data.schema.get_from_text(schema_text)
     schema2 = j.data.schema.get_from_text(schema_text2)
-
-    zdb = j.servers.zdb.test_instance_start()
 
     for namespace in namespaces:
         if namespace == "testexport_zdb":
@@ -102,8 +106,7 @@ def main(self):
             assert len(node_model.find()) == 8
 
             bcdb.reset()
-            assert bcdb.storclient.count == 1
-
+            assert bcdb.storclient.count == 0
             bcdb.import_(f"/tmp/bcdb_export/{namespace}", interactive=False)
 
             assert len(farm_model.find()) == 10
@@ -111,8 +114,7 @@ def main(self):
 
     export_import(encrypt=True)
     export_import(encrypt=False)
-
     cleanup()
-
+    j.servers.zdb.test_instance_stop()
     self._log_info("TEST DONE")
     return "OK"

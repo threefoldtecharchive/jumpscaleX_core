@@ -62,6 +62,7 @@ class JSDict(MutableMapping):
         self._data[key] = value
 
     def __getattr__(self, name):
+        name = name.replace("__", ".")
         if name.startswith("_"):
             return self.__getattribute__(name)
         # don't clean here

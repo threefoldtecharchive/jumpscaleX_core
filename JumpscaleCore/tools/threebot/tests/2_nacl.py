@@ -19,7 +19,7 @@ def main(self):
     S = """
     @url = tools.threebot.test.schema
     name** = "aname"
-    description = "something" 
+    description = "something"
     """
     schema = j.data.schema.get_from_text(S)
     jsxobject = schema.new()

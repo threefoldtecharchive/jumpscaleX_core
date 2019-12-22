@@ -12,13 +12,13 @@
 - is managing the type for a JSXObject, knows how to check, clean, serialze, ...
 - knowns the schema and optionally the model attached to it (which knows the sid)
 - inherits from j.data.types._TypeBaseObjClass  (good to check type)
-  
+
 ## JSXObject   = is the result of using our schema, is a strongly typed object
 
 - can create by using the j.data.types.object.clean(...)  the above type manager
 - inherits from j.data.schema._JSXObjectClass  use ```isinstance(obj,j.data.schema._JSXObjectClass)``` to test is right object or ```j.data.types.object.check(```
 - main properties
-    - _schema 
+    - _schema
     - _changed_items : when items got modified on the object
 - properties only relevant when model used
     - id : the unique id of the object, is None when no _model
@@ -49,4 +49,28 @@
 - main properties
   - sid: has link to sid = schemaid
   - schema: knows which schema to use
-  - 
+  -
+
+
+ ## bcdb internals
+
+ BCDB runs in two modes
+ - Read Write mode (master process): full access to whoever does write operation on it first (typically should be threebot server)
+ - Readonly mode: any other access operation on BCDB from another process that's not master
+
+ ### Read Write mode
+ all operations done directly on the objects (model, index .. etc)
+
+ ### Readonly mode
+ all operation are dispatched to BCDB-redis server of the master process to execute it from its side.
+
+ ### Flags
+ - j.data.bcdb._master
+ - `YOURBCDBOBJECT.readonly`
+
+ ### BCDBModelClient
+ it's a proxy for BCDBModel object when used in RW mode it actually uses the BCDBModel directly and if in R mode it uses BCDB-redis server.
+
+
+ ### bcdb_model_init
+ Special command in BCDB-Redis server responsible for initializing the model and its index

@@ -33,7 +33,7 @@ class Unique(BaseTest):
         if j.data.bcdb.exists("test"):
             self.bcdb = j.data.bcdb.get("test")
         else:
-            self.bcdb = j.data.bcdb.new("test")
+            self.bcdb = j.data.bcdb.get("test")
 
     def tearDown(self):
         self.bcdb.reset()

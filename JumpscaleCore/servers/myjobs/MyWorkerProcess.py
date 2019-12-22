@@ -43,39 +43,33 @@ class MyWorkerProcess(j.baseclasses.object):
             j.application.subprocess_prepare()
             j.clients.redis._cache_clear()  # make sure we have redis connections empty, because comes from parent
 
-        # MAKE SURE YOU DON'T REUSE SOCKETS FROM MOTHER PROCESSS
-        j.core.db.source = "worker"  # this allows us to test
         self.redisclient = j.core.db
-        self.bcdbclient = j.clients.redis.get(port=j.servers.myjobs.BCDB_CONNECTOR_PORT)
 
         self.queue_jobs_start = j.clients.redis.queue_get(
             redisclient=self.redisclient, key="queue:jobs:start", fromcache=False
         )
-        # self.queue_return = j.clients.redis.queue_get(redisclient=redisclient, key="queue:jobs:return", fromcache=False)
 
         j.errorhandler.handlers.append(self.error_handler)
 
-        storclient = j.clients.rdb.client_get(redisclient=self.redisclient)
-        # important, test we're using the right redis client
-        assert storclient._redis.source == "worker"
+        found = j.data.bcdb.exists("myjobs")
+        while not found:
+            found = j.data.bcdb.exists("myjobs")
+            time.sleep(0.1)
 
-        self.bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
-        self.model_job = self.bcdb.model_get(schema=schemas.job)
-        self.model_action = self.bcdb.model_get(schema=schemas.action)
-        self.model_worker = self.bcdb.model_get(schema=schemas.worker)
+        self.bcdb = j.data.bcdb.get("myjobs")
+        self.bcdb._readonly = True
+
+        self.model_job = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.job)
+        self.model_action = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.action)
+        self.model_worker = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.worker)
 
         if not self.onetime:
             # if not onetime then will send all to queue which will be processed on parent process (the myjobs manager)
             # makes sure that we cannot start by coincidence the data processing loop
             # TODO: need to check this in the processing loop that this is not True
             j.servers.myjobs._i_am_worker = True
-            self.model_job.nosave = True
-            self.model_worker.nosave = True
 
-        self.model_worker.trigger_add(self._worker_set)
-        self.model_job.trigger_add(self._job_set)
-
-        self.worker_obj = self._worker_get(worker_id)
+        self.worker_obj = self.model_worker.get(worker_id)
 
         self.start()
 
@@ -93,60 +87,12 @@ class MyWorkerProcess(j.baseclasses.object):
         self.worker_obj.last_update = j.data.time.epoch
         self.worker_obj.halt = False
         self.worker_obj.pid = 0
+        self._redis_set(self.worker_obj)
         self.worker_obj.save()
         if not self.onetime:
             self._log_info("WORKER REMOVE SELF:%s" % self.id, data=self)
         else:
             self._log_info("WORKER ONETIME DONE")
-
-    # DATA LOGIC
-    def job_get(self, id):
-        # call through redis client the local BCDB
-        # get data as json
-        # use model_schema to give the object
-        return self._redis_get(id, self.model_job)
-
-    def _redis_get(self, id, model):
-        key = f"{self.bcdb.name}:data:1:{model.schema.url}"
-        data = self.bcdbclient.hget(key, str(id))
-        ddata = j.data.serializers.json.loads(data)
-        return model.new(ddata)
-
-    def _redis_set(self, obj):
-        key = f"{self.bcdb.name}:data:1:{obj._schema.url}"
-        self.bcdbclient.hset(key, str(obj.id), obj._json)
-
-    def _action_get(self, id):
-        if self.onetime:
-            return self.model_action.get(id, die=True)
-        else:
-            # call through redis client the local BCDB
-            # get data as json
-            # use model_schema
-            return self._redis_get(id, self.model_action)
-
-    def _worker_get(self, id):
-        if self.onetime:
-            return self.model_worker.get(id, die=True)
-        else:
-            return self._redis_get(id, self.model_worker)
-            # call through redis client the local BCDB
-            # get data as json
-            # use model_schema
-            # if exists put on self.worker_obj & return this one
-            # if dont exists, quit
-
-    def _worker_set(self, obj, action="save", propertyname=None, **kwargs):
-        if action == "save":
-            self._redis_set(obj)
-            # call through redis client the local BCDB
-            # get data as json (from _data) and use redis client to set to server
-
-    def _job_set(self, obj, action="save", propertyname=None, **kwargs):
-        if action == "save":
-            # call through redis client the local BCDB
-            # get data as json (from _data) and use redis client to set to server
-            self._redis_set(obj)
 
     ################
 
@@ -187,7 +133,7 @@ class MyWorkerProcess(j.baseclasses.object):
             else:
                 res = self.queue_jobs_start.get(timeout=20)
 
-            self.worker_obj = self._worker_get(self.id)
+            self.worker_obj = self.model_worker.get(self.id)
             if self.worker_obj.halt or res == b"halt":
                 return self.stop()
 
@@ -200,7 +146,7 @@ class MyWorkerProcess(j.baseclasses.object):
             else:
                 # self._log_debug("queue has data")
                 jobid = int(res)
-                job = self.job_get(jobid)
+                job = self.model_job.get(jobid)
                 self.job = job
                 job.time_start = j.data.time.epoch
                 skip = False
@@ -241,7 +187,7 @@ class MyWorkerProcess(j.baseclasses.object):
                         j.shell()
                     else:
                         # now have job
-                        action = self._action_get(job.action_id)
+                        action = self.model_action.get(job.action_id)
                         kwargs = job.kwargs
 
                         self.worker_obj.last_update = j.data.time.epoch

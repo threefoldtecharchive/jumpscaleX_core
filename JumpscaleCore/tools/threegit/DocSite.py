@@ -1,26 +1,29 @@
+import copy
+import sys
+import traceback
+
 from urllib.parse import urlparse
+
 from Jumpscale import j
+
 from .Doc import Doc
 from .Link import Linker, MarkdownLinkParser
 
 JSBASE = j.baseclasses.object
-
-import copy
-
-import sys
 
 
 class DocSite(j.baseclasses.object):
     """
     """
 
-    def __init__(self, path, name="", dest="", sonic_client=None):
+    def __init__(self, path, name="", dest="", sonic_client=None, threegit=None):
         JSBASE.__init__(self)
         self._j = j
 
         self.docgen = j.tools.threegit.get(name)
         # init initial arguments
 
+        self.threegit = threegit
         self.path = path
         if not j.sal.fs.exists(path):
             raise j.exceptions.Base("Cannot find path:%s" % path)
@@ -173,8 +176,11 @@ class DocSite(j.baseclasses.object):
             new_link = Linker.to_custom_link(repo, host)
             # to match any path, start with root `/`
             url = Linker(host, new_link.account, new_link.repo).tree("/")
-            docsite = j.tools.threegit.load(url, name=new_link.repo)
+            docsite = self.threegit.load(url, name=new_link.repo, base_path="")
             custom_link = new_link
+
+        docsite.load(reset=True)
+        # docsite.write()
 
         try:
             included_doc = docsite.doc_get(custom_link.path)
@@ -403,7 +409,6 @@ class DocSite(j.baseclasses.object):
 
         name = name.replace("/", ".").strip(".")
 
-        self.load()
         name = self._clean(name)
 
         name = name.strip("/")
@@ -618,8 +623,7 @@ class DocSite(j.baseclasses.object):
 
         return out
 
-    def verify(self, reset=False):
-        self.load(reset=reset)
+    def verify(self):
         keys = [item for item in self.docs.keys()]
         keys.sort()
         for key in keys:
@@ -628,7 +632,7 @@ class DocSite(j.baseclasses.object):
             try:
                 doc.markdown  # just to trigger the error checking
             except Exception as e:
-                msg = "unknown error to get markdown for doc, error:\n%s" % e
+                msg = "unknown error to get markdown for doc, error:\n%s\n%s" % (e, traceback.format_exc())
                 self.error_raise(msg, doc=doc)
             # doc.html
         return self.errors
@@ -677,10 +681,11 @@ class DocSite(j.baseclasses.object):
         return self.outpath + "/.data"
 
     def write(self, reset=False, check=True):
-        self.load(check=check, reset=reset)
-        self.verify(reset=reset)
         if reset:
             j.sal.fs.remove(self.outpath)
+
+        self.load(check=check, reset=reset)
+        self.verify()
 
         j.sal.fs.createDir(self.outpath)
 

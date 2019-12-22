@@ -4,13 +4,25 @@ from base_test import BaseTest
 from parameterized import parameterized
 
 
+@skip(
+    "https://github.com/threefoldtech/jumpscaleX_core/issues/369 , when unskipping these tests, please uncomment the SetUpClass and tearDownClass methods"
+)
 class RegistryTests(BaseTest):
 
-    bcdb = j.data.bcdb.get("threebot_registery")
+    # bcdb = j.data.bcdb.get("threebot_registery")
 
-    @classmethod
-    def setUpClass(cls):
-        cls.cl = cls.addRegistryPackage()
+    # @classmethod
+    # def setUpClass(cls):
+    #     try:
+    #         cls.cl = cls.addRegistryPackage()
+    #     except Exception:
+    #         cls.tearDownClass()
+    #         raise
+
+    # @classmethod
+    # def tearDownClass(cls):
+    #     j.servers.threebot.default.stop()
+    #     j.sal.process.killall("tmux")
 
     @classmethod
     def addRegistryPackage(cls):

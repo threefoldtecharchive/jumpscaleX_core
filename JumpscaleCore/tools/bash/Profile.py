@@ -294,5 +294,3 @@ class Profile(j.baseclasses.object):
         return content.getvalue()
 
     __repr__ = __str__
-
-

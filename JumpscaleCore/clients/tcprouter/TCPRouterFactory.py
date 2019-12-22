@@ -12,7 +12,14 @@ class TCPRouterFactory(JSConfigs):
     def test(self):
 
         # get a client instance (TO CHECK: secret is already assigned to backend)
-        cl = self.get("test_instance", local_address="0.0.0.0:18000", remote_address="127.0.0.1:6379", secret="test")
+        cl = self.get(
+            "test_instance",
+            local_ip="0.0.0.0",
+            local_port=18000,
+            remote_ip="127.0.0.1",
+            remote_port=6379,
+            secret="test",
+        )
 
         # connect to backend
         cl.connect()

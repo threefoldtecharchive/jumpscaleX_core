@@ -109,7 +109,7 @@ def copy_links(main_doc, included_docs_root, included_doc_path, links):
         # the destination is just the output path with the relative directory and the source
         destination = exapnd_doc_path(main_docs_outpath, main_doc.path_dir_rel, source)
         if not j.sal.fs.exists(destination):
-            j.sal.fs.copyFile(real_path, destination)
+            j.sal.fs.copyFile(real_path, destination, createDirIfNeeded=True)
 
 
 def process_content(content, marker, doc_only, header_levels_modify, ignore):

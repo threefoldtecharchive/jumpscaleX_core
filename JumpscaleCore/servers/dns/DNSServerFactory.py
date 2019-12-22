@@ -100,7 +100,7 @@ class DNSServerFactory(j.baseclasses.factory_testtools):
         pprint(ns.namerecords_get("google.com"))
         pprint(ns.namerecords_get("info.despiegk"))
 
-        bcdb = j.data.bcdb.new("test_dns")
+        bcdb = j.data.bcdb.get("test_dns")
         dns = self.get(port, bcdb)
         obj = dns.resolver.model.find(zone="test.com")
         if obj:
