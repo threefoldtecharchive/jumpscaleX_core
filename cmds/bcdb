@@ -9,8 +9,8 @@ import click
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
-j.core.db.delete("threebot.starting")
-j.data.bcdb._master_set()
+j.data.bcdb._master_set(False)
+j.data.bcdb._master_set(True)
 
 
 @click.group()
@@ -46,10 +46,13 @@ def delete(name=None, all=False):
             _unlock(name)
             do(name)
 
+    j.data.bcdb._master_set(False)
+
 
 @click.command()
 def unlock():
     _unlock()
+    j.data.bcdb._master_set(False)
 
 
 def _unlock():
@@ -77,6 +80,7 @@ def check(name=None):
     :return:
     """
     j.application.check()
+    j.data.bcdb._master_set(False)
 
 
 @click.command()
@@ -96,6 +100,8 @@ def rebuild(name=None):
     else:
         bcdb = j.data.bcdb.get(name=name, reset=False)
         bcdb.index_rebuild()
+
+    j.data.bcdb._master_set(False)
 
 
 if __name__ == "__main__":
