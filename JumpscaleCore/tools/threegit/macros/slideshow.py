@@ -67,7 +67,7 @@ def slideshow(doc, **kwargs):
         image_tag = """
         <img src="$path{dest}" alt='{slide_name}'"/>
         """.format(
-            slide_name=slide.name, dest=dest
+            slide_name=slide.name, dest=dest[10:]  # remove /docsites/
         )
         output += """
             <section>

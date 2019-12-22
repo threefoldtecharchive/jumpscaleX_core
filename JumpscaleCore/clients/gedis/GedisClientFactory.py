@@ -28,13 +28,33 @@ class GedisClientFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.clients.gedis"
     _CHILDCLASS = GedisClient
 
-    def client_get(self, name="base", host="localhost", port=8901, package_name="zerobot.base"):
-        """
+    # def get(self, name="base", host="localhost", port=8901, package_name=None, **kwargs):
+    #     """
+    #
+    #     :param host:
+    #     :param port:
+    #     :param package_name: needs to be the full name which is $threebotauthor.$packagename
+    #     :return:
+    #     """
+    #
+    #     return super().get(name=name, host=host, port=port, package_name=package_name, **kwargs)
 
-        :param host:
-        :param port:
-        :param package_name: needs to be the full name which is $threebotauthor.$packagename
-        :return:
-        """
+    def _handle_error(self, e, source=None, cmd_name=None, redis=None):
 
-        return self.get(name=name, host=host, port=port, package_name=package_name)
+        try:
+            logdict = j.data.serializers.json.loads(str(e))
+        except Exception:
+            logdict = j.core.myenv.exception_handle(e, die=False, stdout=False)
+        assert redis
+
+        addr = redis.connection_pool.connection_kwargs["host"]
+        port = redis.connection_pool.connection_kwargs["port"]
+        msg = "GEDIS SERVER %s:%s" % (addr, port)
+        if cmd_name:
+            msg += " SOURCE METHOD: %s" % cmd_name
+        logdict["source"] = msg
+
+        # j.core.tools.log2stdout(logdict=logdict, data_show=True)
+        j.core.tools.process_logdict_for_handlers(logdict=logdict, iserror=True)
+
+        raise j.exceptions.RemoteException(message=msg, data=logdict, exception=e)

@@ -9,6 +9,10 @@ import click
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
+j.core.db.delete("threebot.starting")
+j.data.bcdb._master_set()
+
+
 @click.group()
 def cli():
     pass
@@ -33,11 +37,24 @@ def delete(name=None, all=False):
 
     if all:
         if j.tools.console.askYesNo("Are you sure you want to destroy all BCDB's"):
+            _unlock()
             j.data.bcdb.threebot_stop()
             j.data.bcdb.destroy_all()
+
     else:
         if j.tools.console.askYesNo("Are you sure you want to destroy:%s" % name):
+            _unlock(name)
             do(name)
+
+
+@click.command()
+def unlock():
+    _unlock()
+
+
+def _unlock():
+    # we now do all or nothing
+    j.data.bcdb.unlock()
 
 
 # @click.command()
@@ -71,7 +88,7 @@ def rebuild(name=None):
     :return:
     """
 
-    j.data.bcdb.threebot_start()
+    j.data.bcdb.threebot_zdb_sonic_start()
 
     if not name:
         for bcdb in j.data.bcdb.instances.values():
@@ -85,5 +102,6 @@ if __name__ == "__main__":
     cli.add_command(delete)
     cli.add_command(check)
     cli.add_command(rebuild)
+    cli.add_command(unlock)
 
     cli()

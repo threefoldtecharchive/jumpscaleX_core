@@ -1,24 +1,10 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
+
+####
+
+# To Be reviewed in jumpscale 10.3
+
+###
 
 
 def main(self):
@@ -27,15 +13,9 @@ def main(self):
     kosmos 'j.data.bcdb.test(name="export")'
 
     """
+    zdb = j.servers.zdb.test_instance_start()
+
     namespaces = ["testexport_zdb", "testexport_sqlite"]
-
-    def cleanup():
-        for namespace in namespaces:
-            if namespace in j.data.bcdb.instances:
-                bcdb = j.data.bcdb.instances[namespace]
-                bcdb.destroy()
-
-    cleanup()
 
     schema_text = """
     @url = farm.1
@@ -57,8 +37,6 @@ def main(self):
     schema = j.data.schema.get_from_text(schema_text)
     schema2 = j.data.schema.get_from_text(schema_text2)
 
-    zdb = j.servers.zdb.test_instance_start()
-
     for namespace in namespaces:
         if namespace == "testexport_zdb":
             adminsecret_ = j.data.hash.md5_string(zdb.adminsecret_)
@@ -70,6 +48,8 @@ def main(self):
             bcdb = j.data.bcdb.get(name=namespace, storclient=storclient)
         else:
             bcdb = j.data.bcdb.get(name=namespace)
+
+        bcdb.reset()
 
         farm_model = bcdb.model_get(schema)
 
@@ -103,7 +83,6 @@ def main(self):
 
             bcdb.reset()
             assert bcdb.storclient.count == 1
-
             bcdb.import_(f"/tmp/bcdb_export/{namespace}", interactive=False)
 
             assert len(farm_model.find()) == 10
@@ -112,7 +91,10 @@ def main(self):
     export_import(encrypt=True)
     export_import(encrypt=False)
 
-    cleanup()
+    for namespace in namespaces:
+        bcdb = j.data.bcdb.get(name=namespace)
+        bcdb.destroy()
 
+    j.servers.zdb.test_instance_stop()
     self._log_info("TEST DONE")
     return "OK"

@@ -26,7 +26,9 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         self._bcdb = self._bcdb_selector()
 
-        self.model_action = self._bcdb.model_get(schema=schemas.action)
+        self.model_action = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.action)
+        j.clients.bcdbmodel.get(name="myjobs", schema=schemas.worker)
+        j.clients.bcdbmodel.get(name="myjobs", schema=schemas.job)
 
         self.scheduled_ids = []
         self.events = {}
@@ -41,10 +43,17 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
     #     if self.model_action._index_:
     #         self.model_action._index_.destroy()
 
+    def _init_models_readonly(self):
+        self._bcdb._readonly = True
+        m1 = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.action)
+        m2 = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.job)
+        m3 = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.worker)
+
     def _init_pre_schedule(self, in3bot=False):
         if not self._init_pre_schedule_:
             assert self._i_am_worker == False
             # need to make sure at startup we process all data which is still waiting there for us
+
             assert self._children
             assert self.jobs
             assert self.workers
@@ -60,7 +69,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 self._log_warning("waiting for redis interface of threebotserver to come up")
                 self._bcdb.redis_server_wait_up(self.BCDB_CONNECTOR_PORT)
             self._init_pre_schedule_ = True
-            self.jobs._model.trigger_add(self._job_update)
+            if j.data.bcdb._master:
+                self.jobs._model.trigger_add(self._job_update)
 
     def action_get(self, key, return_none_if_not_exist=False):
 
@@ -75,22 +85,21 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             return True, o
 
     def _bcdb_selector(self):
-        client = j.clients.rdb.client_get()
-        client.cat = "myjobs"
-        return j.data.bcdb.get("myjobs", storclient=client)
+        assert j.data.bcdb.exists("myjobs")
+        return j.data.bcdb.get("myjobs")
 
     @property
     def _workers_gipc_count(self):
         return len(self._workers_gipc.values())
 
-    def worker_inprocess_start(self, nr=1, debug=False):
+    def worker_inprocess_start(self, nr=1, debug=False, in3bot=False):
         """
 
         :param nr: is the nr of the worker 1 to x will be a child with name w$nr e.g. w3
         :param debug:
         :return:
         """
-        self._init_pre_schedule()
+        self._init_pre_schedule(in3bot=in3bot)
         if not nr:
             nr = self._worker_next_get()
         w = self.workers.get(name="w%s" % nr)
@@ -122,6 +131,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
     def _worker_inprocess_start_from_tmux(self, nr):
         # make sure jobs schema loaded
+        self._init_models_readonly()
         _ = self.jobs
         w = self.workers.get(name="w%s" % nr)
         w.time_start = j.data.time.epoch
@@ -145,7 +155,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         if not self._mainloop_tmux:
             self._mainloop_tmux = gevent.spawn(self._main_loop_tmux)
 
-    def worker_subprocess_start(self, nr=None, debug=False, in3bot=True):
+    def worker_subprocess_start(self, nr=None, debug=False, in3bot=False):
         """
         :param nr: is the nr of the worker 1 to x will be a child with name w$nr e.g. w3
         :param debug:
@@ -167,7 +177,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 last = i.nr
         return last + 1
 
-    def workers_subprocess_start(self, nr_fixed_workers=None, debug=False):
+    def workers_subprocess_start(self, nr_fixed_workers=None, debug=False, in3bot=False):
         """
 
         run the workers in subprocess
@@ -177,7 +187,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         :return:
         """
-        self._init_pre_schedule()
+        self._init_models_readonly()
+        self._init_pre_schedule(in3bot=in3bot)
         if not nr_fixed_workers:
             self._mainloop_gipc = gevent.spawn(self._main_loop_subprocess)
         else:
@@ -277,7 +288,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                         w.start()
                 elif w.state in ["WAITING"]:
                     if w.last_update > j.data.time.epoch - 40:
-                        w._log_info("no need to start worker:%s" % w.nr)
+                        # w._log_info("no need to start worker:%s" % w.nr)
+                        pass
                     else:
                         w._log_warning("worker was frozen because watchdog expired, will kill:%s" % w.nr)
                         w.stop(hard=True)

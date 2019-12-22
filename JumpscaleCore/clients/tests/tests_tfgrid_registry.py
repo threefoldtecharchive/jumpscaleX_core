@@ -4,18 +4,31 @@ from base_test import BaseTest
 from parameterized import parameterized
 
 
+@skip(
+    "https://github.com/threefoldtech/jumpscaleX_core/issues/369 , when unskipping these tests, please uncomment the SetUpClass and tearDownClass methods"
+)
 class RegistryTests(BaseTest):
 
-    bcdb = j.data.bcdb.get("threebot_registery")
+    # bcdb = j.data.bcdb.get("threebot_registery")
 
-    @classmethod
-    def setUpClass(cls):
-        cls.cl = cls.addRegistryPackage()
+    # @classmethod
+    # def setUpClass(cls):
+    #     try:
+    #         cls.cl = cls.addRegistryPackage()
+    #     except Exception:
+    #         cls.tearDownClass()
+    #         raise
+
+    # @classmethod
+    # def tearDownClass(cls):
+    #     j.servers.threebot.default.stop()
+    #     j.sal.process.killall("tmux")
 
     @classmethod
     def addRegistryPackage(cls):
         # . Start threebot server, add registery package, then reload the client.
-        cl = j.servers.threebot.local_start_default()
+        cl = j.servers.threebot.local_start_default(background=True)
+        cl = j.clients.gedis.get("threebot_registery", port=8901)
         cl.actors.package_manager.package_add(
             path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry"
         )
@@ -29,36 +42,34 @@ class RegistryTests(BaseTest):
 
     def getSchemaAndModel(self, x="hello"):
         schema = """
-            @url = threebot.registry.test.schema.1
+            @url = threebot.registry.test.schema.1 
             url = "" 
             x = ""
-            y = "{}" (E)
             tags = (LS)
         """
         randStr = j.data.idgenerator.generateXCharID(10)
         scm = j.data.schema.get_from_text(schema)
         model = self.bcdb.model_get(url=scm.url).new()
         model.url = randStr + ".com"
+        model.x = x
         model.save()
         return schema, model
 
     def register_using_filter(self, filter, **kwargs):
-        filter_value = j.data.idgenerator.generateXCharID(10)
+        filter_value = j.data.idgenerator.generateRandomInt(1000, 2000)
 
         if filter == "country_code":
-            data_id = j.clients.tfgrid_registry.register(country_code=filter_value, **kwargs)
-
-        elif filter == "category":
-            data_id = j.clients.tfgrid_registry.register(category=filter_value, **kwargs)
+            j.clients.tfgrid_registry.register(country_code=filter_value, **kwargs)
 
         elif filter == "topic":
-            data_id = j.clients.tfgrid_registry.register(topic=filter_value, **kwargs)
+            filter_value = "TRAVEL"
+            j.clients.tfgrid_registry.register(country_code="234", topic=filter_value, **kwargs)
 
         elif filter == "location_latitude":
-            data_id = j.clients.tfgrid_registry.register(location_latitude=filter_value, **kwargs)
+            j.clients.tfgrid_registry.register(country_code="234", location_latitude=filter_value, **kwargs)
 
         else:
-            data_id = j.clients.tfgrid_registry.register(location_longitude=filter_value, **kwargs)
+            j.clients.tfgrid_registry.register(country_code="234", location_longitude=filter_value, **kwargs)
 
         return filter_value
 
@@ -66,9 +77,6 @@ class RegistryTests(BaseTest):
 
         if filter == "country_code":
             res = j.clients.tfgrid_registry.find_formatted(registered_info_format="yaml", country_code=filter_value)
-
-        elif filter == "category":
-            res = j.clients.tfgrid_registry.find_formatted(registered_info_format="yaml", category=filter_value)
 
         elif filter == "topic":
             res = j.clients.tfgrid_registry.find_formatted(registered_info_format="yaml", topic=filter_value)
@@ -87,7 +95,7 @@ class RegistryTests(BaseTest):
         return data
 
     def test001_RegisterationAndPrivacy(self):
-        """RG001
+        """TC560
         #. Start threebot server, add registery package, then reload the client.
         #. Register user1's data as public, should succeed
         #. Get user1's public data, should succeed
@@ -97,6 +105,7 @@ class RegistryTests(BaseTest):
         """
 
         self.info("Test case : {}".format(self._testMethodName))
+        country_code = j.data.idgenerator.generateXCharID(10)
         schema, model = self.getSchemaAndModel()
         author = self.getNewUser()
         authorized_reader = self.getNewUser()
@@ -104,7 +113,7 @@ class RegistryTests(BaseTest):
 
         self.info("Register user1's data as public, should succeed")
         data_id1 = j.clients.tfgrid_registry.register(
-            schema=schema, authors=[author.tid], model=model, is_encrypted_data=False
+            schema=schema, authors=[author.tid], model=model, is_encrypted_data=False, country_code=country_code
         )
         self.assertTrue(data_id1, "Failed to register content")
 
@@ -114,7 +123,12 @@ class RegistryTests(BaseTest):
 
         self.info("Register user1's data as private with giving access to user2, should succeed")
         data_id2 = j.clients.tfgrid_registry.register(
-            schema=schema, authors=[author.tid], model=model, is_encrypted_data=True, readers=[authorized_reader.tid]
+            schema=schema,
+            authors=[author.tid],
+            model=model,
+            is_encrypted_data=True,
+            readers=[authorized_reader.tid],
+            country_code=country_code,
         )
         self.assertTrue(data_id2, "Failed to register content")
 
@@ -126,9 +140,8 @@ class RegistryTests(BaseTest):
         data = j.clients.tfgrid_registry.find_encrypted(unauthorized_reader.tid)
         self.assertFalse(data)
 
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/221")
     def test002_CheckOnDataFormat(self):
-        """RG002
+        """TC561
         #. Start threebot server, add registery package, then reload the client.
         #. Register user1's data
         #. Check if you can load the data in json format, should succeed
@@ -140,7 +153,7 @@ class RegistryTests(BaseTest):
         schema, model = self.getSchemaAndModel()
         author = self.getNewUser()
         data_id1 = j.clients.tfgrid_registry.register(
-            schema=schema, authors=[author.tid], model=model, is_encrypted_data=False
+            schema=schema, authors=[author.tid], model=model, is_encrypted_data=False, country_code="2354"
         )
         self.assertTrue(data_id1, "Failed to register your content")
 
@@ -154,10 +167,9 @@ class RegistryTests(BaseTest):
         data = j.data.serializers.yaml.loads(res)
         self.assertTrue(data)
 
-    @parameterized.expand(["country_code", "category", "topic", "location_latitude", "location_longitude"])
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/221")
+    @parameterized.expand(["country_code", "location_latitude", "location_longitude"])
     def test003_search_using_single_filter(self, filter):
-        """RG003
+        """TC562
         #. Start threebot server, add registery package, then reload the client.
         #. Register user1's data (D1) with adding filter
         #. Get the data using that filter, should succeed
@@ -174,7 +186,7 @@ class RegistryTests(BaseTest):
 
         self.info("Get the data using that filter, should succeed")
         data = self.find_using_filter(filter, filter_value)
-        self.assertNotEqual(len(data), 1, "couldn't filter using country code")
+        self.assertEqual(len(data), 1, "couldn't filter using country code")
         self.assertEqual(data[0]["x"], x)
 
         self.info("Register user1's different data (D2) with adding same filter")
@@ -186,9 +198,8 @@ class RegistryTests(BaseTest):
         data2 = self.find_using_filter(filter, filter_value)
         self.assertNotEqual(len(data2), 2)
 
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/221")
-    def test004_search_using_two_filters(self, filter):
-        """RG004
+    def test004_search_using_two_filters(self):
+        """TC563
         #. Start threebot server, add registery package, then reload the client.
         #. Register user1's data (D1) with adding country_code (C1)
         #. Register user1's data (D2) with adding topic (T1) ans same country code (C1)
@@ -203,15 +214,15 @@ class RegistryTests(BaseTest):
         author = self.getNewUser()
         C1 = self.register_using_filter("country_code", schema=schema, authors=[author.tid], model=model)
 
-        self.info("Register user1's data (D2) with adding topic (T1) ans same country code (C1)")
+        self.info("Register user1's data (D2) with adding topic (T1) and same country code (C1)")
         x2 = j.data.idgenerator.generateXCharID(10)
         schema, model = self.getSchemaAndModel(x2)
-        T1 = j.data.idgenerator.generateXCharID(10)
+        T1 = "TRAVEL"
         j.clients.tfgrid_registry.register(schema=schema, authors=[author.tid], model=model, country_code=C1, topic=T1)
 
         self.info("Get data using filter C1, should get D1 and D2")
         data = self.find_using_filter("country_code", C1)
-        self.assertNotEqual(len(data), 2)
+        self.assertEqual(len(data), 2)
         lst = [obj["x"] for obj in data]
         self.assertIn(x, lst)
         self.assertIn(x2, lst)
@@ -219,5 +230,5 @@ class RegistryTests(BaseTest):
         self.info("Get data using filters T1 and C1, should only get D2")
         res2 = j.clients.tfgrid_registry.find_formatted(registered_info_format="yaml", country_code=C1, topic=T1)
         data2 = j.data.serializers.yaml.loads(res2)
-        self.assertNotEqual(len(data), 1)
-        self.assertEqual(data2[0]["x"], x2)
+        self.assertNotEqual(len(data2), 1)
+        self.assertEqual(data2[1]["x"], x2)

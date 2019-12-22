@@ -1,6 +1,7 @@
 import toml
 import copy
 import re
+import traceback
 
 from urllib.parse import urlparse, parse_qs, parse_qsl
 from .Link import Link
@@ -282,19 +283,22 @@ class Doc(j.baseclasses.object):
         eval the macros
         """
 
+        if not self.docsite.threegit:
+            return
+
         for part in self.parts_get(cat="macro"):
             if part.method.strip() == "":
                 return self.docsite.error_raise("empty macro cannot be executed", doc=self)
 
             macro_name = part.method.split("(", 1)[0].strip()
 
-            if not macro_name in j.tools.markdowndocs._macros:
+            if not macro_name in self.docsite.threegit._macros:
                 e = "COULD NOT FIND MACRO"
                 block = "```python\nERROR IN MACRO*** TODO: *1 ***\nmacro:\n%s\nERROR:\n%s\n```\n" % (macro_name, e)
                 self._log_error(block)
                 self.docsite.error_raise(block, doc=self)
 
-            method = j.tools.markdowndocs._macros[macro_name]
+            method = self.docsite.threegit._macros[macro_name]
             args = self._args_get(part.method)
             kwargs = self._kwargs_get(part.method)
             if j.data.types.dict.check(part.data):
@@ -306,7 +310,11 @@ class Doc(j.baseclasses.object):
             except Exception as e:
                 if hasattr(e, "message"):
                     e = e.message
-                block = "```python\nERROR IN MACRO*** TODO: *1 ***\nmacro:\n%s\nERROR:\n%s\n```\n" % (macro_name, e)
+                block = "```python\nERROR IN MACRO*** TODO: *1 ***\nmacro:\n%s\nERROR:\n%s\n%s```\n" % (
+                    macro_name,
+                    e,
+                    traceback.format_exc(),
+                )
                 self._log_error(block)
                 self.docsite.error_raise(block, doc=self)
                 part.result = block
@@ -352,7 +360,9 @@ class Doc(j.baseclasses.object):
             if link.filename:
                 dest_file = j.sal.fs.joinPaths(self.docsite.outpath, self.path_dir_rel, link.filename)
 
-                if link.filepath:
+                if link.filepath and not j.sal.fs.exists(dest_file):
+                    # make sure parent dir of dest_file exists
+                    j.sal.fs.createDir(j.sal.fs.getParent(dest_file))
                     j.sal.fs.copyFile(link.filepath, dest_file)
                 else:
                     if link.source.startswith("!"):
@@ -364,6 +374,7 @@ class Doc(j.baseclasses.object):
             md = link.replace_in_txt(md)
 
         dest = j.sal.fs.joinPaths(self.docsite.outpath, self.path_dir_rel, self.name) + ".md"
+
         j.sal.fs.writeFile(dest, md, append=False)
 
     def _link_exists(self, link):

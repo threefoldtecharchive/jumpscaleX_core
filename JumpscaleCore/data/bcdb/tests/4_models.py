@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 
 
@@ -30,6 +10,7 @@ def main(self):
     work with toml files and see if models get generated properly
 
     """
+
     mpath = self._dirpath + "/tests/models"
     assert j.sal.fs.exists(mpath)
 
@@ -39,17 +20,33 @@ def main(self):
 
     bcdb, _ = self._load_test_model()
 
-    assert bcdb in j.data.bcdb.instances
+    assert bcdb.name in j.data.bcdb.instances
 
     bcdb.models_add(mpath)
 
+    s = """
+    @url = jumpscale.bcdb.test.house
+    name** = "" (S)
+    active** = "" (B)
+    cost** =  (N)
+    room = (LO) !jumpscale.bcdb.test.room
+    """
+
+    # check the right schema in meta stor
+    s_ = j.data.schema.get(url="jumpscale.bcdb.test.house")
+    assert j.data.schema._md5(s) == s_._md5
+
     model = bcdb.model_get(url="jumpscale.bcdb.test.house")
+    assert model.schema._md5 == j.data.schema._md5(s)
 
     schema_md5 = model.schema._md5
 
     model_obj = model.new()
     model_obj.cost = "10 USD"
+    model_obj.name = "House"
+
     model_obj.save()
+    assert model_obj.id
 
     data = model.get(model_obj.id)
 
@@ -64,20 +61,26 @@ def main(self):
     @url = jumpscale.bcdb.test.house
     name** = "" (S)
     active** = "" (B)
-    cost** =  (N)
-    newprop = ""
-    room = (LO) !jumpscale.bcdb.test.room
+    cost** = (N)
+    room = (LS)
     """
 
     ms = model.find()
     assert len(ms) == 1
-    print(ms[0]._schema._md5)
+    md5 = ms[0]._schema._md5
 
     model_updated = bcdb.model_get(schema=schema_updated)
 
+    s_ = j.data.schema.get(url="jumpscale.bcdb.test.house")
+    assert j.data.schema._md5(schema_updated) == s_._md5
+
     ms = model.find()
     assert len(ms) == 1
-    print(ms[0]._schema._md5)
+
+    assert ms[0]._schema._md5 == md5
+
+    # Update schema
+
     s_updated = model_updated.schema
     assert s_updated._md5 != schema_md5
 
@@ -85,21 +88,18 @@ def main(self):
 
     assert model2.schema._md5 == s_updated._md5
 
-    assert model2 == model
-
     assert len(model2.find()) == 1
 
     model_obj = model_updated.new()
     model_obj.cost = 15
     model_obj.name = "test_name_because_there_is_a_unique_constraint_on_it"
-
     model_obj.save()
 
-    assert len(model2.find()) == 2
-    assert len(model.find()) == 2
+    assert len(model_updated.find()) == 2
 
-    data2 = model.find()[1]
-    assert data2._schema._md5 == s_updated._md5  # needs to be the new md5
+    obj = model_updated.find()[1]
+
+    assert obj._schema._md5 == s_updated._md5  # needs to be the new md5
 
     model.find()[0].cost == "10 USD"
     model.find()[1].cost == 15
@@ -108,6 +108,10 @@ def main(self):
     # the schema's need to be different
 
     res = model.find()
-    assert res[0]._schema._md5 != res[1]._schema._md5
+    # Auto migration!
+    assert res[0]._schema._md5 == res[1]._schema._md5
 
+    # CLEAN STATE
+    j.servers.zdb.test_instance_stop()
+    j.servers.sonic.default.stop()
     return "OK"

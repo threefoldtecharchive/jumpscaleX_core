@@ -725,5 +725,3 @@ class GitFactory(j.baseclasses.object):
 
         if pushmessage != "":
             self.pushGitRepos(pushmessage, name=name, update=True, provider=provider, account=account)
-
-

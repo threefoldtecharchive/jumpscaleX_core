@@ -76,4 +76,3 @@ class GedisHTTPFactory(j.baseclasses.object, j.baseclasses.testtools):
 
     def get_app(self):
         return app
-

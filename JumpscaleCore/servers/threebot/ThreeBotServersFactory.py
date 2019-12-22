@@ -13,6 +13,9 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     _CHILDCLASS = ThreeBotServer
 
     def _init(self, **kwargs):
+        if j.core.db:
+            j.core.db.set("threebot.starting", ex=120, value="1")
+        j.data.bcdb._master_set()
         self._default = None
         self.current = None
         self.client = None
@@ -40,11 +43,37 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def local_start_default(self, background=False, explorer_debug=False, packages=None, reload=False):
+    def local_start_zerobot(self, background=False, reload=False):
+        """starts the zerobot application server with default packages (base, myjobs_ui, alerta_ui, packagemanager, webinterface)"""
+        packages = []
+        return self.local_start_default(background=background, packages=packages, reload=reload)
+
+    def local_start_3bot(self, background=False, reload=False):
+        """starts 3bot with webplatform package.
+        kosmos -p 'j.servers.threebot.local_start_3bot()'
+        """
+        # FIXME: webplatform should go threebot directory now
+        packages = ["{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform"]
+        return self.local_start_default(background=background, packages=packages, reload=reload)
+
+    def local_start_explorer(self, background=False, reload=False):
         """
 
-        kosmos -p 'j.servers.threebot.local_start_default(explorer_debug=True)'
-        kosmos -p 'j.servers.threebot.local_start_default()'
+        starts 3bot with phonebook, directory, workloads packages.
+
+        kosmos -p 'j.servers.threebot.local_start_explorer()'
+
+        """
+        packages = [
+            f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/phonebook",
+            f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/directory",
+            f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/workloads",
+        ]
+        return self.local_start_default(background=background, packages=packages, reload=reload)
+
+    def local_start_default(self, background=False, packages=None, reload=False):
+        """
+        kosmos -p 'j.servers.threebot.local_start_default(background=True)'
 
         REMARK: if you want to run a threebot in non background do following first:
             kosmos -p 'j.servers.threebot.default.start()'
@@ -53,40 +82,36 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         will check if there is already one running, will create client to localhost & return
         gedis client
-        :param explorer_debug: if True will simulate to be a explorer
-        :param: packages, is a list of names of packages in form $threebotauthor.$packagename
+        :param: packages, is a list of packages_paths
             the packages need to reside in this repo otherwise they will not be found,
             centralized registration will be added but is not there yet
 
         :return:
         """
-        client = None
+
         packages = packages or []
-        if reload or j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
-            self.install()
+        if reload:
             self.default.stop()
-            client = self.default.start(background=background)
 
-        if not client:
-            client = j.clients.gedis.client_get(name="threebot", port=8901, package_name="zerobot.base")
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
+            self.install()
+            client = self.default.start(background=background, packages=packages)
+            assert "." in client.package_name
+        else:
+            client = j.clients.gedis.get(name="threebot", port=8901)
+            if not "." in client.package_name:
+                j.shell()
+            assert "." in client.package_name
 
-        if explorer_debug:
-            client.actors.package_manager.package_add(
-                path="{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform/"
-            )
-            client.actors.package_manager.package_add(
-                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/tfgrid/phonebook"
-            )
+        gediscl = j.clients.gedis.get("pkggedis", package_name="zerobot.packagemanager")
+        for package_path in packages:
+            gediscl.actors.package_manager.package_add(path=package_path)
 
-        if packages:
-            # TODO: needs to be implemented
-            j.shell()
-
-        client.reload()  # normally reload should be done already in the client_get...
+        client.reload()
 
         return client
 
-    def test(self, restart=False):
+    def test(self, name=None, restart=False):
         """
 
         kosmos -p 'j.servers.threebot.test()'
@@ -110,6 +135,16 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         # gedis_client.reload()
 
         self._test_run(name=name)
+
+    def test_explorer(self):
+        """
+
+        kosmos -p 'j.servers.threebot.test_explorer()'
+        :return:
+        """
+
+        j.servers.threebot.local_start_explorer(background=True)
+        j.shell()
 
     def _docker_jumpscale_get(self, name="3bot", delete=True):
         docker = j.core.dockerfactory.container_get(name=name, delete=delete)

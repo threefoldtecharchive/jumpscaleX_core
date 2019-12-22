@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 
 
@@ -146,7 +126,15 @@ class JSXObject(j.baseclasses.object):
 
     def check_empty_indexed_fields(self):
         for prop in self._model.schema.properties_index_sql:
-            value = eval(f"self.{prop.name}")
+            if "." in prop.name:
+                raise j.exceptions.Input("cannot be . in property")
+            if "__" in prop.name:
+                # handle indexed subobject field
+                props = prop.name.split("__")
+                value = eval(f"self.{props[0]}.{props[1]}")
+            else:
+                # handle indexed object field
+                value = eval(f"self.{prop.name}")
             if not value and not isinstance(value, (int, float, complex)):
                 raise j.exceptions.Input("an indexed (sql) field cannot be empty:%s" % prop.name, data=self)
 
@@ -193,22 +181,15 @@ class JSXObject(j.baseclasses.object):
                         raise j.exceptions.Input(msg)
                     elif len(r) == 1:
                         msg = "could not save, was not unique.\n%s." % (args_search)
-                        if self.id:
-                            if not self.id == r[0].id:
-                                raise j.exceptions.Input(msg)
-                        else:
-                            self.id = r[0].id
-                            self._ddict_hr  # to trigger right serialization
-                            if self._data == r[0]._data:
-                                return self  # means data was not changed
-                            else:  # means data is not the same and id not known yet
-                                self.id = r[0].id
+                        if (self.id and not self.id == r[0].id) or not self.id:
+                            raise j.exceptions.Input(msg)
 
-                if not self._nosave:
-                    o = self._model.set(self)
-                    self.id = o.id
-
-                obj = self._model._triggers_call(obj=self, action="save", propertyname=None)
+                if self._nosave:
+                    obj, stop = self._model._triggers_call(obj=self, action="set_pre", propertyname=None)
+                else:
+                    obj = self._model.set(self)
+                assert obj.id
+                self.id = obj.id
 
                 return obj
             return self

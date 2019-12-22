@@ -734,7 +734,7 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         j.tools.threebot.init_my_threebot(name="{docker_name}.3bot", interactive=False)
         j.clients.threebot.explorer.reload()  # make sure we have the actors loaded
         # lets low level talk to the phonebook actor
-        print(j.clients.threebot.explorer.actors_default.phonebook.get(name="{docker_name}.3bot"))
+        print(j.clients.threebot.explorer.actors_all.phonebook.get(name="{docker_name}.3bot"))
         cl = j.clients.threebot.client_get("{docker_name}.3bot")
 
         r1 = j.tools.threebot.explorer.threebot_record_get(name="{docker_name}.3bot")
@@ -771,10 +771,10 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         if not docker.config.done_get("start_cmd"):
             if web:
                 docker.sshexec(
-                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_default(packages_add=True)';jsx wiki-load"
+                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_default()';jsx wiki-load"
                 )
             else:
-                start_cmd = "j.servers.threebot.local_start_default(packages_add=True)"
+                start_cmd = "j.servers.threebot.local_start_default()"
                 docker.jsxexec(start_cmd)
         docker.config.done_set("start_cmd")
         if not docker.config.done_get("config"):
@@ -827,11 +827,29 @@ def package_new(name, dest=None):
         dest = j.sal.fs.getcwd()
     capitalized_name = name.capitalize()
     dirs = ["wiki", "models", "actors", "chatflows"]
+    package_toml_path = j.sal.fs.joinPaths(dest, f"{name}/package.toml")
     package_py_path = j.sal.fs.joinPaths(dest, f"{name}/package.py")
     factory_py_path = j.sal.fs.joinPaths(dest, f"{name}/{capitalized_name}Factory.py")
 
     for d in dirs:
         j.sal.fs.createDir(j.sal.fs.joinPaths(dest, name, d))
+
+    package_toml_content = f"""
+[source]
+name = "{name}"
+description = "mypackage"
+threebot = "mybot"
+version = "1.0.0"
+
+
+[[bcdbs]]
+namespace = "mybot"
+type = "zdb"
+instance = "default"
+    """
+
+    with open(package_toml_path, "w") as f:
+        f.write(package_toml_content)
 
     package_py_content = f"""
 from Jumpscale import j
