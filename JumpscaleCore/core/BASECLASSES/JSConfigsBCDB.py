@@ -147,7 +147,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             for key, val in kwargs.items():
                 if key not in props:
                     raise j.exceptions.Input(
-                        "cannot set property:%s on obj because not part of the schema" % key, data=jsconfig
+                        "cannot set property:'%s' on obj because not part of the schema" % key, data=jsconfig
                     )
                 if not getattr(jsconfig, key) == val:
                     changed = True

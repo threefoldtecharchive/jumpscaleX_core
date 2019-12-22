@@ -299,6 +299,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.__dict__.pop("sal_zos")
 
             for path in packages:
+                # j.debug()
                 j.threebot.packages.zerobot.packagemanager.actors.package_manager.package_add(path=path)
 
             # reload nginx at the end after loading packages and its config is written
@@ -310,7 +311,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
 
-            j.shell()  # for now removed otherwise debug does not work
+            # j.shell()  # for now removed otherwise debug does not work
 
             forever = event.Event()
             try:
@@ -320,6 +321,8 @@ class ThreeBotServer(j.baseclasses.object_config):
             sys.exit()
 
             # dont call stop
+            # delete the fact that maybe we are still in starting mode
+            j.core.db.delete("threebot.starting")
 
         else:
             if not self.startup_cmd.is_running():
@@ -367,10 +370,13 @@ class ThreeBotServer(j.baseclasses.object_config):
         return p.actors[actor_name]
 
     def myjobs_start(self):
+        # rebuild indexes before starting the workers to make sure they're up-to-date
+        j.servers.myjobs.model_action.model.index_rebuild()
+        j.servers.myjobs.workers._model.index_rebuild()
+        j.servers.myjobs.jobs._model.index_rebuild()
+
         j.servers.myjobs.workers_tmux_start(2, in3bot=True)
-        # j.servers.myjobs._workers_gipc_nr_max = 10
-        # j.servers.myjobs.workers_subprocess_start()
-        pass
+        # j.servers.myjobs.workers_subprocess_start(2, in3bot=True)
 
     def _packages_core_init(self):
 
@@ -387,7 +393,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             if p.status in ["config", "init"]:
                 p.install()
                 p.save()
-
             # start should be called everytime server starts
             # TODO: NOT THE INTENTION !!!!
             # p.actors_reload()
@@ -398,6 +403,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         :return:
         """
         self.startup_cmd.stop(waitstop=False, force=True)
+        j.core.db.delete("threebot.starting")
         self.openresty_server.stop()
 
     @property

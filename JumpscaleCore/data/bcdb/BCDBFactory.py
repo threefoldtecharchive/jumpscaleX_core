@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 
 from .BCDB import BCDB
@@ -46,7 +26,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         self._instances = j.baseclasses.dict(name="BCDBS")
         self.children = self._instances
 
-        self._BCDBModelClass = BCDBModel  # j.data.bcdb._BCDBModelClass
+        self._BCDBModelClass = BCDBModel  # j.data.bcdb._BCDBModelClasses
+        self._config = {}
 
         self.__master = None
 
@@ -56,8 +37,20 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
                 self.__master = False
             else:
-                self.__master = True
+                if j.core.db and j.core.db.get("threebot.starting"):
+                    print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
+                    j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60)
+                    self.__master = False
+                else:
+                    self.__master = True
         return self.__master
+
+    def _master_set(self, val=True):
+        if True:
+            j.core.db.set("threebot.starting", ex=120, value="1")
+        else:
+            j.core.db.delete("threebot.starting")
+        self.__master = val
 
     def config_reload(self):
         self._loaded = False
@@ -375,11 +368,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                 # print("name:'%s' in instances on bcdb" % name)
                 return self._instances[name]
 
-        if name in self._config and not storclient:
-            storclient = self._get_storclient(name)
-
         if not self.exists(name=name):
             self._new(name=name, storclient=storclient)  # we create object in config of bcdb factory
+        if name in self._config and not storclient:
+            storclient = self._get_storclient(name)
 
         b = self._get(name=name, storclient=storclient, reset=reset)  # make instance of bcdb
 
@@ -606,7 +598,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         bcdb.reset()  # empty
 
-        assert bcdb.storclient.count == 0
+        assert bcdb.storclient.count == 1
 
         assert bcdb.name == "test"
 
@@ -617,7 +609,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         if type.lower() in ["zdb"]:
             # print(model.storclient.nsinfo["entries"])
-            assert model.storclient.nsinfo["entries"] == 0
+            assert model.storclient.nsinfo["entries"] == 1
 
         assert len(model.find()) == 0
 
@@ -664,14 +656,33 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         """
         print(name)
         # CLEAN STATE
+
+        redis = j.servers.startupcmd.get("redis_6380")
+        redis.stop()
+        redis.wait_stopped()
         j.servers.zdb.test_instance_stop()
         j.servers.sonic.default.stop()
 
-        self._test_run(name=name)
-
-        # CLEAN STATE
-        j.servers.zdb.test_instance_stop()
-        j.servers.sonic.default.stop()
-
+        try:
+            self._test_run(name=name)
+        except:
+            # clean after errors
+            # CLEAN STATE
+            redis = j.servers.startupcmd.get("redis_6380")
+            redis.stop()
+            redis.wait_stopped()
+            j.servers.zdb.test_instance_stop()
+            j.servers.sonic.default.stop()
+            raise
+        else:
+            # CLEAN STATE
+            redis = j.servers.startupcmd.get("redis_6380")
+            redis.stop()
+            redis.wait_stopped()
+            j.servers.zdb.test_instance_stop()
+            j.servers.sonic.default.stop()
+        bcdb = j.data.bcdb.get("test", reset=True)
+        bcdb.reset()
+        bcdb.destroy()
         self._log_info("All TESTS DONE")
         return "OK"

@@ -53,7 +53,7 @@ class TestThreebotServer(BaseTest):
         - Check it works correctly.
         """
         self.info("Get gedis client from it .")
-        gedis_client = j.servers.threebot.local_start_default()
+        gedis_client = j.servers.threebot.local_start_default(background=True)
         self.info("Check it works correctly.")
         self.assertTrue(gedis_client.ping())
 

@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 # from importlib import import_module
 
 import gevent
@@ -138,6 +118,7 @@ class BCDB(j.baseclasses.object):
             raise j.exceptions.Base("name needs to be string")
 
         # need to do this to make sure we load the classes from scratch
+        ## TODO: make sure to load meta.toml.
         for item in ["ACL", "USER", "GROUP"]:
             key = "Jumpscale.data.bcdb.models_system.%s" % item
             if key in sys.modules:
@@ -147,6 +128,11 @@ class BCDB(j.baseclasses.object):
         from .models_system.USER import USER
         from .models_system.CIRCLE import CIRCLE
         from .models_system.NAMESPACE import NAMESPACE
+
+        system_meta_path = j.core.tools.text_replace(
+            "{DIR_CODE}/github/threefoldtech/jumpscaleX_core/JumpscaleCore/data/bcdb/models_system/meta.toml"
+        )
+        j.data.schema.add_from_path(system_meta_path)
 
         self.acl = self.model_add(ACL(bcdb=self))
         self.user = self.model_add(USER(bcdb=self))
@@ -216,7 +202,7 @@ class BCDB(j.baseclasses.object):
             j.sal.fs.remove(path)
         j.sal.fs.createDir(path)
 
-        for m in self.models:
+        for m in self.models.values():
             print("export model: ", m)
             dpath = f"{path}/{m.schema.url}"
             print("  datapath: ", dpath)
@@ -268,9 +254,6 @@ class BCDB(j.baseclasses.object):
                 return
 
         self.reset()
-        if self.storclient:
-            assert self.storclient.list() == [0]
-            assert self.storclient.nsinfo["entries"] == 1
 
         self._log_info("Load bcdb:%s from %s" % (self.name, path))
         assert j.sal.fs.exists(path)
@@ -285,11 +268,8 @@ class BCDB(j.baseclasses.object):
             print(f"processing {url_path}")
             schema_text = j.sal.fs.readFile("%s/_schema.toml" % url_path)
             url = j.sal.fs.getBaseName(url_path)
-            schema = j.data.schema.get_from_text(schema_text, url=url, multiple=False)
+            schema = j.data.schema.get_from_text(schema_text, url=url)
             schemas[url] = schema
-            raise RuntimeError("not implemented")
-            # need to put in j.data.schema
-            # self.meta._schema_set(schema, save=False)
 
         for url_path in paths:
             print(f"processing {url_path}")
@@ -326,18 +306,23 @@ class BCDB(j.baseclasses.object):
 
         max_id = max(list(data.keys()) or [0])
 
+        next_id = 1
+        if isinstance(self.storclient, ZDBClientBase):
+            next_id = self.storclient.next_id
+
+        to_remove = []
+
         # have to import it in the exact same order
         for i in range(1, max_id + 1):
             print(f"i: {i}")
             if i not in data:
-                if isinstance(self.storclient, ZDBClientBase):
-                    if i < self.storclient.next_id:
-                        continue
-
+                if i < next_id:
+                    continue
                 print(f"{i} doesn't exist in data.. ")
-                gap_obj = self._dummy.new()
+                gap_obj = model.new()
                 gap_obj.name = j.data.idgenerator.generateGUID()
                 gap_obj.save()
+                to_remove.append(gap_obj)
             else:
                 url, obj_data = data[i]
                 model = models[url]
@@ -349,8 +334,9 @@ class BCDB(j.baseclasses.object):
                 obj.save()
                 assert obj.id == i
 
-        print("Cleaning up dummy objects")
-        self._dummy.destroy()
+        print("Cleaning up gap objects")
+        for obj in to_remove:
+            obj.delete()
 
     @property
     def sqlite_index_client(self):
@@ -461,6 +447,13 @@ class BCDB(j.baseclasses.object):
         # since delete the data directory above, we have to re-init the storclient
         # so it can do its things and re-connect properly
         self.storclient._init(nsname=self.storclient.nsname)
+        if self.storclient.type == "SDB":
+            self.storclient.flush()
+
+        if not self.storclient.get(0):
+            r = self.storclient.set(b"INIT")
+            # this is to not have id 0, otherwise certain tests which check on value in 0 get confused
+            assert self.storclient.get(0)
 
         self._init_props_()
         self._init_system_objects()

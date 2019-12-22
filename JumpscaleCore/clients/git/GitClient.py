@@ -260,13 +260,14 @@ class GitClient(j.baseclasses.object):
                     if _file not in result:
                         result.append(_file)
                         self._log_info(f"File {_file} created")
-                elif state == "R":
+                elif state.startswith("R"):
                     from_, to_ = post.split("\t")
+                    if from_ != to_:
+                        to_delete.append(from_)
                     if from_ in result:
                         result.pop(result.index(from_))
-                        to_delete.append(from_)
-                    if _file not in result:
-                        result.append(_file)
+                    if to_ not in result:
+                        result.append(to_)
                     self._log_info(f"File {_file} renamed")
                 elif state == "D":
                     # delete
@@ -287,6 +288,7 @@ class GitClient(j.baseclasses.object):
 
         if not revision:
             revision = from_revision
+
         return (revision, result, to_delete)
 
     def logChangesRevisionSet(self, revision):

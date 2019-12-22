@@ -128,6 +128,7 @@ def main(self):
     assert "threefoldtoken.wallet.test" in schemas3  # multiple url link to the same schema id ?
 
     r = vfs.get("schemas/threefoldtoken.wallet.test")
+
     schema = r.get()
     obj = j.data.serializers.json.loads(schema)
     assert str(obj["url"]) == "threefoldtoken.wallet.test"
@@ -135,19 +136,25 @@ def main(self):
 
     self._log_info("TEST GET SCHEMA DONE")
 
-    SCHEMAS = """
+    SCHEMAS = [
+        """
     @url = ben.pc.test
     description** =  "top_pc"
     cpu = "6ghz" (S)            # power
     ram =  (LI)
-    enable = true (B)
-    @url = ben.pc.test.2
+    enable = true (B)""",
+        """@url = ben.pc.test.2
     description** =  "super_top_pc"
     cpu = "12ghz" (S)            # power
     ram =  (LI)
     enable = false (B)
-    """
-    res = vfs.add_schemas(SCHEMAS)
+    """,
+    ]
+    res = []
+
+    for schema_text in SCHEMAS:
+        res.append(vfs.add_schema(schema_text))
+
     assert len(res) == 2
     s1 = vfs.get("schemas/%s" % (res[1].schema.url))
     s2 = vfs.get("schemas/%s" % (res[0].schema.url))
@@ -239,6 +246,7 @@ def main(self):
     r = vfs.get("data/1/threefoldtoken.wallet.test/%s" % obj_id)
     obj = r.get()
     r.delete()
+
     schema_wallet_obj = j.data.serializers.json.loads(schema)
 
     with test_case.assertRaises(Exception) as cm:  # can't delete an already deleted data
@@ -284,5 +292,6 @@ def main(self):
     # CLEAN STATE
     j.servers.zdb.test_instance_stop()
     j.servers.sonic.default.stop()
+    vfs._bcdb.destroy()
     self._log_info("TEST DONE")
     return "OK"

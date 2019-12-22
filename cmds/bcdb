@@ -9,6 +9,10 @@ import click
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
+j.core.db.delete("threebot.starting")
+j.data.bcdb._master_set()
+
+
 @click.group()
 def cli():
     pass
@@ -84,7 +88,7 @@ def rebuild(name=None):
     :return:
     """
 
-    j.data.bcdb.threebot_start()
+    j.data.bcdb.threebot_zdb_sonic_start()
 
     if not name:
         for bcdb in j.data.bcdb.instances.values():

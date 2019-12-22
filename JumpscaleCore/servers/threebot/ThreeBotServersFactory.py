@@ -13,6 +13,9 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     _CHILDCLASS = ThreeBotServer
 
     def _init(self, **kwargs):
+        if j.core.db:
+            j.core.db.set("threebot.starting", ex=120, value="1")
+        j.data.bcdb._master_set()
         self._default = None
         self.current = None
         self.client = None
@@ -100,8 +103,9 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
                 j.shell()
             assert "." in client.package_name
 
+        gediscl = j.clients.gedis.get("pkggedis", package_name="zerobot.packagemanager")
         for package_path in packages:
-            client.actors.package_manager.package_add(path=package_path)
+            gediscl.actors.package_manager.package_add(path=package_path)
 
         client.reload()
 

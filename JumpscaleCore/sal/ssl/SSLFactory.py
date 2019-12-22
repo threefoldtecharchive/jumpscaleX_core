@@ -245,4 +245,3 @@ class SSLFactory(JSBASE):
         :type name: str, optional
         """
         self._test_run(name=name, obj_key="test_main")
-

@@ -15,8 +15,6 @@ if True or "-p" in sys.argv:
 import sys
 from Jumpscale import j
 
-if "-s" in sys.argv:
-    j.application.__slave = True
 
 # j.tools.bash.get().profile.locale_check()
 
@@ -32,6 +30,10 @@ parser.add_argument("-q", "--quiet", default=False, action="store_true", help="T
 parser.add_argument(
     "-r", "--reset", default=False, action="store_true", help="Reset system BCDB and all encryption keys (DANGEROUS)"
 )
+
+parser.add_argument("-s", "--slave", default=None, action="store_true", help="force as slave")
+parser.add_argument("-m", "--master", default=None, action="store_true", help="force as slave")
+
 # parser.add_argument("--init", default=False, action="store_true", help="Initialize a jumpscale system")
 
 parser.add_argument(
@@ -54,6 +56,14 @@ parser.add_argument(
 parser.add_argument("-p", "--patch", default=False, action="store_true", help="Monkeypatch the system for gevent")
 
 options, args = parser.parse_known_args()
+
+if options.slave:
+    j.data.bcdb._master_set()
+    print("SLAVE")
+
+if options.master:
+    j.data.bcdb._master_set(False)
+    print("MASTER")
 
 if options.quiet:
     j.shell()

@@ -38,6 +38,8 @@ class BCDBModelIndex(j.baseclasses.object):
         if self.index_key_needed:
             self.bcdb._redis_index.ping()
 
+        # if master will try to create the index table and set .sql property
+        # if not: will set .sql property only, check BCDBModelIndexClass
         self._sql_index_init()
 
         if self.index_text_needed:

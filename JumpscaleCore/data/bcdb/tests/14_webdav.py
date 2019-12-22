@@ -31,6 +31,9 @@ def main(self):
 
     # md5 = "cbf134f55d0c7149ef188cf8a52db0eb"
     # sid = "7"
+    redis = j.servers.startupcmd.get("redis_6380")
+    redis.stop()
+    redis.wait_stopped()
     test_cmd = """
     from Jumpscale import j
     bcdb = j.data.bcdb.get("test", reset=True)
@@ -91,7 +94,6 @@ def main(self):
     web_dav = j.servers.startupcmd.get("webdav_test")
     web_dav.stop()
     web_dav.wait_stopped()
-
     # TODO: mount webdav over fuse and do some tests
 
     self._log_info("test ok")

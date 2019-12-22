@@ -2,31 +2,31 @@ from Jumpscale import j
 
 JSBASE = j.baseclasses.object
 
-SCHEMA_IN = """
-@url = gedis.test.in
-foo = (S)
-"""
+# SCHEMA_IN = """
+# @url = gedis.test.in
+# foo = (S)
+# """
 
-SCHEMA_OUT = """
-@url = gedis.test.out
-bar = (S)
-"""
+# SCHEMA_OUT = """
+# @url = gedis.test.out
+# bar = (S)
+# """
 
 
 class actor(j.baseclasses.threebot_actor):
-    def _init(self, **kwargs):
-        for schema in [SCHEMA_IN, SCHEMA_OUT]:
-            j.data.schema.get_from_text(schema)
-
+    @j.baseclasses.actor_method
     def foo(self, user_session=None):
         return "foo"
 
+    @j.baseclasses.actor_method
     def bar(self, user_session=None):
         return "bar"
 
+    @j.baseclasses.actor_method
     def echo(self, _input, user_session=None):
         return _input
 
+    @j.baseclasses.actor_method
     def schema_in(self, x, user_session=None):
         """
         ```in
@@ -35,6 +35,7 @@ class actor(j.baseclasses.threebot_actor):
         """
         return x.foo
 
+    @j.baseclasses.actor_method
     def schema_out(self, schema_out=None, user_session=None):
         """
         ```out
@@ -45,6 +46,7 @@ class actor(j.baseclasses.threebot_actor):
         result.bar = "test"
         return result
 
+    @j.baseclasses.actor_method
     def schema_in_out(self, x, schema_out=None, user_session=None):
         """
         ```in
@@ -59,6 +61,7 @@ class actor(j.baseclasses.threebot_actor):
         result.bar = x.foo
         return result
 
+    @j.baseclasses.actor_method
     def schema_in_list_out(self, x, schema_out=None, user_session=None):
         """
         ```in
@@ -73,6 +76,7 @@ class actor(j.baseclasses.threebot_actor):
         result.bar = x.foo
         return [result, result]
 
+    @j.baseclasses.actor_method
     def args_in(self, foo, bar, user_session=None):
         """
         ```in
@@ -82,5 +86,6 @@ class actor(j.baseclasses.threebot_actor):
         """
         return "%s %s" % (foo, bar)
 
+    @j.baseclasses.actor_method
     def raise_error(self, user_session=None):
         raise j.exceptions.Base("woopsy daisy")
