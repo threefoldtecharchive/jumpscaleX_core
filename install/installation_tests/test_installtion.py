@@ -595,7 +595,7 @@ class TestInstallationInSystem(BaseTest):
         self.info("Check generate option, using jsx generate cmd")
 
         self.info("remove jumpscale_generated file")
-        os.remove("rm /sandbox/lib/jumpscale/jumpscale_generated.py")
+        os.remove("/sandbox/lib/jumpscale/jumpscale_generated.py")
 
         self.info("Check generate option")
         command = ". /sandbox/env.sh && /tmp/jsx generate"
@@ -603,7 +603,7 @@ class TestInstallationInSystem(BaseTest):
         self.assertIn("process", output.decode())
 
         self.info("make sure that jumpscale_generated file is generated again")
-        self.assertTrue(os.path.exists(j.core.tools.text_replace("{DIR_BASE}/lib/jumpscale/jumpscale_generated.py")))
+        self.assertTrue(os.path.exists("/sandbox/lib/jumpscale/jumpscale_generated.py"))
 
     def Test03_insystem_installation_r_option_no_jsx_before(self):
         """
