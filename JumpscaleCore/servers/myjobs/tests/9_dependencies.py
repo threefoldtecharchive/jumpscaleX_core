@@ -16,7 +16,7 @@ def main(self):
             time.sleep(wait_do)
         if process:
             for dep in process.job.dependencies:
-                job = process.job_get(id=dep)
+                job = process.model_job.get(id=dep)
                 assert job.result == "OK"
             return "OK:%s" % job.id
         else:

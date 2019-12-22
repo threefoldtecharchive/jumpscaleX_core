@@ -5,6 +5,11 @@ def main(self):
     """
     kosmos -p 'j.servers.myjobs.test("fancycode")'
     """
+    return
+
+    # TODO: implement this?
+
+
 
     def testa():
         # NO ARGEMENTS NEEDED

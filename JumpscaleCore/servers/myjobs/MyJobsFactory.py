@@ -212,8 +212,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                     self._log_warning(
                         "will kill job, worker:%s pid:%s" % (worker_obj.id, worker_obj.pid), data=worker_obj
                     )
-                    j.shell()
-                    w
                 else:
                     self._log_warning(
                         "cannot kill worker, workerid:%s pid:%s is unknown" % (worker_obj._id, worker_obj.pid),
@@ -447,11 +445,11 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         job = self.jobs.new(
             name=name,
             method=method,
-            kwargs=kwargs,
             dependencies=dependencies,
             args_replace=args_replace,
             return_queues=return_queues,
             return_queues_reset=return_queues_reset,
+            kwargs=kwargs,
         )
 
         job.time_start = j.data.time.epoch
@@ -475,13 +473,13 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         assert job._data._autosave == True
         return job
 
-    def stop(self, graceful=True, reset=True, timeout=60):
+    def stop(self, graceful=True, reset=True, timeout=60, hard=True):
         if self._mainloop_gipc != None:
             self._mainloop_gipc.kill()
 
         for w in self.workers.find(reload=True):
             # look for the workers and ask for halt in nice way
-            w.stop(hard=reset)
+            w.stop(hard=hard)
 
         timeout_end = j.data.time.epoch + timeout
         while not reset and graceful and j.data.time.epoch < timeout_end:
@@ -625,6 +623,15 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         """
 
+        def clean():
+            j.servers.myjobs.stop(timeout=10, reset=False, graceful=False)
+            redis = j.servers.startupcmd.get("redis_6380")
+            try:
+                redis.stop()
+                redis.wait_stopped()
+            except:
+                j.sal.process.killProcessByPort(6380)
+
         # make sure client for myjobs properly configured
         j.core.db.redisconfig_name = "core"
         storclient = j.clients.rdb.client_get(redisclient=j.core.db)
@@ -638,9 +645,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         j.servers.myjobs.workers._model.index_rebuild()
         j.servers.myjobs.jobs._model.index_rebuild()
 
-        redis = j.servers.startupcmd.get("redis_6380")
-        redis.stop()
-        redis.wait_stopped()
+
 
         cmd = """
         . {DIR_BASE}/env.sh;
@@ -651,8 +656,10 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self._cmd.start()
         j.sal.nettools.waitConnectionTest("127.0.0.1", port=6380, timeout=15)
 
-        self._test_run(name=name, **kwargs)
-        redis = j.servers.startupcmd.get("redis_6380")
-        redis.stop()
-
+        try:
+            self._test_run(name=name, **kwargs)
+            clean()
+        except:
+            clean()
+            raise
         print("TEST OK ALL PASSED")

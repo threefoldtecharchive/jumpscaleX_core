@@ -152,7 +152,7 @@ class MyWorkerProcess(j.baseclasses.object):
                 skip = False
                 relaunch = False
                 for dep_id in job.dependencies:
-                    job_deb = self.job_get(dep_id)
+                    job_deb = self.model_job.get(dep_id)
                     if job_deb.state in ["ERROR"]:
                         job.state = job_deb.state
 
