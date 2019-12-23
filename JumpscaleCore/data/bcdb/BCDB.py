@@ -55,7 +55,7 @@ class BCDB(j.baseclasses.object):
         j.sal.fs.createDir(self._data_dir)
 
         if self.readonly:
-            self._log_info("sqlite file is in readonly mode")
+            self._log_info("sqlite file is in readonly mode for: '%s'" % self.name)
             self._sqlite_index_dbpath = "file:%s/sqlite_index.db?mode=ro" % self._data_dir
         else:
             self._sqlite_index_dbpath = "file:%s/sqlite_index.db" % self._data_dir
@@ -149,10 +149,10 @@ class BCDB(j.baseclasses.object):
         # self._readonly = False
         # return True
 
-    def lock_acquire(self):
-        self.lock.acquire()
-        self._lock_checked = False
-        self._readonly = None
+    # def lock_acquire(self):
+    #     self.lock.acquire()
+    #     self._lock_checked = False
+    #     self._readonly = None
 
     @property
     def readonly(self):

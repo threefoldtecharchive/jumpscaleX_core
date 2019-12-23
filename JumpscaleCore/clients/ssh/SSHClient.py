@@ -114,6 +114,7 @@ class SSHClient(SSHClientBase):
         return rc, output, error
 
     def file_write(self, path, content, mode=0o755, append=False):
+        path = self._replace(path)
         flags = ssh2.sftp.LIBSSH2_FXF_CREAT
         if append:
             flags |= ssh2.sftp.LIBSSH2_FXF_APPEND
@@ -138,7 +139,7 @@ class SSHClient(SSHClientBase):
         :raises: :py:class:`IOError` on I/O errors writing files
         :raises: :py:class:`OSError` on OS errors like permission denied
         """
-        local_file = self._replace(local_file, paths_executor=False)
+        local_file = j.core.tools.text_replace(local_file)
         remote_file = self._replace(remote_file)
         if os.path.isdir(local_file):
             raise j.exceptions.Value("Local file cannot be a dir")
@@ -149,6 +150,7 @@ class SSHClient(SSHClientBase):
         self._log_info("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
 
     def sftp_stat(self, path):
+        path = self._replace(path)
         res = self.sftp.stat(path)
         counter = 0
         while isinstance(res, int):
@@ -186,11 +188,6 @@ class SSHClient(SSHClientBase):
     #     self._client.connect(**cfg)
 
     #     return self._client
-
-    def _reset(self):
-        with self._lock:
-            if self._client is not None:
-                self._client = None
 
     @property
     def sftp(self):

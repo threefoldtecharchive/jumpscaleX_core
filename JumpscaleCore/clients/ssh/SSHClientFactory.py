@@ -1,7 +1,7 @@
 from Jumpscale import j
 from .SSHClient import SSHClient
 
-from .SSHClientParamiko import SSHClientParamiko
+# from .SSHClientParamiko import SSHClientParamiko
 from .SSHClientBase import SSHClientBase
 
 
@@ -20,14 +20,15 @@ class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
         gives a creator of a factory the ability to change the type of child to be returned
         :return:
         """
-        if jsxobject.client_type == "pssh":
-            return SSHClient
-        elif j.core.platformtype.myplatform.platform_is_osx:
-            # return SSHClientParamiko
-            return SSHClient
-        else:
-            return SSHClient
-            # return SSHClientParamiko
+        return SSHClient
+        # if jsxobject.client_type == "pssh":
+        #     return SSHClient
+        # elif j.core.platformtype.myplatform.platform_is_osx:
+        #     # return SSHClientParamiko
+        #     return SSHClient
+        # else:
+        #     return SSHClient
+        #     # return SSHClientParamiko
 
     def test(self):
         """

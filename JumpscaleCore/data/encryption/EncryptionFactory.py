@@ -4,15 +4,16 @@ from Jumpscale import j
 # use functionality in j.clients.ssh to deal with SSH-Agent & getting key info, improve if required
 # use j.data.nacl for underlying encryption/decryption/signing when possible
 JSBASE = j.baseclasses.object
-from .mnemonic.mnemonic import Mnemonic
+from .EncryptionInstance import EncryptionInstance
+import mnemonic
 
 
-class EncryptionFactory(j.baseclasses.object):
+class EncryptionFactory(j.baseclasses.object_config_collection_testtools):
+    __jslocation__ = "j.data.encryption"
+    _CHILDCLASS = EncryptionInstance
     """
     EncryptionFactory provides the means to sign, encrypt data using NACL
     """
-
-    __jslocation__ = "j.data.encryption"
 
     def _init(self, **kwargs):
         self._mnemonic = None
@@ -78,6 +79,11 @@ class EncryptionFactory(j.baseclasses.object):
         """
         kosmos 'j.data.encryption.test()'
         """
+
+        e = j.data.encryption.get("test", secret_="12345")
+        encrypted = e.encrypt("test")
+        assert "test" == e.decrypt(encrypted)
+
         words = "sound key uncover anger liberty coffee now huge catalog bread link grit"
         secret = j.data.encryption.mnemonic_to_seed(words, "1234")
         assert (
