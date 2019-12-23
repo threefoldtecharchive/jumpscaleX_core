@@ -7,7 +7,7 @@ def main(self):
 
     kosmos 'j.data.schema.test(name="base")'
     """
-    j.data.schema.meta.reset()
+    j.data.schema.reset()
 
     assert j.data.schema.meta._data == {"url": {}, "md5": {}}
 
