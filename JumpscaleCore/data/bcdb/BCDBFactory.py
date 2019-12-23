@@ -46,7 +46,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         return self.__master
 
     def _master_set(self, val=True):
-        if True:
+        if val:
             j.core.db.set("threebot.starting", ex=120, value="1")
         else:
             j.core.db.delete("threebot.starting")
