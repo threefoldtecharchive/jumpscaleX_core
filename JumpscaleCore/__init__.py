@@ -1,3 +1,19 @@
+import jumpscale_generated
+from .core.errorhandler.ErrorHandler import ErrorHandler
+from .core.PlatformTypes import PlatformTypes
+from .core.cache.Cache import Cache
+from .core.Application import Application
+from .core.BASECLASSES.BaseClasses import BaseClasses
+from .core.Dirs import Dirs
+from .core.Text import Text
+from .core.KosmosShell import KosmosShellConfig, ptconfig
+import yaml
+from .core.InstallTools import MyEnv
+from .core.InstallTools import DockerFactory
+from .core.InstallTools import RedisTools
+from .core.InstallTools import Tools
+from .core.InstallTools import JumpscaleInstaller
+from .core.InstallTools import BaseInstaller
 import os
 import socket
 import inspect
@@ -48,14 +64,6 @@ def profileStop(pr):
 spec = util.spec_from_file_location("IT", "/%s/core/InstallTools.py" % os.path.dirname(__file__))
 
 
-from .core.InstallTools import BaseInstaller
-from .core.InstallTools import JumpscaleInstaller
-from .core.InstallTools import Tools
-from .core.InstallTools import RedisTools
-from .core.InstallTools import DockerFactory
-from .core.InstallTools import MyEnv
-import yaml
-
 MyEnv.init()
 # TODO: there is something not right we get different version of this class, this should be like a singleton !!!
 
@@ -64,7 +72,7 @@ class Core:
     def __init__(self, j):
         self._dir_home = None
         self._dir_jumpscale = None
-        self._isSandbox = None
+        self._sandbox_check = None
         self.db = MyEnv.db
 
     def db_reset(self, j):
@@ -79,13 +87,13 @@ class Core:
         return self._dir_jumpscale
 
     @property
-    def isSandbox(self):
-        if self._isSandbox is None:
+    def sandbox_check(self):
+        if self._sandbox_check is None:
             if self.dir_jumpscale.startswith("/sandbox"):
-                self._isSandbox = True
+                self._sandbox_check = True
             else:
-                self._isSandbox = False
-        return self._isSandbox
+                self._sandbox_check = False
+        return self._sandbox_check
 
     def is_gevent_monkey_patched(self):
         try:
@@ -124,9 +132,6 @@ class Core:
             except Exception as e:
                 serialized = "CANNOT SERIALIZE CORE FOR STR"
         return serialized
-
-
-from .core.KosmosShell import KosmosShellConfig, ptconfig
 
 
 class Jumpscale:
@@ -250,11 +255,9 @@ j.core.profileStop = profileStop
 
 # pr=profileStart()
 
-from .core.Text import Text
 
 j.core.text = Text(j)
 
-from .core.Dirs import Dirs
 
 j.dirs = Dirs(j)
 j.core.dirs = j.dirs
@@ -264,26 +267,18 @@ j.core.dirs = j.dirs
 # j.core.logger = j.logger
 
 
-from .core.BASECLASSES.BaseClasses import BaseClasses
-
 j.baseclasses = BaseClasses()
 
-
-from .core.Application import Application
 
 j.application = Application(j)
 j.core.application = j.application
 
 
-from .core.cache.Cache import Cache
-
 j.core.cache = Cache(j)
 
-from .core.PlatformTypes import PlatformTypes
 
 j.core.platformtype = PlatformTypes(j)
 
-from .core.errorhandler.ErrorHandler import ErrorHandler
 
 j.errorhandler = ErrorHandler(j)
 j.core.errorhandler = j.errorhandler
@@ -308,9 +303,6 @@ if not os.path.exists(j.core.application._lib_generation_path):
     j.core.jsgenerator.generate(methods_find=True)
     j.core.jsgenerator.report()
     generated = True
-
-
-import jumpscale_generated
 
 
 if generated and len(j.core.application.errors_init) > 0:
