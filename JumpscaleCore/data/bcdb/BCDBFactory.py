@@ -39,8 +39,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             else:
                 if j.core.db and j.core.db.get("threebot.starting"):
                     print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
-                    j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60)
-                    self.__master = False
+                    if not j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60):
+                        self.__master = True
+                    else:
+                        self.__master = False
                 else:
                     self.__master = True
         return self.__master
