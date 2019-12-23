@@ -3,6 +3,7 @@ from unittest import TestCase
 
 import redis
 import time
+
 """
 try redis commands to get to BCDB
 """
