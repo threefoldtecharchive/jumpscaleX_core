@@ -9,7 +9,8 @@ import ssh2.sftp
 
 class SSHClient(SSHClientBase):
     def _init2(self, **kwargs):
-        self._logger_prefix = "ssh client: %s:%s(%s)" % (self.addr_variable, self.port, self.login)
+
+        self._logger_prefix = "ssh client: %s:%s(%s)" % (self.addr, self.port, self.login)
         self._logger_enable()
 
         if self.passwd == "" and self.sshkey_name == "":
@@ -44,19 +45,18 @@ class SSHClient(SSHClientBase):
             #     from pssh.utils import enable_host_logger
             #
             #     enable_host_logger()
-
             self._log_debug(
-                "ssh connection: %s@%s:%s (passwd:%s,key:%s)"
-                % (self.login, self.addr_variable, self.port_variable, passwd, pkey)
+                "ssh connection: %s@%s:%s (passwd:%s,key:%s)" % (self.login, self.addr, self.port, passwd, pkey)
             )
+
             hosts = []
-            hosts.append(self.addr_variable)
+            hosts.append(self.addr)
             try:
                 self._client_ = PSSHCLIENT(
                     hosts,
                     user=self.login,
                     password=passwd,
-                    port=self.port_variable,
+                    port=self.port,
                     proxy_pkey=pkey,
                     num_retries=10,
                     allow_agent=self.allow_agent,
@@ -76,7 +76,7 @@ class SSHClient(SSHClientBase):
         # channel, _, stdout, stderr, _ = self._client.run_command(cmd, timeout=timeout, use_pty=True)
 
         output = self._client.run_command(cmd)
-        client = output[self.addr_variable]
+        client = output[self.addr]
         channel = client.channel
         stdout = client.stdout
         stderr = client.stderr
@@ -140,7 +140,7 @@ class SSHClient(SSHClientBase):
         :raises: :py:class:`OSError` on OS errors like permission denied
         """
         local_file = j.core.tools.text_replace(local_file)
-        remote_file = self._replace(remote_file)
+        remote_file = self.executor._replace(remote_file)
         if os.path.isdir(local_file):
             raise j.exceptions.Value("Local file cannot be a dir")
         destination = j.sal.fs.getDirName(remote_file)

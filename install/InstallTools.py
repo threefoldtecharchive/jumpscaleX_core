@@ -1724,10 +1724,8 @@ class Tools:
             return content
 
         if executor:
-            Tools.shell()
             if not executor.env:
                 executor.load()
-            j.shell()
             if executor.config:
                 content2 = Tools.args_replace(
                     content,

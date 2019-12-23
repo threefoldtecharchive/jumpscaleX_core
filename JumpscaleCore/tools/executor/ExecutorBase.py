@@ -28,10 +28,11 @@ class ExecutorBase(j.baseclasses.object_config):
         self._init3(**kwargs)
         self._installer = None
         self._bash = None
+        self.config = j.core.myenv.config
 
     def _load(self):
         if not self.env:
-            j.shell()
+            self.env = j.core.myenv.config
 
     @property
     def installer(self):

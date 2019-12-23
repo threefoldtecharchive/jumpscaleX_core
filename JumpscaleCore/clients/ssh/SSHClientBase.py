@@ -1,5 +1,7 @@
 from Jumpscale import j
 import os
+import gevent
+
 import time
 
 
@@ -66,7 +68,7 @@ class SSHClientBase(j.baseclasses.object_config):
         return "%s-%s-%s" % (self.addr, self.port, self.name)
 
     def sftp_stat(self, path):
-        path = self._replace(path)
+        path = self.executor._replace(path)
         return self.sftp.stat(path)
 
     @property
@@ -116,7 +118,7 @@ class SSHClientBase(j.baseclasses.object_config):
         C = j.clients.sshagent._script_get_sshload(keyname=ssh_private_key_name)
         r = self.execute(C, interactive=interactive)
         cmd = "mosh -ssh='ssh -tt -oStrictHostKeyChecking=no -p {PORT}' {LOGIN}@{ADDR} -p 6000:6100 'bash'"
-        cmd = self._replace(cmd)
+        cmd = self.executor._replace(cmd, args={"LOGIN": self.login, "ADDR": self.addr, "PORT": self.port})
         j.sal.process.executeWithoutPipe(cmd)
 
     @property
@@ -223,7 +225,6 @@ class SSHClientBase(j.baseclasses.object_config):
         :param showout:
         :return:
         """
-
         source = j.core.tools.text_replace(source)  # this needs to be the local one
         if not dest:
             dest = source
@@ -232,7 +233,7 @@ class SSHClientBase(j.baseclasses.object_config):
                 return self.file_copy(source, dest)
             else:
                 raise j.exceptions.Base("only support dir or file for upload")
-        dest = self._replace(dest)
+        dest = self.executor._replace(dest)
         # self._check_base()
         # if dest_prefix != "":
         #     dest = j.sal.fs.joinPaths(dest_prefix, dest)
@@ -272,13 +273,16 @@ class SSHClientBase(j.baseclasses.object_config):
         :param ignorefiles: the following are always in, no need to specify: ["*.egg-info","*.pyc","*.bak"]
         :return:
         """
+
         if not dest:
             dest = source
-        source = self._replace(source)
+        source = self.executor._replace(source)
         dest = j.core.tools.text_replace(dest)  # this is on the local system so need to use the local replace
         if not self.executor.path_isdir(source):
             if self.executor.path_isfile(source):
-                return self._client.scp_recv(source, dest, recurse=False, sftp=None, encoding="utf-8")
+                res = self._client.scp_recv(source, dest, recurse=False)
+                gevent.joinall(res)
+                self._log_info("Copied remote file %s to loacl destination %s for %s" % (dest, source, self))
             else:
                 if not self.exists(source):
                     raise j.exceptions.Base("%s does not exists, cannot download" % source)
@@ -288,9 +292,9 @@ class SSHClientBase(j.baseclasses.object_config):
         #     source = j.sal.fs.joinPaths(source_prefix, source)
         if source[0] != "/":
             raise j.exceptions.RuntimeError("need / in beginning of source path")
-        if source[-1] != "/":
+        if source[-1] != "/" and not self.executor.path_isfile(source):
             source += "/"
-        if dest[-1] != "/":
+        if dest[-1] != "/" and not self.executor.path_isfile(dest):
             dest += "/"
 
         source = "root@%s:%s" % (self.addr, source)
@@ -325,7 +329,7 @@ class SSHClientBase(j.baseclasses.object_config):
         if not isinstance(cmd, str):
             raise j.exceptions.Base("cmd needs to be string")
         if replace:
-            cmd = self._replace(cmd)
+            cmd = self.executor._replace(cmd)
         if ("\n" in cmd and script in [None, True]) or len(cmd) > 100000:
             return self._execute_script(
                 content=cmd,
@@ -347,7 +351,7 @@ class SSHClientBase(j.baseclasses.object_config):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
         cmd2 = "ssh -oStrictHostKeyChecking=no -t {LOGIN}@{ADDR} -A -p {PORT} '%s'" % (cmd)
-        cmd3 = self._replace(cmd2)
+        cmd3 = self.executor._replace(cmd2, args={"LOGIN": self.login, "ADDR": self.addr, "PORT": self.port})
         return j.core.tools.execute(cmd3, interactive=True, showout=False, replace=False, asfile=True, die=die)
 
     def __repr__(self):
