@@ -682,7 +682,7 @@ class TestInstallationInSystem(BaseTest):
 
         self.info("Use package-new option ")
         package_name = self.rand_str()
-        destionation = "/tmp/"
+        destionation = "/tmp"
         command = "/tmp/jsx  package-new --name {} --dest {}".format(package_name, destionation)
         output, error = self.os_command(command)
 
@@ -696,31 +696,4 @@ class TestInstallationInSystem(BaseTest):
 
         command = "ls {}/{}/actors".format(destionation, package_name)
         output, error = self.os_command(command)
-        self.assertIn("{}.py", output.decode())
-
-    def Test08_wiki_load(self):
-        """
-        ** test wikis-load  option **
-        #. test that wikis-load option is working correctly.
-        """
-
-        self.info("Install jumpscale on {}".format(self.os_type))
-        output, error = self.jumpscale_installation("install")
-        self.assertFalse(error)
-        self.assertIn("installed successfully", output.decode())
-
-        self.info("start a threebot server. ")
-        command = ". /sandbox/env.sh && kosmos -p 'j.servers.threebot.local_start_default()'"
-        output, error = self.os_command(command)
-
-        self.info("Use load-wikis option.")
-        wikis_name = self.rand_str()
-        wikis_url = "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/docs/wikis/examples/docs"
-        command = "/tmp/jsx  wiki-load -n {} -u {}".format(wikis_name, wikis_url)
-        output, error = self.os_command(command)
-        self.assertFalse(error)
-
-        self.info("Check the wikis is loaded, should be found.")
-        r = requests.get("https://127.0.0.1/wiki/test_presentaion.md", verify=False)
-        self.assertEqual(r.status_code, 200)
-        self.assertIn("includes 1", r.content.decode())
+        self.assertIn(f"{package_name}.py", output.decode())
