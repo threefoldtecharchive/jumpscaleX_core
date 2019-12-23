@@ -620,7 +620,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         if res:
             return res[0]
 
-    def test_teardown(self):
+    def _test_teardown(self):
         j.servers.myjobs.stop(timeout=10, reset=False, graceful=False)
         try:
             redis = j.servers.startupcmd.get("redis_6380")
@@ -631,7 +631,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         j.servers.myjobs.workers.reset()
 
-    def test_setup(self):
+    def _test_setup(self):
         # make sure client for myjobs properly configured
 
         j.core.db.redisconfig_name = "core"
@@ -665,6 +665,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         try:
             self._test_run(name=name, **kwargs)
         except:
-            self.test_teardown()
+            self._test_teardown()
             raise
         print("TEST OK ALL PASSED")

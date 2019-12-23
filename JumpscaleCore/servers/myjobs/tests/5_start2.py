@@ -6,7 +6,7 @@ def main(self, count=20):
     kosmos -p 'j.servers.myjobs.test("start2")'
     """
 
-    self.test_setup()
+    self._test_setup()
     self.workers_subprocess_start()
 
     def wait_2sec():
@@ -16,6 +16,6 @@ def main(self, count=20):
         self.schedule(wait_2sec)
 
     assert self._mainloop_gipc.ready()
-    self.test_teardown()
+    self._test_teardown()
     print("start2 TEST OK")
     print("TEST OK")

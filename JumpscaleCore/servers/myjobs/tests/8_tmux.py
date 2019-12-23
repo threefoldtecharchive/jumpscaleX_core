@@ -9,7 +9,7 @@ def main(self):
     """
     kosmos -p 'j.servers.myjobs.test("tmux")'
     """
-    self.test_setup()
+    self._test_setup()
     assert len(self.workers.find()) == 0
 
     self.workers_tmux_start(2)
@@ -63,6 +63,6 @@ def main(self):
     assert self.workers.w2.nr == 2
     assert self.workers.w2.pid > 0
     assert self.workers.w2.state == "WAITING"
-    self.test_teardown()
+    self._test_teardown()
     print("Tmux TEST OK")
     print("TEST OK FOR TMUX")

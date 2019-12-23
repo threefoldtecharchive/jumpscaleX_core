@@ -8,7 +8,7 @@ def main(self):
 
     j.tools.logger.debug = True
 
-    self.test_setup()
+    self._test_setup()
 
     def add(a=None, b=None):
         assert a
@@ -58,6 +58,6 @@ def main(self):
     self.worker_inprocess_start()
     res = job.wait()
     print(res)
-    self.test_teardown()
+    self._test_teardown()
     print("Basic TEST OK")
     print("TEST OK")

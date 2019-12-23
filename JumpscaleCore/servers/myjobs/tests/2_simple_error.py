@@ -6,7 +6,7 @@ def main(self):
     kosmos -p 'j.servers.myjobs.test("simple_error")'
     """
 
-    self.test_setup()
+    self._test_setup()
 
     j.tools.logger.debug = True
 

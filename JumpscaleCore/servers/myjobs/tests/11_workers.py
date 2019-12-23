@@ -6,7 +6,7 @@ def main(self):
     """
     kosmos -p 'j.servers.myjobs.test("workers")'
     """
-    self.test_setup()
+    self._test_setup()
     j.servers.myjobs.jobs.reset()
     self.workers_subprocess_start(nr_fixed_workers=10)
 
