@@ -269,9 +269,9 @@ class TestInstallationInDocker(BaseTest):
         self.assertIn("installed successfully", output.decode())
 
         self.info("Check that new contianer installed without new data .")
-        command = "source /sandbox/env.sh && kosmos 'j.data.bcdb.system.get_all()'"
+        command = 'source /sandbox/env.sh && kosmos "print (j.data.bcdb.system.get_all())"'
         output, error = self.docker_command(command)
-        self.assertFalse(data for data in output.decode() if data.name == client_name)
+        self.assertFalse(client_name in output.decode())
 
     def test11_verify_threebot(self):
         """
@@ -319,7 +319,7 @@ class TestInstallationInDocker(BaseTest):
         command = 'docker ps -a -f status=running  | grep %s | awk "{print \$2}"' % self.CONTAINER_NAME
         output, error = self.os_command(command)
         container_image = output.decode()
-        self.assertEqual(image, container_image.strip("\n"))
+        self.assertIn(image, container_image.strip("\n"))
 
     def test13_verify_ports(self):
         """
@@ -334,7 +334,7 @@ class TestInstallationInDocker(BaseTest):
         destination_port_2 = random.randint(500, 1000)
         output, error = self.jumpscale_installation(
             "container-install",
-            "-n {} --ports {}:{} {}:{} ".format(
+            "-n {} --ports {}:{} --ports {}:{} ".format(
                 self.CONTAINER_NAME, source_port_1, destination_port_1, source_port_2, destination_port_2
             ),
         )
@@ -464,7 +464,7 @@ class TestInstallationInDocker(BaseTest):
         self.os_command(command)
 
         self.info("Add sshkey ")
-        self.os_command('ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa <<< y')
+        self.os_command('ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa  <<< y')
         self.os_command("eval `ssh-agent -s`  &&  ssh-add")
 
         self.info("Configure the no-interactive option")
@@ -481,24 +481,6 @@ class TestInstallationInDocker(BaseTest):
         output, error = self.os_command(command)
         self.assertTrue(output.decode())
         self.assertIn("threefoldtech/base", output.decode())
-
-        self.info("install jumpscale inside the base docker, should succeed  ")
-        command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx"
-        self.docker_command(command)
-        command = "chmod +x /tmp/jsx"
-        self.docker_command(command)
-
-        self.info("Add key on base cnstainer .")
-        self.docker_command('ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa')
-        self.docker_command("eval `ssh-agent -s` && ssh-add")
-
-        self.info("Configure the no-interactive option in base container .")
-        command = "/tmp/jsx configure -s --secret mysecret"
-        self.docker_command(command)
-
-        command = "/tmp/jsx install -s"
-        output, error = self.docker_command(command)
-        self.assertIn("installed successfully", output.decode())
 
     def test20_verify_pull(self):
         """
@@ -545,7 +527,7 @@ class TestInstallationInDocker(BaseTest):
         dire_name = "/root/test"
         command = "/tmp/jsx configure --codedir {}".format(dire_name)
         self.os_command(command)
-        self.install_jsx_container()
+        command = "/tmp/jsx container-install -s"
 
         self.info("Check that the directory has the code now.")
         command = "ls {}/github/threefoldtech".format(dire_name)
