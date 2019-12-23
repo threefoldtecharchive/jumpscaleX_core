@@ -7,13 +7,13 @@ def main(self, reset=False):
     """
     kosmos -p 'j.servers.myjobs.test("wait_queues")'
     """
+    self._test_setup()
     j.tools.logger.debug = True
     queue_a = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % "queue_a")
     queue_b = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % "queue_b")
 
     queue_a.reset()
     queue_b.reset()
-    self.reset()
     self.workers_tmux_start()
 
     def add(a=None, b=None):
@@ -31,6 +31,6 @@ def main(self, reset=False):
 
     assert queue_a.qsize() == 0
     assert queue_b.qsize() == 0
-
+    self._test_teardown()
     print("wait TEST OK")
     print("TEST OK")
