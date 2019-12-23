@@ -318,12 +318,11 @@ class ThreeBotServer(j.baseclasses.object_config):
                 forever.wait()
             except KeyboardInterrupt:
                 print("KEYB INTERUPT")
-            sys.exit()
 
             # dont call stop
             # delete the fact that maybe we are still in starting mode
-            j.core.db.delete("threebot.starting")
-
+            j.data.bcdb._master_set(False)
+            sys.exit()
         else:
             if not self.startup_cmd.is_running():
                 self.startup_cmd.start()
@@ -403,7 +402,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         :return:
         """
         self.startup_cmd.stop(waitstop=False, force=True)
-        j.core.db.delete("threebot.starting")
+        j.data.bcdb._master_set(False)
         self.openresty_server.stop()
 
     @property
