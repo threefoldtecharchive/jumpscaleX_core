@@ -223,7 +223,6 @@ class SSHClientBase(j.baseclasses.object_config):
         :param showout:
         :return:
         """
-
         source = j.core.tools.text_replace(source)  # this needs to be the local one
         if not dest:
             dest = source
@@ -307,6 +306,14 @@ class SSHClientBase(j.baseclasses.object_config):
             sshport=self.port,
             recursive=recursive,
         )
+
+    def _replace(self, txt, paths_executor=True):
+        if "{" in txt:
+            res = {}
+            for key, item in self._data._ddict.items():
+                res[key.upper()] = item
+            txt = j.core.tools.text_replace(txt, args=res)
+        return txt
 
     def execute(self, cmd, interactive=True, showout=True, replace=True, die=True, timeout=None, script=None):
         """
