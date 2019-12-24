@@ -14,16 +14,15 @@ class Tester:
     def _get_all_tests(locations, path):
 
         location_search = "__jslocation_"
-        for root, dirs, files in os.walk(j.core.tools.text_replace(path)):
-            for file in files:
-                if file.endswith("Factory.py"):
-                    file_path = os.path.join(root, file)
-                    with open(file_path, "r") as f:
-                        content = f.read()
-                    if location_search in content:
-                        jslocation = content.find(location_search)
-                        location = content[content.find("=", jslocation) + 1 : content.find("\n", jslocation)]
-                        locations.append(location.strip().strip("'").strip('"'))
+        for file_path in j.sal.fs.listFilesInDir(
+            path=j.core.tools.text_replace(path), filter="*Factory.py", recursive=True
+        ):
+            with open(file_path, "r") as f:
+                content = f.read()
+            if location_search in content:
+                jslocation = content.find(location_search)
+                location = content[content.find("=", jslocation) + 1 : content.find("\n", jslocation)]
+                locations.append(location.strip().strip("'").strip('"'))
 
 
 Tester._get_all_tests(locations_libs, "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_libs")
