@@ -7,7 +7,8 @@ def main(self, reset=False):
     """
     kosmos -p 'j.servers.myjobs.test("wait")'
     """
-    self.reset()
+    self._test_setup()
+
     self.workers_tmux_start()
 
     def add(a=None, b=None):
@@ -25,7 +26,6 @@ def main(self, reset=False):
     print(res)
 
     # user results instead of wait() which is basically the same!
-    self.reset()
     self.workers_tmux_start()
     ids = []
     for x in range(10):
@@ -36,7 +36,6 @@ def main(self, reset=False):
     print(res)
 
     # Test die
-    self.reset()
     self.workers_tmux_start()
     ids = []
     for x in range(9):
@@ -51,7 +50,6 @@ def main(self, reset=False):
         pass
 
     assert len(res) == 0
-    self.stop(reset=True)
-
+    self._test_teardown()
     print("wait TEST OK")
     print("TEST OK")

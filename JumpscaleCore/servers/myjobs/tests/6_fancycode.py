@@ -9,8 +9,6 @@ def main(self):
 
     # TODO: implement this?
 
-    self.reset()
-
     def testa():
         # NO ARGEMENTS NEEDED
 

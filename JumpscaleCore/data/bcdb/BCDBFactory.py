@@ -41,8 +41,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             else:
                 if j.core.db and j.core.db.get("threebot.starting"):
                     print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
-                    j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=40)
-                    self.__master = False
+                    if j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60):
+                        self._master_set(False)
+                    else:
+                        self._master_set(True)
                 else:
                     self.__master = True
         return self.__master
@@ -603,7 +605,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         bcdb.reset()  # empty
 
-        assert bcdb.storclient.count == 0
+        assert bcdb.storclient.count == 1
 
         assert bcdb.name == "test"
 
@@ -614,7 +616,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         if type.lower() in ["zdb"]:
             # print(model.storclient.nsinfo["entries"])
-            assert model.storclient.nsinfo["entries"] == 0
+            assert model.storclient.nsinfo["entries"] == 1
 
         assert len(model.find()) == 0
 
@@ -678,7 +680,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             redis.wait_stopped()
             j.servers.zdb.test_instance_stop()
             j.servers.sonic.default.stop()
-
             raise
         else:
             # CLEAN STATE

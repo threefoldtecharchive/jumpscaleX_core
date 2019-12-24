@@ -283,7 +283,7 @@ class RedisServer(j.baseclasses.object):
         bcdb_name, _, url_id = s
         url, id = url_id.split("/")
         # * means all ids
-        if id != '*':
+        if id != "*":
             id = int(id)
 
         bcdb_name = bcdb_name.lower().strip()
@@ -303,7 +303,7 @@ class RedisServer(j.baseclasses.object):
         model = j.clients.bcdbmodel.get(name=bcdb_name, url=url)
 
         try:
-            if id == '*':
+            if id == "*":
                 count = model.count()
                 model.destroy()
                 response.encode(count)

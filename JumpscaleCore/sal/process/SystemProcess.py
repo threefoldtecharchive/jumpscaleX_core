@@ -484,7 +484,8 @@ class SystemProcess(JSBASE):
             line = line.strip()
             pid = line.split(" ")[0]
             self._log_info("kill:%s (%s)" % (name, pid))
-            self.kill(pid)
+            if self.isPidAlive(int(pid)):
+                self.kill(pid)
         if self.psfind(name):
             raise j.exceptions.Base("Could not kill:%s, is still, there check if its not autorestarting." % name)
 

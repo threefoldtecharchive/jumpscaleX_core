@@ -297,7 +297,7 @@ class BCDBVFS(j.baseclasses.object):
         data_dir = self.get("/%s/data/%s/%s" % (bcdb_name, nid, url))
         return data_dir.set(data_items)
 
-    def add_schema(self, schema,bcdb_name=None):
+    def add_schema(self, schema, bcdb_name=None):
         if bcdb_name:
             self.change_current_bcdb(bcdb_name)
         s = j.clients.bcdbmodel.get(name=bcdb_name, schema=schema)  # add the schema
@@ -307,8 +307,6 @@ class BCDBVFS(j.baseclasses.object):
         # replace the latest schema with this url
         self._dirs_cache[key_url] = BCDBVFS_Schema(self, key=key_url, item=s.schema)
         return s
-
-
 
     def delete(self, path):
         split = self._split_clean_path(path)
