@@ -664,11 +664,11 @@ class TestInstallationInSystem(BaseTest):
 
         self.info("Use package-new option ")
         package_name = self.rand_str()
-        destionation = "/tmp"
-        command = "/tmp/jsx  package-new --name {} --dest {}".format(package_name, destionation)
+        destionation = "/tmp/"
+        command = f"bash -c 'source /sandbox/env.sh; /tmp/jsx  package-new --name {package_name} --dest {destionation}'"
         output, error = self.os_command(command)
 
-        self.info("chick that package added successfully.")
+        self.info("check that package added successfully.")
         command = "ls {}/{}".format(destionation, package_name)
         output, error = self.os_command(command)
         self.assertIn("actors", output.decode())
