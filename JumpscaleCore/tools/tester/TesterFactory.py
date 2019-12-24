@@ -55,20 +55,24 @@ class TesterFactory(j.baseclasses.factory_testtools):
             test()
 
     def start(self):
+        def run_test(test_name):
+            test_function = j.tools.tester.__getattribute__(test_name)
+            if test_function:
+                test_function()
+
+        jobs = []
         j.servers.threebot.local_start_default(background=True)
 
         for test in dir(j.tools.tester):
             if not test.endswith("_") and test.startswith("test_"):
-                test_name = j.tools.tester.__getattribute__(test)
-                try:
-                    job = j.servers.myjobs.schedule(test_name)
+                jobs.append(j.servers.myjobs.schedule(run_test, test_name=test))
 
-                except Exception as e:
-                    print(test_name)
-                    raise j.exceptions.RuntimeError("problem in my jobs", str(e))
+        for job in jobs:
 
-        if job.state == "OK":
-            print("ALL TEST OK")
-        else:
-            print("Job failed", job.result)
+            job.wait()
+
+            if job.state == "OK":
+                print("%s SUCCESS" % job.id)
+            else:
+                print("Job failed", job.result)
 
