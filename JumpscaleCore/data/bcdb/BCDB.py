@@ -319,10 +319,8 @@ class BCDB(j.baseclasses.object):
                 if i < next_id:
                     continue
                 print(f"{i} doesn't exist in data.. ")
-                gap_obj = model.new()
-                gap_obj.name = j.data.idgenerator.generateGUID()
-                gap_obj.save()
-                to_remove.append(gap_obj)
+                self.storclient.set("")
+                to_remove.append(i)
             else:
                 url, obj_data = data[i]
                 model = models[url]
@@ -334,9 +332,9 @@ class BCDB(j.baseclasses.object):
                 obj.save()
                 assert obj.id == i
 
-        print("Cleaning up gap objects")
-        for obj in to_remove:
-            obj.delete()
+        print("Cleaning up empty objects")
+        for i in to_remove:
+            self.storclient.delete(i)
 
     @property
     def sqlite_index_client(self):
