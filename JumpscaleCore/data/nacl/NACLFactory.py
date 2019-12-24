@@ -261,7 +261,11 @@ class NACLFactory(j.baseclasses.object):
         # LETS NOW TEST THAT WE CAN START FROM WORDS
 
         words = j.data.nacl.default.words
-        j.sal.fs.copyDirTree(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default", j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup")))  # make backup
+        j.sal.fs.copyDirTree(
+            j.core.tools.text_replace(
+                "{DIR_BASE}/cfg/keys/default", j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup")
+            )
+        )  # make backup
         j.sal.fs.remove(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default"))
         try:
             self.default.reset()
@@ -278,7 +282,11 @@ class NACLFactory(j.baseclasses.object):
             assert b == b"something"
 
         finally:
-            j.sal.fs.copyDirTree(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup", j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default")))
+            j.sal.fs.copyDirTree(
+                j.core.tools.text_replace(
+                    "{DIR_BASE}/cfg/keys/default_backup", j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default")
+                )
+            )
             j.sal.fs.remove(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup"))
 
         self._log_info("TEST OK")
@@ -315,5 +323,3 @@ class NACLFactory(j.baseclasses.object):
             b = cl.decrypt(a)
             assert data2 == b
         j.tools.timer.stop(i)
-
-

@@ -8,9 +8,7 @@ class BCDBModelClient(j.baseclasses.object):
         self.model = self.bcdb.model_get(url=kwargs["url"])
         self.schema = self.model.schema
         self.count = self.model.count
-
-        if self.bcdb.readonly:
-            self._rediscl_ = j.clients.bcdbmodel._rediscl_
+        self.index = self.model.index
 
         self.iterate = self.model.iterate
         self.search = self.model.search
@@ -23,13 +21,11 @@ class BCDBModelClient(j.baseclasses.object):
         if j.data.bcdb._master:
             self.trigger_add = self.model.trigger_add
         else:
+            # means self.bcdb.readonly == True
+            self._rediscl_ = j.clients.bcdbmodel._rediscl_
             self._rediscl_.execute_command(
                 "bcdb_model_init", self.bcdb.name, self.model.schema.url, self.model.schema._md5, self.model.schema.text
             )
-
-        self.index = self.model.index
-
-        if not j.data.bcdb._master:
             self.model.trigger_add(self._set_trigger)
 
     def get(self, id):
@@ -64,7 +60,7 @@ class BCDBModelClient(j.baseclasses.object):
     def destroy(self):
         if self.bcdb.readonly:
             key = f"{self.name}:data:"
-            self._rediscl_.hdel(key, '*')
+            self._rediscl_.hdel(key, "*")
         else:
             return j.data.bcdb.instances.get(self.name).destroy()
 

@@ -136,19 +136,20 @@ def main(self):
 
     self._log_info("TEST GET SCHEMA DONE")
 
-    SCHEMAS = ["""
+    SCHEMAS = [
+        """
     @url = ben.pc.test
     description** =  "top_pc"
     cpu = "6ghz" (S)            # power
     ram =  (LI)
     enable = true (B)""",
-
-    """@url = ben.pc.test.2
+        """@url = ben.pc.test.2
     description** =  "super_top_pc"
     cpu = "12ghz" (S)            # power
     ram =  (LI)
     enable = false (B)
-    """]
+    """,
+    ]
     res = []
 
     for schema_text in SCHEMAS:
@@ -291,5 +292,6 @@ def main(self):
     # CLEAN STATE
     j.servers.zdb.test_instance_stop()
     j.servers.sonic.default.stop()
+    vfs._bcdb.destroy()
     self._log_info("TEST DONE")
     return "OK"
