@@ -41,7 +41,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
         j.sal.fs.createDir(self.path_web)
         j.sal.fs.createDir(self.path_cfg_dir)
         # clean old websites config
-        j.sal.fs.remove("%s/servers" % self.path_cfg_dir)
+        self.cleanup()
         self.executor = "tmux"  # only tmux for now
 
         self.install()
@@ -187,3 +187,6 @@ class OpenRestyServer(j.baseclasses.factory_data):
         self.configure()
         cmd = "cd  %s;lapis build" % self.path_cfg_dir
         j.sal.process.execute(cmd)
+
+    def cleanup(self):
+        j.sal.fs.remove("%s/servers" % self.path_cfg_dir)
