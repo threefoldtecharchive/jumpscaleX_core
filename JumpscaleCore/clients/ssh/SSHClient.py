@@ -150,7 +150,7 @@ class SSHClient(SSHClientBase):
         self._log_info("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
 
     def sftp_stat(self, path):
-        path = self._replace(path)
+        path = self.executor._replace(path)
         res = self.sftp.stat(path)
         counter = 0
         while isinstance(res, int):

@@ -138,17 +138,17 @@ class SSHClientBase(j.baseclasses.object_config):
         :param localport: the local tcp port to be used (will terminate on remote)
         :return:
         """
-        self.portforwardKill(localport)
-        C = "ssh -L %s:localhost:%s %s@%s -p %s" % (remoteport, localport, self.login, self.addr, self.port)
+        self.portforward_kill(localport)
+        C = f"ssh -4 -f -N -L {localport}:127.0.0.1:{remoteport} {self.login}@{self.addr} -p {self.port}"
         print(C)
-        pm = j.builders.system.processmanager.get()  # need to use other one, no longer working #TODO:
-        pm.ensure(cmd=C, name="ssh_%s" % localport, wait=0.5)
+
+        j.sal.process.execute(C)
         print("Test tcp port to:%s" % localport)
-        if not j.sal.nettools.waitConnectionTest("127.0.0.1", localport, 10):
+        if not j.sal.nettools.waitConnectionTest("localhost", localport, 10):
             raise j.exceptions.Base("Cannot open ssh forward:%s_%s_%s" % (self, remoteport, localport))
         print("Connection ok")
 
-    def portforward_to_remote(self, remoteport, localport, timeout=20):
+    def portforward_to_remote(self, remoteport, localport, timeout=50):
         """
         forward local port to remote host port
         :param remoteport: port used on ssh host
@@ -160,7 +160,7 @@ class SSHClientBase(j.baseclasses.object_config):
                 "Cannot open ssh forward:%s_%s_%s (local port:%s)" % (self, remoteport, localport, localport)
             )
         # self.portforwardKill(localport)
-        C = "ssh -R %s:localhost:%s %s@%s -p %s" % (remoteport, localport, self.login, self.addr, self.port)
+        C = f"ssh -4 -R {remoteport}:127.0.0.1:{localport} {self.login}@{self.addr} -p {self.port}"
         print(C)
         key = f"{self.addr}_{self.port}_{remoteport}_{localport}"
         cmd = j.servers.startupcmd.get(name=key)
@@ -174,7 +174,7 @@ class SSHClientBase(j.baseclasses.object_config):
         start = j.data.time.epoch
         end = start + timeout
         while j.data.time.epoch < end:
-            if self.tcp_remote_port_check("localhost", remoteport):
+            if self.tcp_remote_port_check("127.0.0.1", remoteport):
                 self._log_info(f"Connection ok for {remoteport} to local:{localport}")
                 return
             time.sleep(0.1)
@@ -197,8 +197,7 @@ class SSHClientBase(j.baseclasses.object_config):
         :return:
         """
         print("kill portforward %s" % localport)
-        pm = j.builders.system.processmanager.get()
-        pm.processmanager.stop("ssh_%s" % localport)
+        j.sal.process.killProcessByPort(localport)
 
     def upload(
         self,
@@ -331,6 +330,8 @@ class SSHClientBase(j.baseclasses.object_config):
         if replace:
             cmd = self.executor._replace(cmd)
         if ("\n" in cmd and script in [None, True]) or len(cmd) > 100000:
+            raise RuntimeError("NOT IMPLEMENTED")
+            # is it still needed ?
             return self._execute_script(
                 content=cmd,
                 die=die,
