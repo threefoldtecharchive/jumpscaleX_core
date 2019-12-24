@@ -55,7 +55,7 @@ class BCDB(j.baseclasses.object):
         j.sal.fs.createDir(self._data_dir)
 
         if self.readonly:
-            self._log_info("sqlite file is in readonly mode for: '%s'" % self.name)
+            self._log_info("sqlite file is in readonly mode")
             self._sqlite_index_dbpath = "file:%s/sqlite_index.db?mode=ro" % self._data_dir
         else:
             self._sqlite_index_dbpath = "file:%s/sqlite_index.db" % self._data_dir
@@ -118,7 +118,7 @@ class BCDB(j.baseclasses.object):
             raise j.exceptions.Base("name needs to be string")
 
         # need to do this to make sure we load the classes from scratch
-        # TODO: make sure to load meta.toml.
+        ## TODO: make sure to load meta.toml.
         for item in ["ACL", "USER", "GROUP"]:
             key = "Jumpscale.data.bcdb.models_system.%s" % item
             if key in sys.modules:

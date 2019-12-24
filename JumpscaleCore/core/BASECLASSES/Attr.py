@@ -20,7 +20,7 @@
 
 from Jumpscale import j
 
-# CLASS DEALING WITH THE ATTRIBUTES SET & GET
+### CLASS DEALING WITH THE ATTRIBUTES SET & GET
 
 
 class Attr:
@@ -63,7 +63,8 @@ class Attr:
         try:
             r = self.__getattribute__(name)
         except AttributeError as e:
-            msg = "could not find attribute:%s (error was:%s)" % (name, e)
+            whereami = self._key
+            msg = "could not find attribute:%s in %s (error was:%s)" % (name, whereami, e)
             raise j.exceptions.NotFound(msg)
 
         return r
