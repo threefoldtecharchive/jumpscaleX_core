@@ -41,3 +41,24 @@ sshcl.upload("/sandbox/test_file", dest="/test_file")
 ```python
 sshcl.download("/sandbox/test_file", dest="/test_file")
 ```
+
+- Port forwarding from remote to local
+
+use case: you have a remote server and want to access it through local port
+
+Example: I have nginx running on the remote machine on port 80 and I need to access it from my local 9999 port
+
+```python
+sshcl.portforward_to_local(80, 9999)
+```
+
+make sure via `curl 127.0.0.1:9999` on your local machine
+
+- Port forwarding from local to remote
+
+use case: the opposite of forward to local you have a local server and want to access it through remote port
+
+```python
+sshcl.portforward_to_remote(80, 9000)
+```
+make sure via `curl 127.0.0.1:9000` on your remote machine
