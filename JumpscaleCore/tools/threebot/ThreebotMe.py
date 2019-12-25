@@ -14,7 +14,7 @@ class ThreebotMe(JSConfigBase):
     @url = jumpscale.threebot.me
     name** = ""
     tid** =  0 (I)                  #my threebot id
-    tname** = "me" (S)                #my threebot name
+    tname** = "" (S)                #my threebot name
     email = "" (S)                  #for caching purposes
     pubkey = ""                     #for caching purposes
     admins = (LS)                   #3bot names which are admin of this 3bot
