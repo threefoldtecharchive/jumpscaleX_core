@@ -374,9 +374,7 @@ class Link(j.baseclasses.object):
                 self.filename = self._clean(j.sal.fs.getBaseName(link_source))
 
                 if not self.extension in ["png", "jpg", "jpeg", "mov", "mp4", "mp3", "docx"]:
-                    self.extension = (
-                        "jpeg"
-                    )  # to support url's like https://images.unsplash.com/photo-1533157961145-8cb586c448e1?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=4e252bcd55caa8958985866ad15ec954&auto=format&fit=crop&w=1534&q=80
+                    self.extension = "jpeg"  # to support url's like https://images.unsplash.com/photo-1533157961145-8cb586c448e1?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=4e252bcd55caa8958985866ad15ec954&auto=format&fit=crop&w=1534&q=80
                     self.filename = self.filename + ".jpeg"
 
                 if j.sal.fs.getFileExtension(self.filename) != self.extension:
@@ -460,7 +458,7 @@ class Link(j.baseclasses.object):
             import requests
 
             response = requests.get(self.link_source_original, stream=True)
-            j.sal.fs.writeFile(dest, response, append=False)
+            j.sal.fs.writeFile(dest, response.content, append=False)
 
     def should_skip(self):
         return any(link in self.link_source for link in SKIPPED_LINKS) or j.data.types.email.check(self.link_source)

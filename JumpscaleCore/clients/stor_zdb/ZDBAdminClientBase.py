@@ -11,6 +11,7 @@ class ZDBAdminClientBase:
 
     def namespace_exists(self, name):
         assert self.admin
+        self.auth()
         try:
             self.redis.execute_command("NSINFO", name)
             # self._log_debug("namespace_exists:%s" % name)
@@ -23,6 +24,7 @@ class ZDBAdminClientBase:
 
     def namespaces_list(self):
         assert self.admin
+        self.auth()
         res = self.redis.execute_command("NSLIST")
         return [i.decode() for i in res]
 
@@ -37,6 +39,7 @@ class ZDBAdminClientBase:
         :return:
         """
         assert self.admin
+        self.auth()
         self._log_debug("namespace_new:%s" % name)
         if not self.namespace_exists(name):
             self._log_debug("namespace does not exists")
@@ -65,15 +68,16 @@ class ZDBAdminClientBase:
             assert ns.nsinfo["public"] == "no"
         else:
             assert ns.nsinfo["public"] == "yes"
-
         return ns
 
     def namespace_get(self, name, secret=""):
         assert self.admin
+        self.auth()
         return self.namespace_new(name, secret)
 
     def namespace_delete(self, name):
         assert self.admin
+        self.auth()
         if self.namespace_exists(name):
             self._log_debug("namespace_delete:%s" % name)
             self.redis.execute_command("NSDEL", name)
@@ -85,6 +89,7 @@ class ZDBAdminClientBase:
         :return:
         """
         assert self.admin
+        self.auth()
         for name in self.namespaces_list():
             if name not in ["default"] and name not in ignore:
                 self.namespace_delete(name)

@@ -86,11 +86,9 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
         kosmos 'j.clients.zdb.test()'
 
         """
-
         zdb = j.servers.zdb.test_instance_start()
-
         cl = zdb.client_admin_get()
         assert cl.ping()
-        cl.namespace_delete("admin")
         self._test_run(name=name)
+
         j.servers.zdb.test_instance_stop()
