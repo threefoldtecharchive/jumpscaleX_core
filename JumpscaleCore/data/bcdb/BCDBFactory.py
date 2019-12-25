@@ -29,8 +29,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         self._BCDBModelClass = BCDBModel  # j.data.bcdb._BCDBModelClasses
         self._config = {}
 
-        j.sal.fs.createDir(j.core.tools.text_replace("{DIR_CFG}/bcdb"))
-
         self.__master = None
 
     @property
@@ -41,49 +39,46 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             else:
                 if j.core.db and j.core.db.get("threebot.starting"):
                     print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
-                    if j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60):
-                        self._master_set(False)
+                    if not j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60):
+                        self.__master = True
                     else:
-                        self._master_set(True)
+                        self.__master = False
                 else:
                     self.__master = True
         return self.__master
 
     def _master_set(self, val=True):
-        self.__master = val
-
-    def _threebot_starting_set(self, val=True):
-        if True:
+        if val:
             j.core.db.set("threebot.starting", ex=120, value="1")
         else:
             j.core.db.delete("threebot.starting")
-        self._master_set(val=val)
+        self.__master = val
 
     def config_reload(self):
         self._loaded = False
         self._load()
 
-    # def unlock(self):
-    #     base_path = j.core.tools.text_replace("{DIR_BASE}/var/bcdb/")
-    #     instances = []
-    #     if j.sal.fs.exists(base_path):
-    #         instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
-    #         for instance in instances:
-    #             lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
-    #             if j.sal.fs.exists(lock_path):
-    #                 j.sal.fs.remove(lock_path)
-    #                 self._log_info(f"BCDB instance {instance} unlocked")
-    #
-    # def lock(self):
-    #     base_path = j.core.tools.text_replace("{DIR_BASE}/var/bcdb/")
-    #     instances = []
-    #     instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
-    #     for instance in instances:
-    #         lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
-    #         if not j.sal.fs.exists(lock_path):
-    #             j.sal.fs.touch(lock_path)
-    #             self._log_info(f"BCDB instance {instance} unlocked")
-    #     self.__master = True
+    def unlock(self):
+        base_path = j.core.tools.text_replace("{DIR_BASE}/var/bcdb/")
+        instances = []
+        if j.sal.fs.exists(base_path):
+            instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
+            for instance in instances:
+                lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
+                if j.sal.fs.exists(lock_path):
+                    j.sal.fs.remove(lock_path)
+                    self._log_info(f"BCDB instance {instance} unlocked")
+
+    def lock(self):
+        base_path = j.core.tools.text_replace("{DIR_BASE}/var/bcdb/")
+        instances = []
+        instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
+        for instance in instances:
+            lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
+            if not j.sal.fs.exists(lock_path):
+                j.sal.fs.touch(lock_path)
+                self._log_info(f"BCDB instance {instance} unlocked")
+        self.__master = True
 
     def _load(self):
 
@@ -307,7 +302,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
     def destroy(self, name):
         if not self._master:
-            raise j.exceptions.Base("cannot destroy BCDB when not master")
+            raise j.exceptions.Base("cannot destory BCDB when not master")
         self._load()
         assert name
         assert isinstance(name, str)
@@ -680,6 +675,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             redis.wait_stopped()
             j.servers.zdb.test_instance_stop()
             j.servers.sonic.default.stop()
+
             raise
         else:
             # CLEAN STATE
