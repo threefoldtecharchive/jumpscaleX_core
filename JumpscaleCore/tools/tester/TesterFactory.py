@@ -66,12 +66,17 @@ class TesterFactory(j.baseclasses.factory_testtools):
             if test.startswith("test_"):
                 jobs.append(j.servers.myjobs.schedule(run_test, test_name=test))
 
-        for job in jobs:
+        try:
+            j.servers.myjobs.wait([job.id for job in jobs])
+        except Exception as e:
+            pass
 
-            job.wait()
+        for job in jobs:
 
             if job.state == "OK":
                 print("%s SUCCESS" % job.id)
+            elif job.state == "NEW":
+                print("%s Waiting" % job.id)
             else:
                 print("Job failed", job.result)
 
