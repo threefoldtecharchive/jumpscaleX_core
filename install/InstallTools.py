@@ -4326,7 +4326,7 @@ class JumpscaleInstaller:
     #     Tools.execute("cp {DIR_CODE}/github/threefoldtech/sandbox_threebot_linux64/.startup.toml /")
     #     Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
     #
-    def repos_get(self, pull=False, prebuilt=False, branch=branch):
+    def repos_get(self, pull=False, prebuilt=False, branch=None):
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
 
