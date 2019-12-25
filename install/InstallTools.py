@@ -1723,14 +1723,20 @@ class Tools:
         if not "{" in content:
             return content
 
-        if executor and executor.config:
-            content2 = Tools.args_replace(
-                content,
-                args_list=(args, executor.config),
-                ignorecolors=ignorecolors,
-                die_if_args_left=die_if_args_left,
-                primitives_only=primitives_only,
-            )
+        if executor:
+            if not executor.env:
+                executor.load()
+            if executor.config:
+                content2 = Tools.args_replace(
+                    content,
+                    args_list=(args, executor.config),
+                    ignorecolors=ignorecolors,
+                    die_if_args_left=die_if_args_left,
+                    primitives_only=primitives_only,
+                )
+            else:
+                j.shell()
+                raise RuntimeError("config not defined on executor")
         else:
             content2 = Tools.args_replace(
                 content,
@@ -3945,6 +3951,8 @@ class BaseInstaller:
                 "wsgidav",
                 "bottle==0.12.17",  # why this version?
                 "beaker",
+                "monkey.patch_thread",
+                "Mnemonic",
             ],
             # level 1: in the middle
             1: [
@@ -3966,6 +3974,7 @@ class BaseInstaller:
                 "bottle==0.12.17",
                 "bottle-websocket==0.2.9",
                 "stellar-sdk",
+                "mnemonic",
             ],
             # level 2: full install
             2: [

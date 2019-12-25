@@ -80,11 +80,6 @@ class ExecutorInstallers(j.baseclasses.object):
         self.executor = executor
 
     @executor_method()
-    def kosmos(self):
-        self.jumpscale()
-        j.shell()
-
-    @executor_method()
     def base(self):
         self.executor.execute("apt-get update")
         self.executor.execute(

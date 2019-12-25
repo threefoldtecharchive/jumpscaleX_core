@@ -26,9 +26,7 @@ class NACLFactory(j.baseclasses.object):
         if isinstance(j.core.db, fakeredis.FakeStrictRedis):
             j.clients.redis.core_get()
 
-    def configure(
-        self, name="default", privkey_words=None, sshagent_use=None, generate=True, interactive=False, reset=False
-    ):
+    def configure(self, name="default", privkey_words=None, generate=True, interactive=False, reset=False):
         """
         secret is used to encrypt/decrypt the private key when stored on local filesystem
         privkey_words is used to put the private key back

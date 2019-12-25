@@ -206,8 +206,8 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.zdb  # will start sonic & zdb
             self.sonic
 
-            # will make sure all BCDB's are locked
-            j.data.bcdb.lock()
+            # # will make sure all BCDB's are locked
+            # j.data.bcdb.lock()
 
             # make sure client for myjobs properly configured
             j.core.db.redisconfig_name = "core"
@@ -401,8 +401,8 @@ class ThreeBotServer(j.baseclasses.object_config):
         :return:
         """
         self.startup_cmd.stop(waitstop=False, force=True)
-        j.data.bcdb._master_set(False)
         self.openresty_server.stop()
+        j.data.bcdb._master_set(False)
 
     @property
     def startup_cmd(self):

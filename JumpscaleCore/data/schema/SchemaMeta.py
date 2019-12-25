@@ -174,8 +174,17 @@ class SchemaMeta(j.baseclasses.object):
             d["url"] = schema.url
             self._data["md5"][schema._md5] = d
 
+            self.schema_backup(schema)
         if (change or change2) and save:
             self.save()
+
+    def schema_backup(self, schema):
+        data = {"url": schema.url, "md5": schema._md5, "text": schema.text, "time": j.data.time.epoch}
+        t = j.data.serializers.toml.dumps(data)
+        hrtime = j.data.time.epoch
+        t2 = "[[time_%s]]\n%s\n\n" % (hrtime, t)
+        dest = j.core.tools.text_replace("{DIR_CFG}/bcdb/%s.toml" % schema.url.replace(".", "__"))
+        j.sal.fs.writeFile(dest, t2, append=True)
 
     def _data_from_url(self, url):
         if url not in self._data["url"]:
