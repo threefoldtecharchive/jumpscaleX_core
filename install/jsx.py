@@ -234,7 +234,7 @@ def container_install(
     #     docker.sandbox_sync()
 
     installer = IT.JumpscaleInstaller()
-    installer.repos_get(pull=False)
+    installer.repos_get(pull=False, branch=branch)
 
     docker.jumpscale_install(branch=branch, redo=reinstall, pull=pull, threebot=threebot)  # , prebuilt=prebuilt)
 
@@ -294,7 +294,7 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
 
     installer = IT.JumpscaleInstaller()
     assert prebuilt == False  # not supported yet
-    installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt)
+    installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt, branch=branch)
     if threebot:
         IT.Tools.execute(
             "source %s/env.sh;kosmos 'j.servers.threebot.install(force=True)'" % SANDBOX, showout=True, timeout=3600 * 2
