@@ -3976,6 +3976,7 @@ class BaseInstaller:
                 "bottle==0.12.17",
                 "bottle-websocket==0.2.9",
                 "stellar-sdk",
+                "mnemonic",
             ],
             # level 2: full install
             2: [
