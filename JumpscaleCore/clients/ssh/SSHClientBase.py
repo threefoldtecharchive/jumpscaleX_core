@@ -174,6 +174,7 @@ class SSHClientBase(j.baseclasses.object_config):
         start = j.data.time.epoch
         end = start + timeout
         while j.data.time.epoch < end:
+            time.sleep(2)  # wait for the port to started
             if self.tcp_remote_port_check("127.0.0.1", remoteport):
                 self._log_info(f"Connection ok for {remoteport} to local:{localport}")
                 return
