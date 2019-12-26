@@ -22,8 +22,7 @@ def load_install_tools(branch=None, reset=False):
     if not branch:
         branch = DEFAULT_BRANCH
     # first check on code tools
-    # TODO: remove this reset
-    if not os.path.exists(path) or reset:
+    if not os.path.exists(path):
         rootdir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(rootdir, "InstallTools.py")
         # now check on path next to jsx
