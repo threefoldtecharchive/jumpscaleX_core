@@ -42,7 +42,9 @@ class CoreTests(TestCase):
         ]
     )
     def test(self, cmd):
-        if cmd == "j.servers.myjobs.test()":
+        if cmd == "j.clients.zdb.test()":
+            self.skipTest("This test shouldn't be run on CI, as it depends on machine speed (performance test)")
+        elif cmd == "j.servers.myjobs.test()":
             self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/342")
         elif cmd == "j.servers.openresty.test()":
             self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/364")
