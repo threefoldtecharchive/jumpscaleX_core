@@ -3951,7 +3951,6 @@ class BaseInstaller:
                 "wsgidav",
                 "bottle==0.12.17",  # why this version?
                 "beaker",
-                "monkey.patch_thread",
                 "Mnemonic",
             ],
             # level 1: in the middle
@@ -3974,7 +3973,6 @@ class BaseInstaller:
                 "bottle==0.12.17",
                 "bottle-websocket==0.2.9",
                 "stellar-sdk",
-                "mnemonic",
             ],
             # level 2: full install
             2: [
