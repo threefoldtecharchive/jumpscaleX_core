@@ -33,21 +33,17 @@ class CoreTests(TestCase):
     @parameterized.expand(
         [
             "j.data.bcdb.test()",
+            "j.clients.zdb.test()",
             "j.data.schema.test()",
             "j.clients.sshkey.test()",
             "j.clients.sshagent.test()",
-            "j.clients.zdb.test()",
             "j.servers.openresty.test()",
             "j.servers.myjobs.test()",
         ]
     )
     def test(self, cmd):
-        if cmd == "j.data.bcdb.test()":
-            self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/340")
-        elif cmd == "j.data.schema.test()":
-            self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/356")
-        elif cmd == "j.clients.zdb.test()":
-            self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/361")
+        if cmd == "j.clients.zdb.test()":
+            self.skipTest("This test shouldn't be run on CI, as it depends on machine speed (performance test)")
         elif cmd == "j.servers.myjobs.test()":
             self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/342")
         elif cmd == "j.servers.openresty.test()":

@@ -12,14 +12,21 @@ import redis
 class TestSimpleEcho(TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.client = j.servers.threebot.local_start_default()
+        j.servers.threebot.local_start_default(background=True)
+        cls.package_manager_client = j.clients.gedis.get(
+            name="default", host="127.0.0.1", port=8901, package_name="zerobot.packagemanager"
+        )
         package_path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), "test_package")
-        cls.client.actors.package_manager.package_add(path=package_path)
-        cls.client.reload()
+        cls.package_manager_client.actors.package_manager.package_add(path=package_path)
+        cls.package_manager_client.reload()
+        cls.client = j.clients.gedis.get(
+            name="test_package", host="127.0.0.1", port=8901, package_name="zerobot.test_package"
+        )
 
     @classmethod
     def tearDownClass(cls):
-        cls.client.reset()
+        cls.package_manager_client.actors.package_manager.package_delete("zerobot.test_package")
+        j.sal.process.execute("tmux kill-session")
 
     def test01_echo(self):
         assert b"test" == self.client.actors.actor.echo("test")

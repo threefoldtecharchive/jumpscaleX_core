@@ -120,7 +120,7 @@ class ThreeBotPackage(JSConfigBase):
             #     # load webserver
             #     j.shell()
 
-            self.load_wiki()
+            self.load_wiki(reset=True)
 
         self._init_ = True
 
