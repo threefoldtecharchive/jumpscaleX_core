@@ -1,8 +1,5 @@
 from Jumpscale import j
 
-import os
-from unittest import TestCase, skip
-
 from parameterized import parameterized
 
 locations_libs = []
