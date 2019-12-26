@@ -86,7 +86,7 @@ class DocSite(j.baseclasses.object):
                 return
 
             if gitpath not in self.docgen._git_repos:
-                self._git = j.tools.threegit.get(self.name)._git_get(gitpath)
+                self._git = self.docgen._git_get(gitpath)
                 self.docgen._git_repos[gitpath] = self.git
 
         if not self._git:
@@ -252,7 +252,7 @@ class DocSite(j.baseclasses.object):
             return
 
         if reset == True:
-            git_client = j.clients.git.get(self.path)
+            git_client = j.clients.git.get(self.path, check_path=False)
             self.revision = git_client.config_3git_set("revision_last_processed", "")
 
         path = self.path
@@ -312,7 +312,7 @@ class DocSite(j.baseclasses.object):
                 self.file_add(path)
 
         # check changed files and process it using 3git tool
-        git_client = j.clients.git.get(self.path)
+        git_client = j.clients.git.get(self.path, check_path=False)
         self.revision = git_client.config_3git_get("revision_last_processed")
         revision, self._files_changed, old_files = git_client.logChanges(path=self.path, from_revision=self.revision)
 
