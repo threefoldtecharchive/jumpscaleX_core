@@ -32,13 +32,8 @@ class JSConfigBCDBBase(JSBase, Attr):
     def _init_pre(self, **kwargs):
         self._model_ = None
         self._bcdb_ = None
-        self._triggers = []
-        # that way the triggers can know about this class and can call the triggers on this level
-        # self._model._kosmosinstance = self
 
-    # def _init_post(self, **kwargs):
-    #     self._inspect()  # force inspection
-    #     # self._protected = True
+        # self._model._kosmosinstance = self
 
     def _bcdb_selector(self):
         """
@@ -119,34 +114,3 @@ class JSConfigBCDBBase(JSBase, Attr):
                 schematext += "mother_id** = 0 (I)\n"
 
         return schematext
-
-    #### NEED TO IMPLEMENT BUT THINK FIRST
-
-    def _trigger_add(self, method):
-        """
-
-        triggers are called with (jsconfigs, jsconfig, action, propertyname=None)
-
-        can register any method you want to respond on some change
-
-        - jsconfigs: if relevant the factory starting drom model to 1 instance
-        - jsconfig: the jsconfig object
-        - action: e.g. new, delete, get, stop, ...  (any method call)
-        - propertyname if the trigger was called because of change of the property of the data underneith
-
-        return: jsconfig object
-        """
-        if method not in self._triggers:
-            self._triggers.append(method)
-
-    def _triggers_call(self, jsconfig, action=None):
-        """
-        will go over all triggers and call them with arguments given
-
-        """
-        assert isinstance(jsconfig, j.baseclasses.object_config)
-        self._log_debug("trigger: %s:%s" % (jsconfig.name, action))
-        for method in self._triggers:
-            jsconfig = method(jsconfigs=self, jsconfig=jsconfig, action=action)
-            assert isinstance(jsconfig, j.baseclasses.object_config)
-        return jsconfig

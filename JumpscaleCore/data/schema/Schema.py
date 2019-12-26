@@ -343,17 +343,18 @@ class Schema(j.baseclasses.object):
 
         # self._log_debug("LOADS:%s:%s" % (versionnr, obj_id))
 
-        if bcdb:
-            model = bcdb.model_get(url=self.url)
-            # here the model retrieved will be linked to a schema with the same url
-            # but can be a different md5
-        else:
-            model = None
-
         if serializeddata:
             assert isinstance(serializeddata, bytes)
             obj = j.data.serializers.jsxdata.loads(serializeddata, bcdb=bcdb)
         else:
+
+            if bcdb:
+                model = bcdb.model_get(url=self.url)
+                # here the model retrieved will be linked to a schema with the same url
+                # but can be a different md5
+            else:
+                model = None
+
             if capnpdata and isinstance(capnpdata, bytes):
                 obj = self.objclass(schema=self, capnpdata=capnpdata, model=model)
             elif datadict and datadict != {}:
@@ -363,8 +364,8 @@ class Schema(j.baseclasses.object):
             else:
                 raise j.exceptions.Base("wrong arguments to new on schema")
 
-        if model is not None:
-            model._triggers_call(obj=obj, action="new")
+            if bcdb:
+                model._triggers_call(obj=obj, action="new")
 
         return obj
 

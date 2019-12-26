@@ -67,6 +67,8 @@ class BCDBModel(j.baseclasses.object):
         self.autosave = False
         self.nosave = False
 
+        self.instances = []
+
         if self.storclient and self.storclient.type == "ZDB":
             # is unique id for a bcdbmodel (unique per storclient !)
             self.key = "%s_%s" % (self.storclient.nsname, self.schema.url)
@@ -88,6 +90,17 @@ class BCDBModel(j.baseclasses.object):
             indexklass = self._index_class_generate()
             self._index_ = indexklass(model=self, reset=True)
             self.destroy()
+
+        self.trigger_add(self._maintenance)
+
+    def _maintenance(self, model=None, obj=None, action=None, kosmosinstance=None, propertyname=None):
+        if action == "schema_change":
+            for obj in self.instances:
+                # make sure we attach the right model to the obj
+                obj._model = self.bcdb.model_get(url=obj.schema.url)
+        if action == "stop":
+            for obj in self.instances:
+                obj.stop()
 
     @property
     def index(self):
@@ -125,27 +138,17 @@ class BCDBModel(j.baseclasses.object):
 
         return myclass
 
-    # @property
-    # def schema(self):
-    #     if not self.schema:
-    #         self.schema = j.data.schema.get_from_url(self.schema.url)
-    #         if self._md5_previous_ != schema._md5:
-    #             self._md5_previous_ = schema._md5 + ""  # to make sure we have copy=
-    #             self._index_ = None
-    #     return self.schema
-
-    # @property
-    # def mid(self):
-    #     return self.bcdb.meta._mid_from_url(self.schema.url)
-
-    def schema_change(self, schema):
+    def schema_change(self, schema, obj=None):
         assert isinstance(schema, j.data.schema.SCHEMA_CLASS)
 
         # make sure model has the latest schema
         if self.schema._md5 != schema._md5:
             self.schema = schema
             self._log_info("schema change")
-            self._triggers_call(None, "schema_change", None)
+            self._triggers_call(obj, "schema_change", None)
+
+    def stop(self):
+        self._triggers_call(action="stop")
 
     @property
     def sonic_client(self):
@@ -178,6 +181,8 @@ class BCDBModel(j.baseclasses.object):
         """
         will go over all triggers and call them with arguments given
         see docs/baseclasses/data_mgmt_on_obj.md
+
+        return obj, stop
 
         """
         model = self
@@ -232,11 +237,12 @@ class BCDBModel(j.baseclasses.object):
         if obj:
             assert obj.nid
             if obj.id is not None:
-                self._triggers_call(obj=obj, action="delete")
+                obj, stop = self._triggers_call(obj=obj, action="delete")
                 # if obj.id in self.obj_cache:
                 #     self.obj_cache.pop(obj.id)
-                self.storclient.delete(obj.id)
-                self.index.delete_by_id(obj_id=obj.id, nid=obj.nid)
+                if not stop:
+                    self.storclient.delete(obj.id)
+                    self.index.delete_by_id(obj_id=obj.id, nid=obj.nid)
         else:
             self.storclient.delete(obj_id)
             self.index.delete_by_id(obj_id=obj_id, nid=obj.nid)

@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 from .JSConfigBCDBBase import JSConfigBCDBBase
 
@@ -43,7 +23,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             raise j.exceptions.Input("name needs to be specified on a config mgmt obj")
         if self.exists(name=name):
             raise j.exceptions.Base(f"cannot do new object, {name} exists")
-        jsconfig = self._new(name=name, jsxobject=jsxobject, autosave=autosave, **kwargs)
+        jsconfig = self._create(name=name, jsxobject=jsxobject, autosave=autosave, **kwargs)
         self._check(jsconfig)
         return jsconfig
 
@@ -63,7 +43,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             assert jsconfig.mother_id == mother_id
         assert jsconfig._model.schema._md5 == self._model.schema._md5
 
-    def _new(self, name, jsxobject=None, autosave=True, **kwargs):
+    def _create(self, name, jsxobject=None, autosave=None, **kwargs):
         """
         :param name: for the CONFIG item (is a unique name for the service, client, ...)
         :param jsxobject: you can right away specify the jsxobject
@@ -96,7 +76,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         kwargs_to_obj_new, kwargs_to_class = process_kwargs(kwargs)
 
         if not jsxobject:
-            if kwargs:
+            if kwargs_to_obj_new:
                 jsxobject = self._model.new(data=kwargs_to_obj_new)
             else:
                 jsxobject = self._model.new()
@@ -110,12 +90,13 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         jsconfig_klass = self._childclass_selector(jsxobject=jsxobject)
         jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject, **kwargs_to_class)
-        jsconfig._triggers_call(jsconfig, "new")
-        jsconfig._autosave = autosave
         self._children[name] = jsconfig
-        if autosave:
-            self._children[name].save()
+
+        if autosave != None:
             jsxobject._autosave = autosave
+
+        if jsxobject._autosave:
+            self._children[name].save()
 
         return self._children[name]
 
@@ -131,7 +112,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         if not jsconfig:
             self._log_debug("NEW OBJ:%s:%s" % (name, self._classname))
-            jsconfig = self._new(name=name, autosave=autosave, **kwargs)
+            jsconfig = self._create(name=name, autosave=autosave, **kwargs)
         else:
             # check that the stored values correspond with kwargs given
             # means comes from the database
@@ -161,16 +142,25 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         # lets do some tests (maybe in future can be removed, but for now the safe bet)
         self._check(jsconfig)
 
-        jsconfig._triggers_call(jsconfig, "get")
-
         return jsconfig
 
-    def _get(self, name="main", id=None, die=True, reload=False, autosave=True):
+    def _get(self, name="main", id=None, die=True, reload=False, autosave=None):
+        """
+
+        :param name:
+        :param id: id will always have priority
+        :param die: if False will return None if it cannot be found
+        :param reload: if exists, will ask the data to be reloaded
+        :param autosave:
+        :return: 1,obj or 2,obj
+            2 if exists
+            1 if new
+        """
 
         if id:
             obj = self._model.get(id)
             name = obj.name
-            return 1, self._new(name, obj)
+            return 1, self._create(name, obj, autosave=autosave)
 
         obj = self._validate_child(name)
         if obj:
@@ -197,7 +187,8 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         else:
             jsxconfig = res[0]
 
-        jsxconfig._autosave = autosave
+        if autosave != None:
+            jsxconfig._autosave = autosave
 
         return 2, jsxconfig
 
@@ -326,7 +317,12 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             return True
 
         # will only use the index
-        return self.count(name=name) == 1
+        r = self.count(name=name)
+        if r == 1:
+            return True
+        if r == 0:
+            return False
+        raise j.exceptions.Base("should never be more than 1 result")
 
     def _children_get(self, filter=None):
         """

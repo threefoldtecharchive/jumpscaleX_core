@@ -60,6 +60,7 @@ class Syncer(j.baseclasses.object_config):
 
             cl = j.clients.ssh.get(name=name)
         else:
+            j.shell()
             raise j.exceptions.Base("only support name of sshclient or the sshclient instance itself")
 
         if cl.name not in self.sshclients:

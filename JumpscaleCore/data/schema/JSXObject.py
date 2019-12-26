@@ -8,7 +8,7 @@ class JSXObject(j.baseclasses.object):
 
         if model:
             self._model = model
-            self._schema_ = schema
+            self._schema_ = None  # leave None
         else:
             self._schema_ = schema
             self._model = None

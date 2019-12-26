@@ -77,6 +77,10 @@ class BCDB(j.baseclasses.object):
         """
         make sure the bcdb is initialized with default values & all is stopped
         """
+        for model in self.models.values():
+            # lets make sure the triggers are fired
+            model.stop()
+
         self.dataprocessor_stop()
         self.sqlite_index_client_stop()
         if self.storclient.type == "SDB":
@@ -490,7 +494,7 @@ class BCDB(j.baseclasses.object):
             model = self.model_get(schema=jsxobj._schema)
             model.set(jsxobj, store=False, index=True)
 
-    def model_get(self, schema=None, md5=None, url=None, reset=False):
+    def model_get(self, schema=None, md5=None, url=None, reset=False, triggers=True):
         """
         will return the latest model found based on url, md5 or schema
         :param url:
@@ -500,9 +504,14 @@ class BCDB(j.baseclasses.object):
         schema = self.schema_get(schema=schema, md5=md5, url=url)
 
         if schema.url in self.models:
-            # check that we don't cache the wrong one
-            if schema._md5 == self.models[schema.url].schema._md5:
-                return self.models[schema.url]
+            if schema._md5 != self.models[schema.url].schema._md5:
+                # this means we found model in mem but schema changed in mean time
+                # need to use the new one now
+                self.models[schema.url].schema = schema
+                if triggers:
+                    self.models[schema.url].schema_change(schema)
+                    # don't add the obj, because need to do for all obj
+            return self.models[schema.url]
 
         # model not known yet need to create
         self._log_info("load model:%s" % schema.url)

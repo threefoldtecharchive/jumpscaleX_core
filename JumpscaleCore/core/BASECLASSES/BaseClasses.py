@@ -130,7 +130,6 @@ class BaseClasses(JSBase, TestTools):
 
         deals with base functionality as required for the object(s)_config classes
 
-        - triggers
         - change schema's inside object
         - initialization
 
