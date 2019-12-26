@@ -4,52 +4,94 @@ from .ExecutorBase import ExecutorBase
 
 
 class ExecutorSSH(ExecutorBase):
-    def _init3(self, sshclient=None, **kwargs):
-        assert sshclient
-        self.type = "ssh"
-        self.sshclient = sshclient
+    def _init3(self, **kwargs):
+        assert self.type == "ssh"
+        self._sshclient = None
         self.uid = self.sshclient.uid
 
-        # self.kosmos = self.sshclient.kosmos
-        # self.shell = self.sshclient.shell
-        self.upload = self.sshclient.upload
-        self.download = self.sshclient.download
+    def download(self, source, dest=None, ignoredir=None, ignorefiles=None, recursive=True):
+        source = self._replace(source)
+        dest = j.core.tools.text_replace(dest)
+        return self.sshclient.download(
+            source=source, dest=dest, ignoredir=ignoredir, ignorefiles=ignorefiles, recursive=recursive
+        )
 
-    def _load(self):
-        ExecutorBase._load(self)
-        if not self.sshclient.addr:
-            raise j.exceptions.Input("ssh client needs to have addr specified")
+    def upload(
+        self,
+        source,
+        dest=None,
+        recursive=True,
+        createdir=True,
+        rsyncdelete=True,
+        ignoredir=None,
+        ignorefiles=None,
+        keepsymlinks=True,
+        retry=4,
+    ):
+        source = j.core.tools.text_replace(source)
+        dest = self._replace(dest)
+        return self.sshclient.upload(
+            source=source,
+            dest=dest,
+            recursive=recursive,
+            createdir=createdir,
+            rsyncdelete=rsyncdelete,
+            ignoredir=ignoredir,
+            ignorefiles=ignorefiles,
+            keepsymlinks=keepsymlinks,
+            retry=retry,
+        )
 
-    def shell(self, cmd=None, interactive=True):
-        self._load()
+    @property
+    def sshclient(self):
+        if not self._sshclient:
+            assert self.connection_name
+            self._sshclient = j.clients.ssh.get(name=self.connection_name)
+        return self._sshclient
+
+    def shell(self, cmd=None):
+        login = self.sshclient.login
+        addr = self.sshclient.addr
+        port = self.sshclient.port
         if cmd:
-            j.shell()
-        cmd = "ssh {LOGIN}@{ADDR} -A -p {PORT}"
-        cmd = self._replace(cmd)
+            cmd2 = f"ssh {login}@{addr} -A -p {port} '%s'" % cmd
+        else:
+            cmd2 = f"ssh {login}@{addr} -A -p {port}"
+        j.sal.process.executeWithoutPipe(cmd2)
+
+    def mosh(self, cmd=None, ssh_private_key_name=None, interactive=True):
+        """
+        if private key specified
+        :param ssh_private_key:
+        :return:
+        """
+        self.installer.mosh()
+        C = j.clients.sshagent._script_get_sshload(keyname=ssh_private_key_name)
+        r = self.execute(C, interactive=interactive)
+        cmd = "mosh -ssh='ssh -tt -oStrictHostKeyChecking=no -p {PORT}' {LOGIN}@{ADDR} -p 6000:6100 'bash'"
+        cmd = self._replace(
+            cmd, args={"LOGIN": self.sshclient.login, "ADDR": self.sshclient.addr, "PORT": self.sshclient.port}
+        )
         j.sal.process.executeWithoutPipe(cmd)
 
-    def execute(
-        self,
-        cmd=None,
-        die=True,
-        showout=True,
-        timeout=1000,
-        env=None,
-        sudo=False,
-        replace=True,
-        interactive=False,
-        script=False,
-    ):
+    def _execute_cmd(self, cmd, interactive=False, showout=True, die=True, timeout=1000):
+        res = self.sshclient.execute(cmd=cmd, interactive=interactive, showout=showout, die=die, timeout=timeout)
+        return res
+
+    def file_read(self, path):
+        self._log_debug("file read:%s" % path)
+        path = self._replace(path)
+        rc, out, err = self.execute("cat %s" % path, showout=False, interactive=False)
+        return out
+
+    def file_write(self, path, content, mode=None, owner=None, group=None, showout=True):
         """
-        @RETURN rc, out, err
+        @param append if append then will add to file
         """
-        self._load()
-        if env or sudo:
-            raise j.exceptions.NotFound("Not implemented for ssh executor")
-            return self.execute(cmd)
-        return self.sshclient.execute(
-            cmd=cmd, interactive=interactive, showout=showout, replace=replace, die=die, timeout=timeout
-        )
+        path = self._replace(path)
+        if showout:
+            self._log_debug("file write:%s" % path)
+        return self.sshclient.file_write(path=path, content=content, mode=mode)
 
     def __repr__(self):
         return "Executor ssh: %s (%s)" % (self.sshclient.addr, self.sshclient.port)

@@ -1724,19 +1724,13 @@ class Tools:
             return content
 
         if executor:
-            if not executor.env:
-                executor.load()
-            if executor.config:
-                content2 = Tools.args_replace(
-                    content,
-                    args_list=(args, executor.config),
-                    ignorecolors=ignorecolors,
-                    die_if_args_left=die_if_args_left,
-                    primitives_only=primitives_only,
-                )
-            else:
-                j.shell()
-                raise RuntimeError("config not defined on executor")
+            content2 = Tools.args_replace(
+                content,
+                args_list=(args, executor.config, executor.info.cfg_jumpscale),
+                ignorecolors=ignorecolors,
+                die_if_args_left=die_if_args_left,
+                primitives_only=primitives_only,
+            )
         else:
             content2 = Tools.args_replace(
                 content,

@@ -7,25 +7,17 @@ from .ExecutorBase import ExecutorBase
 
 class ExecutorLocal(ExecutorBase):
     def _init3(self, **kwargs):
-        self._cache_expiration = 3600
         self.type = "local"
         self.uid = "localhost"
 
     def exists(self, path):
         return j.sal.fs.exists(path)
 
-    def execute(self, cmd, die=True, showout=True, timeout=1000, env=None, sudo=False, replace=True, interactive=False):
+    def _execute_cmd(self, cmd, interactive=False, showout=True, die=True, timeout=1000):
         """
         @RETURN rc, out, err
         """
-        if replace:
-            cmd = self._replace(cmd)
-
-        if sudo:
-            raise j.exceptions.Base("sudo not supported")
-
         self._log_debug(cmd)
-
         return j.core.tools.execute(
             cmd, die=die, showout=showout, timeout=timeout, replace=False, interactive=interactive
         )

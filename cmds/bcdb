@@ -8,6 +8,7 @@ import click
 
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
+# needs to become master !
 j.data.bcdb._master_set(True)
 
 
@@ -44,21 +45,6 @@ def delete(name=None, all=False):
             # _unlock(name)
             do(name)
 
-    j.data.bcdb._master_set(False)
-
-
-# @click.command()
-# @click.option("--name", default=None, help="specify which bcdb you want to fix, if not specified will use all")
-# def check(name=None):
-#     """
-#     will check and if issues found in index it will rebuild the index
-#     :return:
-#     """
-#     j.application.check()
-#     if not name:
-#         j.shell()
-#     j.shell()
-
 
 @click.command()
 def check(name=None):
@@ -67,7 +53,6 @@ def check(name=None):
     :return:
     """
     j.application.check()
-    j.data.bcdb._master_set(False)
 
 
 @click.command()
@@ -88,13 +73,10 @@ def rebuild(name=None):
         bcdb = j.data.bcdb.get(name=name, reset=False)
         bcdb.index_rebuild()
 
-    j.data.bcdb._master_set(False)
-
 
 if __name__ == "__main__":
     cli.add_command(delete)
     cli.add_command(check)
     cli.add_command(rebuild)
-    # cli.add_command(unlock)
 
     cli()

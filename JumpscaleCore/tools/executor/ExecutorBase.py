@@ -17,22 +17,66 @@ class ExecutorBase(j.baseclasses.object_config):
         timeout = 60
         #configuration information
         config = {} (DICT)
-        #env which was fetched from remote or local system
-        env =  {} (DICT)
         #used to measure e.g. progress
         state =  {} (DICT)
         uid = ""
+        info = (O) !jumpscale.executor.info.1
+
+        @url = jumpscale.executor.info.1
+        issandbox = (B)
+        issandbox_bin = (B)
+        uname = ""
+        hostname = ""
+        ostype = "unknown,local,darwin,ubuntu" (E)
+        cfg_jumpscale = (DICT)
+        env = (DICT)
+
         """
 
     def _init(self, **kwargs):
-        self._init3(**kwargs)
+        self._autosave = False
+        self._cache_expiration = 3600
         self._installer = None
         self._bash = None
-        self.config = j.core.myenv.config
+        self._init3(**kwargs)
+        if not self.info.uname:
+            self.load()
 
-    def _load(self):
-        if not self.env:
-            self.env = j.core.myenv.config
+    @property
+    def env_on_system(self):
+        return self.info.env
+
+    def load(self, save=True):
+        eos = self._env_on_system
+        self.info.issandbox = eos.pop("ISSANDBOX")
+        self.info.issandbox_bin = eos.pop("ISSANDBOX_BIN")
+        self.info.uname = eos.pop("UNAME")
+        self.info.hostname = eos.pop("HOSTNAME")
+        self.info.ostype = eos.pop("OS_TYPE")
+        self.info.cfg_jumpscale = eos.pop("CFG_JUMPSCALE")
+        self.info.env = eos.pop("ENV")
+        self.info.env["UNAME"] = self.info.uname
+        self.info.env["HOSTNAME"] = self.info.hostname
+        self.info.env["OS_TYPE"] = str(self.info.ostype)
+        if save:
+            self.save()
+
+    def download(self, source, dest=None, ignoredir=None, ignorefiles=None, recursive=True):
+        raise j.exceptions.NotImplemented()
+
+    def upload(
+        self,
+        source,
+        dest=None,
+        recursive=True,
+        createdir=True,
+        rsyncdelete=True,
+        ignoredir=None,
+        ignorefiles=None,
+        keepsymlinks=True,
+        retry=4,
+    ):
+        raise j.exceptions.NotImplemented()
 
     @property
     def installer(self):
@@ -51,7 +95,7 @@ class ExecutorBase(j.baseclasses.object_config):
         return self.bash.profile
 
     def delete(self, path):
-        raise NotImplemented()
+        self.execute("rm -rf %s" % path)
 
     def exists(self, path):
         path = self._replace(path)
@@ -72,8 +116,10 @@ class ExecutorBase(j.baseclasses.object_config):
 
         performance is +100k per sec
         """
-        self._load()
-        return j.core.tools.text_replace(content=content, args=args, executor=self)
+        res = j.core.tools.text_replace(content=content, args=args, executor=self)
+        if "{" in res:
+            j.shell()
+        return res
 
     def dir_ensure(self, path):
         path = self._replace(path)
@@ -123,36 +169,45 @@ class ExecutorBase(j.baseclasses.object_config):
             raise j.exceptions.NotImplemented("only ubuntu & osx supported")
         self.execute(cmd)
 
-    def file_read(self, path):
-        self._log_debug("file read:%s" % path)
-        path = self._replace(path)
-        rc, out, err = self.execute("cat %s" % path, showout=False, interactive=False)
-        return out
-
-    def file_write(self, path, content, mode=None, owner=None, group=None, showout=True):
+    def execute(
+        self,
+        cmd=None,
+        die=True,
+        showout=True,
+        timeout=1000,
+        env=None,
+        sudo=False,
+        replace=True,
+        interactive=False,
+        python=None,
+        jumpscale=None,
+        debug=False,
+        cmd_process=True,
+    ):
         """
-        @param append if append then will add to file
+        @RETURN rc, out, err
         """
-        path = self._replace(path)
-        if showout:
-            self._log_debug("file write:%s" % path)
-
-        temp = j.sal.fs.getTmpFilePath()
-        j.sal.fs.writeFile(filename=temp, contents=content, append=False)
-        self.upload(temp, path)
-        j.sal.fs.remove(temp)
-        cmd = ""
-        if mode:
-            cmd += "chmod %s %s && " % (mode, path)
-        if owner:
-            cmd += "chown %s %s && " % (owner, path)
-        if group:
-            cmd += "chgrp %s %s &&" % (group, path)
-        cmd = cmd.strip().strip("&")
-
-        self.execute(cmd, showout=False, script=False, interactive=False)
-
-        return None
+        if env or sudo:
+            raise j.exceptions.NotFound("Not implemented for ssh executor")
+            return self.execute(cmd)
+        script_path = None
+        if replace:
+            cmd = self._replace(cmd)
+        if cmd_process:
+            cmd, script_path = self._cmd_process(
+                cmd=cmd,
+                python=python,
+                jumpscale=jumpscale,
+                die=die,
+                env=env,
+                sudo=sudo,
+                interactive=interactive,
+                debug=debug,
+            )
+        res = self._execute_cmd(cmd=cmd, interactive=interactive, showout=showout, die=die, timeout=timeout)
+        if script_path:
+            self.delete(script_path)
+        return res
 
     def find(self, path):
         path = self._replace(path)
@@ -192,7 +247,9 @@ class ExecutorBase(j.baseclasses.object_config):
 
         :return:
         """
-        assert sudo == None  # not implemented yet
+        assert sudo == None or sudo == False  # not implemented yet
+        if env == None:
+            env = {}
 
         if j.sal.fs.exists(cmd):
             ext = j.sal.fs.getFileExtension(cmd).lower()
@@ -202,12 +259,13 @@ class ExecutorBase(j.baseclasses.object_config):
                     python = True
 
         script = None
-        if ";" in cmd and not "\n" in cmd:
-            cmd = "\n".join(cmd.split(";"))
+        # if ";" in cmd and not "\n" in cmd:
+        #     cmd = "\n".join(cmd.split(";"))
 
         if "\n" in cmd or python or jumpscale:
             script = cmd
 
+        dest = None
         if script:
             if python or jumpscale:
                 dest = "/tmp/script_%s.py" % j.data.randomnames.hostname()
@@ -224,11 +282,11 @@ class ExecutorBase(j.baseclasses.object_config):
                     cmd = "bash -ex %s" % dest
                 else:
                     cmd = "bash -x %s" % dest
-                script = self._script_process_bash(script=script, die=die, env=env, debug=debug)
+                script = self._script_process_bash(script, die=die, env=env, debug=debug)
 
             self.file_write(dest, script)
 
-        return cmd
+        return cmd, dest
 
     def _script_process_jumpscale(self, script, env={}, debug=False):
         pre = ""
@@ -283,10 +341,6 @@ class ExecutorBase(j.baseclasses.object_config):
         #     script = self.sudo_cmd(script)
 
         return script
-
-    # interface to implement by child classes
-    def execute(self, *args, **kwargs):
-        raise j.exceptions.NotImplemented()
 
     def shell(self, cmd=None, interactive=True, cmdprocess=True):
         if cmdprocess:
@@ -386,7 +440,8 @@ class ExecutorBase(j.baseclasses.object_config):
     def state_reset(self):
         self.config["state"] = {}
 
-    def systemenv_load(self):
+    @property
+    def _env_on_system(self):
         """
         get relevant information from remote system e.g. hostname, env variables, ...
         :return:
@@ -417,18 +472,19 @@ class ExecutorBase(j.baseclasses.object_config):
         # cat /etc/os-release | grep "VERSION_ID"
         #
 
-        # echo "CFG_JUMPSCALE = --TEXT--"
-        # cat {DIR_BASE}/cfg/jumpscale_config.msgpack 2>/dev/null || echo ""
-        # echo --TEXT--
-
-        echo "BASHPROFILE = --TEXT--"
-        cat $HOME/.profile_js 2>/dev/null || echo ""
+        echo "CFG_JUMPSCALE = --TEXT--"
+        cat /sandbox/cfg/jumpscale_config.toml 2>/dev/null || echo ""
         echo --TEXT--
+
+        # echo "BASHPROFILE = --TEXT--"
+        # cat $HOME/.profile_js 2>/dev/null || echo ""
+        # echo --TEXT--
 
         echo "ENV = --TEXT--"
         export
         echo --TEXT--
         """
+        C = j.core.tools.text_strip(C)
         rc, out, err = self.execute(C, showout=False, interactive=False, replace=False)
         res = {}
         state = ""
@@ -463,11 +519,18 @@ class ExecutorBase(j.baseclasses.object_config):
                         pass
                 res[varname.upper()] = val
 
-        if res["CFG_JUMPSCALE"].strip() != "":
-            rconfig = j.core.tools.config_load(content=res["CFG_JUMPSCALE"])
+        if not self.type == "local":
+            config = j.core.tools.config_load(content=res["CFG_JUMPSCALE"])
+            if "DIR_BASE" not in config:
+                config["DIR_BASE"] = "/sandbox"
+            if "DIR_HOME" not in config:
+                config["DIR_HOME"] = res["HOME"]
+            if "DIR_CFG" not in config:
+                config["DIR_CFG"] = "%s/cfg" % config["DIR_BASE"]
+            rconfig = j.core.myenv.config_default_get(config=config)
             res["CFG_JUMPSCALE"] = rconfig
         else:
-            res["CFG_JUMPSCALE"] = {}
+            res["CFG_JUMPSCALE"] = j.core.myenv.config
 
         envdict = {}
         for line in res["ENV"].split("\n"):
@@ -482,28 +545,37 @@ class ExecutorBase(j.baseclasses.object_config):
 
         res["ENV"] = envdict
 
-        def get_cfg(name, default):
-            name = name.upper()
-            if "CFG_JUMPSCALE" in res and name in res["CFG_JUMPSCALE"]:
-                self.config[name] = res["CFG_JUMPSCALE"]
-                return
-            if name not in self.config:
-                self.config[name] = default
+        # def get_cfg(name, default):
+        #     name = name.upper()
+        #     if "CFG_JUMPSCALE" in res and name in res["CFG_JUMPSCALE"]:
+        #         self.config[name] = res["CFG_JUMPSCALE"]
+        #         return
+        #     if name not in self.config:
+        #         self.config[name] = default
+        #
+        # if self.type != "local":
+        #     get_cfg("DIR_HOME", res["ENV"]["HOME"])
+        #     get_cfg("DIR_BASE", "/sandbox")
+        #     get_cfg("DIR_CFG", "/sandbox/cfg")
+        #     get_cfg("DIR_TEMP", "/tmp")
+        #     get_cfg("DIR_VAR", "/sandbox/var")
+        #     get_cfg("DIR_CODE", "/sandbox/code")
+        #     get_cfg("DIR_BIN", "/usr/local/bin")
 
-        if self.type != "local":
-            get_cfg("DIR_HOME", res["ENV"]["HOME"])
-            get_cfg("DIR_BASE", "/sandbox")
-            get_cfg("DIR_CFG", "/sandbox/cfg")
-            get_cfg("DIR_TEMP", "/tmp")
-            get_cfg("DIR_VAR", "/sandbox/var")
-            get_cfg("DIR_CODE", "/sandbox/code")
-            get_cfg("DIR_BIN", "/usr/local/bin")
-
-        j.shell()
-        self.save()
+        return res
 
     def state_reset(self):
         self.state = {}
+
+    def reset(self):
+        self.state_reset()
+        self.config = {}
+        self.info.uname = ""
+        self.info.hostname = ""
+        self.info.cfg_jumpscale = {}
+        self.info.env = {}
+        self.info.ostype = "unknown"
+        self.load()
 
     def test(self):
 
@@ -516,8 +588,7 @@ class ExecutorBase(j.baseclasses.object_config):
         ex.reset()
 
         assert ex.state == {}
-        assert ex.env_on_system_msgpack == b""
-        assert ex.config_msgpack == b""
+        assert ex.config == {}
 
         rc, out, err = ex.execute("ls /")
         assert rc == 0
@@ -535,18 +606,36 @@ class ExecutorBase(j.baseclasses.object_config):
         ex.state_set("bla", 1)
         assert ex.state == {"bla": 1}
 
-        e = ex.env_on_system
-
-        assert e["HOME"] == j.core.myenv.config["DIR_HOME"]
+        if self.type == "local":
+            assert self.info.cfg_jumpscale["DIR_HOME"] == j.core.myenv.config["DIR_HOME"]
+        else:
+            assert self.info.cfg_jumpscale["DIR_HOME"]
 
         ex.file_write("/tmp/1re", "a")
         assert ex.file_read("/tmp/1re").strip() == "a"
+
+        ex.delete("/tmp/adir")
+        ex.dir_ensure("/tmp/adir")
+        assert ex.exists("/tmp/adir")
+        # see if it creates intermediate non existing dir
+        ex.file_write("/tmp/adir/notexist/a.txt", "aa")
+        assert ex.exists("/tmp/adir/notexist/a.txt")
+        ex.delete("/tmp/adir")
+        assert ex.exists("/tmp/adir") == False
+
+        err = False
+        try:
+            ex.execute("ls /tmp/sssss")
+        except:
+            err = True
+        assert err
 
         assert ex.path_isdir("/tmp")
         assert ex.path_isfile("/tmp") == False
         assert ex.path_isfile("/tmp/1re")
 
         path = ex.download("/tmp/1re", "/tmp/something.txt")
+        assert j.sal.fs.readFile("/tmp/something.txt").strip() == "a"
         path = ex.upload("/tmp/something.txt", "/tmp/2re")
 
         assert ex.file_read("/tmp/2re").strip() == "a"
@@ -568,31 +657,24 @@ class ExecutorBase(j.baseclasses.object_config):
         r = ex.find("/tmp/8889")
         assert r == ["/tmp/8889/1.txt", "/tmp/8889/2.txt", "/tmp/8889/5", "/tmp/8889/5/3.txt"]
 
+        ex.download("/tmp/8889", "/tmp/8890")
         j.sal.fs.remove("/tmp/8889")
 
-        ex.download("/tmp/8888", "/tmp/8889")
-
-        r2 = j.sal.fs.listFilesAndDirsInDir("/tmp/8889")
+        r2 = j.sal.fs.listFilesAndDirsInDir("/tmp/8890")
         r2.sort()
-        assert r2 == ["/tmp/8889/1.txt", "/tmp/8889/2.txt", "/tmp/8889/5", "/tmp/8889/5/3.txt"]
+        assert r2 == ["/tmp/8890/1.txt", "/tmp/8890/2.txt", "/tmp/8890/5", "/tmp/8890/5/3.txt"]
 
-        ex.delete("/tmp/8888")
-        r2 = ex.find("/tmp/8888")
+        ex.delete("/tmp/8890")
+        r2 = ex.find("/tmp/8890")
         assert r2 == []
 
-        j.sal.fs.remove("/tmp/8888")
-        j.sal.fs.remove("/tmp/8889")
+        j.sal.fs.remove("/tmp/8890")
 
         ex.reset()
         assert ex.state == {}
-        assert ex.env_on_system_msgpack == b""
-        assert ex.config_msgpack == b""
 
         # test that it does not do repeating thing & cache works
         for i in range(1000):
             ptype = self.platformtype
-
-        for i in range(1000):
-            env = self.env
 
         self._log_info("TEST for executor done")

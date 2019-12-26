@@ -13,7 +13,7 @@ class SSHClientBase(j.baseclasses.object_config):
     _SCHEMATEXT = """
         @url = jumpscale.sshclient.1
         name** = ""
-        addr = ""
+        addr = "localhost"
         port = 22
         login = "root"
         passwd = ""
@@ -39,6 +39,7 @@ class SSHClientBase(j.baseclasses.object_config):
     def executor(self):
         if not self._executor:
             self._executor = j.tools.executor.ssh_get(self)
+
         return self._executor
 
     def reset(self):
@@ -67,9 +68,8 @@ class SSHClientBase(j.baseclasses.object_config):
     def uid(self):
         return "%s-%s-%s" % (self.addr, self.port, self.name)
 
-    def sftp_stat(self, path):
-        path = self.executor._replace(path)
-        return self.sftp.stat(path)
+    # def sftp_stat(self, path):
+    #     return self.sftp.stat(path)
 
     @property
     def sshkey_obj(self):
@@ -107,19 +107,6 @@ class SSHClientBase(j.baseclasses.object_config):
             self.execute(
                 'echo "{sshkey}" >> {homedir}/.ssh/authorized_keys'.format(**locals()), interactive=interactive
             )
-
-    def mosh(self, cmd=None, ssh_private_key_name=None, interactive=True):
-        """
-        if private key specified
-        :param ssh_private_key:
-        :return:
-        """
-        self.executor.installer.mosh()
-        C = j.clients.sshagent._script_get_sshload(keyname=ssh_private_key_name)
-        r = self.execute(C, interactive=interactive)
-        cmd = "mosh -ssh='ssh -tt -oStrictHostKeyChecking=no -p {PORT}' {LOGIN}@{ADDR} -p 6000:6100 'bash'"
-        cmd = self.executor._replace(cmd, args={"LOGIN": self.login, "ADDR": self.addr, "PORT": self.port})
-        j.sal.process.executeWithoutPipe(cmd)
 
     @property
     def syncer(self):
@@ -224,7 +211,6 @@ class SSHClientBase(j.baseclasses.object_config):
         :param showout:
         :return:
         """
-        source = j.core.tools.text_replace(source)  # this needs to be the local one
         if not dest:
             dest = source
         if not j.sal.fs.isDir(source):
@@ -232,16 +218,19 @@ class SSHClientBase(j.baseclasses.object_config):
                 return self.file_copy(source, dest)
             else:
                 raise j.exceptions.Base("only support dir or file for upload")
-        dest = self.executor._replace(dest)
-        # self._check_base()
-        # if dest_prefix != "":
-        #     dest = j.sal.fs.joinPaths(dest_prefix, dest)
         if dest[0] != "/":
             raise j.exceptions.RuntimeError("need / in beginning of dest path")
         if source[-1] != "/":
             source += "/"
         if dest[-1] != "/":
             dest += "/"
+
+        if j.sal.fs.isDir(source):
+            if source[-1] != "/":
+                source += "/"
+            if dest[-1] != "/":
+                dest += "/"
+
         dest = "%s@%s:%s" % (self.login, self.addr, dest)
         j.sal.fs.copyDirTree(
             source,
@@ -275,26 +264,24 @@ class SSHClientBase(j.baseclasses.object_config):
 
         if not dest:
             dest = source
-        source = self.executor._replace(source)
-        dest = j.core.tools.text_replace(dest)  # this is on the local system so need to use the local replace
         if not self.executor.path_isdir(source):
             if self.executor.path_isfile(source):
-                res = self._client.scp_recv(source, dest, recurse=False)
+                res = self._client.scp_recv(source, dest)
                 gevent.joinall(res)
-                self._log_info("Copied remote file %s to loacl destination %s for %s" % (dest, source, self))
+                self._log_info("Copied remote file %s to local destination %s for %s" % (dest, source, self))
+                return
             else:
-                if not self.exists(source):
+                if not self.executor.exists(source):
                     raise j.exceptions.Base("%s does not exists, cannot download" % source)
                 raise j.exceptions.Base("src:%s needs to be dir or file" % source)
-        # self._check_base()
-        # if source_prefix != "":
-        #     source = j.sal.fs.joinPaths(source_prefix, source)
-        if source[0] != "/":
-            raise j.exceptions.RuntimeError("need / in beginning of source path")
-        if source[-1] != "/" and not self.executor.path_isfile(source):
-            source += "/"
-        if dest[-1] != "/" and not self.executor.path_isfile(dest):
-            dest += "/"
+        else:
+            # we know now its a dir
+            if source[0] != "/":
+                raise j.exceptions.RuntimeError("need / in beginning of source path")
+            if source[-1] != "/":
+                source += "/"
+            if dest[-1] != "/":
+                dest += "/"
 
         source = "root@%s:%s" % (self.addr, source)
         j.sal.fs.copyDirTree(
@@ -311,7 +298,7 @@ class SSHClientBase(j.baseclasses.object_config):
             recursive=recursive,
         )
 
-    def execute(self, cmd, interactive=True, showout=True, replace=True, die=True, timeout=None, script=None):
+    def execute(self, cmd, interactive=True, showout=True, die=True, timeout=None):
         """
 
         :param cmd: cmd to execute, can be multiline or even a script
@@ -327,19 +314,9 @@ class SSHClientBase(j.baseclasses.object_config):
 
         if not isinstance(cmd, str):
             raise j.exceptions.Base("cmd needs to be string")
-        if replace:
-            cmd = self.executor._replace(cmd)
-        if ("\n" in cmd and script in [None, True]) or len(cmd) > 100000:
-            raise RuntimeError("NOT IMPLEMENTED")
-            # is it still needed ?
-            return self._execute_script(
-                content=cmd,
-                die=die,
-                showout=showout,
-                checkok=None,
-                sudo=False,
-                interactive=interactive,
-                timeout=timeout,
+        if "\n" in cmd or len(cmd) > 100000:
+            raise RuntimeError(
+                "NOT IMPLEMENTED, need to use execute on executor level which will convert from script to command"
             )
         elif interactive:
             return self._execute_interactive(cmd, showout=showout, die=die)
@@ -352,7 +329,7 @@ class SSHClientBase(j.baseclasses.object_config):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
         cmd2 = "ssh -oStrictHostKeyChecking=no -t {LOGIN}@{ADDR} -A -p {PORT} '%s'" % (cmd)
-        cmd3 = self.executor._replace(cmd2, args={"LOGIN": self.login, "ADDR": self.addr, "PORT": self.port})
+        cmd3 = j.core.tools.text_replace(cmd2, args={"LOGIN": self.login, "ADDR": self.addr, "PORT": self.port})
         return j.core.tools.execute(cmd3, interactive=True, showout=False, replace=False, asfile=True, die=die)
 
     def __repr__(self):

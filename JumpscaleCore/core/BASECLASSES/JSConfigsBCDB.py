@@ -137,7 +137,8 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             # means comes from the database
             if not jsconfig._data._model.schema._md5 == jsconfig._model.schema._md5:
                 # means data came from DB and schema is not same as config mgmt class
-                j.shell()
+                # j.shell()
+                j.debug()
                 raise j.exceptions.Input(
                     "models should be same", data=(jsconfig._data._model.schema.text, jsconfig._model.schema.text)
                 )
@@ -206,13 +207,9 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :return:
         """
         self._log_debug("reset all data")
-        for item in self.find():
-            item.delete()
-            # try:
-            #     item.delete()
-            # except Exception as e:
-            #     j.shell()
-
+        for id in self._model.find_ids():
+            self._model.delete(id)
+        assert self._model.index.sql_index_count() == 0
         if not self._mother_id_get():
             self._model.index.destroy()
 
