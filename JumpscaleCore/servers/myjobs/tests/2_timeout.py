@@ -6,10 +6,8 @@ def main(self):
     """
     kosmos -p 'j.servers.myjobs.test("timeout")'
     """
-
+    self._test_setup()
     j.tools.logger.debug = True
-
-    self.reset()
 
     def add(a=None, b=None):
         gevent.sleep(2)
@@ -23,9 +21,6 @@ def main(self):
     job = self.wait([job.id], die=False)[0]
     assert job.state == "ERROR"
     assert job.error_cat == "TIMEOUT"
-
-    # self.stop(reset=False)
-    self.stop(reset=True)
-
+    self._test_teardown()
     print("timeout TEST OK")
     print("TEST OK")

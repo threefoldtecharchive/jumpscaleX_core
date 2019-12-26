@@ -347,17 +347,16 @@ class StartupCMD(j.baseclasses.object_config):
                 if j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=port) == False:
                     self._notify_state("down")
                     return False
-                else:
-                    self._notify_state("running")
-                    return True
+            self._notify_state("running")
+            return True
 
         if self._local and self.ports_udp != []:
             for port in self.ports_udp:
                 if j.sal.nettools.udpPortConnectionTest(ipaddr="localhost", port=port) == False:
                     self._notify_state("down")
                     return False
-                else:
-                    return True
+            self._notify_state("running")
+            return True
 
         if self.executor == "corex":
             if self.state in ["NOTFOUND"]:
@@ -372,10 +371,7 @@ class StartupCMD(j.baseclasses.object_config):
             p = self.process
             if p:
                 # we found a process so can take decision now
-                if self.state == "running":
-                    # self process sets the state
-                    return True
-                elif j.sal.process.psfind("startupcmd_%s" % self.name):
+                if j.sal.process.psfind("startupcmd_%s" % self.name):
                     self._notify_state("running")
                     return True
                 else:
@@ -388,11 +384,7 @@ class StartupCMD(j.baseclasses.object_config):
                 self._notify_state("down")
                 return False
             else:
-                try:
-                    return j.sal.process.psfind("startupcmd_%s" % self.name)
-                except:
-                    self._notify_state("down")
-                    return False
+                return j.sal.process.psfind("startupcmd_%s" % self.name)
 
         return -1  # means we don't know
 
@@ -541,8 +533,6 @@ class StartupCMD(j.baseclasses.object_config):
 
         self.cmd_start = j.core.tools.text_strip(self.cmd_start)
 
-        if self.state in ["running"]:
-            raise RuntimeError()
         if self.state in ["init", "running", "error"]:
             self._hardkill()
 

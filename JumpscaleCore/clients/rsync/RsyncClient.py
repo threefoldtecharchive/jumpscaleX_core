@@ -17,7 +17,7 @@ class RsyncClient(JSConfigClient):
 
     def _init(self, **kwargs):
         self.options = "-r --delete-after --modify-window=60 --compress --stats  --progress"
-        self._local = j.tools.executorLocal
+        self._local = j.tools.executor.local
 
     def _pad(self, dest):
         if len(dest) != 0 and dest[-1] != "/":

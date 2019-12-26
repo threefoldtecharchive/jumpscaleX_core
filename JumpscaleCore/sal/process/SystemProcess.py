@@ -552,6 +552,28 @@ class SystemProcess(JSBASE):
         else:
             raise j.exceptions.Base("filterstr or regexes")
 
+    def getPidsByFilter2(self, filterstr="", regex_list=[], excludes=[]):
+        res = []
+        for process in psutil.process_iter():
+            try:
+                cmdline = process.cmdline()
+            except psutil.NoSuchProcess:
+                cmdline = None
+            except psutil.AccessDenied:
+                cmdline = None
+            if cmdline:
+                name = " ".join(cmdline)
+                if filterstr:
+                    # print(name)
+                    if filterstr in name:
+                        res.append(process.pid)
+                else:
+                    for r in regex_list:
+                        if name.strip() != "":
+                            if j.data.regex.match(r, name):
+                                res.append(process.pid)
+        return res
+
     def checkstart(self, cmd, filterstr, nrtimes=1, retry=1):
         """
         @param cmd is which command to execute to start e.g. a daemon

@@ -206,8 +206,8 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.zdb  # will start sonic & zdb
             self.sonic
 
-            # will make sure all BCDB's are locked
-            j.data.bcdb.lock()
+            # # will make sure all BCDB's are locked
+            # j.data.bcdb.lock()
 
             # make sure client for myjobs properly configured
             j.core.db.redisconfig_name = "core"
@@ -318,12 +318,11 @@ class ThreeBotServer(j.baseclasses.object_config):
                 forever.wait()
             except KeyboardInterrupt:
                 print("KEYB INTERUPT")
-            sys.exit()
 
             # dont call stop
             # delete the fact that maybe we are still in starting mode
-            j.core.db.delete("threebot.starting")
-
+            j.data.bcdb._master_set(False)
+            sys.exit()
         else:
             if not self.startup_cmd.is_running():
                 self.startup_cmd.start()
@@ -375,8 +374,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         j.servers.myjobs.workers._model.index_rebuild()
         j.servers.myjobs.jobs._model.index_rebuild()
 
-        j.servers.myjobs.workers_tmux_start(2, in3bot=True)
-        # j.servers.myjobs.workers_subprocess_start(2, in3bot=True)
+        j.servers.myjobs.workers_subprocess_start(2, in3bot=True)
 
     def _packages_core_init(self):
 
@@ -403,8 +401,8 @@ class ThreeBotServer(j.baseclasses.object_config):
         :return:
         """
         self.startup_cmd.stop(waitstop=False, force=True)
-        j.core.db.delete("threebot.starting")
         self.openresty_server.stop()
+        j.data.bcdb._master_set(False)
 
     @property
     def startup_cmd(self):

@@ -67,9 +67,9 @@ class JSConfigBCDBBase(JSBase, Attr):
                     return self._model_
 
             if isinstance(self, j.baseclasses.object_config_base):
-                if "_SCHEMATEXT" in self.__class__.__dict__:
+                if hasattr(self.__class__, "_SCHEMATEXT"):
                     s = self.__class__._SCHEMATEXT
-                elif "_SCHEMATEXT" in self.__class__._CHILDCLASS.__dict__:
+                elif hasattr(self.__class__, "_CHILDCLASS") and "_SCHEMATEXT" in self.__class__._CHILDCLASS.__dict__:
                     s = self.__class__._CHILDCLASS._SCHEMATEXT
                 else:
                     raise j.exceptions.JSBUG("cannot find _SCHEMATEXT on childclass or class itself")

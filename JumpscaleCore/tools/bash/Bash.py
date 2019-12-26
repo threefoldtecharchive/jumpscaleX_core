@@ -12,7 +12,10 @@ class Bash(object):
         :param executor:
         :param profile_name: if None will look for env.sh, .profile_js in this order
         """
-        self._executor = executor
+        if not executor:
+            executor = j.tools.executor.local
+
+        self.executor = executor
 
         if not path:
             self.path = j.dirs.HOMEDIR
@@ -35,27 +38,15 @@ class Bash(object):
         # self.reset()
 
     @property
-    def executor(self):
-        if self._executor is None:
-            self.executor = j.tools.executorLocal
-        return self._executor
-
-    @executor.setter
-    def executor(self, newexecutor):
-        self._executor = newexecutor
-
-    def reset(self):
-        self.executor.reset()
-
-    @property
     def env(self):
         dest = dict(self.profile.env)
-        dest.update(self.executor.env)
+        # dest.update(self.executor.env)
         return dest
 
     def cmd_path_get(self, cmd, die=True):
         """
         checks cmd Exists and returns the path
+        within the scope of the current profile
         """
         rc, out, err = self.executor.execute("source %s;which %s" % (self.profile.paths, cmd), die=False, showout=False)
         if rc > 0:

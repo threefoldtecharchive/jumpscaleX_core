@@ -9,11 +9,13 @@ def main(self):
     """
 
     server = j.servers.openresty.get("test")
+    server.stop()
+
     server.install(reset=True)
     server.configure()
-    website = server.websites.get("test")
+    website = server.websites.get("test1")
     website.ssl = False
-    locations = website.locations.get("main")
+    locations = website.locations.get("home")
 
     website_location = locations.locations_static.new()
     website_location.name = "home"
@@ -43,3 +45,7 @@ def main(self):
 
     static_content = j.clients.http.get("http://0.0.0.0/website/")
     assert static_content == "<html>\nHello from static!\n</html>\n"
+
+    server.cleanup()
+    server.stop()
+    server.delete()

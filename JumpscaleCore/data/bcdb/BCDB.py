@@ -55,7 +55,7 @@ class BCDB(j.baseclasses.object):
         j.sal.fs.createDir(self._data_dir)
 
         if self.readonly:
-            self._log_info("sqlite file is in readonly mode")
+            self._log_info("sqlite file is in readonly mode for: '%s'" % self.name)
             self._sqlite_index_dbpath = "file:%s/sqlite_index.db?mode=ro" % self._data_dir
         else:
             self._sqlite_index_dbpath = "file:%s/sqlite_index.db" % self._data_dir
@@ -149,18 +149,14 @@ class BCDB(j.baseclasses.object):
         # self._readonly = False
         # return True
 
-    def lock_acquire(self):
-        self.lock.acquire()
-        self._lock_checked = False
-        self._readonly = None
+    # def lock_acquire(self):
+    #     self.lock.acquire()
+    #     self._lock_checked = False
+    #     self._readonly = None
 
     @property
     def readonly(self):
-        if self._readonly == None:
-            # simplified logic
-            return not j.data.bcdb._master
-            # self._readonly = self.lock.locked
-        return self._readonly
+        return not j.data.bcdb._master
 
     def check(self):
         """
@@ -319,10 +315,8 @@ class BCDB(j.baseclasses.object):
                 if i < next_id:
                     continue
                 print(f"{i} doesn't exist in data.. ")
-                gap_obj = model.new()
-                gap_obj.name = j.data.idgenerator.generateGUID()
-                gap_obj.save()
-                to_remove.append(gap_obj)
+                self.storclient.set("")
+                to_remove.append(i)
             else:
                 url, obj_data = data[i]
                 model = models[url]
@@ -334,9 +328,9 @@ class BCDB(j.baseclasses.object):
                 obj.save()
                 assert obj.id == i
 
-        print("Cleaning up gap objects")
-        for obj in to_remove:
-            obj.delete()
+        print("Cleaning up empty objects")
+        for i in to_remove:
+            self.storclient.delete(i)
 
     @property
     def sqlite_index_client(self):

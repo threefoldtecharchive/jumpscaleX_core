@@ -3,29 +3,36 @@ from Jumpscale import j
 import base64
 from .ExecutorInstallers import ExecutorInstallers
 
-JSBASE = j.baseclasses.object
 
+class ExecutorBase(j.baseclasses.object_config):
 
-class ExecutorBase(JSBASE):
-    def __init__(self, debug=False, checkok=True):
-        self.debug = debug
-        self.checkok = checkok
-        self.type = None
+    _SCHEMATEXT = """
+        @url = jumpscale.executor.1
+        name** = ""
+        stdout = True (B)
+        debug = True (B)
+        readonly = False (B)
+        type = "local,ssh,corex,serial" (E)
+        connection_name = "" (S)
+        timeout = 60
+        #configuration information
+        config = {} (DICT)
+        #env which was fetched from remote or local system
+        env =  {} (DICT)
+        #used to measure e.g. progress
+        state =  {} (DICT)
+        uid = ""
+        """
 
-        self._id = None
-        self._env = {}
-        self.readonly = False
-        self.CURDIR = ""
-
-        # self._state = None
-
-        JSBASE.__init__(self)
-
+    def _init(self, **kwargs):
+        self._init3(**kwargs)
         self._installer = None
+        self._bash = None
+        self.config = j.core.myenv.config
 
-        self._env_on_system = None
-
-        self._init3()
+    def _load(self):
+        if not self.env:
+            self.env = j.core.myenv.config
 
     @property
     def installer(self):
@@ -33,39 +40,18 @@ class ExecutorBase(JSBASE):
             self._installer = ExecutorInstallers(executor=self)
         return self._installer
 
-    def reset(self):
-        self.state_reset()
-        self._init3()
-        self.save()
-
-    def _init3(self):
-        self._config = None
-        self._env_on_system = None
+    @property
+    def bash(self):
+        if not self._bash:
+            self._bash = j.tools.bash.get(path=None, profile_name=None, executor=self)
+        return self._bash
 
     @property
-    def config(self):
-        if not self._config:
-            if self.config_msgpack:
-                self._config = j.data.serializers.msgpack.loads(self.config_msgpack)
-            else:
-                self._config = {}
-        return self._config
-
-    def save(self):
-        """
-        only relevant for ssh
-        :return:
-        """
-        pass
-
-    @property
-    def data(self):
-        return self.sshclient.data
+    def profile(self):
+        return self.bash.profile
 
     def delete(self, path):
-        path = self._replace(path)
-        cmd = "rm -rf %s" % path
-        self.execute(cmd)
+        raise NotImplemented()
 
     def exists(self, path):
         path = self._replace(path)
@@ -86,11 +72,11 @@ class ExecutorBase(JSBASE):
 
         performance is +100k per sec
         """
-        if self.type == "ssh":
-            content = self.sshclient._replace(content)
+        self._load()
         return j.core.tools.text_replace(content=content, args=args, executor=self)
 
     def dir_ensure(self, path):
+        path = self._replace(path)
         cmd = "mkdir -p %s" % path
         self.execute(cmd, interactive=False)
 
@@ -99,6 +85,7 @@ class ExecutorBase(JSBASE):
         checks if the path is a directory
         :return:
         """
+        path = self._replace(path)
         rc, out, err = self.execute('if [ -d "%s" ] ;then echo DIR ;fi' % path, interactive=False)
         return out.strip() == "DIR"
 
@@ -107,6 +94,7 @@ class ExecutorBase(JSBASE):
         checks if the path is a directory
         :return:
         """
+        path = self._replace(path)
         rc, out, err = self.execute('if [ -f "%s" ] ;then echo FILE ;fi' % path, interactive=False)
         return out.strip() == "FILE"
 
@@ -114,8 +102,30 @@ class ExecutorBase(JSBASE):
     def platformtype(self):
         return j.core.platformtype.get(self)
 
+    @property
+    def wireguard_server(self):
+        if not self._wireguard:
+            from Jumpscale.core.InstallTools import WireGuardServer
+
+            self._wireguard = WireGuardServer(self.addr, port=self.port)
+        return self._wireguard
+
+    def package_install(self, name):
+        """
+        use system installer to install a component
+        :return:
+        """
+        if str(self.platformtype).startswith("darwin64"):
+            cmd = "brew install %s" % name
+        elif str(self.platformtype).startswith("ubuntu"):
+            cmd = "apt install %s" % name
+        else:
+            raise j.exceptions.NotImplemented("only ubuntu & osx supported")
+        self.execute(cmd)
+
     def file_read(self, path):
         self._log_debug("file read:%s" % path)
+        path = self._replace(path)
         rc, out, err = self.execute("cat %s" % path, showout=False, interactive=False)
         return out
 
@@ -144,68 +154,8 @@ class ExecutorBase(JSBASE):
 
         return None
 
-    @property
-    def uid(self):
-        if self._id is None:
-            raise j.exceptions.Base("self._id cannot be None")
-        return self._id
-
-    def _commands_transform(self, cmds, die=True, checkok=False, env={}, sudo=False, shell=False):
-        # print ("TRANSF:%s"%cmds)
-
-        if sudo or shell:
-            checkok = False
-
-        multicommand = "\n" in cmds or ";" in cmds
-
-        if shell:
-            if "\n" in cmds:
-                raise j.exceptions.Base("cannot do shell for multiline scripts")
-            else:
-                cmds = "bash -c '%s'" % cmds
-
-        pre = ""
-
-        checkok = checkok or self.checkok
-
-        if die:
-            # first make sure not already one
-            if "set -e" not in cmds:
-                # now only do if multicommands
-                if multicommand:
-                    if self.debug:
-                        pre += "set -ex\n"
-                    else:
-                        pre += "set -e\n"
-
-        if self.CURDIR != "":
-            pre += "cd %s\n" % (self.CURDIR)
-
-        if env != {}:
-            for key, val in env.items():
-                pre += "export %s=%s\n" % (key, val)
-
-        cmds = "%s\n%s" % (pre, cmds)
-
-        if checkok and multicommand:
-            if not cmds.endswith("\n"):
-                cmds += "\n"
-            cmds += "echo '**OK**'"
-
-        if "\n" in cmds:
-            cmds = cmds.replace("\n", ";")
-            cmds.strip() + "\n"
-
-        cmds = cmds.replace(";;", ";").strip(";")
-
-        if sudo:
-            cmds = self.sudo_cmd(cmds)
-
-        self._log_debug(cmds)
-
-        return cmds
-
     def find(self, path):
+        path = self._replace(path)
         rc, out, err = self.execute("find %s" % path, die=False, interactive=False)
         if rc > 0:
             if err.lower().find("no such file") != -1:
@@ -221,26 +171,140 @@ class ExecutorBase(JSBASE):
         res.sort()
         return res
 
+    def kosmos(self, cmd=None):
+        if not cmd:
+            cmd = self._replace("source {DIR_BASE}/env.sh && kosmos")
+        else:
+            cmd = self._cmd_process(cmd=cmd, interactive=True, jumpscale=True)
+        return self.shell(cmd=cmd, interactive=True, cmdprocess=False)
+
+    def _cmd_process(
+        self, cmd, python=None, jumpscale=None, die=True, env={}, sudo=None, interactive=False, debug=False
+    ):
+        """
+        if file then will read
+        if \n in cmd then will treat as script
+        if ; in cmd then will convert to script
+        if script will upload as file
+
+        :param cmd:
+        :param interactive: means we will run as interactive in a shell, for python always the case
+
+        :return:
+        """
+        assert sudo == None  # not implemented yet
+
+        if j.sal.fs.exists(cmd):
+            ext = j.sal.fs.getFileExtension(cmd).lower()
+            cmd = j.sal.fs.readFile(cmd)
+            if python == None and jumpscale == None:
+                if ext == "py":
+                    python = True
+
+        script = None
+        if ";" in cmd and not "\n" in cmd:
+            cmd = "\n".join(cmd.split(";"))
+
+        if "\n" in cmd or python or jumpscale:
+            script = cmd
+
+        if script:
+            if python or jumpscale:
+                dest = "/tmp/script_%s.py" % j.data.randomnames.hostname()
+
+                if jumpscale:
+                    script = self._script_process_jumpscale(script=script, die=die, env=env, debug=debug)
+                    cmd = self._replace("source {DIR_BASE}/env.sh && kosmos %s" % dest)
+                else:
+                    script = self._script_process_python(script, env=env)
+                    cmd = self._replace("source {DIR_BASE}/env.sh && python3 %s" % dest)
+            else:
+                dest = "/tmp/script_%s.sh" % j.data.randomnames.hostname()
+                if die:
+                    cmd = "bash -ex %s" % dest
+                else:
+                    cmd = "bash -x %s" % dest
+                script = self._script_process_bash(script=script, die=die, env=env, debug=debug)
+
+            self.file_write(dest, script)
+
+        return cmd
+
+    def _script_process_jumpscale(self, script, env={}, debug=False):
+        pre = ""
+
+        if "from Jumpscale import j" not in script:
+            # now only do if multicommands
+            pre += "from Jumpscale import j\n"
+
+        if debug:
+            pre += "j.application.debug = True\n"  # TODO: is this correct
+
+        if pre:
+            script = "%s\n%s" % (pre, script)
+
+        script = self._script_process_python(script, env=env)
+
+        return script
+
+    def _script_process_python(self, script, env={}):
+        pre = ""
+
+        if env != {}:
+            for key, val in env.items():
+                pre += "%s = %s\n" % (key, val)
+
+        if pre:
+            script = "%s\n%s" % (pre, script)
+
+        return script
+
+    def _script_process_bash(self, script, die=True, env={}, sudo=False, debug=False):
+
+        pre = ""
+
+        if die:
+            # first make sure not already one
+            if "set -e" not in script:
+                # now only do if multicommands
+                if self.debug:
+                    pre += "set -ex\n"
+                else:
+                    pre += "set -e\n"
+
+        if env != {}:
+            for key, val in env.items():
+                pre += "export %s=%s\n" % (key, val)
+
+        if pre:
+            script = "%s\n%s" % (pre, script)
+
+        # if sudo:
+        #     script = self.sudo_cmd(script)
+
+        return script
+
     # interface to implement by child classes
     def execute(self, *args, **kwargs):
         raise j.exceptions.NotImplemented()
 
-    # def executeRaw(self, cmd, die=True, showout=False):
-    #     raise j.exceptions.NotImplemented()
+    def shell(self, cmd=None, interactive=True, cmdprocess=True):
+        if cmdprocess:
+            cmd = self._cmd_process(cmd=cmd, interactive=interactive)
+        self.execute(cmd, interactive=True)
+        # j.sal.process.executeWithoutPipe(cmd)
+
+    def package_installed(self, cmd):
+        rc, _, _ = self.execute("which %s" % cmd, die=False)
+        if rc:
+            return False
+        else:
+            return True
 
     @property
-    def isDebug(self):
-        return (
-            self.state.configGetFromDict("system", "debug") == "1"
-            or self.state.configGetFromDict("system", "debug") == 1
-            or self.state.configGetFromDict("system", "debug")
-            or self.state.configGetFromDict("system", "debug") == "true"
-        )
-
-    @property
-    def isContainer(self):
+    def container_check(self):
         """
-        means we don't work with ssh-agent ...
+        return True if we are in a container
         """
 
         if not "IN_DOCKER" in self.config:
@@ -254,63 +318,21 @@ class ExecutorBase(JSBASE):
         return j.data.types.bool.clean(self.config["IN_DOCKER"])
 
     @property
-    def isSandbox(self):
+    def sandbox_check(self):
         """
         has this env a sandbox?
         """
-        if self._isSandbox is None:
-            if self.exists(j.core.tools.text_replace("{DIR_BASE}")):
-                self._isSandbox = True
+        if self._sandbox_check is None:
+            if self.exists(self._replace("{DIR_BASE}")):
+                self._sandbox_check = True
             else:
-                self._isSandbox = False
-        return self._isSandbox
-
-    def debug_enable(self):
-        self.state.configSetInDictBool("system", "debug", True)
-        self.state.configSave()
-        self._cache.reset()
-
-    # def _initEnv(self):
-    #     """
-    #     init the environment of an executor
-    #     """
-    #
-    #     self._env = self.env_on_system["env"]
-    #
-    #     self.env_on_system
-    #
-    #     print("INITENV")  # TMP
-    #     self.reset()
-    #     j.shell()
-    #     w
-    #
-    #     self.config["system"]["container"] = self.env_on_system["iscontainer"]
-    #
-    #     if self.isBuildEnv:
-    #         # ONLY RELEVANT FOR BUILDING PYTHON, needs to check what needs to be done (kristof) #TODO:
-    #         j.shell()
-    #
-    #     else:
-    #         out = ""
-    #         for key, val in self.dir_paths.items():
-    #             out += "mkdir -p %s\n" % val
-    #         self.execute(out, sudo=True, showout=False,interactive=False)
-    #
-    #     self._cache.reset()
-    #
-    #     self.config["system"]["executor"] = True
-    #     self.config["DIRS"]["HOMEDIR"] = self.env_on_system["HOME"]
-    #     self.state.configSave()
-    #
-    #     if "cfg_state" in self.env_on_system:
-    #         self.state._state = self.env_on_system["cfg_state"]
-    #
-    #     self._log_debug("initenv done on executor base")
+                self._sandbox_check = False
+        return self._sandbox_check
 
     @property
     def cache(self):
         if self._cache is None:
-            self._cache = j.core.cache.get("executor" + self.uid, reset=True, expiration=600)  # 10 min
+            self._cache = j.core.cache.get("executor_" + self.name, reset=True, expiration=600)  # 10 min
         return self._cache
 
     # def sudo_cmd(self, command):
@@ -334,24 +356,6 @@ class ExecutorBase(JSBASE):
     #
     #     cmd = "echo %s | sudo -H -SE -p '' bash -c \"%s\"" % (passwd, command.replace('"', '\\"'))
     #     return cmd
-
-    @property
-    def env_on_system(self):
-        if not self._env_on_system:
-            if not self.env_on_system_msgpack:
-                self.systemenv_load()
-            self._env_on_system = j.data.serializers.msgpack.loads(self.env_on_system_msgpack)
-        return self._env_on_system
-
-    @property
-    def env(self):
-        return self.env_on_system["ENV"]
-
-    @property
-    def state(self):
-        if "state" not in self.config:
-            self.config["state"] = {}
-        return self.config["state"]
 
     def state_exists(self, key):
         key = j.core.text.strip_to_ascii_dense(key)
@@ -391,7 +395,7 @@ class ExecutorBase(JSBASE):
         set +ex
         ls "/sandbox"  > /dev/null 2>&1 && echo 'ISSANDBOX = 1' || echo 'ISSANDBOX = 0'
 
-        ls "/sandbox/bin/python3"  > /dev/null 2>&1 && echo 'ISSANDBOX_BIN = 1' || echo 'ISSANDBOX_BIN = 0'                        
+        ls "/sandbox/bin/python3"  > /dev/null 2>&1 && echo 'ISSANDBOX_BIN = 1' || echo 'ISSANDBOX_BIN = 0'
         echo UNAME = \""$(uname -mnprs)"\"
         echo "HOME = $HOME"
         echo HOSTNAME = "$(hostname)"
@@ -411,11 +415,11 @@ class ExecutorBase(JSBASE):
         # brew -v > /dev/null 2>&1 && echo 'OS_TYPE="darwin"'
         # opkg -v > /dev/null 2>&1 && echo 'OS_TYPE="LEDE"'
         # cat /etc/os-release | grep "VERSION_ID"
-        # 
+        #
 
-        echo "CFG_JUMPSCALE = --TEXT--"
-        cat {DIR_BASE}/cfg/jumpscale_config.msgpack 2>/dev/null || echo ""
-        echo --TEXT--
+        # echo "CFG_JUMPSCALE = --TEXT--"
+        # cat {DIR_BASE}/cfg/jumpscale_config.msgpack 2>/dev/null || echo ""
+        # echo --TEXT--
 
         echo "BASHPROFILE = --TEXT--"
         cat $HOME/.profile_js 2>/dev/null || echo ""
@@ -486,16 +490,20 @@ class ExecutorBase(JSBASE):
             if name not in self.config:
                 self.config[name] = default
 
-        get_cfg("DIR_HOME", res["ENV"]["HOME"])
-        get_cfg("DIR_BASE", "/sandbox")
-        get_cfg("DIR_CFG", "/sandbox/cfg")
-        get_cfg("DIR_TEMP", "/tmp")
-        get_cfg("DIR_VAR", "/sandbox/var")
-        get_cfg("DIR_CODE", "/sandbox/code")
-        get_cfg("DIR_BIN", "/usr/local/bin")
+        if self.type != "local":
+            get_cfg("DIR_HOME", res["ENV"]["HOME"])
+            get_cfg("DIR_BASE", "/sandbox")
+            get_cfg("DIR_CFG", "/sandbox/cfg")
+            get_cfg("DIR_TEMP", "/tmp")
+            get_cfg("DIR_VAR", "/sandbox/var")
+            get_cfg("DIR_CODE", "/sandbox/code")
+            get_cfg("DIR_BIN", "/usr/local/bin")
 
-        self.env_on_system_msgpack = j.data.serializers.msgpack.dumps(res)
+        j.shell()
         self.save()
+
+    def state_reset(self):
+        self.state = {}
 
     def test(self):
 

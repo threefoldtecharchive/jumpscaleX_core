@@ -7,14 +7,13 @@ if True or "-p" in sys.argv:
     from gevent import monkey
 
     monkey.patch_all(subprocess=False)
-    # monkey.patch_select()
     # monkey.patch_thread()
+    # monkey.patch_select()
     # monkey.patch_socket()
     # monkey.patch_time()
 
 import sys
 from Jumpscale import j
-
 
 # j.tools.bash.get().profile.locale_check()
 
@@ -58,12 +57,13 @@ parser.add_argument("-p", "--patch", default=False, action="store_true", help="M
 options, args = parser.parse_known_args()
 
 if options.slave:
-    j.data.bcdb._master_set()
-    print("SLAVE")
+    j.data.bcdb._master_set(False)
+    # print("SLAVE")
+
 
 if options.master:
-    j.data.bcdb._master_set(False)
-    print("MASTER")
+    j.data.bcdb._master_set(True)
+    # print("MASTER")
 
 if options.quiet:
     j.shell()
