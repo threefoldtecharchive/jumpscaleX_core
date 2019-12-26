@@ -64,9 +64,9 @@ class ThreeGit(j.baseclasses.object_config):
         """
         if path not in self._git_repos:
             try:
-                gc = j.clients.git.get(path)
+                gc = j.clients.git.get(path, check_path=False)
             except Exception as e:
-                print("cannot load git:%s error %s" % path, e)
+                self._log_error(f"error while get git of {path}", exception=e)
                 return
             self._git_repos[path] = gc
         return self._git_repos[path]
