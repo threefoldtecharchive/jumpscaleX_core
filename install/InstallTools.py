@@ -2880,17 +2880,13 @@ class Tools:
             raise Tools.exceptions.JSBUG("branch should be a string or list, now %s" % branch)
 
         Tools.log("get code:%s:%s (%s)" % (url, path, branch))
-        if MyEnv.config["SSH_AGENT"] and MyEnv.interactive:
+        if MyEnv.config["SSH_AGENT"]:
             url = "git@github.com:%s/%s.git"
         else:
             url = "https://github.com/%s/%s.git"
 
         repo_url = url % (account, repo)
         exists, foundgit, dontpull, ACCOUNT_DIR, REPO_DIR = Tools._code_location_get(account=account, repo=repo)
-
-        if reset:
-            Tools.delete(REPO_DIR)
-            exists, foundgit, dontpull, ACCOUNT_DIR, REPO_DIR = Tools._code_location_get(account=account, repo=repo)
 
         args = {}
         args["ACCOUNT_DIR"] = ACCOUNT_DIR
@@ -2909,7 +2905,7 @@ class Tools:
             """means code is already there, maybe synced?"""
             return gitpath
 
-        if git_on_system and MyEnv.config["USEGIT"] and ((exists and foundgit) or not exists):
+        if git_on_system and MyEnv.config["USEGIT"]:
             # there is ssh-key loaded
             # or there is a dir with .git inside and exists
             # or it does not exist yet
@@ -2923,7 +2919,7 @@ class Tools:
                 mkdir -p {ACCOUNT_DIR}
                 """
                 Tools.log("get code [git] (first time): %s" % repo)
-                Tools.execute(C, args=args, showout=False, die_if_args_left=True)
+                Tools.execute(C, args=args, showout=True, die_if_args_left=True)
                 C = """
                 cd {ACCOUNT_DIR}
                 # git clone  --depth 1 {URL} -b {BRANCH}
@@ -2934,7 +2930,7 @@ class Tools:
                     C,
                     args=args,
                     die=True,
-                    showout=False,
+                    showout=True,
                     retry=4,
                     errormsg="Could not clone %s" % repo_url,
                     die_if_args_left=True,
@@ -2952,42 +2948,31 @@ class Tools:
                         Tools.execute(
                             C, args=args, retry=1, errormsg="Could not checkout %s" % repo_url, die_if_args_left=True
                         )
-                        C = """
-                        set -x
-                        cd {REPO_DIR}
-                        git pull
-                        """
-                        Tools.log("get code & ignore changes: %s" % repo)
-                        Tools.execute(
-                            C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, die_if_args_left=True
-                        )
-
-                    elif Tools.code_changed(REPO_DIR):
-                        if Tools.ask_yes_no("\n**: found changes in repo '%s', do you want to commit?" % repo):
-                            if "GITMESSAGE" in os.environ:
-                                args["MESSAGE"] = os.environ["GITMESSAGE"]
+                    else:
+                        if Tools.code_changed(REPO_DIR):
+                            if Tools.ask_yes_no("\n**: found changes in repo '%s', do you want to commit?" % repo):
+                                if "GITMESSAGE" in os.environ:
+                                    args["MESSAGE"] = os.environ["GITMESSAGE"]
+                                else:
+                                    args["MESSAGE"] = input("\nprovide commit message: ")
+                                    assert args["MESSAGE"].strip() != ""
                             else:
-                                args["MESSAGE"] = input("\nprovide commit message: ")
-                                assert args["MESSAGE"].strip() != ""
-                        else:
-                            raise Tools.exceptions.Input("found changes, do not want to commit")
-                        C = """
-                        set -x
-                        cd {REPO_DIR}
-                        git add . -A
-                        git commit -m "{MESSAGE}"
-                        """
-                        Tools.log("get code & commit [git]: %s" % repo)
-                        Tools.execute(C, args=args, die_if_args_left=True)
-                        C = """
-                        set -x
-                        cd {REPO_DIR}
-                        git pull
-                        """
-                        Tools.log("get code & commit [git]: %s" % repo)
-                        Tools.execute(
-                            C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, die_if_args_left=True
-                        )
+                                raise Tools.exceptions.Input("found changes, do not want to commit")
+                            C = """
+                            set -x
+                            cd {REPO_DIR}
+                            git add . -A
+                            git commit -m "{MESSAGE}"
+                            """
+                            Tools.log("get code & commit [git]: %s" % repo)
+                            Tools.execute(C, args=args, die_if_args_left=True)
+                    C = """
+                    set -x
+                    cd {REPO_DIR}
+                    git pull
+                    """
+                    Tools.log("pull code: %s" % repo)
+                    Tools.execute(C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, die_if_args_left=True)
 
                     if not checkoutbranch(args, branch):
                         raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
@@ -4328,28 +4313,28 @@ class JumpscaleInstaller:
     #     Tools.execute("cp {DIR_CODE}/github/threefoldtech/sandbox_threebot_linux64/.startup.toml /")
     #     Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
     #
-    def repos_get(self, pull=False, prebuilt=False):
+    def repos_get(self, pull=False, prebuilt=False, reset=False):
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
 
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
-            dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull)
-            try:
-                dest = Tools.code_github_get(url=GITURL, branch=BRANCH, pull=pull)
-            except Exception:
-                activate_http = Tools.ask_yes_no(
-                    "\n### SSH cloning Failed, your key isn't on github or you're missing permission, Do you want to clone via http?\n"
-                )
-                if activate_http:
-                    MyEnv.interactive = False
-                    r = Tools.code_git_rewrite_url(url=URL, ssh=False)
-                    # TODO: *1
-                    Tools.shell()
-                    w
-                    Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, dest=DEST)
-                else:
-                    raise Tools.exceptions.Base("\n### Please authenticate your key and try again\n")
+            dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
+            # try:
+            #     dest = Tools.code_github_get(url=GITURL, branch=BRANCH, pull=pull)
+            # except Exception:
+            #     activate_http = Tools.ask_yes_no(
+            #         "\n### SSH cloning Failed, your key isn't on github or you're missing permission, Do you want to clone via http?\n"
+            #     )
+            #     if activate_http:
+            #         MyEnv.interactive = False
+            #         r = Tools.code_git_rewrite_url(url=URL, ssh=False)
+            #         # TODO: *1
+            #         Tools.shell()
+            #         w
+            #         Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, dest=DEST)
+            #     else:
+            #         raise Tools.exceptions.Base("\n### Please authenticate your key and try again\n")
 
         if prebuilt:
             self.prebuilt_copy()
@@ -4379,9 +4364,6 @@ class JumpscaleInstaller:
             script = Tools.text_replace(script, args=locals())
             script = Tools.text_replace(script, args=locals())  # NEED TO DO THIS 2x
             if "{" in script:
-                from pudb import set_trace
-
-                set_trace()
                 script = Tools.text_replace(script, args=locals())
                 Tools.shell()
                 raise Tools.exceptions.BUG("replace did not work")

@@ -69,6 +69,10 @@ class Syncer(j.baseclasses.object_config):
                 self.sshclient_names.append(cl.name)
                 self.save()
 
+    def reset(self):
+        self.paths = []
+        self._init()
+
     def _init(self, **kwargs):
 
         self.sshclients = {}

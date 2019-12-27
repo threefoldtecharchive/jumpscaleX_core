@@ -58,7 +58,7 @@ class JSXObject2(j.data.schema._JSXObjectClass):
         if val != self.{{prop.name}}:
             # self._log_debug("change:{{prop.name}}" + str(val))
             if self._model:
-                val=self._model._triggers_call(obj=self, action="change", propertyname="{{prop.name}}")
+                self._model._triggers_call(obj=self, action="change", propertyname="{{prop.name}}")
             self._deserialized_items["{{prop.name}}"] = val
             if self._autosave:
                 self.save()

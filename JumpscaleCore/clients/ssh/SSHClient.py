@@ -162,7 +162,8 @@ class SSHClient(SSHClientBase):
             # should check if the dir is not there
             j.shell()
             self.execute("mkdir -p %s" % destination)
-        gevent.joinall(res)
+        if res:
+            gevent.joinall(res)
         self._log_info("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
 
     def sftp_stat(self, path):

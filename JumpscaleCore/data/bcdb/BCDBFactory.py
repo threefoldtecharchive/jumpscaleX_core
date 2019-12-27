@@ -34,17 +34,28 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     @property
     def _master(self):
         if self.__master == None:
+            # see if a threebot starting
+            if not j.core.db:
+                # no choice but to say we are master
+                return True
+            if j.core.db.get("threebot.starting"):
+                print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
+                res = j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60)
+                if res:
+                    # the server did answer, lets now wait till the threebot.starting is gone
+                    timeout = j.data.time.epoch + 15
+                    while j.data.time.epoch < timeout:
+                        if j.core.db.get("threebot.starting") == None:
+                            self.__master = False
+                            return (
+                                self.__master
+                            )  # means we found a threebot who was started properly, can now start as slave
+                raise j.exceptions.Base("threebotserver is starting but did not succeed within 60+15 sec")
+
             if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
                 self.__master = False
             else:
-                if j.core.db and j.core.db.get("threebot.starting"):
-                    print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
-                    if not j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60):
-                        self.__master = True
-                    else:
-                        self.__master = False
-                else:
-                    self.__master = True
+                self.__master = True
         return self.__master
 
     def _master_set(self, val=True):

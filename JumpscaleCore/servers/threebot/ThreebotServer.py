@@ -71,6 +71,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.web = False
         self.ssl = False
         self.client = None
+        j.servers.threebot._threebot_starting()  # in case it wouldn't have happened yet
         j.threebot = ThreeBotRoot()
         j.servers.threebot.current = self
 
@@ -308,6 +309,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             print("*****************************")
             print("*** 3BOTSERVER IS RUNNING ***")
             print("*****************************")
+            j.core.db.delete("threebot.starting")  # remove the marker in redis so we know we started
 
             p = j.threebot.packages
 

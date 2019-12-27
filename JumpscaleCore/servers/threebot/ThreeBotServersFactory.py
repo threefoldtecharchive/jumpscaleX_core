@@ -1,5 +1,6 @@
 from .ThreebotServer import ThreeBotServer
 from Jumpscale import j
+import time
 
 # from .OpenPublish import OpenPublish
 
@@ -13,17 +14,40 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     _CHILDCLASS = ThreeBotServer
 
     def _init(self, **kwargs):
-        print("MARK THREEBOT IS STARTING")
-        if j.core.db:
-            j.core.db.set("threebot.starting", ex=120, value="1")
-        j.data.bcdb._master_set()
         self._default = None
         self.current = None
         self.client = None
 
+    def _threebot_starting(self):
+        print("MARK THREEBOT IS STARTING")
+        if j.core.db:
+            j.core.db.set("threebot.starting", ex=120, value="1")
+        j.data.bcdb._master_set()
+
+    def require_threebotserver(self, timeout=120):
+        """
+        see if we can find a local threebotserver, wait till timeout
+
+        j.servers.threebot.require_threebotserver()
+
+        :param timeout:
+        :return:
+        """
+        timeout2 = j.data.time.epoch + timeout
+        while j.data.time.epoch < timeout2:
+            res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380, timeout=0.1)
+            if res and j.core.db.get("threebot.starting") == None:
+                j.core.bcdb._master_set(False)
+                return
+            timedone = timeout2 - j.data.time.epoch
+            print(" - wait threebotserver to start: %s" % timedone)
+            time.sleep(0.5)
+        raise j.exceptions.Base("please start threebotserver, could not reach in '%s' seconds." % timeout)
+
     @property
     def default(self):
         if not self._default:
+            self._threebot_starting()
             self._default = self.get("default")
         return self._default
 
@@ -89,7 +113,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         :return:
         """
-
+        self._threebot_starting()
         packages = packages or []
         if reload:
             self.default.stop()

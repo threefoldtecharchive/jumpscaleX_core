@@ -32,7 +32,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         j.clients.bcdbmodel.get(name="myjobs", schema=schemas.job)
 
         self.scheduled_ids = []
-        self.events = {}
         self._init_pre_schedule_ = False
         self._i_am_worker = False
 
@@ -70,8 +69,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 self._log_warning("waiting for redis interface of threebotserver to come up")
                 self._bcdb.redis_server_wait_up(self.BCDB_CONNECTOR_PORT)
             self._init_pre_schedule_ = True
-            if j.data.bcdb._master:
-                self.jobs._model.trigger_add(self._job_update)
 
     def action_get(self, key, return_none_if_not_exist=False):
 
@@ -306,13 +303,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
             time.sleep(10)
 
-    def _job_update(self, obj, action="save", **kwargs):
-        if action in ["save", "set_post", "change"]:
-            if obj.state in ["ERROR", "OK"]:
-                event = self.events.pop(obj.id, None)
-                if event:
-                    event.set()
-
     def _main_loop_subprocess(self):
         """
         gevent loop
@@ -459,7 +449,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         job.category = category
         job.die = die
         self.scheduled_ids.append(job.id)
-        self.events[job.id] = gevent.event.Event()
         self.queue_jobs_start.put(job.id)
 
         # never timeout

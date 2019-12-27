@@ -17,7 +17,7 @@ class NetTools(JSBASE):
     def _init(self, **kwargs):
         self._windowsNetworkInfo = None
 
-    def tcpPortConnectionTest(self, ipaddr, port, timeout=None):
+    def tcpPortConnectionTest(self, ipaddr, port, timeout=1):  # there needs to be a timeout
         conn = None
         try:
             conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

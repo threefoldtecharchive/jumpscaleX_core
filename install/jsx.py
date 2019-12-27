@@ -306,6 +306,35 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
     print("Jumpscale X installed successfully")
 
 
+# INSTALL OF JUMPSCALE IN CONTAINER ENVIRONMENT
+@click.command()
+@click.option(
+    "-b", "--branch", default=None, help="jumpscale branch. default 'master' or 'development' for unstable release"
+)
+@click.option(
+    "--pull",
+    is_flag=True,
+    help="pull code from git, if not specified will only pull if code directory does not exist yet",
+)
+@click.option("--reset", is_flag=True, help="if reset, will remove code, be careful")
+def jumpscale_code_get(branch=None, pull=False, reset=False):
+    """
+    install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.
+    if interactive is True then will ask questions, otherwise will go for the defaults or configured arguments
+
+    if you want to configure other arguments use 'jsx configure ... '
+
+    """
+    IT = load_install_tools(branch=branch)
+    # IT.MyEnv.interactive = True
+    # _configure(no_interactive=True)
+    if not branch:
+        branch = IT.DEFAULT_BRANCH
+    installer = IT.JumpscaleInstaller()
+    installer.repos_get(pull=pull, reset=reset)
+    # IT.Tools.shell()
+
+
 @click.command(name="container-import")
 @click.option("-n", "--name", default="3bot", help="name of container")
 @click.option("-i", "--imagename", default="threefoldtech/3bot", help="name of image where we will import to")
@@ -937,6 +966,7 @@ if __name__ == "__main__":
     cli.add_command(wiki_load, "wiki-load")
     cli.add_command(wiki_reload)
     cli.add_command(package_new, "package-new")
+    cli.add_command(jumpscale_code_get, "jumpscale-code-get")
 
     # DO NOT DO THIS IN ANY OTHER WAY !!!
     if not e._DF.indocker():

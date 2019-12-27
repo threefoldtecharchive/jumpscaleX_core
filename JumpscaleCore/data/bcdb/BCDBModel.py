@@ -148,7 +148,7 @@ class BCDBModel(j.baseclasses.object):
             self._triggers_call(obj, "schema_change", None)
 
     def stop(self):
-        self._triggers_call(action="stop")
+        self._triggers_call(obj=None, action="stop")
 
     @property
     def sonic_client(self):
