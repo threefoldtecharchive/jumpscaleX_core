@@ -96,9 +96,13 @@ def rebuild(name=None):
 
     if not name:
         for bcdb in j.data.bcdb.instances.values():
+            # load all objects to make sure all models loaded
+            bcdb.get_all()
             bcdb.index_rebuild()
     else:
         bcdb = j.data.bcdb.get(name=name, reset=False)
+        # load all objects to make sure all models loaded
+        bcdb.get_all()
         bcdb.index_rebuild()
 
     j.data.bcdb._master_set(False)

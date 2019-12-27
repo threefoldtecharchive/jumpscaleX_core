@@ -86,7 +86,7 @@ class BCDB(j.baseclasses.object):
             self.storclient.sqlitedb = None
         self._init_props_()
         # self._shutdown_ = True
-        print(" * STOP BCDB: %s" % self.name)
+        self._log_info(" * STOP BCDB: %s" % self.name)
 
     def _init_props_(self):
 
@@ -401,7 +401,7 @@ class BCDB(j.baseclasses.object):
         """
 
         if self.dataprocessor_greenlet is None:
-            print("** START DATA PROCESSOR FOR :%s" % self.name)
+            self._log_info("** START DATA PROCESSOR FOR :%s" % self.name)
             self.queue = gevent.queue.Queue()
             self.dataprocessor_greenlet = gevent.spawn(self._data_process)
             self.dataprocessor_state = "RUNNING"

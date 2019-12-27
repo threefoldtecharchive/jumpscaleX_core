@@ -12,7 +12,7 @@ DEFAULT_BRANCH = "development"
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
-def load_install_tools(branch=None):
+def load_install_tools(branch=None, reset=False):
     # get current install.py directory
 
     path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py"
@@ -26,7 +26,7 @@ def load_install_tools(branch=None):
         rootdir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(rootdir, "InstallTools.py")
         # now check on path next to jsx
-        if not os.path.exists(path):  # or path.find("/code/") == -1:
+        if not os.path.exists(path) or reset:  # or path.find("/code/") == -1:
             url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py" % branch
 
             with urlopen(url) as resp:
@@ -199,7 +199,7 @@ def container_install(
 
     """
 
-    IT = load_install_tools(branch=branch)
+    IT = load_install_tools(branch=branch, reset=True)
     # IT.MyEnv.interactive = True
     # interactive = not no_interactive
 
@@ -234,7 +234,7 @@ def container_install(
     #     docker.sandbox_sync()
 
     installer = IT.JumpscaleInstaller()
-    installer.repos_get(pull=False)
+    installer.repos_get(pull=False, branch=branch)
 
     docker.jumpscale_install(branch=branch, redo=reinstall, pull=pull, threebot=threebot)  # , prebuilt=prebuilt)
 
@@ -278,7 +278,7 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
 
     """
     # print("DEBUG:: no_sshagent", no_sshagent, "configdir", configdir)  #no_sshagent=no_sshagent
-    IT = load_install_tools(branch=branch)
+    IT = load_install_tools(branch=branch, reset=True)
     # IT.MyEnv.interactive = True
     _configure(no_interactive=no_interactive)
     SANDBOX = IT.MyEnv.config["DIR_BASE"]
@@ -294,7 +294,7 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
 
     installer = IT.JumpscaleInstaller()
     assert prebuilt == False  # not supported yet
-    installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt)
+    installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt, branch=branch)
     if threebot:
         IT.Tools.execute(
             "source %s/env.sh;kosmos 'j.servers.threebot.install(force=True)'" % SANDBOX, showout=True, timeout=3600 * 2
