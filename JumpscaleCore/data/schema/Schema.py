@@ -285,7 +285,7 @@ class Schema(j.baseclasses.object):
             p._default = defvalue
         p.comment = comment
         p.jumpscaletype = jumpscaletype
-        p.nr = len(self.properties)
+        p.nr = nr
 
         self.props[p.name] = p
 
