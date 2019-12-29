@@ -37,7 +37,7 @@ class SystemProps:
 
 
 class Schema(j.baseclasses.object):
-    def _init(self, text, md5=None, url=None):
+    def _init(self, text, url=None, extrafields={}):
         self.properties = []
         self._systemprops = {}
         self._obj_class = None
@@ -47,12 +47,7 @@ class Schema(j.baseclasses.object):
         self.systemprops = SystemProps()
 
         self.url = url
-
-        if md5:
-            self._md5 = md5
-            assert j.data.schema._md5(text) == self._md5
-        else:
-            self._md5 = j.data.schema._md5(text)
+        self._md5 = j.data.schema._md5(text)
 
         self._schema_from_text(text)
 
@@ -60,6 +55,32 @@ class Schema(j.baseclasses.object):
             raise j.exceptions.Input("url needs to be specified", data=text)
 
         self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
+
+        # next is the work we need to do for adding the extra fields and make sure they are always added
+        meta = j.data.schema.meta
+
+        extrafields_existing = meta.extrafields_get(self.url)
+        assert isinstance(extrafields, dict)
+
+        for key, line in extrafields.items():
+            property_tocheck = self._property_get_from_line(line)
+            property_exists = self.property_get(property_tocheck.name, die=False)
+            if key in extrafields_existing and extrafields_existing[key] != line:
+                raise j.exceptions.Input("extra fields not compatible", data=[extrafields_existing, extrafields])
+            if not property_exists:
+                #     if property_exists != property_tocheck:
+                #         property_exists._hash != property_tocheck._hash
+                #         j.shell()
+                #         raise j.exceptions.Base(
+                #             "schema gots modified for extrafield, cannot continue because don't know how to fix this auto"
+                #         )
+                # else:
+                self.properties.append(property_tocheck)
+
+        meta.schema_set(self, extrafields=extrafields)
+        j.data.schema.schemas_url[self.url] = self
+        j.data.schema.schemas_md5[self._md5] = self
+        j.data.schema.schemas[self.url] = self
 
     @property
     def url_str(self):
@@ -131,96 +152,6 @@ class Schema(j.baseclasses.object):
         systemprops = {}
         self.properties = []
 
-        def process(line):
-            def _getdefault(txt):
-                if '"' in txt or "'" in txt:
-                    txt = txt.strip().strip('"').strip("'").strip()
-                if txt.strip() == "":
-                    return None
-                txt = txt.strip()
-                return txt
-
-            line_original = copy(line)
-            propname, line = line.split("=", 1)
-            propname = propname.strip()
-            if ":" in propname:
-                self._error_raise(
-                    "Aliases no longer supported in names, remove  ':' in name '%s'" % propname, schema=text
-                )
-            line = line.strip()
-
-            if "!" in line:
-                line, pointer_type = line.split("!", 1)
-                pointer_type = pointer_type.strip()
-                pointer_type = j.data.schema._urlclean(pointer_type)
-                line = line.strip()
-            else:
-                pointer_type = None
-
-            if "#" in line:
-                line, comment = line.split("#", 1)
-                line = line.strip()
-                comment = comment.strip()
-            else:
-                comment = ""
-
-            p = SchemaProperty()
-
-            name = propname + ""  # make sure there is copy
-            if name.endswith("***"):
-                name = name[:-3]
-                p.index_text = True
-            if name.endswith("**"):
-                name = name[:-2]
-                p.index = True
-            if name.endswith("*"):
-                raise j.exceptions.Input("key based indexing (*) for now not supported use **", data=text)
-                name = name[:-1]
-                p.index_key = True
-            if name.startswith("&"):
-                name = name[1:]
-                p.unique = True
-                # everything which is unique also needs to be indexed
-                p.index_key = True
-
-            if name in ["id"]:
-                self._error_raise("do not use 'id' in your schema, is reserved for system.", data=text)
-            elif name in ["name"]:
-                p.unique = True
-                # everything which is unique also needs to be indexed
-                p.index_key = True
-
-            if "(" in line:
-                line_proptype = line.split("(")[1].split(")")[0].strip().lower()  # in between the ()
-                self._log_debug("line:%s; lineproptype:'%s'" % (line_original, line_proptype))
-                line_wo_proptype = line.split("(")[0].strip()  # before the (
-
-                if pointer_type:
-                    pointer_type = j.data.schema._urlclean(pointer_type)
-                    default = pointer_type
-                    # means the default is a link to another object
-                else:
-                    # will make sure we convert the default to the right possible type int,float, string
-                    default = _getdefault(line_wo_proptype)
-
-                jumpscaletype = j.data.types.get(line_proptype, default=default)
-
-                defvalue = None
-
-            else:
-                jumpscaletype = self._proptype_get(line)
-                defvalue = None
-
-            jumpscaletype._jsx_location
-
-            p.name = name
-            if defvalue:
-                p._default = defvalue
-            p.comment = comment
-            p.jumpscaletype = jumpscaletype
-
-            return p
-
         nr = 0
         for line in text.split("\n"):
             line = line.strip()
@@ -242,7 +173,7 @@ class Schema(j.baseclasses.object):
                     "did not find =, need to be there to define field, line=%s\ntext:%s" % (line, text)
                 )
 
-            p = process(line)
+            p = self._property_get_from_line(line)
 
             if p.jumpscaletype.NAME is "list":
                 raise j.exceptions.Base("no longer used")
@@ -263,6 +194,94 @@ class Schema(j.baseclasses.object):
             s.nr = nr
             self.__dict__["property_%s" % s.name] = s
             nr += 1
+
+    def _property_get_from_line(self, line):
+        def _getdefault(txt):
+            if '"' in txt or "'" in txt:
+                txt = txt.strip().strip('"').strip("'").strip()
+            if txt.strip() == "":
+                return None
+            txt = txt.strip()
+            return txt
+
+        line_original = copy(line)
+        propname, line = line.split("=", 1)
+        propname = propname.strip()
+        if ":" in propname:
+            self._error_raise("Aliases no longer supported in names, remove  ':' in name '%s'" % propname, schema=text)
+        line = line.strip()
+
+        if "!" in line:
+            line, pointer_type = line.split("!", 1)
+            pointer_type = pointer_type.strip()
+            pointer_type = j.data.schema._urlclean(pointer_type)
+            line = line.strip()
+        else:
+            pointer_type = None
+
+        if "#" in line:
+            line, comment = line.split("#", 1)
+            line = line.strip()
+            comment = comment.strip()
+        else:
+            comment = ""
+
+        p = SchemaProperty()
+
+        name = propname + ""  # make sure there is copy
+        if name.endswith("***"):
+            name = name[:-3]
+            p.index_text = True
+        if name.endswith("**"):
+            name = name[:-2]
+            p.index = True
+        if name.endswith("*"):
+            raise j.exceptions.Input("key based indexing (*) for now not supported use **", data=text)
+            name = name[:-1]
+            p.index_key = True
+        if name.startswith("&"):
+            name = name[1:]
+            p.unique = True
+            # everything which is unique also needs to be indexed
+            p.index_key = True
+
+        if name in ["id"]:
+            self._error_raise("do not use 'id' in your schema, is reserved for system.", data=text)
+        elif name in ["name"]:
+            p.unique = True
+            # everything which is unique also needs to be indexed
+            p.index_key = True
+
+        if "(" in line:
+            line_proptype = line.split("(")[1].split(")")[0].strip().lower()  # in between the ()
+            self._log_debug("line:%s; lineproptype:'%s'" % (line_original, line_proptype))
+            line_wo_proptype = line.split("(")[0].strip()  # before the (
+
+            if pointer_type:
+                pointer_type = j.data.schema._urlclean(pointer_type)
+                default = pointer_type
+                # means the default is a link to another object
+            else:
+                # will make sure we convert the default to the right possible type int,float, string
+                default = _getdefault(line_wo_proptype)
+
+            jumpscaletype = j.data.types.get(line_proptype, default=default)
+
+            defvalue = None
+
+        else:
+            jumpscaletype = self._proptype_get(line)
+            defvalue = None
+
+        jumpscaletype._jsx_location
+
+        p.name = name
+        if defvalue:
+            p._default = defvalue
+        p.comment = comment
+        p.jumpscaletype = jumpscaletype
+
+        return p
 
     @property
     def _capnp_id(self):
@@ -449,6 +468,14 @@ class Schema(j.baseclasses.object):
         """
         res = [item.name for item in self.properties]
         return res
+
+    def property_get(self, name, die=True):
+        for item in self.properties:
+            if item.name == name:
+                return item
+        if die:
+            raise j.exceptions.Input("cannot find property:%s" % name)
+        return None
 
     @property
     def _json(self):

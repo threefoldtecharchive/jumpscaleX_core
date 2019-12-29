@@ -3709,7 +3709,7 @@ MyEnv = MyEnv_()
 
 class BaseInstaller:
     @staticmethod
-    def install(configdir=None, force=False, sandboxed=False):
+    def install(configdir=None, force=False, sandboxed=False, branch=None):
 
         MyEnv.init(configdir=configdir)
 
@@ -3760,7 +3760,7 @@ class BaseInstaller:
 
         ji = JumpscaleInstaller()
         print("- get sandbox repos from git")
-        ji.repos_get(pull=False)
+        ji.repos_get(pull=False, branch=branch)
         print("- copy files to sandbox (non binaries)")
         # will get the sandbox installed
         if not sandboxed:
@@ -4232,7 +4232,7 @@ class UbuntuInstaller:
 
 
 class JumpscaleInstaller:
-    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False):
+    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False, branch=None):
 
         MyEnv.check_platform()
         # will check if there's already a key loaded (forwarded) will continue installation with it
@@ -4241,11 +4241,11 @@ class JumpscaleInstaller:
             if "SSH_Agent" in MyEnv.config and MyEnv.config["SSH_Agent"]:
                 MyEnv.sshagent.key_default_name  # means we will load ssh-agent and help user to load it properly
 
-        BaseInstaller.install(sandboxed=sandboxed, force=force)
+        BaseInstaller.install(sandboxed=sandboxed, force=force, branch=branch)
 
         Tools.file_touch(os.path.join(MyEnv.config["DIR_BASE"], "lib/jumpscale/__init__.py"))
 
-        self.repos_get(pull=gitpull)
+        self.repos_get(pull=gitpull, branch=branch)
         self.repos_link()
         self.cmds_link()
 
@@ -4313,28 +4313,32 @@ class JumpscaleInstaller:
     #     Tools.execute("cp {DIR_CODE}/github/threefoldtech/sandbox_threebot_linux64/.startup.toml /")
     #     Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
     #
-    def repos_get(self, pull=False, prebuilt=False, reset=False):
+    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False):
+        assert not prebuilt  # not supported yet
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
 
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
-            dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
-            # try:
-            #     dest = Tools.code_github_get(url=GITURL, branch=BRANCH, pull=pull)
-            # except Exception:
-            #     activate_http = Tools.ask_yes_no(
-            #         "\n### SSH cloning Failed, your key isn't on github or you're missing permission, Do you want to clone via http?\n"
-            #     )
-            #     if activate_http:
-            #         MyEnv.interactive = False
-            #         r = Tools.code_git_rewrite_url(url=URL, ssh=False)
-            #         # TODO: *1
-            #         Tools.shell()
-            #         w
-            #         Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, dest=DEST)
-            #     else:
-            #         raise Tools.exceptions.Base("\n### Please authenticate your key and try again\n")
+            if branch:
+                BRANCH = branch
+            try:
+                dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
+            except Exception as e:
+                j.shell()
+                raise
+                activate_http = Tools.ask_yes_no(
+                    "\n### SSH cloning Failed, your key isn't on github or you're missing permission, Do you want to clone via http?\n"
+                )
+                if activate_http:
+                    MyEnv.interactive = False
+                    r = Tools.code_git_rewrite_url(url=URL, ssh=False)
+                    # TODO: *1
+                    Tools.shell()
+                    w
+                    Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, dest=DEST)
+                else:
+                    raise Tools.exceptions.Base("\n### Please authenticate your key and try again\n")
 
         if prebuilt:
             self.prebuilt_copy()

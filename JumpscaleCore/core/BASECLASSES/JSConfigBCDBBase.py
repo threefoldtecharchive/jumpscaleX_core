@@ -69,24 +69,28 @@ class JSConfigBCDBBase(JSBase, Attr):
                 else:
                     raise j.exceptions.JSBUG("cannot find _SCHEMATEXT on childclass or class itself")
 
-            first_schema = None
-            res = []
+            first = True
             for block in j.data.schema._schema_blocks_get(s):
-                if not first_schema and block:
-                    block = self._process_schematext(block)  # will add parent and other properties to first part
-                    first_schema = block
-                res.append(block)
-            s2 = "\n".join(res)
-
-            j.data.schema.get_from_text(s2)
-
-            if j.data.bcdb._master:
-                self._model_ = self._bcdb.model_get(schema=first_schema)
-            else:
-                self._model_ = j.clients.bcdbmodel.get(name=self._bcdb.name, schema=first_schema)
-                self._bcdb_ = self._model.bcdb
-
-            assert self._model_.schema._md5 == j.data.schema._md5(first_schema.text)
+                assert block
+                if first:
+                    # means this is the first block need to add it
+                    has_mother = self._mother_id_get()
+                    extrafields = {"name": "name** = (S)"}
+                    if self._mother_id_get():
+                        extrafields["mother_id"] = "mother_id = 0 (I)"
+                    schema = j.data.schema.get_from_text(block, extrafields=extrafields)
+                    if j.data.bcdb._master:
+                        self._model_ = self._bcdb.model_get(schema=schema)
+                    else:
+                        # make remote connection (to the threebotserver)
+                        self._model_ = j.clients.bcdbmodel.get(name=self._bcdb.name, schema=schema)
+                        self._bcdb_ = self._model.bcdb
+                    first = False
+                    assert self._model_.schema._md5 == j.data.schema._md5(schema.text)
+                else:
+                    j.data.schema.get_from_text(block)
+            if first:
+                raise j.exceptions.Input("didn't find schema's")
 
         return self._model_
 
@@ -95,22 +99,4 @@ class JSConfigBCDBBase(JSBase, Attr):
         if isinstance(j.baseclasses.object_config) and isinstance(j.baseclasses.object_config_collection):
             raise j.exceptions.Base("combination not allowed of config and configsclass")
 
-    def _process_schematext(self, schematext):
-        """
-        rewrites the schema in such way there is always a parent_id and name
-        :param schematext:
-        :return:
-        """
-        assert schematext
-        schematext = j.core.tools.text_strip(schematext, replace=False)
-        if schematext.find("name") == -1:
-            if "\n" != schematext[-1]:
-                schematext += "\n"
-            schematext += 'name** = ""\n'
-        if self._mother_id_get():
-            if schematext.find("mother_id") == -1:
-                if "\n" != schematext[-1]:
-                    schematext += "\n"
-                schematext += "mother_id** = 0 (I)\n"
-
-        return schematext
+        return schematext, fieldsadded

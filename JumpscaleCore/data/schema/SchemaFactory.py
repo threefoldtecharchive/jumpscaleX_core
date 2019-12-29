@@ -144,7 +144,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         blocks = self._schema_blocks_get(schema_text)
         return len(blocks) > 1
 
-    def get_from_text(self, schema_text, url=None):
+    def get_from_text(self, schema_text, extrafields={}, url=None):
         """
         will return the first schema specified if more than 1
 
@@ -158,15 +158,15 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         for i, block in enumerate(blocks):
             if i == 0:
                 # first one can take url
-                res.append(self._get_from_text_single(block, url=url))
+                res.append(self._get_from_text_single(block, url=url, extrafields=extrafields))
             else:
                 # 2nd one needs to have url specified
-                res.append(self._get_from_text_single(block))
+                res.append(self._get_from_text_single(block, extrafields=extrafields))
 
         if len(res) > 0:
             return res[0]
 
-    def _get_from_text_single(self, schema_text, url=None):
+    def _get_from_text_single(self, schema_text, url=None, extrafields={}):
         """
         can only be 1 schema
 
@@ -176,22 +176,34 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         assert isinstance(schema_text, str)
 
         md5 = self._md5(schema_text)
-        if md5 in self.schemas_md5:
+
+        # lets check there is a linked schema (which was modified before)
+        md5_linked = self.meta.schema_link_foreign_md5_get(md5)
+        if md5_linked:
+            # means there is already a schema which was modified for this one
+            self._log_debug("schema linked")
+            if md5_linked in self.schemas_md5:
+                return self.schemas_md5[md5_linked]
+        elif md5 in self.schemas_md5:
             s = self.schemas_md5[md5]
-            self.set_schema(s)
+            md5_exists = self.meta.schema_link_foreign_md5_get(md5=md5)
+            if md5_exists and not md5 in self.schemas_md5:
+                # should be there, need to investigate why not(despiegk)
+                j.shell()
+            if url:
+                assert s.url == url
             return s
 
-        s = Schema(text=schema_text, md5=md5, url=url)
+        s = Schema(text=schema_text, url=url, extrafields=extrafields)
 
-        self.set_schema(s)
+        if s._md5 != md5:
+            # means schema was modified because of extrafields
+            self.meta.schema_link_foreign_md5(s, md5=md5)
+            self.schemas_md5[md5] = s
+            if md5_linked:
+                assert s._md5 == md5_linked
 
         return s
-
-    def set_schema(self, schema):
-        self.schemas_url[schema.url] = schema
-        self.schemas_md5[schema._md5] = schema
-        self.schemas[schema.url] = schema
-        self.meta.schema_set(schema)
 
     def _md5(self, text):
         """

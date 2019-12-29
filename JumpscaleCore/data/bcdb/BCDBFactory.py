@@ -55,7 +55,14 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
                 self.__master = False
             else:
-                self.__master = True
+                if j.core.db and j.core.db.get("threebot.starting"):
+                    self._log_info(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
+                    if not j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60):
+                        self.__master = True
+                    else:
+                        self.__master = False
+                else:
+                    self.__master = True
         return self.__master
 
     def _master_set(self, val=True):
@@ -95,7 +102,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         if not self._loaded:
 
-            print("LOAD CONFIG BCDB")
+            self._log_info("LOAD CONFIG BCDB")
 
             # will make sure the toml schema's are loaded
             j.data.schema.add_from_path("%s/models_system" % self._dirpath)

@@ -203,6 +203,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         assert self._model.index.sql_index_count() == 0
         if not self._mother_id_get():
             self._model.index.destroy()
+        self._children = j.baseclasses.dict()
 
     def _children_names_get(self, filter=None):
         condition = False

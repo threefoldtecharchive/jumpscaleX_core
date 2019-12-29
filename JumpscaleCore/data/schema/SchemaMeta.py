@@ -15,6 +15,7 @@ class SchemaMeta(j.baseclasses.object):
             {$url:
                 {
                     "sid":sid,
+                    "extrafields":{name:propertyline,...},
                     "md5s":[]
                 }
                 #latest md5 is at end of list, sid is the schema id based on url,
@@ -110,7 +111,7 @@ class SchemaMeta(j.baseclasses.object):
                     {
                         "text":$text,
                         "epoch":$epoch,
-                        "url":$url
+                        "url":$url,
                     }
         """
         if md5:
@@ -118,16 +119,25 @@ class SchemaMeta(j.baseclasses.object):
                 return self._data["md5"][md5]
         elif url:
             if url in self._data["url"]:
-                return self._data_from_url(url)
+                return self._data_md5_get(url)
         raise j.exceptions.Input(f"did not find schema in meta with md5:'{md5}' and url '{url}'")
 
-    def schema_set(self, schema, save=True):
+    def extrafields_get(self, url):
+        if url in self._data["url"]:
+            if "extrafields" not in self._data["url"]:
+                self._data["url"]["extrafields"] = {}
+                assert self._data["md5s"]
+            return self._data["url"]["extrafields"]
+        return {}
+
+    def schema_set(self, schema, extrafields={}, save=True):
         """
         add the schema to the metadata if it was not done yet
         :param schema:
         :return: the model id
         """
         # optimized for speed, will happen quite a lot, need to know when there is change
+        assert isinstance(extrafields, dict)
 
         def find_sid():
             sid_highest = 0
@@ -153,15 +163,15 @@ class SchemaMeta(j.baseclasses.object):
                     change = True
                     md5s.pop(md5s.index(schema._md5))
                     md5s.append(schema._md5)  # now at end of list again
-                    d = {"sid": sid, "md5s": md5s}
+                    d = {"sid": sid, "md5s": md5s, "extrafields": extrafields}
             else:
                 # is a new one, not in list yet
                 change = True
                 md5s.append(schema._md5)
-                d = {"sid": sid, "md5s": md5s}
+                d = {"sid": sid, "md5s": md5s, "extrafields": extrafields}
         else:
             change = True
-            d = {"sid": find_sid(), "md5s": [schema._md5]}
+            d = {"sid": find_sid(), "md5s": [schema._md5], "extrafields": extrafields}
         if change:
             self._data["url"][schema.url] = d
 
@@ -178,6 +188,25 @@ class SchemaMeta(j.baseclasses.object):
         if (change or change2) and save:
             self.save()
 
+    def schema_link_foreign_md5_get(self, md5):
+        if md5 in self._data["md5"]:
+            if "link" in self._data["md5"][md5]:
+                return self._data["md5"]["link"]
+
+    def schema_link_foreign_md5(self, schema, md5):
+        # means we put link fom md5 to other modified schema
+        if md5 in self._data["md5"]:
+            assert schema.url == self._data["md5"]["url"]
+            if "link" in self._data["md5"][md5]:
+                return self._data["md5"]["link"]
+        d = {}
+        d["text"] = ""
+        d["epoch"] = j.data.time.epoch
+        d["url"] = schema.url
+        d["link"] = schema.md5
+        self._data["md5"][md5] = d
+        self.save()
+
     def schema_backup(self, schema):
         data = {"url": schema.url, "md5": schema._md5, "text": schema.text, "time": j.data.time.epoch}
         t = j.data.serializers.toml.dumps(data)
@@ -186,18 +215,27 @@ class SchemaMeta(j.baseclasses.object):
         dest = j.core.tools.text_replace("{DIR_CFG}/bcdb/%s.toml" % schema.url.replace(".", "__"))
         j.sal.fs.writeFile(dest, t2, append=True)
 
-    def _data_from_url(self, url):
-        if url not in self._data["url"]:
-            raise j.exceptions.Input("cannot find url schema meta" % url)
-        if len(self._data["url"][url]) == 0:
-            raise j.exceptions.Input("cannot find a schema for url in schema meta: '%s' " % url)
-        d = self._data["url"][url]
+    def _data_md5_get(self, url):
+        d = self._data_url_get(url)
+        if "md5s" not in d:
+            j.shell()
         if len(d["md5s"]) == 0:
             raise j.exceptions.Input("url had no md5:%s" % url)
         md5 = d["md5s"][-1]
         if md5 not in self._data["md5"]:
             raise j.exceptions.Input("cannot find md5 in schema meta: '%s'" % md5)
         return self._data["md5"][md5]
+
+    def _data_url_exists(self, url):
+        return url in self._data["url"]
+
+    def _data_url_get(self, url):
+        if url not in self._data["url"]:
+            raise j.exceptions.Input("cannot find url schema meta" % url)
+        d = self._data["url"][url]
+        if "extrafields" not in d:
+            d["extrafields"] = {}
+        return d
 
     def _sid_from_url(self, url):
         if not url in self._data["url"]:
