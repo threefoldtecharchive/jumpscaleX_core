@@ -75,7 +75,7 @@ class Schema(j.baseclasses.object):
                 #             "schema gots modified for extrafield, cannot continue because don't know how to fix this auto"
                 #         )
                 # else:
-                self.properties.append(property_tocheck)
+                self.property_set(property_tocheck)
 
         meta.schema_set(self, extrafields=extrafields)
         j.data.schema.schemas_url[self.url] = self
@@ -181,7 +181,7 @@ class Schema(j.baseclasses.object):
                 # print(p.capnp_schema)
                 # self.lists.append(p)
             else:
-                self.properties.append(p)
+                self.property_set(p)
 
         for key, val in systemprops.items():
             if key == "url":
@@ -189,11 +189,11 @@ class Schema(j.baseclasses.object):
             else:
                 self.systemprops.__dict__[key] = val
 
-        nr = 0
-        for s in self.properties:
-            s.nr = nr
-            self.__dict__["property_%s" % s.name] = s
-            nr += 1
+    def property_set(self, prop):
+        if not self.property_exists(prop.name):
+            prop.nr = len(self.properties)
+            self.properties.append(prop)
+        self.__dict__["property_%s" % prop.name] = prop
 
     def _property_get_from_line(self, line):
         def _getdefault(txt):
@@ -476,6 +476,9 @@ class Schema(j.baseclasses.object):
         if die:
             raise j.exceptions.Input("cannot find property:%s" % name)
         return None
+
+    def property_exists(self, name):
+        return self.property_get(name=name, die=False) != None
 
     @property
     def _json(self):
