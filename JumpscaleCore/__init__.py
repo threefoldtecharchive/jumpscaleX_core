@@ -45,9 +45,6 @@ def profileStop(pr):
 
 # pr=profileStart()
 
-spec = util.spec_from_file_location("IT", "/%s/core/InstallTools.py" % os.path.dirname(__file__))
-
-
 from .core.InstallTools import BaseInstaller
 from .core.InstallTools import JumpscaleInstaller
 from .core.InstallTools import Tools
