@@ -4,8 +4,9 @@ from Jumpscale import j
 from .SSHClientBase import SSHClientBase
 import time
 import gevent
-import ssh2.sftp
-from ssh2.session import Session
+
+# import ssh2.sftp
+# from ssh2.session import Session
 
 
 class SSHClient(SSHClientBase):

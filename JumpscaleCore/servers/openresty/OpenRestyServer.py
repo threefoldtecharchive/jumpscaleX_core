@@ -139,6 +139,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
                 name="lapis",
                 cmd_start=cmd,
                 path=self.path_cfg_dir,
+                process_name="openresty",
                 process_strings_regex="^nginx",
                 executor=self.executor,
             )

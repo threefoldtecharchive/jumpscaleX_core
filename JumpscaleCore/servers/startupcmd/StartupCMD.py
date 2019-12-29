@@ -38,6 +38,7 @@ class StartupCMD(j.baseclasses.object_config):
         ports = (LI)
         ports_udp = (LI)
         timeout = 120
+        process_name = (s)
         process_strings = (ls)
         process_strings_regex = (ls)
         pid = (I)
@@ -368,15 +369,20 @@ class StartupCMD(j.baseclasses.object_config):
                 return False
 
         if self._local:
-            p = self.process
-            if p:
-                # we found a process so can take decision now
-                if j.sal.process.psfind("startupcmd_%s" % self.name):
-                    self._notify_state("running")
-                    return True
-                else:
-                    return False
-            elif self.ports != [] or self.process_strings != "" or self.process_strings_regex != "":
+            # if self.process_name:
+            #     p = self.process
+            #     if p:
+            #         if self.process_name in p.name()
+            #         j.shell()
+            # if p:
+            #     # we found a process so can take decision now
+            #     if j.sal.process.psfind("startupcmd_%s" % self.name):
+            #         self._notify_state("running")
+            #         return True
+            #     else:
+            #         print("could not find process:startupcmd_%s" % name)
+            #         return False
+            if self.ports != [] or self.process_strings != "" or self.process_strings_regex != "":
                 # we check on ports or process strings so we know for sure its down
                 if len(self._get_processes_by_port_or_filter()) > 0:
                     self._notify_state("running")

@@ -79,18 +79,19 @@ class JSConfigBCDBBase(JSBase, Attr):
                     if True or self._mother_id_get():  # TODO: will have to be resolved in future
                         extrafields["mother_id"] = "mother_id** = 0 (I)"
                     schema = j.data.schema.get_from_text(block, extrafields=extrafields)
-                    if j.data.bcdb._master:
-                        self._model_ = self._bcdb.model_get(schema=schema)
-                    else:
-                        # make remote connection (to the threebotserver)
-                        self._model_ = j.clients.bcdbmodel.get(name=self._bcdb.name, schema=schema)
-                        self._bcdb_ = self._model.bcdb
                     first = False
-                    assert self._model_.schema._md5 == j.data.schema._md5(schema.text)
                 else:
                     j.data.schema.get_from_text(block)
             if first:
                 raise j.exceptions.Input("didn't find schema's")
+
+            if j.data.bcdb._master:
+                self._model_ = self._bcdb.model_get(schema=schema)
+            else:
+                # make remote connection (to the threebotserver)
+                self._model_ = j.clients.bcdbmodel.get(name=self._bcdb.name, schema=schema)
+                self._bcdb_ = self._model.bcdb
+            assert self._model_.schema._md5 == j.data.schema._md5(schema.text)
 
         return self._model_
 
