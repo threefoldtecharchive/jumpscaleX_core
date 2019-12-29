@@ -37,8 +37,8 @@ class SystemProps:
 
 
 class Schema(j.baseclasses.object):
-    def _init(self, text, url=None, extrafields={}):
-        self.properties = []
+    def _init(self, text=None, url=None, extrafields={}):
+        self.props = j.baseclasses.dict()
         self._systemprops = {}
         self._obj_class = None
         self._capnp = None
@@ -47,8 +47,8 @@ class Schema(j.baseclasses.object):
         self.systemprops = SystemProps()
 
         self.url = url
-        self._md5 = j.data.schema._md5(text)
 
+        self._md5 = j.data.schema._md5(text)
         self._schema_from_text(text)
 
         if not self.url:
@@ -57,30 +57,29 @@ class Schema(j.baseclasses.object):
         self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
 
         # next is the work we need to do for adding the extra fields and make sure they are always added
-        meta = j.data.schema.meta
+        if self.url == "jumpscale.example.ship.1":
+            j.debug()
 
-        extrafields_existing = meta.extrafields_get(self.url)
-        assert isinstance(extrafields, dict)
+        for prop_name, data in self._meta_url["props"].items():
+            if prop_name not in self.props:
+                prop_nr, prop_line = data
+                p = self._property_get_from_line(prop_line, nr=prop_nr)
 
-        for key, line in extrafields.items():
-            property_tocheck = self._property_get_from_line(line)
-            property_exists = self.property_get(property_tocheck.name, die=False)
-            if key in extrafields_existing and extrafields_existing[key] != line:
-                raise j.exceptions.Input("extra fields not compatible", data=[extrafields_existing, extrafields])
-            if not property_exists:
-                #     if property_exists != property_tocheck:
-                #         property_exists._hash != property_tocheck._hash
-                #         j.shell()
-                #         raise j.exceptions.Base(
-                #             "schema gots modified for extrafield, cannot continue because don't know how to fix this auto"
-                #         )
-                # else:
-                self.property_set(property_tocheck)
+        for extra_name, extra_line in extrafields.items():
+            if extra_name in self.props:
+                if self.props[extra_name].line != extra_line:
+                    p = self._property_get_from_line(extra_line)
+            else:
+                p = self._property_get_from_line(extra_line)
 
-        meta.schema_set(self, extrafields=extrafields)
+        j.data.schema.meta.schema_set(self)
         j.data.schema.schemas_url[self.url] = self
         j.data.schema.schemas_md5[self._md5] = self
         j.data.schema.schemas[self.url] = self
+
+    @property
+    def properties(self):
+        return list(self.props.values())
 
     @property
     def url_str(self):
@@ -146,11 +145,12 @@ class Schema(j.baseclasses.object):
 
         if text.count("@url") > 1:
             raise j.exceptions.Input("there should only be 1 url in the schema", data=text)
+        if text.count("@url") == 0 and not self.url:
+            raise j.exceptions.Input("url not specified", data=text)
 
         self.text = j.core.text.strip(text)
 
         systemprops = {}
-        self.properties = []
 
         nr = 0
         for line in text.split("\n"):
@@ -165,6 +165,8 @@ class Schema(j.baseclasses.object):
                 systemprop_name = line.split("=")[0].strip()[1:]
                 systemprop_val = line.split("=")[1].strip()
                 systemprops[systemprop_name] = systemprop_val.strip('"').strip("'")
+                if systemprop_name == "url":
+                    self.url = j.data.schema._urlclean(systemprops[systemprop_name])
                 continue
             if line.startswith("#"):
                 continue
@@ -175,27 +177,18 @@ class Schema(j.baseclasses.object):
 
             p = self._property_get_from_line(line)
 
-            if p.jumpscaletype.NAME is "list":
-                raise j.exceptions.Base("no longer used")
-                # j.shell()
-                # print(p.capnp_schema)
-                # self.lists.append(p)
-            else:
-                self.property_set(p)
-
         for key, val in systemprops.items():
-            if key == "url":
-                self.url = j.data.schema._urlclean(val)
-            else:
+            if not key == "url":
                 self.systemprops.__dict__[key] = val
 
-    def property_set(self, prop):
-        if not self.property_exists(prop.name):
-            prop.nr = len(self.properties)
-            self.properties.append(prop)
-        self.__dict__["property_%s" % prop.name] = prop
+    @property
+    def _meta_url(self):
+        assert self.url
+        return j.data.schema.meta._data_url_get(self.url, die=False)
 
-    def _property_get_from_line(self, line):
+    def _property_get_from_line(self, line, nr=None):
+        assert self.url
+
         def _getdefault(txt):
             if '"' in txt or "'" in txt:
                 txt = txt.strip().strip('"').strip("'").strip()
@@ -203,6 +196,16 @@ class Schema(j.baseclasses.object):
                 return None
             txt = txt.strip()
             return txt
+
+        assert "=" in line
+        key, _line = line.split("=", 1)
+        key = key.replace("*", "").replace("&", "").lower().strip()
+
+        if not nr:
+            if key in self._meta_url["props"]:
+                nr, line_old = self._meta_url["props"][key]
+            else:
+                nr = len(self._meta_url["props"])
 
         line_original = copy(line)
         propname, line = line.split("=", 1)
@@ -226,7 +229,7 @@ class Schema(j.baseclasses.object):
         else:
             comment = ""
 
-        p = SchemaProperty()
+        p = SchemaProperty(nr=nr, line=line_original)
 
         name = propname + ""  # make sure there is copy
         if name.endswith("***"):
@@ -236,7 +239,7 @@ class Schema(j.baseclasses.object):
             name = name[:-2]
             p.index = True
         if name.endswith("*"):
-            raise j.exceptions.Input("key based indexing (*) for now not supported use **", data=text)
+            raise j.exceptions.Input("key based indexing (*) for now not supported use **", data=line)
             name = name[:-1]
             p.index_key = True
         if name.startswith("&"):
@@ -280,6 +283,11 @@ class Schema(j.baseclasses.object):
             p._default = defvalue
         p.comment = comment
         p.jumpscaletype = jumpscaletype
+        p.nr = len(self.properties)
+
+        self.props[p.name] = p
+
+        assert p.jumpscaletype.NAME is not "list"
 
         return p
 
@@ -309,13 +317,11 @@ class Schema(j.baseclasses.object):
             if self._md5 in [None, ""]:
                 raise j.exceptions.Base("md5 cannot be None")
 
-            for prop in self.properties:
-                self._log_debug("prop for obj gen: %s:%s" % (prop, prop.js_typelocation))
-
             tpath = "%s/templates/JSXObject2.py" % self._dirpath
 
             # lets do some tests to see if it will render well, jinja doesn't show errors propertly
             for prop in self.properties:
+                self._log_debug("prop for obj gen: %s:%s" % (prop, prop.js_typelocation))
                 prop.capnp_schema
                 prop.default_as_python_code
                 prop.js_typelocation
@@ -413,6 +419,7 @@ class Schema(j.baseclasses.object):
             elif prop.is_jsxobject:
                 for subprop in prop.jumpscaletype._schema.properties_index_sql:
                     sprop = SchemaProperty(
+                        line=subprop.line,
                         name=f"{prop.name}__{subprop.name}",
                         attr=f"{prop.name}.{subprop.name}",
                         jumpscaletype=subprop.jumpscaletype,
@@ -466,19 +473,7 @@ class Schema(j.baseclasses.object):
         lists all the property names
         :return:
         """
-        res = [item.name for item in self.properties]
-        return res
-
-    def property_get(self, name, die=True):
-        for item in self.properties:
-            if item.name == name:
-                return item
-        if die:
-            raise j.exceptions.Input("cannot find property:%s" % name)
-        return None
-
-    def property_exists(self, name):
-        return self.property_get(name=name, die=False) != None
+        return list(self.props.keys())
 
     @property
     def _json(self):

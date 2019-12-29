@@ -76,8 +76,8 @@ class JSConfigBCDBBase(JSBase, Attr):
                     # means this is the first block need to add it
                     has_mother = self._mother_id_get()
                     extrafields = {"name": "name** = (S)"}
-                    if self._mother_id_get():
-                        extrafields["mother_id"] = "mother_id = 0 (I)"
+                    if True or self._mother_id_get():  # TODO: will have to be resolved in future
+                        extrafields["mother_id"] = "mother_id** = 0 (I)"
                     schema = j.data.schema.get_from_text(block, extrafields=extrafields)
                     if j.data.bcdb._master:
                         self._model_ = self._bcdb.model_get(schema=schema)

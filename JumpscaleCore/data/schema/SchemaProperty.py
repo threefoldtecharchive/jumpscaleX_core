@@ -6,11 +6,14 @@ JSBASE = j.baseclasses.object
 class SchemaProperty(j.baseclasses.object):
     def _init(self, **kwargs):
 
+        # following 2 need to be given
+        self.nr = kwargs["nr"]
+        self.line = kwargs["line"]
+
         self.name = kwargs.get("name", "")
         self.attr = kwargs.get("attr", "")
         self.jumpscaletype = kwargs.get("jumpscaletype", None)
         self.comment = kwargs.get("comments", "")
-        self.nr = kwargs.get("nr", 0)
         self._default = None
         self.index = kwargs.get("index", False)  # as used in sqlite
         self.index_key = False  # is for indexing the keys

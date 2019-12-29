@@ -22,7 +22,6 @@ class Website(j.baseclasses.factory_data):
         ssl = True (B)
         domain = ""
         path = ""
-
         """
 
     CONFIG = """

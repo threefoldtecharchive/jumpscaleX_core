@@ -15,7 +15,7 @@ class SchemaMeta(j.baseclasses.object):
             {$url:
                 {
                     "sid":sid,
-                    "extrafields":{name:propertyline,...},
+                    "props":{name:[nr,propertyline],...},
                     "md5s":[]
                 }
                 #latest md5 is at end of list, sid is the schema id based on url,
@@ -26,7 +26,8 @@ class SchemaMeta(j.baseclasses.object):
                     {
                         "text":$text,
                         "epoch":$epoch,
-                        "url":$url
+                        "url":$url,
+                        "link":$link_to_other_md5_for_extrafields,
                     }
             }
     }
@@ -122,24 +123,27 @@ class SchemaMeta(j.baseclasses.object):
                 return self._data_md5_get(url)
         raise j.exceptions.Input(f"did not find schema in meta with md5:'{md5}' and url '{url}'")
 
-    def extrafields_get(self, url):
+    def props_get(self, url):
         if url in self._data["url"]:
-            if "extrafields" not in self._data["url"][url]:
-                self._data["url"][url]["extrafields"] = {}
+            if "props" not in self._data["url"][url]:
+                self._data["url"][url]["props"] = {}
                 # if not "md5" in self._data["url"][url] or not self._data["url"][url]["md5s"]:
                 #     j.debug()
                 assert self._data["url"][url]["md5s"]
-            return self._data["url"][url]["extrafields"]
+            return self._data["url"][url]["props"]
         return {}
 
-    def schema_set(self, schema, extrafields={}, save=True):
+    def schema_set(self, schema, save=True):
         """
         add the schema to the metadata if it was not done yet
         :param schema:
         :return: the model id
         """
         # optimized for speed, will happen quite a lot, need to know when there is change
-        assert isinstance(extrafields, dict)
+
+        props = {}
+        for name, p in schema.props.items():
+            props[name] = [p.nr, p.line]
 
         def find_sid():
             sid_highest = 0
@@ -165,15 +169,15 @@ class SchemaMeta(j.baseclasses.object):
                     change = True
                     md5s.pop(md5s.index(schema._md5))
                     md5s.append(schema._md5)  # now at end of list again
-                    d = {"sid": sid, "md5s": md5s, "extrafields": extrafields}
+                    d = {"sid": sid, "md5s": md5s, "props": props}
             else:
                 # is a new one, not in list yet
                 change = True
                 md5s.append(schema._md5)
-                d = {"sid": sid, "md5s": md5s, "extrafields": extrafields}
+                d = {"sid": sid, "md5s": md5s, "props": props}
         else:
             change = True
-            d = {"sid": find_sid(), "md5s": [schema._md5], "extrafields": extrafields}
+            d = {"sid": find_sid(), "md5s": [schema._md5], "props": props}
         if change:
             self._data["url"][schema.url] = d
 
@@ -231,12 +235,15 @@ class SchemaMeta(j.baseclasses.object):
     def _data_url_exists(self, url):
         return url in self._data["url"]
 
-    def _data_url_get(self, url):
+    def _data_url_get(self, url, die=True):
         if url not in self._data["url"]:
-            raise j.exceptions.Input("cannot find url schema meta" % url)
-        d = self._data["url"][url]
-        if "extrafields" not in d:
-            d["extrafields"] = {}
+            if die:
+                raise j.exceptions.Input("cannot find url schema meta:%s" % url)
+            d = {}
+        else:
+            d = self._data["url"][url]
+        if "props" not in d:
+            d["props"] = {}
         return d
 
     def _sid_from_url(self, url):

@@ -67,12 +67,12 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                 self.__master = True
         return self.__master
 
-    def _treebot_set(self, val=True):
-        self._master_set(val)
-        if val:
-            j.core.db.set("threebot.starting", ex=120, value="1")
-        else:
-            j.core.db.delete("threebot.starting")
+    # def _treebot_set(self, val=True): #ALREADY DONE IN THREEBOTSERVER
+    #     self._master_set(val)
+    #     if val:
+    #         j.core.db.set("threebot.starting", ex=120, value="1")
+    #     else:
+    #         j.core.db.delete("threebot.starting")
 
     def _master_set(self, val=True):
         self.__master = val
