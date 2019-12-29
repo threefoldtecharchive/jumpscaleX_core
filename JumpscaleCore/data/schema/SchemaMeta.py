@@ -124,10 +124,12 @@ class SchemaMeta(j.baseclasses.object):
 
     def extrafields_get(self, url):
         if url in self._data["url"]:
-            if "extrafields" not in self._data["url"]:
-                self._data["url"]["extrafields"] = {}
-                assert self._data["md5s"]
-            return self._data["url"]["extrafields"]
+            if "extrafields" not in self._data["url"][url]:
+                self._data["url"][url]["extrafields"] = {}
+                # if not "md5" in self._data["url"][url] or not self._data["url"][url]["md5s"]:
+                #     j.debug()
+                assert self._data["url"][url]["md5s"]
+            return self._data["url"][url]["extrafields"]
         return {}
 
     def schema_set(self, schema, extrafields={}, save=True):
