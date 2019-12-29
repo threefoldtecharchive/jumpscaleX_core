@@ -5,7 +5,7 @@ from Jumpscale import j
 # use j.data.nacl for underlying encryption/decryption/signing when possible
 JSBASE = j.baseclasses.object
 from .EncryptionInstance import EncryptionInstance
-import mnemonic
+from mnemonic import Mnemonic
 
 
 class EncryptionFactory(j.baseclasses.object_config_collection_testtools):

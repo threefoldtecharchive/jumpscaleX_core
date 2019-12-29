@@ -41,11 +41,7 @@ class NACLFactory(j.baseclasses.object):
         """
         n = self.get(name=name, load=False)
         n.configure(
-            privkey_words=privkey_words,
-            sshagent_use=sshagent_use,
-            generate=generate,
-            interactive=interactive,
-            reset=reset,
+            privkey_words=privkey_words, generate=generate, interactive=interactive, reset=reset,
         )
         return n
 

@@ -8,7 +8,6 @@ SKIPPED_INSTALLATION = {
     "capacity": "https://github.com/threefoldtech/jumpscaleX_core/issues/94",
     "sanic": "https://github.com/threefoldtech/jumpscaleX_core/issues/94",
     "flask": "https://github.com/threefoldtech/jumpscaleX_core/issues/94",
-    "sockexec": "https://github.com/threefoldtech/jumpscaleX_core/issues/30",
     "errbot": "https://github.com/threefoldtech/jumpscaleX_core/issues/94",
     "etcd": "https://github.com/threefoldtech/jumpscaleX_core/issues/158",
     "odoo": "https://github.com/threefoldtech/jumpscaleX_core/issues/222",

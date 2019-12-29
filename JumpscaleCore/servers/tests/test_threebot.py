@@ -67,7 +67,6 @@ class TestThreebotServer(BaseTest):
             except Exception as e:
                 self.fail(e)
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/208")
     def test02_get_bcdb(self):
         """
         - ​Install  threebot server.
@@ -80,7 +79,6 @@ class TestThreebotServer(BaseTest):
         output, error = self.os_command(" ls /sandbox/var/bcdb")
         self.assertIn(bcdb_name, output.decode())
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/208")
     def Test03_start_stop_options(self, server):
         """
         - Start server. 
@@ -101,7 +99,6 @@ class TestThreebotServer(BaseTest):
         self.assertFalse(j.sal.nettools.tcpPortConnectionTest("localhost", 8901), "Gedis still running.")
 
     @parameterized.expand([(True,), (False,)])
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/208")
     def test04_verify_start_options(self, web_status):
         """
         - ​Install  threebot server.
