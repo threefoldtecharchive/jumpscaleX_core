@@ -80,6 +80,7 @@ class BCDBModelClientFactory(j.baseclasses.object):
     def _init(self, **kwargs):
         self._clients = j.baseclasses.dict()
         self._rediscl__ = None
+        self._class = BCDBModelClient
 
     @property
     def _rediscl_(self):

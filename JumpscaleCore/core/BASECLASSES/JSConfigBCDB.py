@@ -48,7 +48,8 @@ class JSConfigBCDB(JSConfigBCDBBase):
             self._data.name = name
 
     def _init_post(self, **kwargs):
-        if self._data not in self._model.instances:
+
+        if not isinstance(self._model, j.clients.bcdbmodel._class) and self._data not in self._model.instances:
             self._model.instances.append(self._data)  # link from model to where its used
             # to check we are not creating multiple instances
             # assert id(j.data.bcdb.children.system.models[self._model.schema.url]) == id(self._model)
