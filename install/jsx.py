@@ -38,7 +38,6 @@ def load_install_tools(branch=None):
 
     spec = util.spec_from_file_location("IT", path)
     IT = spec.loader.load_module()
-    IT.MyEnv.init()
     return IT
 
 
