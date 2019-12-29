@@ -31,6 +31,15 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         self.__master = None
 
+    def require_threebotserver(self, timeout=120):
+        timeout2 = j.data.time.epoch + timeout
+        while j.data.time.epoch < timeout2:
+            res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380)
+            if res and j.core.db.get("threebot.starting") == None:
+                self._master_set(False)
+                return
+        raise j.exceptions.Base("please start threebotserver, could not reach in '%s' seconds." % timeout)
+
     @property
     def _master(self):
         if self.__master is None:
@@ -55,21 +64,17 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
                 self.__master = False
             else:
-                if j.core.db and j.core.db.get("threebot.starting"):
-                    self._log_info(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
-                    if not j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60):
-                        self.__master = True
-                    else:
-                        self.__master = False
-                else:
-                    self.__master = True
+                self.__master = True
         return self.__master
 
-    def _master_set(self, val=True):
+    def _treebot_set(self, val=True):
+        self._master_set(val)
         if val:
             j.core.db.set("threebot.starting", ex=120, value="1")
         else:
             j.core.db.delete("threebot.starting")
+
+    def _master_set(self, val=True):
         self.__master = val
 
     def config_reload(self):
