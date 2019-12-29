@@ -264,9 +264,9 @@ class BCDBModel(j.baseclasses.object):
         if j.data.types.string.check(data):
 
             data = j.data.serializers.json.loads(data)
-            if obj_id == None and "id" in data:
+            if obj_id is None and "id" in data:
                 obj_id = data["id"]
-            if nid == None:
+            if nid is None:
                 if "nid" in data:
                     nid = data["nid"]
                 else:
@@ -292,7 +292,7 @@ class BCDBModel(j.baseclasses.object):
                 else:
                     raise j.exceptions.Base("need to specify nid")
         elif j.data.types.dict.check(data):
-            if obj_id == None and "id" in data:
+            if obj_id is None and "id" in data:
                 obj_id = data["id"]
             if "nid" not in data or not data["nid"]:
                 if nid:

@@ -76,7 +76,7 @@ class NACLFactory(j.baseclasses.object):
                 item = item._json
             elif isinstance(item, j.baseclasses.dict):
                 item = j.data.serializers.json.dumps(item._data).encode()
-            elif item == None:
+            elif item is None:
                 raise j.exceptions.Input("should not be None")
             else:
                 item = j.data.serializers.json.dumps(item).encode()
@@ -189,7 +189,7 @@ class NACLFactory(j.baseclasses.object):
         r = cl.sign(data)
 
         assert cl.verify(data, r)
-        assert cl.verify(b"a", r) == False
+        assert cl.verify(b"a", r) is False
 
         pubsignkey32 = cl.verify_key.encode()
 

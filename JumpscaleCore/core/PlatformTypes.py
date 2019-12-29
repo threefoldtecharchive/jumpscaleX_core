@@ -124,7 +124,7 @@ class PlatformType(object):
     def uname(self):
         if self._uname is not None:
             return self._uname
-        if self.executor == None:
+        if self.executor is None:
             unn = os.uname()
             self._hostname = unn.nodename
             distro_info = platform.linux_distribution()
@@ -203,7 +203,7 @@ class PlatformType(object):
 
     @property
     def osname(self):
-        if self.executor == None:
+        if self.executor is None:
             if "darwin" in sys.platform.lower():
                 osname = "darwin"
             elif "linux" in sys.platform.lower():

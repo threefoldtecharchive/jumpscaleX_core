@@ -62,7 +62,7 @@ class {{BASENAME}}(BCDBModelIndex):
         dd["nid"] = obj.nid
 
         z = self.sql.get_or_none(id=obj.id)
-        if z == None:
+        if z is None:
             dd["id"] = obj.id
             self.sql.create(**dd)
         else:

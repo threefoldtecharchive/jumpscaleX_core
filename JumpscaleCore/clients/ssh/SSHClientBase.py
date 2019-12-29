@@ -1,5 +1,4 @@
 from Jumpscale import j
-import os
 import gevent
 
 import time

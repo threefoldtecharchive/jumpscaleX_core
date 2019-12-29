@@ -138,7 +138,7 @@ def include_original(
 
     if name.find(":") == -1:
         doc = doc.docsite.doc_get(name, die=False)
-        if doc == None:
+        if doc is None:
             # walk over all docsites
             res = []
             for key, ds in j.tools.markdowndocs.docsites.items():

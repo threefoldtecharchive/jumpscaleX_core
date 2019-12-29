@@ -76,4 +76,4 @@ cl.actors_all.package_manager.package_add(
 )
 ```
 
-when reload == False, which is recommended then the actor packagemanager will not reload the package if already there.
+when reload is False, which is recommended then the actor packagemanager will not reload the package if already there.

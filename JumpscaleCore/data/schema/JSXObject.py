@@ -12,7 +12,7 @@ class JSXObject(j.baseclasses.object):
         else:
             self._schema_ = schema
             self._model = None
-            assert model == None
+            assert model is None
 
         self._deserialized_items = {}
 

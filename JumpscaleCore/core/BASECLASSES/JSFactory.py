@@ -68,7 +68,7 @@ class JSFactory(JSBase, Attr):
         """
         child = self._validate_child(name)
         if not child:
-            if hasattr(self.__class__, "_CHILDCLASS") and needexist == False:
+            if hasattr(self.__class__, "_CHILDCLASS") and needexist is False:
                 self.new(name=name, autosave=save, **kwargs)
             else:
                 raise j.exceptions.Value("cannot get child with name:%s" % name)

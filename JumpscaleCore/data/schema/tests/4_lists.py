@@ -120,7 +120,7 @@ def main(self):
     assert schema_test._ddict == schema_test2._ddict
     assert schema_test._data == schema_test2._data
 
-    assert schema_test._readonly == False
+    assert schema_test._readonly is False
 
     # test we cannot change a subobj
     try:

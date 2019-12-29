@@ -127,7 +127,7 @@ def main(self):
         "Set the new object's attributes with the same attributes of the second object, should success.", level=20
     )
     schema_obj3 = model.new()
-    assert schema_obj3.id == None
+    assert schema_obj3.id is None
     schema_obj3.name = schema_obj2.name
     schema_obj3.new_name = schema_obj2.new_name
     schema_obj3.test = schema_obj2.test

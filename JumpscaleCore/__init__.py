@@ -186,7 +186,7 @@ class Jumpscale:
             embed(globals_, locals_, configure=ptconfig, history_filename=history_filename)
 
     def shelli(self, loc=True, name=None, stack_depth=2):
-        if self._shell == None:
+        if self._shell is None:
             from IPython.terminal.embed import InteractiveShellEmbed
 
             if name is not "":

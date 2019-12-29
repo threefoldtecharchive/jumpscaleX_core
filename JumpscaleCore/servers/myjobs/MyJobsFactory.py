@@ -51,7 +51,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
     def _init_pre_schedule(self, in3bot=False):
         if not self._init_pre_schedule_:
-            assert self._i_am_worker == False
+            assert self._i_am_worker is False
             # need to make sure at startup we process all data which is still waiting there for us
 
             assert self._children
@@ -339,7 +339,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 if gproc.exitcode != None:
                     raise j.exceptions.Base("subprocess should never have been exitted")
                 w = self.workers.get(wid)
-                if w == None:
+                if w is None:
                     # should always find the worker
                     j.shell()
                     continue
@@ -381,15 +381,15 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                     if gproc.exitcode != None:
                         raise j.exceptions.Base("subprocess should never have been exit-ed")
                     w = self.workers.get(wid, die=False)
-                    if w == None:
+                    if w is None:
                         # WHY IS THIS OK, SHOULD THIS NOT FAIL? TODO:
                         continue
 
                     job_running = w.current_job != 2147483647
                     self._log_debug("job running:%s (%s)" % (w.id, job_running))
 
-                    if w.halt == False and not job_running and self.queue_jobs_start.qsize() == 0:
-                        if removed_one == False and test_workers_less():
+                    if w.halt is False and not job_running and self.queue_jobs_start.qsize() == 0:
+                        if removed_one is False and test_workers_less():
                             self._log_debug("worker remove:%s" % wid)
                             w.stop(True)
                             w.delete()
@@ -460,7 +460,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 return job.wait(die=die, timeout=timeout)
             return self.wait_queues(queue_names=return_queues, size=len([job.id]), die=die, timeout=timeout)
 
-        assert job._data._autosave == True
+        assert job._data._autosave is True
         return job
 
     def stop(self, graceful=True, reset=True, timeout=60, hard=True):

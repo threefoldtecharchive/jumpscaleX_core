@@ -21,7 +21,7 @@ class BCDBModelClient(j.baseclasses.object):
         if j.data.bcdb._master:
             self.trigger_add = self.model.trigger_add
         else:
-            # means self.bcdb.readonly == True
+            # means self.bcdb.readonly is True
             self._rediscl_ = j.clients.bcdbmodel._rediscl_
             self._rediscl_.execute_command(
                 "bcdb_model_init", self.bcdb.name, self.model.schema.url, self.model.schema._md5, self.model.schema.text

@@ -36,7 +36,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         timeout2 = j.data.time.epoch + timeout
         while j.data.time.epoch < timeout2:
             res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380, timeout=0.1)
-            if res and j.core.db.get("threebot.starting") == None:
+            if res and j.core.db.get("threebot.starting") is None:
                 j.core.bcdb._master_set(False)
                 return
             timedone = timeout2 - j.data.time.epoch
@@ -118,7 +118,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         if reload:
             self.default.stop()
 
-        if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) is False:
             self.install()
             client = self.default.start(background=background, packages=packages)
             assert "." in client.package_name

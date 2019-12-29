@@ -159,14 +159,14 @@ def main(self):
 
     o = j.data.schema.get_from_text(schema3).new()
 
-    assert o.bool1 == True
-    assert o.bool2 == True
-    assert o.bool3 == False
-    assert o.bool4 == False
-    assert o.bool5 == True
-    assert o.bool6 == True
-    assert o.bool7 == False
-    assert o.bool8 == False
+    assert o.bool1 is True
+    assert o.bool2 is True
+    assert o.bool3 is False
+    assert o.bool4 is False
+    assert o.bool5 is True
+    assert o.bool6 is True
+    assert o.bool7 is False
+    assert o.bool8 is False
     assert o.int1 == 10
 
     schema4 = """

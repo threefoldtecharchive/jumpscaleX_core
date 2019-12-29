@@ -24,14 +24,14 @@ def main(self):
     if j.sal.fs.exists(dir_path_2):
         j.sal.fs.remove(dir_path_2)
 
-    assert j.sal.fs.exists(dir_path_1) == False
-    assert j.sal.fs.exists(dir_path_2) == False
+    assert j.sal.fs.exists(dir_path_1) is False
+    assert j.sal.fs.exists(dir_path_2) is False
 
     j.sal.fs.createDir(dir_path_1)
     j.sal.fs.createDir(dir_path_2)
 
-    assert j.sal.fs.exists(dir_path_1) == True
-    assert j.sal.fs.exists(dir_path_2) == True
+    assert j.sal.fs.exists(dir_path_1) is True
+    assert j.sal.fs.exists(dir_path_2) is True
 
     j.sal.fs.writeFile(dir_path_1 + file_1, file_1_content)
     j.sal.fs.writeFile(dir_path_1 + file_1_2, file_1_2_content)
@@ -42,28 +42,28 @@ def main(self):
     assert j.sal.fs.readFile(dir_path_1 + file_1_2) == file_1_2_content
     assert j.sal.fs.readFile(dir_path_2 + file_2_2) == file_2_2_content
 
-    assert j.sal.fs.exists(dir_path_1 + file_1) == True
-    assert j.sal.fs.exists(dir_path_2 + file_2) == True
-    assert j.sal.fs.exists(dir_path_1 + file_1_2) == True
-    assert j.sal.fs.isFile(dir_path_1 + file_1) == True
-    assert j.sal.fs.isFile(dir_path_2 + file_2) == True
-    assert j.sal.fs.isFile(dir_path_1 + file_1_2) == True
-    assert j.sal.fs.isFile(dir_path_2 + file_2_2) == True
+    assert j.sal.fs.exists(dir_path_1 + file_1) is True
+    assert j.sal.fs.exists(dir_path_2 + file_2) is True
+    assert j.sal.fs.exists(dir_path_1 + file_1_2) is True
+    assert j.sal.fs.isFile(dir_path_1 + file_1) is True
+    assert j.sal.fs.isFile(dir_path_2 + file_2) is True
+    assert j.sal.fs.isFile(dir_path_1 + file_1_2) is True
+    assert j.sal.fs.isFile(dir_path_2 + file_2_2) is True
 
     print("TEST Directory copy with no overwrites")
     j.sal.fs.copyDirTree(dir_path_1, dir_path_2, overwriteFiles=False)
-    assert j.sal.fs.exists(dir_path_1 + file_1) == True
-    assert j.sal.fs.exists(dir_path_2 + file_2) == True
-    assert j.sal.fs.exists(dir_path_1 + file_1_2) == True
-    assert j.sal.fs.isFile(dir_path_1 + file_1) == True
-    assert j.sal.fs.isFile(dir_path_2 + file_2) == True
-    assert j.sal.fs.isFile(dir_path_1 + file_1_2) == True
+    assert j.sal.fs.exists(dir_path_1 + file_1) is True
+    assert j.sal.fs.exists(dir_path_2 + file_2) is True
+    assert j.sal.fs.exists(dir_path_1 + file_1_2) is True
+    assert j.sal.fs.isFile(dir_path_1 + file_1) is True
+    assert j.sal.fs.isFile(dir_path_2 + file_2) is True
+    assert j.sal.fs.isFile(dir_path_1 + file_1_2) is True
     # overwrite is False
     # as file_1 and file_2 names are identical the content should stay the same
     assert j.sal.fs.readFile(dir_path_2 + file_2) == file_2_content
     assert j.sal.fs.readFile(dir_path_1 + file_1) == file_1_content
     # file_1_2 should have been copied to dir2
-    assert j.sal.fs.isFile(dir_path_2 + file_1_2) == True
+    assert j.sal.fs.isFile(dir_path_2 + file_1_2) is True
     # extraneous file should have been preserved
     assert j.sal.fs.readFile(dir_path_2 + file_2_2) == file_2_2_content
 
@@ -81,13 +81,13 @@ def main(self):
     j.sal.fs.writeFile(dir_path_2 + file_2, file_2_content)
     j.sal.fs.writeFile(dir_path_2 + file_2_2, file_2_2_content)
     j.sal.fs.copyDirTree(dir_path_1, dir_path_2, overwriteFiles=True)
-    assert j.sal.fs.isFile(dir_path_1 + file_1) == True
-    assert j.sal.fs.isFile(dir_path_2 + file_2) == True
-    assert j.sal.fs.isFile(dir_path_1 + file_1_2) == True
+    assert j.sal.fs.isFile(dir_path_1 + file_1) is True
+    assert j.sal.fs.isFile(dir_path_2 + file_2) is True
+    assert j.sal.fs.isFile(dir_path_1 + file_1_2) is True
     # extraneous file should have been deleted
-    assert j.sal.fs.exists(dir_path_2 + file_2_2) == False
+    assert j.sal.fs.exists(dir_path_2 + file_2_2) is False
     # as file_1 and file_2 names are identical the content should have been overwritten
     assert j.sal.fs.readFile(dir_path_2 + file_2) == file_1_content
     assert j.sal.fs.readFile(dir_path_1 + file_1) == file_1_content
     # file_1_2 should have been copied to dir2
-    assert j.sal.fs.isFile(dir_path_2 + file_1_2) == True
+    assert j.sal.fs.isFile(dir_path_2 + file_1_2) is True

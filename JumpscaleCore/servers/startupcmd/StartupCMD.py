@@ -304,7 +304,7 @@ class StartupCMD(j.baseclasses.object_config):
         if not timeout:
             timeout = self.timeout
 
-        if self.is_running() == False and force == False:  # if we don't know it will be -1
+        if self.is_running() is False and force is False:  # if we don't know it will be -1
             return
 
         self._notify_state("stopping")
@@ -313,7 +313,7 @@ class StartupCMD(j.baseclasses.object_config):
             # means we really tried a softkill
             if force is False:
                 stopped = self.wait_stopped(die=False, timeout=timeout)
-                if stopped == True and force == False:  # this means we really know for sure it died
+                if stopped is True and force is False:  # this means we really know for sure it died
                     return True
 
         self._hardkill()  # will remove tmux pane or other hard method of stopping
@@ -344,7 +344,7 @@ class StartupCMD(j.baseclasses.object_config):
     def is_running(self):
         if self._local and self.ports != []:
             for port in self.ports:
-                if j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=port) == False:
+                if j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=port) is False:
                     self._notify_state("down")
                     return False
             self._notify_state("running")
@@ -352,7 +352,7 @@ class StartupCMD(j.baseclasses.object_config):
 
         if self._local and self.ports_udp != []:
             for port in self.ports_udp:
-                if j.sal.nettools.udpPortConnectionTest(ipaddr="localhost", port=port) == False:
+                if j.sal.nettools.udpPortConnectionTest(ipaddr="localhost", port=port) is False:
                     self._notify_state("down")
                     return False
             self._notify_state("running")
@@ -407,10 +407,10 @@ class StartupCMD(j.baseclasses.object_config):
                     nr = 0
                     nr_port_check = len(self.ports) + len(self.ports_udp)
                     for port in self.ports:
-                        if j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=port) == False:
+                        if j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=port) is False:
                             nr += 1
                     for port2 in self.ports_udp:
-                        if j.sal.nettools.udpPortConnectionTest(ipaddr="localhost", port=port2) == False:
+                        if j.sal.nettools.udpPortConnectionTest(ipaddr="localhost", port=port2) is False:
                             nr += 1
                     if nr == nr_port_check and nr > 0:
                         self._log_info("IS HALTED based on TCP/UDP %s" % self.name)
@@ -524,7 +524,7 @@ class StartupCMD(j.baseclasses.object_config):
                     self.stop(force=True)
                 # self._hardkill()
 
-        if not reset and self.is_running() == True:
+        if not reset and self.is_running() is True:
             self._log_info("no need to start was already started:%s" % self.name)
             return
 

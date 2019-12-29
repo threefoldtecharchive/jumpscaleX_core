@@ -34,8 +34,8 @@ def main(self):
     self.http_back.timeout = 5
     self.http_back.start()
     assert self.http_back.pid
-    assert self.http_back.is_running() == True
+    assert self.http_back.is_running() is True
     self.http_back.stop()
-    assert self.http_back.is_running() == False
+    assert self.http_back.is_running() is False
 
     return "OK"

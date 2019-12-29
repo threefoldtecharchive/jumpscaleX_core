@@ -69,7 +69,7 @@ class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
 
         cl.reset()
         assert ex.state == {}
-        assert cl._connected == None
+        assert cl._connected is None
         assert ex.env_on_system_msgpack == b""
         assert ex.config_msgpack == b""
 
@@ -81,10 +81,10 @@ class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
         ex.state_set("bla")
         assert ex.state == {"bla": None}
         assert ex.state_exists("bla")
-        assert ex.state_exists("blabla") == False
-        assert ex.state_get("bla") == None
+        assert ex.state_exists("blabla") is False
+        assert ex.state_get("bla") is None
         ex.state_reset()
-        assert ex.state_exists("bla") == False
+        assert ex.state_exists("bla") is False
         assert ex.state == {}
         ex.state_set("bla", 1)
         assert ex.state == {"bla": 1}
@@ -103,7 +103,7 @@ class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
         assert stat.filesize == 1
 
         assert ex.path_isdir("/tmp")
-        assert ex.path_isfile("/tmp") == False
+        assert ex.path_isfile("/tmp") is False
         assert ex.path_isfile("/tmp/1")
 
         path = ex.download("/tmp/1", "/tmp/something.txt")
@@ -140,7 +140,7 @@ class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
 
         cl.reset()
         assert ex.state == {}
-        assert cl._connected == None
+        assert cl._connected is None
         assert ex.env_on_system_msgpack == b""
         assert ex.config_msgpack == b""
 

@@ -248,10 +248,10 @@ class DocSite(j.baseclasses.object):
 
         if duplicate only the first found will be used
         """
-        if reset == False and self._loaded and check == False:
+        if reset is False and self._loaded and check is False:
             return
 
-        if reset == True:
+        if reset is True:
             git_client = j.clients.git.get(self.path, check_path=False)
             self.revision = git_client.config_3git_set("revision_last_processed", "")
 

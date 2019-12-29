@@ -1,6 +1,4 @@
 from Jumpscale import j
-
-import base64
 from .ExecutorInstallers import ExecutorInstallers
 
 
@@ -247,14 +245,14 @@ class ExecutorBase(j.baseclasses.object_config):
 
         :return:
         """
-        assert sudo == None or sudo == False  # not implemented yet
-        if env == None:
+        assert sudo is None or sudo is False  # not implemented yet
+        if env is None:
             env = {}
 
         if j.sal.fs.exists(cmd):
             ext = j.sal.fs.getFileExtension(cmd).lower()
             cmd = j.sal.fs.readFile(cmd)
-            if python == None and jumpscale == None:
+            if python is None and jumpscale is None:
                 if ext == "py":
                     python = True
 
@@ -598,10 +596,10 @@ class ExecutorBase(j.baseclasses.object_config):
         ex.state_set("bla")
         assert ex.state == {"bla": None}
         assert ex.state_exists("bla")
-        assert ex.state_exists("blabla") == False
-        assert ex.state_get("bla") == None
+        assert ex.state_exists("blabla") is False
+        assert ex.state_get("bla") is None
         ex.state_reset()
-        assert ex.state_exists("bla") == False
+        assert ex.state_exists("bla") is False
         assert ex.state == {}
         ex.state_set("bla", 1)
         assert ex.state == {"bla": 1}
@@ -621,7 +619,7 @@ class ExecutorBase(j.baseclasses.object_config):
         ex.file_write("/tmp/adir/notexist/a.txt", "aa")
         assert ex.exists("/tmp/adir/notexist/a.txt")
         ex.delete("/tmp/adir")
-        assert ex.exists("/tmp/adir") == False
+        assert ex.exists("/tmp/adir") is False
 
         err = False
         try:
@@ -631,7 +629,7 @@ class ExecutorBase(j.baseclasses.object_config):
         assert err
 
         assert ex.path_isdir("/tmp")
-        assert ex.path_isfile("/tmp") == False
+        assert ex.path_isfile("/tmp") is False
         assert ex.path_isfile("/tmp/1re")
 
         path = ex.download("/tmp/1re", "/tmp/something.txt")

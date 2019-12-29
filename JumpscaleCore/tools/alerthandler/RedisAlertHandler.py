@@ -78,7 +78,7 @@ class AlertHandler(j.baseclasses.object):
     def get(self, key, new=False, die=True):
         res = self.db.get(key)
         if res is None:
-            if die == False:
+            if die is False:
                 return
             if new:
                 return self.schema_alert.new()

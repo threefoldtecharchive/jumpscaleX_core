@@ -293,7 +293,7 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
         branch = IT.DEFAULT_BRANCH
 
     installer = IT.JumpscaleInstaller()
-    assert prebuilt == False  # not supported yet
+    assert prebuilt is False  # not supported yet
     installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt, branch=branch)
     if threebot:
         IT.Tools.execute(
@@ -744,7 +744,7 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
 
     def docker_jumpscale_get(name=name, delete=True):
         docker = e._DF.container_get(name=name, delete=delete)
-        if docker.config.done_get("jumpscale") == False:
+        if docker.config.done_get("jumpscale") is False:
             # means we have not installed jumpscale yet
             docker.install()
             docker.jumpscale_install()
@@ -790,7 +790,7 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
             # the master 3bot
             explorer_addr = docker.config.ipaddr
             if IT.MyEnv.platform() != "linux":
-                if docker.config.done_get("wireguard") == False:
+                if docker.config.done_get("wireguard") is False:
                     # only need to use wireguard if on osx or windows (windows not implemented)
                     # only do it on the first container
                     docker.wireguard.server_start()

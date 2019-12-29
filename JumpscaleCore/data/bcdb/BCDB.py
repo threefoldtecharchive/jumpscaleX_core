@@ -20,7 +20,7 @@ class BCDB(j.baseclasses.object):
     def _init(self, name=None, storclient=None, reset=False):
         """
         :param name: name for the BCDB
-        :param storclient: if storclient == None then will use sqlite db
+        :param storclient: if storclient is None then will use sqlite db
         """
 
         if name is None:
@@ -146,7 +146,7 @@ class BCDB(j.baseclasses.object):
     def _is_writable_check(self):
         return not self.readonly
         # check there is write access on bcdb
-        # if self._lock_checked and self.readonly == False:
+        # if self._lock_checked and self.readonly is False:
         #     return True
         # self.lock.acquire()
         # self._lock_checked = True
@@ -534,8 +534,8 @@ class BCDB(j.baseclasses.object):
         """
 
         if schema:
-            assert md5 == None
-            assert url == None
+            assert md5 is None
+            assert url is None
             if j.data.types.string.check(schema):
                 schema_text = schema
                 # j.data.schema.models_in_use = False
@@ -549,13 +549,13 @@ class BCDB(j.baseclasses.object):
         else:
             if url:
                 url = j.data.schema._urlclean(url)
-                assert md5 == None
+                assert md5 is None
                 if not j.data.schema.exists(url=url):
                     # means we don't know it and it is not in BCDB either because the load has already happened
                     raise j.exceptions.Input("we could not find model from:%s, was not in bcdb or j.data.schema" % url)
                 schema = j.data.schema.get_from_url(url)
             elif md5:
-                assert url == None
+                assert url is None
                 if not j.data.schema.exists(md5=md5):
                     raise j.exceptions.Input("we could not find model from:%s, was not in bcdb meta" % md5)
                 schema_md5 = j.data.schema.get_from_md5(md5=md5)

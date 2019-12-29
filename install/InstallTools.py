@@ -345,7 +345,7 @@ class RedisTools:
         :rtype: Redis
         """
 
-        if reset == False:
+        if reset is False:
             if RedisTools.core_running(tcp=tcp):
                 return RedisTools.core_get()
 
@@ -424,8 +424,8 @@ if redis:
             make empty
             :return:
             """
-            while self.empty == False:
-                if self.get_nowait() == None:
+            while self.empty is False:
+                if self.get_nowait() is None:
                     self.empty = True
 
         def put(self, item):
@@ -1198,7 +1198,7 @@ class Tools:
         # else:
         #     mswindows = subprocess.mswindows
 
-        if env == None or env == {}:
+        if env is None or env == {}:
             env = os.environ
 
         if useShell:
@@ -1765,7 +1765,7 @@ class Tools:
         def arg_process(key, val):
             if key in ["self"]:
                 return None
-            if val == None:
+            if val is None:
                 return ""
             if isinstance(val, str):
                 if val.strip().lower() == "none":
@@ -3097,9 +3097,9 @@ class Tools:
                 val = "'%s'" % val
             elif isinstance(val, int) or isinstance(val, float):
                 val = str(val)
-            elif val == True:
+            elif val is True:
                 val = "true"
-            elif val == False:
+            elif val is False:
                 val = "false"
             out += "%s = %s\n" % (key, val)
 
@@ -3592,7 +3592,7 @@ class MyEnv_:
             # exception_type, exception_obj, tb = sys.exc_info()
             pudb.post_mortem(tb)
 
-        if die == False:
+        if die is False:
             return logdict
         else:
             sys.exit(1)
@@ -4680,7 +4680,7 @@ class DockerContainer:
 
         self.config = DockerConfig(name=name, image=image, startupcmd=startupcmd, delete=delete, ports=ports)
 
-        if self.config.portrange == None:
+        if self.config.portrange is None:
             self.config._find_port_range()
             self.config.save()
 
@@ -4770,7 +4770,7 @@ class DockerContainer:
         if not self.container_exists_config:
             # means is a new one
             new = True
-            if update == None:
+            if update is None:
                 if image2 in ["threefoldtech/base", "threefoldtech/3bot", "threefoldtech/3botdev"]:
                     update = False
             if not update:
@@ -6000,7 +6000,7 @@ class ExecutorSSH:
             cmd = self._replace(cmd, args=args)
         if env or args or asfile or sudo:
             cmd = self._commands_transform(cmds=cmd, die=die, checkok=self.checkok, env=env, sudo=sudo, shell=False)
-        if asfile == None:
+        if asfile is None:
             if asfile or "\n" in cmd or "'" in cmd:
                 asfile = True
             else:

@@ -12,7 +12,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
     def new(self, name, jsxobject=None, autosave=True, **kwargs):
         """
-        it it exists will delete if first when delete == True
+        it it exists will delete if first when delete is True
         :param name:
         :param jsxobject:
         :param autosave: sets the autosave argument on the data and also saves the object before the function returns. If set to False, you need to explicitly save the object.
