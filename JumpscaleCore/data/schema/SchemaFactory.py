@@ -176,7 +176,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
                     continue
                 out += "%s\n" % line
             schema_text = out
-        schema_text = "@url = %s\n%s" % (url, schema_text)
+        schema_text = "@url = %s\n%s\n" % (url, schema_text.strip())
         return schema_text
 
     def _get_from_text_single(self, schema_text, url=None, extrafields={}):
