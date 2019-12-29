@@ -48,13 +48,16 @@ class JSON(TypeBaseClassUnserialized):
         """
         if v is None:
             return self._default_get()
+        if v is "":
+            return v
         if isinstance(v, dict):
             pass
         elif isinstance(v, str):
-            try:
-                v = j.data.serializers.json.loads(v)
-            except j.exceptions.Value:
+            if self.check(v):
                 pass
+            else:
+                raise j.exceptions.Value("Can't parse string to json", data=v)
+
         elif isinstance(v, (set, list, int, float)):
             pass
         elif isinstance(v, j.data.schema._JSXObjectClass):
@@ -123,6 +126,7 @@ class YAML(JSON):
 
     def possible(self, value):
         """Check whether provided value is a dict"""
+        j.debug()
         if not isinstance(value, str):
             return False
         try:
@@ -132,6 +136,7 @@ class YAML(JSON):
         return True
 
     def toData(self, v):
+        j.debug()
         v = self.clean(v)
         return j.data.serializers.yaml.dumps(v)
 
@@ -139,6 +144,7 @@ class YAML(JSON):
         """
         return string from a dict
         """
+        j.debug()
         if j.data.types.yaml.check(s):
             return s
         else:
@@ -147,6 +153,14 @@ class YAML(JSON):
 
     def toString(self, v):
         return j.data.serializers.yaml.dumps(v)
+
+    def check(self, v):
+        j.debug()
+        try:
+            j.data.serializers.yaml.loads(v)
+            return True
+        except j.exceptions.Value:
+            return False
 
 
 class Dictionary(TypeBaseClassUnserialized):
