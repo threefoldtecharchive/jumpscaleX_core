@@ -38,7 +38,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                 self.__master = False
             else:
                 if j.core.db and j.core.db.get("threebot.starting"):
-                    print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
+                    self._log_info(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
                     if not j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60):
                         self.__master = True
                     else:
@@ -84,7 +84,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         if not self._loaded:
 
-            print("LOAD CONFIG BCDB")
+            self._log_info("LOAD CONFIG BCDB")
 
             # will make sure the toml schema's are loaded
             j.data.schema.add_from_path("%s/models_system" % self._dirpath)
@@ -675,6 +675,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             redis.wait_stopped()
             j.servers.zdb.test_instance_stop()
             j.servers.sonic.default.stop()
+
             raise
         else:
             # CLEAN STATE

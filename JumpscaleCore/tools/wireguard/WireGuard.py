@@ -21,7 +21,7 @@ class WireGuard(j.baseclasses.object_config):
     name** = "main"
     sshclient_name = "" (S)
     key_private_ = "" (S)
-    key_public = "" (S) 
+    key_public = "" (S)
     network_private = "" (S)
     network_public = "" (S)
     interface_name = "wg0" (S)
@@ -54,7 +54,7 @@ class WireGuard(j.baseclasses.object_config):
     def executor(self):
         if self._executor is None:
             if self.islocal:
-                self._executor = j.tools.executorLocal
+                self._executor = j.tools.executor.local
             else:
                 self._executor = j.clients.ssh.get(self.sshclient_name, client_type="pssh", autosave=False).executor
         return self._executor

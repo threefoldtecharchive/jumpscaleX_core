@@ -43,6 +43,10 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         self.schemas_url = j.baseclasses.dict(name="SCHEMASURL")  # is url to schema
         self._schemas = None
 
+    def reset(self):
+        self.meta.reset()
+        self._reset_state()
+
     @property
     def schemas(self):
         if not self._schemas:

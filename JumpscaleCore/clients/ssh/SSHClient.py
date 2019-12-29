@@ -9,7 +9,8 @@ import ssh2.sftp
 
 class SSHClient(SSHClientBase):
     def _init2(self, **kwargs):
-        self._logger_prefix = "ssh client: %s:%s(%s)" % (self.addr_variable, self.port, self.login)
+
+        self._logger_prefix = "ssh client: %s:%s(%s)" % (self.addr, self.port, self.login)
         self._logger_enable()
 
         if self.passwd == "" and self.sshkey_name == "":
@@ -44,19 +45,18 @@ class SSHClient(SSHClientBase):
             #     from pssh.utils import enable_host_logger
             #
             #     enable_host_logger()
-
             self._log_debug(
-                "ssh connection: %s@%s:%s (passwd:%s,key:%s)"
-                % (self.login, self.addr_variable, self.port_variable, passwd, pkey)
+                "ssh connection: %s@%s:%s (passwd:%s,key:%s)" % (self.login, self.addr, self.port, passwd, pkey)
             )
+
             hosts = []
-            hosts.append(self.addr_variable)
+            hosts.append(self.addr)
             try:
                 self._client_ = PSSHCLIENT(
                     hosts,
                     user=self.login,
                     password=passwd,
-                    port=self.port_variable,
+                    port=self.port,
                     proxy_pkey=pkey,
                     num_retries=10,
                     allow_agent=self.allow_agent,
@@ -76,7 +76,7 @@ class SSHClient(SSHClientBase):
         # channel, _, stdout, stderr, _ = self._client.run_command(cmd, timeout=timeout, use_pty=True)
 
         output = self._client.run_command(cmd)
-        client = output[self.addr_variable]
+        client = output[self.addr]
         channel = client.channel
         stdout = client.stdout
         stderr = client.stderr
@@ -114,6 +114,7 @@ class SSHClient(SSHClientBase):
         return rc, output, error
 
     def file_write(self, path, content, mode=0o755, append=False):
+        path = self._replace(path)
         flags = ssh2.sftp.LIBSSH2_FXF_CREAT
         if append:
             flags |= ssh2.sftp.LIBSSH2_FXF_APPEND
@@ -138,8 +139,8 @@ class SSHClient(SSHClientBase):
         :raises: :py:class:`IOError` on I/O errors writing files
         :raises: :py:class:`OSError` on OS errors like permission denied
         """
-        local_file = self._replace(local_file, paths_executor=False)
-        remote_file = self._replace(remote_file)
+        local_file = j.core.tools.text_replace(local_file)
+        remote_file = self.executor._replace(remote_file)
         if os.path.isdir(local_file):
             raise j.exceptions.Value("Local file cannot be a dir")
         destination = j.sal.fs.getDirName(remote_file)
@@ -149,6 +150,7 @@ class SSHClient(SSHClientBase):
         self._log_info("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
 
     def sftp_stat(self, path):
+        path = self.executor._replace(path)
         res = self.sftp.stat(path)
         counter = 0
         while isinstance(res, int):
@@ -186,11 +188,6 @@ class SSHClient(SSHClientBase):
     #     self._client.connect(**cfg)
 
     #     return self._client
-
-    def _reset(self):
-        with self._lock:
-            if self._client is not None:
-                self._client = None
 
     @property
     def sftp(self):

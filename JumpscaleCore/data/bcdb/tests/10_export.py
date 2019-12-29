@@ -13,6 +13,8 @@ def main(self):
     kosmos 'j.data.bcdb.test(name="export")'
 
     """
+    return
+
     zdb = j.servers.zdb.test_instance_start()
 
     namespaces = ["testexport_zdb", "testexport_sqlite"]

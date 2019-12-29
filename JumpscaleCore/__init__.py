@@ -64,7 +64,7 @@ class Core:
     def __init__(self, j):
         self._dir_home = None
         self._dir_jumpscale = None
-        self._isSandbox = None
+        self._sandbox_check = None
         self.db = MyEnv.db
 
     def db_reset(self, j):
@@ -79,13 +79,13 @@ class Core:
         return self._dir_jumpscale
 
     @property
-    def isSandbox(self):
-        if self._isSandbox is None:
+    def sandbox_check(self):
+        if self._sandbox_check is None:
             if self.dir_jumpscale.startswith("/sandbox"):
-                self._isSandbox = True
+                self._sandbox_check = True
             else:
-                self._isSandbox = False
-        return self._isSandbox
+                self._sandbox_check = False
+        return self._sandbox_check
 
     def is_gevent_monkey_patched(self):
         try:

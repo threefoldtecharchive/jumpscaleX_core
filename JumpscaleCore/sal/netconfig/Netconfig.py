@@ -15,7 +15,7 @@ class Netconfig(j.baseclasses.object):
 
     def _init(self, **kwargs):
         self.root = j.tools.path.get("/")
-        self._executor = j.tools.executorLocal
+        self._executor = j.tools.executor.local
         self._interfaceChanged = False
 
     def chroot(self, root):

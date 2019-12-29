@@ -119,7 +119,7 @@ class GitClient(j.baseclasses.object):
         # mode
         if not self._repo:
             if not j.sal.fs.exists(self.BASEDIR):
-                j.tools.executorLocal.execute("git config --global http.sslVerify false")
+                j.tools.executor.local.execute("git config --global http.sslVerify false")
                 self._clone()
             else:
                 self._repo = git.Repo(self.BASEDIR)
@@ -180,7 +180,7 @@ class GitClient(j.baseclasses.object):
         False otherwise
         """
         cmd = "cd %s;git status --porcelain" % self.BASEDIR
-        rc, out, err = j.tools.executorLocal.execute(cmd, die=False)
+        rc, out, err = j.tools.executor.local.execute(cmd, die=False)
         for item in out.split("\n"):
             item = item.strip()
             if item == "":
@@ -237,7 +237,7 @@ class GitClient(j.baseclasses.object):
         else:
             cmd = f"cd {path};git --no-pager log --name-status --oneline --reverse {path}"
 
-        rc, out, err = j.tools.executorLocal.execute(cmd)
+        rc, out, err = j.tools.executor.local.execute(cmd)
         # Organize files in lists
         result = []
         to_delete = []
@@ -322,7 +322,7 @@ class GitClient(j.baseclasses.object):
             return False
 
         cmd = "cd %s;git status --porcelain" % self.BASEDIR
-        rc, out, err = j.tools.executorLocal.execute(cmd)
+        rc, out, err = j.tools.executor.local.execute(cmd)
         # Organize files in lists
         for item in out.split("\n"):
             item = item.strip()
@@ -375,7 +375,7 @@ class GitClient(j.baseclasses.object):
         checkout to the sent path
         """
         cmd = "cd %s;git checkout %s" % (self.BASEDIR, path)
-        j.tools.executorLocal.execute(cmd)
+        j.tools.executor.local.execute(cmd)
 
     def addRemoveFiles(self):
         """
@@ -383,7 +383,7 @@ class GitClient(j.baseclasses.object):
         """
         # cmd = 'cd %s;git add -A :/' % self.BASEDIR
         cmd = "cd %s;git add -A ." % self.BASEDIR
-        j.tools.executorLocal.execute(cmd)
+        j.tools.executor.local.execute(cmd)
 
     def addFiles(self, files=[]):
         """
@@ -642,7 +642,7 @@ class GitClient(j.baseclasses.object):
         """
         try:
             cmd = "cd {path}; git describe --tags".format(path=self.BASEDIR)
-            return "tag", j.tools.executorLocal.execute(cmd)[1]
+            return "tag", j.tools.executor.local.execute(cmd)[1]
         except BaseException:
             return "branch", self.repo.head.ref.name
 
@@ -655,7 +655,7 @@ class GitClient(j.baseclasses.object):
         :return: string value of the field name
         """
         cmd = "cd %s; git config %s" % (self.BASEDIR, field)
-        rc, output, _ = j.tools.executorLocal.execute(cmd, die=False)
+        rc, output, _ = j.tools.executor.local.execute(cmd, die=False)
         if rc != 0:
             return ""
 
@@ -675,7 +675,7 @@ class GitClient(j.baseclasses.object):
             flags += "--global "
 
         cmd = "cd %s; git config %s %s %s" % (self.BASEDIR, flags, field, value)
-        j.tools.executorLocal.execute(cmd, die=die)
+        j.tools.executor.local.execute(cmd, die=die)
 
     def unsetConfig(self, field, local=True, die=True):
         """
@@ -690,4 +690,4 @@ class GitClient(j.baseclasses.object):
             flags += "--global "
 
         cmd = "cd %s; git config --unset %s %s" % (self.BASEDIR, flags, field)
-        j.tools.executorLocal.execute(cmd, die=die)
+        j.tools.executor.local.execute(cmd, die=die)

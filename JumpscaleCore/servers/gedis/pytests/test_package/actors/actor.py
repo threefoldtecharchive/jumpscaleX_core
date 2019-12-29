@@ -24,6 +24,11 @@ class actor(j.baseclasses.threebot_actor):
 
     @j.baseclasses.actor_method
     def echo(self, _input, user_session=None):
+        """
+        ```in
+        _input = (S)
+        ```
+        """
         return _input
 
     @j.baseclasses.actor_method

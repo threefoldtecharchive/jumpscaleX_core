@@ -96,8 +96,6 @@ class JSDict(MutableMapping):
 
         out += "{RESET}"
 
-        print(j.core.tools.text_replace(out))
-
-        return ""
+        return j.core.tools.text_replace(out)
 
     __str__ = __repr__
