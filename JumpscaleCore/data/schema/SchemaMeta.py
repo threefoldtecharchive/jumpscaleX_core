@@ -133,18 +133,8 @@ class SchemaMeta(j.baseclasses.object):
             return self._data["url"][url]["props"]
         return {}
 
-    def schema_set(self, schema, save=True):
-        """
-        add the schema to the metadata if it was not done yet
-        :param schema:
-        :return: the model id
-        """
+    def _schema_define(self, url):
         # optimized for speed, will happen quite a lot, need to know when there is change
-
-        props = {}
-        for name, p in schema.props.items():
-            props[name] = [p.nr, p.line]
-
         def find_sid():
             sid_highest = 0
             for urldata in self._data["url"].values():
@@ -153,33 +143,48 @@ class SchemaMeta(j.baseclasses.object):
                     sid_highest = sid
             return sid_highest + 1
 
+        if url not in self._data["url"]:
+            self._data["url"][url] = {"sid": find_sid(), "props": {}, "md5s": []}
+            self.save()
+
+    def schema_set(self, schema, save=True):
+        """
+        add the schema to the metadata if it was not done yet
+        :param schema:
+        :return: the model id
+        """
+        # optimized for speed, will happen quite a lot, need to know when there is change
+
         if not isinstance(schema, j.data.schema.SCHEMA_CLASS):
             raise j.exceptions.Base("schema needs to be of type: j.data.schema.SCHEMA_CLASS")
 
+        props = {}
+        for name, p in schema.props.items():
+            props[name] = [p.nr, p.line]
+
         change = False  # we only want to save is there is a change
 
+        self._schema_define(schema.url)
+        assert schema.url in self._data["url"]
+
         # deal with making sure that the md5 of this schema is registered as the newest one
-        if schema.url in self._data["url"]:
-            urldata = self._data["url"][schema.url]
-            sid = urldata["sid"]
-            md5s = urldata["md5s"]
-            if schema._md5 in md5s:
-                if schema._md5 != md5s[-1]:
-                    # means its not the latest one
-                    change = True
-                    md5s.pop(md5s.index(schema._md5))
-                    md5s.append(schema._md5)  # now at end of list again
-                    d = {"sid": sid, "md5s": md5s, "props": props}
-            else:
-                # is a new one, not in list yet
+
+        urldata = self._data["url"][schema.url]
+        md5s = urldata["md5s"]
+        if schema._md5 in md5s:
+            if schema._md5 != md5s[-1]:
+                # means its not the latest one
                 change = True
-                md5s.append(schema._md5)
-                d = {"sid": sid, "md5s": md5s, "props": props}
+                md5s.pop(md5s.index(schema._md5))
+                md5s.append(schema._md5)  # now at end of list again
+                urldata["md5s"] = md5s
         else:
+            # is a new one, not in list yet
             change = True
-            d = {"sid": find_sid(), "md5s": [schema._md5], "props": props}
+            urldata["md5s"].append(schema._md5)
+
         if change:
-            self._data["url"][schema.url] = d
+            self._data["url"][schema.url] = urldata
 
         change2 = False
         if schema._md5 not in self._data["md5"]:
@@ -223,8 +228,6 @@ class SchemaMeta(j.baseclasses.object):
 
     def _data_md5_get(self, url):
         d = self._data_url_get(url)
-        if "md5s" not in d:
-            j.shell()
         if len(d["md5s"]) == 0:
             raise j.exceptions.Input("url had no md5:%s" % url)
         md5 = d["md5s"][-1]
@@ -235,15 +238,10 @@ class SchemaMeta(j.baseclasses.object):
     def _data_url_exists(self, url):
         return url in self._data["url"]
 
-    def _data_url_get(self, url, die=True):
+    def _data_url_get(self, url):
         if url not in self._data["url"]:
-            if die:
-                raise j.exceptions.Input("cannot find url schema meta:%s" % url)
-            d = {}
-        else:
-            d = self._data["url"][url]
-        if "props" not in d:
-            d["props"] = {}
+            self._schema_define(url=url)
+        d = self._data["url"][url]
         return d
 
     def _sid_from_url(self, url):

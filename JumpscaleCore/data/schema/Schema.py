@@ -184,7 +184,7 @@ class Schema(j.baseclasses.object):
     @property
     def _meta_url(self):
         assert self.url
-        return j.data.schema.meta._data_url_get(self.url, die=False)
+        return j.data.schema.meta._data_url_get(self.url)
 
     def _property_get_from_line(self, line, nr=None):
         assert self.url
@@ -202,10 +202,12 @@ class Schema(j.baseclasses.object):
         key = key.replace("*", "").replace("&", "").lower().strip()
 
         if not nr:
-            if key in self._meta_url["props"]:
-                nr, line_old = self._meta_url["props"][key]
+            metadata = self._meta_url["props"]
+            if key in metadata:
+                nr, line_old = metadata[key]
             else:
                 nr = len(self._meta_url["props"])
+                metadata[key] = [nr, line]
 
         line_original = copy(line)
         propname, line = line.split("=", 1)
