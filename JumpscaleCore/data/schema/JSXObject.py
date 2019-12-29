@@ -209,7 +209,12 @@ class JSXObject(j.baseclasses.object):
 
     def stop(self):
         # will be called when BCDB stops, if changes will save
-        self.save()
+        try:
+            self.save()
+        except:
+            # can fail because obj empty and index cannot be saved because of it, need to do this better
+            pass
+        pass  # TODO: for later
 
     def _check(self):
         self._ddict

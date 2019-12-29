@@ -97,7 +97,7 @@ class BCDBModel(j.baseclasses.object):
         if action == "schema_change":
             for obj in self.instances:
                 # make sure we attach the right model to the obj
-                obj._model = self.bcdb.model_get(url=obj.schema.url)
+                obj._model = self.bcdb.model_get(url=obj._schema.url)
         if action == "stop":
             for obj in self.instances:
                 obj.stop()

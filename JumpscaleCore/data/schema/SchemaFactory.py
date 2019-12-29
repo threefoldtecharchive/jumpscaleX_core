@@ -166,6 +166,19 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         if len(res) > 0:
             return res[0]
 
+    def _schema_text_rewrite_url(self, url, schema_text):
+        assert url
+        schema_text = j.core.tools.text_strip(schema_text)
+        if "@url" in schema_text:
+            out = ""
+            for line in schema_text.split("\n"):
+                if "@url" in line:
+                    continue
+                out += "%s\n" % line
+            schema_text = out
+        schema_text = "@url = %s\n%s" % (url, schema_text)
+        return schema_text
+
     def _get_from_text_single(self, schema_text, url=None, extrafields={}):
         """
         can only be 1 schema
@@ -174,6 +187,9 @@ class SchemaFactory(j.baseclasses.factory_testtools):
             Schema
         """
         assert isinstance(schema_text, str)
+
+        if url:
+            schema_text = self._schema_text_rewrite_url(url, schema_text)
 
         md5 = self._md5(schema_text)
 
