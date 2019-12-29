@@ -57,9 +57,6 @@ class Schema(j.baseclasses.object):
         self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
 
         # next is the work we need to do for adding the extra fields and make sure they are always added
-        if self.url == "jumpscale.example.ship.1":
-            j.debug()
-
         for prop_name, data in self._meta_url["props"].items():
             if prop_name not in self.props:
                 prop_nr, prop_line = data

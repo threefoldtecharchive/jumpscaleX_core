@@ -125,9 +125,9 @@ class BCDBModel(j.baseclasses.object):
         tpath = "%s/templates/BCDBModelIndexClass.py" % j.data.bcdb._dirpath
         name = "bcdbindex_%s_%s" % (self.schema.url, self.schema._md5)
         name = name.replace(".", "_")
-        if self.schema.url == "jumpscale.example.car.1":
-            j.shell()
-            w
+        # if self.schema.url == "jumpscale.example.car.1":
+        #     j.shell()
+        #     w
         myclass = j.tools.jinja2.code_python_render(
             name=name,
             path=tpath,
