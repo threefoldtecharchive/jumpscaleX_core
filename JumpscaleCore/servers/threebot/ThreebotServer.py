@@ -376,7 +376,8 @@ class ThreeBotServer(j.baseclasses.object_config):
         j.servers.myjobs.workers._model.index_rebuild()
         j.servers.myjobs.jobs._model.index_rebuild()
 
-        j.servers.myjobs.workers_subprocess_start(2, in3bot=True)
+        j.servers.myjobs.workers_tmux_start(2, in3bot=True)
+        # j.servers.myjobs.workers_subprocess_start(2, in3bot=True)
 
     def _packages_core_init(self):
 

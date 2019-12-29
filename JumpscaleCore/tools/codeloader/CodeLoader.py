@@ -68,24 +68,25 @@ class CodeLoader(j.baseclasses.object):
         if path is not None and not j.sal.fs.exists(path):
             raise j.exceptions.Base("path:%s does not exist" % path)
 
+        path = j.core.tools.text_replace(path)
         if md5 is None:
             txt = j.sal.fs.readFile(path)
             md5 = j.data.hash.md5_string(txt)
 
         if reload or md5 not in self._hash_to_codeobj:
-
             try:
                 m = imp.load_source(name=md5, pathname=path)
             except Exception as e:
                 out = j.sal.fs.readFile(path)
                 msg = "SCRIPT CONTENT:\n%s\n\n" % out
                 msg += "---------------------------------\n"
-                msg += "COULD not load source:%s\n" % path
+                msg += "COULD not load:%s\n" % path
                 msg += "ERROR WAS:%s\n\n" % e
                 raise j.exceptions.Base(msg)
             try:
                 obj = eval("m.%s" % obj_key)
             except Exception as e:
+                j.shell()
                 out = j.sal.fs.readFile(path)
                 msg = "SCRIPT CONTENT:\n%s\n\n" % out
                 msg += "---------------------------------\n"
