@@ -9,7 +9,7 @@ locations_threebot = []
 
 def _get_all_tests(locations, path):
 
-    location_search = "__jslocation__"
+    location_search = "__jslocation_"
     for file_path in j.sal.fs.listFilesInDir(
         path=j.core.tools.text_replace(path), filter="*Factory.py", recursive=True
     ):

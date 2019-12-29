@@ -1,6 +1,7 @@
 from .JSClass import JSClass
 
 # from .JSGroup import JSGroup
+from Jumpscale import j
 import os
 import re
 from pathlib import Path
