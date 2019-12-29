@@ -66,6 +66,7 @@ class JSFactory(JSBase, Attr):
 
 
         """
+        name = name.replace("__", ".")
         child = self._validate_child(name)
         if not child:
             if hasattr(self.__class__, "_CHILDCLASS") and needexist is False:

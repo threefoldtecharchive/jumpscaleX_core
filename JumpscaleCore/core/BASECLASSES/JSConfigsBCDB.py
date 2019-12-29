@@ -104,6 +104,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         :param name: of the object
         """
+        name = name.replace("__", ".")
         if not name:
             raise j.exceptions.Input("name needs to be specified on a config mgmt obj")
 

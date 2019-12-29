@@ -22,6 +22,14 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
         path = j.clients.git.getContentPathFromURLorPath(giturl, branch=branch)
         self.add(path=path)
 
+    @property
+    def names(self):
+        res = []
+        for x in self.find():
+            res.append(x.name)
+        res.sort()
+        return res
+
     def add(self, path=None):
         """
         scan a path for package.toml and add all found packages

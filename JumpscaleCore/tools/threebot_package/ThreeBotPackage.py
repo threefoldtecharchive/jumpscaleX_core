@@ -89,38 +89,46 @@ class ThreeBotPackage(JSConfigBase):
         return "\n        ".join(lines)
 
     def load(self):
-        if not "bcdb" in j.threebot.__dict__:
-            # means we are not in a threebot server, should not allow the following to happen
-            raise j.exceptions.Base("cannot use threebot package data model from process out of threebot")
 
         if self._init_ is False:
 
-            # Parent root directory for packages needed to be in sys.path
-            # in order to be able to import file properly inside packages
-            packages_root = j.sal.fs.getParent(self.path)
-            if not packages_root in sys.path:
-                sys.path.append(packages_root)
+            if not "bcdb" in j.threebot.__dict__:
+                self._log_info("install in 3bot package:%s" % self)
+                j.servers.threebot.require_threebotserver()
+                pm = j.clients.gedis.get(name="packagemanager", port=8901, package_name="zerobot.packagemanager")
+                self.package_manager_3bot = pm.actors.package_manager
+                self.package_manager_3bot.package_add(path=self.path)
+                # # means we are not in a threebot server
+                return
+            else:
+                self.package_manager_3bot = None
 
-            self._path_package = "%s/package.py" % (self.path)
+                # Parent root directory for packages needed to be in sys.path
+                # in order to be able to import file properly inside packages
+                packages_root = j.sal.fs.getParent(self.path)
+                if not packages_root in sys.path:
+                    sys.path.append(packages_root)
 
-            if not j.sal.fs.exists(self._path_package):
-                raise j.exceptions.Input(
-                    "cannot find package.py in the package directory", data={"path": self._path_package}
-                )
+                self._path_package = "%s/package.py" % (self.path)
 
-            klass = j.tools.codeloader.load(obj_key="Package", path=self._path_package, reload=False)
-            self._package_author = klass(package=self)
+                if not j.sal.fs.exists(self._path_package):
+                    raise j.exceptions.Input(
+                        "cannot find package.py in the package directory", data={"path": self._path_package}
+                    )
 
-            if j.sal.fs.exists(self.path + "/html"):
-                self._web_load("html")
-            elif j.sal.fs.exists(self.path + "/frontend"):
-                self._web_load("frontend")
+                klass = j.tools.codeloader.load(obj_key="Package", path=self._path_package, reload=False)
+                self._package_author = klass(package=self)
 
-            # if j.sal.fs.exists(self.path + "/bottle"):
-            #     # load webserver
-            #     j.shell()
+                if j.sal.fs.exists(self.path + "/html"):
+                    self._web_load("html")
+                elif j.sal.fs.exists(self.path + "/frontend"):
+                    self._web_load("frontend")
 
-            self.load_wiki(reset=True)
+                # if j.sal.fs.exists(self.path + "/bottle"):
+                #     # load webserver
+                #     j.shell()
+
+                self.load_wiki(reset=True)
 
         self._init_ = True
 
@@ -313,49 +321,70 @@ class ThreeBotPackage(JSConfigBase):
 
     def install(self):
         self.load()
-        if self.status != "config":  # make sure we load the config is not that state yet
-            self.config_load()
-        self._package_author.prepare()
-        if self.status != "installed":
-            self.status = "installed"
-            self.save()
+        if self.package_manager_3bot:
+            return
+        else:
+            if self.status != "config":  # make sure we load the config is not that state yet
+                self.config_load()
+            self._package_author.prepare()
+            if self.status != "installed":
+                self.status = "installed"
+                self.save()
 
     def start(self):
-        if self.status != "installed":
-            self.install()
         self.load()
-        # should be merged into load method later on
-        self._package_author.start()
-        self.running = True
-        self.save()
+        if self.package_manager_3bot:
+            self.package_manager_3bot.package_start(name=self.name)
+        else:
+            if self.status != "installed":
+                self.install()
+            self._package_author.start()
+            self.running = True
+            self.save()
 
     def stop(self):
         self.load()
-        self._package_author.stop()
-        self.running = False
-        self.save()
+        if self.package_manager_3bot:
+            self.package_manager_3bot.package_stop(name=self.name)
+        else:
+            self._package_author.stop()
+            self.running = False
+            self.save()
 
     def uninstall(self):
         self.load()
         self.stop()
-        if self.status != "config":
-            self.status = "config"
-        self._package_author.uninstall()
-        self.save()
+        self.load()
+        if self.package_manager_3bot:
+            self.package_manager_3bot.package_delete(name=self.name)
+        else:
+            if self.status != "config":
+                self.status = "config"
+            self._package_author.uninstall()
+            self.save()
 
     def disable(self):
         self.load()
         self.stop()
-        if self.status != "disabled":
-            self.status = "disabled"
-        self.save()
+        if self.package_manager_3bot:
+            self.package_manager_3bot.package_disable(name=self.name)
+        else:
+            if self.status != "disabled":
+                self.status = "disabled"
+            self.save()
 
     def enable(self):
         self.load()
-        if self.status != "init":
-            self.status = "init"
-        self.install()
+        if self.package_manager_3bot:
+            self.package_manager_3bot.package_enable(name=self.name)
+        else:
+            if self.status != "init":
+                self.status = "init"
+            self.install()
 
     def prepare(self):
+        if self.package_manager_3bot:
+            self.start()
+            return
         self.load()
         self._package_author.prepare()

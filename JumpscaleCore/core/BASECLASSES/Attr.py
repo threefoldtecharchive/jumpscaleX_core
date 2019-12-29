@@ -10,7 +10,7 @@ class Attr:
 
     def __getattr__(self, name):
         # if private or non child then just return
-
+        name = name.replace("__", ".")
         if not name.startswith("_"):
 
             child = self._validate_child(name)
