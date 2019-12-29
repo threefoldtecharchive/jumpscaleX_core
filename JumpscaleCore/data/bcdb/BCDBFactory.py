@@ -33,7 +33,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
     @property
     def _master(self):
-        if self.__master == None:
+        if self.__master is None:
             # see if a threebot starting
             if not j.core.db:
                 # no choice but to say we are master
@@ -45,7 +45,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                     # the server did answer, lets now wait till the threebot.starting is gone
                     timeout = j.data.time.epoch + 15
                     while j.data.time.epoch < timeout:
-                        if j.core.db.get("threebot.starting") == None:
+                        if j.core.db.get("threebot.starting") is None:
                             self.__master = False
                             return (
                                 self.__master
@@ -75,28 +75,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     def config_reload(self):
         self._loaded = False
         self._load()
-
-    def unlock(self):
-        base_path = j.core.tools.text_replace("{DIR_BASE}/var/bcdb/")
-        instances = []
-        if j.sal.fs.exists(base_path):
-            instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
-            for instance in instances:
-                lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
-                if j.sal.fs.exists(lock_path):
-                    j.sal.fs.remove(lock_path)
-                    self._log_info(f"BCDB instance {instance} unlocked")
-
-    def lock(self):
-        base_path = j.core.tools.text_replace("{DIR_BASE}/var/bcdb/")
-        instances = []
-        instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
-        for instance in instances:
-            lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
-            if not j.sal.fs.exists(lock_path):
-                j.sal.fs.touch(lock_path)
-                self._log_info(f"BCDB instance {instance} unlocked")
-        self.__master = True
 
     def _load(self):
 
@@ -142,8 +120,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             s = j.servers.sonic.get(name="threebot")
             s.stop()
 
-        assert j.sal.process.checkProcessRunning("zdb") == False
-        assert j.sal.process.checkProcessRunning("sonic") == False
+        assert j.sal.process.checkProcessRunning("zdb") is False
+        assert j.sal.process.checkProcessRunning("sonic") is False
 
     def threebot_zdb_sonic_start(self, reset=False):
         """
@@ -162,11 +140,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             s = j.servers.sonic.get(name="threebot")
             s.destroy()
 
-        if j.sal.nettools.tcpPortConnectionTest("localhost", 9900) == False:
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 9900) is False:
             z = j.servers.zdb.get(name="threebot", adminsecret_=adminsecret_)
             z.start()
 
-        if j.sal.nettools.tcpPortConnectionTest("localhost", 1491) == False:
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 1491) is False:
             s = j.servers.sonic.get(name="threebot", port=1491, adminsecret_=adminsecret_)
             s.start()
 
@@ -182,7 +160,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     def get_test(self, reset=False):
         bcdb = j.data.bcdb.get(name="testbcdb")
         bcdb2 = j.data.bcdb._instances["testbcdb"]
-        assert bcdb2.storclient == None
+        assert bcdb2.storclient is None
         return bcdb
 
     @property

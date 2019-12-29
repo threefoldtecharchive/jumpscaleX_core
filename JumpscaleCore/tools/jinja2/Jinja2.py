@@ -43,7 +43,7 @@ class Jinja2(j.baseclasses.object):
 
         md5 = None
         if path is not None:
-            if reload == False and path in self._path_to_contenthash:
+            if reload is False and path in self._path_to_contenthash:
                 md5 = self._path_to_contenthash[path]
             else:
                 text = j.sal.fs.readFile(path)

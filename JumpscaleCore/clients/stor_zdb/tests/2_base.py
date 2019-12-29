@@ -60,7 +60,7 @@ def main(self):
     assert cl.exists(id2)
 
     cl.delete(id2)
-    assert cl.exists(id2) == False
+    assert cl.exists(id2) is False
 
     cl.flush()
     assert cl.list() == []

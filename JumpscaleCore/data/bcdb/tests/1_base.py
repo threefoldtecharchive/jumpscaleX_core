@@ -145,7 +145,7 @@ def main(self):
         assert result == res
 
         # assert db_model.index.sql._id_exists(1)
-        # assert db_model.index.sql._id_exists(10) == False  #NEEDS TO BE DEBUGGED & IMPROVED
+        # assert db_model.index.sql._id_exists(10) is False  #NEEDS TO BE DEBUGGED & IMPROVED
 
         assert db_model.bcdb.name == "test"
 

@@ -240,7 +240,7 @@ class SchemaMeta(j.baseclasses.object):
         return d
 
     def _sid_from_url(self, url):
-        if not url in self._data["url"]:
+        if url not in self._data["url"]:
             raise j.exceptions.Input("cannot find url in metadata for schema meta :'%s'" % url)
         sid, md5s = self._data["url"][url]
         return sid

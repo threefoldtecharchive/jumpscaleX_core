@@ -49,7 +49,7 @@ class GIPCProcess(JSConfigClient):
 
     def wait(self, die=True):
         while True:
-            if self.greenlet.dead == False and self.process.is_alive():
+            if self.greenlet.dead is False and self.process.is_alive():
                 time.sleep(0.05)
             else:
                 if self.greenlet.dead:

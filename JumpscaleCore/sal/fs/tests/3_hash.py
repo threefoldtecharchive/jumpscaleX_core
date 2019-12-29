@@ -22,10 +22,10 @@ def main(self):
 
     j.sal.fs.createDir(test_path)
 
-    assert j.sal.fs.exists(test_path) == True
+    assert j.sal.fs.exists(test_path) is True
 
     j.sal.fs.writeFile(test_path + file_path, file_content)
-    assert j.sal.fs.isFile(test_path + file_path) == True
+    assert j.sal.fs.isFile(test_path + file_path) is True
     hash_dir = j.sal.fs.getFolderMD5sum(test_path)
     print("Dir hash:%s" % hash_dir)
     hash_file = j.sal.fs.md5sum(test_path + file_path)
@@ -36,8 +36,8 @@ def main(self):
 
     # let's move the directory to another place the hash should be the same
     j.sal.fs.moveDir(test_path, moved_path)
-    assert j.sal.fs.exists(moved_path) == True
-    assert j.sal.fs.isFile(moved_path + file_path) == True
+    assert j.sal.fs.exists(moved_path) is True
+    assert j.sal.fs.isFile(moved_path + file_path) is True
     hash_moved_file = j.sal.fs.md5sum(moved_path + file_path)
     hash_moved_dir = j.sal.fs.getFolderMD5sum(moved_path)
     assert hash_dir == hash_moved_dir
@@ -55,7 +55,7 @@ def main(self):
 
     # we remove the file to replace it with a file with same name but different content
     j.sal.fs.remove(test_path + file2_path)
-    assert j.sal.fs.exists(test_path + file2_path) == False
+    assert j.sal.fs.exists(test_path + file2_path) is False
     j.sal.fs.writeFile(test_path + file2_path, file_content + hash_file)
     hash_dir_3 = j.sal.fs.getFolderMD5sum(test_path)
     assert hash_dir != hash_dir_2 != hash_dir_3

@@ -51,13 +51,13 @@ class JSBase:
 
     @property
     def _properties(self):
-        if self._properties_ == None:  # need to be specific None
+        if self._properties_ is None:  # need to be specific None
             self._inspect()
         return self._properties_
 
     @property
     def _methods(self):
-        if self._methods_ == None:
+        if self._methods_ is None:
             self._inspect()
         return self._methods_
 

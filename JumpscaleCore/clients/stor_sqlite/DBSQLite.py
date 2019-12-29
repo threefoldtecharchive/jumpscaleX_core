@@ -66,7 +66,7 @@ class DBSQLite(j.baseclasses.object):
         return {"entries": self.count}
 
     def set(self, data, key=None):
-        if key == None:
+        if key is None:
             res = self._table_model(value=data)
             res.save()
             return res.id - 1

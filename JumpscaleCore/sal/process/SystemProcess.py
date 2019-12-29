@@ -42,7 +42,7 @@ class SystemProcess(JSBASE):
 
     @property
     def platform_is_unix(self):
-        if self._isunix == None:
+        if self._isunix is None:
             if "posix" in sys.builtin_module_names:
                 self._isunix = True
             else:
@@ -134,7 +134,7 @@ class SystemProcess(JSBASE):
         same for errMethod
         resout&reserr are lists with output/error
         return rc, resout, reserr
-        @param captureOutput, if that one == False then will not populate resout/reserr
+        @param captureOutput, if that one is False then will not populate resout/reserr
         @param outMethod,errMethod if None then will print to out
         """
         # TODO: *2 check if this works on windows
@@ -225,7 +225,7 @@ class SystemProcess(JSBASE):
         )
 
         # TODO: *1 if I close this then later on there is problem, says loop is closed
-        # # if loop.is_closed() == False:
+        # # if loop.is_closed() is False:
         # print("STOP")
         # # executor.shutdown(wait=True)
         # loop.stop()

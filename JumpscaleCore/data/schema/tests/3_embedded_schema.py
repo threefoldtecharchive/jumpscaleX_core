@@ -29,7 +29,7 @@ def main(self):
         assert o._changed
         assert o.x == "2"
 
-        assert o.cmd._changed == False
+        assert o.cmd._changed is False
         o.cmd.name = "a"
         assert o.cmd._changed
         assert o.cmd.name == "a"

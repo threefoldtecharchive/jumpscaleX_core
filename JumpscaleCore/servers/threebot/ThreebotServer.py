@@ -243,7 +243,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             assert redis_server.secret == adminsecret_
             self.rack_server.add("bcdb_system_redis", redis_server.gevent_server)
 
-            if restart or j.sal.nettools.tcpPortConnectionTest("localhost", 80) == False:
+            if restart or j.sal.nettools.tcpPortConnectionTest("localhost", 80) is False:
                 self._log_info("OPENRESTY START")
                 if restart:
                     self.openresty_server.stop()

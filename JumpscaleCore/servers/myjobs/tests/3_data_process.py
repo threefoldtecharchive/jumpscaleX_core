@@ -37,7 +37,7 @@ def main(self, count=20):
     assert len(r) == count
 
     # default autosave is on and needs to be one
-    assert job_sch._data._autosave == True
+    assert job_sch._data._autosave is True
 
     job_sch.state = "RUNNING"
 
@@ -51,7 +51,7 @@ def main(self, count=20):
 
     # change it back and is also test for autosave
     job_sch.state = "NEW"
-    assert job_sch._data._autosave == True
+    assert job_sch._data._autosave is True
     r = [(item.id, item.state) for item in Jobs.select().where(Jobs.state == "NEW")]
     assert len(r) == count
 

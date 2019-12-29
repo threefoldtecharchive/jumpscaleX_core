@@ -378,7 +378,7 @@ class Schema(j.baseclasses.object):
                 obj = self.objclass(schema=self, capnpdata=capnpdata, model=model)
             elif datadict and datadict != {}:
                 obj = self.objclass(schema=self, datadict=datadict, model=model)
-            elif capnpdata is None and serializeddata is None and datadict == None:
+            elif capnpdata is None and serializeddata is None and datadict is None:
                 obj = self.objclass(schema=self, model=model)
             else:
                 raise j.exceptions.Base("wrong arguments to new on schema")

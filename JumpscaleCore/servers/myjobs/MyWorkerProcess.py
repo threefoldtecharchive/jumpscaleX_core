@@ -137,7 +137,7 @@ class MyWorkerProcess(j.baseclasses.object):
             if self.worker_obj.halt or res == b"halt":
                 return self.stop()
 
-            if res == None:
+            if res is None:
                 if j.data.time.epoch > last_info_push + 20:
                     # print(self.worker_obj)
                     # self._log_info("queue request timeout, no data, continue", data=self.worker_obj)
@@ -182,7 +182,7 @@ class MyWorkerProcess(j.baseclasses.object):
                     self.worker_obj.last_update = j.data.time.epoch
                     self.worker_obj.current_job = jobid
 
-                    if job == None:
+                    if job is None:
                         self._log_error("ERROR: job:%s not found" % jobid)
                         j.shell()
                     else:

@@ -93,7 +93,7 @@ class ThreeBotPackage(JSConfigBase):
             # means we are not in a threebot server, should not allow the following to happen
             raise j.exceptions.Base("cannot use threebot package data model from process out of threebot")
 
-        if self._init_ == False:
+        if self._init_ is False:
 
             # Parent root directory for packages needed to be in sys.path
             # in order to be able to import file properly inside packages

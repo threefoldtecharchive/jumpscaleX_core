@@ -229,7 +229,7 @@ class GitClient(j.baseclasses.object):
 
         """
         revision = None
-        if not from_revision and all == False:
+        if not from_revision and all is False:
             from_revision = self.config_3git_get("revision_last_processed")
         path = path or self.BASEDIR
         if from_revision:

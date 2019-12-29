@@ -32,7 +32,7 @@ class Monitors:
         res = []
         ok = 0
         for port in cmd.monitor.ports:
-            if j.sal.nettools.tcpPortConnectionTest(cmd.runtime.ipaddr, port=port) == False:
+            if j.sal.nettools.tcpPortConnectionTest(cmd.runtime.ipaddr, port=port) is False:
                 res.append("could not tcp reach %s:%s [tcp_check]" % (ipaddr, port))
             else:
                 ok += 1
