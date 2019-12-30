@@ -147,7 +147,14 @@ class MyWorkerProcess(j.baseclasses.object):
             else:
                 # self._log_debug("queue has data")
                 jobid = int(res)
-                job = self.model_job.get(jobid)
+                try:
+                    job = self.model_job.get(jobid)
+                except Exception as e:
+                    if not self.model_job.exists(jobid):
+                        self._log_warning("job with:%s did not exist" % jobid)
+                        continue
+                    raise
+
                 self.job = job
                 job.time_start = j.data.time.epoch
                 skip = False

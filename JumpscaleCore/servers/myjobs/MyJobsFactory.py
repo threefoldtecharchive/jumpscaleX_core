@@ -35,7 +35,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self._bcdb = self._bcdb_selector()
         if not j.threebot.active:
             j.servers.threebot.require_threebotserver()
-        self._bcdb._master = j.threebot.active
+        j.data.bcdb._master_set(j.threebot.active)
         self.model_action = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.action)
         j.clients.bcdbmodel.get(name="myjobs", schema=schemas.worker)
         j.clients.bcdbmodel.get(name="myjobs", schema=schemas.job)
@@ -74,7 +74,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             return True, o
 
     def _bcdb_selector(self):
-        # assert j.data.bcdb.exists("myjobs")
         return j.data.bcdb.get("myjobs")
 
     @property
