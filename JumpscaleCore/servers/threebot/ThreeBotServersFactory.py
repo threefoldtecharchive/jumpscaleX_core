@@ -118,7 +118,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         kosmos -p 'j.servers.threebot.local_start_3bot()'
         """
         packages = ["{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform"]
-        return self.local_start_default(background=background, packages=packages, reload=reload)
+        return self.start(background=background, packages=packages, reload=reload)
 
     def local_start_explorer(self, background=False, reload=False):
         """
@@ -133,7 +133,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/directory",
             f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/workloads",
         ]
-        return self.local_start_default(background=background, packages=packages, reload=reload)
+        return self.start(background=background, packages=packages, reload=reload)
 
     def test(self, name=None, restart=False):
         """
@@ -144,7 +144,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         packages = ["threebot.blog"]
 
-        cl = j.servers.threebot.local_start_default(packages=packages)
+        cl = j.servers.threebot.start(packages=packages)
 
         # if fileserver:
         #     gedis_client.actors.package_manager.package_add(
@@ -198,7 +198,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         assert j.sal.nettools.waitConnectionTest(docker.config.ipaddr, 22, timeout=30)
 
         self._log_info("start the threebot server")
-        docker.sshexec("source /sandbox/env.sh;kosmos 'j.servers.threebot.local_start_default(packages_add=True)'")
+        docker.sshexec("source /sandbox/env.sh;kosmos 'j.servers.threebot.start(packages_add=True)'")
         j.shell()
 
     def docker_environment_multi(self):

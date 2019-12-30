@@ -460,7 +460,7 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
         threebot_client.reload()
     except (j.exceptions.Base, redis.ConnectionError):
         print(
-            "Threebot server must be running, please start a local threebot first using `kosmos -p 'j.servers.threebot.local_start_default()'`"
+            "Threebot server must be running, please start a local threebot first using `kosmos -p 'j.servers.threebot.start()'`"
         )
         return
 
@@ -798,11 +798,9 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
 
         if not docker.config.done_get("start_cmd"):
             if web:
-                docker.sshexec(
-                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_default()';jsx wiki-load"
-                )
+                docker.sshexec("source /sandbox/env.sh; kosmos -p 'j.servers.threebot.start()';jsx wiki-load")
             else:
-                start_cmd = "j.servers.threebot.local_start_default()"
+                start_cmd = "j.servers.threebot.start()"
                 docker.jsxexec(start_cmd)
         docker.config.done_set("start_cmd")
         if not docker.config.done_get("config"):
@@ -912,7 +910,7 @@ from Jumpscale import j
 
 
 class {capitalized_name}Factory(j.baseclasses.threebot_factory):
-    __jslocation__ = "j.threebot.package.{name}"
+    __jslocation__ = "j.threebot_factories.package.{name}"
 
     """
     with open(factory_py_path, "w") as f:

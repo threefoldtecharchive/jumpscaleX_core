@@ -37,7 +37,7 @@ def webhook_github():
 
 
 class WebhooksFactory(j.baseclasses.threebot_factory):
-    __jslocation__ = "j.threebot.package.webhooks"
+    __jslocation__ = "j.threebot_factories.package.webhooks"
 
     def get_app(self):
         return app

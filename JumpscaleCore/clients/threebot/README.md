@@ -5,7 +5,7 @@
 - we need threebot server running and a package to test with
 
 ```python
-cl = j.servers.threebot.local_start_default(web=True)
+cl = j.servers.threebot.start(web=True)
 ```
 
 - Create the `default` instance from threebot.me

@@ -6,7 +6,7 @@ Part of the core packages in threebot and defined [here](https://github.com/thre
 
 using the package manager
 ```
-JSX> cl = j.servers.threebot.local_start_default()
+JSX> cl = j.servers.threebot.start()
 JSX> cl.actors.package_manager.package_add("/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot/chat")
 JSX> cl.actors.package_manager.package_start("chat")
 ```

@@ -58,7 +58,7 @@ class BCDBModelClientFactory(j.baseclasses.object):
         :return:
         """
 
-        # j.servers.threebot.local_start_default(background=True)
+        # j.servers.threebot.start(background=True)
 
         b = j.clients.bcdbmodel.get(url="jumpscale.sshclient.1")
 

@@ -40,7 +40,7 @@ class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtoo
 
         if not j.sal.nettools.tcpPortConnectionTest("localhost", 8901):
             # make sure we have a threebot life
-            cl = j.servers.threebot.local_start_default()
+            cl = j.servers.threebot.start()
         else:
             cl = j.clients.gedis.get(name="test", port=8901)
 

@@ -46,14 +46,14 @@ class TestThreebotServer(BaseTest):
             lapis_output, error = self.os_command(" ps -aux | grep -v grep | grep /sandbox/bin/openresty ")
             self.assertTrue(lapis_output.decode(), "can't find openresty server ")
 
-    def test01_local_start_default(self):
+    def test01_start(self):
         """
         - ​Install  threebot server.
         - Get gedis client from it.
         - Check it works correctly.
         """
         self.info("Get gedis client from it .")
-        gedis_client = j.servers.threebot.local_start_default(background=True)
+        gedis_client = j.servers.threebot.start(background=True)
         self.info("Check it works correctly.")
         self.assertTrue(gedis_client.ping())
 
@@ -81,8 +81,8 @@ class TestThreebotServer(BaseTest):
 
     def Test03_start_stop_options(self, server):
         """
-        - Start server. 
-        - Make sure that server started successfully by check zdb and sonic works.   
+        - Start server.
+        - Make sure that server started successfully by check zdb and sonic works.
         - Check that server connection  works successfully.
         - Stop server
         """

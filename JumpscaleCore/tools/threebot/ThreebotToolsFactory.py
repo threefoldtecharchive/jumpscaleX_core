@@ -304,7 +304,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         :return:
         """
 
-        j.servers.threebot.local_start_default()
+        j.servers.threebot.start()
 
         self._add_phonebook()
 

@@ -32,7 +32,7 @@ app = oauth_app.app
 
 
 class Oauth2Factory(j.baseclasses.threebot_factory):
-    __jslocation__ = "j.threebot.package.oauth2"
+    __jslocation__ = "j.threebot_factories.package.oauth2"
 
     def get_app(self):
         return app
