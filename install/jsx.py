@@ -442,13 +442,13 @@ def basebuilder_(dest=None, push=False, delete=True):
 @click.command()
 @click.option("-n", "--name", default=None, help="name of the wiki, you're given name")
 @click.option("-u", "--url", default=None, help="url of the github wiki")
+@click.option("-r", "--reset", default=None, help="reset git revision and process all files")
 @click.option("-f", "--foreground", is_flag=True, help="if you don't want to use the job manager (background jobs)")
-@click.option("-p", "--pull", is_flag=True, help="pull content from github")
-@click.option("--download", is_flag=True, help="download the images")
-def wiki_load(name=None, url=None, foreground=False, pull=False, download=False):
+def wiki_load(name=None, url=None, reset=False, foreground=False):
     # monkey patch for myjobs to start/work properly
     import gevent
     from gevent import monkey
+    from Jumpscale.tools.threegit.ThreeGit import load_wiki
 
     import redis
 
@@ -456,7 +456,7 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
     from Jumpscale import j
 
     try:
-        threebot_client = j.clients.gedis.get("jsx_threebot", namespace="zerobot", port=8901)
+        threebot_client = j.clients.gedis.get("jsx_threebot", package_name="zerobot.webinterface", port=8901)
         threebot_client.ping()
         threebot_client.reload()
     except (j.exceptions.Base, redis.ConnectionError):
@@ -483,15 +483,12 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
 
     if not foreground:
         greenlets = [
-            gevent.spawn(threebot_client.actors.content_wiki.load, wiki_name, wiki_url, pull, download)
-            for wiki_name, wiki_url in wikis
+            gevent.spawn(threebot_client.actors.wiki_content.load, wiki_name, wiki_url) for wiki_name, wiki_url in wikis
         ]
         gevent.wait(greenlets)
     else:
         for wiki_name, wiki_url in wikis:
-            docsite = j.tools.markdowndocs.load(name=wiki_name, path=wiki_url, download=download, pull=pull)
-            docsite.write()
-
+            load_wiki(wiki_name, wiki_url)
     print("You'll find the wiki(s) loaded at https://<container or 3bot hostname>/wiki")
 
 
