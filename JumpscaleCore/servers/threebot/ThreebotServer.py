@@ -373,7 +373,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         j.servers.myjobs.model_action.model.index_rebuild()
         j.servers.myjobs.workers._model.index_rebuild()
         j.servers.myjobs.jobs._model.index_rebuild()
-        return
         j.servers.myjobs.workers_tmux_start(2, in3bot=True)
         # j.servers.myjobs.workers_subprocess_start(2, in3bot=True)
         self._log_info("start workers done")
