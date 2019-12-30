@@ -1,18 +1,9 @@
 import sys
 
 from Jumpscale import j
+from Jumpscale.tools.threegit.ThreeGit import load_wiki
 
 JSConfigBase = j.baseclasses.object_config
-
-
-def load_wiki(wiki_name=None, wiki_path=None, reset=False):
-    """we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
-    path_dest = f"/docsites/{wiki_name}"
-
-    threegit_tool = j.tools.threegit.get(name=wiki_name, path_source=wiki_path, path_dest=path_dest)
-    j.sal.fs.createDir(path_dest)
-
-    threegit_tool.process(reset=reset)
 
 
 class ThreeBotPackage(JSConfigBase):

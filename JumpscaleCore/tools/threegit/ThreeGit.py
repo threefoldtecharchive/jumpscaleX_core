@@ -4,6 +4,16 @@ from .Link import Linker
 from .DocSite import DocSite, Doc
 
 
+def load_wiki(wiki_name=None, wiki_path=None, reset=False):
+    """loads any wiki and writes it do /docsites we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
+    path_dest = f"/docsites/{wiki_name}"
+
+    threegit_tool = j.tools.threegit.get(name=wiki_name, path_source=wiki_path, path_dest=path_dest)
+    j.sal.fs.createDir(path_dest)
+
+    threegit_tool.process(reset=reset)
+
+
 class ThreeGit(j.baseclasses.object_config):
     """
     To get wikis load faster by only loading git changes
@@ -92,7 +102,12 @@ class ThreeGit(j.baseclasses.object_config):
                 current_branch = j.clients.git.getCurrentBranch(repo_dest)
                 path = Linker.replace_branch(path, current_branch, host)
             path = self.find_docs_path(j.clients.git.getContentPathFromURLorPath(path, pull=pull), base_path)
-        ds = DocSite(path=path, name=name, dest=dest, threegit=self)
+
+        sonic_server = j.servers.sonic.get(name="threebot")
+        sonic_cl = j.clients.sonic.get(
+            "threegit", password=sonic_server.adminsecret_, host=sonic_server.host, port=sonic_server.port
+        )
+        ds = DocSite(path=path, name=name, dest=dest, threegit=self, sonic_client=sonic_cl)
         self.docsites[ds.name] = ds
         return self.docsites[ds.name]
 
