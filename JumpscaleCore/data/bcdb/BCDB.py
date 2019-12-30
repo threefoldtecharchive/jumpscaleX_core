@@ -8,21 +8,16 @@ from Jumpscale.clients.stor_rdb.RDBClient import RDBClient
 from Jumpscale.clients.stor_sqlite.DBSQLite import DBSQLite
 from .BCDBModel import BCDBModel
 
-
-# from .BCDBDecorator import *
 from Jumpscale import j
 import sys
 
-JSBASE = j.baseclasses.object
-
 
 class BCDB(j.baseclasses.object):
-    def _init(self, name=None, storclient=None, reset=False):
+    def _init(self, name=None, storclient=None, reset=False, readonly=False):
         """
         :param name: name for the BCDB
         :param storclient: if storclient is None then will use sqlite db
         """
-
         if name is None:
             raise j.exceptions.Base("name needs to be specified")
 
@@ -54,7 +49,9 @@ class BCDB(j.baseclasses.object):
 
         j.sal.fs.createDir(self._data_dir)
 
-        if not j.data.bcbd._master:
+        self.readonly = readonly
+
+        if self.readonly:
             self._log_info("sqlite file is in readonly mode for: '%s'" % self.name)
             self._sqlite_index_dbpath = "file:%s/sqlite_index.db?mode=ro" % self._data_dir
         else:
@@ -72,6 +69,9 @@ class BCDB(j.baseclasses.object):
         # dataprocessor_stop
         atexit.register(self.stop)
         self._log_info("BCDB INIT DONE:%s" % self.name)
+
+    def _is_writable_check(self):
+        return not self.readonly
 
     def stop(self):
         """

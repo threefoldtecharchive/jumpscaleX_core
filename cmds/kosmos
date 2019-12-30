@@ -17,7 +17,6 @@ from Jumpscale import j
 
 # j.tools.bash.get().profile.locale_check()
 
-
 import argparse
 import pudb
 

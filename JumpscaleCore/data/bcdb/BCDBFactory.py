@@ -74,6 +74,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     def _master_set(self, val=True):
         self.__master = val
 
+    @property
+    def _readonly(self):
+        return not self._master
+
     def config_reload(self):
         self._loaded = False
         self._load()
@@ -104,7 +108,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     @property
     def system(self):
         if "system" not in self._children:
-            storclient = j.clients.sqlitedb.client_get(namespace="system")
+            storclient = j.clients.sqlitedb.client_get(namespace="system", readonly=self._readonly)
             self._children["system"] = self._get(name="system", storclient=storclient)
         return self._children["system"]
 
@@ -341,7 +345,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                     zdb_admin.namespace_new(namespace, secret=adminsecret_, maxsize=0, die=True)
                 storclient = j.threebot.servers.core.zdb.client_get(namespace, adminsecret_)
             elif ttype == "sqlite":
-                storclient = j.clients.sqlitedb.client_get(namespace=namespace)
+                storclient = j.clients.sqlitedb.client_get(namespace=namespace, readonly=self._readonly)
             elif ttype == "redis":
                 storclient = j.clients.rdb.client_get(namespace=namespace)
             else:
@@ -416,7 +420,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         :return:
         """
         # DO NOT CHANGE if_not_exist_die NEED TO BE TRUE
-        self._children[name] = BCDB(storclient=storclient, name=name, reset=reset)
+        self._children[name] = BCDB(storclient=storclient, name=name, reset=reset, readonly=self._readonly)
         return self._children[name]
 
     def _config_write(self):

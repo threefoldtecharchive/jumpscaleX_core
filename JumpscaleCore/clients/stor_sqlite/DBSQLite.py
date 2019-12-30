@@ -22,7 +22,7 @@ from Jumpscale import j
 
 
 class DBSQLite(j.baseclasses.object):
-    def _init(self, nsname=None, **kwargs):
+    def _init(self, nsname=None, readonly=False, **kwargs):
 
         assert nsname
         assert "name" not in kwargs
@@ -30,7 +30,13 @@ class DBSQLite(j.baseclasses.object):
 
         self.type = "SDB"
 
-        db_path = j.core.tools.text_replace("{DIR_VAR}/bcdb/%s/sqlite_stor.db" % nsname)
+        self.readonly = readonly
+
+        if readonly:
+            self._log_info("sqlite file is in readonly mode for: '%s'" % nsname)
+            db_path = j.core.tools.text_replace("file:{DIR_VAR}/bcdb/%s/sqlite_stor.db?mode=ro" % nsname)
+        else:
+            db_path = j.core.tools.text_replace("file:{DIR_VAR}/bcdb/%s/sqlite_stor.db" % nsname)
 
         self._dbpath = db_path
 
@@ -40,7 +46,7 @@ class DBSQLite(j.baseclasses.object):
             j.sal.fs.touch(db_path)
             self._log_debug("NEW SQLITEDB in %s" % self._dbpath)
 
-        self.sqlitedb = j.data.peewee.SqliteDatabase(self._dbpath)
+        self.sqlitedb = j.data.peewee.SqliteDatabase(self._dbpath, uri=True, pragmas={"journal_mode": "wal"})
         if self.sqlitedb.is_closed():
             self.sqlitedb.connect()
 

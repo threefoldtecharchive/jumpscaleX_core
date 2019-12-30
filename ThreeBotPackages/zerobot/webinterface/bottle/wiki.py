@@ -17,7 +17,7 @@ def get_metadata(docsite):
 
 
 @app.route("/<threebot_name>/<package_name>/wiki", method=["get"])
-def gedis_http_wiki(threebot_name, package_name):
+def wiki_list(threebot_name, package_name):
     try:
         package = j.tools.threebot_packages.get(name=f"{threebot_name}.{package_name}")
     except j.exceptions.NotFound:
@@ -30,7 +30,7 @@ def gedis_http_wiki(threebot_name, package_name):
 
 
 @app.route("/<threebot_name>/<package_name>/wiki/<wiki_name>", method=["get"])
-def gedis_http_wiki(threebot_name, package_name, wiki_name):
+def wiki_by_name(threebot_name, package_name, wiki_name):
     try:
         package = j.tools.threebot_packages.get(name=f"{threebot_name}.{package_name}")
     except j.exceptions.NotFound:
