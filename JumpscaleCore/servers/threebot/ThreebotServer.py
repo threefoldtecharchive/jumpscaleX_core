@@ -260,6 +260,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             self._maintenance()
 
             if self.state == "init":
+                j.debug()
                 j.tools.threebot_packages.load()
                 self.state = "installed"
 

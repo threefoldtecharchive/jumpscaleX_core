@@ -32,21 +32,21 @@ class DBSQLite(j.baseclasses.object):
 
         self.readonly = readonly
 
+        self._dbpath = j.core.tools.text_replace("{DIR_VAR}/bcdb/%s/sqlite_stor.db" % nsname)
+
         if readonly:
             self._log_info("sqlite file is in readonly mode for: '%s'" % nsname)
-            db_path = j.core.tools.text_replace("file:{DIR_VAR}/bcdb/%s/sqlite_stor.db?mode=ro" % nsname)
+            db_path = j.core.tools.text_replace("file:%s?mode=ro" % self._dbpath)
         else:
-            db_path = j.core.tools.text_replace("file:{DIR_VAR}/bcdb/%s/sqlite_stor.db" % nsname)
-
-        self._dbpath = db_path
+            db_path = j.core.tools.text_replace("file:%s" % self._dbpath)
 
         if j.sal.fs.exists(self._dbpath):
             self._log_debug("EXISTING SQLITEDB in %s" % self._dbpath)
         else:
-            j.sal.fs.touch(db_path)
+            j.sal.fs.touch(self._dbpath)
             self._log_debug("NEW SQLITEDB in %s" % self._dbpath)
 
-        self.sqlitedb = j.data.peewee.SqliteDatabase(self._dbpath, uri=True, pragmas={"journal_mode": "wal"})
+        self.sqlitedb = j.data.peewee.SqliteDatabase(db_path, uri=True, pragmas={"journal_mode": "wal"})
         if self.sqlitedb.is_closed():
             self.sqlitedb.connect()
 
