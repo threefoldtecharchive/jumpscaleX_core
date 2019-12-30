@@ -114,6 +114,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         :param url: url is e.g. jumpscale.bcdb.user.1
         :return: will return the most recent schema, there can be more than 1 schema with same url (changed over time)
         """
+        # print(f"getting {url}")
         if not die:
             if not self.exists(url=url):
                 return None
