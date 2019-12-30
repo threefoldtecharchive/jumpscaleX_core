@@ -32,7 +32,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self._i_am_worker = False
 
     def _init_models(self):
-        self._bcdb = j.data.bcdb.get("myjobs")
+        self._bcdb = self._bcdb_selector()
         if not j.threebot.active:
             j.servers.threebot.require_threebotserver()
         self._bcdb._master = j.threebot.active
@@ -72,6 +72,10 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 return
             o = self.model_action.new()
             return True, o
+
+    def _bcdb_selector(self):
+        # assert j.data.bcdb.exists("myjobs")
+        return j.data.bcdb.get("myjobs")
 
     @property
     def _workers_gipc_count(self):
@@ -120,6 +124,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         w = self.workers.get(name="w%s" % nr)
         w.time_start = j.data.time.epoch
         w.last_update = j.data.time.epoch
+        w.state = "waiting"
         self._log_info("worker in process for tmux: %s" % nr)
         MyWorkerProcess(worker_id=w._id, onetime=False, showout=False)
 

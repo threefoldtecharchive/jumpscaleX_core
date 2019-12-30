@@ -267,15 +267,18 @@ class RedisServer(j.baseclasses.object):
         model = j.clients.bcdbmodel.get(name=bcdb_name, url=url)
         try:
             obj = model.new(data=val)
-            obj.save()
-            assert obj.id
-            if new:
-                response.encode(obj.id)
-            else:
-                response.encode("OK")
-            return
         except Exception as e:
             response.error("cannot set, key:'%s' not supported" % key)
+        try:
+            obj.save()
+            assert obj.id
+        except Exception as e:
+            response.error("cannot set, key:'%s' could not save obj" % key)
+        if new:
+            response.encode(obj.id)
+        else:
+            response.encode("OK")
+        return
 
     def _parse_key(self, key):
         s = key.split(":")
@@ -294,9 +297,12 @@ class RedisServer(j.baseclasses.object):
         model = j.clients.bcdbmodel.get(name=bcdb_name, url=url)
         try:
             obj = model.get(id)
-            response.encode(obj._json)
-        except:
+        except Exception as e:
             response.error("cannot get, key:'%s' not found" % key)
+        try:
+            response.encode(obj._json)
+        except Exception as e:
+            response.error("cannot get, key:'%s' could not decode json" % key)
 
     def delete(self, response, key):
         bcdb_name, url, id = self._parse_key(key)
