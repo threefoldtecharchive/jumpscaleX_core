@@ -260,7 +260,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             self._maintenance()
 
             if self.state == "init":
-                j.debug()
                 j.tools.threebot_packages.load()
                 self.state = "installed"
 
@@ -383,7 +382,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         if not j.tools.threebot_packages.exists(name="zerobot.webinterface"):
             j.tools.threebot_packages.load()
 
-        names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta_ui", "system_bcdb"]
+        names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta_ui"]  # , "system_bcdb"]
         for name in names:
             name2 = f"zerobot.{name}"
             if not j.tools.threebot_packages.exists(name=name2):

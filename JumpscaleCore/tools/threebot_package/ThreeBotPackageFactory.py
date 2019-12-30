@@ -15,7 +15,10 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
     def add_from_git(self, giturl=None, branch=None):
 
         if not giturl:
-            giturl = "https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages"
+            self.add_from_git("https://github.com/threefoldtech/jumpscaleX_core/tree/master/ThreeBotPackages")
+            return self.add_from_git(
+                "https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages"
+            )
         if not branch:
             branch = j.core.myenv.DEFAULT_BRANCH
 
