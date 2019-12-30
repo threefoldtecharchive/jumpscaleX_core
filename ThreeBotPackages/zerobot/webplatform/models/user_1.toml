@@ -1,0 +1,19 @@
+@url = zerobot.webplatform.user.1
+@acl = false
+bot_name** = ""
+public_key** = ""
+referrer** = ""
+location = (O) !zerobot.webplatform.user.location.1
+threebot_keys = (LO) !zerobot.webplatform.user.threebot_keys.1
+wallet_keys = (LO) !zerobot.webplatform.user.wallet_keys.1
+
+@url = zerobot.webplatform.user.location.1
+country = ""
+
+@url = zerobot.webplatform.user.threebot_keys.1
+public_key = ""
+secret_key = ""
+
+@url = zerobot.webplatform.user.wallet_keys.1
+public_key = ""
+secret_key = ""

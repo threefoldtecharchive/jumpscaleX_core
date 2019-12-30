@@ -44,7 +44,6 @@ def load_install_tools(branch=None, reset=False):
 
 IT = load_install_tools()
 IT.MyEnv.interactive = True  # std is interactive
-IT.MyEnv.init()
 
 
 class JSXEnv:

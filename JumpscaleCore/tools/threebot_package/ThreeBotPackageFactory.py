@@ -37,7 +37,10 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
         :return:
         """
         if not path:
-            path = j.core.tools.text_replace("{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/")
+            self.add(j.core.tools.text_replace("{DIR_CODE}/github/threefoldtech/jumpscaleX_core/ThreeBotPackages/"))
+            return self.add(
+                j.core.tools.text_replace("{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/")
+            )
 
         def process(path, arg):
             basename = j.sal.fs.getBaseName(path)

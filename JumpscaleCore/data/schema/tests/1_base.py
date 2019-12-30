@@ -34,21 +34,19 @@ def main(self):
     assert schema_object.url == "despiegk.test"
     print(schema_object)
 
-    assert schema_object.property_llist.default.value == []
-    assert schema_object.property_llist2.default.value == []
-    assert schema_object.property_llist3.default.value == [1.0, 2.0, 3.0]
+    assert schema_object.props.llist.default.value == []
+    assert schema_object.props.llist2.default.value == []
+    assert schema_object.props.llist3.default.value == [1.0, 2.0, 3.0]
     # works with & without value
-    assert schema_object.property_llist3.default == [1.0, 2.0, 3.0]
-    assert schema_object.property_llist4.default == [1, 2, 3]
-    assert schema_object.property_llist5.default == [1, 2, 3]
-    assert schema_object.property_llist6.default == [1, 2, 3]
+    assert schema_object.props.llist3.default == [1.0, 2.0, 3.0]
+    assert schema_object.props.llist4.default == [1, 2, 3]
+    assert schema_object.props.llist5.default == [1, 2, 3]
+    assert schema_object.props.llist6.default == [1, 2, 3]
 
-    ll = schema_object.property_llist3.jumpscaletype.default_get()
+    ll = schema_object.props.llist3.jumpscaletype.default_get()
     assert ll.value == [1.0, 2.0, 3.0]
 
-    assert (
-        schema_object.property_llist3.js_typelocation == "j.data.types._types['list_281be192c3ea134b85dd0c368d7d1b36']"
-    )
+    assert schema_object.props.llist3.js_typelocation == "j.data.types._types['list_281be192c3ea134b85dd0c368d7d1b36']"
 
     o = schema_object.new()
 

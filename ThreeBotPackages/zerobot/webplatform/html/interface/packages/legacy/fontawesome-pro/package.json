@@ -1,0 +1,81 @@
+{
+  "_from": "@fortawesome/fontawesome-pro@5.11.2",
+  "_id": "@fortawesome/fontawesome-pro@5.11.2",
+  "_inBundle": false,
+  "_integrity": "sha512-qDJHtsCBkGqVM1i10aTjl1WCB/YPCxYYn7lQZNXDqo0yHzBXiwrwv2RXDV4vWgFP7fvCeqKVkP0Co2YQnkTxJg==",
+  "_location": "/@fortawesome/fontawesome-pro",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "version",
+    "registry": true,
+    "raw": "@fortawesome/fontawesome-pro@5.11.2",
+    "name": "@fortawesome/fontawesome-pro",
+    "escapedName": "@fortawesome%2ffontawesome-pro",
+    "scope": "@fortawesome",
+    "rawSpec": "5.11.2",
+    "saveSpec": null,
+    "fetchSpec": "5.11.2"
+  },
+  "_requiredBy": [
+    "#DEV:/"
+  ],
+  "_resolved": "https://npm.fontawesome.com/@fortawesome/fontawesome-pro/-/fontawesome-pro-5.11.2.tgz",
+  "_shasum": "4c055b486f2ec488ef982133703879176efa7f54",
+  "_spec": "@fortawesome/fontawesome-pro@5.11.2",
+  "_where": "/home/delruej/jimbercode/3botui",
+  "author": {
+    "name": "Dave Gandy",
+    "email": "dave@fontawesome.com",
+    "url": "http://twitter.com/davegandy"
+  },
+  "bugs": {
+    "url": "http://github.com/FortAwesome/Font-Awesome/issues"
+  },
+  "bundleDependencies": false,
+  "contributors": [
+    {
+      "name": "Brian Talbot",
+      "url": "http://twitter.com/talbs"
+    },
+    {
+      "name": "Travis Chase",
+      "url": "http://twitter.com/supercodepoet"
+    },
+    {
+      "name": "Rob Madole",
+      "url": "http://twitter.com/robmadole"
+    },
+    {
+      "name": "Geremia Taglialatela",
+      "url": "http://twitter.com/gtagliala"
+    },
+    {
+      "name": "Mike Wilkerson",
+      "url": "http://twitter.com/mw77"
+    }
+  ],
+  "dependencies": {},
+  "deprecated": false,
+  "description": "The iconic font, CSS, and SVG framework",
+  "engines": {
+    "node": ">=6"
+  },
+  "homepage": "https://fontawesome.com",
+  "keywords": [
+    "font",
+    "awesome",
+    "fontawesome",
+    "icon",
+    "svg",
+    "bootstrap"
+  ],
+  "license": "UNLICENSED",
+  "main": "js/fontawesome.js",
+  "name": "@fortawesome/fontawesome-pro",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FortAwesome/Font-Awesome.git"
+  },
+  "style": "css/fontawesome.css",
+  "version": "5.11.2"
+}

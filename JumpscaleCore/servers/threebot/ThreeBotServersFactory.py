@@ -20,6 +20,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
     def _threebot_starting(self):
         print("MARK THREEBOT IS STARTING")
+        j.threebot.active = True
         if j.core.db:
             j.core.db.set("threebot.starting", ex=120, value="1")
         j.data.bcdb._master_set()
@@ -68,16 +69,54 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def local_start_zerobot(self, background=False, reload=False):
-        """starts the zerobot application server with default packages (base, myjobs_ui, alerta_ui, packagemanager, webinterface)"""
-        packages = []
-        return self.local_start_default(background=background, packages=packages, reload=reload)
+    def start(self, background=False, packages=None, reload=False):
+        """
+        kosmos -p 'j.servers.threebot.start(background=False)'
+        kosmos -p 'j.servers.threebot.start(background=True)'
+
+        if background:
+            will check if there is already one running, will create client to localhost & return
+            gedis client to system actor
+
+        :param: packages, is a list of packages_paths
+            the packages need to reside in this repo otherwise they will not be found,
+            centralized registration will be added but is not there yet
+
+        :return:
+        """
+        self._threebot_starting()
+        packages = packages or []
+
+        if background:
+            if reload:
+                self.default.stop()
+
+            if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) is False:
+                self.install()
+                client = self.default.start(background=True, packages=packages)
+                assert "." in client.package_name
+            else:
+                client = j.clients.gedis.get(name="threebot", port=8901)
+                if not "." in client.package_name:
+                    j.shell()
+                assert "." in client.package_name
+
+            # NO LONGER NEEDED BECAUSE PART OF DEFAULT>START
+            # gediscl = j.clients.gedis.get("pkggedis", package_name="zerobot.packagemanager")
+            # for package_path in packages:
+            #     gediscl.actors.package_manager.package_add(path=package_path)
+
+            client.reload()
+            return client
+
+        else:
+            self.install()
+            self.default.start(background=False, packages=packages)
 
     def local_start_3bot(self, background=False, reload=False):
         """starts 3bot with webplatform package.
         kosmos -p 'j.servers.threebot.local_start_3bot()'
         """
-        # FIXME: webplatform should go threebot directory now
         packages = ["{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform"]
         return self.local_start_default(background=background, packages=packages, reload=reload)
 
@@ -95,46 +134,6 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/workloads",
         ]
         return self.local_start_default(background=background, packages=packages, reload=reload)
-
-    def local_start_default(self, background=False, packages=None, reload=False):
-        """
-        kosmos -p 'j.servers.threebot.local_start_default(background=True)'
-
-        REMARK: if you want to run a threebot in non background do following first:
-            kosmos -p 'j.servers.threebot.default.start()'
-
-        tbot_client = j.servers.threebot.local_start_default()
-
-        will check if there is already one running, will create client to localhost & return
-        gedis client
-        :param: packages, is a list of packages_paths
-            the packages need to reside in this repo otherwise they will not be found,
-            centralized registration will be added but is not there yet
-
-        :return:
-        """
-        self._threebot_starting()
-        packages = packages or []
-        if reload:
-            self.default.stop()
-
-        if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) is False:
-            self.install()
-            client = self.default.start(background=background, packages=packages)
-            assert "." in client.package_name
-        else:
-            client = j.clients.gedis.get(name="threebot", port=8901)
-            if not "." in client.package_name:
-                j.shell()
-            assert "." in client.package_name
-
-        gediscl = j.clients.gedis.get("pkggedis", package_name="zerobot.packagemanager")
-        for package_path in packages:
-            gediscl.actors.package_manager.package_add(path=package_path)
-
-        client.reload()
-
-        return client
 
     def test(self, name=None, restart=False):
         """

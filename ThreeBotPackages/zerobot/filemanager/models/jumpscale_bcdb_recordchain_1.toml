@@ -1,0 +1,51 @@
+
+
+@url = jumpscale.bcdb.recordchain.1
+recordchain = (LO) !jumpscale.bcdb.record.1
+
+@url = jumpscale.bcdb.record.1
+data = ""           #capnp optionally encrypted data (symmetric encryption)
+schema_mid = (I)
+authors = (LO) !jumpscale.ebcdb.record.author.1
+md5 = ""            #md5 of encrypted data
+epoch = (T)
+multisig_write = (LI)           #list of 3botid's of who need to agree on
+multisig_delete = (LI)          #list of 3botid's of who need to agree on
+multisig_admin = (LI)           #list of 3botid's of who need to agree on
+multisig_write_min = (I)       #min nr of people who need to sign from the list
+multisig_delete_min = (I)
+multisig_admin_min = (I)
+timeout = 3600 (I)
+author_last = (I)
+state = "first,ok,deleted" (E)
+
+
+@url = jumpscale.ebcdb.record.author.1
+threebot_id = (I)
+admin = (B)  #admin is the only one who can change admin rights, multisig, delete
+encr_key = "" #is the encryption key for the data used but encrypted with public key of this author
+signature = "" #as when the author changed the data last otherwise empty, sign the md5 of above
+               #or when multisignature was needed then you need this field too
+rights = "write,delete" (E)
+
+
+
+
+#BCDB BLOCKCHAIN REGISTRY
+
+@url = jumpscale.ebcdb.block.chain.1
+zdb_block_md5 = ""
+zdb_block_id** =  ""
+last_block_id = (I)
+last_block_md5 = ""
+dispersal_meta = (LO) !jumpscale.ebcdb.block.disperal.profile.1
+
+@url = jumpscale.ebcdb.block.disperal.profile.1
+name** = ""
+profile = (LO) !jumpscale.ebcdb.block.disperal.item.1
+
+@url = jumpscale.ebcdb.block.disperal.item.1
+zdb_id =  (I)  #reference to the zerodb instance
+key = (I)
+namespace = "" (S)
+secret_ = "" (S)

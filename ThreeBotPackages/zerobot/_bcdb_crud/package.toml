@@ -1,0 +1,14 @@
+status = "disabled"
+
+[source]
+name = "system_bcdb"
+description = "serves crud actors for all system models"
+threebot = "zerobot"
+version = "1.0.0"
+
+[[bcdbs]]
+namespace = "threebot"
+type = "zdb"
+instance = "default"
+
+#TODO: make sure we don't load automatically, we don't need like this

@@ -38,7 +38,6 @@ class SystemProps:
 
 class Schema(j.baseclasses.object):
     def _init(self, text=None, url=None, extrafields={}):
-        self.props = j.baseclasses.dict()
         self._systemprops = {}
         self._obj_class = None
         self._capnp = None
@@ -50,6 +49,7 @@ class Schema(j.baseclasses.object):
 
         self._md5 = j.data.schema._md5(text)
         self._schema_from_text(text)
+        self.props = self._children
 
         if not self.url:
             raise j.exceptions.Input("url needs to be specified", data=text)
@@ -58,13 +58,13 @@ class Schema(j.baseclasses.object):
 
         # next is the work we need to do for adding the extra fields and make sure they are always added
         for prop_name, data in self._meta_url["props"].items():
-            if prop_name not in self.props:
+            if prop_name not in self._children:
                 prop_nr, prop_line = data
                 p = self._property_get_from_line(prop_line, nr=prop_nr)
 
         for extra_name, extra_line in extrafields.items():
-            if extra_name in self.props:
-                if self.props[extra_name].line != extra_line:
+            if extra_name in self._children:
+                if self._children[extra_name].line != extra_line:
                     p = self._property_get_from_line(extra_line)
             else:
                 p = self._property_get_from_line(extra_line)
@@ -76,7 +76,7 @@ class Schema(j.baseclasses.object):
 
     @property
     def properties(self):
-        return list(self.props.values())
+        return list(self._children.values())
 
     @property
     def url_str(self):
@@ -284,7 +284,8 @@ class Schema(j.baseclasses.object):
         p.jumpscaletype = jumpscaletype
         p.nr = nr
 
-        self.props[p.name] = p
+        self._children[p.name] = p
+        # self.__dict__["property_%s" % p.name] = p
 
         assert p.jumpscaletype.NAME is not "list"
 
@@ -472,7 +473,7 @@ class Schema(j.baseclasses.object):
         lists all the property names
         :return:
         """
-        return list(self.props.keys())
+        return list(self._children.keys())
 
     @property
     def _json(self):

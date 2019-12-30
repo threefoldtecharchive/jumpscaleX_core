@@ -23,9 +23,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         j.clients.redis.core_get()  # just to make sure the redis got started
 
-        self._instances = j.baseclasses.dict(name="BCDBS")
-        self.children = self._instances
-
         self._BCDBModelClass = BCDBModel  # j.data.bcdb._BCDBModelClasses
         self._config = {}
 
@@ -106,10 +103,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
     @property
     def system(self):
-        if "system" not in self._instances:
+        if "system" not in self._children:
             storclient = j.clients.sqlitedb.client_get(namespace="system")
-            self._instances["system"] = self._get(name="system", storclient=storclient)
-        return self._instances["system"]
+            self._children["system"] = self._get(name="system", storclient=storclient)
+        return self._children["system"]
 
     def threebot_stop(self):
         """
@@ -184,16 +181,16 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         keys = [i for i in self._config.keys()]
         for name in keys:
             # don't reload the bcdb instance because its already
-            if name in self._instances:
+            if name in self._children:
                 continue
             if name == "system":
                 continue
             storclient = self._get_storclient(name)
             if storclient:
                 bcdb = self._get(name, storclient)
-                self._instances[name] = bcdb
+                self._children[name] = bcdb
 
-        return self._instances
+        return self._children
 
     def index_rebuild(self, name=None, storclient=None):
         """
@@ -238,7 +235,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         # self._load()
         j.sal.fs.remove(self._config_data_path)
         self._config = {}
-        self._instances = j.baseclasses.dict()
+        self._children = j.baseclasses.dict()
         self._loaded = False
 
     def destroy_all(self):
@@ -257,7 +254,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         self.threebot_stop()  # stop the threebot ones
         j.servers.tmux.kill()  # kill all tmux sessions
 
-        self._instances = j.baseclasses.dict()
+        self._children = j.baseclasses.dict()
         storclients = []
         for name in names:
             try:
@@ -313,15 +310,15 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             bcdb = self.get(name=name)
             bcdb.reset()
 
-            if name in self._instances:
-                self._instances.pop(name)
+            if name in self._children:
+                self._children.pop(name)
 
             self._config.pop(name)
             self._config_write()
 
         self._loaded = False
 
-    def get_for_threebot(self, namespace, ttype, instance):
+    def get_for_threebot(self, name, namespace, ttype):
         """
         used by actors in threebot
         :param namespace:
@@ -332,10 +329,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if ttype not in ["zdb", "sqlite", "redis"]:
             raise j.exceptions.Input("ttype can only be zdb or sqlite")
 
-        name = "threebot_%s_%s" % (ttype, namespace)
-
         if j.data.bcdb.exists(name=name):
-            return self.get(name=name)
+            bcdb = self.get(name=name)
+            return bcdb
         else:
             if ttype == "zdb":
                 adminsecret_ = j.data.hash.md5_string(j.threebot.servers.core.adminsecret_)
@@ -367,9 +363,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         assert isinstance(name, str)
 
         if not reset:
-            if name in self._instances:
+            if name in self._children:
                 # print("name:'%s' in instances on bcdb" % name)
-                return self._instances[name]
+                return self._children[name]
 
         if not self.exists(name=name):
             self._new(name=name, storclient=storclient)  # we create object in config of bcdb factory
@@ -378,7 +374,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         b = self._get(name=name, storclient=storclient, reset=reset)  # make instance of bcdb
 
-        assert name in self._instances
+        assert name in self._children
 
         return b
 
@@ -420,8 +416,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         :return:
         """
         # DO NOT CHANGE if_not_exist_die NEED TO BE TRUE
-        self._instances[name] = BCDB(storclient=storclient, name=name, reset=reset)
-        return self._instances[name]
+        self._children[name] = BCDB(storclient=storclient, name=name, reset=reset)
+        return self._children[name]
 
     def _config_write(self):
         data = j.data.serializers.msgpack.dumps(self._config)
@@ -444,9 +440,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         self._log_info("new bcdb:%s" % name)
 
-        # if name in self._instances:
+        # if name in self._children:
         #     print("name:'%s' in instances on bcdb (new)" % name)
-        #     return self._instances[name]
+        #     return self._children[name]
         #
         # if self.exists(name=name):
         #     if not reset:

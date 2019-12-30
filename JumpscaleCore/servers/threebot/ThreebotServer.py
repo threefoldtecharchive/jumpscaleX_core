@@ -10,10 +10,6 @@ import sys
 JSConfigs = j.baseclasses.object_config_collection
 
 
-class ThreeBotRoot:
-    pass
-
-
 class Actors:
     pass
 
@@ -72,7 +68,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.ssl = False
         self.client = None
         j.servers.threebot._threebot_starting()  # in case it wouldn't have happened yet
-        j.threebot = ThreeBotRoot()
         j.servers.threebot.current = self
 
         if "adminsecret" in kwargs:
@@ -211,9 +206,10 @@ class ThreeBotServer(j.baseclasses.object_config):
             # j.data.bcdb.lock()
 
             # make sure client for myjobs properly configured
-            j.core.db.redisconfig_name = "core"
-            storclient = j.clients.rdb.client_get(redisclient=j.core.db)
-            myjobs_bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
+            # j.core.db.redisconfig_name = "core"
+            # storclient = j.clients.rdb.client_get(redisclient=j.core.db)
+            # myjobs_bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
+            j.data.bcdb.get_for_threebot("myjobs", "myjobs", "redis")
 
             j.threebot.servers = Servers()
             j.threebot.servers.zdb = self.zdb
@@ -222,10 +218,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.threebot.servers.web = self.openresty_server
             j.threebot.servers.core = self
             j.threebot.servers.gevent_rack = self.rack_server
-            j.threebot.myjobs = j.servers.myjobs
-            # j.threebot.bcdb_get = j.servers.threebot.bcdb_get
-            # j.threebot.bcdb = BCDBS()
-            j.threebot.bcdb = j.data.bcdb
+            j.threebot.bcdb = j.data.bcdb._children
 
             # to allow gedis server to get the right package
             j.threebot.package_get = self.package_get
@@ -234,8 +227,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             # add system actors and basic chat flows
             self.rack_server.add("gedis", self.gedis_server.gevent_server)
 
-            # needed for myjobs
-            bcdb = j.data.bcdb.system
+            # needed for myjobs (is bcdb redis server)
             adminsecret_ = j.data.hash.md5_string(self.adminsecret_)
             redis_server = j.data.bcdb.redis_server_get(port=6380, secret=adminsecret_)
             # just to make sure we don't have it open to external
@@ -255,9 +247,14 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             self.rack_server.start(wait=False)
 
-            self.myjobs_start()
+            timeout2 = j.data.time.epoch + 2
+            while j.data.time.epoch < timeout2:
+                res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380, timeout=0.1)
+                j.core.db.delete("threebot.starting")
+                if res:
+                    break
 
-            self._log_info("start workers done")
+            self.myjobs_start()
 
             # j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
             self._maintenance()
@@ -375,9 +372,9 @@ class ThreeBotServer(j.baseclasses.object_config):
         j.servers.myjobs.model_action.model.index_rebuild()
         j.servers.myjobs.workers._model.index_rebuild()
         j.servers.myjobs.jobs._model.index_rebuild()
-
         j.servers.myjobs.workers_tmux_start(2, in3bot=True)
         # j.servers.myjobs.workers_subprocess_start(2, in3bot=True)
+        self._log_info("start workers done")
 
     def _packages_core_init(self):
 

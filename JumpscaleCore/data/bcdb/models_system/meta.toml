@@ -36,9 +36,6 @@ name**=""
 uid** = 0 (I)
 rights = (LS)
 
-@url = jumpscale.bcdb.dummy.1
-name** = (S)
-
 #acl's and users are std property the records being inserted in the BCDB
 
 #

@@ -1,0 +1,5 @@
+[source]
+name = "wiki_examples"
+description = "examples for wikis"
+threebot = "zerobot"
+version = "1.0.0"

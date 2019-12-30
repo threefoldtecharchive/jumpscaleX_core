@@ -25,49 +25,39 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self._mainloop_tmux = None
         self._mainloop_greenlet_redis = None
 
-        self._bcdb = self._bcdb_selector()
-
-        self.model_action = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.action)
-        j.clients.bcdbmodel.get(name="myjobs", schema=schemas.worker)
-        j.clients.bcdbmodel.get(name="myjobs", schema=schemas.job)
+        j.servers.threebot.require_threebotserver()
+        self._init_models()
 
         self.scheduled_ids = []
         self._init_pre_schedule_ = False
         self._i_am_worker = False
 
-    # def index_reset(self):
-    #     if self.workers._model._index_:
-    #         self.workers._model._index_.destroy()
-    #     if self.jobs._model._index_:
-    #         self.jobs._model._index_.destroy()
-    #     if self.model_action._index_:
-    #         self.model_action._index_.destroy()
-
-    def _init_models_readonly(self):
-        self._bcdb._readonly = True
-        m1 = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.action)
-        m2 = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.job)
-        m3 = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.worker)
+    def _init_models(self):
+        self._bcdb = j.data.bcdb.get("myjobs")
+        self._bcdb._master = j.threebot.active
+        self.model_action = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.action)
+        j.clients.bcdbmodel.get(name="myjobs", schema=schemas.worker)
+        j.clients.bcdbmodel.get(name="myjobs", schema=schemas.job)
 
     def _init_pre_schedule(self, in3bot=False):
         if not self._init_pre_schedule_:
+
             assert self._i_am_worker is False
             # need to make sure at startup we process all data which is still waiting there for us
-
             assert self._children
             assert self.jobs
             assert self.workers
-            try:
-                # start bcdb connector only if it's not started already
-                j.clients.redis.get(port=self.BCDB_CONNECTOR_PORT).ping()
-            except (j.exceptions.Base, redis.ConnectionError):
-                if in3bot:
-                    raise j.exceptions.Base("cannot connect to 3bot bcdb redis port")
-                self._mainloop_greenlet_redis = gevent.spawn(
-                    self._bcdb.redis_server_start, port=self.BCDB_CONNECTOR_PORT
-                )
-                self._log_warning("waiting for redis interface of threebotserver to come up")
-                self._bcdb.redis_server_wait_up(self.BCDB_CONNECTOR_PORT)
+            # try:
+            #     # start bcdb connector only if it's not started already
+            #     j.clients.redis.get(port=self.BCDB_CONNECTOR_PORT).ping()
+            # except (j.exceptions.Base, redis.ConnectionError):
+            #     if in3bot:
+            #         raise j.exceptions.Base("cannot connect to 3bot bcdb redis port")
+            #     self._mainloop_greenlet_redis = gevent.spawn(
+            #         self._bcdb.redis_server_start, port=self.BCDB_CONNECTOR_PORT
+            #     )
+            #     self._log_warning("waiting for redis interface of threebotserver to come up")
+            #     self._bcdb.redis_server_wait_up(self.BCDB_CONNECTOR_PORT)
             self._init_pre_schedule_ = True
 
     def action_get(self, key, return_none_if_not_exist=False):
@@ -81,10 +71,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 return
             o = self.model_action.new()
             return True, o
-
-    def _bcdb_selector(self):
-        # assert j.data.bcdb.exists("myjobs")
-        return j.data.bcdb.get("myjobs")
 
     @property
     def _workers_gipc_count(self):
@@ -129,7 +115,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
     def _worker_inprocess_start_from_tmux(self, nr):
         # make sure jobs schema loaded
-        self._init_models_readonly()
         _ = self.jobs
         w = self.workers.get(name="w%s" % nr)
         w.time_start = j.data.time.epoch
@@ -185,7 +170,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
         :return:
         """
-        self._init_models_readonly()
         self._init_pre_schedule(in3bot=in3bot)
         if not nr_fixed_workers:
             self._mainloop_gipc = gevent.spawn(self._main_loop_subprocess)

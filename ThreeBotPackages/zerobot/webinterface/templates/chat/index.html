@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Zero ChatBot</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,100,300,500">
+    <link rel="stylesheet" href="/weblibs/bootstrap3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/weblibs/fontawesome4/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/staticchat/chat/css/form-elements.css">
+    <link rel="stylesheet" href="/staticchat/chat/css/style.css">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"
+        integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ=="
+        crossorigin="" />
+
+
+
+</head>
+
+<body>
+    <div class="loader" id="spinner"></div>
+    <!-- Top menu -->
+    <div style="float:right; margin:12px; padding:10px;color:#404040;">
+        <i class="fa fa-user-circle" style="font-size: 25px; margin-right:5px;"></i> {{ email }}
+    </div>
+    <nav class="navbar navbar-inverse navbar-no-bg" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                    data-target="#top-navbar-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="index.html" style="color:#404040">Zero Bot</a>
+            </div>
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="top-navbar-1">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <span class="li-social">
+                            <a href="https://facebook.com/threefoldnetwork" target="_blank"><i class="fa fa-facebook"
+                                    style="color:#404040"></i></a>
+                            <a href="https://twitter.com/threefoldntwrk" target="_blank"><i style="color:#404040"
+                                    class="fa fa-twitter"></i></a>
+                            <a href="https://www.youtube.com/threefoldfoundation" target="_blank"><i
+                                    style="color:#404040" class="fa fa-youtube"></i></a>
+                            <a href="https://github.com/threefold" target="_blank">
+                                <i style="color:#404040" class="fa fa-github"></i>
+                            </a>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Top content -->
+    <div class="top-content">
+        <div class="container">
+
+            <div class="row">
+                <div class="col-sm-8 col-sm-offset-2 text">
+                    <h1><strong style="color:#404040">Zero Chat Bot</strong></h1>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12 col-md-12 col-lg-12 form-box">
+                    <div class="f1-buttons-right">
+                        <button onClick="window.location.reload()" class="btn" style="color:grey">
+                            <i class="fa fa-refresh"></i>
+                        </button>
+                    </div>
+                    <form role="form" action="" method="GET" class="f1">
+                        <div class="alert alert-danger text-left hidden" id="error"></div>
+                        <div id="wizard"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        var SERVER = '{{ url }}'
+        var TOPIC = '{{ topic }}'
+        var QS = '{{ qs }}'
+        var USERNAME = '{{ username }}'
+        var EMAIL = '{{ email }}'
+    </script>
+    <!-- Javascript -->
+    <script src="/weblibs/jquery/jquery.min.js"></script>
+    <script src="/weblibs/bootstrap3/js/bootstrap.min.js"></script>
+    <script src="/weblibs/jquery/jquery.backstretch.min.js"></script>
+    <script src="/weblibs/retina/retina.min.js"></script>
+    <script src="/weblibs/showdown/showdown.min.js"></script>
+    <script src="/staticchat/chat/js/validators.js"></script>
+    <script src="/staticchat/chat/js/scripts.js"></script>
+    <script src="/weblibs/gedis/gedis_client.js"></script>
+    <script src="/weblibs/gedis/gedis_package.js"></script>
+    <script src="/staticchat/chat/js/bot_client.js"></script>
+    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"
+        integrity="sha512-/Nsx9X4HebavoBvEBuyp3I7od5tA0UzAxs+j83KgC8PU0kgB4XiK4Lfe4y4cgBtaRJQEIFCW+oC506aPT2L1zw=="
+        crossorigin=""></script>
+
+</body>
+
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Home</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/weblibs/bootstrap4/bootstrap.min.css">
+
+    <link rel="stylesheet" href="/staticwiki/home/css/fonts.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/staticwiki/home/css/style.css">
+</head>
+
+<body>
+    <div class="intro">
+        <div class="container">
+            <div class="intro-text justify-content-center">
+                <div class="row">
+                    <div class="col-sm">
+                        <img src="/staticwiki/home/img/3BOT - ROBOT.png" alt="3Bot">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm text-center ">
+                        <h4>An error occured while trying to fetch google drive document...</h4>
+                    </div>
+                </div>
+
+                <div class="alert alert-danger" role="alert">
+                    {{ message }}
+                </div>
+
+                {% if code >= 400 %}
+                <div class="row">
+                    <div class="col-md-12">
+                        Most of this error types can occur because the service account does not have permissions or
+                        misconfigured.
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        Please, contact your domain admin to follow this <a
+                            href="https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/docs/wikis/tech/gdrive.md">setup
+                            of gdrive tool</a>.
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        If the this file is private, then see how to <a
+                            href="https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/docs/wikis/tech/service_account.md">setup
+                            service account</a> correctly and this note about <a
+                            href="https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/docs/wikis/tech/service_account.md#accessing-private-files-using-service-accounts">accessing
+                            private files</a>.
+                    </div>
+                </div>
+                {% endif%}
+
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="/weblibs/jquery/jquery.slim.min.js"></script>
+    <!-- Bootstrap JavaScript -->
+    <script src="/weblibs/bootstrap4/bootstrap.min.js"></script>
+</body>
+
+</html>

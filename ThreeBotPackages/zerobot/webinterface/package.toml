@@ -1,0 +1,5 @@
+[source]
+name = "webinterface"
+description = "zerobot API for gedis and bcdbfs"
+threebot = "zerobot"
+version = "1.0.0"

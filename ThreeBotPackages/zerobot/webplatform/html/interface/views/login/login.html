@@ -1,0 +1,13 @@
+
+<section class="login fill-height">
+  <v-layout column fill-height align-center justify-center>
+    <div v-if="isLoggingIn" class="text-xs-center">
+      <v-progress-circular indeterminate :color="$route.meta.accent" class="mb-4" size="50" width="10"></v-progress-circular>
+      <p>You'll be redirected soon...</p>
+    </div>
+    <div v-else class="text-xs-center">
+      <v-progress-circular indeterminate :color="$route.meta.accent" class="mb-4" size="50" width="10"></v-progress-circular>
+      <p>Logging you in, one moment please...</p>
+    </div>
+  </v-layout>
+</section>

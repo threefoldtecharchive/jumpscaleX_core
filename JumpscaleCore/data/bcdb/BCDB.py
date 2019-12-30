@@ -54,7 +54,7 @@ class BCDB(j.baseclasses.object):
 
         j.sal.fs.createDir(self._data_dir)
 
-        if self.readonly:
+        if not j.data.bcbd._master:
             self._log_info("sqlite file is in readonly mode for: '%s'" % self.name)
             self._sqlite_index_dbpath = "file:%s/sqlite_index.db?mode=ro" % self._data_dir
         else:
@@ -98,9 +98,6 @@ class BCDB(j.baseclasses.object):
 
         self.dataprocessor_greenlet = None
 
-        self._readonly = None
-        self._lock_checked = False  # we did not check the lock yet
-
         # self._shutdown_ = False  # if set it means we should not use bcdb any more
 
         # needed for async processing
@@ -142,25 +139,6 @@ class BCDB(j.baseclasses.object):
         self.user = self.model_add(USER(bcdb=self))
         self.circle = self.model_add(CIRCLE(bcdb=self))
         self.NAMESPACE = self.model_add(NAMESPACE(bcdb=self))
-
-    def _is_writable_check(self):
-        return not self.readonly
-        # check there is write access on bcdb
-        # if self._lock_checked and self.readonly is False:
-        #     return True
-        # self.lock.acquire()
-        # self._lock_checked = True
-        # self._readonly = False
-        # return True
-
-    # def lock_acquire(self):
-    #     self.lock.acquire()
-    #     self._lock_checked = False
-    #     self._readonly = None
-
-    @property
-    def readonly(self):
-        return not j.data.bcdb._master
 
     def check(self):
         """

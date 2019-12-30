@@ -32,6 +32,8 @@ class MyWorkerProcess(j.baseclasses.object):
         self.showout = showout
         self.debug = debug
 
+        j.servers.threebot.require_threebotserver()
+
         assert worker_id
 
         if self.debug:
@@ -57,7 +59,6 @@ class MyWorkerProcess(j.baseclasses.object):
             time.sleep(0.1)
 
         self.bcdb = j.data.bcdb.get("myjobs")
-        self.bcdb._readonly = True
 
         self.model_job = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.job)
         self.model_action = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.action)

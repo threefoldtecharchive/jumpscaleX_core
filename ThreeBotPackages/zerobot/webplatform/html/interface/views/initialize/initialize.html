@@ -1,0 +1,24 @@
+<section class="login fill-height">
+    <v-layout column fill-height align-center justify-center>
+        <v-row align="center">
+            <v-card min-width="600px" class="pa-3">
+                <v-card-title>
+                    <h3 v-if="validated !== 0">Welcome to your 3bot ({{ doubleName }})</h3>
+                    <h3 v-else>Please make sure your 3bot has been registered before initializing!</h3>
+                </v-card-title>
+
+                <v-form>
+                    <v-select v-model="country" menu-props="auto" :items="countries" label="Country"
+                        :error-messages="countryError" @input="countryError = []" :disabled="validated === 0"></v-select>
+                    <v-text-field v-model="referredBy" label="Referred by (name)" required
+                        :error-messages="referredByError" @input="referredByError = []" :disabled="validated === 0"></v-text-field>
+                    <v-textarea v-model="seed" label="Seed phrase" required :error-messages="seedError"
+                        @input="seedError = []" :disabled="validated === 0"></v-textarea>
+                    <v-btn color="success" class="mr-4 float-right" @click="initialize3Bot" :disabled="validated === 0">
+                        Initialize 3bot
+                    </v-btn>
+                </v-form>
+            </v-card>
+        </v-row>
+    </v-layout>
+</section>

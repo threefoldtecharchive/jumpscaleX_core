@@ -290,6 +290,15 @@ j.core.errorhandler = j.errorhandler
 j.exceptions = j.errorhandler.exceptions
 j.core.exceptions = j.exceptions
 
+
+class ThreeBotRoot:
+    pass
+
+
+j.threebot = ThreeBotRoot()
+j.threebot.active = False
+
+
 # THIS SHOULD BE THE END OF OUR CORE, EVERYTHING AFTER THIS SHOULD BE LOADED DYNAMICALLY
 
 j.core.application._lib_generation_path = j.core.tools.text_replace("{DIR_BASE}/lib/jumpscale/jumpscale_generated.py")

@@ -1,0 +1,10 @@
+[source]
+name = "alerta_ui"
+description = "alerting system for jumpscale"
+threebot = "zerobot"
+version = "1.0.0"
+
+[[bcdbs]]
+name = "system.alerta"
+namespace = "alerta"
+type = "redis"

@@ -1,0 +1,13 @@
+[source]
+name = "webplatform"
+description = "TBD"
+threebot = "zerobot"
+version = "1.0.0"
+
+
+[[bcdbs]]
+namespace = "zerobot"
+type = "zdb"
+instance = "default"
+
+#TODO: i don't understand this package, what is it about

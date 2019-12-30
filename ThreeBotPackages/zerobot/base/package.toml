@@ -1,0 +1,10 @@
+[source]
+name = "base"
+description = "contains the system actors for each explorer"
+threebot = "zerobot"
+version = "1.0.0"
+
+[[bcdbs]]
+namespace = "threebot"
+type = "zdb"
+instance = "default"

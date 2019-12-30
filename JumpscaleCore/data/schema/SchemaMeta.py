@@ -159,7 +159,7 @@ class SchemaMeta(j.baseclasses.object):
             raise j.exceptions.Base("schema needs to be of type: j.data.schema.SCHEMA_CLASS")
 
         props = {}
-        for name, p in schema.props.items():
+        for name, p in schema._children.items():
             props[name] = [p.nr, p.line]
 
         change = False  # we only want to save is there is a change

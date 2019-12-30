@@ -39,6 +39,7 @@ class ThreeBotPackage(JSConfigBase):
         namespace = ""
 
         @url = jumpscale.threebot.package.bcdb.1
+        name = ""
         namespace = ""
         type = "zdb,sqlite,redis" (E)
         instance = "default"
@@ -272,10 +273,11 @@ class ThreeBotPackage(JSConfigBase):
             ##GET THE BCDB, ONLY 1 support for now
             if len(self.bcdbs) == 1:
                 config = self.bcdbs[0]
-                assert config.instance == "default"  # for now we don't support anything else
-                self._bcdb_ = j.data.bcdb.get_for_threebot(
-                    namespace=config.namespace, ttype=config.type, instance=config.instance
-                )
+                if self.name:
+                    name = self.name
+                else:
+                    name = "%s.%s" % (self.source.threebot, config.namespace)
+                self._bcdb_ = j.data.bcdb.get_for_threebot(name=name, namespace=config.namespace, ttype=config.type)
             if len(self.bcdbs) == 0:
                 self._bcdb_ = j.data.bcdb.system
 

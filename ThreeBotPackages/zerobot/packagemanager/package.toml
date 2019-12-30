@@ -1,0 +1,5 @@
+[source]
+name = "packagemanager"
+description = "zerobot package manager"
+threebot = "zerobot"
+version = "1.0.0"
