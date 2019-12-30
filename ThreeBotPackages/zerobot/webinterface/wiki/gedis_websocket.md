@@ -1,1 +1,0 @@
-# Gedis Websocket interface
