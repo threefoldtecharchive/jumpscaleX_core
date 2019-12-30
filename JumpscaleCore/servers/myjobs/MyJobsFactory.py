@@ -25,7 +25,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         self._mainloop_tmux = None
         self._mainloop_greenlet_redis = None
 
-        j.servers.threebot.require_threebotserver()
         self._init_models()
 
         self.scheduled_ids = []
@@ -34,6 +33,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
     def _init_models(self):
         self._bcdb = j.data.bcdb.get("myjobs")
+        if not j.threebot.active:
+            j.servers.threebot.require_threebotserver()
         self._bcdb._master = j.threebot.active
         self.model_action = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.action)
         j.clients.bcdbmodel.get(name="myjobs", schema=schemas.worker)
