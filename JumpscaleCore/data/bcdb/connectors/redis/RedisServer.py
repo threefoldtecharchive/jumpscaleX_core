@@ -152,7 +152,7 @@ class RedisServer(j.baseclasses.object):
                 method(response, *args)
                 continue
 
-    def bcdb_model_init(self, response, bcdbname, schema, md5):
+    def bcdb_model_init(self, response, bcdbname, schema):
 
         if not j.data.bcdb.exists(bcdbname):
             response.error("COULD NOT FIND BCDB:%s" % bcdbname)
@@ -168,19 +168,9 @@ class RedisServer(j.baseclasses.object):
             return
 
         assert isinstance(schema, str)
-        assert md5
 
-        schema = j.data.schema.get_from_text(schema, md5=md5)
+        schema = j.data.schema.get_from_text(schema)
         url = schema.url
-
-        # if md5:
-        #     if md5 in j.data.schema.schemas_md5:
-        #         # means we know it schema not needed
-        #         schema = None
-        #     else:
-        #         # means we don't know it yet, need to make sure schema based on url is removed out of cache
-        #         if url and url in j.data.schema.schemas_loaded:
-        #             j.data.schema.schema_cache_remove(url)
 
         if not j.data.bcdb.exists(bcdbname):
             # need to make sure to load, because maybe a slave has added a new one
@@ -204,7 +194,6 @@ class RedisServer(j.baseclasses.object):
             response.error("COULD NOT GET URL:%s\n%s" % (bcdbname, e))
             return
 
-        assert model.schema._md5 == md5
         # model.index.sql_index_count()
 
         response.encode("OK")

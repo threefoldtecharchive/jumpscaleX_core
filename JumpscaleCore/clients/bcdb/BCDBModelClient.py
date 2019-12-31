@@ -26,9 +26,7 @@ class BCDBModelClient(j.data.bcdb._BCDBModelBase):
             # means self.bcdb.readonly is True
             self._rediscl_ = j.clients.bcdbmodel._rediscl_
             assert self.model.schema.text
-            self._rediscl_.execute_command(
-                "bcdb_model_init", self.bcdb.name, self.model.schema.text, self.model.schema._md5
-            )
+            self._rediscl_.execute_command("bcdb_model_init", self.bcdb.name, self.model.schema.text)
             self.model.trigger_add(self._set_trigger)
             self._triggers = []
             self._kosmosinstance = None
