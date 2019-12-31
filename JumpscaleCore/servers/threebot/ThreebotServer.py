@@ -374,7 +374,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         j.threebot.myjobs = j.servers.myjobs
         self.myjobs_clean()
         # j.servers.myjobs.workers_subprocess_start(2, in3bot=True)
-        # j.servers.myjobs.workers_tmux_start(2, in3bot=True)
+        j.servers.myjobs.workers_tmux_start(2, in3bot=True)
         self._log_info("start workers done")
 
     def myjobs_clean(self):
