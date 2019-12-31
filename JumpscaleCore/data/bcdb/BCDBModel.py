@@ -8,9 +8,10 @@ INT_BIN_EMPTY = b"\xff\xff\xff\xff"  # is the empty value for in our key contain
 
 # from .BCDBModelIndex import BCDBModelIndex
 from .BCDBIndexMeta import BCDBIndexMeta
+from .BCDBModelBase import BCDBModelBase
 
 
-class BCDBModel(j.baseclasses.object):
+class BCDBModel(BCDBModelBase):
     def __init__(self, bcdb, schema_url=None, reset=False):
         """
 

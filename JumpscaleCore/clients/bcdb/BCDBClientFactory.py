@@ -29,7 +29,6 @@ class BCDBModelClientFactory(j.baseclasses.object):
             assert not url
             if isinstance(schema, str):
                 schema = j.data.schema.get_from_text(schema)
-
             url = schema.url
         if not name:
             name = "system"

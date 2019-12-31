@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 from .JSBase import JSBase
 
@@ -75,10 +55,16 @@ class JSConfigBCDBBase(JSBase, Attr):
                 if first:
                     # means this is the first block need to add it
                     has_mother = self._mother_id_get()
-                    extrafields = {"name": "name** = (S)"}
-                    if True or self._mother_id_get():  # TODO: will have to be resolved in future
-                        extrafields["mother_id"] = "mother_id** = 0 (I)"
-                    schema = j.data.schema.get_from_text(block, extrafields=extrafields)
+                    schema = j.data.schema.get_from_text(block)
+                    if "name" not in schema.props:
+                        raise j.exceptions.Input("name need to be a field and indexed (S)", data=schema)
+                    if not schema.props["name"].index_key:
+                        raise j.exceptions.Input("name need to be a field and index (**)", data=schema)
+                    if has_mother:
+                        if "mother_id" not in schema.props:
+                            raise j.exceptions.Input("mother_id need to be a field (int) and indexed", data=schema)
+                        if not schema.props["mother_id"].index_key:
+                            raise j.exceptions.Input("mother_id need to be a field and index (**)", data=schema)
                     first = False
                 else:
                     j.data.schema.get_from_text(block)
@@ -91,7 +77,6 @@ class JSConfigBCDBBase(JSBase, Attr):
                 # make remote connection (to the threebotserver)
                 self._model_ = j.clients.bcdbmodel.get(name=self._bcdb.name, schema=schema)
                 self._bcdb_ = self._model.bcdb
-            assert self._model_.schema._md5 == j.data.schema._md5(schema.text)
 
         return self._model_
 

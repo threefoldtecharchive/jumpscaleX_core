@@ -27,7 +27,6 @@ class SchemaMeta(j.baseclasses.object):
                         "text":$text,
                         "epoch":$epoch,
                         "url":$url,
-                        "link":$link_to_other_md5_for_extrafields,
                     }
             }
     }
@@ -198,25 +197,6 @@ class SchemaMeta(j.baseclasses.object):
             self.schema_backup(schema)
         if (change or change2) and save:
             self.save()
-
-    def schema_link_foreign_md5_get(self, md5):
-        if md5 in self._data["md5"]:
-            if "link" in self._data["md5"][md5]:
-                return self._data["md5"]["link"]
-
-    def schema_link_foreign_md5(self, schema, md5):
-        # means we put link fom md5 to other modified schema
-        if md5 in self._data["md5"]:
-            assert schema.url == self._data["md5"]["url"]
-            if "link" in self._data["md5"][md5]:
-                return self._data["md5"]["link"]
-        d = {}
-        d["text"] = ""
-        d["epoch"] = j.data.time.epoch
-        d["url"] = schema.url
-        d["link"] = schema.md5
-        self._data["md5"][md5] = d
-        self.save()
 
     def schema_backup(self, schema):
         data = {"url": schema.url, "md5": schema._md5, "text": schema.text, "time": j.data.time.epoch}

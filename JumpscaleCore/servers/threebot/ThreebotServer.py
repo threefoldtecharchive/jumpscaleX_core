@@ -369,19 +369,22 @@ class ThreeBotServer(j.baseclasses.object_config):
 
     def myjobs_start(self):
         j.threebot.myjobs = j.servers.myjobs
-        # rebuild indexes before starting the workers to make sure they're up-to-date
-        j.servers.myjobs.model_action.model.index_rebuild()
-        j.servers.myjobs.workers._model.index_rebuild()
-        j.servers.myjobs.jobs._model.index_rebuild()
-        # j.servers.myjobs.workers_tmux_start(2, in3bot=True)
+        self.myjobs_clean()
         # j.servers.myjobs.workers_subprocess_start(2, in3bot=True)
+        # j.servers.myjobs.workers_tmux_start(2, in3bot=True)
         self._log_info("start workers done")
 
-    def _packages_core_init(self):
+    def myjobs_clean(self):
+        # for now we better delete all when starting, there is some syncing issue
+        j.servers.myjobs.reset_data()
+        # rebuild indexes before starting the workers to make sure they're up-to-date
+        # j.servers.myjobs.model_action.model.index_rebuild()
+        # j.servers.myjobs.workers._model.index_rebuild()
+        # j.servers.myjobs.jobs._model.index_rebuild()
 
+    def _packages_core_init(self):
         if not j.tools.threebot_packages.exists(name="zerobot.webinterface"):
             j.tools.threebot_packages.load()
-
         names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta_ui"]  # , "system_bcdb"]
         for name in names:
             name2 = f"zerobot.{name}"
@@ -392,7 +395,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             if p.status in ["config", "init"]:
                 p.install()
                 p.save()
-            # start should be called everytime server starts
             # TODO: NOT THE INTENTION !!!!
             # p.actors_reload()
             # p.start()

@@ -2,6 +2,7 @@ from Jumpscale import j
 
 from .BCDB import BCDB
 from .BCDBModel import BCDBModel
+from .BCDBModelBase import BCDBModelBase
 
 import os
 import sys
@@ -24,7 +25,14 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         j.clients.redis.core_get()  # just to make sure the redis got started
 
         self._BCDBModelClass = BCDBModel  # j.data.bcdb._BCDBModelClasses
+        self._BCDBModelBase = BCDBModelBase
         self._config = {}
+
+        # load the system models
+        system_meta_path = j.core.tools.text_replace(
+            "{DIR_CODE}/github/threefoldtech/jumpscaleX_core/JumpscaleCore/data/bcdb/models_system/meta.toml"
+        )
+        j.data.schema.add_from_path(system_meta_path)
 
         self.__master = None
 
@@ -193,7 +201,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             if storclient:
                 bcdb = self._get(name, storclient)
                 self._children[name] = bcdb
-
         return self._children
 
     def index_rebuild(self, name=None, storclient=None):
@@ -254,8 +261,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         self._load()
         names = [name for name in self._config.keys()]
-
-        self.threebot_stop()  # stop the threebot ones
+        try:
+            self.threebot_stop()  # stop the threebot ones
+        except:
+            pass
         j.servers.tmux.kill()  # kill all tmux sessions
 
         self._children = j.baseclasses.dict()
@@ -550,20 +559,20 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if not schema:
             schema = """
             @url = despiegk.test
-            llist2 = "" (LS)
-            name*** = ""
-            email** = ""
-            nr** = 0
-            date_start** = 0 (D)
-            description = ""
-            token_price** = "10 USD" (N)
-            hw_cost = 0.0 #this is a comment
-            llist = []
-            llist3 = "1,2,3" (LF)
-            llist4 = "1,2,3" (L)
-            llist5 = "1,2,3" (LI)
-            U = 0.0
-            pool_type = "managed,unmanaged" (E)
+            0:  llist2 = "" (LS)
+            1:  name*** = ""
+            2:  email** = ""
+            3:  nr** = 0
+            4:  date_start** = 0 (D)
+            5:  description = ""
+            6:  token_price** = "10 USD" (N)
+            7:  hw_cost = 0.0 #this is a comment
+            8:  llist = []
+            9:  llist3 = "1,2,3" (LF)
+            10: llist4 = "1,2,3" (L)
+            11: llist5 = "1,2,3" (LI)
+            12: U = 0.0
+            13: pool_type = "managed,unmanaged" (E)
             """
 
         type = type.lower()

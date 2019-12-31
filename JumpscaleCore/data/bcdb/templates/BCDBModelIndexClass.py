@@ -15,7 +15,7 @@ class {{BASENAME}}(BCDBModelIndex):
         p = j.clients.peewee
 
         self.db = self.bcdb.sqlite_index_client
-        # print(db)
+        print("##DB:%s"%self.db.database)
 
         class BaseModel(p.Model):
             class Meta:

@@ -16,7 +16,6 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         self._reset_state()
         self._JSXObjectClass = JSXObject
         self.models_in_use = False  # if this is set then will not allow certain actions to happen here
-        self._schemas = None
 
     @property
     def SCHEMA_CLASS(self):
@@ -40,39 +39,32 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         :return:
         """
         self.schemas_md5 = j.baseclasses.dict(name="SCHEMASMD5")  # is md5 to schema
-        self.schemas_url = j.baseclasses.dict(name="SCHEMASURL")  # is url to schema
-        self._schemas = None
+        self.schemas_loaded = j.baseclasses.dict(name="SCHEMASURL")  # is url to schema
 
     def reset(self):
         self.meta.reset()
         self._reset_state()
 
     @property
-    def schemas(self):
-        if not self._schemas:
-            self._schemas = j.baseclasses.dict(name="SCHEMAS")
-            for url in self.meta.schema_urls:
-                if url in self.schemas_url:
-                    self._schemas[url] = self.schemas_url[url]
-                else:
-                    self.get(url=url)
-        return self._schemas
+    def schemas_all(self):
+        for url in self.meta.schemas_urls:
+            if url not in self.schemas_loaded:
+                self.get(url=url)
+        return self.schemas_loadeds
 
     def exists(self, md5=None, url=None):
         if md5:
             if md5 in self.schemas_md5:
                 return True
         elif url:
-            if url in self.schemas_url:
+            if url in self.schemas_loaded:
                 return True
         return self.meta.exists(md5=None, url=None)
 
     def schema_cache_remove(self, url):
-        if url in self._schemas:
-            self._schemas.pop(url)
-        if url in self.schemas_url:
-            s = self.schemas_url[url]
-            self.schemas_url.pop(url)
+        if url in self.schemas_loaded:
+            s = self.schemas_loaded[url]
+            self.schemas_loaded.pop(url)
             if s._md5 in self.schemas_md5:
                 self.schemas_md5.pop(s._md5)
 
@@ -119,19 +111,19 @@ class SchemaFactory(j.baseclasses.factory_testtools):
                 return None
         url = self._urlclean(url)
         # if not in mem yet will load here
-        if url not in self.schemas_url:
+        if url not in self.schemas_loaded:
             if not self.meta.exists(url=url):
                 raise j.exceptions.Input("Could not find schema with url:%s" % url)
             data = self.meta.schema_get(url=url)
             self.get_from_text(data["text"], url=data["url"])
-            # return self.schemas_url[data["url"]]
-        if not url in self.schemas_url:
+            # return self.schemas_loaded[data["url"]]
+        if not url in self.schemas_loaded:
             raise j.exceptions.Base("url schould be same as data[url]")
             # j.debug()
             # s = self.get_from_text(data["text"], url=url)
             # j.shell()
             # w
-        return self.schemas_url[url]
+        return self.schemas_loaded[url]
 
     def is_multiple_schema_from_text(self, schema_text):
         """
@@ -144,7 +136,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         blocks = self._schema_blocks_get(schema_text)
         return len(blocks) > 1
 
-    def get_from_text(self, schema_text, extrafields={}, url=None):
+    def get_from_text(self, schema_text, url=None):
         """
         will return the first schema specified if more than 1
 
@@ -158,28 +150,49 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         for i, block in enumerate(blocks):
             if i == 0:
                 # first one can take url
-                res.append(self._get_from_text_single(block, url=url, extrafields=extrafields))
+                res.append(self._get_from_text_single(block, url=url))
             else:
                 # 2nd one needs to have url specified
-                res.append(self._get_from_text_single(block, extrafields=extrafields))
+                res.append(self._get_from_text_single(block))
 
         if len(res) > 0:
             return res[0]
 
-    def _schema_text_rewrite_url(self, url, schema_text):
-        assert url
+    def _schema_text_rewrite(self, url, schema_text):
+        """
+        will add url to schema_text if not there yet
+        :param url:
+        :param schema_text:
+        :return:
+        """
+        if url:
+            if "@url" in schema_text:
+                raise j.exceptions.Input("url given and found @url in schema", data=schema_text)
         schema_text = j.core.tools.text_strip(schema_text)
-        if "@url" in schema_text:
-            out = ""
-            for line in schema_text.split("\n"):
-                if "@url" in line:
-                    continue
+        found_nrs = False
+        nr = 0
+        out = ""
+        for line in schema_text.split("\n"):
+            if line.startswith("@"):
                 out += "%s\n" % line
-            schema_text = out
-        schema_text = "@url = %s\n%s\n" % (url, schema_text.strip())
+            elif line.strip() == "":
+                out += "\n"
+            elif line.strip().startswith("#"):
+                out += "%s\n" % line
+            elif ":" in line:
+                found_nrs = True
+                out += "%s\n" % line
+            else:
+                if found_nrs:
+                    raise j.exceptions.Input("cannot mix nr's and no nrs in schema", data=[url, schema_text])
+                out += "%-2s: %s\n" % (nr, line)
+                nr += 1
+        schema_text = out
+        if url:
+            schema_text = "@url = %s\n%s\n" % (url, schema_text.strip())
         return schema_text
 
-    def _get_from_text_single(self, schema_text, url=None, extrafields={}):
+    def _get_from_text_single(self, schema_text, url=None):
         """
         can only be 1 schema
 
@@ -188,36 +201,16 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         """
         assert isinstance(schema_text, str)
 
-        if url:
-            schema_text = self._schema_text_rewrite_url(url, schema_text)
-
+        schema_text = self._schema_text_rewrite(url, schema_text)
         md5 = self._md5(schema_text)
 
-        # lets check there is a linked schema (which was modified before)
-        md5_linked = self.meta.schema_link_foreign_md5_get(md5)
-        if md5_linked:
-            # means there is already a schema which was modified for this one
-            self._log_debug("schema linked")
-            if md5_linked in self.schemas_md5:
-                return self.schemas_md5[md5_linked]
-        elif md5 in self.schemas_md5:
+        if md5 in self.schemas_md5:
             s = self.schemas_md5[md5]
-            md5_exists = self.meta.schema_link_foreign_md5_get(md5=md5)
-            if md5_exists and not md5 in self.schemas_md5:
-                # should be there, need to investigate why not(despiegk)
-                j.shell()
             if url:
                 assert s.url == url
             return s
 
-        s = Schema(text=schema_text, url=url, extrafields=extrafields)
-
-        if s._md5 != md5:
-            # means schema was modified because of extrafields
-            self.meta.schema_link_foreign_md5(s, md5=md5)
-            self.schemas_md5[md5] = s
-            if md5_linked:
-                assert s._md5 == md5_linked
+        s = Schema(text=schema_text, url=url, md5=md5)
 
         return s
 

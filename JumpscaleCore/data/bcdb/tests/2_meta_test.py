@@ -13,7 +13,7 @@ def main(self):
 
     assert len(bcdb.get_all()) == 0
 
-    s = list(j.data.schema.schemas.keys())
+    s = list(j.data.schema.schemas_loaded.keys())
 
     assert "despiegk.test" in s
 
@@ -29,14 +29,14 @@ def main(self):
 
     assert s.properties_unique == []
 
-    assert "jumpscale.schema.test.a" in j.data.schema.schemas
-    assert "jumpscale.bcdb.circle.2" in j.data.schema.schemas
+    assert "jumpscale.schema.test.a" in j.data.schema.schemas_loaded
+    assert "jumpscale.bcdb.circle.2" in j.data.schema.schemas_loaded
 
     schema = bcdb.model_get(url="jumpscale.schema.test.a")
     o = schema.new()
 
-    assert "jumpscale.schema.test.a" in j.data.schema.schemas
-    assert "jumpscale.bcdb.circle.2" in j.data.schema.schemas
+    assert "jumpscale.schema.test.a" in j.data.schema.schemas_loaded
+    assert "jumpscale.bcdb.circle.2" in j.data.schema.schemas_loaded
 
     s0 = bcdb.schema_get(url="jumpscale.schema.test.a")
     s0md5 = s0._md5 + ""

@@ -64,6 +64,10 @@ class MyWorkerProcess(j.baseclasses.object):
         self.model_action = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.action)
         self.model_worker = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.worker)
 
+        self.model_job.trigger_add(self._obj_print)
+        self.model_action.trigger_add(self._obj_print)
+        self.model_worker.trigger_add(self._obj_print)
+
         if not self.onetime:
             # if not onetime then will send all to queue which will be processed on parent process (the myjobs manager)
             # makes sure that we cannot start by coincidence the data processing loop
@@ -73,6 +77,9 @@ class MyWorkerProcess(j.baseclasses.object):
         self.worker_obj = self.model_worker.get(worker_id)
 
         self.start()
+
+    def _obj_print(self, model, obj, kosmosinstance=None, action=None, propertyname=None):
+        self._log_debug("action: %s" % action, data=obj)
 
     @property
     def id(self):

@@ -19,14 +19,14 @@ class ThreeBotPackage(JSConfigBase):
 
     _SCHEMATEXT = """
         @url = jumpscale.threebot.package.1
-        name** = "main"
-        giturl = "" (S)  #if empty then local
-        branch = "" (S)
-        path = ""
-        status = "init,config,installed,disabled,error" (E)
-        source = (O) !jumpscale.threebot.package.source.1
-        actor = (O) !jumpscale.threebot.package.actor.1
-        bcdbs = (LO) !jumpscale.threebot.package.bcdb.1
+        0:  name** = "main"
+        1:  giturl = "" (S)  #if empty then local
+        2:  branch = "" (S)
+        3:  path = ""
+        4:  status = "init,config,installed,disabled,error" (E)
+        5:  source = (O) !jumpscale.threebot.package.source.1
+        6:  actor = (O) !jumpscale.threebot.package.actor.1
+        7:  bcdbs = (LO) !jumpscale.threebot.package.bcdb.1
 
 
         @url = jumpscale.threebot.package.source.1

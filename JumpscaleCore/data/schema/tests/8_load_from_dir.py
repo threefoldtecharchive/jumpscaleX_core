@@ -13,8 +13,8 @@ def main(self):
 
     j.data.schema.add_from_path(mpath)
 
-    assert len(j.data.schema.schemas) == 4
-    assert len(j.data.schema.schemas) == 4
+    assert len(j.data.schema.schemas_loaded) == 4
+    assert len(j.data.schema.schemas_loaded) == 4
 
     s = j.data.schema.get_from_url("threefoldtoken.wallet")
 

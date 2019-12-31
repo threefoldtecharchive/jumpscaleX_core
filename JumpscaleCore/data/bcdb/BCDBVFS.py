@@ -194,7 +194,7 @@ class BCDBVFS(j.baseclasses.object):
                 # second element must be the nid e.g. /data/5/
                 key = "%s_data_%s" % (self.current_bcbd_name, nid)
                 if not key in self._dirs_cache:
-                    self._dirs_cache[key] = BCDBVFS_Data_Dir(self, key=key, items=j.data.schema.schemas.keys())
+                    self._dirs_cache[key] = BCDBVFS_Data_Dir(self, key=key, items=j.data.schema.schemas_loaded.keys())
             else:
                 url = splitted[2]
                 if path_length == 3:
@@ -258,7 +258,7 @@ class BCDBVFS(j.baseclasses.object):
         if len(splitted) == 1:
             key = "schemas"
             if not key in self._dirs_cache:
-                res = BCDBVFS_Schema_Dir(self, items=j.data.schema.schemas.keys())
+                res = BCDBVFS_Schema_Dir(self, items=j.data.schema.schemas_loaded.keys())
         else:
             url = splitted[1]
             key = "schemas_%s" % (url)

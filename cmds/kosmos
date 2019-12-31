@@ -30,7 +30,7 @@ parser.add_argument(
 )
 
 parser.add_argument("-s", "--slave", default=None, action="store_true", help="force as slave")
-parser.add_argument("-m", "--master", default=None, action="store_true", help="force as slave")
+parser.add_argument("-m", "--master", default=None, action="store_true", help="force as master")
 
 # parser.add_argument("--init", default=False, action="store_true", help="Initialize a jumpscale system")
 

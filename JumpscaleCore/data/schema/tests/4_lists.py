@@ -52,7 +52,7 @@ def main(self):
     assert j.data.schema.get_from_md5(md5=schema_object2._md5)._md5 == schema_object2._md5
     assert schema_object2._md5 == j.data.schema._md5(schema1)
 
-    assert j.data.schema.schemas["jumpscale.schema.test4.cmd"]._md5 == schemasub2._md5
+    assert j.data.schema.schemas_loaded["jumpscale.schema.test4.cmd"]._md5 == schemasub2._md5
 
     q = schema_object.new()
     assert q.cmds._child_type_._schema._md5 == schemasub._md5

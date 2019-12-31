@@ -113,27 +113,20 @@ class BCDB(j.baseclasses.object):
     def _init_system_objects(self):
 
         assert self.name
-        j.data.bcdb._instances[self.name] = self
 
         if not j.data.types.string.check(self.name):
             raise j.exceptions.Base("name needs to be string")
 
-        # need to do this to make sure we load the classes from scratch
-        ## TODO: make sure to load meta.toml.
-        for item in ["ACL", "USER", "GROUP"]:
-            key = "Jumpscale.data.bcdb.models_system.%s" % item
-            if key in sys.modules:
-                sys.modules.pop(key)
+        # think no longer needed
+        # for item in ["ACL", "USER", "GROUP"]:
+        #     key = "Jumpscale.data.bcdb.models_system.%s" % item
+        #     if key in sys.modules:
+        #         sys.modules.pop(key)
 
         from .models_system.ACL import ACL
         from .models_system.USER import USER
         from .models_system.CIRCLE import CIRCLE
         from .models_system.NAMESPACE import NAMESPACE
-
-        system_meta_path = j.core.tools.text_replace(
-            "{DIR_CODE}/github/threefoldtech/jumpscaleX_core/JumpscaleCore/data/bcdb/models_system/meta.toml"
-        )
-        j.data.schema.add_from_path(system_meta_path)
 
         self.acl = self.model_add(ACL(bcdb=self))
         self.user = self.model_add(USER(bcdb=self))
@@ -432,22 +425,23 @@ class BCDB(j.baseclasses.object):
             assert self.storclient.get(0)
 
         self._init_props_()
-        self._init_system_objects()
+        # self._init_system_objects()
 
     def destroy(self):
         """
-        removed all data and the bcbd instance
+        removed all data and the bcdb instance
         :return:
         """
 
         self.reset()
         if self.name in j.data.bcdb._config:
             j.data.bcdb._config.pop(self.name)
-        if self.name in j.data.bcdb._instances:
-            j.data.bcdb._instances.pop(self.name)
         j.data.bcdb._config_write()
         for key in j.core.db.keys("bcdb:%s:*" % self.name):
             j.core.db.delete(key)
+
+        if self.name in j.data.bcdb._children:
+            j.data.bcdb._instances.pop(self.name)
 
     def _redis_reset(self):
         # shouldnt this be part of the indexing class?
@@ -575,7 +569,7 @@ class BCDB(j.baseclasses.object):
             if prop.jumpscaletype.NAME == "list" and isinstance(prop.jumpscaletype.SUBTYPE, j.data.types._jsxobject):
                 # now we know that there is a subtype, we need to store it in the bcdb as well
                 s = prop.jumpscaletype.SUBTYPE._schema
-                if s.url not in j.data.schema.schemas_url:
+                if not j.data.schema.exists(url=s.url):
                     # should be there lets see why not
                     j.shell()
                 # now see if more subtypes
@@ -584,7 +578,7 @@ class BCDB(j.baseclasses.object):
                     done = self._schema_property_add_if_needed(s)
             elif prop.jumpscaletype.NAME == "jsxobject":
                 s = prop.jumpscaletype._schema
-                if s.url not in j.data.schema.schemas_url:
+                if s.url not in j.data.schema.schemas_loaded:
                     # should be there lets see why not
                     j.shell()
                 # now see if more subtypes

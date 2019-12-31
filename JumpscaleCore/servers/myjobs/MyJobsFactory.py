@@ -497,12 +497,14 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         assert self.queue_jobs_start.qsize() == 0
 
     def reset_data(self):
-        self.model_action.destroy()
+        self.wait_queues_delete()
+        self.model_action.reset()
         self.jobs.reset()
         self.workers.reset()
         self.scheduled_ids = []
         self.queue_jobs_start.reset()
         assert self.queue_jobs_start.qsize() == 0
+        self._init()
 
     def check_all(self, die=True):
         for job in self.find(state="NEW"):
@@ -556,7 +558,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         res = []
         with gevent.Timeout(timeout, False):
             for queue_name in queue_names:
-                queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)
+                queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:wait:%s" % queue_name)
                 queues.append(queue)
                 while queue.qsize() < size:
                     gevent.sleep(0)
@@ -579,6 +581,11 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
             for queue in queues:
                 queue.reset()
             return res
+
+    def wait_queues_delete(self):
+        for key in j.core.db.keys("myjobs:wait*"):
+            j.core.db.delete(key)
+            j.shell()
 
     def results(self, ids=None, return_queues=None, timeout=100, die=True):
         if ids is None:
