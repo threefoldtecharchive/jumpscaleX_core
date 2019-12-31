@@ -58,13 +58,15 @@ class JSConfigBCDBBase(JSBase, Attr):
                     schema = j.data.schema.get_from_text(block)
                     if "name" not in schema.props:
                         raise j.exceptions.Input("name need to be a field and indexed (S)", data=schema)
-                    if not schema.props["name"].index_key:
+                    if not schema.props["name"].index:
                         raise j.exceptions.Input("name need to be a field and index (**)", data=schema)
                     if has_mother:
                         if "mother_id" not in schema.props:
-                            raise j.exceptions.Input("mother_id need to be a field (int) and indexed", data=schema)
-                        if not schema.props["mother_id"].index_key:
-                            raise j.exceptions.Input("mother_id need to be a field and index (**)", data=schema)
+                            raise j.exceptions.Input(
+                                "mother_id need to be a field (int) and indexed, didn't exist", data=schema
+                            )
+                        if not schema.props["mother_id"].index:
+                            raise j.exceptions.Input("mother_id need to be a field (int) and index (**)", data=schema)
                     first = False
                 else:
                     j.data.schema.get_from_text(block)

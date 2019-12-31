@@ -81,37 +81,6 @@ class {{BASENAME}}(BCDBModelIndex):
         self.sql.delete().where(self.sql.id == obj_id).execute()
 
 
-
-    {%- if index.active_keys %}
-    def _key_index_set(self,obj):
-        {%- for property_name in index.fields_key %}
-        # if self._hasattr(obj,"{{property_name}}"):
-        val = obj.{{property_name}}
-        if val not in ["",None]:
-            val=str(val)
-            # self._log_debug("key:{{property_name}}:%s:%s"%(val,obj.id))
-            self._key_index_set_("{{property_name}}",val,obj.id,nid=obj.nid)
-        {%- endfor %}
-
-    def _key_index_delete(self,obj):
-        {%- for property_name in index.fields_key %}
-        # if self._hasattr(obj,"{{property_name}}"):
-        val = obj.{{property_name}}
-        if val not in ["",None]:
-            val=str(val)
-            self._log_debug("delete key:{{property_name}}:%s:%s"%(val,obj.id))
-            self._key_index_delete_("{{property_name}}",val,obj.id,nid=obj.nid)
-        {%- endfor %}
-
-    {% else %}
-    def _key_index_set(self,obj):
-        return
-
-    def _key_index_delete(self,obj):
-        return
-
-    {%- endif %}
-
     {%- if index.active_text %}
     def _text_index_set(self,obj):
         {%- for property_name in index.fields_text %}

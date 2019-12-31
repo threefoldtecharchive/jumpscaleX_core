@@ -8,7 +8,6 @@ class SchemaProperty(j.baseclasses.object):
 
         # following 2 need to be given
         self.nr = kwargs["nr"]
-        self.line = kwargs["line"]
 
         self.name = kwargs.get("name", "")
         self.attr = kwargs.get("attr", "")
@@ -16,7 +15,7 @@ class SchemaProperty(j.baseclasses.object):
         self.comment = kwargs.get("comments", "")
         self._default = None
         self.index = kwargs.get("index", False)  # as used in sqlite
-        self.index_key = False  # is for indexing the keys
+        # self.index_key = False  # is for indexing the keys
         self.index_text = False  # is for full text index
         self.unique = False  # to check if type is unique or not
         if self.name in ["schema"]:

@@ -15,7 +15,6 @@ class SchemaMeta(j.baseclasses.object):
             {$url:
                 {
                     "sid":sid,
-                    "props":{name:[nr,propertyline],...},
                     "md5s":[]
                 }
                 #latest md5 is at end of list, sid is the schema id based on url,
@@ -122,16 +121,6 @@ class SchemaMeta(j.baseclasses.object):
                 return self._data_md5_get(url)
         raise j.exceptions.Input(f"did not find schema in meta with md5:'{md5}' and url '{url}'")
 
-    def props_get(self, url):
-        if url in self._data["url"]:
-            if "props" not in self._data["url"][url]:
-                self._data["url"][url]["props"] = {}
-                # if not "md5" in self._data["url"][url] or not self._data["url"][url]["md5s"]:
-                #     j.debug()
-                assert self._data["url"][url]["md5s"]
-            return self._data["url"][url]["props"]
-        return {}
-
     def _schema_define(self, url):
         # optimized for speed, will happen quite a lot, need to know when there is change
         def find_sid():
@@ -143,7 +132,7 @@ class SchemaMeta(j.baseclasses.object):
             return sid_highest + 1
 
         if url not in self._data["url"]:
-            self._data["url"][url] = {"sid": find_sid(), "props": {}, "md5s": []}
+            self._data["url"][url] = {"sid": find_sid(), "md5s": []}
             self.save()
 
     def schema_set(self, schema, save=True):
@@ -156,10 +145,6 @@ class SchemaMeta(j.baseclasses.object):
 
         if not isinstance(schema, j.data.schema.SCHEMA_CLASS):
             raise j.exceptions.Base("schema needs to be of type: j.data.schema.SCHEMA_CLASS")
-
-        props = {}
-        for name, p in schema._children.items():
-            props[name] = [p.nr, p.line]
 
         change = False  # we only want to save is there is a change
 

@@ -13,6 +13,8 @@ class Schema(j.baseclasses.object):
 
         self.systemprops = j.baseclasses.dict()
 
+        self.text = text
+
         self.url = url
 
         assert md5
@@ -156,19 +158,10 @@ class Schema(j.baseclasses.object):
         key, _line = line.split("=", 1)
         key = key.replace("*", "").replace("&", "").lower().strip()
 
-        if not nr:
-            metadata = self._meta_url["props"]
-            if key in metadata:
-                nr, line_old = metadata[key]
-            else:
-                nr = len(self._meta_url["props"])
-                metadata[key] = [nr, line]
-
         line_original = copy(line)
         propname, line = line.split("=", 1)
         propname = propname.strip()
-        if ":" in propname:
-            self._error_raise("Aliases no longer supported in names, remove  ':' in name '%s'" % propname, schema=text)
+
         line = line.strip()
 
         if "!" in line:
@@ -186,7 +179,7 @@ class Schema(j.baseclasses.object):
         else:
             comment = ""
 
-        p = SchemaProperty(nr=nr, line=line_original)
+        p = SchemaProperty(nr=nr)
 
         name = propname + ""  # make sure there is copy
         if name.endswith("***"):
@@ -197,8 +190,8 @@ class Schema(j.baseclasses.object):
             p.index = True
         if name.endswith("*"):
             raise j.exceptions.Input("key based indexing (*) for now not supported use **", data=line)
-            name = name[:-1]
-            p.index_key = True
+            # name = name[:-1]
+            # p.index_key = True
         if name.startswith("&"):
             name = name[1:]
             p.unique = True
@@ -248,15 +241,6 @@ class Schema(j.baseclasses.object):
         assert p.jumpscaletype.NAME is not "list"
 
         return p
-
-    @property
-    def text(self):
-        out = "@url = %s\n" % self.url
-        for key, val in self.systemprops.items():
-            out += "@%s = %s\n" % (key, val)
-        for p in self.properties:
-            out += "%-2s:: %s\n" % (p.nr, p.line)
-        return out
 
     @property
     def _capnp_id(self):
@@ -398,17 +382,17 @@ class Schema(j.baseclasses.object):
                     res.append(sprop)
         return res
 
-    @property
-    def properties_index_keys(self):
-        """
-        list of the properties which are used for indexing with keys
-        :return:
-        """
-        res = []
-        for prop in self.properties:
-            if prop.index_key:
-                res.append(prop)
-        return res
+    # @property
+    # def properties_index_keys(self):
+    #     """
+    #     list of the properties which are used for indexing with keys
+    #     :return:
+    #     """
+    #     res = []
+    #     for prop in self.properties:
+    #         if prop.index_key:
+    #             res.append(prop)
+    #     return res
 
     @property
     def properties_index_text(self):
