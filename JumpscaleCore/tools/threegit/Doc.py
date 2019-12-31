@@ -71,15 +71,16 @@ class Doc(j.baseclasses.object):
                 yield txt[i : i + length]
 
     def register_sonic(self):
+        print(f"indexing {self.docsite.name} of {self.path_rel}")
         text = self.markdown_source.replace("\n", " ").strip()
         if not text:
             return
         if " " in self.name:
             print("file {} can't be indexed it contains space in the file name")
             return
-        for chunck in self.chunks(text, int(self.sonic_client.bufsize) // 2):
+        for chunk in self.chunks(text, int(self.sonic_client.bufsize) // 2):
             try:
-                self.sonic_client.push("docsites", self.docsite.name, self.path_rel, chunck)
+                self.sonic_client.push("docsites", self.docsite.name, self.path_rel, chunk)
             except Exception as e:
                 print("Couldn't index {}".format(self.name))
 
