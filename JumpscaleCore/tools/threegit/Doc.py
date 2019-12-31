@@ -361,13 +361,12 @@ class Doc(j.baseclasses.object):
             if link.filename:
                 dest_file = j.sal.fs.joinPaths(self.docsite.outpath, self.path_dir_rel, link.filename)
 
-                if link.filepath and not j.sal.fs.exists(dest_file):
+                if link.filepath and j.sal.fs.exists(link.filepath) and not j.sal.fs.exists(dest_file):
                     # make sure parent dir of dest_file exists
                     j.sal.fs.createDir(j.sal.fs.getParent(dest_file))
                     j.sal.fs.copyFile(link.filepath, dest_file)
-                else:
-                    if link.source.startswith("!"):
-                        link.download(dest=dest_file)
+                elif link.source.startswith("!"):
+                    link.download(dest=dest_file)
                 # now change the right link in the doc
                 # link.link_source = j.sal.fs.pathRemoveDirPart(dest_file,self.docsite.outpath)
                 # Set link source to the file name only as it gets its files from current page path
