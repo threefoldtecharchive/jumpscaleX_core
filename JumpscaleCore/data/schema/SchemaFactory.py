@@ -166,14 +166,13 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         :param schema_text:
         :return:
         """
-        if url:
-            if "@url" in schema_text:
-                raise j.exceptions.Input("url given and found @url in schema", data=schema_text)
         schema_text = j.core.tools.text_strip(schema_text)
         found_nrs = False
         nr = 0
         out = ""
         for line in schema_text.split("\n"):
+            if url and line.startswith("@url"):
+                continue
             if line.startswith("@"):
                 out += "%s\n" % line
             elif line.strip() == "":

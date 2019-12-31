@@ -20,6 +20,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
     def _threebot_starting(self):
         print("MARK THREEBOT IS STARTING")
+        j.tools.executor.local
         j.threebot.active = True
         if j.core.db:
             j.core.db.set("threebot.starting", ex=120, value="1")
@@ -69,10 +70,11 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def start(self, background=False, packages=None, reload=False):
+    def start(self, background=False, packages=None, reload=False, with_shell=True):
         """
-        kosmos -p 'j.servers.threebot.start(background=False)'
         kosmos -p 'j.servers.threebot.start(background=True)'
+        kosmos -p 'j.servers.threebot.start(background=False,with_shell=False)'
+        kosmos -p 'j.servers.threebot.start(background=False,with_shell=True)'
 
         if background:
             will check if there is already one running, will create client to localhost & return
@@ -111,7 +113,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         else:
             self.install()
-            self.default.start(background=False, packages=packages)
+            self.default.start(background=False, packages=packages, with_shell=with_shell)
 
     def local_start_3bot(self, background=False, reload=False):
         """starts 3bot with webplatform package.
@@ -120,12 +122,12 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         packages = ["{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform"]
         return self.start(background=background, packages=packages, reload=reload)
 
-    def local_start_explorer(self, background=False, reload=False):
+    def local_start_explorer(self, background=False, reload=False, with_shell=True):
         """
 
         starts 3bot with phonebook, directory, workloads packages.
 
-        kosmos -p 'j.servers.threebot.local_start_explorer()'
+        kosmos -p 'j.servers.threebot.local_start_explorer(with_shell=True)'
 
         """
         packages = [
@@ -133,7 +135,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
             f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/directory",
             f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/workloads",
         ]
-        return self.start(background=background, packages=packages, reload=reload)
+        return self.start(background=background, packages=packages, reload=reload, with_shell=with_shell)
 
     def test(self, name=None, restart=False):
         """

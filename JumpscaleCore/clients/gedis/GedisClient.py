@@ -101,13 +101,13 @@ class GedisClient(JSConfigBase):
 
         # this will make sure we know the core schema's as used on server
         # if system schema's not known, we get them from the server
-        if "jumpscale_bcdb_acl_user_2" not in j.data.schema.schemas:
+        if not j.data.schema.exists("jumpscale_bcdb_acl_user_2"):
             r = self._redis_cmd_execute("jsx_schemas_get")
             r2 = j.data.serializers.msgpack.loads(r)
             for key, data in r2.items():
                 schema_text, schema_url = data
                 if not j.data.schema.exists(md5=key):
-                    j.data.schema.get_from_text(schema_text, url=schema_url)
+                    j.data.schema.get_from_text(schema_text)
 
         cmds_meta = self._redis_cmd_execute("api_meta_get", self.package_name)
         cmds_meta = j.data.serializers.msgpack.loads(cmds_meta)

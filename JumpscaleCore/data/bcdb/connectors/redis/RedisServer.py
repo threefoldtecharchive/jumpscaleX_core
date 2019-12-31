@@ -194,7 +194,7 @@ class RedisServer(j.baseclasses.object):
             response.error("COULD NOT GET URL:%s\n%s" % (bcdbname, e))
             return
 
-        # model.index.sql_index_count()
+        model.index.sql_index_count()
 
         response.encode("OK")
 

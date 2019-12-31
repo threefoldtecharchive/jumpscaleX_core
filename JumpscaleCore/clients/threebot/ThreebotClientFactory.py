@@ -34,7 +34,7 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
     def explorer(self):
         if not self._explorer:
             self._explorer = j.baseclasses.object_config_collection_testtools.get(
-                self, name="explorere", host=self.explorer_addr
+                self, name="explorer", host=self.explorer_addr
             )
         return self._explorer
 

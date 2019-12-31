@@ -77,6 +77,7 @@ class JSConfigBCDBBase(JSBase, Attr):
                 self._model_ = self._bcdb.model_get(schema=schema)
             else:
                 # make remote connection (to the threebotserver)
+                # print("CONNECT TO THREEBOTSERVER FOR MODEL")
                 self._model_ = j.clients.bcdbmodel.get(name=self._bcdb.name, schema=schema)
                 self._bcdb_ = self._model.bcdb
 

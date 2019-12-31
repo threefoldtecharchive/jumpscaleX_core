@@ -204,13 +204,8 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.zdb  # will start sonic & zdb
             self.sonic
 
-            # # will make sure all BCDB's are locked
-            # j.data.bcdb.lock()
-
             # make sure client for myjobs properly configured
             # j.core.db.redisconfig_name = "core"
-            # storclient = j.clients.rdb.client_get(redisclient=j.core.db)
-            # myjobs_bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
             j.data.bcdb.get_for_threebot("myjobs", "myjobs", "redis")
 
             j.threebot.servers = Servers()

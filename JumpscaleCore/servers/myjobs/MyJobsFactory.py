@@ -258,21 +258,23 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         :param reset:
         :return:
         """
+        timeout_error = 600
+        timeout_busy = 1200
         while True:
             self._log_debug("check workers")
             for w in self.workers.find(reload=True):
                 if w.state == "HALTED":
                     w.stop(hard=True)
-                    if w.last_update < j.data.time.epoch - 41:
+                    if w.last_update < j.data.time.epoch - (timeout_error + 2):
                         w.delete()
                 elif w.state in ["ERROR"]:
                     w._log_warning("WORKER IN ERROR:%s" % w.nr)
-                    # auto restart when 41 sec in error
-                    if w.last_update < j.data.time.epoch - 41:
+                    # auto restart when $timeout_error sec in error
+                    if w.last_update < j.data.time.epoch - (timeout_error + 1):
                         w.stop(hard=True)
                         w.start()
                 elif w.state in ["WAITING"]:
-                    if w.last_update > j.data.time.epoch - 40:
+                    if w.last_update > j.data.time.epoch - timeout_error:
                         # w._log_info("no need to start worker:%s" % w.nr)
                         pass
                     else:
@@ -283,8 +285,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                     if reset:
                         w.stop(hard=True)
                         w.start()
-                    if w.last_update < j.data.time.epoch - 1200:
-                        w._log_warning("worker was busy for 20 min, will kill:%s" % w.nr)
+                    if w.last_update < j.data.time.epoch - timeout_busy:
+                        w._log_warning("worker was busy for %s min, will kill:%s" % (timeout_busy, w.nr))
                         w.stop(hard=True)
                         w.start()
                 elif w.state in ["NEW"]:
