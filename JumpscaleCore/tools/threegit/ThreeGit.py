@@ -95,8 +95,8 @@ class ThreeGit(j.baseclasses.object_config):
             # check if we already have a git repo, then the current checked-out branch
             repo_args = j.clients.git.getGitRepoArgs(path)
             host = repo_args[0]
-            dest = repo_args[-3]
-            repo_dest = j.clients.git.findGitPath(dest, die=False)
+            git_dest = repo_args[-3]
+            repo_dest = j.clients.git.findGitPath(git_dest, die=False)
             if repo_dest:
                 # replace branch with current one
                 current_branch = j.clients.git.getCurrentBranch(repo_dest)

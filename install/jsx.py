@@ -441,7 +441,7 @@ def basebuilder_(dest=None, push=False, delete=True):
 @click.command()
 @click.option("-n", "--name", default=None, help="name of the wiki, you're given name")
 @click.option("-u", "--url", default=None, help="url of the github wiki")
-@click.option("-r", "--reset", default=None, help="reset git revision and process all files")
+@click.option("-r", "--reset", is_flag=True, help="reset git revision and process all files")
 @click.option("-f", "--foreground", is_flag=True, help="if you don't want to use the job manager (background jobs)")
 def wiki_load(name=None, url=None, reset=False, foreground=False):
     # monkey patch for myjobs to start/work properly
@@ -482,12 +482,13 @@ def wiki_load(name=None, url=None, reset=False, foreground=False):
 
     if not foreground:
         greenlets = [
-            gevent.spawn(threebot_client.actors.wiki_content.load, wiki_name, wiki_url) for wiki_name, wiki_url in wikis
+            gevent.spawn(threebot_client.actors.wiki_content.load, wiki_name, wiki_url, reset)
+            for wiki_name, wiki_url in wikis
         ]
         gevent.wait(greenlets)
     else:
         for wiki_name, wiki_url in wikis:
-            load_wiki(wiki_name, wiki_url)
+            load_wiki(wiki_name, wiki_url, reset=reset)
     print("You'll find the wiki(s) loaded at https://<container or 3bot hostname>/wiki")
 
 

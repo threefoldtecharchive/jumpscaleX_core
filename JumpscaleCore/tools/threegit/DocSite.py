@@ -327,10 +327,9 @@ class DocSite(j.baseclasses.object):
                 if j.sal.fs.isDir(item):
                     if callbackForMatchDir(item, ""):
                         callbackFunctionDir(item, "")
-
         if old_files:
             for ditem in old_files:
-                item_path = j.sal.fs.joinPaths(self.outpath, j.sal.fs.getBaseName(ditem))
+                item_path = j.sal.fs.joinPaths(self.outpath, ditem)
                 j.sal.fs.remove(item_path)
 
         git_client.logChangesRevisionSet(revision)

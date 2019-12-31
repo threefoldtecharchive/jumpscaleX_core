@@ -337,6 +337,8 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
         :return:
         """
         self.q_out.put({"cat": "redirect", "msg": msg, "kwargs": kwargs})
+        # dangerous: better spend time figuring out why this is happening
+        gevent.sleep(1)
 
     def html_show(self, msg, **kwargs):
         """
