@@ -63,6 +63,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         self._openresty_server = None
         self._startup_cmd = None
         self._zdb = None
+        self._sonic = None
         self.threebot_server = None
         self.web = False
         self.ssl = False
@@ -181,7 +182,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             gevent.sleep(day1)
 
-    def start(self, background=False, restart=False, packages=None):
+    def start(self, background=False, restart=False, packages=None, with_shell=True):
         """
 
         kosmos -p 'j.servers.threebot.default.start(background=True)'
@@ -192,7 +193,8 @@ class ThreeBotServer(j.baseclasses.object_config):
         :type packages: list of str
         ports & paths used for threebotserver
         see: {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/docs/3Bot/web_environment.md
-
+        :param with_shell: if set, will run j.shell() after a successful start, defaults to True
+        :type with_shell: bool
         """
         packages = packages or []
 
@@ -213,7 +215,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             j.threebot.servers = Servers()
             j.threebot.servers.zdb = self.zdb
-            j.threebot.servers.zonic = self.sonic
+            j.threebot.servers.sonic = self.sonic
             j.threebot.servers.gedis = self.gedis_server
             j.threebot.servers.web = self.openresty_server
             j.threebot.servers.core = self
@@ -310,7 +312,8 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
 
-            # j.shell()  # for now removed otherwise debug does not work
+            if with_shell:
+                j.shell()  # for now removed otherwise debug does not work
 
             forever = event.Event()
             try:
