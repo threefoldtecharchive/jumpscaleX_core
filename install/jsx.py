@@ -529,14 +529,18 @@ def threebot_flist(username=None, secret=None, app_id=None):
 
 
 @click.command(name="wiki-reload")
-@click.option("-n", "--name", default=None, help="name of the wiki, you're given name", required=True)
-def wiki_reload(name=None):
+@click.option("-n", "--name", help="name of the wiki, you're given name", required=True)
+@click.option("-r", "--reset", is_flag=True, help="reset git revision and process all files")
+def wiki_reload(name, reset=False):
     """
     reload the changed files from wikis repo
     ex: jsx wiki-reload -n foundation
     """
     j = jumpscale_get()
-    j.tools.markdowndocs.reload(name)
+    if not j.tools.threegit.exists(name=name):
+        print("Need to load the wiki first using wiki-load command")
+        return
+    j.tools.threegit.get(name=name).process(reset=reset)
 
 
 @click.command(name="threebotbuilder")

@@ -12,6 +12,7 @@ def load_wiki(wiki_name=None, wiki_path=None, reset=False):
     j.sal.fs.createDir(path_dest)
 
     threegit_tool.process(reset=reset)
+    threegit_tool.save()
 
 
 class ThreeGit(j.baseclasses.object_config):
