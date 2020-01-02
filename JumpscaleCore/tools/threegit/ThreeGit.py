@@ -5,13 +5,14 @@ from .DocSite import DocSite, Doc
 
 
 def load_wiki(wiki_name=None, wiki_path=None, reset=False):
-    """loads any wiki and writes it do /docsites we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
-    path_dest = f"/docsites/{wiki_name}"
-
-    threegit_tool = j.tools.threegit.get(name=wiki_name, path_source=wiki_path, path_dest=path_dest)
-    j.sal.fs.createDir(path_dest)
-
-    threegit_tool.process(reset=reset)
+    """
+    loads any wiki and writes it do j.tools.threegit.docsites_path (/sandbox/var/docsites by default)
+    we cannot use name parameter with myjobs.schedule, it has a name parameter itself
+    """
+    # use default path_dest
+    threegit = j.tools.threegit.get(name=wiki_name, path_source=wiki_path, path_dest="")
+    threegit.process(reset=reset)
+    threegit.save()
 
 
 class ThreeGit(j.baseclasses.object_config):
