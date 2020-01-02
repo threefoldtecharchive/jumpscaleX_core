@@ -18,11 +18,11 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         self.current = None
         self.client = None
 
-    def _threebot_starting(self):
+    def _threebot_starting(self, starting=True):
         print("MARK THREEBOT IS STARTING")
         j.tools.executor.local
         j.threebot.active = True
-        if j.core.db:
+        if j.core.db and starting:
             j.core.db.set("threebot.starting", ex=120, value="1")
         j.data.bcdb._master_set()
 

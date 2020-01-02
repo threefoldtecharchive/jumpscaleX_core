@@ -79,17 +79,15 @@ class GedisChatBotFactory(JSBASE):
         :param chatflows_dir: the dir path need to look for chatflows into it
         """
         chatflow_names = []
-        for chatflow in j.sal.fs.listFilesInDir(chatflows_dir, recursive=True, filter="*.py", followSymlinks=True):
-            dir_path = j.sal.fs.getDirName(chatflow)
-            if dir_path not in sys.path:
-                sys.path.append(dir_path)
-            self._log_info("chat:%s" % chatflow)
-            module_name = j.sal.fs.getBaseName(chatflow)[:-3]
+        for chatflow_path in j.sal.fs.listFilesInDir(chatflows_dir, recursive=True, filter="*.py", followSymlinks=True):
+            self._log_info("chat:%s" % chatflow_path)
+            module_name = j.sal.fs.getBaseName(chatflow_path)[:-3]
             if module_name.startswith("_"):
                 continue
-            loaded_chatflow = import_module(module_name)
             # Each chatflow file must have `chat` method which contains all logic/questions
-            self.chat_flows[module_name] = loaded_chatflow.chat
+            mod, changed = j.tools.codeloader.load("chat", path=chatflow_path, reload=False)
+            if changed:
+                self.chat_flows[module_name] = mod
             chatflow_names.append(module_name)
         return chatflow_names
 

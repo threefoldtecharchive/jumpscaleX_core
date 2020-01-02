@@ -73,7 +73,10 @@ class CodeLoader(j.baseclasses.object):
             txt = j.sal.fs.readFile(path)
             md5 = j.data.hash.md5_string(txt)
 
+        changed = False
+        # there is a memory leak here because we don't unload the modules which have newer version
         if reload or md5 not in self._hash_to_codeobj:
+            changed = True
             try:
                 m = imp.load_source(name=md5, pathname=path)
             except Exception as e:
@@ -86,7 +89,6 @@ class CodeLoader(j.baseclasses.object):
             try:
                 obj = eval("m.%s" % obj_key)
             except Exception as e:
-                j.shell()
                 out = j.sal.fs.readFile(path)
                 msg = "SCRIPT CONTENT:\n%s\n\n" % out
                 msg += "---------------------------------\n"
@@ -97,4 +99,4 @@ class CodeLoader(j.baseclasses.object):
 
             self._hash_to_codeobj[md5] = obj
 
-        return self._hash_to_codeobj[md5]
+        return self._hash_to_codeobj[md5], changed

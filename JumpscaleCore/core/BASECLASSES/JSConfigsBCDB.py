@@ -169,7 +169,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 obj.load()
             return 1, obj
 
-        self._log_debug("get child:'%s'from '%s'" % (name, self._classname))
+        # self._log_debug("get child:'%s'from '%s'" % (name, self._classname))
 
         # new = False
         res = self.find(name=name)

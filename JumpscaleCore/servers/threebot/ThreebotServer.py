@@ -383,6 +383,7 @@ class ThreeBotServer(j.baseclasses.object_config):
     def _packages_core_init(self):
         if not j.tools.threebot_packages.exists(name="zerobot.webinterface"):
             j.tools.threebot_packages.load()
+        j.shell()
         names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta_ui"]  # , "system_bcdb"]
         for name in names:
             name2 = f"zerobot.{name}"

@@ -149,7 +149,7 @@ class Jinja2(j.baseclasses.object):
             j.sal.fs.writeFile(dest, out)
             if dest_md5 is not None:
                 j.sal.fs.writeFile(dest_md5, md5)  # remember the md5
-        obj = j.tools.codeloader.load(obj_key=obj_key, path=dest, md5=md5)
+        obj, changed = j.tools.codeloader.load(obj_key=obj_key, path=dest, md5=md5)
 
         self._hash_to_codeobj[md5] = obj
 

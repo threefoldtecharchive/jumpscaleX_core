@@ -38,7 +38,7 @@ class JSBase:
             kwargs.pop("parent")
         self._init_pre(**kwargs)
         self._init_actor(**kwargs)
-        self._init_pre2(**kwargs)
+        self._init_jsconfig(**kwargs)
         self.__init_class()
         self._obj_cache_reset()
         self._init(**kwargs)
@@ -176,7 +176,7 @@ class JSBase:
         """
         pass
 
-    def _init_pre2(self, **kwargs):
+    def _init_jsconfig(self, **kwargs):
         """
         meant to be used by developers of the base classes
         :return:

@@ -7,7 +7,7 @@ classes who use JSXObject for data storage but provide nice interface to enduser
 
 
 class JSConfigBCDB(JSConfigBCDBBase):
-    def _init_pre2(self, jsxobject=None, datadict=None, name=None, **kwargs):
+    def _init_jsconfig(self, jsxobject=None, datadict=None, name=None, **kwargs):
 
         if jsxobject:
             self._data = jsxobject

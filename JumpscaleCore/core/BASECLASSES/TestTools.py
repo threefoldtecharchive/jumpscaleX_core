@@ -69,7 +69,7 @@ class TestTools:
             path3 = self.__find_code(name=name, path=path2)
         else:
             path3 = path2
-        method = j.tools.codeloader.load(obj_key=obj_key, path=path3)
+        method, changed = j.tools.codeloader.load(obj_key=obj_key, path=path3)
         self._log_debug("##:LOAD: path: %s\n\n" % path2)
         if die or j.application.debug:
             res = method(self=self, **kwargs)

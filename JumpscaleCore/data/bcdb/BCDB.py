@@ -596,7 +596,7 @@ class BCDB(j.baseclasses.object):
 
         self._log_debug("model get from file:%s" % path)
         obj_key = j.sal.fs.getBaseName(path)[:-3]
-        cl = j.tools.codeloader.load(obj_key=obj_key, path=path, reload=False)
+        cl, changed = j.tools.codeloader.load(obj_key=obj_key, path=path, reload=False)
         model = cl(self)
         self.model_add(model)
         return model
