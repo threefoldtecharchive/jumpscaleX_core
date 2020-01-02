@@ -26,22 +26,22 @@ class Packages:
     pass
 
 
-class PackageInstall(j.baseclasses.object):
-    def _init(self, name=None, path=None):
-        self.path = path
-        self.name = name
-        self._zdb = None
-        self._sonic = None
-
-    def install(self):
-        server = j.servers.threebot.default
-        package = j.tools.threebot_packages.get(self.name, path=self.path, threebot_server_name=server.name)
-        package.prepare()
-        package.save()
-        name = self.name
-        package.start()
-        j.threebot.packages.__dict__[self.name] = package
-        return "OK"
+# class PackageInstall(j.baseclasses.object):
+#     def _init(self, name=None, path=None):
+#         self.path = path
+#         self.name = name
+#         self._zdb = None
+#         self._sonic = None
+#
+#     def install(self):
+#         server = j.servers.threebot.default
+#         package = j.tools.threebot_packages.get(self.name, path=self.path, threebot_server_name=server.name)
+#         package.prepare()
+#         package.save()
+#         name = self.name
+#         package.start()
+#         j.threebot.packages.__dict__[self.name] = package
+#         return "OK"
 
 
 class ThreeBotServer(j.baseclasses.object_config):
@@ -262,29 +262,6 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             self._packages_core_init()
 
-            j.threebot.__dict__["packages"] = Packages()
-
-            for package in j.tools.threebot_packages.find():
-
-                if package.status in ["installed", "error"]:
-                    self._log_warning("START:%s" % package.name)
-                    try:
-                        package.start()
-                    except Exception as e:
-                        j.core.tools.log(level=50, exception=e, stdout=True)
-                        package.status = "error"
-                    package.save()
-
-                class PackageGroup:
-                    pass
-
-                if package.source.threebot not in j.threebot.packages.__dict__:
-                    j.threebot.packages.__dict__[package.source.threebot] = PackageGroup()
-                g = j.threebot.packages.__dict__[package.source.threebot]
-                g.__dict__[package.source.name.replace(".", "__")] = package
-
-            if "package" in j.threebot.__dict__:
-                j.threebot.__dict__.pop("package")
             # LETS NOT DO SERVERS YET, STILL BREAKS TOO MUCH
             # j.__dict__.pop("servers")
             # j.__dict__.pop("builders")
@@ -381,22 +358,45 @@ class ThreeBotServer(j.baseclasses.object_config):
         # j.servers.myjobs.jobs._model.index_rebuild()
 
     def _packages_core_init(self):
+        class PackageGroup:
+            pass
+
         if not j.tools.threebot_packages.exists(name="zerobot.webinterface"):
             j.tools.threebot_packages.load()
-        j.shell()
-        names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta_ui"]  # , "system_bcdb"]
-        for name in names:
-            name2 = f"zerobot.{name}"
-            if not j.tools.threebot_packages.exists(name=name2):
-                raise j.exceptions.Input("Could not find package:%s" % name2)
-            p = j.tools.threebot_packages.get(name=name2)
 
-            if p.status in ["config", "init"]:
-                p.install()
-                p.save()
-            # TODO: NOT THE INTENTION !!!!
-            # p.actors_reload()
-            # p.start()
+            for package in j.tools.threebot_packages.find():
+                if package.status in ["installed", "error"]:
+                    self._log_warning("START:%s" % package.name)
+                    try:
+                        package.start()
+                    except Exception as e:
+                        j.core.tools.log(level=50, exception=e, stdout=True)
+                        package.status = "error"
+                    package.save()
+
+            names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta_ui"]  # , "system_bcdb"]
+            for name in names:
+                name2 = f"zerobot.{name}"
+                if not j.tools.threebot_packages.exists(name=name2):
+                    raise j.exceptions.Input("Could not find package:%s" % name2)
+                p = j.tools.threebot_packages.get(name=name2)
+                if p.status in ["config", "init"]:
+                    p.install()
+                    p.save()
+                # TODO: NOT THE INTENTION !!!!
+                # p.actors_reload()
+                # p.start()
+
+        j.threebot.__dict__["packages"] = Packages()
+
+        for package in j.tools.threebot_packages.find():
+            if package.source.threebot not in j.threebot.packages.__dict__:
+                j.threebot.packages.__dict__[package.source.threebot] = PackageGroup()
+            g = j.threebot.packages.__dict__[package.source.threebot]
+            g.__dict__[package.source.name.replace(".", "__")] = package
+
+        if "package" in j.threebot.__dict__:
+            j.threebot.__dict__.pop("package")
 
     def stop(self):
         """

@@ -30,7 +30,10 @@ class ThreeBotPackage(ThreeBotPackageBase):
             packages_root = j.sal.fs.getParent(self.path)
             # if not packages_root in sys.path:
             #     sys.path.append(packages_root)
-            self.reload()
+            path = self._changed("package.py")
+            if path:
+                klass, changed = j.tools.codeloader.load(obj_key="Package", path=path, reload=False)
+                self._package_author = klass(package=self)
         self._init_ = True
 
     def _changed(self, path, die=True):
@@ -56,12 +59,6 @@ class ThreeBotPackage(ThreeBotPackageBase):
 
         # Parent root directory for packages needed to be in sys.path
         # in order to be able to import file properly inside packages
-
-        path = self._changed("package.py")
-        if path:
-            klass, changed = j.tools.codeloader.load(obj_key="Package", path=path, reload=False)
-            if changed:
-                self._package_author = klass(package=self)
 
         path = self._changed("html", die=False)
         if path:
@@ -248,15 +245,12 @@ class ThreeBotPackage(ThreeBotPackageBase):
 
     def install(self):
         self.load()
-        if self.package_manager_3bot:
-            return
-        else:
-            if self.status != "config":  # make sure we load the config is not that state yet
-                self.config_load()
-            self._package_author.prepare()
-            if self.status != "installed":
-                self.status = "installed"
-                self.save()
+        if self.status != "config":  # make sure we load the config is not that state yet
+            self.config_load()
+        self._package_author.prepare()
+        if self.status != "installed":
+            self.status = "installed"
+            self.save()
 
     def start(self):
         self.load()
