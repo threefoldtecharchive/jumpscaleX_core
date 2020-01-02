@@ -57,6 +57,8 @@ class ThreeBotPackage(ThreeBotPackageBase):
 
     def reload(self, reset=False):
 
+        self.load()
+
         # Parent root directory for packages needed to be in sys.path
         # in order to be able to import file properly inside packages
 
@@ -80,6 +82,8 @@ class ThreeBotPackage(ThreeBotPackageBase):
             self.openresty.reload()
 
     def wiki_load(self, reset=False):
+        self.load()
+
         if self._wikis is None:
             self._wikis = j.baseclasses.dict()
 
@@ -89,6 +93,8 @@ class ThreeBotPackage(ThreeBotPackageBase):
             self._wikis[self.name] = path
 
     def actors_load(self):
+
+        self.load()
 
         path = self._changed("actors", die=False)
         if path:
@@ -120,6 +126,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
         self.models  # always need to have the models
         if self._actors is None:
             self.load()
+            self.reload()
             # self.actors_load()
         return self._actors
 
@@ -157,9 +164,6 @@ class ThreeBotPackage(ThreeBotPackageBase):
                     self._models[model_url3] = m
         return self._models
 
-    def bcdb_model_get(self, url):
-        return self.bcdb.model_get(url=url)
-
     @property
     def model_urls(self):
         return [item.schema.url for item in self.models.values()]
@@ -167,11 +171,13 @@ class ThreeBotPackage(ThreeBotPackageBase):
     @property
     def chat_names(self):
         if self._chatflows is None:
+            self.load()
             self.chatflows_load()
         return self._chatflows
 
     def chatflows_load(self):
         self._chatflows = j.baseclasses.dict()
+        self.load()
         path = self._changed("chatflows", die=False)
         if path:
             self._chatflows = self.gedis_server.chatbot.chatflows_load(path)
@@ -190,22 +196,6 @@ class ThreeBotPackage(ThreeBotPackageBase):
     @property
     def wiki_names(self):
         return [item for item in self.wikis.keys()]
-
-    @property
-    def bcdb(self):
-        if not self._bcdb_:
-            ##GET THE BCDB, ONLY 1 support for now
-            if len(self.bcdbs) == 1:
-                config = self.bcdbs[0]
-                if self.name:
-                    name = self.name
-                else:
-                    name = "%s.%s" % (self.source.threebot, config.namespace)
-                self._bcdb_ = j.data.bcdb.get_for_threebot(name=name, namespace=config.namespace, ttype=config.type)
-            if len(self.bcdbs) == 0:
-                self._bcdb_ = j.data.bcdb.system
-
-        return self._bcdb_
 
     def bcdb_model_get(self, url):
         return self.bcdb.model_get(url=url)
