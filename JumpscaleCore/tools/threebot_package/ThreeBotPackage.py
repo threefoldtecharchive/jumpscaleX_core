@@ -146,6 +146,14 @@ class ThreeBotPackage(ThreeBotPackageBase):
 
         return self._bcdb_
 
+    def actor_names(self):
+        res = []
+        path = self.path + "actors"
+        if j.sal.fs.exists(path):
+            for fpath in j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py", followSymlinks=True):
+                res.append(j.sal.fs.getBaseName(fpath)[:-3])
+        return res
+
     @property
     def models(self):
         if self._models is None:
