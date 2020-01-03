@@ -529,7 +529,7 @@ def threebot_flist(username=None, secret=None, app_id=None):
 
 
 @click.command(name="wiki-reload")
-@click.option("-n", "--name", help="name of the wiki, you're given name", required=True)
+@click.option("-n", "--name", default=None, help="name of the wiki, you're given name", required=True)
 @click.option("-r", "--reset", is_flag=True, help="reset git revision and process all files")
 def wiki_reload(name, reset=False):
     """

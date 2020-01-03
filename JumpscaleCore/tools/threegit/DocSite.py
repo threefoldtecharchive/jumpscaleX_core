@@ -45,7 +45,9 @@ class DocSite(j.baseclasses.object):
 
         self.links_verify = False
 
-        self.outpath = dest or f"/docsites/{self.name}"
+        self.outpath = dest or j.sal.fs.joinPaths(j.tools.threegit.docsites_path, self.name)
+        j.sal.fs.createDir(self.outpath)
+
         self.error_file_path = f"{self.outpath}/errors.md"
 
         self._log_level = 1

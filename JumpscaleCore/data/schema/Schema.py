@@ -370,7 +370,6 @@ class Schema(j.baseclasses.object):
             elif prop.is_jsxobject:
                 for subprop in prop.jumpscaletype._schema.properties_index_sql:
                     sprop = SchemaProperty(
-                        line=subprop.line,
                         name=f"{prop.name}__{subprop.name}",
                         attr=f"{prop.name}.{subprop.name}",
                         jumpscaletype=subprop.jumpscaletype,

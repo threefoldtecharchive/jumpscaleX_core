@@ -12,6 +12,12 @@ class ThreeGitFactory(j.baseclasses.object_config_collection):
     __jslocation__ = "j.tools.threegit"
     _CHILDCLASS = ThreeGit
 
+    def _init(self):
+        self.docsites_path = j.sal.fs.joinPaths(j.dirs.VARDIR, "docsites")
+
+    def get_docsite_path(self, name):
+        return j.sal.fs.joinPaths(self.docsites_path, name)
+
     def test(self):
         test_wiki = j.tools.threegit.get(
             name="test_wiki",

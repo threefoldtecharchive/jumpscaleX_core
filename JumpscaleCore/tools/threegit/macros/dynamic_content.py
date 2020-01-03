@@ -15,7 +15,7 @@ def write_script(doc, unique_id, package, actor, method, args, markdown=False):
     :type args: str
     :param markdown: if the content returned by actor markdown
     :type markdown: bool
-    :return: script src path (to include in html from /docsites/...)
+    :return: script src path (to include in html from docsites path)
     :rtype: str
     """
     j = doc.docsite._j
@@ -36,8 +36,7 @@ def write_script(doc, unique_id, package, actor, method, args, markdown=False):
         j.sal.fs.remove(real_path)
     j.sal.fs.writeFile(real_path, content)
 
-    rel_outpath = doc.docsite.outpath[10:]  # remove /docsites/
-    return j.sal.fs.joinPaths("/3git/wikis/", rel_outpath, doc.path_dir_rel, script_name)
+    return j.sal.fs.joinPaths("/3git/wikis/", doc.docsite.name, doc.path_dir_rel, script_name)
 
 
 def dynamic_content(doc, package, actor, method, markdown=False, **kwargs):
