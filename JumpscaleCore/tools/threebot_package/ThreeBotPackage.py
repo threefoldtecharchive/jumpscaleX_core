@@ -207,7 +207,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
     def wikis(self):
         # lazy-loading of wikis would take time, user will wait for too long
         # and need to refresh to see loaded wikis
-        self.load()
+        self.wiki_load()
         return self._wikis
 
     def bcdb_model_get(self, url):
