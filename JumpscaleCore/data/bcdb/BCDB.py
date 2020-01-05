@@ -441,7 +441,7 @@ class BCDB(j.baseclasses.object):
             j.core.db.delete(key)
 
         if self.name in j.data.bcdb._children:
-            j.data.bcdb._instances.pop(self.name)
+            j.data.bcdb.instances.pop(self.name)
 
     def _redis_reset(self):
         # shouldnt this be part of the indexing class?
