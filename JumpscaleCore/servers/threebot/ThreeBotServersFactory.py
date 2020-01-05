@@ -126,7 +126,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         """starts 3bot with webplatform package.
         kosmos -p 'j.servers.threebot.local_start_3bot()'
         """
-        packages = ["{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform"]
+        packages = [f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform"]
         return self.start(background=background, packages=packages, reload=reload)
 
     def local_start_explorer(self, background=False, reload=False, with_shell=True):

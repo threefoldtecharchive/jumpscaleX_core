@@ -256,11 +256,11 @@ class ThreeBotServer(j.baseclasses.object_config):
             # j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
             self._maintenance()
 
+            self._packages_core_init()
+
             if self.state == "init":
                 j.tools.threebot_packages.load()
                 self.state = "installed"
-
-            self._packages_core_init()
 
             # LETS NOT DO SERVERS YET, STILL BREAKS TOO MUCH
             # j.__dict__.pop("servers")
@@ -269,6 +269,16 @@ class ThreeBotServer(j.baseclasses.object_config):
             # j.__dict__.pop("shelli")
             j.__dict__.pop("tutorials")
             j.__dict__.pop("sal_zos")
+            for package in j.tools.threebot_packages.find():
+
+                if package.status in ["installed", "error"]:
+                    self._log_warning("START:%s" % package.name)
+                    try:
+                        package.start()
+                    except Exception as e:
+                        j.core.tools.log(level=50, exception=e, stdout=True)
+                        package.status = "error"
+                    package.save()
 
             for path in packages:
                 # j.debug()
@@ -373,8 +383,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                         j.core.tools.log(level=50, exception=e, stdout=True)
                         package.status = "error"
                     package.save()
-
-            names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta_ui"]  # , "system_bcdb"]
+            names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta_ui"]
             for name in names:
                 name2 = f"zerobot.{name}"
                 if not j.tools.threebot_packages.exists(name=name2):
