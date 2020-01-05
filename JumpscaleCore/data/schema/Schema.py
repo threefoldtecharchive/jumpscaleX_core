@@ -259,6 +259,8 @@ class Schema(j.baseclasses.object):
         tpath = "%s/templates/schema.capnp" % self._dirpath
         # j.shell()
         _capnp_schema_text = j.tools.jinja2.template_render(path=tpath, reload=False, obj=self, objForHash=self._md5)
+        if "@0x" not in _capnp_schema_text:
+            j.shell()
         return _capnp_schema_text
 
     @property

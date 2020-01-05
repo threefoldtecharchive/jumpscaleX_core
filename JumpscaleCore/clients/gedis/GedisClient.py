@@ -53,8 +53,6 @@ class GedisClient(JSConfigBase):
         self._reset()
         self.reload()
 
-        # TODO: KRISTOF URGENT
-
     #     self._model.trigger_add(self._update_trigger)
     #
     # def _update_trigger(self, obj, action, **kwargs):
@@ -158,13 +156,8 @@ class GedisClient(JSConfigBase):
 
     @property
     def actors(self):
-        # FIXME: restore caching _actors.
-        # if self._actors is None:
-        try:
+        if self._actors is None:
             self.reload()
-        except AttributeError as e:
-            raise j.exceptions.Input(e)
-
         return self._actors
 
     @property

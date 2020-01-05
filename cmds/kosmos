@@ -31,6 +31,7 @@ parser.add_argument(
 
 parser.add_argument("-s", "--slave", default=None, action="store_true", help="force as slave")
 parser.add_argument("-m", "--master", default=None, action="store_true", help="force as master")
+parser.add_argument("-t", "--threebot", default=False, action="store_true", help="Connect to local threebot")
 
 # parser.add_argument("--init", default=False, action="store_true", help="Initialize a jumpscale system")
 
@@ -63,6 +64,29 @@ if options.slave:
 if options.master:
     j.data.bcdb._master_set(True)
     # print("MASTER")
+
+if options.threebot:
+    j.servers.threebot.threebotserver_require()
+    # there is a local threebotserver
+    if not j.threebot.active:
+        # lets now load the threebot packages
+        class Packages:
+            pass
+
+        class PackageGroup:
+            pass
+
+        j.threebot.__dict__["packages"] = Packages()
+
+        for package in j.tools.threebot_packages.find():
+            if package.source.threebot not in j.threebot.packages.__dict__:
+                j.threebot.packages.__dict__[package.source.threebot] = PackageGroup()
+            g = j.threebot.packages.__dict__[package.source.threebot]
+            g.__dict__[package.source.name.replace(".", "__")] = package
+
+        if "package" in j.threebot.__dict__:
+            j.threebot.__dict__.pop("package")
+
 
 if options.quiet:
     j.shell()

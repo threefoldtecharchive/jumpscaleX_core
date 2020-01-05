@@ -95,6 +95,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
     def actors_load(self):
 
         self.load()
+        self.models
 
         path = self._changed("actors", die=False)
         if path:
@@ -119,7 +120,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
                         print(errormsg)
                         raise e
                         # print(f"adding actor {name} {fpath} {self.name}")
-                        self.gedis_server.actor_add(name=name, path=fpath, package=self)
+                    self.gedis_server.actor_add(name=name, path=fpath, package=self)
 
     @property
     def actors(self):
@@ -153,6 +154,18 @@ class ThreeBotPackage(ThreeBotPackageBase):
             for fpath in j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py", followSymlinks=True):
                 res.append(j.sal.fs.getBaseName(fpath)[:-3])
         return res
+
+    @property
+    def model_urls(self):
+        return [item.schema.url for item in self.models.values()]
+
+    @property
+    def chat_names(self):
+        return [item for item in self.chatflows]
+
+    @property
+    def wiki_names(self):
+        return [item for item in self.wikis.keys()]
 
     @property
     def models(self):

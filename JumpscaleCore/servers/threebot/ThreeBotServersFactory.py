@@ -20,17 +20,24 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
     def _threebot_starting(self, starting=True):
         print("MARK THREEBOT IS STARTING")
-        j.tools.executor.local
         j.threebot.active = True
         if j.core.db and starting:
             j.core.db.set("threebot.starting", ex=120, value="1")
         j.data.bcdb._master_set()
+        j.tools.executor.local
 
-    def require_threebotserver(self, timeout=120):
+    def threebotserver_check(self):
+        if j.core.db and j.core.db.get("threebot.starting"):
+            self.threebotserver_require()
+            return True
+        res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380, timeout=0.1)
+        return res
+
+    def threebotserver_require(self, timeout=120):
         """
         see if we can find a local threebotserver, wait till timeout
 
-        j.servers.threebot.require_threebotserver()
+        j.servers.threebot.threebotserver_require()
 
         :param timeout:
         :return:

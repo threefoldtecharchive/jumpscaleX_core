@@ -59,7 +59,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         elif url:
             if url in self.schemas_loaded:
                 return True
-        return self.meta.exists(md5=None, url=None)
+        return self.meta.exists(md5=md5, url=url)
 
     def schema_cache_remove(self, url):
         if url in self.schemas_loaded:
@@ -107,6 +107,9 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         :return: will return the most recent schema, there can be more than 1 schema with same url (changed over time)
         """
         # print(f"getting {url}")
+        # shortcut for performance
+        if url in self.schemas_loaded:
+            return self.schemas_loaded[url]
         if not die:
             if not self.exists(url=url):
                 return None

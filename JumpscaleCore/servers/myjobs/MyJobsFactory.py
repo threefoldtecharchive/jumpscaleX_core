@@ -34,7 +34,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
     def _init_models(self):
         self._bcdb = self._bcdb_selector()
         if not j.threebot.active:
-            j.servers.threebot.require_threebotserver()
+            j.servers.threebot.threebotserver_require()
         j.data.bcdb._master_set(j.threebot.active)
         self.model_action = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.action)
         j.clients.bcdbmodel.get(name="myjobs", schema=schemas.worker)

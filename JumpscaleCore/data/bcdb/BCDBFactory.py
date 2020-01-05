@@ -36,7 +36,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         self.__master = None
 
-    def require_threebotserver(self, timeout=120):
+    def threebotserver_require(self, timeout=120):
         timeout2 = j.data.time.epoch + timeout
         while j.data.time.epoch < timeout2:
             res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380)

@@ -40,7 +40,6 @@ class GedisClientFactory(j.baseclasses.object_config_collection_testtools):
     #     return super().get(name=name, host=host, port=port, package_name=package_name, **kwargs)
 
     def _handle_error(self, e, source=None, cmd_name=None, redis=None):
-
         try:
             logdict = j.data.serializers.json.loads(str(e))
         except Exception:
@@ -54,7 +53,9 @@ class GedisClientFactory(j.baseclasses.object_config_collection_testtools):
             msg += " SOURCE METHOD: %s" % cmd_name
         logdict["source"] = msg
 
-        # j.core.tools.log2stdout(logdict=logdict, data_show=True)
+        # j.core.tools.log2stdout(logdict=logdict, data_show=False)
+        print(j.core.tools.log2str(logdict, data_show=True, replace=True))
         j.core.tools.process_logdict_for_handlers(logdict=logdict, iserror=True)
 
-        raise j.exceptions.RemoteException(message=msg, data=logdict, exception=e)
+        # raise j.exceptions.RemoteException(message=msg, data=logdict, exception=e)
+        raise j.exceptions.RemoteException(message=msg)

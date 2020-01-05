@@ -31,34 +31,6 @@ class ThreeBotPackageBase(j.baseclasses.object_config):
                 res.append(j.sal.fs.getBaseName(fpath)[:-3])
         return res
 
-    @property
-    def model_urls(self):
-        return [item.schema.url for item in self.models.values()]
-
-    @property
-    def chat_names(self):
-        return [item for item in self.chatflows]
-
-    @property
-    def wikis(self):
-        # lazy-loading of wikis would take time, user will wait for too long
-        # and need to refresh to see loaded wikis
-        self.load()
-        return self._wikis
-
-    @property
-    def wiki_names(self):
-        return [item for item in self.wikis.keys()]
-
-    @property
-    def models(self):
-        if self._models is None:
-            self.load()
-            self._models = j.baseclasses.dict()
-            # need to use bcdbmodel client, prob need actor method to know the models
-            j.shell()
-        return self._models
-
     def config_load(self):
         self._log_info("load package.toml config", data=self)
         if self.giturl:

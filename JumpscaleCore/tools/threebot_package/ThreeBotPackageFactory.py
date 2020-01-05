@@ -49,7 +49,7 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
         if j.threebot.active:
             return ThreeBotPackage
         else:
-            j.servers.threebot.require_threebotserver()
+            j.servers.threebot.threebotserver_require()
 
             return ThreeBotPackageClient
 

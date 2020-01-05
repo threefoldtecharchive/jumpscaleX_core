@@ -32,7 +32,7 @@ class MyWorkerProcess(j.baseclasses.object):
         self.showout = showout
         self.debug = debug
 
-        j.servers.threebot.require_threebotserver()
+        j.servers.threebot.threebotserver_require()
 
         assert worker_id
 
