@@ -36,7 +36,8 @@ def main(self):
     contents = ["threefold foundation", "the new internet", "change the world", "digital freedom", "the future of IT"]
     bcdb = j.data.bcdb.get("test_fs", reset=True)
 
-    bcdb.models_add_threebot()
+    mpath = self._dirpath + "/tests/models"
+    bcdb.models_add(mpath)
 
     cl = j.clients.sonic.get_client_bcdb()
     cl.flush("test_fs")
@@ -93,9 +94,11 @@ def main(self):
     rack = j.servers.rack.get()
     from Jumpscale.data.bcdb.connectors.webdav.BCDBFSProvider import BCDBFSProvider
 
-    rack.webdav_server_add(webdavprovider=BCDBFSProvider("test_fs"), port=4444)
+    rack.webdav_server_add(webdavprovider=BCDBFSProvider("test_fs", models_dir='{}'), port=4444)
     rack.start()
-    """
+    """.format(
+        mpath
+    )
 
     s = j.servers.startupcmd.get(
         name="webdav_fs_test", cmd_start=start_cmd, interpreter="python", executor="tmux", ports=[4444]
