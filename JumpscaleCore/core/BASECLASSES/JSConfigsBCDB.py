@@ -199,8 +199,13 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :return:
         """
         self._log_debug("reset all data")
+        # delete the all children of the factory
+        for item in self._children_names_get():
+            self.delete(item)
+
         for id in self._model.find_ids():
             self._model.delete(id)
+
         assert self._model.index.sql_index_count() == 0
         if not self._mother_id_get():
             self._model.index.destroy()

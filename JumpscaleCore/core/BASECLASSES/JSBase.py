@@ -653,7 +653,10 @@ class JSBase:
         """
         for child in self._children_get(filter=filter):
             if child._hasattr("delete"):
-                child.delete()
+                # delete only related children
+                # passing names to delete instead of clearing all the factory data
+                for child_name in child._children_names_get():
+                    child.delete(name=child_name)
             else:
                 child._children_delete()
 
