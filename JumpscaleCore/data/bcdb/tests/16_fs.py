@@ -36,7 +36,7 @@ def main(self):
     contents = ["threefold foundation", "the new internet", "change the world", "digital freedom", "the future of IT"]
     bcdb = j.data.bcdb.get("test_fs", reset=True)
 
-    mpath = self._dirpath + "/tests/models"
+    mpath = "/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/filemanager/models"
     bcdb.models_add(mpath)
 
     cl = j.clients.sonic.get_client_bcdb()
