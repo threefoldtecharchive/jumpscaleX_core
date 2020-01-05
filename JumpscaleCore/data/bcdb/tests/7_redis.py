@@ -28,6 +28,7 @@ def main(self):
 
         cmd = """
                 . {DIR_BASE}/env.sh;
+                kosmos 'j.data.bcdb._new("test")' # required to generate storcliet, otherwise next line will fail coz no storclient for that db
                 kosmos 'j.data.bcdb.get("test").redis_server_start(port=6380)'
                 """
 
@@ -74,8 +75,6 @@ def main(self):
         key = f"test:data:despiegk.test2"
         redis_cl.hdel(key, 1)
         assert redis_cl.hlen(key) == 9
-        db.reset()
-        db.destroy()
 
     do(type="rdb")
     do(type="zdb")

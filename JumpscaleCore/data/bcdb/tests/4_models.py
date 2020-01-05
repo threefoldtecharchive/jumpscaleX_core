@@ -25,12 +25,13 @@ def main(self):
     bcdb.models_add(mpath)
 
     s = """
-    @url = jumpscale.bcdb.test.house
-    name** = "" (S)
-    active** = "" (B)
-    cost** =  (N)
-    room = (LO) !jumpscale.bcdb.test.room
-    """
+@url = jumpscale.bcdb.test.house
+0 : name** = "" (S)
+1 : active** = "" (B)
+2 : cost** =  (N)
+3 : room = (LO) !jumpscale.bcdb.test.room
+
+""".lstrip()
 
     # check the right schema in meta stor
     s_ = j.data.schema.get(url="jumpscale.bcdb.test.house")
@@ -57,14 +58,12 @@ def main(self):
 
     assert model_obj.cost_usd == 10
 
-    schema_updated = """
-    @url = jumpscale.bcdb.test.house
-    name** = "" (S)
-    active** = "" (B)
-    cost** = (N)
-    room = (LS)
-    """
-
+    schema_updated = """@url = jumpscale.bcdb.test.house
+    0 : name** = "" (S)
+    1: active** = "" (B)
+    2 : cost** = (N)
+    3 : room = (LS)
+"""
     ms = model.find()
     assert len(ms) == 1
     md5 = ms[0]._schema._md5
@@ -77,7 +76,8 @@ def main(self):
     ms = model.find()
     assert len(ms) == 1
 
-    assert ms[0]._schema._md5 == md5
+    # schema updated so md5 not equal to old one
+    assert ms[0]._schema._md5 != md5
 
     # Update schema
 

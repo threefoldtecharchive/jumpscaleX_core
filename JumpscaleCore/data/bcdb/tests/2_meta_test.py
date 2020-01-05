@@ -105,4 +105,5 @@ def main(self):
     j.servers.sonic.default.stop()
 
     self._log_info("TEST META DONE")
+
     return "OK"

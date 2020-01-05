@@ -432,7 +432,7 @@ class Schema(j.baseclasses.object):
         out = "{"
         out += '"url":"%s",' % self.url
         for item in self.propertynames:
-            prop = self.__getattribute__("property_%s" % item)
+            prop = self.props[item]
             out += '"%s":"%s",' % (str(prop.name), str(prop.jumpscaletype.NAME))
         out = out.rstrip(",")
         out += "}"

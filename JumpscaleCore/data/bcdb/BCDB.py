@@ -21,7 +21,12 @@ class BCDB(j.baseclasses.object):
         if name is None:
             raise j.exceptions.Base("name needs to be specified")
 
-        assert storclient
+        try:
+            assert storclient
+        except:
+            import ipdb
+
+            ipdb.set_trace()
 
         if not storclient.get(0):
             r = storclient.set(b"INIT")
@@ -425,7 +430,7 @@ class BCDB(j.baseclasses.object):
             assert self.storclient.get(0)
 
         self._init_props_()
-        # self._init_system_objects()
+        self._init_system_objects()
 
     def destroy(self):
         """

@@ -384,7 +384,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             self._new(name=name, storclient=storclient)  # we create object in config of bcdb factory
         if name in self._config and not storclient:
             storclient = self._get_storclient(name)
-
         b = self._get(name=name, storclient=storclient, reset=reset)  # make instance of bcdb
 
         assert name in self._children
@@ -439,7 +438,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
     def _new(self, name, storclient=None):
         """
-        create a new instance
+        create a new nce
         :param name:
         :param storclient: optional
             e.g. j.clients.rdb.client_get()  (would be the core redis
@@ -694,8 +693,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             redis.wait_stopped()
             j.servers.zdb.test_instance_stop()
             j.servers.sonic.default.stop()
-        bcdb = j.data.bcdb.get("test", reset=True)
-        bcdb.reset()
-        bcdb.destroy()
+
         self._log_info("All TESTS DONE")
         return "OK"
