@@ -11,7 +11,7 @@ class MyWorker(j.baseclasses.object_config):
 
     def _init(self, **kwargs):
         # important to check (at least for now)
-        assert self._bcdb.storclient._check_cat == "myjobs"
+
         if "nr" in kwargs:
             self.nr = kwargs["nr"]
             self.name = "w%s" % self.nr
@@ -44,16 +44,14 @@ class MyWorker(j.baseclasses.object_config):
         elif self.type in ["SUBPROCESS"]:
             self._worker_subprocess_start()
         elif self.type in ["INPROCESS"]:
-            state_update()
             self._worker_start_inprocess()
             self.stop()
         else:
             raise j.exceptions.JSBUG("did not find right type to start worker")
 
-    def stop(self, hard=False):
-        self.halt = True
-        self.save()
+        state_update()
 
+    def stop(self, hard=False):
         if hard:
             if self.type in ["TMUX"]:
                 cmd = j.servers.startupcmd.get(name="workers_%s" % self.nr)
@@ -69,6 +67,9 @@ class MyWorker(j.baseclasses.object_config):
             self.last_update = j.data.time.epoch
             self.current_job = 2147483647
             self.halt = False
+            self.save()
+        else:
+            self.halt = True
             self.save()
 
     def _worker_subprocess_start(self):

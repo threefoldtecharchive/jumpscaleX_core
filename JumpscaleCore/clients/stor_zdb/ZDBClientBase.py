@@ -1,5 +1,6 @@
 from Jumpscale import j
 import redis
+import struct
 
 
 class ZDBClientBase(j.baseclasses.object_config):
@@ -37,10 +38,12 @@ class ZDBClientBase(j.baseclasses.object_config):
             self._select_namespace()
 
         assert self.ping()
+        if j.data.bcdb._master:
+            self._model.trigger_add(self._update_trigger)
 
-    def save(self):
-        self._redis = None
-        j.baseclasses.object_config.save(self)
+    def _update_trigger(self, obj, action, **kwargs):
+        if action in ["save", "change"]:
+            self._redis = None
 
     @property
     def redis(self):
@@ -48,6 +51,7 @@ class ZDBClientBase(j.baseclasses.object_config):
             self._redis = _patch_redis_client(
                 j.clients.redis.get(ipaddr=self.addr, port=self.port, fromcache=False, ping=False)
             )
+            self._select_namespace(self.nsname)
         return self._redis
 
     def _select_namespace(self, nsname=None):
@@ -184,6 +188,15 @@ class ZDBClientBase(j.baseclasses.object_config):
         :return:
         """
         return self.redis.ping()
+
+    @property
+    def next_id(self):
+        """
+        :return: return the next id
+        :rtype: int
+        """
+        id_bytes = struct.pack("<I", int(self.nsinfo["next_internal_id"], 16))
+        return int.from_bytes(id_bytes, byteorder="big", signed=True)
 
 
 def _patch_redis_client(redis):

@@ -22,7 +22,7 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
     _CHILDCLASS = None  # because we use _childclass_selector
     _SCHEMATEXT = """
     @url = jumpscale.zdb.client.1
-    name** = "test" (S)
+    name** = "test_instance" (S)
     addr = "localhost" (S)
     port = 9900 (I)
     secret_ = "" (S)
@@ -55,15 +55,15 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
         else:
             raise j.exceptions.Base("childclass cannot be defined")
 
-    def client_admin_get(self, name="admin", addr="localhost", port=9900, secret="123456", mode="seq"):
+    def client_admin_get(self, name="admin", addr="localhost", port=9901, secret="123456", mode="seq"):
         if self.exists(name=name):
             cl = self.get(name=name)
-            # we should make sure AUTH has been launched as zdb client admin comes from config
-            # and if we instanciated a new zdb server the AUTH command will not be executed
-            cl.auth()
         else:
             cl = self.get(name=name, nsname=name, addr=addr, port=port, secret_=secret, mode=mode, admin=True)
-        assert cl.admin == True
+        # we should make sure AUTH has been launched as zdb client admin comes from config
+        # and if we instanciated a new zdb server the AUTH command will not be executed
+        cl.auth()
+        assert cl.admin is True
         assert self.exists(name=name)
         return cl
 
@@ -81,18 +81,14 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
         assert self.exists(name=name)
         return cl
 
-    def test(self):
+    def test(self, name=""):
         """
         kosmos 'j.clients.zdb.test()'
 
         """
-
-        j.servers.zdb.test_instance_start()
-
-        cl = self.client_admin_get(port=9901)
+        zdb = j.servers.zdb.test_instance_start()
+        cl = zdb.client_admin_get()
         assert cl.ping()
-        cl.namespace_delete("admin")
-        self._test_run(name="base")
-        self._test_run(name="admin")
+        self._test_run(name=name)
 
         j.servers.zdb.test_instance_stop()

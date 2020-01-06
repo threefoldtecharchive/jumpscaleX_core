@@ -36,7 +36,6 @@ name**=""
 uid** = 0 (I)
 rights = (LS)
 
-
 #acl's and users are std property the records being inserted in the BCDB
 
 #

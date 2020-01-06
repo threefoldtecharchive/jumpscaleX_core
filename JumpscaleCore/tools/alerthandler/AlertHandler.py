@@ -54,7 +54,9 @@ class AlertHandler(j.baseclasses.object):
     __jslocation__ = "j.tools.alerthandler"
 
     def _init(self, **kwargs):
-        self.model = j.data.bcdb.system.model_get(schema=SCHEMA_ALERT)
+        # DONT CHANGE NAME PLEASE
+        self.bcdb = j.data.bcdb.get_for_threebot("system.alerta", "alerta", "redis")
+        self.model = self.bcdb.model_get(schema=SCHEMA_ALERT)
 
     def setup(self):
         if self.handle not in j.errorhandler.handlers:
@@ -70,6 +72,7 @@ class AlertHandler(j.baseclasses.object):
         """
         filepath, linenr = logdict["filepath"], logdict["linenr"]
 
+        # TODO: this will not give enough data deduplication !
         value = "\n".join(
             [
                 logdict["context"],

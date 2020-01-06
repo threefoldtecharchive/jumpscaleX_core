@@ -2,6 +2,7 @@ from Jumpscale import j
 
 
 class EBCDB(j.baseclasses.object):
+    @j.baseclasses.actor_method
     def set(self, data, schema_out=None, user_session=None):
         """
         ```in

@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 import os
 
@@ -58,7 +38,7 @@ class JSBase:
             kwargs.pop("parent")
         self._init_pre(**kwargs)
         self._init_actor(**kwargs)
-        self._init_pre2(**kwargs)
+        self._init_jsconfig(**kwargs)
         self.__init_class()
         self._obj_cache_reset()
         self._init(**kwargs)
@@ -71,13 +51,13 @@ class JSBase:
 
     @property
     def _properties(self):
-        if self._properties_ == None:  # need to be specific None
+        if self._properties_ is None:  # need to be specific None
             self._inspect()
         return self._properties_
 
     @property
     def _methods(self):
-        if self._methods_ == None:
+        if self._methods_ is None:
             self._inspect()
         return self._methods_
 
@@ -122,19 +102,6 @@ class JSBase:
                     parent = parent._parent
                 if self.__class__._location is None:
                     self.__class__._location = self.__class__._classname
-
-            # # walk to all parents, let them know that there are child classes
-            # self.__class__._class_children = []
-            # parent = self._parent
-            # while parent is not None:
-            #     if parent.__class__ not in parent._class_children:
-            #         parent._class_children.append(parent.__class__)
-            #     parent = parent._parent
-
-            # if self.__class__._location.lower() != self.__class__._classname.lower():
-            #     self.__class__._key = "%s:%s" % (self.__class__._location, self.__class__._classname)
-            # else:
-            #     self.__class__._key = self.__class__._classname.lower()
 
             self.__init_class_post()
 
@@ -209,7 +176,7 @@ class JSBase:
         """
         pass
 
-    def _init_pre2(self, **kwargs):
+    def _init_jsconfig(self, **kwargs):
         """
         meant to be used by developers of the base classes
         :return:
@@ -686,7 +653,10 @@ class JSBase:
         """
         for child in self._children_get(filter=filter):
             if child._hasattr("delete"):
-                child.delete()
+                # delete only related children
+                # passing names to delete instead of clearing all the factory data
+                for child_name in child._children_names_get():
+                    child.delete(name=child_name)
             else:
                 child._children_delete()
 

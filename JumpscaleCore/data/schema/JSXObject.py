@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 
 
@@ -28,11 +8,11 @@ class JSXObject(j.baseclasses.object):
 
         if model:
             self._model = model
-            self._schema_ = schema
+            self._schema_ = None  # leave None
         else:
             self._schema_ = schema
             self._model = None
-            assert model == None
+            assert model is None
 
         self._deserialized_items = {}
 
@@ -144,19 +124,43 @@ class JSXObject(j.baseclasses.object):
             out += "- %-30s: %s\n" % (key, item)
         return out
 
-    def save(self, serialize=False):
+    def check_empty_indexed_fields(self):
+        for prop in self._model.schema.properties_index_sql:
+            if "." in prop.name:
+                raise j.exceptions.Input("cannot be . in property")
+            if "__" in prop.name:
+                # handle indexed subobject field
+                props = prop.name.split("__")
+                value = eval(f"self.{props[0]}.{props[1]}")
+            else:
+                # handle indexed object field
+                value = eval(f"self.{prop.name}")
+            if not value and not isinstance(value, (int, float, complex)):
+                raise j.exceptions.Input("an indexed (sql) field cannot be empty:%s" % prop.name, data=self)
+
+        for prop in self._model.schema.properties_index_text:
+            if eval(f"self.{prop.name}") is None:
+                raise j.exceptions.Input("an indexed (text) field cannot be empty:%s" % prop.name, data=self)
+
+    def save(self, serialize=True):
         if self._changed:
+
             self._capnp_obj  # makes sure we get back to binary form
             if serialize:
                 self._deserialized_items = {}  # need to go back to smallest form
-        if self._model:
-            if not self._model._classname == "acl" and self._acl is not None:
-                if self.acl.id is None:
-                    self.acl.save()
-                if self.acl.id != self.acl_id:
-                    self._deserialized_items["ACL"] = True
 
-            if self._changed:
+            if self._model:
+                if self._nosave:
+                    obj, stop = self._model._triggers_call(obj=self, action="set_pre", propertyname=None)
+                    return obj
+
+                self.check_empty_indexed_fields()
+
+                if not self._model._classname == "acl" and self._acl is not None:
+                    if self.acl.id is None:
+                        self.acl.save()
+                    if self.acl.id != self.acl_id:
+                        self._deserialized_items["ACL"] = True
 
                 # WE NEED UNIQUE PROPERTIES
                 for prop_u in self._model.schema.properties_unique:
@@ -180,27 +184,15 @@ class JSXObject(j.baseclasses.object):
                         raise j.exceptions.Input(msg)
                     elif len(r) == 1:
                         msg = "could not save, was not unique.\n%s." % (args_search)
-                        if self.id:
-                            if not self.id == r[0].id:
-                                raise j.exceptions.Input(msg)
-                        else:
-                            self.id = r[0].id
-                            self._ddict_hr  # to trigger right serialization
-                            if self._data == r[0]._data:
-                                return self  # means data was not changed
-                            else:  # means data is not the same and id not known yet
-                                self.id = r[0].id
+                        if (self.id and not self.id == r[0].id) or not self.id:
+                            raise j.exceptions.Input(msg)
 
-                if not self._nosave:
-                    o = self._model.set(self)
-                    self.id = o.id
-
-                obj = self._model._triggers_call(obj=self, action="save", propertyname=None)
+                obj = self._model.set(self)
+                assert obj.id
+                self.id = obj.id
 
                 return obj
             return self
-
-        raise j.exceptions.Base("cannot save, model not known")
 
     def delete(self):
         if self._model:
@@ -214,6 +206,15 @@ class JSXObject(j.baseclasses.object):
             return self
 
         raise j.exceptions.Base("cannot save, model not known")
+
+    def stop(self):
+        # will be called when BCDB stops, if changes will save
+        try:
+            self.save()
+        except:
+            # can fail because obj empty and index cannot be saved because of it, need to do this better
+            pass
+        pass  # TODO: for later
 
     def _check(self):
         self._ddict

@@ -39,7 +39,7 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         return self._explorer
 
     @property
-    def explorer_redis(self):
+    def _explorer_redis(self):
         cl = j.clients.redis.get(self.explorer_addr, port=8901)
         cl.execute_command("config_format", "json")
         return cl
@@ -74,7 +74,8 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         if len(res) > 1:
             j.shell()
             raise j.exceptions.JSBUG("should never be more than 1")
-
+        # reload, make sure newly added packages exist
+        j.tools.threebot.explorer.reload()
         r = j.tools.threebot.explorer.threebot_record_get(tid=tid, name=tname)
         assert r.id > 0
         r2 = j.baseclasses.object_config_collection_testtools.get(
@@ -82,3 +83,24 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         )
         self._id2client_cache[r2.tid] = r2
         return self._id2client_cache[r2.tid]
+
+    def test(self):
+        """
+        kosmos 'j.clients.threebot.test()'
+        :return:
+        """
+        e = j.clients.threebot.explorer
+        a = e.actors_base
+        assert a.system.ping() == b"PONG"
+
+        a2 = e.actors_get("threebot.blog")
+
+        p = e.actors_get("zerobot.packagemanager")
+
+        l = p.package_manager.packages_list()
+
+        pnames = [p.name for p in p.package_manager.packages_list().packages]
+
+        l = p.package_manager.actors_list()
+
+        j.shell()

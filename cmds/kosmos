@@ -2,22 +2,20 @@
 
 import sys
 
-if "-p" in sys.argv:
+# lets always monkey patch
+if True or "-p" in sys.argv:
     from gevent import monkey
 
     monkey.patch_all(subprocess=False)
-    # monkey.patch_select()
     # monkey.patch_thread()
+    # monkey.patch_select()
     # monkey.patch_socket()
     # monkey.patch_time()
-
 
 import sys
 from Jumpscale import j
 
-
 # j.tools.bash.get().profile.locale_check()
-
 
 import argparse
 import pudb
@@ -30,6 +28,11 @@ parser.add_argument("-q", "--quiet", default=False, action="store_true", help="T
 parser.add_argument(
     "-r", "--reset", default=False, action="store_true", help="Reset system BCDB and all encryption keys (DANGEROUS)"
 )
+
+parser.add_argument("-s", "--slave", default=None, action="store_true", help="force as slave")
+parser.add_argument("-m", "--master", default=None, action="store_true", help="force as master")
+parser.add_argument("-t", "--threebot", default=False, action="store_true", help="Connect to local threebot")
+
 # parser.add_argument("--init", default=False, action="store_true", help="Initialize a jumpscale system")
 
 parser.add_argument(
@@ -52,6 +55,38 @@ parser.add_argument(
 parser.add_argument("-p", "--patch", default=False, action="store_true", help="Monkeypatch the system for gevent")
 
 options, args = parser.parse_known_args()
+
+if options.slave:
+    j.data.bcdb._master_set(False)
+    # print("SLAVE")
+
+
+if options.master:
+    j.data.bcdb._master_set(True)
+    # print("MASTER")
+
+if options.threebot:
+    j.servers.threebot.threebotserver_require()
+    # there is a local threebotserver
+    if not j.threebot.active:
+        # lets now load the threebot packages
+        class Packages:
+            pass
+
+        class PackageGroup:
+            pass
+
+        j.threebot.__dict__["packages"] = Packages()
+
+        for package in j.tools.threebot_packages.find():
+            if package.source.threebot not in j.threebot.packages.__dict__:
+                j.threebot.packages.__dict__[package.source.threebot] = PackageGroup()
+            g = j.threebot.packages.__dict__[package.source.threebot]
+            g.__dict__[package.source.name.replace(".", "__")] = package
+
+        if "package" in j.threebot.__dict__:
+            j.threebot.__dict__.pop("package")
+
 
 if options.quiet:
     j.shell()
@@ -174,7 +209,7 @@ if len(args) == 1:
         toexec = toexec.strip("'\" ").strip("'\" ")
         exec(toexec, globals(), j._locals_get({}))
 else:
-    j.application.bcdb_system  # needed to make sure we have bcdb running, needed for code completion
+    j.data.bcdb.system  # needed to make sure we have bcdb running, needed for code completion
     j.application.interactive = True
     n = j.data.nacl.get(load=False)  # important to make sure private key is loaded
     if n.load(die=False) is False:

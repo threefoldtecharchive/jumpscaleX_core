@@ -80,11 +80,6 @@ class ExecutorInstallers(j.baseclasses.object):
         self.executor = executor
 
     @executor_method()
-    def kosmos(self):
-        self.jumpscale()
-        j.shell()
-
-    @executor_method()
     def base(self):
         self.executor.execute("apt-get update")
         self.executor.execute(
@@ -126,14 +121,42 @@ class ExecutorInstallers(j.baseclasses.object):
         self.secure(web=False)
 
     @executor_method()
-    def jumpscale(self):
-        self.executor.execute(
-            "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/jsx.py\?$RANDOM > /tmp/jsx"
-            % j.core.myenv.DEFAULT_BRANCH
-        )
-        self.executor.execute("chmod +x /tmp/jsx")
+    def jumpscale_getcode(self, reset=True, syncfromlocal=True, monitor=False):
+        if syncfromlocal:
+            self.executor.upload(
+                "{DIR_CODE}/github/threefoldtech/jumpscaleX_core/install",
+                "{DIR_CODE}/github/threefoldtech/jumpscaleX_core/install",
+            )
+            C = """
+            rm -f /tmp/jsx.py
+            rm -f /tmp/jsx
+            rm -f /tmp/InstallTools.py
+            ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx;
+            ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py /tmp/InstallTools.py
+            chmod +x /tmp/jsx
+            """
+            self.executor.execute(C)
+        else:
+            self.executor.execute(
+                "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/jsx.py\?$RANDOM > /tmp/jsx"
+                % j.core.myenv.DEFAULT_BRANCH
+            )
+            self.executor.execute("chmod +x /tmp/jsx")
         cmd = "cd /tmp;python3 jsx configure --sshkey %s -s" % j.core.myenv.sshagent.key_default_name
         self.executor.execute(cmd, interactive=True)
+        if reset:
+            # will remove code if already there
+            cmd = "cd /tmp;python3 jsx jumpscale-code-get --pull --reset"
+        else:
+            cmd = "cd /tmp;python3 jsx jumpscale-code-get --pull"
+        self.executor.execute(cmd, interactive=True)
+        if syncfromlocal:
+            self.executor.sshclient.syncer.reset()
+            self.executor.sshclient.syncer.sync(monitor=monitor)
+
+    @executor_method()
+    def jumpscale(self, reset=True, syncfromlocal=True):
+        self.jumpscale_getcode(reset=reset, syncfromlocal=syncfromlocal)
         self.executor.execute("/tmp/jsx install -s", interactive=True)
 
     @executor_method()

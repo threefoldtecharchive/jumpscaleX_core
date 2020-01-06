@@ -31,6 +31,7 @@ class RDBClient(j.baseclasses.object_config):
         self._hsetkey = "rdb:%s" % self.nsname
         self._incrkey = "rdbmeta:incr:%s" % self.nsname
         self._keysbinkey = "rdbmeta:keys:%s" % self.nsname
+        self.cat = None
 
         assert self.ping()
 

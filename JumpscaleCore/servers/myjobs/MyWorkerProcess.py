@@ -32,6 +32,8 @@ class MyWorkerProcess(j.baseclasses.object):
         self.showout = showout
         self.debug = debug
 
+        j.servers.threebot.threebotserver_require()
+
         assert worker_id
 
         if self.debug:
@@ -39,45 +41,45 @@ class MyWorkerProcess(j.baseclasses.object):
 
         if not onetime:
             # make sure all traces of existing clients are gone
-            j.data.bcdb._children = j.baseclasses.dict()
+            j.data.bcdb._instances = j.baseclasses.dict()
             j.application.subprocess_prepare()
             j.clients.redis._cache_clear()  # make sure we have redis connections empty, because comes from parent
 
-        # MAKE SURE YOU DON'T REUSE SOCKETS FROM MOTHER PROCESSS
-        j.core.db.source = "worker"  # this allows us to test
         self.redisclient = j.core.db
-        self.bcdbclient = j.clients.redis.get(port=j.servers.myjobs.BCDB_CONNECTOR_PORT)
 
         self.queue_jobs_start = j.clients.redis.queue_get(
             redisclient=self.redisclient, key="queue:jobs:start", fromcache=False
         )
-        # self.queue_return = j.clients.redis.queue_get(redisclient=redisclient, key="queue:jobs:return", fromcache=False)
 
         j.errorhandler.handlers.append(self.error_handler)
 
-        storclient = j.clients.rdb.client_get(redisclient=self.redisclient)
-        # important, test we're using the right redis client
-        assert storclient._redis.source == "worker"
+        found = j.data.bcdb.exists("myjobs")
+        while not found:
+            found = j.data.bcdb.exists("myjobs")
+            time.sleep(0.1)
 
-        self.bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
-        self.model_job = self.bcdb.model_get(schema=schemas.job)
-        self.model_action = self.bcdb.model_get(schema=schemas.action)
-        self.model_worker = self.bcdb.model_get(schema=schemas.worker)
+        self.bcdb = j.data.bcdb.get("myjobs")
+
+        self.model_job = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.job)
+        self.model_action = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.action)
+        self.model_worker = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.worker)
+
+        self.model_job.trigger_add(self._obj_print)
+        self.model_action.trigger_add(self._obj_print)
+        self.model_worker.trigger_add(self._obj_print)
 
         if not self.onetime:
             # if not onetime then will send all to queue which will be processed on parent process (the myjobs manager)
             # makes sure that we cannot start by coincidence the data processing loop
             # TODO: need to check this in the processing loop that this is not True
             j.servers.myjobs._i_am_worker = True
-            self.model_job.nosave = True
-            self.model_worker.nosave = True
 
-        self.model_worker.trigger_add(self._worker_set)
-        self.model_job.trigger_add(self._job_set)
-
-        self.worker_obj = self._worker_get(worker_id)
+        self.worker_obj = self.model_worker.get(worker_id)
 
         self.start()
+
+    def _obj_print(self, model, obj, kosmosinstance=None, action=None, propertyname=None):
+        self._log_debug("action: %s" % action, data=obj)
 
     @property
     def id(self):
@@ -93,60 +95,12 @@ class MyWorkerProcess(j.baseclasses.object):
         self.worker_obj.last_update = j.data.time.epoch
         self.worker_obj.halt = False
         self.worker_obj.pid = 0
+        self._redis_set(self.worker_obj)
         self.worker_obj.save()
         if not self.onetime:
             self._log_info("WORKER REMOVE SELF:%s" % self.id, data=self)
         else:
             self._log_info("WORKER ONETIME DONE")
-
-    # DATA LOGIC
-    def job_get(self, id):
-        # call through redis client the local BCDB
-        # get data as json
-        # use model_schema to give the object
-        return self._redis_get(id, self.model_job)
-
-    def _redis_get(self, id, schema):
-        key = f"{self.bcdb.name}:data:1:{schema._schema_url}"
-        data = self.bcdbclient.hget(key, str(id))
-        ddata = j.data.serializers.json.loads(data)
-        return schema.new(ddata)
-
-    def _redis_set(self, obj):
-        key = f"{self.bcdb.name}:data:1:{obj._schema.url}"
-        self.bcdbclient.hset(key, str(obj.id), obj._json)
-
-    def _action_get(self, id):
-        if self.onetime:
-            return self.model_action.get(id, die=True)
-        else:
-            # call through redis client the local BCDB
-            # get data as json
-            # use model_schema
-            return self._redis_get(id, self.model_action)
-
-    def _worker_get(self, id):
-        if self.onetime:
-            return self.model_worker.get(id, die=True)
-        else:
-            return self._redis_get(id, self.model_worker)
-            # call through redis client the local BCDB
-            # get data as json
-            # use model_schema
-            # if exists put on self.worker_obj & return this one
-            # if dont exists, quit
-
-    def _worker_set(self, obj, action="save", propertyname=None, **kwargs):
-        if action == "save":
-            self._redis_set(obj)
-            # call through redis client the local BCDB
-            # get data as json (from _data) and use redis client to set to server
-
-    def _job_set(self, obj, action="save", propertyname=None, **kwargs):
-        if action == "save":
-            # call through redis client the local BCDB
-            # get data as json (from _data) and use redis client to set to server
-            self._redis_set(obj)
 
     ################
 
@@ -165,6 +119,17 @@ class MyWorkerProcess(j.baseclasses.object):
         self.worker_obj.pid = os.getpid()
         self.worker_obj.save()
         last_info_push = j.data.time.epoch
+
+        def queue_results(job):
+            """
+            add job results to queues, if there
+            :param job: job obj
+            """
+            for queue_name in job.return_queues:
+                queue = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % queue_name)
+                data = {"id": job.id, "result": job.result, "state": job.state._string}
+                queue.put(j.data.serializers.json.dumps(data))
+
         while True:
             res = None
 
@@ -176,11 +141,11 @@ class MyWorkerProcess(j.baseclasses.object):
             else:
                 res = self.queue_jobs_start.get(timeout=20)
 
-            self.worker_obj = self._worker_get(self.id)
+            self.worker_obj = self.model_worker.get(self.id)
             if self.worker_obj.halt or res == b"halt":
                 return self.stop()
 
-            if res == None:
+            if res is None:
                 if j.data.time.epoch > last_info_push + 20:
                     # print(self.worker_obj)
                     # self._log_info("queue request timeout, no data, continue", data=self.worker_obj)
@@ -189,13 +154,20 @@ class MyWorkerProcess(j.baseclasses.object):
             else:
                 # self._log_debug("queue has data")
                 jobid = int(res)
-                job = self.job_get(jobid)
+                try:
+                    job = self.model_job.get(jobid)
+                except Exception as e:
+                    if not self.model_job.exists(jobid):
+                        self._log_warning("job with:%s did not exist" % jobid)
+                        continue
+                    raise
+
                 self.job = job
                 job.time_start = j.data.time.epoch
                 skip = False
                 relaunch = False
                 for dep_id in job.dependencies:
-                    job_deb = self.job_get(dep_id)
+                    job_deb = self.model_job.get(dep_id)
                     if job_deb.state in ["ERROR"]:
                         job.state = job_deb.state
 
@@ -225,12 +197,12 @@ class MyWorkerProcess(j.baseclasses.object):
                     self.worker_obj.last_update = j.data.time.epoch
                     self.worker_obj.current_job = jobid
 
-                    if job == None:
+                    if job is None:
                         self._log_error("ERROR: job:%s not found" % jobid)
                         j.shell()
                     else:
                         # now have job
-                        action = self._action_get(job.action_id)
+                        action = self.model_action.get(job.action_id)
                         kwargs = job.kwargs
 
                         self.worker_obj.last_update = j.data.time.epoch
@@ -255,6 +227,8 @@ class MyWorkerProcess(j.baseclasses.object):
                             job.state = "ERROR"
                             job.time_stop = j.data.time.epoch
                             job.save()
+
+                            queue_results(job)
 
                             if self.debug:
                                 pudb.post_mortem(tb)
@@ -284,6 +258,8 @@ class MyWorkerProcess(j.baseclasses.object):
                             job.error = logdict
                             job.save()
 
+                            queue_results(job)
+
                             if self.debug:
                                 pudb.post_mortem(tb)
 
@@ -302,6 +278,7 @@ class MyWorkerProcess(j.baseclasses.object):
                             job.state = "ERROR"
                             job.time_stop = j.data.time.epoch
                             job.save()
+                            queue_results(job)
                             if self.showout:
                                 self._log_error("ERROR:%s" % e, exception=e, data=job)
                             if self.onetime:
@@ -315,7 +292,7 @@ class MyWorkerProcess(j.baseclasses.object):
                             self._log("OK", data=job)
 
                         job.save()
-
+                        queue_results(job)
                         if self.queue_jobs_start.qsize() == 0:
                             # make sure we already set here, otherwise no need because a new job is waiting anyhow
                             self._state_set()

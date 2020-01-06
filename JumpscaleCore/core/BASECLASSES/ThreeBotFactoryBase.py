@@ -32,7 +32,7 @@ class ThreeBotFactoryBase(JSBase, TestTools):
     def client_get(self):
         """
         """
-        self.client = j.servers.threebot.local_start_default(web=True)
+        self.client = j.servers.threebot.start()
 
         return self.client
 
@@ -72,10 +72,10 @@ class ThreeBotFactoryBase(JSBase, TestTools):
         return "OK"
 
     def start(self):
-        ##DO NOT START IN FOREGROUND
+        # DO NOT START IN FOREGROUND
         # server = j.servers.threebot.default
         # server.start(web=self._web, ssl=self._ssl)
 
         # WILL GIVE YOU THE MAIN THREEBOT,STARTED THROUGH TMUX
         self.install()
-        self.client = j.servers.threebot.local_start_default(web=True)
+        self.client = j.servers.threebot.start()

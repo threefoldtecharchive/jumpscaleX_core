@@ -2,6 +2,7 @@ from base_test import BaseTest
 from Jumpscale import j
 from smtplib import SMTP
 from imbox import Imbox
+import unittest
 from imapclient import IMAPClient
 from time import sleep
 

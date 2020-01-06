@@ -1,0 +1,6 @@
+[source]
+name = "test_package"
+description = "Test package with dummy data"
+threebot = "zerobot"
+version = "1.0.0"
+disable_crud = true

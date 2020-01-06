@@ -72,4 +72,3 @@ class RedisCoreClient(j.baseclasses.object):
 
             self._client = redis.Redis(unix_socket_path=j.core.db.connection_pool.connection_kwargs["path"], db=1)
         return self._client
-

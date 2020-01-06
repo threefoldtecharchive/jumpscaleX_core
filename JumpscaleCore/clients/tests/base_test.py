@@ -1,6 +1,6 @@
 import logging
 import unittest
-import subprocess
+from subprocess import Popen, PIPE
 from Jumpscale import j
 
 
@@ -12,34 +12,14 @@ class BaseTest(unittest.TestCase):
 
     @staticmethod
     def os_command(command):
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
         output, error = process.communicate()
         return output, error
 
     @staticmethod
-    def rand_num():
-        return j.data.idgenerator.generateRandomInt(100, 1000)
+    def rand_num(start=100, stop=1000):
+        return j.data.idgenerator.generateRandomInt(start, stop)
 
     @staticmethod
     def rand_string():
         return j.data.idgenerator.generateXCharID(10)
-
-    def delete_client_method(self, client, schema_url, client_name):
-        """
-        This is method to test deleted in clients
-        this method take a client_name and schema_url as an input and and delete it from BCDB.
-        """
-        self.info("check delete method on {} client".format(client_name))
-        self.info("check the existence of the client in BCDB, it should be exist")
-        model = j.data.bcdb.system.model_get(url=schema_url)
-        if model.get_by_name(name=client_name):
-            self.info("try to delete the client using delete method and check again, it shouldn't be exist")
-            client.delete()
-            self.info("check the existence of the client in BCDB")
-            try:
-                model.get_by_name(name=client_name)
-            except Exception:
-                pass
-            return True
-        else:
-            return False

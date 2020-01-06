@@ -9,7 +9,7 @@ class SerializerBase(j.baseclasses.object):
         j.sal.fs.writeFile(filepath, data)
 
     def load(self, path):
-        b = j.sal.fs.readFile(path)
+        b = j.sal.fs.readFile(path, binary=True)
         try:
             r = self.loads(b)
         except Exception as e:

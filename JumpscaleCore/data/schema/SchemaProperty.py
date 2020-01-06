@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 
 JSBASE = j.baseclasses.object
@@ -26,18 +6,31 @@ JSBASE = j.baseclasses.object
 class SchemaProperty(j.baseclasses.object):
     def _init(self, **kwargs):
 
+        # following 2 need to be given
+        self.nr = kwargs["nr"]
+
         self.name = kwargs.get("name", "")
         self.attr = kwargs.get("attr", "")
         self.jumpscaletype = kwargs.get("jumpscaletype", None)
         self.comment = kwargs.get("comments", "")
-        self.nr = kwargs.get("nr", 0)
         self._default = None
         self.index = kwargs.get("index", False)  # as used in sqlite
-        self.index_key = False  # is for indexing the keys
+        # self.index_key = False  # is for indexing the keys
         self.index_text = False  # is for full text index
         self.unique = False  # to check if type is unique or not
         if self.name in ["schema"]:
             raise j.exceptions.Base("cannot have property name:%s" % self.name)
+
+    # @property
+    # def _hash(self):
+    #     o = ""
+    #     for x in self.__dict__.values():
+    #         o += str(x)
+    #     return j.data.hash.md5_string(o)
+    #
+    # def __eq__(self, other):
+    #     assert isinstance(other, SchemaProperty)
+    #     return other._hash == self._hash
 
     @property
     def capnp_schema(self):

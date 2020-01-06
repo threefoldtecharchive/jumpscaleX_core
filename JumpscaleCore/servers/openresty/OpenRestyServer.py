@@ -41,7 +41,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
         j.sal.fs.createDir(self.path_web)
         j.sal.fs.createDir(self.path_cfg_dir)
         # clean old websites config
-        j.sal.fs.remove("%s/servers" % self.path_cfg_dir)
+        self.cleanup()
         self.executor = "tmux"  # only tmux for now
 
         self.install()
@@ -94,18 +94,6 @@ class OpenRestyServer(j.baseclasses.factory_data):
             j.sal.fs.symlink(
                 "%s/static" % weblibs_path, "{}/static/weblibs".format(self._web_path), overwriteTarget=True
             )
-
-            # link individual files & create a directory TODO:*1
-            lualib_dir = j.core.tools.text_replace("{DIR_BASE}/openresty/lualib")
-            if not j.sal.fs.exists(lualib_dir):
-                j.sal.fs.createDir(lualib_dir)
-            j.sal.fs.copyFile(
-                "%s/web_resources/lualib/redis.lua" % self._dirpath,
-                j.core.tools.text_replace("{DIR_BASE}/openresty/lualib/redis.lua"),
-            )
-            # j.sal.fs.copyFile(
-            #     "%s/web_resources/lualib/websocket.lua" % self._dirpath, j.core.tools.text_replace("{DIR_BASE}/openresty/lualib/websocket.lua")
-            # )
             self.status = "installed"
 
             self.save()
@@ -151,6 +139,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
                 name="lapis",
                 cmd_start=cmd,
                 path=self.path_cfg_dir,
+                process_name="openresty",
                 process_strings_regex="^nginx",
                 executor=self.executor,
             )
@@ -199,3 +188,6 @@ class OpenRestyServer(j.baseclasses.factory_data):
         self.configure()
         cmd = "cd  %s;lapis build" % self.path_cfg_dir
         j.sal.process.execute(cmd)
+
+    def cleanup(self):
+        j.sal.fs.remove("%s/servers" % self.path_cfg_dir)

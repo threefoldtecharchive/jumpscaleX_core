@@ -9,7 +9,7 @@ class JSGroup:
         self.md = md
         self.location = location
         self._jsmodules = None
-        self._children = None
+        self._childrengroup = None
 
     @property
     def jsmodules(self):
@@ -42,16 +42,16 @@ class JSGroup:
         """
         list children groups (groups in groups)
         """
-        if not self._children:
-            self._children = []
+        if not self._childrengroup:
+            self._childrengroup = []
             for location, group in self.md.jsgroups.items():
                 if self.location.startswith(group.location) and self.location != group.location:
                     t = self.location.replace(group.location, "")  # get the grouplocation out
                     t = t.strip(".")
                     if "." not in t:
                         # means its a direct kid
-                        self._children.append(group)
-        return self._children
+                        self._childrengroup.append(group)
+        return self._childrengroup
 
     # @property
     # def jdir(self):

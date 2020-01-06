@@ -6,28 +6,6 @@ from .GedisCmd import GedisCmd
 
 JSBASE = j.baseclasses.object
 
-SCHEMA = """
-@url = jumpscale.gedis.api
-namespace = ""
-name** = ""
-cmds = (LO) !jumpscale.gedis.cmd
-schemas = (LO) !jumpscale.gedis.schema
-
-@url = jumpscale.gedis.cmd
-name** = ""
-comment = ""
-schema_in_url = ""
-schema_out_url = ""
-args = (ls)
-public = False
-
-@url = jumpscale.gedis.schema
-name** = ""
-md5 = ""
-url = ""
-content = ""
-"""
-
 
 class ActorNamespace:
     pass
@@ -38,40 +16,45 @@ class GedisCmds(JSBASE):
     cmds understood by gedis server
     """
 
-    def __init__(self, server=None, namespace="default", name="", path="", data=None):
+    def __init__(self, package=None, name="", path="", data=None):
         JSBASE.__init__(self)
 
         if path is "" and data is None:
             raise j.exceptions.Base("path cannot be None")
 
         self.path = path
-        self.server = server
+        # self.server = server
 
-        j.data.schema.get_from_text(SCHEMA)
-        self.schema = j.data.schema.get_from_url(url="jumpscale.gedis.api")
-        self.schema = j.data.bcdb.system.model_get(schema=self.schema)
+        self.package = package
+
+        schema = j.data.schema.get_from_url(url="jumpscale.gedis.api")
+        self.model = j.data.bcdb.system.model_get(schema=schema)
         self._cmds = {}
 
         if data:
-            self.data = self.schema.new(data=data)
+            self.data = self.model.new(data=data)
             self.cmds
         else:
-            cname = j.sal.fs.getBaseName(path)[:-3]
-            klass = j.tools.codeloader.load(obj_key=cname, path=path, reload=False)
-            kobj = klass(gedis_server=self.server)  # this is the actor obj
+            # cname = j.sal.fs.getBaseName(path)[:-3]
+            # klass,changed = j.tools.codeloader.load(obj_key=cname, path=path, reload=False)
+            # kobj = klass(gedis_server=self.server)  # this is the actor obj
+            #
+            # key = "%s__%s" % (namespace, cname.replace(".", "_"))
+            #
+            # self.server.actors[key] = kobj  # as used in gedis server (when serving the commands)
+            #
+            # if not namespace in j.threebot.actors.__dict__:
+            #     j.threebot.actors.__dict__[namespace] = ActorNamespace()
 
-            key = "%s__%s" % (namespace, cname.replace(".", "_"))
+            # j.threebot.actors.__dict__[namespace].__dict__[cname.replace(".", "_")] = self.server.actors[key]
 
-            self.server.actors[key] = kobj  # as used in gedis server (when serving the commands)
-
-            if not namespace in j.threebot.actors.__dict__:
-                j.threebot.actors.__dict__[namespace] = ActorNamespace()
-
-            j.threebot.actors.__dict__[namespace].__dict__[cname.replace(".", "_")] = self.server.actors[key]
-
-            self.data = self.schema.new()
+            self.data = self.model.new()
             self.data.name = name
-            self.data.namespace = namespace
+            self.data.namespace = self.package.name
+
+            actor = self.package._actors[name]
+
+            klass = actor.__class__
 
             for member_name, item in inspect.getmembers(klass):
                 if member_name.startswith("_"):
@@ -127,13 +110,15 @@ class GedisCmds(JSBASE):
         comment = ""
         schema_in = ""
         schema_out = ""
-        auth_args = ""
+        acl_config = ""
         args = []
 
         state = "START"
 
         for line in txt.split("\n"):
             lstrip = line.strip().lower()
+            if lstrip.startswith("@j.baseclasses"):
+                continue
             if state == "START" and lstrip.startswith("def"):
                 state = "DEF"
                 if "self" in lstrip:
@@ -162,9 +147,9 @@ class GedisCmds(JSBASE):
                 if state == "COMMENT":  # are in comment, now found the schema
                     if lstrip.endswith("out"):
                         state = "SCHEMAO"
-                    elif lstrip.endswith("auth"):
-                        state = "SCHEMAAUTH"
-                    else:
+                    elif lstrip.endswith("acl"):
+                        state = "SCHEMA_ACL"
+                    elif lstrip.endswith("in"):
                         state = "SCHEMAI"
                     continue
                 raise j.exceptions.Base()
@@ -174,25 +159,27 @@ class GedisCmds(JSBASE):
             if state == "SCHEMAO":
                 schema_out += "%s\n" % line
                 continue
+            if state == "SCHEMA_ACL":
+                acl_config += "%s\n" % line
+                continue
             if state == "COMMENT":
                 comment += "%s\n" % line
                 continue
             if state == "CODE" or state == "DEF":
                 code += "%s\n" % line
                 continue
-            if state == "SCHEMAAUTH":
-                auth_args += "%s\n" % line
-                continue
             raise j.exceptions.Base()
 
         # cmd.code = j.core.text.strip(code)
         cmd.comment = j.core.text.strip(comment)
-        s = self._schema_process(cmd, schema_in)
+        s = self._schema_process(cmd, schema_in, cat="in")
         if s:
             cmd.schema_in_url = s.url
-        s = self._schema_process(cmd, schema_out)
+        s = self._schema_process(cmd, schema_out, cat="out")
         if s:
             cmd.schema_out_url = s.url
+        if acl_config:
+            cmd.rights = j.data.serializers.toml.loads(acl_config)
 
         args = self._args_process(args)
 
@@ -202,52 +189,9 @@ class GedisCmds(JSBASE):
             args.pop(args.index("user_session"))
 
         cmd.args = args
-        data = self._parse_auth_data(auth_args)
-        if data:
-            cmd.public = data.get("public")
-            user_ids = []
-            for user_threebot_id in data.get("users", []):
-                user = self.data.bcdb.system.users.find(threebot_id=user_threebot_id)
-                if user:
-                    user_ids.append(user[0].id)
-                else:
-                    raise j.exceptions.NotFound(f"user with threebot_id:'{user_threebot_id}' can't be found")
+        cmd.public = True
 
-            circle_ids = []
-            for circle_threebot_id in data.get("circles", []):
-                circle = self.data.bcdb.system.circle.find(threebot_id=circle_threebot_id)
-                if circle:
-                    circle_ids.append(circle[0].id)
-                else:
-                    raise j.exceptions.NotFound(f"circle with threebot_id:'{circle_threebot_id}' can't be found")
-
-            self.data.acl.rights_add(userids=user_ids, circleids=circle_ids, rights=[cmd.name])
-        else:
-            cmd.public = True
-            # TODO: by default is public for now until we have the full flow of authentication
-            #  after merging this PR https://github.com/threefoldtech/jumpscaleX_core/pull/187/files
-            # admins_circle_id = j.data.bcdb.system.circle.get_by_name("admins").id
-            # self.data.acl.rights_add(circleids=[admins_circle_id], rights=[cmd.name])
-
-        # cmd.save()
-        self.data.save()
         return cmd
-
-    def _parse_auth_data(self, auth_args):
-        if auth_args:
-            import ast
-
-            data = {}
-            try:
-                for line in auth_args.splitlines():
-                    if not line.strip() or not "=" in line:
-                        continue
-                    key = line.split("=")[0].strip()
-                    value = ast.literal_eval(line.split("=")[1].strip())
-                    data[key] = value
-            except Exception as e:
-                j.exceptions.Value(f"Couldn't parse auth args {auth_args}")
-            return data
 
     def _args_process(self, args):
         res = []
@@ -305,17 +249,20 @@ class GedisCmds(JSBASE):
             s.url = url
             s.content = content
 
-    def _schema_process(self, cmd, txt):
+    def _schema_process(self, cmd, txt, cat):
+
         txt = j.core.tools.text_strip(txt).strip()
         if txt.strip() == "":
             return None
         if not txt.strip().startswith("!"):
-            if txt.find("@url") == -1:
-                md5 = j.data.hash.md5_string(txt.strip())
-                url = "actors.%s.%s.%s.%s" % (self.data.namespace, self.data.name, cmd.name, md5)
-                schema = j.data.schema.get_from_text(schema_text=txt, url=url)
-            else:
-                schema = j.data.schema.get_from_text(schema_text=txt)
+            for i, block in enumerate(j.data.schema._schema_blocks_get(txt)):
+                if block.find("@url") == -1:
+                    url = "actors.%s.%s.%s.%s" % (self.data.namespace, self.data.name, cmd.name, cat)
+                    schema_ = j.data.schema.get_from_text(schema_text=block, url=url)
+                else:
+                    schema_ = j.data.schema.get_from_text(schema_text=block)
+                if i == 0:
+                    schema = schema_  # only the first one needs to be returned
         else:
             url = txt.strip().lstrip("!")
             schema = j.data.schema.get_from_url(url=url)

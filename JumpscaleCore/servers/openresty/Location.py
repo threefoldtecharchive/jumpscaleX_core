@@ -24,6 +24,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
         locations_lapis = (LO) !jumpscale.openresty.location_lapis
         locations_custom = (LO) !jumpscale.openresty.location_custom
         locations_spa = (LO) !jumpscale.openresty.location_static
+        mother_id** = 0 (I)
 
         @url = jumpscale.openresty.location_static
         name = "" (S)
@@ -34,6 +35,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
 
         @url = jumpscale.openresty.location_proxy
         name = "" (S)
+        path_url = ""
         ipaddr_dest = (S)
         port_dest = (I)
         path_dest = "" (S)

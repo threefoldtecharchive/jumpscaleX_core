@@ -12,11 +12,12 @@ class ThreebotMe(JSConfigBase):
 
     _SCHEMATEXT = """
     @url = jumpscale.threebot.me
-    name** = ""                      
+    name** = ""
     tid** =  0 (I)                  #my threebot id
     tname** = "" (S)                #my threebot name
     email = "" (S)                  #for caching purposes
     pubkey = ""                     #for caching purposes
+    admins = (LS)                   #3bot names which are admin of this 3bot
     """
 
     def _init(self, **kwargs):

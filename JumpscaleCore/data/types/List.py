@@ -35,7 +35,7 @@ class ListObject(TypeBaseObjClass, MutableSequence):
 
     @_changed.setter
     def _changed(self, value):
-        assert value == False  # only supported mode
+        assert value is False  # only supported mode
         # need to make sure the objects (list(jsxobj) or jsxobj need to set their state to changed)
         for item in self._inner_list:
             # need to check if underlying jsxobjexts will change their change state

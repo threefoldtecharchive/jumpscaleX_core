@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 
 
@@ -27,6 +7,9 @@ def main(self):
 
     kosmos 'j.data.schema.test(name="base")'
     """
+    j.data.schema.reset()
+
+    assert j.data.schema.meta._data == {"url": {}, "md5": {}}
 
     schema0 = """
         @url = despiegk.test
@@ -35,7 +18,7 @@ def main(self):
         llist3 = [1,2,3] (LF)
         nr = 4
         date_start = 0 (D)
-        description = ""        
+        description = ""
         description2 = (S)
         llist4 = [1,2,3] (L)
         llist5 = [1,2,3] (LI)
@@ -51,21 +34,19 @@ def main(self):
     assert schema_object.url == "despiegk.test"
     print(schema_object)
 
-    assert schema_object.property_llist.default.value == []
-    assert schema_object.property_llist2.default.value == []
-    assert schema_object.property_llist3.default.value == [1.0, 2.0, 3.0]
+    assert schema_object.props.llist.default.value == []
+    assert schema_object.props.llist2.default.value == []
+    assert schema_object.props.llist3.default.value == [1.0, 2.0, 3.0]
     # works with & without value
-    assert schema_object.property_llist3.default == [1.0, 2.0, 3.0]
-    assert schema_object.property_llist4.default == [1, 2, 3]
-    assert schema_object.property_llist5.default == [1, 2, 3]
-    assert schema_object.property_llist6.default == [1, 2, 3]
+    assert schema_object.props.llist3.default == [1.0, 2.0, 3.0]
+    assert schema_object.props.llist4.default == [1, 2, 3]
+    assert schema_object.props.llist5.default == [1, 2, 3]
+    assert schema_object.props.llist6.default == [1, 2, 3]
 
-    ll = schema_object.property_llist3.jumpscaletype.default_get()
+    ll = schema_object.props.llist3.jumpscaletype.default_get()
     assert ll.value == [1.0, 2.0, 3.0]
 
-    assert (
-        schema_object.property_llist3.js_typelocation == "j.data.types._types['list_281be192c3ea134b85dd0c368d7d1b36']"
-    )
+    assert schema_object.props.llist3.js_typelocation == "j.data.types._types['list_281be192c3ea134b85dd0c368d7d1b36']"
 
     o = schema_object.new()
 
@@ -176,35 +157,64 @@ def main(self):
 
     o = j.data.schema.get_from_text(schema3).new()
 
-    assert o.bool1 == True
-    assert o.bool2 == True
-    assert o.bool3 == False
-    assert o.bool4 == False
-    assert o.bool5 == True
-    assert o.bool6 == True
-    assert o.bool7 == False
-    assert o.bool8 == False
+    assert o.bool1 is True
+    assert o.bool2 is True
+    assert o.bool3 is False
+    assert o.bool4 is False
+    assert o.bool5 is True
+    assert o.bool6 is True
+    assert o.bool7 is False
+    assert o.bool8 is False
     assert o.int1 == 10
 
     schema4 = """
     @url = despiegk.doubletest
     name = ""
-    llist = []    
+    llist = []
     """
     s0 = j.data.schema.get_from_text(schema4)
+    assert s0.properties[-1].name == "llist"
+    s_temp = j.data.schema.get_from_url(url="despiegk.doubletest")
+    assert s_temp.properties[-1].name == "llist"
+
     schema4prime = """
     @url = despiegk.doubletest
     name = ""
-    llist = ""    
+    llist = ""
     """
 
     s1 = j.data.schema.get_from_text(schema4prime)
+    s0._md5 == "faaed00fc2b02f1c2a30d6996a6d7955"
+    s1._md5 == "d6a17249355a08b58ad8ccbfaa8511f6"
+    a_old = j.data.schema.get(md5=s0._md5)
+    a_new = j.data.schema.get(md5=s1._md5)
+    b = j.data.schema.get(url="despiegk.doubletest")
+    assert a_new == b
+    assert a_new._md5 == b._md5
+    assert a_old != b
+    assert a_old._md5 != b._md5
 
+    assert s0.properties[-1].jumpscaletype.NAME == "list"
+    assert s1.properties[-1].jumpscaletype.NAME == "string"
     assert s0._md5 != s1._md5
 
     s2 = j.data.schema.get_from_url(url="despiegk.doubletest")
     assert s2._md5 == s1._md5
     assert s2._md5 != s0._md5
+    assert s2.properties[-1].jumpscaletype.NAME == "string"
+
+    s3 = j.data.schema.get_from_text(schema4)
+    assert s3.properties[-1].jumpscaletype.NAME == "list"
+    s4 = j.data.schema.get_from_url(url="despiegk.doubletest")
+    assert s3.properties[-1].jumpscaletype.NAME == "list"
+    assert s3._md5 == a_old._md5  # same as original, means the same was put at end of file
+    # do again, just to see reproduceable
+    s3 = j.data.schema.get_from_text(schema4)
+    assert s3.properties[-1].jumpscaletype.NAME == "list"
+    s5 = j.data.schema.get_from_text(schema4prime)
+    assert s5.properties[-1].jumpscaletype.NAME == "string"
+
+    # j.shell()
 
     self._log_info("TEST DONE BASE")
 

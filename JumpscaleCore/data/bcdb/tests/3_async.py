@@ -31,6 +31,9 @@ def main(self):
 
     """
 
+    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.core.myenv.adminsecret))
+    sonic.start()
+
     _, model = self._load_test_model()
 
     def get_obj(i):
@@ -49,7 +52,7 @@ def main(self):
     assert model_obj2._ddict_hr == model_obj._ddict_hr
 
     # will process 1000 obj (set)
-    for x in range(100):
+    for x in range(2, 100):
         model.set_dynamic(get_obj(x))
 
     # should be nothing in queue
@@ -62,6 +65,10 @@ def main(self):
     assert model_obj2._ddict_hr == model_obj._ddict_hr
 
     assert model.bcdb.queue.empty()
+
+    # CLEAN STATE
+    j.servers.zdb.test_instance_stop()
+    j.servers.sonic.default.stop()
 
     self._log_info("TEST ASYNC DONE")
 

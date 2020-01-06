@@ -5,8 +5,7 @@ def main(self, count=10):
     """
     kosmos -p 'j.servers.myjobs.test("start")'
     """
-
-    self.reset()
+    self._test_setup()
 
     def wait_1sec():
         gevent.sleep(1)
@@ -23,8 +22,6 @@ def main(self, count=10):
     res = self.results(ids, timeout=120)
 
     print(res)
-
-    self.stop(reset=True)
-
+    self._test_teardown()
     print("start TEST OK")
     print("TEST OK")

@@ -2,7 +2,8 @@
 import click
 import os
 import shutil
-
+import urllib
+import requests
 from urllib.request import urlopen
 from importlib import util
 
@@ -11,7 +12,7 @@ DEFAULT_BRANCH = "master"
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
-def load_install_tools(branch=None):
+def load_install_tools(branch=None, reset=False):
     # get current install.py directory
 
     path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py"
@@ -25,7 +26,7 @@ def load_install_tools(branch=None):
         rootdir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(rootdir, "InstallTools.py")
         # now check on path next to jsx
-        if not os.path.exists(path):  # or path.find("/code/") == -1:
+        if not os.path.exists(path) or reset:  # or path.find("/code/") == -1:
             url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py" % branch
 
             with urlopen(url) as resp:
@@ -43,7 +44,6 @@ def load_install_tools(branch=None):
 
 IT = load_install_tools()
 IT.MyEnv.interactive = True  # std is interactive
-IT.MyEnv.init()
 
 
 class JSXEnv:
@@ -126,7 +126,7 @@ def cli():
     help="24 words, use '' around the private key if secret specified and private_key not then will ask in -y mode will autogenerate",
 )
 @click.option(
-    "--secret", default=None, help="secret for the private key (to keep secret), default will get from ssh-key"
+    "--secret", default=None, help="secret for the private key (to keep secret, also used for admin secret on rbot)"
 )
 def configure(
     codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey=None, secret=None
@@ -198,7 +198,7 @@ def container_install(
 
     """
 
-    IT = load_install_tools(branch=branch)
+    IT = load_install_tools(branch=branch, reset=True)
     # IT.MyEnv.interactive = True
     # interactive = not no_interactive
 
@@ -233,7 +233,7 @@ def container_install(
     #     docker.sandbox_sync()
 
     installer = IT.JumpscaleInstaller()
-    installer.repos_get(pull=False)
+    installer.repos_get(pull=False, branch=branch)
 
     docker.jumpscale_install(branch=branch, redo=reinstall, pull=pull, threebot=threebot)  # , prebuilt=prebuilt)
 
@@ -277,7 +277,7 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
 
     """
     # print("DEBUG:: no_sshagent", no_sshagent, "configdir", configdir)  #no_sshagent=no_sshagent
-    IT = load_install_tools(branch=branch)
+    IT = load_install_tools(branch=branch, reset=True)
     # IT.MyEnv.interactive = True
     _configure(no_interactive=no_interactive)
     SANDBOX = IT.MyEnv.config["DIR_BASE"]
@@ -292,8 +292,8 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
         branch = IT.DEFAULT_BRANCH
 
     installer = IT.JumpscaleInstaller()
-    assert prebuilt == False  # not supported yet
-    installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt)
+    assert prebuilt is False  # not supported yet
+    installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt, branch=branch)
     if threebot:
         IT.Tools.execute(
             "source %s/env.sh;kosmos 'j.servers.threebot.install(force=True)'" % SANDBOX, showout=True, timeout=3600 * 2
@@ -303,6 +303,35 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
     # LETS NOT DO THE FOLLOWING TAKES TOO LONG
     # IT.Tools.execute("source %s/env.sh;kosmos 'j.core.tools.system_cleanup()'" % SANDBOX, showout=True)
     print("Jumpscale X installed successfully")
+
+
+# INSTALL OF JUMPSCALE IN CONTAINER ENVIRONMENT
+@click.command()
+@click.option(
+    "-b", "--branch", default=None, help="jumpscale branch. default 'master' or 'development' for unstable release"
+)
+@click.option(
+    "--pull",
+    is_flag=True,
+    help="pull code from git, if not specified will only pull if code directory does not exist yet",
+)
+@click.option("--reset", is_flag=True, help="if reset, will remove code, be careful")
+def jumpscale_code_get(branch=None, pull=False, reset=False):
+    """
+    install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.
+    if interactive is True then will ask questions, otherwise will go for the defaults or configured arguments
+
+    if you want to configure other arguments use 'jsx configure ... '
+
+    """
+    IT = load_install_tools(branch=branch)
+    # IT.MyEnv.interactive = True
+    # _configure(no_interactive=True)
+    if not branch:
+        branch = IT.DEFAULT_BRANCH
+    installer = IT.JumpscaleInstaller()
+    installer.repos_get(pull=pull, reset=reset)
+    # IT.Tools.shell()
 
 
 @click.command(name="container-import")
@@ -412,13 +441,13 @@ def basebuilder_(dest=None, push=False, delete=True):
 @click.command()
 @click.option("-n", "--name", default=None, help="name of the wiki, you're given name")
 @click.option("-u", "--url", default=None, help="url of the github wiki")
+@click.option("-r", "--reset", is_flag=True, help="reset git revision and process all files")
 @click.option("-f", "--foreground", is_flag=True, help="if you don't want to use the job manager (background jobs)")
-@click.option("-p", "--pull", is_flag=True, help="pull content from github")
-@click.option("--download", is_flag=True, help="download the images")
-def wiki_load(name=None, url=None, foreground=False, pull=False, download=False):
+def wiki_load(name=None, url=None, reset=False, foreground=False):
     # monkey patch for myjobs to start/work properly
     import gevent
     from gevent import monkey
+    from Jumpscale.tools.threegit.ThreeGit import load_wiki
 
     import redis
 
@@ -426,12 +455,12 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
     from Jumpscale import j
 
     try:
-        threebot_client = j.clients.gedis.get("jsx_threebot", port=8901)
+        threebot_client = j.clients.gedis.get("jsx_threebot", package_name="zerobot.webinterface", port=8901)
         threebot_client.ping()
         threebot_client.reload()
     except (j.exceptions.Base, redis.ConnectionError):
         print(
-            "Threebot server must be running, please start a local threebot first using `kosmos -p 'j.servers.threebot.local_start_default()'`"
+            "Threebot server must be running, please start a local threebot first using `kosmos -p 'j.servers.threebot.start()'`"
         )
         return
 
@@ -453,27 +482,65 @@ def wiki_load(name=None, url=None, foreground=False, pull=False, download=False)
 
     if not foreground:
         greenlets = [
-            gevent.spawn(threebot_client.actors.content_wiki.load, wiki_name, wiki_url, pull, download)
+            gevent.spawn(threebot_client.actors.wiki_content.load, wiki_name, wiki_url, reset)
             for wiki_name, wiki_url in wikis
         ]
         gevent.wait(greenlets)
     else:
         for wiki_name, wiki_url in wikis:
-            docsite = j.tools.markdowndocs.load(name=wiki_name, path=wiki_url, download=download, pull=pull)
-            docsite.write()
-
+            load_wiki(wiki_name, wiki_url, reset=reset)
     print("You'll find the wiki(s) loaded at https://<container or 3bot hostname>/wiki")
+
+
+@click.command(name="threebot-flist")
+@click.option("-i", "--app_id", default=None, help="application id of it's your online")
+@click.option("-s", "--secret", default=None, help="secret of it's your it's your online account")
+@click.option("-u", "--username", default=None, help="username of it's your online account")
+def threebot_flist(username=None, secret=None, app_id=None):
+    """
+    create flist of 3bot docker image
+    ex: jsx threebot-flist -i APP_ID -s SECRET -u USER_NAME
+    """
+    if not username and not app_id and not secret:
+        raise RuntimeError("should add it's your online creds")
+
+    url = urllib.parse.urljoin("https://itsyou.online/api", "/v1/oauth/access_token")
+    params = {
+        "grant_type": "client_credentials",
+        "client_id": app_id,
+        "client_secret": secret,
+        "response_type": "id_token",
+        "scope": "",
+        "validity": None,
+    }
+
+    resp = requests.post(url, params=params)
+    resp.raise_for_status()
+    jwt = resp.content.decode("utf8")
+
+    params = {"image": "threefoldtech/3bot"}
+    url = "https://hub.grid.tf/api/flist/me/docker"
+    headers = {"Authorization": "Bearer %s" % jwt}
+    requests.post(url, headers=headers, data=params)
+    print("uploaded 3bot flist , wait for 3bot-production flist")
+    params = {"image": "threefoldtech/3bot-production"}
+    requests.post(url, headers=headers, data=params)
+    print("uploaded 3bot-production flist ")
 
 
 @click.command(name="wiki-reload")
 @click.option("-n", "--name", default=None, help="name of the wiki, you're given name", required=True)
-def wiki_reload(name=None):
+@click.option("-r", "--reset", is_flag=True, help="reset git revision and process all files")
+def wiki_reload(name, reset=False):
     """
     reload the changed files from wikis repo
     ex: jsx wiki-reload -n foundation
     """
     j = jumpscale_get()
-    j.tools.markdowndocs.reload(name)
+    if not j.tools.threegit.exists(name=name):
+        print("Need to load the wiki first using wiki-load command")
+        return
+    j.tools.threegit.get(name=name).process(reset=reset)
 
 
 @click.command(name="threebotbuilder")
@@ -501,6 +568,7 @@ def threebotbuilder(push=False, base=False, cont=False, production=False):
     installer.repos_get(pull=False)
 
     docker.jumpscale_install(branch=DEFAULT_BRANCH, redo=delete, pull=False, threebot=True)
+    docker.install_tcprouter()
 
     docker.save(clean_runtime=True, image=dest + "dev")
     if push:
@@ -621,7 +689,7 @@ def kosmos(name="3bot", target="auto"):
     n = j.data.nacl.get(load=False)  # important to make sure private key is loaded
     if n.load(die=False) is False:
         n.configure()
-    j.application.bcdb_system  # needed to make sure we have bcdb running, needed for code completion
+    j.data.bcdb.system  # needed to make sure we have bcdb running, needed for code completion
     j.shell(loc=False, locals_=locals(), globals_=globals())
 
 
@@ -677,7 +745,7 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
 
     def docker_jumpscale_get(name=name, delete=True):
         docker = e._DF.container_get(name=name, delete=delete)
-        if docker.config.done_get("jumpscale") == False:
+        if docker.config.done_get("jumpscale") is False:
             # means we have not installed jumpscale yet
             docker.install()
             docker.jumpscale_install()
@@ -696,7 +764,7 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         j.tools.threebot.init_my_threebot(name="{docker_name}.3bot", interactive=False)
         j.clients.threebot.explorer.reload()  # make sure we have the actors loaded
         # lets low level talk to the phonebook actor
-        print(j.clients.threebot.explorer.actors_default.phonebook.get(name="{docker_name}.3bot"))
+        print(j.clients.threebot.explorer.actors_all.phonebook.get(name="{docker_name}.3bot"))
         cl = j.clients.threebot.client_get("{docker_name}.3bot")
 
         r1 = j.tools.threebot.explorer.threebot_record_get(name="{docker_name}.3bot")
@@ -712,10 +780,6 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         # TODO: can now do more stuff here
         # adding packages, get them to talk to each other, ...
 
-    if web:
-        web2 = "True"
-    else:
-        web2 = "False"
     explorer_addr = None
     for i in range(count):
         if i > 0:
@@ -727,7 +791,7 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
             # the master 3bot
             explorer_addr = docker.config.ipaddr
             if IT.MyEnv.platform() != "linux":
-                if docker.config.done_get("wireguard") == False:
+                if docker.config.done_get("wireguard") is False:
                     # only need to use wireguard if on osx or windows (windows not implemented)
                     # only do it on the first container
                     docker.wireguard.server_start()
@@ -736,11 +800,9 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
 
         if not docker.config.done_get("start_cmd"):
             if web:
-                docker.sshexec(
-                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_zerobot_default(packages_add=True,timeout=1000)';jsx wiki-load"
-                )
+                docker.sshexec("source /sandbox/env.sh; kosmos -p 'j.servers.threebot.start()';jsx wiki-load")
             else:
-                start_cmd = "j.servers.threebot.local_start_zerobot_default(web=False,packages_add=True,timeout=1000)"
+                start_cmd = "j.servers.threebot.start()"
                 docker.jsxexec(start_cmd)
         docker.config.done_set("start_cmd")
         if not docker.config.done_get("config"):
@@ -793,11 +855,29 @@ def package_new(name, dest=None):
         dest = j.sal.fs.getcwd()
     capitalized_name = name.capitalize()
     dirs = ["wiki", "models", "actors", "chatflows"]
+    package_toml_path = j.sal.fs.joinPaths(dest, f"{name}/package.toml")
     package_py_path = j.sal.fs.joinPaths(dest, f"{name}/package.py")
     factory_py_path = j.sal.fs.joinPaths(dest, f"{name}/{capitalized_name}Factory.py")
 
     for d in dirs:
         j.sal.fs.createDir(j.sal.fs.joinPaths(dest, name, d))
+
+    package_toml_content = f"""
+[source]
+name = "{name}"
+description = "mypackage"
+threebot = "mybot"
+version = "1.0.0"
+
+
+[[bcdbs]]
+namespace = "mybot"
+type = "zdb"
+instance = "default"
+    """
+
+    with open(package_toml_path, "w") as f:
+        f.write(package_toml_content)
 
     package_py_content = f"""
 from Jumpscale import j
@@ -832,7 +912,7 @@ from Jumpscale import j
 
 
 class {capitalized_name}Factory(j.baseclasses.threebot_factory):
-    __jslocation__ = "j.threebot.package.{name}"
+    __jslocation__ = "j.threebot_factories.package.{name}"
 
     """
     with open(factory_py_path, "w") as f:
@@ -885,6 +965,7 @@ if __name__ == "__main__":
     cli.add_command(wiki_load, "wiki-load")
     cli.add_command(wiki_reload)
     cli.add_command(package_new, "package-new")
+    cli.add_command(jumpscale_code_get, "jumpscale-code-get")
 
     # DO NOT DO THIS IN ANY OTHER WAY !!!
     if not e._DF.indocker():
@@ -900,6 +981,7 @@ if __name__ == "__main__":
         cli.add_command(container_save, "container-save")
         cli.add_command(basebuilder, "basebuilder")
         cli.add_command(threebotbuilder, "threebotbuilder")
+        cli.add_command(threebot_flist, "threebot-flist")
         cli.add_command(containers)
         cli.add_command(threebot_test, "threebot-test")
 

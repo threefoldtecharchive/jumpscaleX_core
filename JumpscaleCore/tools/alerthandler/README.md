@@ -19,3 +19,7 @@ Using bcdb:
 ```python
 j.tools.alerthandler.model.find()
 ```
+
+## TODO
+
+need to come together with alterthandler_redis

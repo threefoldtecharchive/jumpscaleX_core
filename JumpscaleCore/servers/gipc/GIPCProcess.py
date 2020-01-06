@@ -22,7 +22,7 @@ class GIPCProcess(JSConfigClient):
         self.greenlet = None
 
     def _bcdb(self):
-        return j.application.bcdb_system
+        return j.data.bcdb.system
 
     def start(self):
         self.greenlet = gevent.spawn(self._start)
@@ -49,7 +49,7 @@ class GIPCProcess(JSConfigClient):
 
     def wait(self, die=True):
         while True:
-            if self.greenlet.dead == False and self.process.is_alive():
+            if self.greenlet.dead is False and self.process.is_alive():
                 time.sleep(0.05)
             else:
                 if self.greenlet.dead:

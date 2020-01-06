@@ -161,7 +161,7 @@ class SystemFS(JSBASE, TESTTOOLS):
         recursive=True,
         rsyncdelete=True,
         createdir=False,
-        showout=False,
+        showout=True,
         retry=5,
     ):
         """Recursively copy an entire directory tree rooted at src.
@@ -893,7 +893,7 @@ class SystemFS(JSBASE, TESTTOOLS):
                                 if len(r) > 0:
                                     filesreturn.extend(r)
             # and followSymlinks==False and listSymlinks:
-            elif self.isLink(fullpath) and followSymlinks == False and listSymlinks:
+            elif self.isLink(fullpath) and followSymlinks is False and listSymlinks:
                 filesreturn.append(fullpath)
 
         return filesreturn, depth
@@ -1308,6 +1308,9 @@ class SystemFS(JSBASE, TESTTOOLS):
         if contents is None:
             raise j.exceptions.Value("Passed None parameters in system.fs.writeFile")
         filename = j.core.tools.text_replace(filename)
+        dirname = self.getDirName(filename)
+        if not self.exists(dirname):
+            self.createDir(dirname)
         if append is False:
             fp = open(filename, "wb")
         else:

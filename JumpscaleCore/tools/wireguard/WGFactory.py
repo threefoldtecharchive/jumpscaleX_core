@@ -2,6 +2,13 @@ from Jumpscale import j
 
 from .WireGuard import WireGuard
 
+from nacl import public
+from nacl.signing import VerifyKey, SigningKey
+from nacl.encoding import Base64Encoder
+from nacl.public import SealedBox
+
+import netaddr
+
 
 class WGFactory(j.baseclasses.object_config_collection_testtools):
     """
@@ -17,6 +24,35 @@ class WGFactory(j.baseclasses.object_config_collection_testtools):
     def get_by_id(self, id):
         data = self._model.get(id)
         return self._new(data.name, data)
+
+    def generate_zos_keys(self, node_public_key):
+        """
+        Generate a new set of wireguard key pair and encrypt
+        the private side using the public key of a 0-OS node.
+
+        This implementation match the format 0-OS except to be able
+        to read wireguard keys into network reservations.
+        
+        :param node_public_key: hex encoded public key of 0-OS node. 
+                                This is the format you find in the explorer
+        :type node_public_key: str
+        :return: tuple containing 3 fields (private key, private key encrypted, public key)
+        :rtype: typle
+        """
+        wg_private = public.PrivateKey.generate()
+        wg_public = wg_private.public_key
+
+        wg_private_base64 = wg_private.encode(Base64Encoder)
+        wg_public_base64 = wg_public.encode(Base64Encoder)
+
+        node_public_bin = j.data.hash.hex2bin(node_public_key)
+        node_public = VerifyKey(node_public_bin)
+        box = SealedBox(node_public.to_curve25519_public_key())
+
+        wg_private_encrypted = box.encrypt(wg_private_base64)
+        wg_private_encrypted_hex = j.data.hash.bin2hex(wg_private_encrypted)
+
+        return (wg_private_base64.decode(), wg_private_encrypted_hex.decode(), wg_public_base64.decode())
 
     def test(self):
         """

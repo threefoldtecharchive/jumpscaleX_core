@@ -59,7 +59,7 @@ class Pane(j.baseclasses.object):
 
         for line in out.split("\n"):
             if line.strip() == "":
-                if not lastline_empty == True:
+                if not lastline_empty is True:
                     lastline_empty = True
                     out2 += "\n"
             else:

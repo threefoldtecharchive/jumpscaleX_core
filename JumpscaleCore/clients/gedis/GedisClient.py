@@ -1,6 +1,6 @@
-import imp
+# import imp
 import os
-
+import redis
 from Jumpscale import j
 from redis.connection import ConnectionError
 
@@ -20,8 +20,8 @@ class GedisClient(JSConfigBase):
     @url = jumpscale.gedis.client
     name** = "main"
     host = "127.0.0.1" (S)
-    port = 8900 (ipport)
-    namespace = "default" (S)
+    port = 8901 (ipport)
+    package_name = "zerobot.base" (S)  #is the full package name e.g. threebot.blog
     threebot_local_profile = "default"
     password_ = ""
     # ssl = False (B)
@@ -33,8 +33,18 @@ class GedisClient(JSConfigBase):
     def _init(self, **kwargs):
         # j.clients.gedis.latest = self
         self._actorsmeta = {}
+        if not self.package_name:
+            self.package_name = "zerobot.base"
+            self.save()
+        assert self.package_name
+        assert "." in self.package_name
         self.schemas = None
         self._actors = None
+        if "package_name" in kwargs and kwargs["package_name"] and self.package_name != kwargs["package_name"]:
+            raise j.exceptions.Input(
+                "gedis client with name:%s was configured for other packagename:%s"
+                % (self.name, kwargs["package_name"])
+            )
         self._code_generated_dir = j.sal.fs.joinPaths(j.dirs.VARDIR, "codegen", "gedis", self.name, "client")
         j.sal.fs.createDir(self._code_generated_dir)
         j.sal.fs.touch(j.sal.fs.joinPaths(self._code_generated_dir, "__init__.py"))
@@ -43,12 +53,11 @@ class GedisClient(JSConfigBase):
         self._reset()
         self.reload()
 
-    def save(self):
-        self._redis_ = None
-        JSConfigBase.save(self)
-
-    def _update_trigger(self, key, val):
-        self._reset()
+    #     self._model.trigger_add(self._update_trigger)
+    #
+    # def _update_trigger(self, obj, action, **kwargs):
+    #     if action in ["save", "change"]:
+    #         self._reset()
 
     def _reset(self):
         self._redis_ = None  # connection to server
@@ -72,40 +81,49 @@ class GedisClient(JSConfigBase):
     #     res = self._redis.execute_command(cmd)
     #     return res
 
-    def reload(self, namespace=None):
+    def _redis_cmd_execute(self, *args):
+        try:
+            res = self._redis.execute_command(*args)
+        except redis.ResponseError as e:
+            raise j.clients.gedis._handle_error(e, redis=self._redis)
+        return res
+
+    def reload(self):
         self._log_info("reload")
         self._reset()
         assert self.ping()
-
-        if namespace:
-            self.namespace = namespace
 
         self._actorsmeta = {}
         self._actors = GedisClientActors()
         self.schemas = GedisClientSchemas()
 
         # this will make sure we know the core schema's as used on server
-        r = self._redis.execute_command("jsx_schemas_get")
-        r2 = j.data.serializers.msgpack.loads(r)
-        for key, data in r2.items():
-            schema_text, schema_url = data
-            if not j.data.schema.exists(md5=key):
-                j.data.schema.get_from_text(schema_text, url=schema_url)
-        cmds_meta = self._redis.execute_command("api_meta_get", self.namespace)
+        # if system schema's not known, we get them from the server
+        if not j.data.schema.exists("jumpscale_bcdb_acl_user_2"):
+            r = self._redis_cmd_execute("jsx_schemas_get")
+            r2 = j.data.serializers.msgpack.loads(r)
+            for key, data in r2.items():
+                schema_text, schema_url = data
+                if not j.data.schema.exists(md5=key):
+                    j.data.schema.get_from_text(schema_text)
+
+        cmds_meta = self._redis_cmd_execute("api_meta_get", self.package_name)
         cmds_meta = j.data.serializers.msgpack.loads(cmds_meta)
+
         if cmds_meta["cmds"] == {}:
-            raise j.exceptions.Base("did not find any actors in namespace:%s" % self.namespace)
+            return
         for key, data in cmds_meta["cmds"].items():
-            if "__model_" in key:
-                raise j.exceptions.Base("aa")
-            actor_name = key.split("__")[1]
-            self._actorsmeta[actor_name] = j.servers.gedis._cmds_get(key, data)
+            actor_name = key.split(".")[-1]
+            if not self.package_name or key.startswith(self.package_name):
+                self._actorsmeta[actor_name] = j.servers.gedis._cmds_get(actor_name, data)
 
         # at this point the schema's are loaded only for the namespace identified (is all part of metadata)
         for actorname, actormeta in self._actorsmeta.items():
             tpath = "%s/templates/GedisClientGenerated.py" % (j.clients.gedis._dirpath)
             actorname_ = actormeta.namespace + "_" + actorname
+
             dest = j.core.tools.text_replace("{DIR_BASE}/var/codegen/gedis/%s/client/%s.py") % (self.name, actorname_)
+
             cl = j.tools.jinja2.code_python_render(
                 obj_key="GedisClientGenerated",
                 path=tpath,
@@ -139,11 +157,7 @@ class GedisClient(JSConfigBase):
     @property
     def actors(self):
         if self._actors is None:
-            try:
-                self.reload()
-            except AttributeError as e:
-                raise j.exceptions.Input(e)
-
+            self.reload()
         return self._actors
 
     @property
@@ -164,38 +178,22 @@ class GedisClient(JSConfigBase):
             self._log_info("redisclient: %s:%s " % (addr, port))
             self._redis_ = j.clients.redis.get(ipaddr=addr, port=port, password=secret, ping=True, fromcache=False)
 
-            # DONT PUT ON JSON
-            # self._redis_.execute_command("config_format", "json")
             # authenticate us
             seed = j.data.idgenerator.generateGUID()  # any seed works, the more random the more secure
-            signature = self._nacl.default.sign_hex(seed)  # this is just std signing on nacl and hexifly it
+            signature = self._nacl.sign_hex(seed)  # this is just std signing on nacl and hexifly it
             self._redis_.execute_command("auth", self._threebot_me.tid, seed, signature)
 
         return self._redis_
 
-    # def __getattr__(self, name):
-    #     if name.startswith("_") or name in self._methods_gedis() or name in self._properties():
-    #         return self.__getattribute__(name)
-    #     return self.cmds.__getattribute__(name)
-
     @property
     def _threebot_me(self):
         if not self._threebot_me_:
-            if self.threebot_local_profile == "default":
-                self._threebot_me_ = j.tools.threebot.me.default
-            else:
-                print("TODO: implement")
-                j.shell()
-        j.shell()
+            self._threebot_me_ = j.tools.threebot.me.get(self.threebot_local_profile, tname="me", needexist=False)
         return self._threebot_me_
 
     @property
     def _nacl(self):
-        if self.threebot_local_profile == "default":
-            return j.data.nacl.default
-        else:
-            print("TODO: implement")
-            j.shell()
+        return self._threebot_me.nacl
 
     def _methods_gedis(self, prefix=""):
         if prefix.startswith("_"):
@@ -206,4 +204,3 @@ class GedisClient(JSConfigBase):
                 res.append(i)
 
         return res
-

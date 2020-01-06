@@ -22,7 +22,7 @@ from Jumpscale import j
 
 
 class DBSQLite(j.baseclasses.object):
-    def _init(self, nsname=None, **kwargs):
+    def _init(self, nsname=None, readonly=False, **kwargs):
 
         assert nsname
         assert "name" not in kwargs
@@ -30,17 +30,23 @@ class DBSQLite(j.baseclasses.object):
 
         self.type = "SDB"
 
-        db_path = j.core.tools.text_replace("{DIR_VAR}/bcdb/%s/sqlite_stor.db" % nsname)
+        self.readonly = readonly
 
-        self._dbpath = db_path
+        self._dbpath = j.core.tools.text_replace("{DIR_VAR}/bcdb/%s/sqlite_stor.db" % nsname)
+
+        if readonly:
+            self._log_info("sqlite file is in readonly mode for: '%s'" % nsname)
+            db_path = j.core.tools.text_replace("file:%s?mode=ro" % self._dbpath)
+        else:
+            db_path = j.core.tools.text_replace("file:%s" % self._dbpath)
 
         if j.sal.fs.exists(self._dbpath):
             self._log_debug("EXISTING SQLITEDB in %s" % self._dbpath)
         else:
-            j.sal.fs.touch(db_path)
+            j.sal.fs.touch(self._dbpath)
             self._log_debug("NEW SQLITEDB in %s" % self._dbpath)
 
-        self.sqlitedb = j.data.peewee.SqliteDatabase(self._dbpath)
+        self.sqlitedb = j.data.peewee.SqliteDatabase(db_path, uri=True, pragmas={"journal_mode": "wal"})
         if self.sqlitedb.is_closed():
             self.sqlitedb.connect()
 
@@ -66,7 +72,7 @@ class DBSQLite(j.baseclasses.object):
         return {"entries": self.count}
 
     def set(self, data, key=None):
-        if key == None:
+        if key is None:
             res = self._table_model(value=data)
             res.save()
             return res.id - 1

@@ -465,7 +465,7 @@ class TestInstallationInDocker(BaseTest):
         self.os_command(command)
 
         self.info("Add sshkey ")
-        self.os_command('ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa')
+        self.os_command('ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa  <<< y')
         self.os_command("eval `ssh-agent -s`  &&  ssh-add")
 
         self.info("Configure the no-interactive option")
@@ -596,7 +596,7 @@ class TestInstallationInSystem(BaseTest):
         self.info("Check generate option, using jsx generate cmd")
 
         self.info("remove jumpscale_generated file")
-        os.remove("rm /sandbox/lib/jumpscale/jumpscale_generated.py")
+        os.remove("/sandbox/lib/jumpscale/jumpscale_generated.py")
 
         self.info("Check generate option")
         command = ". /sandbox/env.sh && /tmp/jsx generate"
@@ -656,7 +656,7 @@ class TestInstallationInSystem(BaseTest):
         """
         test TC205, TC206
         ** test check option on Linux and Mac OS **
-        #. test that check option is working correctly.  
+        #. test that check option is working correctly.
         #. check option ,ake sure that secret, private key, bcdband kosmos are working fine.
         """
 
@@ -687,7 +687,7 @@ class TestInstallationInSystem(BaseTest):
         command = "/tmp/jsx  package-new --name {} --dest {}".format(package_name, destionation)
         output, error = self.os_command(command)
 
-        self.info("chick that package added successfully.")
+        self.info("check that package added successfully.")
         command = "ls {}/{}".format(destionation, package_name)
         output, error = self.os_command(command)
         self.assertIn("actors", output.decode())

@@ -13,4 +13,4 @@ class ThreebotMeCollection(j.baseclasses.object_config_collection):
         your default threebot data
         :return:
         """
-        return self.get(name="default")
+        return self.get(name="default", tname="me")

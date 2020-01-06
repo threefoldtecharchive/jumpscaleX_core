@@ -45,10 +45,10 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
             # means record did not exist yet
             if not email:
                 if interactive:
-                    assert j.application.interactive
-                    email = j.tools.console.askString("your threebot email (optional)")
+                    assert j.application.interactive  # TODO: doesn't work when used from kosmos -p ...
+                    email = j.tools.console.askString("your threebot email")
                 else:
-                    email = ""
+                    raise j.exceptions.Input("please specify email")
             if not description:
                 if interactive:
                     description = j.tools.console.askString("your threebot description (optional)")
@@ -89,7 +89,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         if serialization_format == "msgpack":
             return j.data.serializers.msgpack
 
-    def _unserialize_item(self, data, serialization_format="json"):
+    def _unserialize_item(self, data, serialization_format="json", schema=None):
         """
         :param data: can be a binary blob or a list of items, which will be converted to binary counterpart
         :param serialization_format: json or msgpack
@@ -113,7 +113,8 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         elif isinstance(data, list) and len(data) == 3 and data[0] == 999:
             # means is jsxobject
             _, md5, json_str = data
-            schema = j.data.schema.get_from_md5(md5)
+            if not schema:
+                schema = j.data.schema.get_from_md5(md5)
             datadict = self._serializer_get(serialization_format="json").loads(json_str.encode())
             data = schema.new(datadict=datadict)
             return data
@@ -176,7 +177,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         else:
             return serializer.dumps(data)
 
-    def _unserialize(self, data, serialization_format="json"):
+    def _unserialize(self, data, serialization_format="json", schema=None):
         """
         :param data: a list which needs to be unserialized, or 1 item
         :param serialization_format: json or msgpack
@@ -197,10 +198,10 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         if isinstance(data, list):
             res = []
             for item in data:
-                res.append(self._unserialize_item(item, serialization_format=serialization_format))
+                res.append(self._unserialize_item(item, serialization_format=serialization_format, schema=schema))
             return res
         else:
-            return self._unserialize_item(data, serialization_format=serialization_format)
+            return self._unserialize_item(data, serialization_format=serialization_format, schema=schema)
 
     def _serialize_sign_encrypt(self, data, serialization_format="json", pubkey_hex=None, nacl=None, threebot=None):
         """
@@ -234,7 +235,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         if isinstance(data2, str):
             data2 = data2.encode()
         signature = nacl.sign(data2)
-        signature_hex = binascii.hexlify(signature)
+
         if threebot:
             threebot_client = j.clients.threebot.client_get(threebot)
             data3 = threebot_client.encrypt_for_threebot(data2)
@@ -247,7 +248,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
                 data3 = nacl.encrypt(data2, public_key=pubkey)
             else:
                 data3 = data2
-        return [tid, data3, signature_hex]
+        return [tid, data3, signature]
 
     def _deserialize_check_decrypt(
         self, data, serialization_format="json", verifykey_hex=None, nacl=None, threebot=None
@@ -261,15 +262,15 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         :param data: result of self._serialize_sign_encrypt()
         :param serialization_format: json or msgpack
 
-        :return: [list of items] deserialized but which were serialized in data using serialization_format 
+        :return: [list of items] deserialized but which were serialized in data using serialization_format
         raises exceptions if decryption or signature fails
 
         """
-        assert len(verifykey_hex) == 128
+        assert len(verifykey_hex) == 64
         if not nacl:
             nacl = self._nacl
         # decrypt data
-        data_dec_ser = nacl.decrypt(data)
+        data_dec_ser = nacl.decrypt(data[1])
         # unserialize data
         data_dec = self._unserialize(data_dec_ser, serialization_format=serialization_format)
         # verify the signature against the provided pubkey and the decrypted data
@@ -288,7 +289,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         S = """
         @url = tools.threebot.test.schema
         name** = "aname"
-        description = "something" 
+        description = "something"
         """
         schema = j.data.schema.get_from_text(S)
         jsxobject = schema.new()
@@ -303,12 +304,9 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         :return:
         """
 
-        self.explorer.actors.package_manager.package_add(
-            "threebot_phonebook",
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
-        )
+        j.servers.threebot.start()
 
-        j.servers.threebot.local_start_default()
+        self._add_phonebook()
 
         nacl1 = j.data.nacl.configure(name="test_client")
         nacl2 = j.data.nacl.configure(name="test_server")
@@ -323,14 +321,17 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
 
         return nacl1, nacl2, threebot1, threebot2
 
-    def test_register_nacl_threebots(self):
-        self.explorer.actors.package_manager.package_add(
-            "threebot_phonebook",
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
+    def _add_phonebook(self):
+        pm = j.clients.gedis.get(
+            name="threebot", port=8901, package_name="zerobot.packagemanager"
+        ).actors.package_manager
+        pm.package_add(
+            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/tfgrid/phonebook"
         )
 
-        # need to make sure to reload the client, because we added a package
-        self.explorer._client.reload()
+    def test_register_nacl_threebots(self):
+
+        self._add_phonebook()
 
         nacl1 = j.data.nacl.get(name="test_client")
         nacl2 = j.data.nacl.get(name="test_server")
@@ -339,7 +340,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         threebot_me_client = j.tools.threebot.init_my_threebot(
             myidentity="test_client",
             name="test_client",
-            email=None,
+            email="someting@sss.com",
             description=None,
             ipaddr="localhost",
             interactive=False,
@@ -347,7 +348,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         threebot_me_server = j.tools.threebot.init_my_threebot(
             myidentity="test_server",
             name="test_server",
-            email=None,
+            email="somethingelse@ddd.com",
             description=None,
             ipaddr="localhost",
             interactive=False,
@@ -368,14 +369,14 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
 
         """
 
-        cl = j.servers.threebot.local_start_default()
+        cl = j.servers.threebot.local_start_explorer(background=True)
 
-        cl.actors.package_manager.package_add(
-            "threebot_phonebook",
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook",
-        )
+        self._add_phonebook()
 
-        self._threebot_client_default = cl
+        e = j.clients.threebot.explorer
+
+        # get actors to phonebook
+        self.actor_phonebook = e.actors_get("tfgrid.phonebook").phonebook
 
         self.me
 

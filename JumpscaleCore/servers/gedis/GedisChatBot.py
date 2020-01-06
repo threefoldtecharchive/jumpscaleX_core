@@ -29,7 +29,10 @@ class GedisChatBotFactory(JSBASE):
 
         query_params = html.unescape(query_params)
         query_params = query_params.replace("'", '"')
-        query_params = j.data.serializers.json.loads(query_params)
+        try:
+            query_params = j.data.serializers.json.loads(query_params)
+        except Exception as e:
+            self._log_debug(f"parsing query params faild could be empty, {e}")
         kwargs.update(query_params)
         session_id = str(uuid.uuid4())
         topic_method = self.chat_flows[topic]
@@ -75,17 +78,18 @@ class GedisChatBotFactory(JSBASE):
         looks for the chat flows exist in `chatflows_dir` to import and load them under self.chat_flows
         :param chatflows_dir: the dir path need to look for chatflows into it
         """
-        for chatflow in j.sal.fs.listFilesInDir(chatflows_dir, recursive=True, filter="*.py", followSymlinks=True):
-            dir_path = j.sal.fs.getDirName(chatflow)
-            if dir_path not in sys.path:
-                sys.path.append(dir_path)
-            self._log_info("chat:%s" % chatflow)
-            module_name = j.sal.fs.getBaseName(chatflow)[:-3]
+        chatflow_names = []
+        for chatflow_path in j.sal.fs.listFilesInDir(chatflows_dir, recursive=True, filter="*.py", followSymlinks=True):
+            self._log_info("chat:%s" % chatflow_path)
+            module_name = j.sal.fs.getBaseName(chatflow_path)[:-3]
             if module_name.startswith("_"):
                 continue
-            loaded_chatflow = import_module(module_name)
             # Each chatflow file must have `chat` method which contains all logic/questions
-            self.chat_flows[module_name] = loaded_chatflow.chat
+            mod, changed = j.tools.codeloader.load("chat", path=chatflow_path, reload=False)
+            if changed:
+                self.chat_flows[module_name] = mod
+            chatflow_names.append(module_name)
+        return chatflow_names
 
     def chatflows_list(self):
         """
@@ -289,6 +293,10 @@ class GedisChatBotSession(JSBASE):
     def md_msg(self, msg, **kwargs):
         return {"cat": "md_show", "msg": msg, "kwargs": kwargs}
 
+    def template_render(self, msg, **kwargs):
+        res = j.tools.jinja2.template_render(text=j.core.text.strip(msg), **kwargs)
+        return self.md_show(res)
+
     def md_show_update(self, msg, **kwargs):
         """
         a special helper method to send markdown content to the bot instead of questions.
@@ -327,6 +335,8 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
         :return:
         """
         self.q_out.put({"cat": "redirect", "msg": msg, "kwargs": kwargs})
+        # dangerous: better spend time figuring out why this is happening
+        gevent.sleep(1)
 
     def html_show(self, msg, **kwargs):
         """
@@ -391,6 +401,12 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
 
     def drop_down_msg(self, msg, options, **kwargs):
         return {"cat": "drop_down_choice", "msg": msg, "options": options, "kwargs": kwargs}
+
+    def drop_down_country(self, msg):
+        return self.drop_down_choice(msg, j.data.countries.names)
+
+    def autocomplete_drop_down(self, msg, options):
+        return self.drop_down_choice(msg, options, auto_complete=True)
 
     def user_info(self, **kwargs):
         """

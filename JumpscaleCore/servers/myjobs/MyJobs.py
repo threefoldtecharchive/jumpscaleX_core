@@ -9,20 +9,12 @@ class MyJob(j.baseclasses.object_config):
     _name = "job"
     _SCHEMATEXT = schemas.job
 
-    def _init(self, method=None, dependencies=None, args_replace=None, **kwargs2):
-
-        # leave this check for now please
-        assert self._bcdb.storclient._check_cat == "myjobs"
-
-        if dependencies:
-            for dep in dependencies:
-                if isinstance(dep, j.data.schema._JSXObjectClass):
-                    self.dependencies.append(dep.id)
-                elif isinstance(dep, int):
-                    self.dependencies.append(dep)
-                else:
-                    raise j.exceptions.Input("only jsx obj (job) or int supported in dependencies")
-
+    def _init(self, method=None, args_replace=None, return_queues_reset=None, **kwargs):
+        if self.return_queues:
+            for qname in self.return_queues:
+                q = j.clients.redis.queue_get(redisclient=j.clients.redis.core_get(), key="myjobs:%s" % qname)
+                if return_queues_reset:
+                    q.reset()
         if method:
             self.process_code(method, args_replace)
 
@@ -51,16 +43,11 @@ class MyJob(j.baseclasses.object_config):
             j.servers.myjobs.model_action.set(action)
 
         self.action_id = action.id
-
-        # if gevent and return_queues != []:
-        #     # self.return_queues[self.id]
-        #     raise j.exceptions.Base("need to implement")
-
         self.save()
 
     def check_ready(self, die=True, load=True):
         """
-        checks if there is a timeout or an error an error will be raised unless if die==False
+        checks if there is a timeout or an errfor an error will be raised unless if die==False
         it will make sure that the object data is right e.g. state, time, ...
 
         will return False if job is finished (error or not)

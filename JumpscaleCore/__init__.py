@@ -64,7 +64,7 @@ class Core:
     def __init__(self, j):
         self._dir_home = None
         self._dir_jumpscale = None
-        self._isSandbox = None
+        self._sandbox_check = None
         self.db = MyEnv.db
 
     def db_reset(self, j):
@@ -79,13 +79,13 @@ class Core:
         return self._dir_jumpscale
 
     @property
-    def isSandbox(self):
-        if self._isSandbox is None:
+    def sandbox_check(self):
+        if self._sandbox_check is None:
             if self.dir_jumpscale.startswith("/sandbox"):
-                self._isSandbox = True
+                self._sandbox_check = True
             else:
-                self._isSandbox = False
-        return self._isSandbox
+                self._sandbox_check = False
+        return self._sandbox_check
 
     def is_gevent_monkey_patched(self):
         try:
@@ -186,7 +186,7 @@ class Jumpscale:
             embed(globals_, locals_, configure=ptconfig, history_filename=history_filename)
 
     def shelli(self, loc=True, name=None, stack_depth=2):
-        if self._shell == None:
+        if self._shell is None:
             from IPython.terminal.embed import InteractiveShellEmbed
 
             if name is not "":
@@ -289,6 +289,14 @@ j.errorhandler = ErrorHandler(j)
 j.core.errorhandler = j.errorhandler
 j.exceptions = j.errorhandler.exceptions
 j.core.exceptions = j.exceptions
+
+
+class ThreeBotRoot:
+    pass
+
+
+j.threebot = ThreeBotRoot()
+j.threebot.active = False
 
 
 # THIS SHOULD BE THE END OF OUR CORE, EVERYTHING AFTER THIS SHOULD BE LOADED DYNAMICALLY

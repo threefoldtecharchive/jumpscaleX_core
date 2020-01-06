@@ -15,7 +15,7 @@ class TestPackageManager(TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.result_path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), PACKAGE_NAME, "result")
-        self.gedis_client = j.servers.threebot.local_start_default(timeout=1200)
+        self.gedis_client = j.servers.threebot.start()
         self.package_manager = self.gedis_client.actors.package_manager
         self.path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), PACKAGE_NAME)
 
@@ -73,7 +73,7 @@ class TestPackageManager(TestCase):
     def test_002_package_list_delete(self):
         """
         Test case for listing and deleting packages
-        
+
         **Test scenario**
         #. Start threebot server.
         #. Add test package.
@@ -103,7 +103,7 @@ class TestPackageManager(TestCase):
     def test_003_package_enable_disable(self):
         """
         Test case for enabling and disabling packages.
-        
+
         **Test scenario**
         #. Add test package.
         #. Enable this package.
@@ -138,7 +138,7 @@ class TestPackageManager(TestCase):
     def test_004_package_start_stop(self):
         """
         Test case for starting and stopping packages.
-        
+
         **Test scenario**
         #. Add test package.
         #. Stop this package.

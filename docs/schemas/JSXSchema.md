@@ -129,13 +129,14 @@ s=j.data.schema.get(schema_text_path=SCHEMA) #will die if not exists
 obj = s.new()
 obj.abool = True
 obj.abool = 1
-assert obj.abool == True
+assert obj.abool is True
 obj.abool = 0
-assert obj.abool == False
+assert obj.abool is False
 ```
 
 > ### can see how the type system we use is intelligent, especially if used for things like numerics.
 
+> ### Please don't use "__" in your schema propery name
 
 - for a full example of using schema see the following [test link](../../JumpscaleCore/data/schema/tests)
 

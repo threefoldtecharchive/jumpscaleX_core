@@ -26,9 +26,7 @@ class NACLFactory(j.baseclasses.object):
         if isinstance(j.core.db, fakeredis.FakeStrictRedis):
             j.clients.redis.core_get()
 
-    def configure(
-        self, name="default", privkey_words=None, sshagent_use=None, generate=True, interactive=False, reset=False
-    ):
+    def configure(self, name="default", privkey_words=None, generate=True, interactive=False, reset=False):
         """
         secret is used to encrypt/decrypt the private key when stored on local filesystem
         privkey_words is used to put the private key back
@@ -43,11 +41,7 @@ class NACLFactory(j.baseclasses.object):
         """
         n = self.get(name=name, load=False)
         n.configure(
-            privkey_words=privkey_words,
-            sshagent_use=sshagent_use,
-            generate=generate,
-            interactive=interactive,
-            reset=reset,
+            privkey_words=privkey_words, generate=generate, interactive=interactive, reset=reset,
         )
         return n
 
@@ -82,7 +76,7 @@ class NACLFactory(j.baseclasses.object):
                 item = item._json
             elif isinstance(item, j.baseclasses.dict):
                 item = j.data.serializers.json.dumps(item._data).encode()
-            elif item == None:
+            elif item is None:
                 raise j.exceptions.Input("should not be None")
             else:
                 item = j.data.serializers.json.dumps(item).encode()
@@ -195,7 +189,7 @@ class NACLFactory(j.baseclasses.object):
         r = cl.sign(data)
 
         assert cl.verify(data, r)
-        assert cl.verify(b"a", r) == False
+        assert cl.verify(b"a", r) is False
 
         pubsignkey32 = cl.verify_key.encode()
 
@@ -261,7 +255,11 @@ class NACLFactory(j.baseclasses.object):
         # LETS NOW TEST THAT WE CAN START FROM WORDS
 
         words = j.data.nacl.default.words
-        j.sal.fs.copyDirTree(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default", j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup")))  # make backup
+        j.sal.fs.copyDirTree(
+            j.core.tools.text_replace(
+                "{DIR_BASE}/cfg/keys/default", j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup")
+            )
+        )  # make backup
         j.sal.fs.remove(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default"))
         try:
             self.default.reset()
@@ -278,7 +276,11 @@ class NACLFactory(j.baseclasses.object):
             assert b == b"something"
 
         finally:
-            j.sal.fs.copyDirTree(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup", j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default")))
+            j.sal.fs.copyDirTree(
+                j.core.tools.text_replace(
+                    "{DIR_BASE}/cfg/keys/default_backup", j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default")
+                )
+            )
             j.sal.fs.remove(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup"))
 
         self._log_info("TEST OK")
@@ -315,5 +317,3 @@ class NACLFactory(j.baseclasses.object):
             b = cl.decrypt(a)
             assert data2 == b
         j.tools.timer.stop(i)
-
-

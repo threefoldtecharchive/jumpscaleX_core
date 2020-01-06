@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 
 
@@ -28,9 +8,10 @@ INT_BIN_EMPTY = b"\xff\xff\xff\xff"  # is the empty value for in our key contain
 
 # from .BCDBModelIndex import BCDBModelIndex
 from .BCDBIndexMeta import BCDBIndexMeta
+from .BCDBModelBase import BCDBModelBase
 
 
-class BCDBModel(j.baseclasses.object):
+class BCDBModel(BCDBModelBase):
     def __init__(self, bcdb, schema_url=None, reset=False):
         """
 
@@ -49,16 +30,15 @@ class BCDBModel(j.baseclasses.object):
         JSBASE.__init__(self)
 
         # we should have a schema
-        if not schema_url:
+        if schema_url:
+            self.schema = j.data.schema.get_from_url(schema_url)
+        else:
             if hasattr(self, "_SCHEMA"):  # what is that _schema ?
-                schema = j.data.schema.get_from_text(self._SCHEMA)
+                self.schema = j.data.schema.get_from_text(self._SCHEMA)
             else:
-                schema = self._schema_get()  # _schema_get is overrided by classes like ACL USER CIRCLE NAMESPACE
-                if not schema:
+                self.schema = self._schema_get()  # _schema_get is overrided by classes like ACL USER CIRCLE NAMESPACE
+                if not self.schema:
                     j.exceptions.JSBUG("BCDB Model needs a schema object or text")
-            schema_url = schema.url
-
-        self._schema_url = schema_url
 
         self.bcdb = bcdb
         self._md5_previous_ = None
@@ -68,12 +48,14 @@ class BCDBModel(j.baseclasses.object):
         self.autosave = False
         self.nosave = False
 
+        self.instances = []
+
         if self.storclient and self.storclient.type == "ZDB":
             # is unique id for a bcdbmodel (unique per storclient !)
             self.key = "%s_%s" % (self.storclient.nsname, self.schema.url)
         else:
             self.key = self.schema.url
-        self.key = self.key.replace(".", "_")
+        self.key = self.schema.key
 
         self._data_dir = j.sal.fs.joinPaths(self.bcdb._data_dir, self.key)
         j.sal.fs.createDir(self._data_dir)
@@ -90,6 +72,17 @@ class BCDBModel(j.baseclasses.object):
             self._index_ = indexklass(model=self, reset=True)
             self.destroy()
 
+        self.trigger_add(self._maintenance)
+
+    def _maintenance(self, model=None, obj=None, action=None, kosmosinstance=None, propertyname=None):
+        if action == "schema_change":
+            for obj in self.instances:
+                # make sure we attach the right model to the obj
+                obj._model = self.bcdb.model_get(url=obj._schema.url)
+        if action == "stop":
+            for obj in self.instances:
+                obj.stop()
+
     @property
     def index(self):
         if not self._index_:
@@ -105,14 +98,17 @@ class BCDBModel(j.baseclasses.object):
         :return: class of the model which is used for indexing
 
         """
-        self._log_debug("generate schema index:%s" % self._schema_url)
+        self._log_debug("generate schema index:%s" % self.schema.url)
 
         # model with info to generate
         imodel = BCDBIndexMeta(schema=self.schema)
         imodel.include_schema = True
         tpath = "%s/templates/BCDBModelIndexClass.py" % j.data.bcdb._dirpath
-        name = "bcdbindex_%s_%s" % (self._schema_url, self.schema._md5)
+        name = "bcdbindex_%s_%s" % (self.schema.url, self.schema._md5)
         name = name.replace(".", "_")
+        # if self.schema.url == "jumpscale.example.car.1":
+        #     j.shell()
+        #     w
         myclass = j.tools.jinja2.code_python_render(
             name=name,
             path=tpath,
@@ -126,26 +122,17 @@ class BCDBModel(j.baseclasses.object):
 
         return myclass
 
-    @property
-    def schema(self):
-        schema = j.data.schema.get_from_url(self._schema_url)
-        if self._md5_previous_ != schema._md5:
-            self._md5_previous_ = schema._md5 + ""  # to make sure we have copy=
-            self._index_ = None
-        return schema
-
-    @property
-    def mid(self):
-        return self.bcdb.meta._mid_from_url(self._schema_url)
-
-    def schema_change(self, schema):
+    def schema_change(self, schema, obj=None):
         assert isinstance(schema, j.data.schema.SCHEMA_CLASS)
 
         # make sure model has the latest schema
         if self.schema._md5 != schema._md5:
-            self._schema_url = schema.url
+            self.schema = schema
             self._log_info("schema change")
-            self._triggers_call(None, "schema_change", None)
+            self._triggers_call(obj, "schema_change", None)
+
+    def stop(self):
+        self._triggers_call(obj=None, action="stop")
 
     @property
     def sonic_client(self):
@@ -179,18 +166,25 @@ class BCDBModel(j.baseclasses.object):
         will go over all triggers and call them with arguments given
         see docs/baseclasses/data_mgmt_on_obj.md
 
+        return obj, stop
+
         """
         model = self
         kosmosinstance = self._kosmosinstance
+        stop = False
         for method in self._triggers:
             obj2 = method(model=model, obj=obj, kosmosinstance=kosmosinstance, action=action, propertyname=propertyname)
+            if isinstance(obj2, list) or isinstance(obj2, tuple):
+                obj2, stop = obj2
+                if stop:
+                    return obj, stop
             if isinstance(obj2, j.data.schema._JSXObjectClass):
                 # only replace if right one returned, otherwise ignore
                 obj = obj2
             else:
                 if obj2 is not None:
                     raise j.exceptions.Base("obj return from action needs to be a JSXObject or None")
-        return obj
+        return obj, stop
 
     # def cache_reset(self):
     #     self.obj_cache = {}
@@ -205,7 +199,6 @@ class BCDBModel(j.baseclasses.object):
 
     @queue_method
     def index_rebuild(self, nid=1):
-        self.stop()
         self.index.destroy(nid=nid)
         self._log_warning("will rebuild index for:%s" % self)
         for obj in self.iterate(nid=nid):
@@ -213,6 +206,7 @@ class BCDBModel(j.baseclasses.object):
 
     @queue_method
     def delete(self, obj, force=True):
+        self.bcdb._is_writable_check()
         if not isinstance(obj, j.data.schema._JSXObjectClass):
             if isinstance(obj, int):
                 try:
@@ -227,11 +221,12 @@ class BCDBModel(j.baseclasses.object):
         if obj:
             assert obj.nid
             if obj.id is not None:
-                self._triggers_call(obj=obj, action="delete")
+                obj, stop = self._triggers_call(obj=obj, action="delete")
                 # if obj.id in self.obj_cache:
                 #     self.obj_cache.pop(obj.id)
-                self.storclient.delete(obj.id)
-                self.index.delete_by_id(obj_id=obj.id, nid=obj.nid)
+                if not stop:
+                    self.storclient.delete(obj.id)
+                    self.index.delete_by_id(obj_id=obj.id, nid=obj.nid)
         else:
             self.storclient.delete(obj_id)
             self.index.delete_by_id(obj_id=obj_id, nid=obj.nid)
@@ -249,12 +244,13 @@ class BCDBModel(j.baseclasses.object):
         if obj -> will check of JSOBJ
         if ddict will put inside JSOBJ
         """
+        self.bcdb._is_writable_check()
         if j.data.types.string.check(data):
 
             data = j.data.serializers.json.loads(data)
-            if obj_id == None and "id" in data:
+            if obj_id is None and "id" in data:
                 obj_id = data["id"]
-            if nid == None:
+            if nid is None:
                 if "nid" in data:
                     nid = data["nid"]
                 else:
@@ -280,7 +276,7 @@ class BCDBModel(j.baseclasses.object):
                 else:
                     raise j.exceptions.Base("need to specify nid")
         elif j.data.types.dict.check(data):
-            if obj_id == None and "id" in data:
+            if obj_id is None and "id" in data:
                 obj_id = data["id"]
             if "nid" not in data or not data["nid"]:
                 if nid:
@@ -305,7 +301,7 @@ class BCDBModel(j.baseclasses.object):
 
     def search(self, text, property_name=None):
         # FIXME: get the real nids
-        objs = self.sonic_client.query(self.bcdb.name, "1:{}".format(self.mid), text)
+        objs = self.sonic_client.query(self.bcdb.name, "1:{}".format(self.key), text)
         res = []
         for obj in objs:
             parts = obj.split(":")
@@ -314,19 +310,25 @@ class BCDBModel(j.baseclasses.object):
         return res
 
     def upgrade(self, obj):
+        self.bcdb._is_writable_check()
         obj._model.schema_change(obj._model.bcdb.schema_get(url=obj._schema.url))
         j.shell()
         return obj
 
-    # @queue_method_results
+    @queue_method_results
     def set(self, obj, index=True, store=True):
         """
         :param obj
         :return: obj
         """
         self.check(obj)
-
         if store:
+            obj, stop = self._triggers_call(obj, action="set_pre")
+            if stop:
+                assert obj.id
+                return obj
+
+            self.bcdb._is_writable_check()
 
             # later:
             if obj.acl_id is None:
@@ -362,12 +364,14 @@ class BCDBModel(j.baseclasses.object):
             l = [obj.nid, obj.acl_id, bdata_encrypted]
             data = j.data.serializers.msgpack.dumps(l)
 
-            obj = self._triggers_call(obj, action="set_pre")
-
             # PUT DATA IN DB
             if obj.id is None:
                 # means a new one
                 obj.id = self.storclient.set(data)
+                if obj.id == 0:
+                    # need to skip the first one
+                    obj.id = self.storclient.set(data)
+
                 new = True
                 # self._log_debug("NEW:\n%s" % obj)
             else:
@@ -399,7 +403,7 @@ class BCDBModel(j.baseclasses.object):
                     raise j.exceptions.Input("Could not insert object, unique constraint failed:%s" % e, data=obj)
                 raise
 
-        obj = self._triggers_call(obj=obj, action="set_post")
+        obj, stop = self._triggers_call(obj=obj, action="set_post")
 
         # if self.storclient.type == "RDB":
         #     # TODO: should be part of the storclient itself and we should use lua code on the redis, is much faster
@@ -428,6 +432,7 @@ class BCDBModel(j.baseclasses.object):
         return ddict
 
     def new(self, data=None, nid=1, **kwargs):
+
         if kwargs != {}:
             data = kwargs
         if data and isinstance(data, dict):
@@ -452,26 +457,27 @@ class BCDBModel(j.baseclasses.object):
                 raise j.exceptions.Base("need dict")
         else:
             obj = self.schema.new(bcdb=self.bcdb)
+
         obj = self._methods_add(obj)
         obj.nid = nid
-        obj = self._triggers_call(obj=obj, action="new")
+        obj, stop = self._triggers_call(obj=obj, action="new")
         return obj
 
     def _methods_add(self, obj):
         return obj
 
     def exists(self, obj_id):
+        #
         return self.get(obj_id=obj_id, die=False) != None
 
     @queue_method_results
-    def get(self, obj_id, return_as_capnp=False, usecache=True, die=True):
+    def get(self, obj_id, return_as_capnp=False, die=True):
         """
         @PARAM id is an int or a key
         @PARAM capnp if true will return data as capnp binary object,
                no hook will be done !
         @RETURN obj    (.index is in obj)
         """
-
         if obj_id in [None, 0, "0", b"0"]:
             raise j.exceptions.Base("id cannot be None or 0")
 
@@ -490,16 +496,16 @@ class BCDBModel(j.baseclasses.object):
 
         if not data:
             if die:
-                raise j.exceptions.NotFound(f"could not find obj with id:{obj_id} of {self._schema_url}")
+                raise j.exceptions.NotFound(f"could not find obj with id:{obj_id} of {self.schema.url}")
             else:
                 return None
 
-        obj = self.bcdb._unserialize(obj_id, data, return_as_capnp=return_as_capnp)
-        if obj._schema.url == self._schema_url:
-            obj = self._triggers_call(obj=obj, action="get")
+        obj = self.bcdb._unserialize(obj_id, data, return_as_capnp=return_as_capnp, schema=self.schema)
+        if obj._schema.url == self.schema.url and obj._schema._md5 == self.schema._md5:
+            obj, stop = self._triggers_call(obj=obj, action="get")
         else:
             raise j.exceptions.JSBUG(
-                "no object with id {} found in {}, this means the index gave back an id which is not part of this model.".format(
+                "no object with id {} found in {}, this means the index gave back an id which is not part of this model, different schema url.".format(
                     obj_id, self
                 )
             )
@@ -603,10 +609,11 @@ class BCDBModel(j.baseclasses.object):
         r = cursor.fetchone()
         res = []
         while r:
-            # the id NEEDS to exist on the model
-            if self.exists(r[0]):
-                res.append(r[0])
+            # the id NEEDS to exist on the model  (THIS IS A SHORTCUT FIX, BUT FIRST WANT TO SEE IF I CAN FIX IT)
+            # if self.exists(r[0]):
+            res.append(r[0])
             r = cursor.fetchone()
+
         return res
 
     def query(self, query, values=None):
@@ -635,7 +642,7 @@ class BCDBModel(j.baseclasses.object):
         return res[0]
 
     def __str__(self):
-        out = "model:%s\n" % self._schema_url
+        out = "model:%s\n" % self.schema.url
         # out += j.core.text.prefix("    ", self.schema.text)
         return out
 
@@ -704,4 +711,3 @@ class BCDBModel(j.baseclasses.object):
     #                 self._log_warning("index system produced false positive, is not abnormal")
     #
     #     return res
-

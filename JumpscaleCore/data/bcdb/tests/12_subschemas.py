@@ -33,13 +33,13 @@ def main(self):
     """
 
     schema = """
-    
+
             @url = jsx.master.1
             cmds = (LO) !jsx.subschema.1
             cmd = (O) !jsx.subschema.2
             deepper = (O) !jsx.subschema.3
 
-    
+
             @url = jsx.subschema.1
             name = ""
             comment = ""
@@ -52,37 +52,37 @@ def main(self):
             name3 = ""
             comment3 = ""
             cmds = (LO) !jsx.subschema.3.1
-            cmd = (O) !jsx.subschema.3.2            
+            cmd = (O) !jsx.subschema.3.2
 
             @url = jsx.subschema.3.1
             name31 = ""
-            comment31 = ""    
+            comment31 = ""
             cmds = (LO) !jsx.subschema.3.1.1
-            cmd = (O) !jsx.subschema.3.1.2         
+            cmd = (O) !jsx.subschema.3.1.2
 
             @url = jsx.subschema.3.1.1
             name311 = ""
-            comment311 = ""    
+            comment311 = ""
 
             @url = jsx.subschema.3.1.2
             name312 = ""
-            comment312 = ""    
-            
+            comment312 = ""
+
             @url = jsx.subschema.3.2.1
             name321 = ""
-            comment321 = ""    
+            comment321 = ""
 
             @url = jsx.subschema.3.2.2
             name322 = ""
-            comment322 = ""    
-                
-    
+            comment322 = ""
+
+
             @url = jsx.subschema.3.2
             name31 = ""
-            comment31 = ""    
+            comment31 = ""
             cmds = (LO) !jsx.subschema.3.2.1
-            cmd = (O) !jsx.subschema.3.2.2 
-        
+            cmd = (O) !jsx.subschema.3.2.2
+
         """
 
     # bcdb = j.data.bcdb.get("test")
@@ -103,11 +103,8 @@ def main(self):
     urls.append("jsx.subschema.3.2.2")
 
     for url in urls:
-        md5 = j.data.schema._url_to_md5[url]
+        md5 = j.data.schema.schemas_loaded[url]._md5
         s = bcdb.schema_get(md5=md5)  # need to start from bcdb
-        assert s._md5 == md5
-
-        bcdb.meta._schema_exists(s._md5)
         assert s._md5 == md5
         assert s.url == url
 

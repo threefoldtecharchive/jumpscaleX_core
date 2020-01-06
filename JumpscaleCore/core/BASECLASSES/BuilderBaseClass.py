@@ -391,7 +391,7 @@ class BuilderBaseClass(JSBase):
 
     def _touch(self, path):
         path = self._replace(path)
-        self.tools.touch.touch(path)
+        self.tools.touch(path)
 
     def _dir_ensure(self, path):
         path = self._replace(path)

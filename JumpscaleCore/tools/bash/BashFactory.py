@@ -75,4 +75,3 @@ class BashFactory(j.baseclasses.object):
         assert p.env == {"PATH": "/tmp/2:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin", "TEST": "B:A"}
 
         self._log_info("TEST FOR j.tools.bash is OK")
-

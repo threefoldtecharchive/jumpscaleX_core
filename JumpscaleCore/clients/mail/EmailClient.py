@@ -27,9 +27,9 @@ class EmailClient(JSConfigClient):
         self._server = self.smtp_server
         self._port = self.smtp_port
         self._ssl = self._port in [465, 587]
-        self._username = self.login
         self._password = self.password
         self._sender = self.Email_from
+        self._username = self.Email_from
 
     def __str__(self):
         out = "server=%s\n" % (self._server)

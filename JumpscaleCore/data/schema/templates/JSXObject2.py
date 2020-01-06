@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 
 from capnp import KjException
@@ -53,18 +33,16 @@ class JSXObject2(j.data.schema._JSXObjectClass):
         else:
             {% if prop.has_jsxobject %}
             v = {{prop.js_typelocation}}.clean(self._capnp_obj_.{{prop.name_camel}},model=self._model)
-            self._deserialized_items["{{prop.name}}"] = v
             {% else %}
             v = {{prop.js_typelocation}}.clean(self._capnp_obj_.{{prop.name_camel}})
-            if isinstance(v,j.data.types._TypeBaseObjClass):
-                self._deserialized_items["{{prop.name}}"] = v
             #to make sure that we keep list, json, ... in deserialized items
-            elif isinstance({{prop.js_typelocation}},j.data.types._TypeBaseClassUnserialized):
+            {% endif %}
+            if isinstance(v,j.data.types._TypeBaseObjClass) or isinstance({{prop.js_typelocation}},j.data.types._TypeBaseClassUnserialized):
+                #to make sure that we keep list, json, ... in deserialized items
                 self._deserialized_items["{{prop.name}}"] = v
+                return self._deserialized_items["{{prop.name}}"]
             else:
                 return v
-            {% endif %}
-        return self._deserialized_items["{{prop.name}}"]
 
     @{{prop.name}}.setter
     def {{prop.name}}(self,val):
@@ -79,9 +57,9 @@ class JSXObject2(j.data.schema._JSXObjectClass):
         # self._log_debug("set:{{prop.name}}='%s'"%(val))
         if val != self.{{prop.name}}:
             # self._log_debug("change:{{prop.name}}" + str(val))
-            self._deserialized_items["{{prop.name}}"] = val
             if self._model:
                 self._model._triggers_call(obj=self, action="change", propertyname="{{prop.name}}")
+            self._deserialized_items["{{prop.name}}"] = val
             if self._autosave:
                 self.save()
 
@@ -217,9 +195,9 @@ class JSXObject2(j.data.schema._JSXObjectClass):
     def _str_get(self, ansi=True):
         out = ""
         if ansi:
-            out += "{BLUE}## %s\n{RESET}" % self._schema.url_str
+            out += "{BLUE}## %s\n{RESET}" % self._schema.url
         else:
-            out += "## %s\n" % self._schema.url_str
+            out += "## %s\n" % self._schema.url
         if self.id:
             if ansi:
                 out += "{GREEN}ID: %s\n{RESET}" % self.id
@@ -256,11 +234,3 @@ class JSXObject2(j.data.schema._JSXObjectClass):
             out += "{RESET}"
         out = j.core.tools.text_strip(out, replace=True,die_if_args_left=False)
         return out
-
-
-
-
-
-
-
-

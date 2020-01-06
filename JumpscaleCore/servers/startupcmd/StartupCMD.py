@@ -38,9 +38,10 @@ class StartupCMD(j.baseclasses.object_config):
         ports = (LI)
         ports_udp = (LI)
         timeout = 120
+        process_name = (s)
         process_strings = (ls)
         process_strings_regex = (ls)
-        pid = 0
+        pid = (I)
         executor = "tmux,corex,foreground,background" (E)
         daemon = true (b)
         hardkill = false (b)
@@ -56,6 +57,7 @@ class StartupCMD(j.baseclasses.object_config):
         time_stop = (T)
 
         """
+    DEFAULT_PROCESS_ID = 2147483647
 
     def _init(self, **kwargs):
         self._pane_ = None
@@ -63,7 +65,7 @@ class StartupCMD(j.baseclasses.object_config):
         self._logger_enable()
         if self.path == "":
             self.path = "/tmp"
-        self._pid = 0
+        self._pid = self.DEFAULT_PROCESS_ID
 
         self.cmd_start = j.core.tools.text_strip(self.cmd_start)
 
@@ -76,7 +78,7 @@ class StartupCMD(j.baseclasses.object_config):
         self.time_stop = 0
         self.state = "init"
         self.corex_id = ""
-        self._pid = 0
+        self._pid = self.DEFAULT_PROCESS_ID
 
     @property
     def pid(self):
@@ -136,10 +138,10 @@ class StartupCMD(j.baseclasses.object_config):
                 self._notify_state("down")
             return p
 
-        if self.pid:
+        if self.pid != self.DEFAULT_PROCESS_ID:
             p = j.sal.process.getProcessObject(self.pid, die=False)
             if not p:
-                self.pid = 0
+                self.pid = self.DEFAULT_PROCESS_ID
             else:
                 return notify_p(p)
 
@@ -148,7 +150,7 @@ class StartupCMD(j.baseclasses.object_config):
             if len(ps) == 1:
                 return notify_p(ps[0])
 
-        if not self.pid:
+        if self.pid == self.DEFAULT_PROCESS_ID:
             return
 
         return j.sal.process.getProcessObject(self.pid)
@@ -237,7 +239,7 @@ class StartupCMD(j.baseclasses.object_config):
 
         # will try to use process manager but this only works for local
         if self._local:
-            if self.pid and self.pid > 0:
+            if self.pid and self.pid != self.DEFAULT_PROCESS_ID:
                 self._log_info("found process to stop:%s" % self.pid)
                 p = self.process
                 if p and self.state in ["running", "stopping"]:
@@ -303,7 +305,7 @@ class StartupCMD(j.baseclasses.object_config):
         if not timeout:
             timeout = self.timeout
 
-        if self.is_running() == False and force == False:  # if we don't know it will be -1
+        if self.is_running() is False and force is False:  # if we don't know it will be -1
             return
 
         self._notify_state("stopping")
@@ -312,7 +314,7 @@ class StartupCMD(j.baseclasses.object_config):
             # means we really tried a softkill
             if force is False:
                 stopped = self.wait_stopped(die=False, timeout=timeout)
-                if stopped == True and force == False:  # this means we really know for sure it died
+                if stopped is True and force is False:  # this means we really know for sure it died
                     return True
 
         self._hardkill()  # will remove tmux pane or other hard method of stopping
@@ -343,20 +345,19 @@ class StartupCMD(j.baseclasses.object_config):
     def is_running(self):
         if self._local and self.ports != []:
             for port in self.ports:
-                if j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=port) == False:
+                if j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=port) is False:
                     self._notify_state("down")
                     return False
-                else:
-                    self._notify_state("running")
-                    return True
+            self._notify_state("running")
+            return True
 
         if self._local and self.ports_udp != []:
             for port in self.ports_udp:
-                if j.sal.nettools.udpPortConnectionTest(ipaddr="localhost", port=port) == False:
+                if j.sal.nettools.udpPortConnectionTest(ipaddr="localhost", port=port) is False:
                     self._notify_state("down")
                     return False
-                else:
-                    return True
+            self._notify_state("running")
+            return True
 
         if self.executor == "corex":
             if self.state in ["NOTFOUND"]:
@@ -368,18 +369,20 @@ class StartupCMD(j.baseclasses.object_config):
                 return False
 
         if self._local:
-            p = self.process
-            if p:
-                # we found a process so can take decision now
-                if self.state == "running":
-                    # self process sets the state
-                    return True
-                elif j.sal.process.psfind("startupcmd_%s" % self.name):
-                    self._notify_state("running")
-                    return True
-                else:
-                    return False
-            elif self.ports != [] or self.process_strings != "" or self.process_strings_regex != "":
+            # if self.process_name:
+            #     p = self.process
+            #     if p:
+            #         if self.process_name in p.name()
+            #         j.shell()
+            # if p:
+            #     # we found a process so can take decision now
+            #     if j.sal.process.psfind("startupcmd_%s" % self.name):
+            #         self._notify_state("running")
+            #         return True
+            #     else:
+            #         print("could not find process:startupcmd_%s" % name)
+            #         return False
+            if self.ports != [] or self.process_strings != "" or self.process_strings_regex != "":
                 # we check on ports or process strings so we know for sure its down
                 if len(self._get_processes_by_port_or_filter()) > 0:
                     self._notify_state("running")
@@ -387,11 +390,7 @@ class StartupCMD(j.baseclasses.object_config):
                 self._notify_state("down")
                 return False
             else:
-                try:
-                    return j.sal.process.psfind("startupcmd_%s" % self.name)
-                except:
-                    self._notify_state("down")
-                    return False
+                return j.sal.process.psfind("startupcmd_%s" % self.name)
 
         return -1  # means we don't know
 
@@ -414,10 +413,10 @@ class StartupCMD(j.baseclasses.object_config):
                     nr = 0
                     nr_port_check = len(self.ports) + len(self.ports_udp)
                     for port in self.ports:
-                        if j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=port) == False:
+                        if j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=port) is False:
                             nr += 1
                     for port2 in self.ports_udp:
-                        if j.sal.nettools.udpPortConnectionTest(ipaddr="localhost", port=port2) == False:
+                        if j.sal.nettools.udpPortConnectionTest(ipaddr="localhost", port=port2) is False:
                             nr += 1
                     if nr == nr_port_check and nr > 0:
                         self._log_info("IS HALTED based on TCP/UDP %s" % self.name)
@@ -490,7 +489,7 @@ class StartupCMD(j.baseclasses.object_config):
                     if (
                         self.process_strings == []
                         and self.process_strings_regex == []
-                        and self.pid == 0
+                        and self.pid == self.DEFAULT_PROCESS_ID
                         and self.ports == []
                         and self.ports_udp == []
                     ):
@@ -531,7 +530,7 @@ class StartupCMD(j.baseclasses.object_config):
                     self.stop(force=True)
                 # self._hardkill()
 
-        if not reset and self.is_running() == True:
+        if not reset and self.is_running() is True:
             self._log_info("no need to start was already started:%s" % self.name)
             return
 
@@ -540,8 +539,6 @@ class StartupCMD(j.baseclasses.object_config):
 
         self.cmd_start = j.core.tools.text_strip(self.cmd_start)
 
-        if self.state in ["running"]:
-            raise RuntimeError()
         if self.state in ["init", "running", "error"]:
             self._hardkill()
 
@@ -573,7 +570,7 @@ class StartupCMD(j.baseclasses.object_config):
         elif self.interpreter == "jumpscale":
             C = """
             from Jumpscale import j
-            j.application.bcdb_system
+            j.data.bcdb.system
             {% if cmdpath %}
             j.sal.fs.changeDir("{{cmdpath}}")
             {% endif %}
@@ -585,7 +582,7 @@ class StartupCMD(j.baseclasses.object_config):
             from gevent import monkey
             monkey.patch_all(subprocess=False)
             from Jumpscale import j
-            j.application.bcdb_system
+            j.data.bcdb.system
             {% if cmdpath %}
             j.sal.fs.changeDir("{{cmdpath}}")
             {% endif %}
@@ -741,13 +738,13 @@ class StartupCMD(j.baseclasses.object_config):
         assert str(res["id"]) == self.corex_id
 
     def _corex_clean(self):
-        if self.pid:
+        if self.pid != self.DEFAULT_PROCESS_ID:
             y = self._corex_client.process_info_get(pid=self.pid)
             if y:
                 assert self.pid == y["pid"]
                 self.corex_id = y["id"]
             else:
-                self.pid = 0
+                self.pid = self.DEFAULT_PROCESS_ID
                 self.state = "init"
         processlist = self._corex_client.process_list()
         for x in processlist:

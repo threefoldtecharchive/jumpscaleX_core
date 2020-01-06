@@ -37,11 +37,11 @@ class Cache(object):
         assert "something" in c.list()
         assert c.exists("something")
         c.reset()
-        assert c.exists("something") == False
+        assert c.exists("something") is False
         c.set("something", "OK")
 
         self.reset()
-        assert c.exists("something") == False
+        assert c.exists("something") is False
 
         c.set("something", "OK")
         assert "OK" == c.get("something")
@@ -80,7 +80,7 @@ class Cache(object):
         assert c.exists("somethingElse")
         assert "somethingElse" in c.list()
         self.reset()
-        assert c.exists("somethingElse") == False
+        assert c.exists("somethingElse") is False
         assert "somethingElse" not in c.list()
 
     def test(self):

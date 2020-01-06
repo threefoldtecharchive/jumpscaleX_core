@@ -101,13 +101,10 @@ class SerializersFactory(j.baseclasses.object):
             self.__class__._pickle = SerializerPickle()
         return self.__class__._pickle
 
-    @property
-    def blowfish(self):
-        if self.__class__._blowfish is None:
-            from .SerializerBlowfish import SerializerBlowfish
+    def blowfish(self, encrkey):
+        from .SerializerBlowfish import SerializerBlowfish
 
-            self.__class__._blowfish = SerializerBlowfish()
-        return self.__class__._blowfish
+        return SerializerBlowfish(encrkey)
 
     @property
     def dict(self):
