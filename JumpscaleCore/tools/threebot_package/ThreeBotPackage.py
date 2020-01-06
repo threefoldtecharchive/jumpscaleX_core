@@ -295,15 +295,3 @@ class ThreeBotPackage(ThreeBotPackageBase):
     def prepare(self):
         self.load()
         self._package_author.prepare()
-
-    def _model_get_fields_schema(self, model):
-        lines = []
-        model_prefix = f"{self.source.threebot}.{self.source.name}"
-
-        for line in model.schema.text.splitlines():
-            line = line.strip().lower()
-            if line.startswith("@url"):
-                continue
-            lines.append(line)
-
-        return "\n        ".join(lines)
