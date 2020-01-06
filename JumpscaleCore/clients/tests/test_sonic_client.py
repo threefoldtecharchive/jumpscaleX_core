@@ -3,7 +3,8 @@ from Jumpscale import j
 from base_test import BaseTest
 
 
-@unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/250, when unskipping these tests, please uncomment the SetUpClass and tearDownClass methods")
+@unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/250, \
+               when un-skipping these tests , please uncomment the SetUpClass and tearDownClass method")
 class SonicClient(BaseTest):
     # @classmethod
     # def setUpClass(cls):
