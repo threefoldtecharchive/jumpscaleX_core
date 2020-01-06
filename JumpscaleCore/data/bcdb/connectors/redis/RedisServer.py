@@ -286,7 +286,6 @@ class RedisServer(j.baseclasses.object):
         try:
             obj = model.get(id)
         except Exception as e:
-            j.debug()
             response.error("cannot get, key:'%s' not found,%s" % (key, e))
         try:
             response.encode(obj._json)

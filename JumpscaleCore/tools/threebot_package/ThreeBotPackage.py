@@ -36,7 +36,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
                 self._package_author = klass(package=self)
         self._init_ = True
 
-    def _changed(self, path, die=True):
+    def _changed(self, path, die=True, reset=False):
         if not path.startswith("/"):
             path = "%s/%s" % (self.path, path)
         if not j.sal.fs.exists(path):
@@ -50,7 +50,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
             md5 = j.sal.fs.md5sum(path)
         else:
             raise j.exceptions.Input("could not check change only file or dir supported:%s" % path)
-        if md5 not in self._changes:
+        if md5 not in self._changes or reset:
             self._changes.append(md5)
             return path
         return None
@@ -87,7 +87,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
         if self._wikis is None:
             self._wikis = j.baseclasses.dict()
 
-        path = self._changed("wiki", die=False)
+        path = self._changed("wiki", die=False, reset=reset)
         if path:
             j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=path, reset=reset)
             self._wikis[self.name] = path
@@ -251,6 +251,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
         if self.status != "config":  # make sure we load the config is not that state yet
             self.config_load()
         self._package_author.prepare()
+        self.wiki_load(reset=True)
         if self.status != "installed":
             self.status = "installed"
             self.save()
