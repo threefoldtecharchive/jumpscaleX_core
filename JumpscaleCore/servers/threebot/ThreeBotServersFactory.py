@@ -56,7 +56,6 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     @property
     def default(self):
         if not self._default:
-            self._threebot_starting()
             self._default = self.get("default")
         return self._default
 
@@ -93,7 +92,6 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         :return:
         """
-        self._threebot_starting()
         packages = packages or []
 
         if background:
