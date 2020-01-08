@@ -197,7 +197,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         :type with_shell: bool
         """
         packages = packages or []
-
         self.save()
         if not background:
 
@@ -231,7 +230,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             assert redis_server.host == "127.0.0.1"
             assert redis_server.secret == adminsecret_
             self.rack_server.add("bcdb_system_redis", redis_server.gevent_server)
-
             if restart or j.sal.nettools.tcpPortConnectionTest("localhost", 80) is False:
                 self._log_info("OPENRESTY START")
                 if restart:
@@ -267,8 +265,10 @@ class ThreeBotServer(j.baseclasses.object_config):
             # j.__dict__.pop("builders")
             # j.__dict__.pop("shell")
             # j.__dict__.pop("shelli")
-            j.__dict__.pop("tutorials")
-            j.__dict__.pop("sal_zos")
+            if j.__dict__.get("tutorials") != None:
+                j.__dict__.pop("tutorials")
+            if j.__dict__.get("sal_zos") != None:
+                j.__dict__.pop("sal_zos")
             for package in j.tools.threebot_packages.find():
 
                 if package.status in ["installed", "error"]:
@@ -411,9 +411,15 @@ class ThreeBotServer(j.baseclasses.object_config):
         """
         :return:
         """
-        self.startup_cmd.stop(waitstop=False, force=True)
         self.openresty_server.stop()
+        self.zdb.stop()
+        self.sonic.stop()
+        j.threebot.servers.gevent_rack.stop()
         j.data.bcdb._master_set(False)
+        j.servers.myjobs.stop()
+        self._zdb = None
+        self._sonic = None
+        # self.startup_cmd.stop(waitstop=False, force=True)
 
     @property
     def startup_cmd(self):
