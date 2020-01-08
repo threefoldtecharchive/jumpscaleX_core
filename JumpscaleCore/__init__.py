@@ -2,7 +2,6 @@ import os
 import socket
 import inspect
 import sys
-from importlib import util
 
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
@@ -44,9 +43,6 @@ def profileStop(pr):
 
 
 # pr=profileStart()
-
-spec = util.spec_from_file_location("IT", "/%s/core/InstallTools.py" % os.path.dirname(__file__))
-
 
 from .core.InstallTools import BaseInstaller
 from .core.InstallTools import JumpscaleInstaller
