@@ -7,6 +7,7 @@ def main(self):
 
     kosmos 'j.data.schema.test(name="base")'
     """
+    j.data.schema.reset()
 
     assert j.data.schema.meta._data == {"url": {}, "md5": {}}
 
@@ -33,21 +34,19 @@ def main(self):
     assert schema_object.url == "despiegk.test"
     print(schema_object)
 
-    assert schema_object.property_llist.default.value == []
-    assert schema_object.property_llist2.default.value == []
-    assert schema_object.property_llist3.default.value == [1.0, 2.0, 3.0]
+    assert schema_object.props.llist.default.value == []
+    assert schema_object.props.llist2.default.value == []
+    assert schema_object.props.llist3.default.value == [1.0, 2.0, 3.0]
     # works with & without value
-    assert schema_object.property_llist3.default == [1.0, 2.0, 3.0]
-    assert schema_object.property_llist4.default == [1, 2, 3]
-    assert schema_object.property_llist5.default == [1, 2, 3]
-    assert schema_object.property_llist6.default == [1, 2, 3]
+    assert schema_object.props.llist3.default == [1.0, 2.0, 3.0]
+    assert schema_object.props.llist4.default == [1, 2, 3]
+    assert schema_object.props.llist5.default == [1, 2, 3]
+    assert schema_object.props.llist6.default == [1, 2, 3]
 
-    ll = schema_object.property_llist3.jumpscaletype.default_get()
+    ll = schema_object.props.llist3.jumpscaletype.default_get()
     assert ll.value == [1.0, 2.0, 3.0]
 
-    assert (
-        schema_object.property_llist3.js_typelocation == "j.data.types._types['list_281be192c3ea134b85dd0c368d7d1b36']"
-    )
+    assert schema_object.props.llist3.js_typelocation == "j.data.types._types['list_281be192c3ea134b85dd0c368d7d1b36']"
 
     o = schema_object.new()
 
@@ -158,14 +157,14 @@ def main(self):
 
     o = j.data.schema.get_from_text(schema3).new()
 
-    assert o.bool1 == True
-    assert o.bool2 == True
-    assert o.bool3 == False
-    assert o.bool4 == False
-    assert o.bool5 == True
-    assert o.bool6 == True
-    assert o.bool7 == False
-    assert o.bool8 == False
+    assert o.bool1 is True
+    assert o.bool2 is True
+    assert o.bool3 is False
+    assert o.bool4 is False
+    assert o.bool5 is True
+    assert o.bool6 is True
+    assert o.bool7 is False
+    assert o.bool8 is False
     assert o.int1 == 10
 
     schema4 = """

@@ -8,25 +8,25 @@ from Jumpscale.clients.stor_rdb.RDBClient import RDBClient
 from Jumpscale.clients.stor_sqlite.DBSQLite import DBSQLite
 from .BCDBModel import BCDBModel
 
-
-# from .BCDBDecorator import *
 from Jumpscale import j
 import sys
 
-JSBASE = j.baseclasses.object
-
 
 class BCDB(j.baseclasses.object):
-    def _init(self, name=None, storclient=None, reset=False):
+    def _init(self, name=None, storclient=None, reset=False, readonly=False):
         """
         :param name: name for the BCDB
-        :param storclient: if storclient == None then will use sqlite db
+        :param storclient: if storclient is None then will use sqlite db
         """
-
         if name is None:
             raise j.exceptions.Base("name needs to be specified")
 
-        assert storclient
+        try:
+            assert storclient
+        except:
+            import ipdb
+
+            ipdb.set_trace()
 
         if not storclient.get(0):
             r = storclient.set(b"INIT")
@@ -54,8 +54,10 @@ class BCDB(j.baseclasses.object):
 
         j.sal.fs.createDir(self._data_dir)
 
+        self.readonly = readonly
+
         if self.readonly:
-            self._log_info("sqlite file is in readonly mode")
+            self._log_info("sqlite file is in readonly mode for: '%s'" % self.name)
             self._sqlite_index_dbpath = "file:%s/sqlite_index.db?mode=ro" % self._data_dir
         else:
             self._sqlite_index_dbpath = "file:%s/sqlite_index.db" % self._data_dir
@@ -73,10 +75,17 @@ class BCDB(j.baseclasses.object):
         atexit.register(self.stop)
         self._log_info("BCDB INIT DONE:%s" % self.name)
 
+    def _is_writable_check(self):
+        return not self.readonly
+
     def stop(self):
         """
         make sure the bcdb is initialized with default values & all is stopped
         """
+        for model in self.models.values():
+            # lets make sure the triggers are fired
+            model.stop()
+
         self.dataprocessor_stop()
         self.sqlite_index_client_stop()
         if self.storclient.type == "SDB":
@@ -86,16 +95,13 @@ class BCDB(j.baseclasses.object):
             self.storclient.sqlitedb = None
         self._init_props_()
         # self._shutdown_ = True
-        print(" * STOP BCDB: %s" % self.name)
+        self._log_info(" * STOP BCDB: %s" % self.name)
 
     def _init_props_(self):
 
         self._sqlite_index_client = None
 
         self.dataprocessor_greenlet = None
-
-        self._readonly = None
-        self._lock_checked = False  # we did not check the lock yet
 
         # self._shutdown_ = False  # if set it means we should not use bcdb any more
 
@@ -112,55 +118,25 @@ class BCDB(j.baseclasses.object):
     def _init_system_objects(self):
 
         assert self.name
-        j.data.bcdb._instances[self.name] = self
 
         if not j.data.types.string.check(self.name):
             raise j.exceptions.Base("name needs to be string")
 
-        # need to do this to make sure we load the classes from scratch
-        ## TODO: make sure to load meta.toml.
-        for item in ["ACL", "USER", "GROUP"]:
-            key = "Jumpscale.data.bcdb.models_system.%s" % item
-            if key in sys.modules:
-                sys.modules.pop(key)
+        # think no longer needed
+        # for item in ["ACL", "USER", "GROUP"]:
+        #     key = "Jumpscale.data.bcdb.models_system.%s" % item
+        #     if key in sys.modules:
+        #         sys.modules.pop(key)
 
         from .models_system.ACL import ACL
         from .models_system.USER import USER
         from .models_system.CIRCLE import CIRCLE
         from .models_system.NAMESPACE import NAMESPACE
 
-        system_meta_path = j.core.tools.text_replace(
-            "{DIR_CODE}/github/threefoldtech/jumpscaleX_core/JumpscaleCore/data/bcdb/models_system/meta.toml"
-        )
-        j.data.schema.add_from_path(system_meta_path)
-
         self.acl = self.model_add(ACL(bcdb=self))
         self.user = self.model_add(USER(bcdb=self))
         self.circle = self.model_add(CIRCLE(bcdb=self))
         self.NAMESPACE = self.model_add(NAMESPACE(bcdb=self))
-
-    def _is_writable_check(self):
-        return not self.readonly
-        # check there is write access on bcdb
-        # if self._lock_checked and self.readonly == False:
-        #     return True
-        # self.lock.acquire()
-        # self._lock_checked = True
-        # self._readonly = False
-        # return True
-
-    def lock_acquire(self):
-        self.lock.acquire()
-        self._lock_checked = False
-        self._readonly = None
-
-    @property
-    def readonly(self):
-        if self._readonly == None:
-            # simplified logic
-            return not j.data.bcdb._master
-            # self._readonly = self.lock.locked
-        return self._readonly
 
     def check(self):
         """
@@ -254,9 +230,6 @@ class BCDB(j.baseclasses.object):
                 return
 
         self.reset()
-        # if self.storclient:
-        #     assert self.storclient.list() == [0]
-        #     assert self.storclient.nsinfo["entries"] == 1
 
         self._log_info("Load bcdb:%s from %s" % (self.name, path))
         assert j.sal.fs.exists(path)
@@ -273,9 +246,6 @@ class BCDB(j.baseclasses.object):
             url = j.sal.fs.getBaseName(url_path)
             schema = j.data.schema.get_from_text(schema_text, url=url)
             schemas[url] = schema
-            raise RuntimeError("not implemented")
-            # need to put in j.data.schema
-            # self.meta._schema_set(schema, save=False)
 
         for url_path in paths:
             print(f"processing {url_path}")
@@ -316,17 +286,17 @@ class BCDB(j.baseclasses.object):
         if isinstance(self.storclient, ZDBClientBase):
             next_id = self.storclient.next_id
 
+        to_remove = []
+
         # have to import it in the exact same order
         for i in range(1, max_id + 1):
             print(f"i: {i}")
             if i not in data:
                 if i < next_id:
                     continue
-
                 print(f"{i} doesn't exist in data.. ")
-                gap_obj = self._dummy.new()
-                gap_obj.name = j.data.idgenerator.generateGUID()
-                gap_obj.save()
+                self.storclient.set("")
+                to_remove.append(i)
             else:
                 url, obj_data = data[i]
                 model = models[url]
@@ -338,8 +308,9 @@ class BCDB(j.baseclasses.object):
                 obj.save()
                 assert obj.id == i
 
-        print("Cleaning up dummy objects")
-        self._dummy.destroy()
+        print("Cleaning up empty objects")
+        for i in to_remove:
+            self.storclient.delete(i)
 
     @property
     def sqlite_index_client(self):
@@ -406,7 +377,7 @@ class BCDB(j.baseclasses.object):
         """
 
         if self.dataprocessor_greenlet is None:
-            print("** START DATA PROCESSOR FOR :%s" % self.name)
+            self._log_info("** START DATA PROCESSOR FOR :%s" % self.name)
             self.queue = gevent.queue.Queue()
             self.dataprocessor_greenlet = gevent.spawn(self._data_process)
             self.dataprocessor_state = "RUNNING"
@@ -452,23 +423,30 @@ class BCDB(j.baseclasses.object):
         self.storclient._init(nsname=self.storclient.nsname)
         if self.storclient.type == "SDB":
             self.storclient.flush()
+
+        if not self.storclient.get(0):
+            r = self.storclient.set(b"INIT")
+            # this is to not have id 0, otherwise certain tests which check on value in 0 get confused
+            assert self.storclient.get(0)
+
         self._init_props_()
         self._init_system_objects()
 
     def destroy(self):
         """
-        removed all data and the bcbd instance
+        removed all data and the bcdb instance
         :return:
         """
 
         self.reset()
         if self.name in j.data.bcdb._config:
             j.data.bcdb._config.pop(self.name)
-        if self.name in j.data.bcdb._instances:
-            j.data.bcdb._instances.pop(self.name)
         j.data.bcdb._config_write()
         for key in j.core.db.keys("bcdb:%s:*" % self.name):
             j.core.db.delete(key)
+
+        if self.name in j.data.bcdb._children:
+            j.data.bcdb.instances.pop(self.name)
 
     def _redis_reset(self):
         # shouldnt this be part of the indexing class?
@@ -493,7 +471,7 @@ class BCDB(j.baseclasses.object):
             model = self.model_get(schema=jsxobj._schema)
             model.set(jsxobj, store=False, index=True)
 
-    def model_get(self, schema=None, md5=None, url=None, reset=False):
+    def model_get(self, schema=None, md5=None, url=None, reset=False, triggers=True):
         """
         will return the latest model found based on url, md5 or schema
         :param url:
@@ -503,9 +481,14 @@ class BCDB(j.baseclasses.object):
         schema = self.schema_get(schema=schema, md5=md5, url=url)
 
         if schema.url in self.models:
-            # check that we don't cache the wrong one
-            if schema._md5 == self.models[schema.url].schema._md5:
-                return self.models[schema.url]
+            if schema._md5 != self.models[schema.url].schema._md5:
+                # this means we found model in mem but schema changed in mean time
+                # need to use the new one now
+                self.models[schema.url].schema = schema
+                if triggers:
+                    self.models[schema.url].schema_change(schema)
+                    # don't add the obj, because need to do for all obj
+            return self.models[schema.url]
 
         # model not known yet need to create
         self._log_info("load model:%s" % schema.url)
@@ -528,8 +511,8 @@ class BCDB(j.baseclasses.object):
         """
 
         if schema:
-            assert md5 == None
-            assert url == None
+            assert md5 is None
+            assert url is None
             if j.data.types.string.check(schema):
                 schema_text = schema
                 # j.data.schema.models_in_use = False
@@ -543,13 +526,13 @@ class BCDB(j.baseclasses.object):
         else:
             if url:
                 url = j.data.schema._urlclean(url)
-                assert md5 == None
+                assert md5 is None
                 if not j.data.schema.exists(url=url):
                     # means we don't know it and it is not in BCDB either because the load has already happened
                     raise j.exceptions.Input("we could not find model from:%s, was not in bcdb or j.data.schema" % url)
                 schema = j.data.schema.get_from_url(url)
             elif md5:
-                assert url == None
+                assert url is None
                 if not j.data.schema.exists(md5=md5):
                     raise j.exceptions.Input("we could not find model from:%s, was not in bcdb meta" % md5)
                 schema_md5 = j.data.schema.get_from_md5(md5=md5)
@@ -591,7 +574,7 @@ class BCDB(j.baseclasses.object):
             if prop.jumpscaletype.NAME == "list" and isinstance(prop.jumpscaletype.SUBTYPE, j.data.types._jsxobject):
                 # now we know that there is a subtype, we need to store it in the bcdb as well
                 s = prop.jumpscaletype.SUBTYPE._schema
-                if s.url not in j.data.schema.schemas_url:
+                if not j.data.schema.exists(url=s.url):
                     # should be there lets see why not
                     j.shell()
                 # now see if more subtypes
@@ -600,7 +583,7 @@ class BCDB(j.baseclasses.object):
                     done = self._schema_property_add_if_needed(s)
             elif prop.jumpscaletype.NAME == "jsxobject":
                 s = prop.jumpscaletype._schema
-                if s.url not in j.data.schema.schemas_url:
+                if s.url not in j.data.schema.schemas_loaded:
                     # should be there lets see why not
                     j.shell()
                 # now see if more subtypes
@@ -618,7 +601,7 @@ class BCDB(j.baseclasses.object):
 
         self._log_debug("model get from file:%s" % path)
         obj_key = j.sal.fs.getBaseName(path)[:-3]
-        cl = j.tools.codeloader.load(obj_key=obj_key, path=path, reload=False)
+        cl, changed = j.tools.codeloader.load(obj_key=obj_key, path=path, reload=False)
         model = cl(self)
         self.model_add(model)
         return model

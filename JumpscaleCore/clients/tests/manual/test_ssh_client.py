@@ -404,11 +404,11 @@ class SshClient(BaseTest):
         Test case to test execute method in ssh client method should pass.
 
         **Test scenario**
-        #. use execute method to execute multi-lines cmd with script option == True.
+        #. use execute method to execute multi-lines cmd with script option is True.
         #. check that the output if this command.
         """
 
-        self.info("use execute method to execute multi-lines cmd with script option == True")
+        self.info("use execute method to execute multi-lines cmd with script option is True")
         self.assertEqual(
             "test_execute_script\n",
             self.SSH_CLIENT.execute(

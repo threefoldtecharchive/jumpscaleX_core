@@ -137,7 +137,7 @@ class RedisFactory(j.baseclasses.factory_testtools):
                 res = cl.ping()
             except Exception as e:
                 if "Timeout" in str(e) or "Connection refused" in str(e):
-                    if die == False:
+                    if die is False:
                         return None
                     else:
                         raise j.exceptions.Base("Redis on %s:%s did not answer: %s" % (ipaddr, port, str(e)))
@@ -172,7 +172,7 @@ class RedisFactory(j.baseclasses.factory_testtools):
         # if not fromcache:
         #     return RedisQueue(self.get(ipaddr, port, fromcache=False), name, namespace=namespace)
         key2 = "%s_%s_%s" % (ipaddr, port, key)
-        if fromcache == False or key2 not in self._redisq:
+        if fromcache is False or key2 not in self._redisq:
             self._redisq[key2] = redisclient.queue_get(key)
         return self._redisq[key2]
 

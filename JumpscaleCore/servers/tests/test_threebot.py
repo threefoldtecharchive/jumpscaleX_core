@@ -46,14 +46,14 @@ class TestThreebotServer(BaseTest):
             lapis_output, error = self.os_command(" ps -aux | grep -v grep | grep /sandbox/bin/openresty ")
             self.assertTrue(lapis_output.decode(), "can't find openresty server ")
 
-    def test01_local_start_default(self):
+    def test01_start(self):
         """
         - ​Install  threebot server.
         - Get gedis client from it.
         - Check it works correctly.
         """
         self.info("Get gedis client from it .")
-        gedis_client = j.servers.threebot.local_start_default(background=True)
+        gedis_client = j.servers.threebot.start(background=True)
         self.info("Check it works correctly.")
         self.assertTrue(gedis_client.ping())
 
@@ -67,7 +67,6 @@ class TestThreebotServer(BaseTest):
             except Exception as e:
                 self.fail(e)
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/208")
     def test02_get_bcdb(self):
         """
         - ​Install  threebot server.
@@ -80,11 +79,10 @@ class TestThreebotServer(BaseTest):
         output, error = self.os_command(" ls /sandbox/var/bcdb")
         self.assertIn(bcdb_name, output.decode())
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/208")
     def Test03_start_stop_options(self, server):
         """
-        - Start server. 
-        - Make sure that server started successfully by check zdb and sonic works.   
+        - Start server.
+        - Make sure that server started successfully by check zdb and sonic works.
         - Check that server connection  works successfully.
         - Stop server
         """
@@ -101,7 +99,6 @@ class TestThreebotServer(BaseTest):
         self.assertFalse(j.sal.nettools.tcpPortConnectionTest("localhost", 8901), "Gedis still running.")
 
     @parameterized.expand([(True,), (False,)])
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/208")
     def test04_verify_start_options(self, web_status):
         """
         - ​Install  threebot server.

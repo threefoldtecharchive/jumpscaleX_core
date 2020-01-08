@@ -33,18 +33,16 @@ class JSXObject2(j.data.schema._JSXObjectClass):
         else:
             {% if prop.has_jsxobject %}
             v = {{prop.js_typelocation}}.clean(self._capnp_obj_.{{prop.name_camel}},model=self._model)
-            self._deserialized_items["{{prop.name}}"] = v
             {% else %}
             v = {{prop.js_typelocation}}.clean(self._capnp_obj_.{{prop.name_camel}})
-            if isinstance(v,j.data.types._TypeBaseObjClass):
-                self._deserialized_items["{{prop.name}}"] = v
             #to make sure that we keep list, json, ... in deserialized items
-            elif isinstance({{prop.js_typelocation}},j.data.types._TypeBaseClassUnserialized):
+            {% endif %}
+            if isinstance(v,j.data.types._TypeBaseObjClass) or isinstance({{prop.js_typelocation}},j.data.types._TypeBaseClassUnserialized):
+                #to make sure that we keep list, json, ... in deserialized items
                 self._deserialized_items["{{prop.name}}"] = v
+                return self._deserialized_items["{{prop.name}}"]
             else:
                 return v
-            {% endif %}
-        return self._deserialized_items["{{prop.name}}"]
 
     @{{prop.name}}.setter
     def {{prop.name}}(self,val):
@@ -59,9 +57,9 @@ class JSXObject2(j.data.schema._JSXObjectClass):
         # self._log_debug("set:{{prop.name}}='%s'"%(val))
         if val != self.{{prop.name}}:
             # self._log_debug("change:{{prop.name}}" + str(val))
-            self._deserialized_items["{{prop.name}}"] = val
             if self._model:
                 self._model._triggers_call(obj=self, action="change", propertyname="{{prop.name}}")
+            self._deserialized_items["{{prop.name}}"] = val
             if self._autosave:
                 self.save()
 

@@ -69,7 +69,7 @@ def main(self):
     # stop redis
 
     # j.core.redistools.core_stop()
-    # assert j.core.redistools.core_running() == False
+    # assert j.core.redistools.core_running() is False
 
     # db = j.core.redistools.core_get()
     # assert j.core.redistools.core_running()

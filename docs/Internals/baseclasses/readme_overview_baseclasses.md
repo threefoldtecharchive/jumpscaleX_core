@@ -69,5 +69,3 @@ class MyClass(JSBase):
 ```
 
 do not implement your own __init__() !!!
-
-

@@ -6,7 +6,7 @@ def main(self, count=20):
     """
     kosmos -p 'j.servers.myjobs.test("data_process")'
     """
-    self.stop(reset=True)
+    self._test_setup()
 
     def wait_1sec():
         gevent.sleep(1)
@@ -37,7 +37,7 @@ def main(self, count=20):
     assert len(r) == count
 
     # default autosave is on and needs to be one
-    assert job_sch._data._autosave == True
+    assert job_sch._data._autosave is True
 
     job_sch.state = "RUNNING"
 
@@ -51,7 +51,7 @@ def main(self, count=20):
 
     # change it back and is also test for autosave
     job_sch.state = "NEW"
-    assert job_sch._data._autosave == True
+    assert job_sch._data._autosave is True
     r = [(item.id, item.state) for item in Jobs.select().where(Jobs.state == "NEW")]
     assert len(r) == count
 
@@ -59,9 +59,9 @@ def main(self, count=20):
 
     print(ids)
     jobs = self.wait(ids)
-    self.stop()
+
     for job in jobs:
         assert job.result == "OK"
-
+    self._test_teardown()
     print("Data_process TEST OK")
     print("TEST OK")

@@ -3,7 +3,7 @@ from Jumpscale import j
 schema = """
 @url = despiegk.test
 @name = TestObj
-llist2 = "" (LS) #L means = list, S=String        
+llist2 = "" (LS) #L means = list, S=String
 nr = 4
 date_start = 0 (D)
 description = ""

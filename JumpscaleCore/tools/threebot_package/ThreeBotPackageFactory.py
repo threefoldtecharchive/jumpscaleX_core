@@ -1,6 +1,7 @@
 from Jumpscale import j
 
 from .ThreeBotPackage import ThreeBotPackage
+from .ThreeBotPackageClient import ThreeBotPackageClient
 
 
 class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
@@ -10,17 +11,78 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
     """
 
     __jslocation__ = "j.tools.threebot_packages"
-    _CHILDCLASS = ThreeBotPackage
+
+    _SCHEMATEXT = """
+        @url = jumpscale.threebot.package.1
+        0:  name** = "main"
+        1:  giturl = "" (S)  #if empty then local
+        2:  branch = "" (S)
+        3:  path = ""
+        4:  status = "init,config,installed,disabled,error" (E)
+        5:  source = (O) !jumpscale.threebot.package.source.1
+        6:  actor = (O) !jumpscale.threebot.package.actor.1
+        7:  bcdbs = (LO) !jumpscale.threebot.package.bcdb.1
+
+
+        @url = jumpscale.threebot.package.source.1
+        0: name = ""
+        1: threebot = ""
+        2: description = ""
+        3: version = "" (S)
+
+        @url = jumpscale.threebot.package.actor.1
+        0: namespace = ""
+
+        @url = jumpscale.threebot.package.bcdb.1
+        0: name = ""
+        1: namespace = ""
+        2: type = "zdb,sqlite,redis" (E)
+        3: instance = "default"
+
+        """
+
+    def _childclass_selector(self, jsxobject, **kwargs):
+        """
+        allow custom implementation of which child class to use
+        :return:
+        """
+        if j.threebot.active:
+            return ThreeBotPackage
+        else:
+            j.servers.threebot.threebotserver_require()
+
+            return ThreeBotPackageClient
 
     def add_from_git(self, giturl=None, branch=None):
+        """
+
+        kosmos 'j.tools.threebot_packages.add_from_git()'
+
+        :param giturl:
+        :param branch:
+        :return:
+        """
 
         if not giturl:
-            giturl = "https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages"
+            return self.add_from_git(
+                "https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages"
+            )
+            # return self.add_from_git(
+            #     "https://github.com/threefoldtech/jumpscaleX_core/tree/master/ThreeBotPackages"
+            # )
         if not branch:
             branch = j.core.myenv.DEFAULT_BRANCH
 
         path = j.clients.git.getContentPathFromURLorPath(giturl, branch=branch)
         self.add(path=path)
+
+    @property
+    def names(self):
+        res = []
+        for x in self.find():
+            res.append(x.name)
+        res.sort()
+        return res
 
     def add(self, path=None):
         """
@@ -28,8 +90,10 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
         :param path:
         :return:
         """
+        path = j.core.tools.text_replace(path)
         if not path:
-            path = j.core.tools.text_replace("{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/")
+            # self.add("{DIR_CODE}/github/threefoldtech/jumpscaleX_core/ThreeBotPackages/")
+            return self.add("{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/")
 
         def process(path, arg):
             basename = j.sal.fs.getBaseName(path)
@@ -86,3 +150,25 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
         if reset:
             self.delete()
         wg = self.add_from_git()
+
+    def test(self):
+        """
+
+        kosmos 'j.tools.threebot_packages.test()'
+
+        :return:
+        """
+        # simulate we are a threebotserver
+        j.servers.threebot._threebot_starting(False)
+        self.add("{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot")
+        self.zerobot__chatbot_examples.reload()
+        p = self.zerobot__chatbot_examples
+
+        p = self.zerobot__base
+        p.actors
+
+        assert not p.models
+        assert p.actors.system.ping() == "PONG"
+
+        # p = self.tfgrid__gitea
+        # p.models

@@ -25,7 +25,7 @@ class SchemaMeta(j.baseclasses.object):
                     {
                         "text":$text,
                         "epoch":$epoch,
-                        "url":$url
+                        "url":$url,
                     }
             }
     }
@@ -110,7 +110,7 @@ class SchemaMeta(j.baseclasses.object):
                     {
                         "text":$text,
                         "epoch":$epoch,
-                        "url":$url
+                        "url":$url,
                     }
         """
         if md5:
@@ -118,8 +118,22 @@ class SchemaMeta(j.baseclasses.object):
                 return self._data["md5"][md5]
         elif url:
             if url in self._data["url"]:
-                return self._data_from_url(url)
+                return self._data_md5_get(url)
         raise j.exceptions.Input(f"did not find schema in meta with md5:'{md5}' and url '{url}'")
+
+    def _schema_define(self, url):
+        # optimized for speed, will happen quite a lot, need to know when there is change
+        def find_sid():
+            sid_highest = 0
+            for urldata in self._data["url"].values():
+                sid = urldata["sid"]
+                if sid > sid_highest:
+                    sid_highest = sid
+            return sid_highest + 1
+
+        if url not in self._data["url"]:
+            self._data["url"][url] = {"sid": find_sid(), "md5s": []}
+            self.save()
 
     def schema_set(self, schema, save=True):
         """
@@ -129,41 +143,32 @@ class SchemaMeta(j.baseclasses.object):
         """
         # optimized for speed, will happen quite a lot, need to know when there is change
 
-        def find_sid():
-            sid_highest = 0
-            for urldata in self._data["url"].values():
-                sid = urldata["sid"]
-                if sid > sid_highest:
-                    sid_highest = sid
-            return sid_highest + 1
-
         if not isinstance(schema, j.data.schema.SCHEMA_CLASS):
             raise j.exceptions.Base("schema needs to be of type: j.data.schema.SCHEMA_CLASS")
 
         change = False  # we only want to save is there is a change
 
+        self._schema_define(schema.url)
+        assert schema.url in self._data["url"]
+
         # deal with making sure that the md5 of this schema is registered as the newest one
-        if schema.url in self._data["url"]:
-            urldata = self._data["url"][schema.url]
-            sid = urldata["sid"]
-            md5s = urldata["md5s"]
-            if schema._md5 in md5s:
-                if schema._md5 != md5s[-1]:
-                    # means its not the latest one
-                    change = True
-                    md5s.pop(md5s.index(schema._md5))
-                    md5s.append(schema._md5)  # now at end of list again
-                    d = {"sid": sid, "md5s": md5s}
-            else:
-                # is a new one, not in list yet
+
+        urldata = self._data["url"][schema.url]
+        md5s = urldata["md5s"]
+        if schema._md5 in md5s:
+            if schema._md5 != md5s[-1]:
+                # means its not the latest one
                 change = True
-                md5s.append(schema._md5)
-                d = {"sid": sid, "md5s": md5s}
+                md5s.pop(md5s.index(schema._md5))
+                md5s.append(schema._md5)  # now at end of list again
+                urldata["md5s"] = md5s
         else:
+            # is a new one, not in list yet
             change = True
-            d = {"sid": find_sid(), "md5s": [schema._md5]}
+            urldata["md5s"].append(schema._md5)
+
         if change:
-            self._data["url"][schema.url] = d
+            self._data["url"][schema.url] = urldata
 
         change2 = False
         if schema._md5 not in self._data["md5"]:
@@ -174,15 +179,20 @@ class SchemaMeta(j.baseclasses.object):
             d["url"] = schema.url
             self._data["md5"][schema._md5] = d
 
+            self.schema_backup(schema)
         if (change or change2) and save:
             self.save()
 
-    def _data_from_url(self, url):
-        if url not in self._data["url"]:
-            raise j.exceptions.Input("cannot find url schema meta" % url)
-        if len(self._data["url"][url]) == 0:
-            raise j.exceptions.Input("cannot find a schema for url in schema meta: '%s' " % url)
-        d = self._data["url"][url]
+    def schema_backup(self, schema):
+        data = {"url": schema.url, "md5": schema._md5, "text": schema.text, "time": j.data.time.epoch}
+        t = j.data.serializers.toml.dumps(data)
+        hrtime = j.data.time.epoch
+        t2 = "[[time_%s]]\n%s\n\n" % (hrtime, t)
+        dest = j.core.tools.text_replace("{DIR_CFG}/bcdb/%s.toml" % schema.url.replace(".", "__"))
+        j.sal.fs.writeFile(dest, t2, append=True)
+
+    def _data_md5_get(self, url):
+        d = self._data_url_get(url)
         if len(d["md5s"]) == 0:
             raise j.exceptions.Input("url had no md5:%s" % url)
         md5 = d["md5s"][-1]
@@ -190,8 +200,17 @@ class SchemaMeta(j.baseclasses.object):
             raise j.exceptions.Input("cannot find md5 in schema meta: '%s'" % md5)
         return self._data["md5"][md5]
 
+    def _data_url_exists(self, url):
+        return url in self._data["url"]
+
+    def _data_url_get(self, url):
+        if url not in self._data["url"]:
+            self._schema_define(url=url)
+        d = self._data["url"][url]
+        return d
+
     def _sid_from_url(self, url):
-        if not url in self._data["url"]:
+        if url not in self._data["url"]:
             raise j.exceptions.Input("cannot find url in metadata for schema meta :'%s'" % url)
         sid, md5s = self._data["url"][url]
         return sid

@@ -13,13 +13,15 @@ def main(self):
 from Jumpscale import j
 rack = j.servers.rack.get()
 rack.websocket_server_add("test", port=4444)
-rack.start()  
+rack.start()
 """
     s = j.servers.startupcmd.get(
         name="websocket_test_server", cmd_start=cmd, interpreter="python", executor="tmux", ports=[4444]
     )
     s.start()
     server = j.servers.openresty.get("test")
+    server.stop()
+
     server.install(reset=True)
     server.configure()
     website = server.websites.get("test3")
@@ -41,3 +43,7 @@ rack.start()
     ws = WebSocket()
     ws.connect("ws://0.0.0.0/")
     assert ws.connected
+
+    website.delete()
+    server.cleanup()
+    server.stop()

@@ -3,7 +3,7 @@ from Jumpscale import j
 
 
 def actor_method(func):
-    def process_doc_str(func):
+    def process_doc_str(prefix=None, func=None):
         S = None
         schema_in = None
         schema_out = None
@@ -18,10 +18,12 @@ def actor_method(func):
                     S = "out"
                     schema_text = ""
                 elif line.startswith("```") or line.startswith("'''"):
+                    url = "%s.%s" % (prefix, S)
+                    url = url.replace("..", ".").strip()
                     if S == "in":
-                        schema_in = j.data.schema.get_from_text(schema_text)
+                        schema_in = j.data.schema.get_from_text(schema_text, url=url)
                     else:
-                        schema_out = j.data.schema.get_from_text(schema_text)
+                        schema_out = j.data.schema.get_from_text(schema_text, url=url)
                     S = None
                 elif S:
                     schema_text += line + "\n"
@@ -40,9 +42,10 @@ def actor_method(func):
             # means not called through the gedis server
             assert "schema_out" not in kwargs
 
+            prefix = "actors.%s.%s.%s" % (self.package.name, self._classname, name)
             # get the schemas
             if name not in self._schemas:
-                self._schemas[name] = process_doc_str(func)
+                self._schemas[name] = process_doc_str(prefix=prefix, func=func)
             schema_in, schema_out = self._schemas[name]
 
             if schema_in:

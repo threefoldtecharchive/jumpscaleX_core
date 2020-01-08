@@ -63,7 +63,7 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
         # we should make sure AUTH has been launched as zdb client admin comes from config
         # and if we instanciated a new zdb server the AUTH command will not be executed
         cl.auth()
-        assert cl.admin == True
+        assert cl.admin is True
         assert self.exists(name=name)
         return cl
 

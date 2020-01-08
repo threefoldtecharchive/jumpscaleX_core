@@ -4,90 +4,94 @@ from .ExecutorBase import ExecutorBase
 
 
 class ExecutorSSH(ExecutorBase):
-    def __init__(self, sshclient):
+    def _init3(self, **kwargs):
+        assert self.type == "ssh"
+        self._sshclient = None
+        self.uid = self.sshclient.uid
 
-        self.sshclient = sshclient
+    def download(self, source, dest=None, ignoredir=None, ignorefiles=None, recursive=True):
+        source = self._replace(source)
+        dest = j.core.tools.text_replace(dest)
+        return self.sshclient.download(
+            source=source, dest=dest, ignoredir=ignoredir, ignorefiles=ignorefiles, recursive=recursive
+        )
 
-        self._id = self.sshclient.uid
-
-        self.kosmos = self.sshclient.kosmos
-        self.shell = self.sshclient.shell
-        self.upload = self.sshclient.upload
-        self.download = self.sshclient.download
-        self.execute_jumpscale = self.sshclient.execute_jumpscale
-
-        ExecutorBase.__init__(self)
-
-        self.type = "ssh"
-
-    def execute(
+    def upload(
         self,
-        cmd,
-        die=True,
-        showout=False,
-        timeout=1000,
-        env=None,
-        sudo=False,
-        replace=True,
-        interactive=False,
-        script=False,
+        source,
+        dest=None,
+        recursive=True,
+        createdir=True,
+        rsyncdelete=True,
+        ignoredir=None,
+        ignorefiles=None,
+        keepsymlinks=True,
+        retry=4,
     ):
-        """
-        @RETURN rc, out, err
-        """
-        if env or sudo or script:
-            raise j.exceptions.NotFound("Not implemented for ssh executor")
-        return self.sshclient.execute(cmd, interactive, showout, replace, die, timeout)
+        source = j.core.tools.text_replace(source)
+        dest = self._replace(dest)
+        return self.sshclient.upload(
+            source=source,
+            dest=dest,
+            recursive=recursive,
+            createdir=createdir,
+            rsyncdelete=rsyncdelete,
+            ignoredir=ignoredir,
+            ignorefiles=ignorefiles,
+            keepsymlinks=keepsymlinks,
+            retry=retry,
+        )
 
     @property
-    def uid(self):
-        return self.sshclient.uid
+    def sshclient(self):
+        if not self._sshclient:
+            assert self.connection_name
+            self._sshclient = j.clients.ssh.get(name=self.connection_name)
+        return self._sshclient
 
-    @property
-    def config_msgpack(self):
-        return self.sshclient.config_msgpack
+    def shell(self, cmd=None):
+        login = self.sshclient.login
+        addr = self.sshclient.addr
+        port = self.sshclient.port
+        if cmd:
+            cmd2 = f"ssh {login}@{addr} -A -p {port} '%s'" % cmd
+        else:
+            cmd2 = f"ssh {login}@{addr} -A -p {port}"
+        j.sal.process.executeWithoutPipe(cmd2)
 
-    @config_msgpack.setter
-    def config_msgpack(self, value):
-        if value != self.sshclient.config_msgpack:
-            self.sshclient.config_msgpack = value
-            self._log_info("save config msgpack for:%s" % self)
-            self.sshclient.save()
-
-    @property
-    def env_on_system_msgpack(self):
-        return self.sshclient.env_on_system_msgpack
-
-    @env_on_system_msgpack.setter
-    def env_on_system_msgpack(self, value):
-        if value != self.sshclient.env_on_system_msgpack:
-            self.sshclient.env_on_system_msgpack = value
-            self._log_info("save system msgpack for:%s" % self)
-            self.sshclient.save()
-
-    def state_reset(self):
-        self.config["state"] = {}
-        self.sshclient.state_reset()
-
-    def save(self):
+    def mosh(self, cmd=None, ssh_private_key_name=None, interactive=True):
         """
-        only relevant for ssh
+        if private key specified
+        :param ssh_private_key:
         :return:
         """
-        # fill save automatically
-        self.config_msgpack = j.data.serializers.msgpack.dumps(self.config)
+        self.installer.mosh()
+        C = j.clients.sshagent._script_get_sshload(keyname=ssh_private_key_name)
+        r = self.execute(C, interactive=interactive)
+        cmd = "mosh -ssh='ssh -tt -oStrictHostKeyChecking=no -p {PORT}' {LOGIN}@{ADDR} -p 6000:6100 'bash'"
+        cmd = self._replace(
+            cmd, args={"LOGIN": self.sshclient.login, "ADDR": self.sshclient.addr, "PORT": self.sshclient.port}
+        )
+        j.sal.process.executeWithoutPipe(cmd)
 
-    # def config_save(self, **kwargs):
-    #     self.sshclient.config_save(**kwargs)
+    def _execute_cmd(self, cmd, interactive=False, showout=True, die=True, timeout=1000):
+        res = self.sshclient.execute(cmd=cmd, interactive=interactive, showout=showout, die=die, timeout=timeout)
+        return res
 
-    # def save(self, onsystem=False):
-    #     self.sshclient.save()
-    # if onsystem:
-    #     self.config_save_on_system()
+    def file_read(self, path):
+        self._log_debug("file read:%s" % path)
+        path = self._replace(path)
+        rc, out, err = self.execute("cat %s" % path, showout=False, interactive=False)
+        return out
 
-    # def config_save_on_system(self):
-    #     self.sshclientfile_write("/root/.jsxssh.msgpack", self.executor.config_msgpack)
-    #     self.sshclient.save()
+    def file_write(self, path, content, mode=None, owner=None, group=None, showout=True):
+        """
+        @param append if append then will add to file
+        """
+        path = self._replace(path)
+        if showout:
+            self._log_debug("file write:%s" % path)
+        return self.sshclient.file_write(path=path, content=content, mode=mode)
 
     def __repr__(self):
         return "Executor ssh: %s (%s)" % (self.sshclient.addr, self.sshclient.port)

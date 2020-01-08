@@ -45,7 +45,9 @@ class DocSite(j.baseclasses.object):
 
         self.links_verify = False
 
-        self.outpath = dest or f"/docsites/{self.name}"
+        self.outpath = dest or j.sal.fs.joinPaths(j.tools.threegit.docsites_path, self.name)
+        j.sal.fs.createDir(self.outpath)
+
         self.error_file_path = f"{self.outpath}/errors.md"
 
         self._log_level = 1
@@ -86,7 +88,7 @@ class DocSite(j.baseclasses.object):
                 return
 
             if gitpath not in self.docgen._git_repos:
-                self._git = j.tools.threegit.get(self.name)._git_get(gitpath)
+                self._git = self.docgen._git_get(gitpath)
                 self.docgen._git_repos[gitpath] = self.git
 
         if not self._git:
@@ -248,11 +250,11 @@ class DocSite(j.baseclasses.object):
 
         if duplicate only the first found will be used
         """
-        if reset == False and self._loaded and check == False:
+        if reset is False and self._loaded and check is False:
             return
 
-        if reset == True:
-            git_client = j.clients.git.get(self.path)
+        if reset is True:
+            git_client = j.clients.git.get(self.path, check_path=False)
             self.revision = git_client.config_3git_set("revision_last_processed", "")
 
         path = self.path
@@ -312,7 +314,7 @@ class DocSite(j.baseclasses.object):
                 self.file_add(path)
 
         # check changed files and process it using 3git tool
-        git_client = j.clients.git.get(self.path)
+        git_client = j.clients.git.get(self.path, check_path=False)
         self.revision = git_client.config_3git_get("revision_last_processed")
         revision, self._files_changed, old_files = git_client.logChanges(path=self.path, from_revision=self.revision)
 
@@ -327,10 +329,9 @@ class DocSite(j.baseclasses.object):
                 if j.sal.fs.isDir(item):
                     if callbackForMatchDir(item, ""):
                         callbackFunctionDir(item, "")
-
         if old_files:
             for ditem in old_files:
-                item_path = j.sal.fs.joinPaths(self.outpath, j.sal.fs.getBaseName(ditem))
+                item_path = j.sal.fs.joinPaths(self.outpath, ditem)
                 j.sal.fs.remove(item_path)
 
         git_client.logChangesRevisionSet(revision)

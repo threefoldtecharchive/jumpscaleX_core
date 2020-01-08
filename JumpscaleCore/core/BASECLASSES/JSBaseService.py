@@ -261,7 +261,7 @@ class JSBaseService(j.baseclasses.object):
     #
     #     @property
     #     def _key(self):
-    #         if self.__key == None:
+    #         if self.__key is None:
     #             self.__key ="%s_%s"%(j.core.text.strip_to_ascii_dense(self.key),j.core.text.strip_to_ascii_dense(self.instance))
     #         return self.__key
     #

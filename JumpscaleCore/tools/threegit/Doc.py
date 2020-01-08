@@ -71,15 +71,16 @@ class Doc(j.baseclasses.object):
                 yield txt[i : i + length]
 
     def register_sonic(self):
+        print(f"indexing {self.docsite.name} of {self.path_rel}")
         text = self.markdown_source.replace("\n", " ").strip()
         if not text:
             return
         if " " in self.name:
             print("file {} can't be indexed it contains space in the file name")
             return
-        for chunck in self.chunks(text, int(self.sonic_client.bufsize) // 2):
+        for chunk in self.chunks(text, int(self.sonic_client.bufsize) // 2):
             try:
-                self.sonic_client.push("docsites", self.docsite.name, self.path_rel, chunck)
+                self.sonic_client.push("docsites", self.docsite.name, self.path_rel, chunk)
             except Exception as e:
                 print("Couldn't index {}".format(self.name))
 
@@ -360,13 +361,12 @@ class Doc(j.baseclasses.object):
             if link.filename:
                 dest_file = j.sal.fs.joinPaths(self.docsite.outpath, self.path_dir_rel, link.filename)
 
-                if link.filepath and not j.sal.fs.exists(dest_file):
+                if link.filepath and j.sal.fs.exists(link.filepath) and not j.sal.fs.exists(dest_file):
                     # make sure parent dir of dest_file exists
                     j.sal.fs.createDir(j.sal.fs.getParent(dest_file))
                     j.sal.fs.copyFile(link.filepath, dest_file)
-                else:
-                    if link.source.startswith("!"):
-                        link.download(dest=dest_file)
+                elif link.source.startswith("!"):
+                    link.download(dest=dest_file)
                 # now change the right link in the doc
                 # link.link_source = j.sal.fs.pathRemoveDirPart(dest_file,self.docsite.outpath)
                 # Set link source to the file name only as it gets its files from current page path

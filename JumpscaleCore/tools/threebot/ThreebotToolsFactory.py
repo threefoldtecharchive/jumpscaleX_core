@@ -45,7 +45,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
             # means record did not exist yet
             if not email:
                 if interactive:
-                    assert j.application.interactive
+                    assert j.application.interactive  # TODO: doesn't work when used from kosmos -p ...
                     email = j.tools.console.askString("your threebot email")
                 else:
                     raise j.exceptions.Input("please specify email")
@@ -304,7 +304,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         :return:
         """
 
-        j.servers.threebot.local_start_default()
+        j.servers.threebot.start()
 
         self._add_phonebook()
 

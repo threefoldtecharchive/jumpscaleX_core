@@ -240,7 +240,7 @@ class Tmux(j.baseclasses.object):
         time.sleep(2)
         p.process_obj_child
 
-        assert p.process_obj_child == None
+        assert p.process_obj_child is None
 
         p = self.execute("htop", "multi", "p22")
 

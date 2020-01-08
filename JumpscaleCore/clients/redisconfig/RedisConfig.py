@@ -23,7 +23,7 @@ class RedisConfig(j.baseclasses.object_config):
     def _init3(self, **kwargs):
         if "ssl" in kwargs:
             assert kwargs["ssl"] is False
-        assert self.ssl == False
+        assert self.ssl is False
 
         # TODO: need to deal with SSL (NOT URGENT BECAUSE WILL BE USING WIREGUARD EVERYWHERE ON GRID)
         # also redis natively does not support SSL

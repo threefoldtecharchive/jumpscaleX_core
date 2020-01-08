@@ -345,7 +345,7 @@ class RedisTools:
         :rtype: Redis
         """
 
-        if reset == False:
+        if reset is False:
             if RedisTools.core_running(tcp=tcp):
                 return RedisTools.core_get()
 
@@ -424,8 +424,8 @@ if redis:
             make empty
             :return:
             """
-            while self.empty == False:
-                if self.get_nowait() == None:
+            while self.empty is False:
+                if self.get_nowait() is None:
                     self.empty = True
 
         def put(self, item):
@@ -1198,7 +1198,7 @@ class Tools:
         # else:
         #     mswindows = subprocess.mswindows
 
-        if env == None or env == {}:
+        if env is None or env == {}:
             env = os.environ
 
         if useShell:
@@ -1723,10 +1723,10 @@ class Tools:
         if not "{" in content:
             return content
 
-        if executor and executor.config:
+        if executor:
             content2 = Tools.args_replace(
                 content,
-                args_list=(args, executor.config),
+                args_list=(args, executor.config, executor.info.cfg_jumpscale),
                 ignorecolors=ignorecolors,
                 die_if_args_left=die_if_args_left,
                 primitives_only=primitives_only,
@@ -1765,7 +1765,7 @@ class Tools:
         def arg_process(key, val):
             if key in ["self"]:
                 return None
-            if val == None:
+            if val is None:
                 return ""
             if isinstance(val, str):
                 if val.strip().lower() == "none":
@@ -2880,17 +2880,13 @@ class Tools:
             raise Tools.exceptions.JSBUG("branch should be a string or list, now %s" % branch)
 
         Tools.log("get code:%s:%s (%s)" % (url, path, branch))
-        if MyEnv.config["SSH_AGENT"] and MyEnv.interactive:
+        if MyEnv.config["SSH_AGENT"]:
             url = "git@github.com:%s/%s.git"
         else:
             url = "https://github.com/%s/%s.git"
 
         repo_url = url % (account, repo)
         exists, foundgit, dontpull, ACCOUNT_DIR, REPO_DIR = Tools._code_location_get(account=account, repo=repo)
-
-        if reset:
-            Tools.delete(REPO_DIR)
-            exists, foundgit, dontpull, ACCOUNT_DIR, REPO_DIR = Tools._code_location_get(account=account, repo=repo)
 
         args = {}
         args["ACCOUNT_DIR"] = ACCOUNT_DIR
@@ -2909,7 +2905,7 @@ class Tools:
             """means code is already there, maybe synced?"""
             return gitpath
 
-        if git_on_system and MyEnv.config["USEGIT"] and ((exists and foundgit) or not exists):
+        if git_on_system and MyEnv.config["USEGIT"]:
             # there is ssh-key loaded
             # or there is a dir with .git inside and exists
             # or it does not exist yet
@@ -2923,7 +2919,7 @@ class Tools:
                 mkdir -p {ACCOUNT_DIR}
                 """
                 Tools.log("get code [git] (first time): %s" % repo)
-                Tools.execute(C, args=args, showout=False, die_if_args_left=True)
+                Tools.execute(C, args=args, showout=True, die_if_args_left=True)
                 C = """
                 cd {ACCOUNT_DIR}
                 # git clone  --depth 1 {URL} -b {BRANCH}
@@ -2934,7 +2930,7 @@ class Tools:
                     C,
                     args=args,
                     die=True,
-                    showout=False,
+                    showout=True,
                     retry=4,
                     errormsg="Could not clone %s" % repo_url,
                     die_if_args_left=True,
@@ -2952,42 +2948,31 @@ class Tools:
                         Tools.execute(
                             C, args=args, retry=1, errormsg="Could not checkout %s" % repo_url, die_if_args_left=True
                         )
-                        C = """
-                        set -x
-                        cd {REPO_DIR}
-                        git pull
-                        """
-                        Tools.log("get code & ignore changes: %s" % repo)
-                        Tools.execute(
-                            C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, die_if_args_left=True
-                        )
-
-                    elif Tools.code_changed(REPO_DIR):
-                        if Tools.ask_yes_no("\n**: found changes in repo '%s', do you want to commit?" % repo):
-                            if "GITMESSAGE" in os.environ:
-                                args["MESSAGE"] = os.environ["GITMESSAGE"]
+                    else:
+                        if Tools.code_changed(REPO_DIR):
+                            if Tools.ask_yes_no("\n**: found changes in repo '%s', do you want to commit?" % repo):
+                                if "GITMESSAGE" in os.environ:
+                                    args["MESSAGE"] = os.environ["GITMESSAGE"]
+                                else:
+                                    args["MESSAGE"] = input("\nprovide commit message: ")
+                                    assert args["MESSAGE"].strip() != ""
                             else:
-                                args["MESSAGE"] = input("\nprovide commit message: ")
-                                assert args["MESSAGE"].strip() != ""
-                        else:
-                            raise Tools.exceptions.Input("found changes, do not want to commit")
-                        C = """
-                        set -x
-                        cd {REPO_DIR}
-                        git add . -A
-                        git commit -m "{MESSAGE}"
-                        """
-                        Tools.log("get code & commit [git]: %s" % repo)
-                        Tools.execute(C, args=args, die_if_args_left=True)
-                        C = """
-                        set -x
-                        cd {REPO_DIR}
-                        git pull
-                        """
-                        Tools.log("get code & commit [git]: %s" % repo)
-                        Tools.execute(
-                            C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, die_if_args_left=True
-                        )
+                                raise Tools.exceptions.Input("found changes, do not want to commit")
+                            C = """
+                            set -x
+                            cd {REPO_DIR}
+                            git add . -A
+                            git commit -m "{MESSAGE}"
+                            """
+                            Tools.log("get code & commit [git]: %s" % repo)
+                            Tools.execute(C, args=args, die_if_args_left=True)
+                    C = """
+                    set -x
+                    cd {REPO_DIR}
+                    git pull
+                    """
+                    Tools.log("pull code: %s" % repo)
+                    Tools.execute(C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, die_if_args_left=True)
 
                     if not checkoutbranch(args, branch):
                         raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
@@ -3112,9 +3097,9 @@ class Tools:
                 val = "'%s'" % val
             elif isinstance(val, int) or isinstance(val, float):
                 val = str(val)
-            elif val == True:
+            elif val is True:
                 val = "true"
-            elif val == False:
+            elif val is False:
                 val = "false"
             out += "%s = %s\n" % (key, val)
 
@@ -3607,7 +3592,7 @@ class MyEnv_:
             # exception_type, exception_obj, tb = sys.exc_info()
             pudb.post_mortem(tb)
 
-        if die == False:
+        if die is False:
             return logdict
         else:
             sys.exit(1)
@@ -3722,7 +3707,7 @@ MyEnv = MyEnv_()
 
 class BaseInstaller:
     @staticmethod
-    def install(configdir=None, force=False, sandboxed=False):
+    def install(configdir=None, force=False, sandboxed=False, branch=None):
 
         MyEnv.init(configdir=configdir)
 
@@ -3773,7 +3758,7 @@ class BaseInstaller:
 
         ji = JumpscaleInstaller()
         print("- get sandbox repos from git")
-        ji.repos_get(pull=False)
+        ji.repos_get(pull=False, branch=branch)
         print("- copy files to sandbox (non binaries)")
         # will get the sandbox installed
         if not sandboxed:
@@ -3945,6 +3930,8 @@ class BaseInstaller:
                 "wsgidav",
                 "bottle==0.12.17",  # why this version?
                 "beaker",
+                "monkey.patch_thread",
+                "Mnemonic",
             ],
             # level 1: in the middle
             1: [
@@ -3965,6 +3952,7 @@ class BaseInstaller:
                 "Pillow>=4.1.1",
                 "bottle==0.12.17",
                 "bottle-websocket==0.2.9",
+                "stellar-sdk",
             ],
             # level 2: full install
             2: [
@@ -4242,7 +4230,7 @@ class UbuntuInstaller:
 
 
 class JumpscaleInstaller:
-    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False):
+    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False, branch=None):
 
         MyEnv.check_platform()
         # will check if there's already a key loaded (forwarded) will continue installation with it
@@ -4251,11 +4239,11 @@ class JumpscaleInstaller:
             if "SSH_Agent" in MyEnv.config and MyEnv.config["SSH_Agent"]:
                 MyEnv.sshagent.key_default_name  # means we will load ssh-agent and help user to load it properly
 
-        BaseInstaller.install(sandboxed=sandboxed, force=force)
+        BaseInstaller.install(sandboxed=sandboxed, force=force, branch=branch)
 
         Tools.file_touch(os.path.join(MyEnv.config["DIR_BASE"], "lib/jumpscale/__init__.py"))
 
-        self.repos_get(pull=gitpull)
+        self.repos_get(pull=gitpull, branch=branch)
         self.repos_link()
         self.cmds_link()
 
@@ -4323,16 +4311,20 @@ class JumpscaleInstaller:
     #     Tools.execute("cp {DIR_CODE}/github/threefoldtech/sandbox_threebot_linux64/.startup.toml /")
     #     Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
     #
-    def repos_get(self, pull=False, prebuilt=False):
+    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False):
+        assert not prebuilt  # not supported yet
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
 
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
-            dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull)
+            if branch:
+                BRANCH = branch
             try:
-                dest = Tools.code_github_get(url=GITURL, branch=BRANCH, pull=pull)
-            except Exception:
+                dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
+            except Exception as e:
+                j.shell()
+                raise
                 activate_http = Tools.ask_yes_no(
                     "\n### SSH cloning Failed, your key isn't on github or you're missing permission, Do you want to clone via http?\n"
                 )
@@ -4374,9 +4366,6 @@ class JumpscaleInstaller:
             script = Tools.text_replace(script, args=locals())
             script = Tools.text_replace(script, args=locals())  # NEED TO DO THIS 2x
             if "{" in script:
-                from pudb import set_trace
-
-                set_trace()
                 script = Tools.text_replace(script, args=locals())
                 Tools.shell()
                 raise Tools.exceptions.BUG("replace did not work")
@@ -4691,7 +4680,7 @@ class DockerContainer:
 
         self.config = DockerConfig(name=name, image=image, startupcmd=startupcmd, delete=delete, ports=ports)
 
-        if self.config.portrange == None:
+        if self.config.portrange is None:
             self.config._find_port_range()
             self.config.save()
 
@@ -4781,7 +4770,7 @@ class DockerContainer:
         if not self.container_exists_config:
             # means is a new one
             new = True
-            if update == None:
+            if update is None:
                 if image2 in ["threefoldtech/base", "threefoldtech/3bot", "threefoldtech/3botdev"]:
                     update = False
             if not update:
@@ -5137,9 +5126,7 @@ class DockerContainer:
         """
         Starts then stops the threebotserver to make sure all needed packages are installed
         """
-        self.sshexec(
-            ". /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_default(); j.servers.threebot.default.stop()'"
-        )
+        self.sshexec(". /sandbox/env.sh; kosmos -p 'j.servers.threebot.start(); j.servers.threebot.default.stop()'")
 
     def install_tcprouter(self):
         """
@@ -6011,7 +5998,7 @@ class ExecutorSSH:
             cmd = self._replace(cmd, args=args)
         if env or args or asfile or sudo:
             cmd = self._commands_transform(cmds=cmd, die=die, checkok=self.checkok, env=env, sudo=sudo, shell=False)
-        if asfile == None:
+        if asfile is None:
             if asfile or "\n" in cmd or "'" in cmd:
                 asfile = True
             else:

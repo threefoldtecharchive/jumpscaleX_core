@@ -46,7 +46,7 @@ class String(TypeBaseClass):
         try:
             value = str(value)
         except Exception as e:
-            raise j.exceptions.input("cannot convert to string")
+            raise j.exceptions.Input("cannot convert to string", data=value)
 
         value2 = value.strip()
         if len(value2) > 1:

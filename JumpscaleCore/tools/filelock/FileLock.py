@@ -85,6 +85,6 @@ class FileLockFactory(j.baseclasses.object):
         l = j.tools.filelock.lock_get("/tmp/test_lock")
         l.release()
         l.acquire()
-        assert l.locked == True
+        assert l.locked is True
         l.release()
-        assert l.locked == False
+        assert l.locked is False

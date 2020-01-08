@@ -14,7 +14,7 @@ def includes(doc, path, title=3, **args):
     out = ""
     for docName in docNames:
         doc2 = doc.docsite.doc_get(docName, die=False)
-        if doc2 == None:
+        if doc2 is None:
             msg = "cannot execute macro includes, could not find doc:\n%s" % docName
             doc.raiseError(msg)
             return "```\n%s\n```\n" % msg

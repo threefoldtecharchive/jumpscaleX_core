@@ -6,9 +6,9 @@ def main(self):
     kosmos -p 'j.servers.myjobs.test("simple_error")'
     """
 
-    j.tools.logger.debug = True
+    self._test_setup()
 
-    self.reset()
+    j.tools.logger.debug = True
 
     def add(a=None, b=None):
         assert a
@@ -42,12 +42,8 @@ def main(self):
 
     assert len(jobs[job_id].error["traceback"]) > 0
 
-    # print(self.results([job]))
+    print(self.results([job_id], die=False))
 
     self._log_info("basic error test done")
-
-    # self.stop(reset=False)
-    self.stop(reset=True)
-
     print("Simple_error TEST OK")
     print("TEST OK")

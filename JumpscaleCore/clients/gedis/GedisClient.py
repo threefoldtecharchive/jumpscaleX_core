@@ -53,8 +53,6 @@ class GedisClient(JSConfigBase):
         self._reset()
         self.reload()
 
-        # TODO: KRISTOF URGENT
-
     #     self._model.trigger_add(self._update_trigger)
     #
     # def _update_trigger(self, obj, action, **kwargs):
@@ -101,13 +99,13 @@ class GedisClient(JSConfigBase):
 
         # this will make sure we know the core schema's as used on server
         # if system schema's not known, we get them from the server
-        if "jumpscale_bcdb_acl_user_2" not in j.data.schema.schemas:
+        if not j.data.schema.exists("jumpscale_bcdb_acl_user_2"):
             r = self._redis_cmd_execute("jsx_schemas_get")
             r2 = j.data.serializers.msgpack.loads(r)
             for key, data in r2.items():
                 schema_text, schema_url = data
                 if not j.data.schema.exists(md5=key):
-                    j.data.schema.get_from_text(schema_text, url=schema_url)
+                    j.data.schema.get_from_text(schema_text)
 
         cmds_meta = self._redis_cmd_execute("api_meta_get", self.package_name)
         cmds_meta = j.data.serializers.msgpack.loads(cmds_meta)
@@ -158,13 +156,8 @@ class GedisClient(JSConfigBase):
 
     @property
     def actors(self):
-        # FIXME: restore caching _actors.
-        # if self._actors is None:
-        try:
+        if self._actors is None:
             self.reload()
-        except AttributeError as e:
-            raise j.exceptions.Input(e)
-
         return self._actors
 
     @property
@@ -195,7 +188,7 @@ class GedisClient(JSConfigBase):
     @property
     def _threebot_me(self):
         if not self._threebot_me_:
-            self._threebot_me_ = j.tools.threebot.me.get(self.threebot_local_profile, needexist=False)
+            self._threebot_me_ = j.tools.threebot.me.get(self.threebot_local_profile, tname="me", needexist=False)
         return self._threebot_me_
 
     @property

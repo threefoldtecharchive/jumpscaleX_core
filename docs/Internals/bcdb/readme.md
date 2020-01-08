@@ -7,13 +7,17 @@
 
 # main objects
 
-## Jumpscale/data/types/JSXObjectTypeFactory.py =  a JSX type manager manages JSXObject's
+## JSXObjectTypeFactory
+
+Jumpscale/data/types/JSXObjectTypeFactory.py =  a JSX type manager manages JSXObject's
 
 - is managing the type for a JSXObject, knows how to check, clean, serialze, ...
 - knowns the schema and optionally the model attached to it (which knows the sid)
 - inherits from j.data.types._TypeBaseObjClass  (good to check type)
 
-## JSXObject   = is the result of using our schema, is a strongly typed object
+## JSXObject
+
+= is the result of using our schema, is a strongly typed object
 
 - can create by using the j.data.types.object.clean(...)  the above type manager
 - inherits from j.data.schema._JSXObjectClass  use ```isinstance(obj,j.data.schema._JSXObjectClass)``` to test is right object or ```j.data.types.object.check(```

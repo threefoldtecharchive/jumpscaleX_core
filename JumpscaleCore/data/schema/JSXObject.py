@@ -8,11 +8,11 @@ class JSXObject(j.baseclasses.object):
 
         if model:
             self._model = model
-            self._schema_ = schema
+            self._schema_ = None  # leave None
         else:
             self._schema_ = schema
             self._model = None
-            assert model == None
+            assert model is None
 
         self._deserialized_items = {}
 
@@ -142,22 +142,25 @@ class JSXObject(j.baseclasses.object):
             if eval(f"self.{prop.name}") is None:
                 raise j.exceptions.Input("an indexed (text) field cannot be empty:%s" % prop.name, data=self)
 
-    def save(self, serialize=False):
+    def save(self, serialize=True):
         if self._changed:
+
             self._capnp_obj  # makes sure we get back to binary form
             if serialize:
                 self._deserialized_items = {}  # need to go back to smallest form
 
-        if self._model:
-            self.check_empty_indexed_fields()
+            if self._model:
+                if self._nosave:
+                    obj, stop = self._model._triggers_call(obj=self, action="set_pre", propertyname=None)
+                    return obj
 
-            if not self._model._classname == "acl" and self._acl is not None:
-                if self.acl.id is None:
-                    self.acl.save()
-                if self.acl.id != self.acl_id:
-                    self._deserialized_items["ACL"] = True
+                self.check_empty_indexed_fields()
 
-            if self._changed:
+                if not self._model._classname == "acl" and self._acl is not None:
+                    if self.acl.id is None:
+                        self.acl.save()
+                    if self.acl.id != self.acl_id:
+                        self._deserialized_items["ACL"] = True
 
                 # WE NEED UNIQUE PROPERTIES
                 for prop_u in self._model.schema.properties_unique:
@@ -184,17 +187,12 @@ class JSXObject(j.baseclasses.object):
                         if (self.id and not self.id == r[0].id) or not self.id:
                             raise j.exceptions.Input(msg)
 
-                if self._nosave:
-                    obj, stop = self._model._triggers_call(obj=self, action="set_pre", propertyname=None)
-                else:
-                    obj = self._model.set(self)
+                obj = self._model.set(self)
                 assert obj.id
                 self.id = obj.id
 
                 return obj
             return self
-
-        raise j.exceptions.Base("cannot save, model not known")
 
     def delete(self):
         if self._model:
@@ -208,6 +206,15 @@ class JSXObject(j.baseclasses.object):
             return self
 
         raise j.exceptions.Base("cannot save, model not known")
+
+    def stop(self):
+        # will be called when BCDB stops, if changes will save
+        try:
+            self.save()
+        except:
+            # can fail because obj empty and index cannot be saved because of it, need to do this better
+            pass
+        pass  # TODO: for later
 
     def _check(self):
         self._ddict

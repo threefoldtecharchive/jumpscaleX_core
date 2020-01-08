@@ -4,6 +4,17 @@ from .Link import Linker
 from .DocSite import DocSite, Doc
 
 
+def load_wiki(wiki_name=None, wiki_path=None, reset=False):
+    """
+    loads any wiki and writes it do j.tools.threegit.docsites_path (/sandbox/var/docsites by default)
+    we cannot use name parameter with myjobs.schedule, it has a name parameter itself
+    """
+    # use default path_dest
+    threegit = j.tools.threegit.get(name=wiki_name, path_source=wiki_path, path_dest="")
+    threegit.process(reset=reset)
+    threegit.save()
+
+
 class ThreeGit(j.baseclasses.object_config):
     """
     To get wikis load faster by only loading git changes
@@ -64,9 +75,9 @@ class ThreeGit(j.baseclasses.object_config):
         """
         if path not in self._git_repos:
             try:
-                gc = j.clients.git.get(path)
+                gc = j.clients.git.get(path, check_path=False)
             except Exception as e:
-                print("cannot load git:%s error %s" % path, e)
+                self._log_error(f"error while get git of {path}", exception=e)
                 return
             self._git_repos[path] = gc
         return self._git_repos[path]
@@ -85,14 +96,19 @@ class ThreeGit(j.baseclasses.object_config):
             # check if we already have a git repo, then the current checked-out branch
             repo_args = j.clients.git.getGitRepoArgs(path)
             host = repo_args[0]
-            dest = repo_args[-3]
-            repo_dest = j.clients.git.findGitPath(dest, die=False)
+            git_dest = repo_args[-3]
+            repo_dest = j.clients.git.findGitPath(git_dest, die=False)
             if repo_dest:
                 # replace branch with current one
                 current_branch = j.clients.git.getCurrentBranch(repo_dest)
                 path = Linker.replace_branch(path, current_branch, host)
             path = self.find_docs_path(j.clients.git.getContentPathFromURLorPath(path, pull=pull), base_path)
-        ds = DocSite(path=path, name=name, dest=dest, threegit=self)
+
+        sonic_server = j.servers.sonic.get(name="threebot")
+        sonic_cl = j.clients.sonic.get(
+            "threegit", password=sonic_server.adminsecret_, host=sonic_server.host, port=sonic_server.port
+        )
+        ds = DocSite(path=path, name=name, dest=dest, threegit=self, sonic_client=sonic_cl)
         self.docsites[ds.name] = ds
         return self.docsites[ds.name]
 

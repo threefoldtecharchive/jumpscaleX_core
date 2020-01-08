@@ -13,9 +13,9 @@ def main(self):
     test = j.servers.zdb.test_instance
 
     c = test.client_admin_get()
-    c.namespace_new("test", secret="1234")
+    c.namespace_new("test_namespace", secret="1234")
 
-    cl = test.client_get(nsname="test", secret="1234")
+    cl = test.client_get(nsname="test_namespace", secret="1234")
     cl.ping()
     cl.flush()
     nr = cl.nsinfo["entries"]
@@ -60,7 +60,7 @@ def main(self):
     assert cl.exists(id2)
 
     cl.delete(id2)
-    assert cl.exists(id2) == False
+    assert cl.exists(id2) is False
 
     cl.flush()
     assert cl.list() == []

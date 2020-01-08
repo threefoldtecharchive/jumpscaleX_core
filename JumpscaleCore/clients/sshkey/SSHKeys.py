@@ -73,11 +73,11 @@ class SSHKeys(j.baseclasses.object_config_collection_testtools):
         assert sshkey_client.pubkey != old_pubkey
         sshkey_client.save()
 
-        assert sshkey_client.is_loaded() == False
+        assert sshkey_client.is_loaded() is False
         sshkey_client.load()
         assert sshkey_client.is_loaded()
         sshkey_client.unload()
-        assert sshkey_client.is_loaded() == False
+        assert sshkey_client.is_loaded() is False
 
         # Clean up after test
         sshkey_client.delete_from_sshdir()

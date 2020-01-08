@@ -15,7 +15,7 @@ class TestPackageManager(TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.result_path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), PACKAGE_NAME, "result")
-        self.gedis_client = j.servers.threebot.local_start_default()
+        self.gedis_client = j.servers.threebot.start()
         self.package_manager = self.gedis_client.actors.package_manager
         self.path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), PACKAGE_NAME)
 

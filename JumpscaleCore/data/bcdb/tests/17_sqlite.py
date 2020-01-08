@@ -89,13 +89,13 @@ def main(self):
         m.trigger_add(post_save)
 
     o = m.new()
-    assert o._autosave == False
+    assert o._autosave is False
 
     count = 10
 
     for i in range(count):
         o = m.new()
-        assert o._autosave == False
+        assert o._autosave is False
         o.name = "name%s" % i
         o.ipaddr = "10.10.10.%s" % i
         o.nr = i

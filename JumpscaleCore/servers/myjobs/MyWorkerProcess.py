@@ -32,6 +32,8 @@ class MyWorkerProcess(j.baseclasses.object):
         self.showout = showout
         self.debug = debug
 
+        j.servers.threebot.threebotserver_require()
+
         assert worker_id
 
         if self.debug:
@@ -57,11 +59,14 @@ class MyWorkerProcess(j.baseclasses.object):
             time.sleep(0.1)
 
         self.bcdb = j.data.bcdb.get("myjobs")
-        self.bcdb._readonly = True
 
         self.model_job = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.job)
         self.model_action = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.action)
         self.model_worker = j.clients.bcdbmodel.get(name=self.bcdb.name, schema=schemas.worker)
+
+        self.model_job.trigger_add(self._obj_print)
+        self.model_action.trigger_add(self._obj_print)
+        self.model_worker.trigger_add(self._obj_print)
 
         if not self.onetime:
             # if not onetime then will send all to queue which will be processed on parent process (the myjobs manager)
@@ -72,6 +77,9 @@ class MyWorkerProcess(j.baseclasses.object):
         self.worker_obj = self.model_worker.get(worker_id)
 
         self.start()
+
+    def _obj_print(self, model, obj, kosmosinstance=None, action=None, propertyname=None):
+        self._log_debug("action: %s" % action, data=obj)
 
     @property
     def id(self):
@@ -137,7 +145,7 @@ class MyWorkerProcess(j.baseclasses.object):
             if self.worker_obj.halt or res == b"halt":
                 return self.stop()
 
-            if res == None:
+            if res is None:
                 if j.data.time.epoch > last_info_push + 20:
                     # print(self.worker_obj)
                     # self._log_info("queue request timeout, no data, continue", data=self.worker_obj)
@@ -146,13 +154,20 @@ class MyWorkerProcess(j.baseclasses.object):
             else:
                 # self._log_debug("queue has data")
                 jobid = int(res)
-                job = self.model_job.get(jobid)
+                try:
+                    job = self.model_job.get(jobid)
+                except Exception as e:
+                    if not self.model_job.exists(jobid):
+                        self._log_warning("job with:%s did not exist" % jobid)
+                        continue
+                    raise
+
                 self.job = job
                 job.time_start = j.data.time.epoch
                 skip = False
                 relaunch = False
                 for dep_id in job.dependencies:
-                    job_deb = self.job_get(dep_id)
+                    job_deb = self.model_job.get(dep_id)
                     if job_deb.state in ["ERROR"]:
                         job.state = job_deb.state
 
@@ -182,7 +197,7 @@ class MyWorkerProcess(j.baseclasses.object):
                     self.worker_obj.last_update = j.data.time.epoch
                     self.worker_obj.current_job = jobid
 
-                    if job == None:
+                    if job is None:
                         self._log_error("ERROR: job:%s not found" % jobid)
                         j.shell()
                     else:

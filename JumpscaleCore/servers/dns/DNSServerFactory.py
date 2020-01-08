@@ -24,7 +24,7 @@ class DNSServerFactory(j.baseclasses.factory_testtools):
     def get_gevent_server(self, name="default", port=53, bcdb_name="system", resolvername="default"):
         s = self.servers.get(name=name, port=port, resolvername=resolvername)
         # make sure there is a resolver created
-        if resolvername == "default" and self.resolvers.exists(name=resolvername) == False:
+        if resolvername == "default" and self.resolvers.exists(name=resolvername) is False:
             r = self.resolvers.new(name="default")
             r.save()
         s.save()

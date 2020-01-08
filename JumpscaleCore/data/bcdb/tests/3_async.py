@@ -52,7 +52,7 @@ def main(self):
     assert model_obj2._ddict_hr == model_obj._ddict_hr
 
     # will process 1000 obj (set)
-    for x in range(100):
+    for x in range(2, 100):
         model.set_dynamic(get_obj(x))
 
     # should be nothing in queue

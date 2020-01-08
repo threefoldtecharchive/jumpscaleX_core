@@ -194,7 +194,7 @@ class BCDBVFS(j.baseclasses.object):
                 # second element must be the nid e.g. /data/5/
                 key = "%s_data_%s" % (self.current_bcbd_name, nid)
                 if not key in self._dirs_cache:
-                    self._dirs_cache[key] = BCDBVFS_Data_Dir(self, key=key, items=j.data.schema.schemas.keys())
+                    self._dirs_cache[key] = BCDBVFS_Data_Dir(self, key=key, items=j.data.schema.schemas_loaded.keys())
             else:
                 url = splitted[2]
                 if path_length == 3:
@@ -258,7 +258,7 @@ class BCDBVFS(j.baseclasses.object):
         if len(splitted) == 1:
             key = "schemas"
             if not key in self._dirs_cache:
-                res = BCDBVFS_Schema_Dir(self, items=j.data.schema.schemas.keys())
+                res = BCDBVFS_Schema_Dir(self, items=j.data.schema.schemas_loaded.keys())
         else:
             url = splitted[1]
             key = "schemas_%s" % (url)
@@ -292,7 +292,7 @@ class BCDBVFS(j.baseclasses.object):
             nid {integer} -- the namespace to be added to
             url {string} -- the schema url that the objects follow
         """
-        if bcdb_name == None:
+        if bcdb_name is None:
             bcdb_name = self.current_bcbd_name
         data_dir = self.get("/%s/data/%s/%s" % (bcdb_name, nid, url))
         return data_dir.set(data_items)
@@ -380,7 +380,7 @@ class BCDBVFS(j.baseclasses.object):
         splitted = key.lower().split("_")
         # let's remove all the empty parts
         splitted = list(filter(None, splitted))
-        if info_dict == None:
+        if info_dict is None:
             info_dict = {}
         info_dict["is_dir"] = True
         # make sure that the first element is either a bcdb name or in data schemas or info
@@ -434,7 +434,7 @@ class BCDBVFS(j.baseclasses.object):
             keys {Array} -- [first if the key to the obj and the second is the key directory where the obj lives]
         """
 
-        if info == None:
+        if info is None:
             info = self._extract_info_from_key(key)
         o_id = None
         if "obj_id" in info:  # it means we are going to update an object
@@ -537,7 +537,7 @@ class BCDBVFS_Data_Dir:
         return res
 
     def _get_model(self):
-        if self._model == None:
+        if self._model is None:
             info = self.vfs._extract_info_from_key(self.key)
             if not info["type"] is "info":
                 self._model = self.vfs._get_model_based_on_url(info["url"])
@@ -680,7 +680,7 @@ class BCDBVFS_Data:
         raise Exception("Data can't be listed")
 
     def _get_model(self):
-        if self._model == None:
+        if self._model is None:
             info = self.vfs._extract_info_from_key(self.key)
             self._model = self.vfs._get_model_based_on_url(url=info["url"])
         return self._model

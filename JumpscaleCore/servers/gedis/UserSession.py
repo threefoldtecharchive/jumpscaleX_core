@@ -38,7 +38,7 @@ class UserSession(UserSessionBase):
 
     @property
     def admin(self):
-        if self._admin == None:
+        if self._admin is None:
             if self.threebot_name == j.tools.threebot.me.default.tname:
                 self._admin = True
             elif int(self.threebot_id) == j.tools.threebot.me.default.tid:

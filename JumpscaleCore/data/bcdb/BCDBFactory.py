@@ -2,6 +2,7 @@ from Jumpscale import j
 
 from .BCDB import BCDB
 from .BCDBModel import BCDBModel
+from .BCDBModelBase import BCDBModelBase
 
 import os
 import sys
@@ -23,68 +24,77 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         j.clients.redis.core_get()  # just to make sure the redis got started
 
-        self._instances = j.baseclasses.dict(name="BCDBS")
-        self.children = self._instances
-
         self._BCDBModelClass = BCDBModel  # j.data.bcdb._BCDBModelClasses
+        self._BCDBModelBase = BCDBModelBase
         self._config = {}
+
+        # load the system models
+        system_meta_path = j.core.tools.text_replace(
+            "{DIR_CODE}/github/threefoldtech/jumpscaleX_core/JumpscaleCore/data/bcdb/models_system/meta.toml"
+        )
+        j.data.schema.add_from_path(system_meta_path)
 
         self.__master = None
 
+    def threebotserver_require(self, timeout=120):
+        timeout2 = j.data.time.epoch + timeout
+        while j.data.time.epoch < timeout2:
+            res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380)
+            if res and j.core.db.get("threebot.starting") == None:
+                self._master_set(False)
+                return
+        raise j.exceptions.Base("please start threebotserver, could not reach in '%s' seconds." % timeout)
+
     @property
     def _master(self):
-        if self.__master == None:
+        if self.__master is None:
+            # see if a threebot starting
+            if not j.core.db:
+                # no choice but to say we are master
+                return True
+            if j.core.db.get("threebot.starting"):
+                print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
+                res = j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60)
+                if res:
+                    # the server did answer, lets now wait till the threebot.starting is gone
+                    timeout = j.data.time.epoch + 15
+                    while j.data.time.epoch < timeout:
+                        if j.core.db.get("threebot.starting") is None:
+                            self.__master = False
+                            return (
+                                self.__master
+                            )  # means we found a threebot who was started properly, can now start as slave
+                raise j.exceptions.Base("threebotserver is starting but did not succeed within 60+15 sec")
+
             if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
                 self.__master = False
             else:
-                if j.core.db and j.core.db.get("threebot.starting"):
-                    print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
-                    if not j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60):
-                        self.__master = True
-                    else:
-                        self.__master = False
-                else:
-                    self.__master = True
+                self.__master = True
         return self.__master
 
+    # def _treebot_set(self, val=True): #ALREADY DONE IN THREEBOTSERVER
+    #     self._master_set(val)
+    #     if val:
+    #         j.core.db.set("threebot.starting", ex=120, value="1")
+    #     else:
+    #         j.core.db.delete("threebot.starting")
+
     def _master_set(self, val=True):
-        if val:
-            j.core.db.set("threebot.starting", ex=120, value="1")
-        else:
-            j.core.db.delete("threebot.starting")
         self.__master = val
+
+    @property
+    def _readonly(self):
+        return not self._master
 
     def config_reload(self):
         self._loaded = False
         self._load()
 
-    def unlock(self):
-        base_path = j.core.tools.text_replace("{DIR_BASE}/var/bcdb/")
-        instances = []
-        if j.sal.fs.exists(base_path):
-            instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
-            for instance in instances:
-                lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
-                if j.sal.fs.exists(lock_path):
-                    j.sal.fs.remove(lock_path)
-                    self._log_info(f"BCDB instance {instance} unlocked")
-
-    def lock(self):
-        base_path = j.core.tools.text_replace("{DIR_BASE}/var/bcdb/")
-        instances = []
-        instances = [j.sal.fs.getBaseName(instance_path) for instance_path in j.sal.fs.listDirsInDir(base_path)]
-        for instance in instances:
-            lock_path = j.sal.fs.joinPaths(base_path, instance, "lock")
-            if not j.sal.fs.exists(lock_path):
-                j.sal.fs.touch(lock_path)
-                self._log_info(f"BCDB instance {instance} unlocked")
-        self.__master = True
-
     def _load(self):
 
         if not self._loaded:
 
-            print("LOAD CONFIG BCDB")
+            self._log_info("LOAD CONFIG BCDB")
 
             # will make sure the toml schema's are loaded
             j.data.schema.add_from_path("%s/models_system" % self._dirpath)
@@ -105,10 +115,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
     @property
     def system(self):
-        if "system" not in self._instances:
-            storclient = j.clients.sqlitedb.client_get(namespace="system")
-            self._instances["system"] = self._get(name="system", storclient=storclient)
-        return self._instances["system"]
+        if "system" not in self._children:
+            storclient = j.clients.sqlitedb.client_get(namespace="system", readonly=self._readonly)
+            self._children["system"] = self._get(name="system", storclient=storclient)
+        return self._children["system"]
 
     def threebot_stop(self):
         """
@@ -124,8 +134,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             s = j.servers.sonic.get(name="threebot")
             s.stop()
 
-        assert j.sal.process.checkProcessRunning("zdb") == False
-        assert j.sal.process.checkProcessRunning("sonic") == False
+        assert j.sal.process.checkProcessRunning("zdb") is False
+        assert j.sal.process.checkProcessRunning("sonic") is False
 
     def threebot_zdb_sonic_start(self, reset=False):
         """
@@ -144,11 +154,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             s = j.servers.sonic.get(name="threebot")
             s.destroy()
 
-        if j.sal.nettools.tcpPortConnectionTest("localhost", 9900) == False:
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 9900) is False:
             z = j.servers.zdb.get(name="threebot", adminsecret_=adminsecret_)
             z.start()
 
-        if j.sal.nettools.tcpPortConnectionTest("localhost", 1491) == False:
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 1491) is False:
             s = j.servers.sonic.get(name="threebot", port=1491, adminsecret_=adminsecret_)
             s.start()
 
@@ -164,7 +174,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     def get_test(self, reset=False):
         bcdb = j.data.bcdb.get(name="testbcdb")
         bcdb2 = j.data.bcdb._instances["testbcdb"]
-        assert bcdb2.storclient == None
+        assert bcdb2.storclient is None
         return bcdb
 
     @property
@@ -183,16 +193,15 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         keys = [i for i in self._config.keys()]
         for name in keys:
             # don't reload the bcdb instance because its already
-            if name in self._instances:
+            if name in self._children:
                 continue
             if name == "system":
                 continue
             storclient = self._get_storclient(name)
             if storclient:
                 bcdb = self._get(name, storclient)
-                self._instances[name] = bcdb
-
-        return self._instances
+                self._children[name] = bcdb
+        return self._children
 
     def index_rebuild(self, name=None, storclient=None):
         """
@@ -237,7 +246,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         # self._load()
         j.sal.fs.remove(self._config_data_path)
         self._config = {}
-        self._instances = j.baseclasses.dict()
+        self._children = j.baseclasses.dict()
         self._loaded = False
 
     def destroy_all(self):
@@ -252,11 +261,13 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         self._load()
         names = [name for name in self._config.keys()]
-
-        self.threebot_stop()  # stop the threebot ones
+        try:
+            self.threebot_stop()  # stop the threebot ones
+        except:
+            pass
         j.servers.tmux.kill()  # kill all tmux sessions
 
-        self._instances = j.baseclasses.dict()
+        self._children = j.baseclasses.dict()
         storclients = []
         for name in names:
             try:
@@ -312,15 +323,15 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             bcdb = self.get(name=name)
             bcdb.reset()
 
-            if name in self._instances:
-                self._instances.pop(name)
+            if name in self._children:
+                self._children.pop(name)
 
             self._config.pop(name)
             self._config_write()
 
         self._loaded = False
 
-    def get_for_threebot(self, namespace, ttype, instance):
+    def get_for_threebot(self, name, namespace, ttype):
         """
         used by actors in threebot
         :param namespace:
@@ -331,10 +342,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if ttype not in ["zdb", "sqlite", "redis"]:
             raise j.exceptions.Input("ttype can only be zdb or sqlite")
 
-        name = "threebot_%s_%s" % (ttype, namespace)
-
         if j.data.bcdb.exists(name=name):
-            return self.get(name=name)
+            bcdb = self.get(name=name)
+            return bcdb
         else:
             if ttype == "zdb":
                 adminsecret_ = j.data.hash.md5_string(j.threebot.servers.core.adminsecret_)
@@ -344,7 +354,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                     zdb_admin.namespace_new(namespace, secret=adminsecret_, maxsize=0, die=True)
                 storclient = j.threebot.servers.core.zdb.client_get(namespace, adminsecret_)
             elif ttype == "sqlite":
-                storclient = j.clients.sqlitedb.client_get(namespace=namespace)
+                storclient = j.clients.sqlitedb.client_get(namespace=namespace, readonly=self._readonly)
             elif ttype == "redis":
                 storclient = j.clients.rdb.client_get(namespace=namespace)
             else:
@@ -366,18 +376,17 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         assert isinstance(name, str)
 
         if not reset:
-            if name in self._instances:
+            if name in self._children:
                 # print("name:'%s' in instances on bcdb" % name)
-                return self._instances[name]
+                return self._children[name]
 
         if not self.exists(name=name):
             self._new(name=name, storclient=storclient)  # we create object in config of bcdb factory
         if name in self._config and not storclient:
             storclient = self._get_storclient(name)
-
         b = self._get(name=name, storclient=storclient, reset=reset)  # make instance of bcdb
 
-        assert name in self._instances
+        assert name in self._children
 
         return b
 
@@ -419,8 +428,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         :return:
         """
         # DO NOT CHANGE if_not_exist_die NEED TO BE TRUE
-        self._instances[name] = BCDB(storclient=storclient, name=name, reset=reset)
-        return self._instances[name]
+        self._children[name] = BCDB(storclient=storclient, name=name, reset=reset, readonly=self._readonly)
+        return self._children[name]
 
     def _config_write(self):
         data = j.data.serializers.msgpack.dumps(self._config)
@@ -429,7 +438,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
     def _new(self, name, storclient=None):
         """
-        create a new instance
+        create a new nce
         :param name:
         :param storclient: optional
             e.g. j.clients.rdb.client_get()  (would be the core redis
@@ -443,9 +452,9 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         self._log_info("new bcdb:%s" % name)
 
-        # if name in self._instances:
+        # if name in self._children:
         #     print("name:'%s' in instances on bcdb (new)" % name)
-        #     return self._instances[name]
+        #     return self._children[name]
         #
         # if self.exists(name=name):
         #     if not reset:
@@ -549,20 +558,20 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if not schema:
             schema = """
             @url = despiegk.test
-            llist2 = "" (LS)
-            name*** = ""
-            email** = ""
-            nr** = 0
-            date_start** = 0 (D)
-            description = ""
-            token_price** = "10 USD" (N)
-            hw_cost = 0.0 #this is a comment
-            llist = []
-            llist3 = "1,2,3" (LF)
-            llist4 = "1,2,3" (L)
-            llist5 = "1,2,3" (LI)
-            U = 0.0
-            pool_type = "managed,unmanaged" (E)
+            0:  llist2 = "" (LS)
+            1:  name*** = ""
+            2:  email** = ""
+            3:  nr** = 0
+            4:  date_start** = 0 (D)
+            5:  description = ""
+            6:  token_price** = "10 USD" (N)
+            7:  hw_cost = 0.0 #this is a comment
+            8:  llist = []
+            9:  llist3 = "1,2,3" (LF)
+            10: llist4 = "1,2,3" (L)
+            11: llist5 = "1,2,3" (LI)
+            12: U = 0.0
+            13: pool_type = "managed,unmanaged" (E)
             """
 
         type = type.lower()
@@ -600,7 +609,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         bcdb.reset()  # empty
 
-        assert bcdb.storclient.count == 0
+        assert bcdb.storclient.count == 1
 
         assert bcdb.name == "test"
 
@@ -611,7 +620,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         if type.lower() in ["zdb"]:
             # print(model.storclient.nsinfo["entries"])
-            assert model.storclient.nsinfo["entries"] == 0
+            assert model.storclient.nsinfo["entries"] == 1
 
         assert len(model.find()) == 0
 
@@ -657,8 +666,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         """
         print(name)
-
         # CLEAN STATE
+
+        redis = j.servers.startupcmd.get("redis_6380")
+        redis.stop()
+        redis.wait_stopped()
         j.servers.zdb.test_instance_stop()
         j.servers.sonic.default.stop()
 
@@ -667,12 +679,18 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         except:
             # clean after errors
             # CLEAN STATE
+            redis = j.servers.startupcmd.get("redis_6380")
+            redis.stop()
+            redis.wait_stopped()
             j.servers.zdb.test_instance_stop()
             j.servers.sonic.default.stop()
 
             raise
         else:
             # CLEAN STATE
+            redis = j.servers.startupcmd.get("redis_6380")
+            redis.stop()
+            redis.wait_stopped()
             j.servers.zdb.test_instance_stop()
             j.servers.sonic.default.stop()
 

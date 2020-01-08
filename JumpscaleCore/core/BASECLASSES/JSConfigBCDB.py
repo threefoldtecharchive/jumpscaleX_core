@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 from .JSConfigBCDBBase import JSConfigBCDBBase
 
@@ -27,7 +7,7 @@ classes who use JSXObject for data storage but provide nice interface to enduser
 
 
 class JSConfigBCDB(JSConfigBCDBBase):
-    def _init_pre2(self, jsxobject=None, datadict=None, name=None, **kwargs):
+    def _init_jsconfig(self, jsxobject=None, datadict=None, name=None, **kwargs):
 
         if jsxobject:
             self._data = jsxobject
@@ -46,6 +26,13 @@ class JSConfigBCDB(JSConfigBCDBBase):
 
         if name and self._data.name != name:
             self._data.name = name
+
+    def _init_post(self, **kwargs):
+
+        if not isinstance(self._model, j.clients.bcdbmodel._class) and self._data not in self._model.instances:
+            self._model.instances.append(self._data)  # link from model to where its used
+            # to check we are not creating multiple instances
+            # assert id(j.data.bcdb.children.system.models[self._model.schema.url]) == id(self._model)
 
     @property
     def _autosave(self):
@@ -106,7 +93,6 @@ class JSConfigBCDB(JSConfigBCDBBase):
         return self
 
     def _delete(self):
-        self._triggers_call(self, "delete")
         assert self._model
         self._model.delete(self._data)
         if self._parent:
@@ -117,15 +103,11 @@ class JSConfigBCDB(JSConfigBCDBBase):
 
         self._children_delete()
 
-        self._triggers_call(self, "delete_post")
-
     def save(self):
         self.save_()
 
     def save_(self):
         assert self._model
-        self._triggers_call(self, "save")
-
         mother_id = self._mother_id_get()
         if mother_id:
             # means there is a mother
@@ -133,8 +115,6 @@ class JSConfigBCDB(JSConfigBCDBBase):
             assert self._data._model.schema._md5 == self._model.schema._md5
 
         self._data.save()
-
-        self._triggers_call(self, "save_post")
 
     def edit(self):
         """

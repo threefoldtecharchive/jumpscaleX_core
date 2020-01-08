@@ -120,14 +120,13 @@ def slideshow_v2(doc, **kwargs):
     output = "```slideshow\n"
     for slide in slides.slides_get():
         filepath = f"{slides_path}/{slide.presentation_guid}/{str(slide.order)}.png"
-        dest = j.sal.fs.joinPaths(
-            doc.docsite.outpath, doc.path_dir_rel, slide.presentation_guid, str(slide.order) + ".png"
-        )
+        relative_path = j.sal.fs.joinPaths(doc.path_dir_rel, slide.presentation_guid, str(slide.order) + ".png")
+        dest = j.sal.fs.joinPaths(doc.docsite.outpath, relative_path)
         j.sal.fs.copyFile(filepath, dest, createDirIfNeeded=True)
         image_tag = """
         <img src="$path{dest}" alt='{slide_name}'"/>
         """.format(
-            slide_name=slide.order, dest=dest[10:]  # remove /docsites/
+            slide_name=slide.order, dest=j.sal.fs.joinPaths(doc.docsite.name, relative_path)
         )
         output += """
             <section>
