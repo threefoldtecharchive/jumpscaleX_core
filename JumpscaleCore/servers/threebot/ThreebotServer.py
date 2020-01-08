@@ -68,7 +68,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.web = False
         self.ssl = False
         self.client = None
-        j.servers.threebot._threebot_starting()  # in case it wouldn't have happened yet
         j.servers.threebot.current = self
 
         if "adminsecret" in kwargs:
@@ -200,7 +199,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         self.save()
         if not background:
-
+            j.servers.threebot._threebot_starting()
             self.zdb  # will start sonic & zdb
             self.sonic
 
