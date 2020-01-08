@@ -413,11 +413,11 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.openresty_server.stop()
         self.zdb.stop()
         self.sonic.stop()
-        self.rack_server.stop()
-        j.data.bcdb._master_set(False)
+        self.gedis_server.stop()
         j.servers.myjobs.stop()
         self._zdb = None
         self._sonic = None
+        j.data.bcdb._master_set(False)
 
     @property
     def startup_cmd(self):
