@@ -346,7 +346,7 @@ class ExecutorBase(j.baseclasses.object_config):
         self.execute(cmd, interactive=True)
         # j.sal.process.executeWithoutPipe(cmd)
 
-    def package_installed(self, cmd):
+    def cmd_installed(self, cmd):
         rc, _, _ = self.execute("which %s" % cmd, die=False)
         if rc:
             return False

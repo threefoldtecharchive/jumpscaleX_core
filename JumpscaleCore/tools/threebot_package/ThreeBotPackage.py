@@ -1,7 +1,6 @@
 import sys
-
-from Jumpscale import j
 from Jumpscale.tools.threegit.ThreeGit import load_wiki
+from Jumpscale import j
 
 from .ThreeBotPackageBase import ThreeBotPackageBase
 

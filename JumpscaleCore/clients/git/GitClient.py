@@ -8,7 +8,12 @@ class GitClient(j.baseclasses.object):
     Client of git services, has all git related operations like push, pull, ...
     """
 
-    def __init__(self, baseDir, check_path=True):  # NOQA
+    def __init__(self, baseDir, check_path=True):
+        """
+
+        :param baseDir: the dir of the gitclient
+        :param check_path: will find /code/ and put some extra arguments
+        """
 
         self._3git_config = None
         self._ignore_items = None
@@ -60,7 +65,7 @@ class GitClient(j.baseclasses.object):
         else:
             self.type, self.account, self.name = "", "", j.sal.fs.getBaseName(baseDir)
 
-        self.BASEDIR = baseDir
+        self.path = baseDir
 
         # if len(self.repo.remotes) != 1:
         #     raise j.exceptions.Input("git repo on %s is corrupt could not find remote url" % baseDir)
@@ -75,7 +80,7 @@ class GitClient(j.baseclasses.object):
         """
         set the remote url of the repo
         """
-        j.sal.process.executeWithoutPipe("cd %s;git remote set-url origin '%s'" % (self.BASEDIR, url))
+        j.sal.process.executeWithoutPipe("cd %s;git remote set-url origin '%s'" % (self.path, url))
 
     @property
     def remoteUrl(self):
@@ -118,11 +123,11 @@ class GitClient(j.baseclasses.object):
         # Load git when we absolutly need it cause it does not work in gevent
         # mode
         if not self._repo:
-            if not j.sal.fs.exists(self.BASEDIR):
+            if not j.sal.fs.exists(self.path):
                 j.tools.executor.local.execute("git config --global http.sslVerify false")
                 self._clone()
             else:
-                self._repo = git.Repo(self.BASEDIR)
+                self._repo = git.Repo(self.path)
         return self._repo
 
     def init(self, **kwargs):
@@ -174,12 +179,14 @@ class GitClient(j.baseclasses.object):
             return True
         return False
 
-    def hasModifiedFiles(self):
+    def hasModifiedFiles(self, path=None):
         """
         :returns True if there is any file modified, new, renamed, or deleted and has not been yet committed,
         False otherwise
         """
-        cmd = "cd %s;git status --porcelain" % self.BASEDIR
+        if not path:
+            path = self.p
+        cmd = "cd %s;git status --porcelain" % self.path
         rc, out, err = j.tools.executor.local.execute(cmd, die=False)
         for item in out.split("\n"):
             item = item.strip()
@@ -190,7 +197,7 @@ class GitClient(j.baseclasses.object):
 
     @property
     def _config_3git_path(self):
-        return self.BASEDIR + "/.3gitconfig.toml"
+        return self.path + "/.3gitconfig.toml"
 
     @property
     def config_3git(self):
@@ -231,7 +238,7 @@ class GitClient(j.baseclasses.object):
         revision = None
         if not from_revision and all is False:
             from_revision = self.config_3git_get("revision_last_processed")
-        path = path or self.BASEDIR
+        path = path or self.path
         if from_revision:
             cmd = f"cd {path};git --no-pager log {from_revision}..HEAD --name-status --oneline --reverse {path}"
         else:
@@ -282,7 +289,7 @@ class GitClient(j.baseclasses.object):
                 #     j.shell()
                 #     w
         if untracked:
-            for item in self.getModifiedFiles(collapse=True):
+            for item in self.getModifiedFiles(collapse=True, path=path):
                 if item not in result:
                     result.append(item)
 
@@ -298,7 +305,7 @@ class GitClient(j.baseclasses.object):
         """
         self.config_3git_set("revision_last_processed", revision)
 
-    def getModifiedFiles(self, collapse=False, ignore=[]):
+    def getModifiedFiles(self, collapse=False, ignore=[], path=None):
         """
         get the list of modified files separated in dict of 4 lists
         N => New
@@ -309,6 +316,14 @@ class GitClient(j.baseclasses.object):
         :param collapse: (Boolean) if True, returns all files in one list
         :param ignore: (List) files to ignore
         """
+
+        if not path:
+            path = self.path
+        if not path.startswith("/"):
+            path = "%s/%s" % (self.path, path)  # means is relative
+
+        assert j.sal.fs.exists(path)
+
         result = {}
         result["D"] = []  # Deleted
         result["N"] = []  # New
@@ -321,7 +336,7 @@ class GitClient(j.baseclasses.object):
                     return True
             return False
 
-        cmd = "cd %s;git status --porcelain" % self.BASEDIR
+        cmd = "cd %s;git status --porcelain %s" % (path, path)
         rc, out, err = j.tools.executor.local.execute(cmd)
         # Organize files in lists
         for item in out.split("\n"):
@@ -339,26 +354,27 @@ class GitClient(j.baseclasses.object):
                 if _file not in result[state]:
                     result[state].append(_file)
 
-        # Organize files in lists
-        for diff in self.repo.index.diff(None):
-            # TODO: does not work, did not show my changes !!! *1
-            if diff.a_blob is None:
-                continue
-            path = diff.a_blob.path
-            if checkignore(ignore, path):
-                continue
-            if diff.deleted_file:
-                if path not in result["D"]:
-                    result["D"].append(path)
-            elif diff.new_file:
-                if path not in result["N"]:
-                    result["N"].append(path)
-            elif diff.renamed:
-                if path not in result["R"]:
-                    result["R"].append(path)
-            else:
-                if path not in result["M"]:
-                    result["M"].append(path)
+        # IS DUPLICATION WITH ABOVE
+        # # Organize files in lists
+        # for diff in self.repo.index.diff(None):
+        #     # TODO: does not work, did not show my changes !!! *1
+        #     if diff.a_blob is None:
+        #         continue
+        #     path = diff.a_blob.path
+        #     if checkignore(ignore, path):
+        #         continue
+        #     if diff.deleted_file:
+        #         if path not in result["D"]:
+        #             result["D"].append(path)
+        #     elif diff.new_file:
+        #         if path not in result["N"]:
+        #             result["N"].append(path)
+        #     elif diff.renamed:
+        #         if path not in result["R"]:
+        #             result["R"].append(path)
+        #     else:
+        #         if path not in result["M"]:
+        #             result["M"].append(path)
 
         if collapse:
             result = result["N"] + result["M"] + result["R"] + result["D"]
@@ -374,15 +390,15 @@ class GitClient(j.baseclasses.object):
         """
         checkout to the sent path
         """
-        cmd = "cd %s;git checkout %s" % (self.BASEDIR, path)
+        cmd = "cd %s;git checkout %s" % (self.path, path)
         j.tools.executor.local.execute(cmd)
 
     def addRemoveFiles(self):
         """
         add all untracked files
         """
-        # cmd = 'cd %s;git add -A :/' % self.BASEDIR
-        cmd = "cd %s;git add -A ." % self.BASEDIR
+        # cmd = 'cd %s;git add -A :/' % self.path
+        cmd = "cd %s;git add -A ." % self.path
         j.tools.executor.local.execute(cmd)
 
     def addFiles(self, files=[]):
@@ -489,9 +505,9 @@ class GitClient(j.baseclasses.object):
                 commits.append((commit.authored_date, commit.hexsha, commit.author.name))
         return commits
 
-    def getFileChanges(self, path):
+    def file_changes_get(self, path):
         """
-        @return lines which got changed
+        @return lines which got changed (since last commit)
         format:
         {'line': [{'commit sha': '', 'author': 'author'}]}
         """
@@ -506,16 +522,16 @@ class GitClient(j.baseclasses.object):
         return diffs
 
     @property
-    def gitignoreItems(self):
+    def gitignore_items(self):
         """
         return list of items in gitignore
         :return:
         """
         if not self._ignore_items:
             self._ignore_items = []
-            ignorefilepath = j.sal.fs.joinPaths(self.BASEDIR, ".gitignore")
+            ignorefilepath = j.sal.fs.joinPaths(self.path, ".gitignore")
             if not j.sal.fs.exists(ignorefilepath):
-                self.patchGitignore()
+                self.gitignore_patch()
             inn = j.sal.fs.readFile(ignorefilepath)
             lines_in = inn.splitlines()
             for item in lines_in:
@@ -532,10 +548,10 @@ class GitClient(j.baseclasses.object):
     #     """
     #     if path.startswith("/"):
     #         # means need to remove the basepath and only if its in the current basepath
-    #         if not path.startswith(self.BASEDIR):
+    #         if not path.startswith(self.path):
     #             raise j.exceptions.Input("path needs to be in git repo:%s" % path)
     #         j.shell()
-    #     for item in self.gitignoreItems:
+    #     for item in self.gitignore_items:
     #         if item.endswith("/"):
     #             # is dir check
     #             if path.startswith(item):
@@ -549,7 +565,7 @@ class GitClient(j.baseclasses.object):
     #             if path.startswith(item2):
     #                 return True
 
-    def patchGitignore(self):
+    def gitignore_patch(self):
         gitignore = """
 
             logs
@@ -616,7 +632,7 @@ class GitClient(j.baseclasses.object):
             """
 
         gitignore = j.core.tools.text_strip(gitignore)
-        ignorefilepath = j.sal.fs.joinPaths(self.BASEDIR, ".gitignore")
+        ignorefilepath = j.sal.fs.joinPaths(self.path, ".gitignore")
         change = False
         if not j.sal.fs.exists(ignorefilepath):
             j.sal.fs.writeFile(ignorefilepath, gitignore)
@@ -641,7 +657,7 @@ class GitClient(j.baseclasses.object):
         this method get latest tag or branch
         """
         try:
-            cmd = "cd {path}; git describe --tags".format(path=self.BASEDIR)
+            cmd = "cd {path}; git describe --tags".format(path=self.path)
             return "tag", j.tools.executor.local.execute(cmd)[1]
         except BaseException:
             return "branch", self.repo.head.ref.name
@@ -654,7 +670,7 @@ class GitClient(j.baseclasses.object):
         :param fields: field name of the config to search for
         :return: string value of the field name
         """
-        cmd = "cd %s; git config %s" % (self.BASEDIR, field)
+        cmd = "cd %s; git config %s" % (self.path, field)
         rc, output, _ = j.tools.executor.local.execute(cmd, die=False)
         if rc != 0:
             return ""
@@ -674,7 +690,7 @@ class GitClient(j.baseclasses.object):
         if not local:
             flags += "--global "
 
-        cmd = "cd %s; git config %s %s %s" % (self.BASEDIR, flags, field, value)
+        cmd = "cd %s; git config %s %s %s" % (self.path, flags, field, value)
         j.tools.executor.local.execute(cmd, die=die)
 
     def unsetConfig(self, field, local=True, die=True):
@@ -689,5 +705,5 @@ class GitClient(j.baseclasses.object):
         if not local:
             flags += "--global "
 
-        cmd = "cd %s; git config --unset %s %s" % (self.BASEDIR, flags, field)
+        cmd = "cd %s; git config --unset %s %s" % (self.path, flags, field)
         j.tools.executor.local.execute(cmd, die=die)

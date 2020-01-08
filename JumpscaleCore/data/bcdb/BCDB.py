@@ -21,12 +21,7 @@ class BCDB(j.baseclasses.object):
         if name is None:
             raise j.exceptions.Base("name needs to be specified")
 
-        try:
-            assert storclient
-        except:
-            import ipdb
-
-            ipdb.set_trace()
+        assert storclient
 
         if not storclient.get(0):
             r = storclient.set(b"INIT")

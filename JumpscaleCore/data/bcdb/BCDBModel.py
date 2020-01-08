@@ -229,7 +229,7 @@ class BCDBModel(BCDBModelBase):
                     self.index.delete_by_id(obj_id=obj.id, nid=obj.nid)
         else:
             self.storclient.delete(obj_id)
-            self.index.delete_by_id(obj_id=obj_id, nid=obj.nid)
+            self.index.delete_by_id(obj_id=obj_id)
 
     def check(self, obj):
         if not isinstance(obj, j.data.schema._JSXObjectClass):

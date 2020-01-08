@@ -20,16 +20,16 @@ class DocSite(j.baseclasses.object):
         JSBASE.__init__(self)
         self._j = j
 
-        self.docgen = j.tools.threegit.get(name)
-        # init initial arguments
-
         self.threegit = threegit
         self.path = path
         if not j.sal.fs.exists(path):
             raise j.exceptions.Base("Cannot find path:%s" % path)
 
         self.sonic_client = sonic_client
-        self.name = prepare_name(name)
+        self.name = j.core.text.strip_to_ascii_dense(name.lower())
+        if not self.name:
+            raise j.exceptions.Base("name cannot be empty")
+
         self.defs = {}
         self.htmlpages = {}
         self.content_default = {}  # key is relative path in docsite where default content found
@@ -69,36 +69,24 @@ class DocSite(j.baseclasses.object):
         #         name="/".join(name) #not sure this is correct
         return j.core.text.convert_to_snake_case(name)
 
-    @classmethod
-    def get_from_name(cls, name):
-        name = prepare_name(name)
-        meta_path = f"{cls.outpath}/.data"
-        repo_meta = j.sal.fs.readFile(meta_path).decode()
-        repo_data = j.data.serializers.json.loads(repo_meta)
-        repo_args = j.clients.git.getGitRepoArgs(repo_data["repo"])
-        path = j.sal.fs.joinPaths(repo_args[-3], repo_data.get("base_path", ""))
-
-        return cls(name=name, path=path)
-
-    @property
-    def git(self):
-        if self._git is None:
-            gitpath = j.clients.git.findGitPath(self.path, die=False)
-            if not gitpath:
-                return
-
-            if gitpath not in self.docgen._git_repos:
-                self._git = self.docgen._git_get(gitpath)
-                self.docgen._git_repos[gitpath] = self.git
-
-        if not self._git:
-            self._log_debug(f"docsite of {self.path} has not git repo")
-        return self._git
-        # MARKER FOR INCLUDE TO STOP  (HIDE)
+    # @classmethod
+    # def get_from_name(cls, name):
+    #     name = prepare_name(name)
+    #     meta_path = f"{cls.outpath}/.data"
+    #     repo_meta = j.sal.fs.readFile(meta_path).decode()
+    #     repo_data = j.data.serializers.json.loads(repo_meta)
+    #     repo_args = j.clients.git.getGitRepoArgs(repo_data["repo"])
+    #     path = j.sal.fs.joinPaths(repo_args[-3], repo_data.get("base_path", ""))
+    #
+    #     return cls(name=name, path=path)
 
     @property
     def host(self):
         return urlparse(self.metadata["repo"]).hostname
+
+    @property
+    def git(self):
+        return self.threegit.git_client
 
     @property
     def account(self):
@@ -140,7 +128,7 @@ class DocSite(j.baseclasses.object):
         :return: a path or a full link
         :rtype: str
         """
-        if custom_link.is_url or not self.git:
+        if custom_link.is_url:
             # as-is
             return custom_link.path
 
@@ -178,6 +166,7 @@ class DocSite(j.baseclasses.object):
             new_link = Linker.to_custom_link(repo, host)
             # to match any path, start with root `/`
             url = Linker(host, new_link.account, new_link.repo).tree("/")
+            j.shell()
             docsite = self.threegit.load(url, name=new_link.repo, base_path="")
             custom_link = new_link
 
@@ -243,19 +232,17 @@ class DocSite(j.baseclasses.object):
         rdirpath = rdirpath.strip("/").strip().strip("/")
         self.data_default[rdirpath] = data
 
-    def load(self, reset=False, check=False):
+    def load(self, reset=False):
         """
         walk in right order over all files which we want to potentially use (include)
         and remember their paths
 
         if duplicate only the first found will be used
         """
-        if reset is False and self._loaded and check is False:
+        if reset is False and self._loaded:
             return
 
-        if reset is True:
-            git_client = j.clients.git.get(self.path, check_path=False)
-            self.revision = git_client.config_3git_set("revision_last_processed", "")
+        self.revision = self.threegit.git_client.config_3git_set("revision_last_processed_docsite", "")
 
         path = self.path
         if not j.sal.fs.exists(path=path):
@@ -313,14 +300,22 @@ class DocSite(j.baseclasses.object):
             else:
                 self.file_add(path)
 
-        # check changed files and process it using 3git tool
-        git_client = j.clients.git.get(self.path, check_path=False)
-        self.revision = git_client.config_3git_get("revision_last_processed")
-        revision, self._files_changed, old_files = git_client.logChanges(path=self.path, from_revision=self.revision)
+        if not reset:
+            # check changed files and process it using 3git tool
+            self.revision = self.threegit.git_client.config_3git_get("revision_last_processed_docsite")
+            revision, self._files_changed, old_files = self.threegit.git_client.logChanges(
+                path=self.path, from_revision=self.revision, untracked=True
+            )
+        else:
+            self._files_changed = j.sal.fs.listFilesInDir(self.path)
+            revision = self.threegit.git_client.config_3git_get("revision_last_processed_docsite")
+            old_files = None
 
         callbackFunctionDir(self.path, "")  # to make sure we use first data.yaml in root
+
         for item in self._files_changed:
-            item = f"{git_client.BASEDIR}/{item}"
+            if not reset:
+                item = f"{self.threegit.git_client.path}/{item}"
             if j.sal.fs.exists(item):
                 if j.sal.fs.isFile(item):
                     if callbackForMatchFile(item, ""):
@@ -329,12 +324,13 @@ class DocSite(j.baseclasses.object):
                 if j.sal.fs.isDir(item):
                     if callbackForMatchDir(item, ""):
                         callbackFunctionDir(item, "")
+
         if old_files:
             for ditem in old_files:
                 item_path = j.sal.fs.joinPaths(self.outpath, ditem)
                 j.sal.fs.remove(item_path)
 
-        git_client.logChangesRevisionSet(revision)
+        self.threegit.git_client.logChangesRevisionSet(revision)
         print("git revision set with value: ", revision)
         self._loaded = True
 
@@ -624,7 +620,7 @@ class DocSite(j.baseclasses.object):
 
         return out
 
-    def verify(self):
+    def verify(self, url_check=False):
         keys = [item for item in self.docs.keys()]
         keys.sort()
         for key in keys:
@@ -653,15 +649,8 @@ class DocSite(j.baseclasses.object):
 
     __str__ = __repr__
 
-    @property
-    def base_path(self):
-        try:
-            repo_path = j.clients.git.findGitPath(self.path)
-            return self.path[len(repo_path) :].lstrip("/")
-        except j.exceptions.Input:
-            return ""
-
     def write_metadata(self):
+        return
         # Create file with extra content to be loaded in docsites
         data = {"name": self.name, "repo": "", "base_path": self.base_path}
 
@@ -681,12 +670,13 @@ class DocSite(j.baseclasses.object):
     def metadata_path(self):
         return self.outpath + "/.data"
 
-    def write(self, reset=False, check=True):
+    def write(self, reset=False, url_check=False):
         if reset:
             j.sal.fs.remove(self.outpath)
 
-        self.load(check=check, reset=reset)
-        self.verify()
+        self.load(reset=reset)
+
+        # self.verify(url_check=url_check)
 
         j.sal.fs.createDir(self.outpath)
 
@@ -698,11 +688,3 @@ class DocSite(j.baseclasses.object):
             doc = self.doc_get(key, die=False)
             if doc:
                 doc.write()
-
-
-def prepare_name(name):
-    name = j.core.text.strip_to_ascii_dense(name.lower())
-    if name == "":
-        raise j.exceptions.Base("name cannot be empty")
-
-    return name
