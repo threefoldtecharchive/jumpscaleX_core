@@ -26,10 +26,12 @@ class ThreeBotPackage(ThreeBotPackageBase):
         return j.threebot.servers.web
 
     def load(self):
-        if self._init_ is False:
-            packages_root = j.sal.fs.getParent(self.path)
-            # if not packages_root in sys.path:
-            #     sys.path.append(packages_root)
+        if not self._init_:
+            if j.sal.fs.exists(f"{self.path}/frontend"):
+                self._web_load(app_type="frontend")
+            elif j.sal.fs.exists(f"{self.path}/html"):
+                self._web_load(app_type="html")
+
             path = self._changed("package.py")
             if path:
                 klass, changed = j.tools.codeloader.load(obj_key="Package", path=path, reload=False)
