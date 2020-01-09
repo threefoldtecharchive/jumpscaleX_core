@@ -196,7 +196,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         :type with_shell: bool
         """
         packages = packages or []
-
         self.save()
         if not background:
             j.servers.threebot._threebot_starting()
@@ -230,7 +229,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             assert redis_server.host == "127.0.0.1"
             assert redis_server.secret == adminsecret_
             self.rack_server.add("bcdb_system_redis", redis_server.gevent_server)
-
             if restart or j.sal.nettools.tcpPortConnectionTest("localhost", 80) is False:
                 self._log_info("OPENRESTY START")
                 if restart:
@@ -266,8 +264,10 @@ class ThreeBotServer(j.baseclasses.object_config):
             # j.__dict__.pop("builders")
             # j.__dict__.pop("shell")
             # j.__dict__.pop("shelli")
-            j.__dict__.pop("tutorials")
-            j.__dict__.pop("sal_zos")
+            if j.__dict__.get("tutorials") != None:
+                j.__dict__.pop("tutorials")
+            if j.__dict__.get("sal_zos") != None:
+                j.__dict__.pop("sal_zos")
             for package in j.tools.threebot_packages.find():
 
                 if package.status in ["installed", "error"]:
@@ -324,18 +324,15 @@ class ThreeBotServer(j.baseclasses.object_config):
         for _ in range(retries):
             try:
                 self.client = j.clients.gedis.get(name="threebot", port=8901)
-                break
+                self.client.reload()
+                assert self.client.ping()
+                return self.client
             except Exception as e:
                 time.sleep(1)
                 last_error = e
         else:
             raise last_error
         # TODO: will have to authenticate myself
-
-        self.client.reload()
-        assert self.client.ping()
-
-        return self.client
 
     def package_get(self, author3bot, package_name):
         if author3bot not in j.threebot.packages.__dict__:
@@ -408,10 +405,15 @@ class ThreeBotServer(j.baseclasses.object_config):
 
     def stop(self):
         """
-        :return:
+        Stop threebot server. Use it only when it's started using background=True
         """
-        self.startup_cmd.stop(waitstop=False, force=True)
         self.openresty_server.stop()
+        self.startup_cmd.stop(waitstop=False, force=True)
+        self._zdb = None
+        self._sonic = None
+        self._gedis_server = None
+        self._rack_server = None
+        self.client = None
         j.data.bcdb._master_set(False)
 
     @property
