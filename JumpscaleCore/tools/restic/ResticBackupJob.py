@@ -17,7 +17,7 @@ class ResticBase(j.baseclasses.object):
             return j.tools.executor.local
 
     def install(self):
-        if not self.executor.installed("restic"):
+        if not self.executor.cmd_installed("restic"):
             self.executor.install("restic")
 
     def _cmd_execute(self, cmd):
@@ -89,6 +89,8 @@ class ResticBackupJob(ResticBase, j.baseclasses.object_config):
         return self.dest.sshclient_name
 
     def _load(self):
+        if not self.dest.backupdir:
+            self.dest.backupdir = "/root/backups"
         self.init_backup_dir()
         assert not self.sshclient_name  # not implement yet
 
@@ -100,6 +102,7 @@ class ResticBackupJob(ResticBase, j.baseclasses.object_config):
             self._cmd_execute("init --repo %s" % self.dest.backupdir)
 
     def install(self):
+        self._load()
         for source in self.sources:
             rs = ResticSource(job=self, source=source)
             rs.install()

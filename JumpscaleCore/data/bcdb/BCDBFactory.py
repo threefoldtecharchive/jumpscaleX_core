@@ -79,6 +79,51 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     #     else:
     #         j.core.db.delete("threebot.starting")
 
+    def recover_schemas(self, force=True, simulate=False):
+        path = j.core.tools.text_replace("{DIR_CFG}/bcdb")
+        for i in j.sal.fs.listFilesInDir(path, filter="*.toml"):
+            data = j.data.serializers.toml.load(i)
+            totalnr = len(data.values())
+            nr = 0
+            processed = []
+            first = True
+            for item in data.values():
+                nr += 1
+                newest = totalnr == nr  # this means its the last one
+                for d in item:
+                    md5 = d["md5"]
+                    processed.append(md5)
+                    text = d["text"]
+                    url = d["url"]
+                    if "@url" not in text:
+                        print(" - ERROR: url not in text !!!, will overrule")
+                    # don't save
+                    s = j.data.schema.get_from_text(text, save=False, url=url)
+                    # need to remember the last one in the list
+                    if first:
+                        print(f"{s.url}")
+                        first = False
+                    if not j.data.schema.meta.schema_exists(md5=md5):
+                        if s._md5 != md5:
+                            print(
+                                f" - md5 mismatch, means old schema type prob (before refactor) {s._md5}:{md5} [{newest}]"
+                            )
+                        else:
+                            print(f" - missing schema {md5} [{newest}]")
+                    else:
+                        s2 = j.data.schema.get(md5=md5)
+                        if s._md5 != s2._md5:
+                            print(f" - md5 mismatch, means old schema type prob, was in DB {s._md5}:{md5} [{newest}]")
+                        else:
+                            print(f" - exists & same {md5} [{newest}]")
+
+                    assert s.url == d["url"]
+                    if not simulate:
+                        s = j.data.schema.get_from_text(text, newest=newest, url=url)  # will save in right way
+                        # we need to remember the old md5's
+                        s._md5 = md5
+                        j.data.schema.meta.schema_set(s, newest=False)
+
     def _master_set(self, val=True):
         self.__master = val
 
@@ -203,9 +248,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                 self._children[name] = bcdb
         return self._children
 
-    def index_rebuild(self, name=None, storclient=None):
+    def index_rebuild(self, name=None, storclient=None, recover_schemas=True):
         """
         kosmos 'j.data.bcdb.index_rebuild(name="system")'
+        kosmos 'j.data.bcdb.index_rebuild(recover_schemas=False)'
+        kosmos 'j.data.bcdb.index_rebuild()'
 
         can get a stor client by e.g.
             storclient = j.clients.sqlitedb.client_get(namespace="system")
@@ -216,14 +263,16 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         :return:
         """
+        if recover_schemas:
+            j.data.bcdb.recover_schemas()
         if not name:
-            for bcdb in self.instances:
+            for bcdb in self.instances.values():
                 bcdb.index_rebuild()
         elif storclient:
             bcdb = self._get(name, storclient=storclient)
             bcdb.index_rebuild()
         elif name == "system":
-            bcdb = self.get_system()
+            bcdb = self.system
             bcdb.index_rebuild()
         else:
             bcdb = self.get(name=name)
@@ -248,6 +297,34 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         self._config = {}
         self._children = j.baseclasses.dict()
         self._loaded = False
+
+    def export(self, name=None, path=None, yaml=True, data=True, encrypt=True, reset=True):
+        """Export all models and objects
+
+        kosmos 'j.data.bcdb.export(name="system",encrypt=False)'
+        kosmos 'j.data.bcdb.export(encrypt=True,yaml=False,reset=False)'
+        kosmos 'j.data.bcdb.export(encrypt=False)'
+
+        :param path: path to export to
+        :type path: str
+
+        :param reset: reset the export path before exporting, defaults to True
+        :type reset: bool, optional
+        """
+        if not name:
+            v = list(self.instances.values())
+            for bcdb in v:
+                bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
+        elif name == "system":
+            if path:
+                path = "%s/%s" % (path, name)
+            bcdb = self.system
+            bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
+        else:
+            if path:
+                path = "%s/%s" % (path, name)
+            bcdb = self.get(name=name)
+            bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
 
     def destroy_all(self):
         """

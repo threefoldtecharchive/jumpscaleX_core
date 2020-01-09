@@ -75,7 +75,9 @@ class {{BASENAME}}(BCDBModelIndex):
 
     def _sql_index_delete(self,obj):
         # if not self.sql.select().where(self.sql.id == obj.id).count()==0:
-        self.sql.delete().where(self.sql.id == id).execute()
+        self.sql.delete().where(self.sql.id == obj.id).execute()
+        if hasattr(obj,"name"):
+            self.sql.delete().where(self.sql.name == obj.name).execute()
 
     def _sql_index_delete_by_id(self,obj_id):
         self.sql.delete().where(self.sql.id == obj_id).execute()

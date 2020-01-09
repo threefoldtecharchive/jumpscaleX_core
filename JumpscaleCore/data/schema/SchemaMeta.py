@@ -135,7 +135,7 @@ class SchemaMeta(j.baseclasses.object):
             self._data["url"][url] = {"sid": find_sid(), "md5s": []}
             self.save()
 
-    def schema_set(self, schema, save=True):
+    def schema_set(self, schema, save=True, newest=False):
         """
         add the schema to the metadata if it was not done yet
         :param schema:
@@ -156,16 +156,18 @@ class SchemaMeta(j.baseclasses.object):
         urldata = self._data["url"][schema.url]
         md5s = urldata["md5s"]
         if schema._md5 in md5s:
-            if schema._md5 != md5s[-1]:
+            # only do this when we know its the newest schema
+            if newest and schema._md5 != md5s[-1]:
                 # means its not the latest one
                 change = True
                 md5s.pop(md5s.index(schema._md5))
                 md5s.append(schema._md5)  # now at end of list again
                 urldata["md5s"] = md5s
         else:
-            # is a new one, not in list yet
-            change = True
-            urldata["md5s"].append(schema._md5)
+            if newest:
+                # is a new one, not in list yet
+                change = True
+                urldata["md5s"].append(schema._md5)
 
         if change:
             self._data["url"][schema.url] = urldata
@@ -178,9 +180,13 @@ class SchemaMeta(j.baseclasses.object):
             d["epoch"] = j.data.time.epoch
             d["url"] = schema.url
             self._data["md5"][schema._md5] = d
+        else:
+            d = self._data["md5"][schema._md5]
+            if d["url"] != schema.url:
+                raise j.exceptions.Input("serious error found schema with same md5, different url", data=d)
 
-            self.schema_backup(schema)
         if (change or change2) and save:
+            self.schema_backup(schema)
             self.save()
 
     def schema_backup(self, schema):

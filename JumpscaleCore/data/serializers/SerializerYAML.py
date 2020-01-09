@@ -25,6 +25,7 @@ class SerializerYAML(SerializerBase):
     def loads(self, s):
         # out=cStringIO.StringIO(s)
         try:
+            # return yaml.load(s, Loader=yaml.FullLoader)
             return yaml.load(s)
         except Exception as e:
             error = "error:%s\n" % e
@@ -40,6 +41,7 @@ class SerializerYAML(SerializerBase):
             raise j.exceptions.Input(message=error)
 
         try:
+            # return yaml.load(s, Loader=yaml.FullLoader)
             return yaml.load(s)
         except Exception as e:
             error = "error:%s\n" % e
