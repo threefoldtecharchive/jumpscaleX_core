@@ -13,8 +13,10 @@ nr = 87
 nr2 = 34.4
 """
 
-
-yaml.warnings({"YAMLLoadWarning": False})
+try:
+    yaml.warnings({"YAMLLoadWarning": False})
+except Exception as e:
+    pass
 
 # from .PrettyYAMLDumper import PrettyYaml
 class SerializerYAML(SerializerBase):

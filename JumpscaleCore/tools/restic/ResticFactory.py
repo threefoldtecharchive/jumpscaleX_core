@@ -7,14 +7,13 @@ class ResticFactory(j.baseclasses.object_config_collection_testtools):
 
     _CHILDCLASS = ResticBackupJob
 
-    def backup(self):
+    def backup(self, mount=False):
         """
         kosmos 'j.tools.restic.backup()'
 
         will make a full blown backup of all relevant data in threebot
         :return:
         """
-        j.debug()
         b = self.get(name="threebot")
 
         # @url = jumpscale.restic.instance.1
@@ -43,12 +42,12 @@ class ResticFactory(j.baseclasses.object_config_collection_testtools):
 
         # j.debug()
         b.dest.backupdir = "/root/backups"
-        j.shell()
 
         b.install()
         b.backup()
 
-        j.shell()
+        if mount:
+            b.mount()
 
     def test(self):
         """

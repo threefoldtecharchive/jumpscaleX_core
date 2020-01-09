@@ -200,7 +200,7 @@ class JSXObject2(j.data.schema._JSXObjectClass):
     def _str_get(self, ansi=True):
         out = ""
         if ansi:
-            out += "{BLUE}## %s\n{RESET}" % self._schema.url
+            out += "{YELLOW}## %s\n{RESET}" % self._schema.url
         else:
             out += "## %s\n" % self._schema.url
         if self.id:
@@ -216,7 +216,7 @@ class JSXObject2(j.data.schema._JSXObjectClass):
             out += " - {{prop.name_str}}: %s\n" % self.name
         {% else %}
         {% if prop.is_jsxobject %}
-        out+= j.core.text.indent(self.{{prop.name}}._str_get(ansi=ansi).rstrip(),4)+"\n"
+        out+= "\n"+j.core.text.indent(self.{{prop.name}}._str_get(ansi=ansi).rstrip(),4)+"\n"
         {% elif prop.is_list %}
 
         items = {{prop.js_typelocation}}.toHR(self.{{prop.name}})
