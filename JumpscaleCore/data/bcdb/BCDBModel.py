@@ -34,7 +34,7 @@ class BCDBModel(BCDBModelBase):
             self.schema = j.data.schema.get_from_url(schema_url)
         else:
             if hasattr(self, "_SCHEMA"):  # what is that _schema ?
-                self.schema = j.data.schema.get_from_text(self._SCHEMA)
+                self.schema = j.data.schema.get_from_text(self._SCHEMA, newest=True)
             else:
                 self.schema = self._schema_get()  # _schema_get is overrided by classes like ACL USER CIRCLE NAMESPACE
                 if not self.schema:
@@ -322,6 +322,7 @@ class BCDBModel(BCDBModelBase):
         :return: obj
         """
         self.check(obj)
+
         if store:
             obj, stop = self._triggers_call(obj, action="set_pre")
             if stop:
@@ -386,17 +387,14 @@ class BCDBModel(BCDBModelBase):
         if index:
             # self._log_debug(obj)
             # print(obj)
+            if not store:  # need to make sure index is clean, used during rebuild index (is safer)
+                self.index.delete(obj)
             try:
                 self.index.set(obj)
             except j.clients.peewee.IntegrityError as e:
                 # this deals with checking on e.g. uniqueness
-                if store and new:
-                    # delete from the storclient was incorrect
-                    # never ever delete when object exists, so only when new
-                    self.storclient.delete(obj.id)
-                else:
-                    # j.shell()
-                    raise j.exceptions.Input("Could not insert object, unique constraint failed:%s" % e, data=obj)
+                j.shell()
+                raise j.exceptions.Input("Could not insert object, unique constraint failed:%s" % e, data=obj)
 
                 obj.id = None
                 if str(e).find("UNIQUE") != -1:

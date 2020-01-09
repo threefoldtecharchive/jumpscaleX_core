@@ -55,7 +55,7 @@ class JSConfigBCDBBase(JSBase, Attr):
                 if first:
                     # means this is the first block need to add it
                     has_mother = self._mother_id_get()
-                    schema = j.data.schema.get_from_text(block)
+                    schema = j.data.schema.get_from_text(block, newest=True)
                     if "name" not in schema.props:
                         raise j.exceptions.Input("name need to be a field and indexed (S)", data=schema)
                     if not schema.props["name"].index:
@@ -69,7 +69,7 @@ class JSConfigBCDBBase(JSBase, Attr):
                             raise j.exceptions.Input("mother_id need to be a field (int) and index (**)", data=schema)
                     first = False
                 else:
-                    j.data.schema.get_from_text(block)
+                    j.data.schema.get_from_text(block, newest=True)
             if first:
                 raise j.exceptions.Input("didn't find schema's")
 

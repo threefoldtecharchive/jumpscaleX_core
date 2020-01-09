@@ -109,7 +109,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             raise j.exceptions.Input("name needs to be specified on a config mgmt obj")
 
         # will reload if needed (not in self._children)
-        rc, jsconfig = self._get(name=name, id=id, die=needexist, reload=reload)
+        rc, jsconfig = self._get(name=name, id=id, die=needexist, reload=reload, autosave=autosave)
 
         if not jsconfig:
             self._log_debug("NEW OBJ:%s:%s" % (name, self._classname))
@@ -125,20 +125,21 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                     "models should be same", data=(jsconfig._data._model.schema.text, jsconfig._model.schema.text)
                 )
             changed = False
-            jsconfig._data._autosave = False
-            props = [i.name for i in self._model.schema.properties]
-            for key, val in kwargs.items():
-                if key not in props:
-                    raise j.exceptions.Input(
-                        "cannot set property:'%s' on obj because not part of the schema" % key, data=jsconfig
-                    )
-                if not getattr(jsconfig, key) == val:
-                    changed = True
-                    setattr(jsconfig, key, val)
+            if kwargs:
+                jsconfig._data._autosave = False
+                props = [i.name for i in self._model.schema.properties]
+                for key, val in kwargs.items():
+                    if key not in props:
+                        raise j.exceptions.Input(
+                            "cannot set property:'%s' on obj because not part of the schema" % key, data=jsconfig
+                        )
+                    if not getattr(jsconfig, key) == val:
+                        changed = True
+                        setattr(jsconfig, key, val)
             if changed and autosave:
                 jsconfig.save()
 
-            jsconfig._autosave = autosave
+        jsconfig._data._autosave = autosave
 
         # lets do some tests (maybe in future can be removed, but for now the safe bet)
         self._check(jsconfig)
@@ -172,7 +173,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         # self._log_debug("get child:'%s'from '%s'" % (name, self._classname))
 
         # new = False
-        res = self.find(name=name)
+        res = self.find(name=name, autosave=bool(autosave))
 
         if len(res) < 1:
             if not die:
@@ -189,7 +190,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             jsxconfig = res[0]
 
         if autosave != None:
-            jsxconfig._autosave = autosave
+            jsxconfig._data._autosave = bool(autosave)
 
         return 2, jsxconfig
 
@@ -232,7 +233,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             return []
         return res
 
-    def find(self, reload=False, **kwargs):
+    def find(self, reload=False, autosave=False, **kwargs):
         """
         :param kwargs: e.g. color="red",...
         :return: list of the config objects
@@ -260,7 +261,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         ids = self._model.find_ids(**kwargs)
         for id in ids:
             if id not in ids_done:
-                item = self.get(id=id, reload=reload, autosave=False)
+                item = self.get(id=id, reload=reload, autosave=autosave)
                 res.append(item)
 
         return res
@@ -303,7 +304,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
     def _delete(self, name=None):
         if name:
-            _, child = self._get(name=name, die=False)
+            _, child = self._get(name=name, die=False, autosave=True)
             if child:
                 return child.delete()
         else:

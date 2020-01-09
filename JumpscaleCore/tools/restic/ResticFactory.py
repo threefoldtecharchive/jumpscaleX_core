@@ -7,6 +7,65 @@ class ResticFactory(j.baseclasses.object_config_collection_testtools):
 
     _CHILDCLASS = ResticBackupJob
 
+    def backup(self, mount=False):
+        """
+        kosmos 'j.tools.restic.backup()'
+
+        will make a full blown backup of all relevant data in threebot
+        :return:
+        """
+
+        j.data.bcdb.stop()
+
+        b = self._default_job_get()
+
+        b.install()
+        b.backup()
+
+        if mount:
+            b.mount()
+
+    def _default_job_get(self):
+        b = self.get(name="threebot")
+
+        # @url = jumpscale.restic.instance.1
+        # name** = "" (S)
+        # secret_ = ""
+        # sources = (LO) !jumpscale.restic.instance.source.1
+        # dest = (O) !jumpscale.restic.instance.dest.1
+        #
+        # @url = jumpscale.restic.instance.dest.1
+        # sshclient_name = "" (S)
+        # backupdir = ""
+        #
+        # @url = jumpscale.restic.instance.source.1
+        # #optional ssh client to do the restic operation on
+        # sshclient_name = "" (S)
+        # paths = [] (LS)
+        # tag = ""
+        # ignoredir = [] (LS)
+
+        b.secret_ = j.core.myenv.adminsecret
+        b.sources = []
+        s = b.sources.new()
+        s.paths.append("/sandbox/cfg")
+        s.paths.append("/sandbox/var/bcdb")
+        s.paths.append("/sandbox/var/bcdb_exports")
+        s.paths.append("/sandbox/var/zdb")
+
+        # j.debug()
+        b.dest.backupdir = "/root/backups"
+
+        return b
+
+    def mount(self):
+        """
+        kosmos 'j.tools.restic.mount()'
+        """
+
+        b = self._default_job_get()
+        b.mount()
+
     def test(self):
         """
         kosmos 'j.tools.restic.test()'
