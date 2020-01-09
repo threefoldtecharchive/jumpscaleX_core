@@ -21,12 +21,7 @@ class BCDB(j.baseclasses.object):
         if name is None:
             raise j.exceptions.Base("name needs to be specified")
 
-        try:
-            assert storclient
-        except:
-            import ipdb
-
-            ipdb.set_trace()
+        assert storclient
 
         if not storclient.get(0):
             r = storclient.set(b"INIT")
@@ -70,7 +65,7 @@ class BCDB(j.baseclasses.object):
         self.dataprocessor_start()
 
         for url in self._urls:
-            self.model_get(url=url)
+            self.model_get(url=url, die=False)
 
         self.check()
 
@@ -546,7 +541,7 @@ class BCDB(j.baseclasses.object):
             model = self.model_get(schema=jsxobj._schema)
             model.set(jsxobj, store=False, index=True)
 
-    def model_get(self, schema=None, md5=None, url=None, reset=False, triggers=True):
+    def model_get(self, schema=None, md5=None, url=None, reset=False, triggers=True, die=True):
         """
         will return the latest model found based on url, md5 or schema
         :param url:
@@ -569,6 +564,9 @@ class BCDB(j.baseclasses.object):
         self._log_info("load model:%s" % schema.url)
 
         self._url_set(schema.url)
+
+        if not die and not j.data.schema.meta._schema_exists(schema.url):
+            return
 
         model = BCDBModel(bcdb=self, schema_url=schema.url, reset=reset)
         self.model_add(model)

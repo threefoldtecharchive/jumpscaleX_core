@@ -133,6 +133,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         starts 3bot with phonebook, directory, workloads packages.
 
         kosmos -p 'j.servers.threebot.local_start_explorer(with_shell=True)'
+        kosmos -p 'j.servers.threebot.local_start_explorer(with_shell=False)'
 
         """
         packages = [

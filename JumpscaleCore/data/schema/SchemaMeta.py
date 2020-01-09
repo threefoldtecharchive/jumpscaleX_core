@@ -49,10 +49,8 @@ class SchemaMeta(j.baseclasses.object):
             self._data = j.data.serializers.msgpack.load(self._data_path)
         else:
             self._log_debug("save, empty schema")
-            data = {"url": {}, "md5": {}}
-            serializeddata = j.data.serializers.msgpack.dumps(data)
-            j.sal.fs.writeFile(self._data_path, serializeddata)
-            self._data = data
+            self._data = {"url": {}, "md5": {}}
+            self.save()
 
     @property
     def schema_dicts(self):
