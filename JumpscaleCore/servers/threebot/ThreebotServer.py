@@ -408,15 +408,14 @@ class ThreeBotServer(j.baseclasses.object_config):
 
     def stop(self):
         """
-        :return:
+        Stop threebot server. Use it only when it's started using background=True
         """
         self.openresty_server.stop()
-        self.zdb.stop()
-        self.sonic.stop()
-        self.gedis_server.stop()
-        j.servers.myjobs.stop()
+        self.startup_cmd.stop(waitstop=False, force=True)
         self._zdb = None
         self._sonic = None
+        self._gedis_server = None
+        self._rack_server = None
         j.data.bcdb._master_set(False)
 
     @property
