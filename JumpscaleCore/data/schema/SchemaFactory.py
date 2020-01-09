@@ -197,7 +197,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
             line_nr = self._get_line_number(line)
             found_nrs |= bool(line_nr)
 
-            line = line.replace("::", ";;")  # there was some but at one point of time
+            line = line.replace("::", ":")  # there was some but at one point of time
             if line.startswith("@url"):
                 if url:
                     continue
