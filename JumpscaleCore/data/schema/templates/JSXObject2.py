@@ -33,6 +33,11 @@ class JSXObject2(j.data.schema._JSXObjectClass):
         else:
             {% if prop.has_jsxobject %}
             v = {{prop.js_typelocation}}.clean(self._capnp_obj_.{{prop.name_camel}},model=self._model)
+            self._deserialized_items["{{prop.name}}"] = v
+            # c="{{prop.js_typelocation}}"
+            # j.shell()
+            # w
+            return self._deserialized_items["{{prop.name}}"]
             {% else %}
             v = {{prop.js_typelocation}}.clean(self._capnp_obj_.{{prop.name_camel}})
             #to make sure that we keep list, json, ... in deserialized items

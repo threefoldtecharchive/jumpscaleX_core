@@ -14,6 +14,8 @@ nr2 = 34.4
 """
 
 
+yaml.warnings({"YAMLLoadWarning": False})
+
 # from .PrettyYAMLDumper import PrettyYaml
 class SerializerYAML(SerializerBase):
     def __init__(self):
