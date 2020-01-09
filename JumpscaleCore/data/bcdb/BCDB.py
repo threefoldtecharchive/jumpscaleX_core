@@ -548,6 +548,9 @@ class BCDB(j.baseclasses.object):
         :return:
         """
 
+        if url and not die and not j.data.schema.meta._schema_exists(url):
+            return
+
         schema = self.schema_get(schema=schema, md5=md5, url=url)
 
         if schema.url in self.models:
@@ -564,9 +567,6 @@ class BCDB(j.baseclasses.object):
         self._log_info("load model:%s" % schema.url)
 
         self._url_set(schema.url)
-
-        if not die and not j.data.schema.meta._schema_exists(schema.url):
-            return
 
         model = BCDBModel(bcdb=self, schema_url=schema.url, reset=reset)
         self.model_add(model)
