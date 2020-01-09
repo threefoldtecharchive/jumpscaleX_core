@@ -166,6 +166,8 @@ class SchemaMeta(j.baseclasses.object):
                 # is a new one, not in list yet
                 change = True
                 urldata["md5s"].append(schema._md5)
+            elif schema._md5 not in urldata["md5s"]:
+                urldata["md5s"].insert(0, schema._md5)
 
         if change:
             self._data["url"][schema.url] = urldata

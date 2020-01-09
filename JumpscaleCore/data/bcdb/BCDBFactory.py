@@ -214,6 +214,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         # TODO: would be best to login into the ZDB through admin interface and check that the passwd is ok
 
+        self._core_zdb = z
+
         return (s, z)
 
     def get_test(self, reset=False):
@@ -337,6 +339,47 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             bcdb = self.get(name=name)
             bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
 
+    def import_(self, name=None, path=None):
+        """
+        import back
+
+        kosmos 'j.data.bcdb.import_(name="system")'
+
+        :param name:
+        :param path:
+        :return:
+        """
+
+        j.data.bcdb._master_set()
+        j.tools.executor.local
+
+        self.threebot_zdb_sonic_start()
+
+        if not path:
+            path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports")
+        if not name:
+            names = j.sal.fs.listDirsInDir(path, False, True)
+            for name in names:
+                self.import_(name, path=path)
+            return
+        path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
+        assert j.sal.fs.exists(path)
+        if name == "system":
+            self.system.import_(path=path, interactive=False)
+        else:
+            path_bcdbconfig = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s/bcdbconfig.yaml" % name)
+            assert j.sal.fs.exists(path_bcdbconfig)
+            if name not in j.data.bcdb._config:
+                config = j.data.serializers.yaml.load(path_bcdbconfig)
+                j.data.bcdb._config[name] = config
+                j.data.bcdb._config_write()
+            else:
+                config = j.data.bcdb._config[name]
+            bcdb = self.get_for_threebot(name, namespace=config["namespace"], ttype=config["type"])
+            # bcdb = j.data.bcdb.get(name=name)
+            path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
+            bcdb.import_(path=path, interactive=False)
+
     def destroy_all(self):
         """
         destroy all remembered BCDB's
@@ -429,18 +472,20 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         """
         if ttype not in ["zdb", "sqlite", "redis"]:
             raise j.exceptions.Input("ttype can only be zdb or sqlite")
+        zdb = self._core_zdb
+        if ttype == "zdb":
+            adminsecret_ = j.data.hash.md5_string(j.core.myenv.adminsecret)
+            self._log_debug("get zdb admin client")
+            zdb_admin = zdb.client_admin_get()
+            if not zdb_admin.namespace_exists(namespace):
+                zdb_admin.namespace_new(namespace, secret=adminsecret_, maxsize=0, die=True)
 
         if j.data.bcdb.exists(name=name):
             bcdb = self.get(name=name)
             return bcdb
         else:
             if ttype == "zdb":
-                adminsecret_ = j.data.hash.md5_string(j.threebot.servers.core.adminsecret_)
-                self._log_debug("get zdb admin client")
-                zdb_admin = j.threebot.servers.core.zdb.client_admin_get()
-                if not zdb_admin.namespace_exists(namespace):
-                    zdb_admin.namespace_new(namespace, secret=adminsecret_, maxsize=0, die=True)
-                storclient = j.threebot.servers.core.zdb.client_get(namespace, adminsecret_)
+                storclient = zdb.client_get(namespace, adminsecret_)
             elif ttype == "sqlite":
                 storclient = j.clients.sqlitedb.client_get(namespace=namespace, readonly=self._readonly)
             elif ttype == "redis":
@@ -467,7 +512,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             if name in self._children:
                 # print("name:'%s' in instances on bcdb" % name)
                 return self._children[name]
-
         if not self.exists(name=name):
             self._new(name=name, storclient=storclient)  # we create object in config of bcdb factory
         if name in self._config and not storclient:
@@ -500,6 +544,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                     secret=data["secret"],
                     mode="seq",
                 )
+            else:
+                raise j.exceptions.Input("cannot find zdb on port" % data["port"])
         elif data["type"] == "rdb":
             storclient = j.clients.rdb.client_get(namespace=data["namespace"], redisconfig_name="core")
         elif data["type"] == "sdb":
