@@ -617,7 +617,6 @@ class SchemaListTest(BaseTest):
         schema_obj.lines_list.append(value)
         self.assertEqual(schema_obj.lines_list, lines_list)
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/162")
     def test016_validate_list_of_yaml(self):
         """
         SCM-037
@@ -639,10 +638,7 @@ class SchemaListTest(BaseTest):
 
         self.log("Try to set parameter with non yaml type, should fail.")
         with self.assertRaises(Exception):
-            schema_obj.yaml_list = [random.randint(1, 1000), self.random_string()]
-
-        with self.assertRaises(Exception):
-            schema_obj.yaml_list.append(random.randint(1, 1000))
+            schema_obj.yaml_list = ["{test", ""]
 
         self.log("Try to set parameter with yaml type, should succeed.")
         yaml_list = [{"example": "test1"}]

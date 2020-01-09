@@ -3930,7 +3930,6 @@ class BaseInstaller:
                 "wsgidav",
                 "bottle==0.12.17",  # why this version?
                 "beaker",
-                "monkey.patch_thread",
                 "Mnemonic",
             ],
             # level 1: in the middle
