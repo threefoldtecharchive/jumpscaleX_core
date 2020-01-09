@@ -324,18 +324,15 @@ class ThreeBotServer(j.baseclasses.object_config):
         for _ in range(retries):
             try:
                 self.client = j.clients.gedis.get(name="threebot", port=8901)
-                break
+                self.client.reload()
+                assert self.client.ping()
+                return self.client
             except Exception as e:
                 time.sleep(1)
                 last_error = e
         else:
             raise last_error
         # TODO: will have to authenticate myself
-
-        self.client.reload()
-        assert self.client.ping()
-
-        return self.client
 
     def package_get(self, author3bot, package_name):
         if author3bot not in j.threebot.packages.__dict__:
@@ -416,6 +413,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         self._sonic = None
         self._gedis_server = None
         self._rack_server = None
+        self.client = None
         j.data.bcdb._master_set(False)
 
     @property
