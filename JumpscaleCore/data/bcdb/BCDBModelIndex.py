@@ -109,8 +109,6 @@ class BCDBModelIndex(j.baseclasses.object):
         :return:
         """
         self.bcdb._is_writable_check()
-        assert not obj_id
-        assert not nid
         if obj.id is not None:
 
             # self._id_delete(obj.id)

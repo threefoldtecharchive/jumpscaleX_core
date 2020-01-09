@@ -46,7 +46,7 @@ def main(self):
 
     assert s2 == s
 
-    s3 = j.data.schema.get_from_text(s2.text)
+    s3 = j.data.schema.get_from_text(s2.text, newest=True)
     assert s2 == s3
 
     assert s2 == j.data.schema.get_from_url(s.url)

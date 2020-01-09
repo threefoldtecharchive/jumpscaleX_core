@@ -19,6 +19,10 @@ class ThreeGitFactory(j.baseclasses.object_config_collection):
         return j.sal.fs.joinPaths(self.docsites_path, name)
 
     def test(self):
+        """
+        kosmos 'j.tools.threegit.test()'
+        :return:
+        """
         test_wiki = j.tools.threegit.get(
             name="test_wiki",
             path_source="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/docs/wikis/examples/docs/",

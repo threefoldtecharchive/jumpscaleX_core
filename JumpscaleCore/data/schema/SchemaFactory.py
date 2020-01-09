@@ -92,7 +92,9 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         assert isinstance(md5, str)
         if not md5 in self.schemas_md5:
             data = self.meta.schema_get(md5=md5)
-            self.get_from_text(data["text"])
+            s = self.get_from_text(data["text"])
+            if md5 not in self.schemas_md5:
+                self.schemas_md5[md5] = s
         return self.schemas_md5[md5]
 
     def _urlclean(self, url):
@@ -140,9 +142,11 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         blocks = self._schema_blocks_get(schema_text)
         return len(blocks) > 1
 
-    def get_from_text(self, schema_text, url=None):
+    def get_from_text(self, schema_text, url=None, newest=False, save=True):
         """
         will return the first schema specified if more than 1
+
+        @param newest when set will replace the metadata even if it exists & the caching
 
         Returns:
             Schema
@@ -154,10 +158,10 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         for i, block in enumerate(blocks):
             if i == 0:
                 # first one can take url
-                res.append(self._get_from_text_single(block, url=url))
+                res.append(self._get_from_text_single(block, url=url, newest=newest, save=save))
             else:
                 # 2nd one needs to have url specified
-                res.append(self._get_from_text_single(block))
+                res.append(self._get_from_text_single(block, newest=newest, save=save))
 
         if len(res) > 0:
             return res[0]
@@ -174,8 +178,14 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         nr = 0
         out = ""
         for line in schema_text.split("\n"):
-            if url and line.startswith("@url"):
-                continue
+            line = line.strip()
+            line = line.replace("::", ":")  # there was some but at one point of time
+            if line.startswith("@url"):
+                if url:
+                    continue
+                else:
+                    url = line.split("=", 1)[1].strip()
+                    continue
             if line.startswith("@"):
                 out += "%s\n" % line
             elif line.strip() == "":
@@ -188,14 +198,16 @@ class SchemaFactory(j.baseclasses.factory_testtools):
             else:
                 if found_nrs:
                     raise j.exceptions.Input("cannot mix nr's and no nrs in schema", data=[url, schema_text])
+                assert ":" not in line
                 out += "%-2s: %s\n" % (nr, line)
                 nr += 1
         schema_text = out
-        if url:
-            schema_text = "@url = %s\n%s\n" % (url, schema_text.strip())
+        assert url
+        assert len(url) > 5
+        schema_text = "@url = %s\n%s\n" % (url, schema_text.strip())
         return schema_text
 
-    def _get_from_text_single(self, schema_text, url=None):
+    def _get_from_text_single(self, schema_text, url=None, newest=False, save=True):
         """
         can only be 1 schema
 
@@ -215,6 +227,12 @@ class SchemaFactory(j.baseclasses.factory_testtools):
 
         s = Schema(text=schema_text, url=url, md5=md5)
 
+        if save:
+            j.data.schema.meta.schema_set(s, newest=newest)
+            if newest or s.url not in j.data.schema.schemas_loaded:
+                j.data.schema.schemas_loaded[s.url] = s
+            if newest or s._md5 not in j.data.schema.schemas_md5:
+                j.data.schema.schemas_md5[s._md5] = s
         return s
 
     def _md5(self, text):

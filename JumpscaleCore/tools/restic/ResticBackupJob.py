@@ -17,13 +17,14 @@ class ResticBase(j.baseclasses.object):
             return j.tools.executor.local
 
     def install(self):
-        if not self.executor.installed("restic"):
+        if not self.executor.cmd_installed("restic"):
             self.executor.install("restic")
 
     def _cmd_execute(self, cmd):
         if not self.secret_:
             raise j.exceptions.Input("please specify restic secret_ ")
         cmd = "export RESTIC_PASSWORD='%s';restic %s" % (self.secret_, cmd)
+        print(cmd)
         return self.executor.execute(cmd)
 
 
@@ -41,18 +42,22 @@ class ResticSource(ResticBase):
     def backup(self, reset=False, port=None):
         """
         """
+        paths = ""
         for path in self.source.paths:
             path = self.executor._replace(path)
-            assert len(path) > 2
-            IGNOREDIR = [".git", ".github"]
-            if self.source.tag:
-                tag = "--tag %s" % self.source.tag
-            else:
-                tag = ""
-            if port:
-                self._cmd_execute(f" backup -r 'rest:http://localhost:{port}' {tag} '{path}'")
-            else:
-                self._cmd_execute(f" -r '{self.dest.backupdir}' backup {tag} '{path}'")
+            paths += " '%s'" % path
+
+        path = paths
+        assert len(path) > 2
+        IGNOREDIR = [".git", ".github"]
+        if self.source.tag:
+            tag = "--tag %s" % self.source.tag
+        else:
+            tag = ""
+        if port:
+            self._cmd_execute(f" backup -r 'rest:http://localhost:{port}' {tag} {path}")
+        else:
+            self._cmd_execute(f" -r '{self.dest.backupdir}' backup {tag} {path}")
 
 
 class ResticBackupJob(ResticBase, j.baseclasses.object_config):
@@ -89,8 +94,9 @@ class ResticBackupJob(ResticBase, j.baseclasses.object_config):
         return self.dest.sshclient_name
 
     def _load(self):
+        if not self.dest.backupdir:
+            self.dest.backupdir = "/root/backups"
         self.init_backup_dir()
-        assert not self.sshclient_name  # not implement yet
 
     def init_backup_dir(self, reset=False):
         if reset:
@@ -100,6 +106,7 @@ class ResticBackupJob(ResticBase, j.baseclasses.object_config):
             self._cmd_execute("init --repo %s" % self.dest.backupdir)
 
     def install(self):
+        self._load()
         for source in self.sources:
             rs = ResticSource(job=self, source=source)
             rs.install()
@@ -130,6 +137,9 @@ class ResticBackupJob(ResticBase, j.baseclasses.object_config):
             else:
                 raise j.exceptions.Base("not supported yet")
 
-    def mount(self, mountpath="/tmp/1"):
-        cmd = f"rm -rf {mountpath};restic -r {self.dest.backupdir} mount {mountpath}"
+    def mount(self, mountpath="/tmp/backups"):
+        if not self.secret_:
+            raise j.exceptions.Input("please specify restic secret_ ")
+        cmd = f"export RESTIC_PASSWORD='{self.secret_}';rm -rf {mountpath};restic -r {self.dest.backupdir} mount {mountpath}"
+        # print(cmd)
         self.executor.execute(cmd)

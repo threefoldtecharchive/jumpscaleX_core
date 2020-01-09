@@ -28,10 +28,6 @@ class Schema(j.baseclasses.object):
 
         self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
 
-        j.data.schema.meta.schema_set(self)
-        j.data.schema.schemas_loaded[self.url] = self
-        j.data.schema.schemas_md5[self._md5] = self
-
     @property
     def properties(self):
         return list(self._children.values())

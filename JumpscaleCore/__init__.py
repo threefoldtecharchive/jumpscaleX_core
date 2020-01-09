@@ -221,6 +221,8 @@ class Jumpscale:
                 debugger = pdb.Pdb()
             debugger.set_trace(sys._getframe().f_back)
 
+    debug2 = debug  # this is to be able to do a search replace & remove it when required
+
 
 j = Jumpscale()
 j.core = Core(j)
