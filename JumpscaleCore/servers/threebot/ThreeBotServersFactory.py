@@ -56,7 +56,6 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
     @property
     def default(self):
-        self._threebot_starting()
         if not self._default:
             self._default = self.get("default")
         return self._default
@@ -94,7 +93,8 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         :return:
         """
-        self._threebot_starting()
+        if not background:
+            self._threebot_starting()
         packages = packages or []
 
         if background:
@@ -127,7 +127,8 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         """starts 3bot with webplatform package.
         kosmos -p 'j.servers.threebot.local_start_3bot()'
         """
-        self._threebot_starting()
+        if not background:
+            self._threebot_starting()
         packages = [f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform"]
         return self.start(background=background, packages=packages, reload=reload)
 
@@ -140,7 +141,8 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         kosmos -p 'j.servers.threebot.local_start_explorer(with_shell=False)'
 
         """
-        self._threebot_starting()
+        if not background:
+            self._threebot_starting()
         packages = [
             f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/phonebook",
             f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/directory",

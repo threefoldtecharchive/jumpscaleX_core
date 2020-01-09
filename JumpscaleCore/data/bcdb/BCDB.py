@@ -265,7 +265,7 @@ class BCDB(j.baseclasses.object):
 
         for url_path in paths:
             # load all schemas first to make sure all models schemas are loaded when refrenced by parent schemas
-            print(f"processing {url_path}")
+            print(f"processing schema {url_path}")
             schema_text = j.sal.fs.readFile("%s/_schema.toml" % url_path)
             url = j.sal.fs.getBaseName(url_path)
             schema = j.data.schema.get_from_text(schema_text, url=url)
@@ -282,22 +282,35 @@ class BCDB(j.baseclasses.object):
                 print(f"item {item}")
                 if item.endswith("_schema.toml"):
                     continue
+                if item.endswith("schema_hist.toml"):
+                    continue
                 print(f"processing item: {item}")
                 ext = j.sal.fs.getFileExtension(item)
-                if ext == "data":
+                if ext == "data" or ext == "datae":
                     self._log("encr:%s" % item)
                     data2 = j.sal.fs.readFile(item, binary=True)
-                    data_bin = j.data.nacl.default.decryptSymmetric(data2)
-                    obj = j.data.serializers.jsxdata.loads(data_bin)
-                    print(f"data decrypted {data}")
+                    if ext == "datae":
+                        data2 = j.data.nacl.default.decryptSymmetric(data2)
+                    obj = j.data.serializers.jsxdata.loads(data2)
+                    # print(f"data decrypted {data}")
                     data[obj.id] = (url, obj._ddict)
-                elif ext in ["toml", "yaml"]:
+                elif ext in ["toml", "yaml"] or ext in ["tomle", "yamle"]:
                     if ext == "toml":
                         self._log("toml:%s" % item)
                         datadict = j.data.serializers.toml.load(item)
-                    if ext == "yaml":
+                    elif ext == "yaml":
                         self._log("yaml:%s" % item)
                         datadict = j.data.serializers.yaml.load(item)
+                    elif ext == "tomle":
+                        self._log("toml:%s" % item)
+                        data = j.sal.fs.readFile(item)
+                        data = j.data.nacl.default.decryptSymmetric(data)
+                        datadict = j.data.serializers.toml.loads(data)
+                    elif ext == "yamle":
+                        self._log("yaml:%s" % item)
+                        data = j.sal.fs.readFile(item)
+                        data = j.data.nacl.default.decryptSymmetric(data)
+                        datadict = j.data.serializers.yaml.loads(data)
 
                     data[datadict["id"]] = (url, datadict)
                 else:
@@ -314,7 +327,7 @@ class BCDB(j.baseclasses.object):
 
         # have to import it in the exact same order
         for i in range(1, max_id + 1):
-            print(f"i: {i}")
+            # print(f"i: {i}")
             if i not in data:
                 if i < next_id:
                     continue

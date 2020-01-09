@@ -70,17 +70,17 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.client = None
         j.servers.threebot.current = self
 
-        if "adminsecret" in kwargs:
-            secret = kwargs["adminsecret"]
-        elif "adminsecret_" in kwargs:
-            secret = kwargs["adminsecret_"]
-        elif "secret" in kwargs:
-            secret = kwargs["secret"]
-        else:
-            secret = j.core.myenv.adminsecret
+        # if "adminsecret" in kwargs:
+        #     secret = kwargs["adminsecret"]
+        # elif "adminsecret_" in kwargs:
+        #     secret = kwargs["adminsecret_"]
+        # elif "secret" in kwargs:
+        #     secret = kwargs["secret"]
+        # else:
+        #     secret = j.core.myenv.adminsecret
 
         if not self.adminsecret_:
-            self.adminsecret_ = secret
+            self.adminsecret_ = j.core.myenv.adminsecret
             assert self.adminsecret_
 
         if self.executor == "corex":
