@@ -14,6 +14,18 @@ class ResticFactory(j.baseclasses.object_config_collection_testtools):
         will make a full blown backup of all relevant data in threebot
         :return:
         """
+
+        j.data.bcdb.stop()
+
+        b = self._default_job_get()
+
+        b.install()
+        b.backup()
+
+        if mount:
+            b.mount()
+
+    def _default_job_get(self):
         b = self.get(name="threebot")
 
         # @url = jumpscale.restic.instance.1
@@ -38,16 +50,21 @@ class ResticFactory(j.baseclasses.object_config_collection_testtools):
         s = b.sources.new()
         s.paths.append("/sandbox/cfg")
         s.paths.append("/sandbox/var/bcdb")
+        s.paths.append("/sandbox/var/bcdb_exports")
         s.paths.append("/sandbox/var/zdb")
 
         # j.debug()
         b.dest.backupdir = "/root/backups"
 
-        b.install()
-        b.backup()
+        return b
 
-        if mount:
-            b.mount()
+    def mount(self):
+        """
+        kosmos 'j.tools.restic.mount()'
+        """
+
+        b = self._default_job_get()
+        b.mount()
 
     def test(self):
         """

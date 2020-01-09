@@ -187,11 +187,16 @@ class BCDB(j.baseclasses.object):
         """
 
         if not path:
-            path = j.core.tools.text_replace("{DIR_VAR}/bcdb/exports/%s" % self.name)
+            path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % self.name)
 
         if reset:
             j.sal.fs.remove(path)
         j.sal.fs.createDir(path)
+
+        # lets copy the config info from bcdb
+        if self.name != "system":
+            config = j.data.bcdb._config[self.name]
+            j.data.serializers.yaml.dump(f"{path}/bcdbconfig.yaml", config)
 
         vs = list(self.models.values())
         for m in vs:
@@ -201,9 +206,11 @@ class BCDB(j.baseclasses.object):
             j.sal.fs.createDir(dpath)
             j.sal.fs.writeFile(f"{dpath}/_schema.toml", m.schema.text)
             url2 = m.schema.url.replace(".", "__")
+
             # lets keep history of the schema's in the export
             source_schema_hist_path = j.core.tools.text_replace("{DIR_CFG}/bcdb/%s.toml" % url2)
             j.sal.fs.copyFile(source_schema_hist_path, "%s/schema_hist.toml" % dpath)
+
             for obj in list(m.iterate()):
                 # print("  writing object: ", obj)
                 assert obj._model.schema.url == m.schema.url

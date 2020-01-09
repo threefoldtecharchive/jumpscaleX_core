@@ -298,6 +298,17 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         self._children = j.baseclasses.dict()
         self._loaded = False
 
+    def stop(self, name=None):
+        if not name:
+            v = list(self.instances.values())
+            for bcdb in v:
+                bcdb.stop()
+        elif name == "system":
+            pass
+        else:
+            bcdb = self.get(name=name)
+            bcdb.stop()
+
     def export(self, name=None, path=None, yaml=True, data=True, encrypt=True, reset=True):
         """Export all models and objects
 
