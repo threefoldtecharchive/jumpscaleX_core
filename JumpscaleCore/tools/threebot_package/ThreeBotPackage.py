@@ -25,6 +25,10 @@ class ThreeBotPackage(ThreeBotPackageBase):
         return j.threebot.servers.web
 
     def load(self):
+        """
+        SHOULD ONLY LOAD THE PACKAGE FILE, NOTHING MORE
+        :return:
+        """
         if not self._init_:
             path = self._changed("package.py")
             if path:
@@ -256,9 +260,13 @@ class ThreeBotPackage(ThreeBotPackageBase):
 
     def start(self):
         self.load()
+        if self.status == "toinstall":
+            self.install()
         if self.status != "installed":
             self.install()
+        self.actors_load()
         self._package_author.start()
+        # self.wiki_load()  #when wiki is fixed we can do this & should do this
         if j.sal.fs.exists(f"{self.path}/frontend"):
             self._web_load(app_type="frontend")
         elif j.sal.fs.exists(f"{self.path}/html"):

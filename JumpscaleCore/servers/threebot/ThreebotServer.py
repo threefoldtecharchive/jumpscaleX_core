@@ -203,8 +203,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.sonic
 
             # make sure client for myjobs properly configured
-            # j.core.db.redisconfig_name = "core"
-            j.data.bcdb.get_for_threebot("myjobs", "myjobs", "redis")
+            j.data.bcdb.get_for_threebot("myjobs", ttype="redis")
 
             j.threebot.servers = Servers()
             j.threebot.servers.zdb = self.zdb
@@ -237,14 +236,12 @@ class ThreeBotServer(j.baseclasses.object_config):
             else:
                 self.openresty_server.reload()
 
-            self._packages_core_init()
-
-            j.shell()
-            w
-
             if self.state == "init":
                 j.tools.threebot_packages.load()
                 self.state = "installed"
+
+            # will also find all packages
+            self._packages_core_init()
 
             # LETS NOT DO SERVERS YET, STILL BREAKS TOO MUCH
             # j.__dict__.pop("servers")
@@ -255,10 +252,25 @@ class ThreeBotServer(j.baseclasses.object_config):
                 j.__dict__.pop("tutorials")
             if j.__dict__.get("sal_zos") != None:
                 j.__dict__.pop("sal_zos")
+
+            # at this point all packages are known but all in config mode, not installed yet
+            # all internal services started but not the gevent rack yet, and should be like this
+
+            # if someone passed along packages  (lazy loading will work for actor, package management in process)
+            for path in packages:
+                # j.debug()
+                j.threebot.packages.zerobot.packagemanager.actors.package_manager.package_add(
+                    path=path, install=False, reload=False, start=False
+                )
+
             for package in j.tools.threebot_packages.find():
 
-                if package.status in ["installed", "error"]:
-                    self._log_warning("START:%s" % package.name)
+                if package.status in ["toinstall"]:
+                    self._log_info("INSTALL:%s" % package.name)
+                    package.install()
+
+                if package.status in ["tostart", "installed", "error"]:
+                    self._log_info("START:%s" % package.name)
                     try:
                         package.start()
                     except Exception as e:
@@ -266,15 +278,13 @@ class ThreeBotServer(j.baseclasses.object_config):
                         package.status = "error"
                     package.save()
 
-            for path in packages:
-                # j.debug()
-                j.threebot.packages.zerobot.packagemanager.actors.package_manager.package_add(path=path)
-
             # reload nginx at the end after loading packages and its config is written
             self.openresty_server.reload()
 
+            # only now we want to start the external components
             self.rack_server.start(wait=False)
 
+            # lets wait till the gevent servers are active (e.g. gedis redis server)
             timeout2 = j.data.time.epoch + 2
             while j.data.time.epoch < timeout2:
                 res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380, timeout=0.1)
@@ -282,6 +292,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                 if res:
                     break
 
+            # now we are ready to start the jobs
             self.myjobs_start()
 
             self._log_info("start workers")
@@ -374,10 +385,8 @@ class ThreeBotServer(j.baseclasses.object_config):
         :return:
         """
 
-        class PackageGroup:
-            pass
-
         if not j.tools.threebot_packages.exists(name="zerobot.webinterface"):
+            self._log_info("FIND THE PACKAGES ON THE FILESYSMTE")
             j.tools.threebot_packages.load()
 
             names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta_ui"]
@@ -386,18 +395,26 @@ class ThreeBotServer(j.baseclasses.object_config):
                 if not j.tools.threebot_packages.exists(name=name2):
                     raise j.exceptions.Input("Could not find package:%s" % name2)
                 p = j.tools.threebot_packages.get(name=name2)
-                p.status = "toinstall"  # means we need to install
+                p.status = "tostart"  # means we need to start
 
-        j.threebot.__dict__["packages"] = Packages()
-
+        self._log_info("load all packages")
         for package in j.tools.threebot_packages.find():
-            if package.source.threebot not in j.threebot.packages.__dict__:
-                j.threebot.packages.__dict__[package.source.threebot] = PackageGroup()
-            g = j.threebot.packages.__dict__[package.source.threebot]
-            g.__dict__[package.source.name.replace(".", "__")] = package
+            self._package_add(package)
 
         if "package" in j.threebot.__dict__:
             j.threebot.__dict__.pop("package")
+
+    def _package_add(self, package):
+        if not hasattr(j.threebot, "packages"):
+            j.threebot.__dict__["packages"] = Packages()
+
+        class PackageGroup:
+            pass
+
+        if package.source.threebot not in j.threebot.packages.__dict__:
+            j.threebot.packages.__dict__[package.source.threebot] = PackageGroup()
+        g = j.threebot.packages.__dict__[package.source.threebot]
+        g.__dict__[package.source.name.replace(".", "__")] = package
 
     def stop(self):
         """
