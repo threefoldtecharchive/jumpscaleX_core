@@ -13,6 +13,9 @@ class ZDBClientBase(j.baseclasses.object_config):
         if admin:
             self.nsname = "default"
 
+        if self.name in ["threebot_phonebook", "threebot.phonebook"]:
+            raise RuntimeError()
+
         self.type = "ZDB"
 
         self._redis = None
@@ -49,7 +52,7 @@ class ZDBClientBase(j.baseclasses.object_config):
     def redis(self):
         if not self._redis:
             self._redis = _patch_redis_client(
-                j.clients.redis.get(ipaddr=self.addr, port=self.port, fromcache=False, ping=False)
+                j.clients.redis.get(addr=self.addr, port=self.port, fromcache=False, ping=False)
             )
             self._select_namespace(self.nsname)
         return self._redis

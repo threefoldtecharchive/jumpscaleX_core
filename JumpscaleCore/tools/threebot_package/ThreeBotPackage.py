@@ -19,7 +19,6 @@ class ThreeBotPackage(ThreeBotPackageBase):
     @property
     def gedis_server(self):
         return j.servers.gedis.threebot
-        # return j.threebot.servers.gedis
 
     @property
     def openresty(self):
@@ -27,11 +26,6 @@ class ThreeBotPackage(ThreeBotPackageBase):
 
     def load(self):
         if not self._init_:
-            if j.sal.fs.exists(f"{self.path}/frontend"):
-                self._web_load(app_type="frontend")
-            elif j.sal.fs.exists(f"{self.path}/html"):
-                self._web_load(app_type="html")
-
             path = self._changed("package.py")
             if path:
                 klass, changed = j.tools.codeloader.load(obj_key="Package", path=path, reload=False)
@@ -139,14 +133,15 @@ class ThreeBotPackage(ThreeBotPackageBase):
             ##GET THE BCDB, ONLY 1 support for now
             if len(self.bcdbs) == 1:
                 config = self.bcdbs[0]
-                if self.name:
-                    name = self.name
-                else:
-                    name = "%s.%s" % (self.source.threebot, config.namespace)
-                self._bcdb_ = j.data.bcdb.get_for_threebot(name=name, namespace=config.namespace, ttype=config.type)
-            if len(self.bcdbs) == 0:
+                if not config.name:
+                    config.name = self.name
+                self._bcdb_ = j.data.bcdb.get_for_threebot(
+                    name=config.name, namespace=config.namespace, ttype=config.type
+                )
+            elif len(self.bcdbs) == 0:
                 self._bcdb_ = j.data.bcdb.system
-
+            else:
+                raise j.exceptions.Input("only support 1 BCDB per package for now")
         return self._bcdb_
 
     def actor_names(self):
@@ -249,6 +244,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
             self.save()
 
     def install(self):
+        self._log_debug("install:%s" % self)
         self.load()
         if self.status != "config":  # make sure we load the config is not that state yet
             self.config_load()
@@ -263,6 +259,10 @@ class ThreeBotPackage(ThreeBotPackageBase):
         if self.status != "installed":
             self.install()
         self._package_author.start()
+        if j.sal.fs.exists(f"{self.path}/frontend"):
+            self._web_load(app_type="frontend")
+        elif j.sal.fs.exists(f"{self.path}/html"):
+            self._web_load(app_type="html")
         self.running = True
         self.save()
 

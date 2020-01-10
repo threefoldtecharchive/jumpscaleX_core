@@ -39,7 +39,7 @@ class BCDB(j.baseclasses.object):
 
         self._init_props_()
 
-        self._redis_index = j.clients.redis.core
+        # self._redis_index = j.clients.redis.core
         self._data_dir = j.sal.fs.joinPaths(j.dirs.VARDIR, "bcdb", self.name)
 
         # self._lock_file = "%s/lock" % self._data_dir
@@ -64,14 +64,18 @@ class BCDB(j.baseclasses.object):
         j.data.nacl.default
         self.dataprocessor_start()
 
-        for url in self._urls:
-            self.model_get(url=url, die=False)
-
         self.check()
 
         # dataprocessor_stop
         atexit.register(self.stop)
         self._log_info("BCDB INIT DONE:%s" % self.name)
+
+    @property
+    def models(self):
+        for url in self._urls:
+            if url not in self._models:
+                self.model_get(url=url, die=False)
+        return self._models
 
     def _is_writable_check(self):
         return not self.readonly
@@ -85,7 +89,7 @@ class BCDB(j.baseclasses.object):
         """
         make sure the bcdb is initialized with default values & all is stopped
         """
-        for model in self.models.values():
+        for model in self._models.values():
             # lets make sure the triggers are fired
             model.stop()
 
@@ -116,7 +120,7 @@ class BCDB(j.baseclasses.object):
         self.user = None
         self.circle = None
 
-        self.models = j.baseclasses.dict(name="BCDBMODELS")  # is model based on url as key
+        self._models = j.baseclasses.dict(name="BCDBMODELS")  # is model based on url as key
 
     def _init_system_objects(self):
 
@@ -150,9 +154,6 @@ class BCDB(j.baseclasses.object):
 
         if self.readonly:
             return
-
-        if not self._urls:
-            self.index_rebuild()
 
         # def index_ok():
         #     for m in self.models:
@@ -570,11 +571,11 @@ class BCDB(j.baseclasses.object):
             if schema._md5 != self.models[schema.url].schema._md5:
                 # this means we found model in mem but schema changed in mean time
                 # need to use the new one now
-                self.models[schema.url].schema = schema
+                self._models[schema.url].schema = schema
                 if triggers:
-                    self.models[schema.url].schema_change(schema)
+                    self._models[schema.url].schema_change(schema)
                     # don't add the obj, because need to do for all obj
-            return self.models[schema.url]
+            return self._models[schema.url]
 
         # model not known yet need to create
         self._log_info("load model:%s" % schema.url)
@@ -646,11 +647,12 @@ class BCDB(j.baseclasses.object):
             j.shell()
 
         self._schema_property_add_if_needed(model.schema)
-        self.models[model.schema.url] = model
+
+        self._models[model.schema.url] = model
 
         self._url_set(model.schema.url)
 
-        return self.models[model.schema.url]
+        return self._models[model.schema.url]
 
     def _schema_property_add_if_needed(self, schema, done=[]):
         """

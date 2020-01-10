@@ -18,7 +18,7 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
         1:  giturl = "" (S)  #if empty then local
         2:  branch = "" (S)
         3:  path = ""
-        4:  status = "init,config,installed,disabled,error" (E)
+        4:  status = "init,config,toinstall,installed,disabled,error" (E)
         5:  source = (O) !jumpscale.threebot.package.source.1
         6:  actor = (O) !jumpscale.threebot.package.actor.1
         7:  bcdbs = (LO) !jumpscale.threebot.package.bcdb.1

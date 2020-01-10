@@ -161,7 +161,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     @property
     def system(self):
         if "system" not in self._children:
-            storclient = j.clients.sqlitedb.client_get(namespace="system", readonly=self._readonly)
+            storclient = j.clients.sqlitedb.client_get(bcdbname="system", readonly=self._readonly)
             self._children["system"] = self._get(name="system", storclient=storclient)
         return self._children["system"]
 
@@ -257,7 +257,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         kosmos 'j.data.bcdb.index_rebuild()'
 
         can get a stor client by e.g.
-            storclient = j.clients.sqlitedb.client_get(namespace="system")
+            storclient = j.clients.sqlitedb.client_get(bcdbname="system")
             storclient = j.clients.zdb.client_get...
 
         if you use a stor client then the metadata for BCDB will not be used
@@ -462,7 +462,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         self._loaded = False
 
-    def get_for_threebot(self, name, namespace, ttype):
+    def get_for_threebot(self, name, namespace=None, ttype=None):
         """
         used by actors in threebot
         :param namespace:
@@ -470,30 +470,32 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         :param instance:
         :return:
         """
+        self._log_info(f"get bcdb: name:{name} namespace:{namespace} type:{ttype}")
+
+        if j.data.bcdb.exists(name=name):
+            bcdb = self.get(name=name)
+            return bcdb
+
         if ttype not in ["zdb", "sqlite", "redis"]:
             raise j.exceptions.Input("ttype can only be zdb or sqlite")
-        zdb = self._core_zdb
+        assert namespace
+        assert name
+        zdb = self._core_zdb  # has been started in threebot_zdb_sonic_start
         if ttype == "zdb":
             adminsecret_ = j.data.hash.md5_string(j.core.myenv.adminsecret)
             self._log_debug("get zdb admin client")
             zdb_admin = zdb.client_admin_get()
             if not zdb_admin.namespace_exists(namespace):
                 zdb_admin.namespace_new(namespace, secret=adminsecret_, maxsize=0, die=True)
-
-        if j.data.bcdb.exists(name=name):
-            bcdb = self.get(name=name)
-            return bcdb
+            storclient = zdb.client_get(name, adminsecret_)
+        elif ttype == "sqlite":
+            storclient = j.clients.sdb.client_get(bcdbname=name)
+        elif ttype == "redis":
+            storclient = j.clients.rdb.client_get()
         else:
-            if ttype == "zdb":
-                storclient = zdb.client_get(namespace, adminsecret_)
-            elif ttype == "sqlite":
-                storclient = j.clients.sqlitedb.client_get(namespace=namespace, readonly=self._readonly)
-            elif ttype == "redis":
-                storclient = j.clients.rdb.client_get(namespace=namespace)
-            else:
-                raise j.exceptions.Input("only redis, slqite and zdb supported")
+            raise j.exceptions.Input("only redis, sqlite and zdb supported")
 
-            return self.get(name=name, storclient=storclient)
+        return self.get(name=name, storclient=storclient)
 
     def get(self, name, storclient=None, reset=False):
         """
@@ -530,10 +532,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
     def _get_storclient(self, name):
 
         if name == "system":
-            return j.clients.sqlitedb.client_get(namespace="system")
-
+            return j.clients.sqlitedb.client_get(bcdbname="system")
         data = self._config[name]
-        storclient = None
         if data["type"] == "zdb":
             if j.sal.nettools.tcpPortConnectionTest(ipaddr=data["addr"], port=data["port"]):
                 storclient = j.clients.zdb.client_get(
@@ -547,9 +547,11 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             else:
                 raise j.exceptions.Input("cannot find zdb on port" % data["port"])
         elif data["type"] == "rdb":
-            storclient = j.clients.rdb.client_get(namespace=data["namespace"], redisconfig_name="core")
+            storclient = j.clients.rdb.client_get(
+                bcdbname=name, addr=data["addr"], port=data["port"], secret=data["secret"]
+            )
         elif data["type"] == "sdb":
-            storclient = j.clients.sqlitedb.client_get(namespace=data["namespace"])
+            storclient = j.clients.sqlitedb.client_get(bcdbname=name)
         else:
             raise j.exceptions.Input("type storclient not found:%s" % data["type"])
         return storclient
@@ -570,7 +572,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         data_encrypted = j.data.nacl.default.encryptSymmetric(data)
         j.sal.fs.writeFile(self._config_data_path, data_encrypted)
 
-    def _new(self, name, storclient=None):
+    def _new(self, name, storclient=None, reset=False):
         """
         create a new nce
         :param name:
@@ -586,31 +588,26 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         self._log_info("new bcdb:%s" % name)
 
-        # if name in self._children:
-        #     print("name:'%s' in instances on bcdb (new)" % name)
-        #     return self._children[name]
-        #
-        # if self.exists(name=name):
-        #     if not reset:
-        #         raise j.exceptions.Input("cannot create new bcdb '%s' already exists, and reset not used" % name)
+        if self.exists(name=name):
+            if not reset:
+                raise j.exceptions.Input("cannot create new bcdb '%s' already exists, and reset not used" % name)
 
         if not storclient:
-            storclient = j.clients.sqlitedb.client_get(namespace=name)
+            storclient = j.clients.sqlitedb.client_get(bcdbname=name)
 
         data = {}
         assert isinstance(storclient.type, str)
 
         if storclient.type == "SDB":
-            data["namespace"] = storclient.nsname
             data["type"] = "sdb"
             # link to which redis to connect to (name of the redis client in JSX)
         elif storclient.type == "RDB":
-            data["namespace"] = storclient.nsname
+            data["addr"] = storclient.addr
+            data["port"] = storclient.port
+            data["secret"] = storclient.secret
             data["type"] = "rdb"
-            data["redisconfig_name"] = storclient._redis.redisconfig_name
             # link to which redis to connect to (name of the redis client in JSX)
         else:
-            data["namespace"] = storclient.nsname
             data["addr"] = storclient.addr
             data["port"] = storclient.port
             data["secret"] = storclient.secret_
@@ -723,10 +720,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         if type == "rdb":
             j.core.db
-            storclient = j.clients.rdb.client_get(namespace="test_rdb")  # will be to core redis
+            storclient = j.clients.rdb.client_get(bcdbname="test")
             bcdb = self.get(name="test", storclient=storclient, reset=True)
         elif type == "sqlite":
-            storclient = j.clients.sqlitedb.client_get(namespace="test_sdb")
+            storclient = j.clients.sqlitedb.client_get(bcdbname="test")
             bcdb = self.get(name="test", storclient=storclient, reset=True)
         elif type == "zdb":
             storclient = startZDB()

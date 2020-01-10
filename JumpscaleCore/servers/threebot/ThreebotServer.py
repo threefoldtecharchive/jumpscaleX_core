@@ -237,23 +237,10 @@ class ThreeBotServer(j.baseclasses.object_config):
             else:
                 self.openresty_server.reload()
 
-            self._log_info("start workers")
-
-            self.rack_server.start(wait=False)
-
-            timeout2 = j.data.time.epoch + 2
-            while j.data.time.epoch < timeout2:
-                res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380, timeout=0.1)
-                j.core.db.delete("threebot.starting")
-                if res:
-                    break
-
-            self.myjobs_start()
-
-            # j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
-            self._maintenance()
-
             self._packages_core_init()
+
+            j.shell()
+            w
 
             if self.state == "init":
                 j.tools.threebot_packages.load()
@@ -285,6 +272,22 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             # reload nginx at the end after loading packages and its config is written
             self.openresty_server.reload()
+
+            self.rack_server.start(wait=False)
+
+            timeout2 = j.data.time.epoch + 2
+            while j.data.time.epoch < timeout2:
+                res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380, timeout=0.1)
+                j.core.db.delete("threebot.starting")
+                if res:
+                    break
+
+            self.myjobs_start()
+
+            self._log_info("start workers")
+
+            # j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
+            self._maintenance()
 
             print("*****************************")
             print("*** 3BOTSERVER IS RUNNING ***")
@@ -364,33 +367,26 @@ class ThreeBotServer(j.baseclasses.object_config):
         # j.servers.myjobs.jobs._model.index_rebuild()
 
     def _packages_core_init(self):
+        """
+        this one registers all packages to the j.threebot.packages
+        the core ones are put on to install
+
+        :return:
+        """
+
         class PackageGroup:
             pass
 
         if not j.tools.threebot_packages.exists(name="zerobot.webinterface"):
             j.tools.threebot_packages.load()
 
-            for package in j.tools.threebot_packages.find():
-                if package.status in ["installed", "error"]:
-                    self._log_warning("START:%s" % package.name)
-                    try:
-                        package.start()
-                    except Exception as e:
-                        j.core.tools.log(level=50, exception=e, stdout=True)
-                        package.status = "error"
-                    package.save()
             names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta_ui"]
             for name in names:
                 name2 = f"zerobot.{name}"
                 if not j.tools.threebot_packages.exists(name=name2):
                     raise j.exceptions.Input("Could not find package:%s" % name2)
                 p = j.tools.threebot_packages.get(name=name2)
-                if p.status in ["config", "init"]:
-                    p.install()
-                    p.save()
-                # TODO: NOT THE INTENTION !!!!
-                # p.actors_reload()
-                # p.start()
+                p.status = "toinstall"  # means we need to install
 
         j.threebot.__dict__["packages"] = Packages()
 

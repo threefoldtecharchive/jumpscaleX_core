@@ -84,6 +84,8 @@ class SerializerJSXObject(SerializerBase):
 
                 # lets put a test in to make sure the schema url's correspond
                 schema_old = j.data.schema.get_from_md5(md5)
+                if schema_old.url != schema.url:
+                    j.shell()
                 assert schema_old.url == schema.url
 
             return obj
