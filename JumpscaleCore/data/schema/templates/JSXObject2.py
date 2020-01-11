@@ -32,11 +32,14 @@ class JSXObject2(j.data.schema._JSXObjectClass):
             return self._deserialized_items["{{prop.name}}"]
         else:
             {% if prop.has_jsxobject %}
-            v = {{prop.js_typelocation}}.clean(self._capnp_obj_.{{prop.name_camel}},model=self._model)
+            try:
+                v = {{prop.js_typelocation}}.clean(self._capnp_obj_.{{prop.name_camel}},model=self._model)
+            except:
+                c="{{prop.js_typelocation}}"
+                d="{{prop.name_camel}}"
+                j.debug()
+                v = {{prop.js_typelocation}}.clean(self._capnp_obj_.{{prop.name_camel}},model=self._model)
             self._deserialized_items["{{prop.name}}"] = v
-            # c="{{prop.js_typelocation}}"
-            # j.shell()
-            # w
             return self._deserialized_items["{{prop.name}}"]
             {% else %}
             v = {{prop.js_typelocation}}.clean(self._capnp_obj_.{{prop.name_camel}})

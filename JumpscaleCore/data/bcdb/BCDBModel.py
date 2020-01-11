@@ -45,7 +45,6 @@ class BCDBModel(BCDBModelBase):
 
         self.readonly = False
         self._index_ = None  # if set it will make sure data is automatically set from object
-        self.autosave = False
         self.nosave = False
 
         self.instances = []
@@ -429,7 +428,7 @@ class BCDBModel(BCDBModelBase):
         """
         return ddict
 
-    def new(self, data=None, nid=1, **kwargs):
+    def new(self, data=None, nid=1, autosave=None, **kwargs):
 
         if kwargs != {}:
             data = kwargs
@@ -461,7 +460,7 @@ class BCDBModel(BCDBModelBase):
         obj.nid = nid
         obj, stop = self._triggers_call(obj=obj, action="new")
 
-        obj._autosave_ = None  # default of the model
+        obj._autosave_ = autosave  # if None default of the model
 
         return obj
 

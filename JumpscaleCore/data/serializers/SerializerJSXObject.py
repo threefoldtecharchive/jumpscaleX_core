@@ -67,7 +67,7 @@ class SerializerJSXObject(SerializerBase):
 
             # MODEL SHOULD NEVER BE USED TO VALIDAT THE SCHEMA, ITS THE ROOT MODEL (not if subobj)
 
-            obj = schema.new(capnpdata=data2, model=model)
+            obj = schema.new(capnpdata=data2, schema=schema, model=model)
             obj._autosave_ = False
             obj.id = obj_id
             if obj.id == 0:

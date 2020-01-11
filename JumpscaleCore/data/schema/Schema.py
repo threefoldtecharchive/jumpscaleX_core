@@ -319,6 +319,7 @@ class Schema(j.baseclasses.object):
 
         if serializeddata:
             assert isinstance(serializeddata, bytes)
+            # schema does not have to be passed because the serialized data should have right md5 inside
             obj = j.data.serializers.jsxdata.loads(serializeddata, model=model)
         else:
 

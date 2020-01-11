@@ -22,6 +22,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             raise j.exceptions.Input("name needs to be specified on a config mgmt obj")
         if self.exists(name=name):
             raise j.exceptions.Base(f"cannot do new object, {name} exists")
+
         jsconfig = self._create(name=name, jsxobject=jsxobject, **kwargs)
         self._check(jsconfig)
 
@@ -56,6 +57,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :return: the service
         """
         if jsxobject:
+            jsxobject._autosave_ = False
             if not name:
                 name = jsxobject.name
             else:
@@ -82,9 +84,9 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         if not jsxobject:
             if kwargs_to_obj_new:
-                jsxobject = self._model.new(data=kwargs_to_obj_new)
+                jsxobject = self._model.new(data=kwargs_to_obj_new, autosave=False)
             else:
-                jsxobject = self._model.new()
+                jsxobject = self._model.new(autosave=False)
             jsxobject.name = name
 
         # means we need to remember the parent id
@@ -94,7 +96,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 jsxobject.mother_id = mother_id
 
         jsconfig_klass = self._childclass_selector(jsxobject=jsxobject)
-        jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject, **kwargs_to_class)
+        jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject, autosave=False, **kwargs_to_class)
         self._children[name] = jsconfig
 
         return self._children[name]

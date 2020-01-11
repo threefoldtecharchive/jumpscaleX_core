@@ -1,8 +1,9 @@
 from Jumpscale import j
+from .JSXObject import JSXObject
 
 
-class JSXObject(j.baseclasses.object):
-    def _init_pre(self, capnpdata=None, datadict={}, schema=None, model=None, autosave=None, parent=None):
+class JSXObjectRoot(JSXObject):
+    def _init_pre(self, capnpdata=None, datadict={}, schema=None, model=None, autosave=None):
         self._capnp_obj_ = None
         self.id = None
         self._parent = parent
