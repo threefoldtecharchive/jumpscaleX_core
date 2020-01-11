@@ -4,7 +4,7 @@ from capnp import KjException
 
 class JSXObject2(j.data.schema._JSXObjectClass):
 
-    __slots__ = ["id","_model","_autosave","_capnp_obj_","_deserialized_items","_acl_id","_acl",
+    __slots__ = ["id","_model","_autosave_","_capnp_obj_","_deserialized_items","_acl_id","_acl",
                         {% for prop in obj.properties %}"_{{prop.name}}",{% endfor %}]
 
     def _defaults_set(self):

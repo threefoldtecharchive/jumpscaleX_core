@@ -46,7 +46,7 @@ class SerializerJSXObject(SerializerBase):
 
         return data2
 
-    def loads(self, data, bcdb=None, schema=None):
+    def loads(self, data, model=None):
         """
         j.data.serializers.jsxdata.loads(..
         :param data:
@@ -61,33 +61,29 @@ class SerializerJSXObject(SerializerBase):
             md5bin = data[5:21]
             md5 = md5bin.hex()
             data2 = data[21:]
-            if not schema:
-                schema_md5 = j.data.schema.get_from_md5(md5)
-                schema = j.data.schema.get_from_url(
-                    schema_md5.url
-                )  # this will get us the newest version, not the one stored
+            schema_md5 = j.data.schema.get_from_md5(md5)
+            schema = j.data.schema.get_from_url(schema_md5.url)
+            # this will get us the newest version, not the one stored
 
-            obj = schema.new(capnpdata=data2, bcdb=bcdb)
+            # MODEL SHOULD NEVER BE USED TO VALIDAT THE SCHEMA, ITS THE ROOT MODEL (not if subobj)
+
+            obj = schema.new(capnpdata=data2, model=model)
+            obj._autosave_ = False
             obj.id = obj_id
             if obj.id == 0:
                 obj.id = None
 
-            if bcdb:
-                model = bcdb.model_get(url=schema.url, triggers=False)
+            if model and model.schema.url == schema.url:
                 # here the model retrieved will be linked to a schema with the same url
                 model._triggers_call(obj=obj, action="new")
+                # can only be done when a new root obj
 
             if md5 != schema._md5:
-                if bcdb:
+                if model and model.schema.url == schema.url:
                     model._triggers_call(obj, "schema_change", None)  # for the obj itself we need to force
-                    model.schema_change(schema)  # don't add the obj, because need to do for all obj which are loaded
-
-                # lets put a test in to make sure the schema url's correspond
-                schema_old = j.data.schema.get_from_md5(md5)
-                if schema_old.url != schema.url:
-                    j.shell()
-                assert schema_old.url == schema.url
-
+                    model.schema_change(schema)
+                    # don't add the obj, because need to do for all obj which are loaded
+            obj._autosave_ = None  # make sure default of model plays
             return obj
 
         else:

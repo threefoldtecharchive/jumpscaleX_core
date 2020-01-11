@@ -303,7 +303,7 @@ class Schema(j.baseclasses.object):
             #     index_key = True
         return (index_key, index_sql, index_text)
 
-    def new(self, capnpdata=None, serializeddata=None, datadict=None, bcdb=None):
+    def new(self, capnpdata=None, serializeddata=None, datadict=None, model=None):
         """
         new schema_object using data and capnpbin
 
@@ -319,26 +319,21 @@ class Schema(j.baseclasses.object):
 
         if serializeddata:
             assert isinstance(serializeddata, bytes)
-            obj = j.data.serializers.jsxdata.loads(serializeddata, bcdb=bcdb)
+            obj = j.data.serializers.jsxdata.loads(serializeddata, model=model)
         else:
 
-            if bcdb:
-                model = bcdb.model_get(url=self.url)
-                # here the model retrieved will be linked to a schema with the same url
-                # but can be a different md5
-            else:
-                model = None
-
             if capnpdata and isinstance(capnpdata, bytes):
-                obj = self.objclass(schema=self, capnpdata=capnpdata, model=model)
+                obj = self.objclass(schema=self, capnpdata=capnpdata, model=model, autosave=False)
             elif datadict and datadict != {}:
-                obj = self.objclass(schema=self, datadict=datadict, model=model)
+                obj = self.objclass(schema=self, datadict=datadict, model=model, autosave=False)
             elif capnpdata is None and serializeddata is None and datadict is None:
-                obj = self.objclass(schema=self, model=model)
+                obj = self.objclass(schema=self, model=model, autosave=False)
             else:
                 raise j.exceptions.Base("wrong arguments to new on schema")
 
-            if bcdb:
+            obj._autosave_ = None  # so we fall back on defaults of the model.autosave
+
+            if model:
                 model._triggers_call(obj=obj, action="new")
 
         return obj

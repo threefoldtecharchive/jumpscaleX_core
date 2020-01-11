@@ -58,7 +58,7 @@ class JSFactory(JSBase, Attr):
             else:
                 raise j.exceptions.JSBUG("only suport j.baseclasses.object")
 
-    def get(self, name="main", needexist=False, autosave=False, reload=False, **kwargs):
+    def get(self, name="main", needexist=False, autosave=None, reload=False, **kwargs):
         """
 
         :param name: of the child to get, if it doesn't need to exist then will try to create new
@@ -70,7 +70,7 @@ class JSFactory(JSBase, Attr):
         child = self._validate_child(name)
         if not child:
             if hasattr(self.__class__, "_CHILDCLASS") and needexist is False:
-                self.new(name=name, autosave=save, **kwargs)
+                self.new(name=name, autosave=autosave, **kwargs)
             else:
                 raise j.exceptions.Value("cannot get child with name:%s" % name)
         if reload:

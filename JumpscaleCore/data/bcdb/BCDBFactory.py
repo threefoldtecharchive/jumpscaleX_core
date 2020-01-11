@@ -536,6 +536,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if name == "system":
             return j.clients.sqlitedb.client_get(bcdbname="system")
         data = self._config[name]
+
         if data["type"] == "zdb":
             if j.sal.nettools.tcpPortConnectionTest(ipaddr=data["addr"], port=data["port"]):
                 storclient = j.clients.zdb.client_get(
@@ -609,11 +610,14 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             data["secret"] = storclient.secret
             data["type"] = "rdb"
             # link to which redis to connect to (name of the redis client in JSX)
-        else:
+        elif storclient.type == "ZDB":
+            data["namespace"] = storclient.nsname
             data["addr"] = storclient.addr
             data["port"] = storclient.port
             data["secret"] = storclient.secret_
             data["type"] = "zdb"
+        else:
+            raise RuntimeError()
 
         self._config[name] = data
         self._config_write()

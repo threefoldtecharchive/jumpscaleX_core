@@ -609,7 +609,7 @@ class BCDB(j.baseclasses.object):
                 # j.data.schema.models_in_use = True
                 self._log_debug("model get from schema:%s, original was text." % schema.url)
             else:
-                self._log_debug("model get from schema:%s" % schema.url)
+                # self._log_debug("model get from schema:%s" % schema.url)
                 if not isinstance(schema, j.data.schema.SCHEMA_CLASS):
                     raise j.exceptions.Base("schema needs to be of type: j.data.schema.SCHEMA_CLASS")
         else:
@@ -803,7 +803,8 @@ class BCDB(j.baseclasses.object):
         if return_as_capnp:
             return bdata
         else:
-            obj = j.data.serializers.jsxdata.loads(bdata, bcdb=self, schema=schema)
+            model = self.model_get(schema=schema)
+            obj = j.data.serializers.jsxdata.loads(bdata, model=model)
             if schema:
                 assert obj._schema == schema
             obj.nid = nid

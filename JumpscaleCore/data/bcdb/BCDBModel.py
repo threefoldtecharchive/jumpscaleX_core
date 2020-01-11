@@ -255,10 +255,10 @@ class BCDBModel(BCDBModelBase):
                     nid = data["nid"]
                 else:
                     raise j.exceptions.Base("need to specify nid")
-            obj = self.schema.new(datadict=data, bcdb=self.bcdb)
+            obj = self.schema.new(datadict=data, model=self)
             obj.nid = nid
         elif j.data.types.bytes.check(data):
-            obj = self.schema.new(serializeddata=data, bcdb=self.bcdb)
+            obj = self.schema.new(serializeddata=data, model=self)
             if obj_id is None:
                 raise j.exceptions.Base("objid cannot be None")
             if not obj.nid:
@@ -440,25 +440,29 @@ class BCDBModel(BCDBModelBase):
 
         if data:
             if isinstance(data, dict):
-                obj = self.schema.new(datadict=data, bcdb=self.bcdb)
+                obj = self.schema.new(datadict=data, model=self)
             elif isinstance(data, bytes):
                 try:
 
                     data = j.data.serializers.json.loads(data)
-                    obj = self.schema.new(datadict=data, bcdb=self.bcdb)
+                    obj = self.schema.new(datadict=data, model=self)
                 except:
-                    obj = self.schema.new(serializeddata=data, bcdb=self.bcdb)
+                    obj = self.schema.new(serializeddata=data, model=self)
 
             elif isinstance(data, j.data.schema._JSXObjectClass):
-                obj = self.schema.new(datadict=data._ddict, bcdb=self.bcdb)
+                obj = self.schema.new(datadict=data._ddict, model=self)
             else:
                 raise j.exceptions.Base("need dict")
         else:
-            obj = self.schema.new(bcdb=self.bcdb)
+            obj = self.schema.new()
+            obj._model = self
 
         obj = self._methods_add(obj)
         obj.nid = nid
         obj, stop = self._triggers_call(obj=obj, action="new")
+
+        obj._autosave_ = None  # default of the model
+
         return obj
 
     def _methods_add(self, obj):

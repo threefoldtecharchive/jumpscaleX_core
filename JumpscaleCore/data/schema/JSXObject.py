@@ -2,9 +2,10 @@ from Jumpscale import j
 
 
 class JSXObject(j.baseclasses.object):
-    def _init_pre(self, capnpdata=None, datadict={}, schema=None, model=None):
+    def _init_pre(self, capnpdata=None, datadict={}, schema=None, model=None, autosave=None):
         self._capnp_obj_ = None
         self.id = None
+        self._autosave_ = autosave
 
         if model:
             self._model = model
@@ -16,7 +17,7 @@ class JSXObject(j.baseclasses.object):
 
         self._deserialized_items = {}
 
-        self._autosave = False
+        self.nid = 1
 
         self.acl_id = None
         self._acl = None
@@ -25,9 +26,15 @@ class JSXObject(j.baseclasses.object):
         if datadict:
             self._data_update(datadict)
 
-        # self.nid = 1
-
         self._logger_enable()
+
+    @property
+    def _autosave(self):
+        if not self._model:
+            return False
+        if self._autosave_ == None:
+            return self._model.autosave
+        return self._autosave_
 
     @property
     def _schema(self):

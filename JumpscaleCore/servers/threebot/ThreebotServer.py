@@ -86,6 +86,8 @@ class ThreeBotServer(j.baseclasses.object_config):
         if self.executor == "corex":
             raise j.exceptions.Input("only tmux supported for now")
 
+        assert self._autosave  # needs to autosave or does not work well
+
     @property
     def secret(self):
         if self.adminsecret_ == "":
@@ -235,11 +237,6 @@ class ThreeBotServer(j.baseclasses.object_config):
                 self.openresty_server.start()
             else:
                 self.openresty_server.reload()
-
-            if self.state == "init":
-                j.tools.threebot_packages.load()
-                self.state = "installed"
-
             # will also find all packages
             self._packages_core_init()
 
@@ -384,9 +381,8 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         :return:
         """
-
-        if not j.tools.threebot_packages.exists(name="zerobot.webinterface"):
-            self._log_info("FIND THE PACKAGES ON THE FILESYSMTE")
+        if self.state == "INIT":
+            self._log_info("FIND THE PACKAGES ON THE FILESYSTEM")
             j.tools.threebot_packages.load()
 
             names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta_ui"]
@@ -396,6 +392,8 @@ class ThreeBotServer(j.baseclasses.object_config):
                     raise j.exceptions.Input("Could not find package:%s" % name2)
                 p = j.tools.threebot_packages.get(name=name2)
                 p.status = "tostart"  # means we need to start
+
+            self.state == "INSTALLED"
 
         self._log_info("load all packages")
         for package in j.tools.threebot_packages.find():
