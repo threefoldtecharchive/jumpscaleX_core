@@ -22,7 +22,9 @@ class JSXObject2(j.data.schema._JSXObjectClassSub):
         {% endif %}
 
         #this deals with lists and other object types which have customer JSX types
-
+        {% if prop.jumpscaletype.NAME == "dict" %}
+        self._changed_deserialized_items=True
+        {% endif %}
         if "{{prop.name}}" in self._deserialized_items:
             return self._deserialized_items["{{prop.name}}"]
         else:

@@ -84,6 +84,12 @@ class SchemaProperty(j.baseclasses.object):
         return isinstance(self.jumpscaletype, j.data.types._TypeBaseObjFactory)
 
     @property
+    def is_primitive_serialized(self):
+        if self.jumpscaletype.NAME in ["json", "yaml", "dict"]:
+            return True
+        return False
+
+    @property
     def default_as_python_code(self):
         if self.is_primitive:
             return self.jumpscaletype.python_code_get(self.default)

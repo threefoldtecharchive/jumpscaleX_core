@@ -57,7 +57,7 @@ def main(self):
     assert o.description2 == ""
 
     assert o.llist3 == [1.0, 2.0, 3.0]
-    assert o.llist3._changed
+    assert not o.llist3._changed  # still the default value
 
     o.llist2.append("yes")
     o.llist2.append("no")
