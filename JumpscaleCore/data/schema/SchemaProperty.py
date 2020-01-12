@@ -48,8 +48,9 @@ class SchemaProperty(j.baseclasses.object):
 
     @property
     def is_list_jsxobject(self):
-        if self.jumpscaletype.NAME == "list" and self.jumpscaletype.SUBTYPE.NAME == "JSXOBJ":
-            return True
+        if self.jumpscaletype.BASETYPE == "list":
+            if self.jumpscaletype.SUBTYPE.BASETYPE == "JSXOBJ":
+                return True
         return False
 
     @property
@@ -65,13 +66,28 @@ class SchemaProperty(j.baseclasses.object):
         return False
 
     @property
+    def is_primitive(self):
+        if self.is_serialized:
+            return False
+        if self.is_complex_type:
+            return False
+        if self.jumpscaletype.BASETYPE in ["string", "int", "dict", "bytes", "bool", "float"]:
+            return True
+        return False
+
+    @property
+    def is_serialized(self):
+        return isinstance(self.jumpscaletype, j.data.types._TypeBaseClassSerialized)
+
+    @property
+    def is_complex_type(self):
+        return isinstance(self.jumpscaletype, j.data.types._TypeBaseObjFactory)
+
+    @property
     def default_as_python_code(self):
-        c = self.jumpscaletype.python_code_get(self.default)
-        # try:
-        #     c = self.jumpscaletype.python_code_get(self.default)
-        # except Exception as e:
-        #     raise j.exceptions.JSBUG("cannot get pythoncode from default", exception=e)
-        return c
+        if self.is_primitive:
+            return self.jumpscaletype.python_code_get(self.default)
+        return None
 
     @property
     def name_camel(self):

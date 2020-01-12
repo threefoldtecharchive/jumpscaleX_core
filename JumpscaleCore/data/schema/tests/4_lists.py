@@ -14,6 +14,16 @@ def main(self):
     """
 
     schema0 = """
+    @url = jumpscale.schema.rubbish
+    name = ""
+    comment = ""
+    nr = 0
+    """
+
+    s = j.data.schema.get_from_text(schema0)
+    assert s._md5 == j.data.schema._md5(schema0)
+
+    schema0 = """
         @url = jumpscale.schema.test4.cmd
         name = ""
         comment = ""

@@ -4,74 +4,60 @@ from Jumpscale import j
 
 
 import struct
-from .TypeBaseClasses import TypeBaseClassUnserialized
+from .TypeBaseClasses import TypeBaseClassSerialized
 
 
-class JSON(TypeBaseClassUnserialized):
+class JSON(TypeBaseClassSerialized):
 
     NAME = "json"
 
     def __init__(self, default=None):
         self.BASETYPE = "string"
         self.NOCHECK = True
+
         if not default:
-            default = {}
-        self._default = default
+            self._default = j.baseclasses.dict()
+        else:
+            self._default = self.clean(default)
 
-    def possible(self, value):
-        """
-        Check whether provided value is a dict
-        """
-        if not isinstance(value, str):
-            return False
-        try:
-            j.data.serializers.json.loads(value)
-        except ValueError:
-            return False
-        return True
-
-    def check(self, v):
-        try:
-            j.data.serializers.json.loads(v)
-            return True
-        except j.exceptions.Value:
-            return False
-
-    def _default_get(self):
-        return None
-
-    def clean(self, v=""):
+    def clean(self, v=None):
         """
         returns to a dict
         :param v:
-        :return:
+        :return: allways return the json deserialized
         """
-        if v is None:
-            return self._default_get()
-        if v is "":
-            return v
-        if isinstance(v, dict):
-            pass
-        elif isinstance(v, str):
-            if self.check(v):
-                pass
-            else:
-                raise j.exceptions.Value("Can't parse string to json", data=v)
+        if not v:
+            v = self._default
 
-        elif isinstance(v, (set, list, int, float)):
-            pass
+        if not v:
+            return {}
+
+        if isinstance(v, bytes):
+            v = j.data.serializers.msgpack.loads(v)
+        elif isinstance(v, str):
+            if v.strip() == "":
+                return {}
+            return self.serializer.loads(v)
         elif isinstance(v, j.data.schema._JSXObjectClass):
-            v = v._ddict
-        else:
-            raise j.exceptions.Value("only support dict, JSXObject or string", data=v)
-        return v
+            return v._ddict
+
+        if isinstance(v, (dict, set, list, int, float)):
+            return v
+
+        raise j.exceptions.Value("only support dict,set, list, int,float, JSXObject or string", data=v)
+
+    @property
+    def serializer(self):
+        return j.data.serializers.json
 
     def python_code_get(self, val):
         return str(self.clean(val))
 
     def toData(self, v):
         v = self.clean(v)
-        return j.data.serializers.json.dumps(v)
+        if isinstance(v, j.baseclasses.dict):
+            v = v._data
+        return self.serializer.dumps(v)
 
     def fromString(self, v):
         return self.clean(v)
@@ -83,7 +69,11 @@ class JSON(TypeBaseClassUnserialized):
         return self.toString(v)
 
     def toString(self, v):
-        return j.data.serializers.json.dumps(self.clean(v))
+        v = self.clean(v)
+        if isinstance(v, j.baseclasses.dict):
+            return j.data.serializers.json.dumps(v._data, True, True)
+        else:
+            return j.data.serializers.json.dumps(v, True, True)
 
 
 class MSGPACK(JSON):
@@ -91,32 +81,12 @@ class MSGPACK(JSON):
 
     NAME = "msgpack"
 
-    def possible(self, value):
-        """Check whether provided value is a dict"""
-        if not isinstance(value, str):
-            return False
-        try:
-            j.data.serializers.msgpack.loads(value)
-        except ValueError:
-            return False
-        return True
+    @property
+    def serializer(self):
+        return j.data.serializers.msgpack
 
-    def toData(self, v):
-        v = self.clean(v)
-        return j.data.serializers.msgpack.dumps(v)
-
-    def fromString(self, s):
-        """
-        return string from a dict
-        """
-        if j.data.types.msgpack.check(s):
-            return s
-        else:
-            j.data.serializers.msgpack.loads(s)
-            return s
-
-    def toString(self, v):
-        return j.data.serializers.msgpack.dumps(v)
+    def capnp_schema_get(self, name, nr):
+        return "%s @%s :Data;" % (name, nr)
 
 
 class YAML(JSON):
@@ -124,147 +94,51 @@ class YAML(JSON):
 
     NAME = "yaml"
 
-    def possible(self, value):
-        """Check whether provided value is a dict"""
-        if not isinstance(value, str):
-            return False
-        try:
-            j.data.serializers.yaml.loads(value)
-        except ValueError:
-            return False
-        return True
-
-    def toData(self, v):
-        v = self.clean(v)
-        return j.data.serializers.yaml.dumps(v)
-
-    def fromString(self, s):
-        """
-        return string from a dict
-        """
-        if j.data.types.yaml.check(s):
-            return s
-        else:
-            j.data.serializers.yaml.loads(s)
-            return s
-
-    def toString(self, v):
-        return j.data.serializers.yaml.dumps(v)
-
-    def check(self, v):
-        try:
-            j.data.serializers.yaml.loads(v)
-            return True
-        except j.exceptions.Value:
-            return False
-
-    def clean(self, v=""):
-        """
-        returns to a dict
-        :param v:
-        :return:
-        """
-        if v is None:
-            return self._default_get()
-        if v is "":
-            return v
-        if isinstance(v, dict):
-            pass
-        elif isinstance(v, str):
-            if self.check(v):
-                pass
-            else:
-                raise j.exceptions.Value("Can't parse string to yaml", data=v)
-
-        elif isinstance(v, (set, list, int, float)):
-            pass
-        elif isinstance(v, j.data.schema._JSXObjectClass):
-            v = v._ddict
-        else:
-            raise j.exceptions.Value("only support dict, JSXObject or string", data=v)
-        return v
+    @property
+    def serializer(self):
+        return j.data.serializers.yaml
 
 
-class Dictionary(TypeBaseClassUnserialized):
+class Dictionary(MSGPACK):
     """Generic dictionary type"""
 
     NAME = "dict"
 
     def __init__(self, default=None):
-
         self.BASETYPE = "dict"
         if not default:
-            default = j.baseclasses.dict()
-        self._default = default
-
-    def check(self, value):
-        """Check whether provided value is a dict"""
-        return isinstance(value, dict) or isinstance(value, j.baseclasses.dict)
-
-    def fromString(self, s):
-        """
-        return string from a dict
-        """
-        if j.data.types.dict.check(s):
-            return s
+            self._default = j.baseclasses.dict()
         else:
-            s = s.replace("''", '"')
-            j.data.serializers.json.loads(s)
-            return s
+            self._default = self.clean(default)
 
-    def toData(self, v):
-        v = self.clean(v)
-        if isinstance(v, j.baseclasses.dict):
-            return j.data.serializers.msgpack.dumps(v._data)
-        else:
-            return j.data.serializers.msgpack.dumps(v)
-
-    def clean(self, v=""):
+    def clean(self, v=None):
         """
-        supports binary, string & dict
-        if binary will use msgpack
-        if string will use json
+        returns to a dict
         :param v:
-        :return:
+        :return: allways return the json deserialized
         """
-        if v is None:
-            return self._default_get()
-        if j.data.types.bytes.check(v):
-            if v == b"":
-                v = j.baseclasses.dict()
-            else:
-                # print(v)
-                v = j.data.serializers.msgpack.loads(v)
-        elif j.data.types.string.check(v):
+        if not v:
+            v = self._default
+
+        if not v:
+            return {}
+
+        if isinstance(v, bytes):
+            v = j.data.serializers.msgpack.loads(v)
+        elif isinstance(v, str):
+            if v.strip() == "":
+                return {}
             v = j.data.serializers.json.loads(v)
-        if not self.check(v):
-            raise j.exceptions.Value("dict for clean needs to be bytes, string or dict")
-        return v
+        elif isinstance(v, j.data.schema._JSXObjectClass):
+            return v._ddict
 
-    def toString(self, v):
-        v = self.clean(v)
-        if isinstance(v, j.baseclasses.dict):
-            return j.data.serializers.json.dumps(v._data, True, True)
-        else:
-            return j.data.serializers.json.dumps(v, True, True)
+        if isinstance(v, dict):
+            return v
 
-    def toJSON(self, v):
-        return self.toString(v)
-
-    def python_code_get(self, value):
-        """
-        produce the python code which represents this value
-        """
-        return self.toString(value)
-
-    def toHR(self, v):
-        return self.toString(v)
-
-    def capnp_schema_get(self, name, nr):
-        return "%s @%s :Data;" % (name, nr)
+        raise j.exceptions.Value("only support dict, JSXObject or string", data=v)
 
 
-class Set(TypeBaseClassUnserialized):
+class Set(TypeBaseClassSerialized):
 
     """
     hash is 2 value list, represented as 2 times 4 bytes
@@ -300,7 +174,7 @@ class Set(TypeBaseClassUnserialized):
     def check(self, value):
         return isinstance(value, (list, tuple)) and len(value) == 2
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         will do a strip
         """
@@ -406,7 +280,7 @@ class Set(TypeBaseClassUnserialized):
 #     def default_get(self):
 #         return set()
 #
-#     def clean(self, value):
+#     def clean(self, value,parent=None):
 #         if not self.check(value):
 #             raise j.exceptions.Value("Valid set is required")
 #         return value

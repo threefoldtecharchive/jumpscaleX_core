@@ -10,7 +10,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         return self.__class__._CHILDCLASS
 
-    def new(self, name, jsxobject=None, autosave=None, **kwargs):
+    def new(self, name, jsxobject=None, autosave=True, **kwargs):
         """
         it it exists will delete if first when delete is True
         :param name:
@@ -26,7 +26,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         jsconfig = self._create(name=name, jsxobject=jsxobject, **kwargs)
         self._check(jsconfig)
 
-        jsconfig._data._autosave_ = autosave
+        jsconfig._autosave = autosave
 
         if jsconfig._autosave:
             jsconfig.save()
@@ -57,7 +57,6 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         :return: the service
         """
         if jsxobject:
-            jsxobject._autosave_ = False
             if not name:
                 name = jsxobject.name
             else:
@@ -84,9 +83,9 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         if not jsxobject:
             if kwargs_to_obj_new:
-                jsxobject = self._model.new(data=kwargs_to_obj_new, autosave=False)
+                jsxobject = self._model.new(data=kwargs_to_obj_new)
             else:
-                jsxobject = self._model.new(autosave=False)
+                jsxobject = self._model.new()
             jsxobject.name = name
 
         # means we need to remember the parent id
@@ -96,7 +95,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                 jsxobject.mother_id = mother_id
 
         jsconfig_klass = self._childclass_selector(jsxobject=jsxobject)
-        jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject, autosave=False, **kwargs_to_class)
+        jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject, **kwargs_to_class)
         self._children[name] = jsconfig
 
         return self._children[name]
@@ -129,7 +128,6 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             changed = False
 
             if kwargs:
-                jsconfig._data._autosave_ = False
                 props = [i.name for i in self._model.schema.properties]
                 for key, val in kwargs.items():
                     if key not in props:
@@ -140,8 +138,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                         changed = True
                         setattr(jsconfig, key, val)
 
-        jsconfig._data._autosave_ = autosave
-
+        jsconfig._autosave = autosave
         if changed and jsconfig._autosave:
             jsconfig.save()
 

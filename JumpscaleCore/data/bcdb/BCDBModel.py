@@ -428,7 +428,7 @@ class BCDBModel(BCDBModelBase):
         """
         return ddict
 
-    def new(self, data=None, nid=1, autosave=None, **kwargs):
+    def new(self, data=None, nid=1, **kwargs):
 
         if kwargs != {}:
             data = kwargs
@@ -459,8 +459,6 @@ class BCDBModel(BCDBModelBase):
         obj = self._methods_add(obj)
         obj.nid = nid
         obj, stop = self._triggers_call(obj=obj, action="new")
-
-        obj._autosave_ = autosave  # if None default of the model
 
         return obj
 

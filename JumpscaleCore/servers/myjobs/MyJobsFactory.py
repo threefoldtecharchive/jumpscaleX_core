@@ -451,7 +451,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 return job.wait(die=die, timeout=timeout)
             return self.wait_queues(queue_names=return_queues, size=len([job.id]), die=die, timeout=timeout)
 
-        assert job._data._autosave is True
         return job
 
     def stop(self, graceful=True, reset=True, timeout=60, hard=True):

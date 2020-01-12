@@ -46,8 +46,8 @@ class JSXObjectTypeFactory(TypeBaseObjFactory):
         """
         return self.clean(val)
 
-    def toData(self, val, model=None):
-        val2 = self.clean(val, model=model)
+    def toData(self, val, parent=None):
+        val2 = self.clean(val, parent=parent)
         return j.data.serializers.jsxdata.dumps(val2)
 
     def toString(self, val):
@@ -65,7 +65,7 @@ class JSXObjectTypeFactory(TypeBaseObjFactory):
     def default_get(self, model=None):
         return self._schema.new(model=model)
 
-    def clean(self, value, model=None):
+    def clean(self, value, model=None, parent=None):
         """
 
         :param value: is the object which needs to be converted to a data object
@@ -75,13 +75,13 @@ class JSXObjectTypeFactory(TypeBaseObjFactory):
         if isinstance(value, j.data.schema._JSXObjectClass):
             return value
         elif not value:
-            return self._schema.new(model=model)
+            return self._schema.new(model=model, parent=parent)
         elif isinstance(value, bytes):
-            obj = j.data.serializers.jsxdata.loads(value)
+            obj = j.data.serializers.jsxdata.loads(value, parent=parent)
             # when bytes the version of the jsxobj & the schema is embedded in the bin data
             return obj
         elif isinstance(value, dict):
-            return self._schema.new(datadict=value, model=model)
+            return self._schema.new(datadict=value, model=model, parent=parent)
         elif isinstance(value, j.baseclasses.object_config):
             return value._data
         else:

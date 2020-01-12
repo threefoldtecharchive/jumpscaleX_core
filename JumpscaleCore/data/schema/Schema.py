@@ -7,7 +7,8 @@ from Jumpscale import j
 class Schema(j.baseclasses.object):
     def _init(self, text=None, url=None, md5=None):
         self._systemprops = {}
-        self._obj_class = None
+        self._obj_class_root = None
+        self._obj_class_sub = None
         self._capnp = None
         self._index_list = None
 
@@ -259,27 +260,41 @@ class Schema(j.baseclasses.object):
             j.shell()
         return _capnp_schema_text
 
-    @property
-    def objclass(self):
-        if self._obj_class is None:
+    def objclass(self, root=True):
+        if root:
+            if self._obj_class_root:
+                return self._obj_class_root
+        else:
+            if self._obj_class_sub:
+                return self._obj_class_sub
 
-            if self._md5 in [None, ""]:
-                raise j.exceptions.Base("md5 cannot be None")
+        if self._md5 in [None, ""]:
+            raise j.exceptions.Base("md5 cannot be None")
 
-            tpath = "%s/templates/JSXObject2.py" % self._dirpath
+        tpath = "%s/templates/JSXObject2.py" % self._dirpath
 
-            # lets do some tests to see if it will render well, jinja doesn't show errors propertly
-            for prop in self.properties:
-                self._log_debug("prop for obj gen: %s:%s" % (prop, prop.js_typelocation))
-                prop.capnp_schema
-                prop.default_as_python_code
-                prop.js_typelocation
+        # lets do some tests to see if it will render well, jinja doesn't show errors propertly
+        for prop in self.properties:
+            self._log_debug("prop for obj gen: %s:%s" % (prop, prop.js_typelocation))
+            prop.capnp_schema
+            prop.default_as_python_code
+            prop.js_typelocation
 
-            self._obj_class = j.tools.jinja2.code_python_render(
-                name="schema_%s" % self.key, obj_key="JSXObject2", path=tpath, obj=self, objForHash=self._md5
-            )
+        cl = j.tools.jinja2.code_python_render(
+            name="schema_%s_%s" % (self.key, root),
+            obj_key="JSXObject2",
+            path=tpath,
+            obj=self,
+            objForHash=self._md5 + "%s" % root,
+            root=root,
+        )
 
-        return self._obj_class
+        if root:
+            self._obj_class_root = cl
+        else:
+            self._obj_class_sub = cl
+
+        return cl
 
     def index_needed(self):
         """
@@ -303,7 +318,7 @@ class Schema(j.baseclasses.object):
             #     index_key = True
         return (index_key, index_sql, index_text)
 
-    def new(self, capnpdata=None, serializeddata=None, datadict=None, model=None):
+    def new(self, capnpdata=None, serializeddata=None, datadict=None, model=None, parent=None):
         """
         new schema_object using data and capnpbin
 
@@ -316,23 +331,22 @@ class Schema(j.baseclasses.object):
         """
 
         # self._log_debug("LOADS:%s:%s" % (versionnr, obj_id))
+        if parent:
+            root = False
+        else:
+            root = True
 
         if serializeddata:
             assert isinstance(serializeddata, bytes)
             # schema does not have to be passed because the serialized data should have right md5 inside
-            obj = j.data.serializers.jsxdata.loads(serializeddata, model=model)
+            obj = j.data.serializers.jsxdata.loads(serializeddata, model=model, parent=parent)
         else:
 
-            if capnpdata and isinstance(capnpdata, bytes):
-                obj = self.objclass(schema=self, capnpdata=capnpdata, model=model, autosave=False)
-            elif datadict and datadict != {}:
-                obj = self.objclass(schema=self, datadict=datadict, model=model, autosave=False)
-            elif capnpdata is None and serializeddata is None and datadict is None:
-                obj = self.objclass(schema=self, model=model, autosave=False)
+            if root:
+                obj = self.objclass(root)(schema=self, capnpdata=capnpdata, datadict=datadict, model=model)
             else:
-                raise j.exceptions.Base("wrong arguments to new on schema")
-
-            obj._autosave_ = None  # so we fall back on defaults of the model.autosave
+                assert model == None
+                obj = self.objclass(root)(schema=self, capnpdata=capnpdata, datadict=datadict, parent=parent)
 
             if model:
                 model._triggers_call(obj=obj, action="new")
@@ -357,6 +371,7 @@ class Schema(j.baseclasses.object):
         list of the properties which are used for indexing in sql db (sqlite)
         :return:
         """
+        # IS TOO SLOW AND WE CREATE MANY TIMES THESE OBJEXTS
         res = []
         for prop in self.properties:
             if prop.index:

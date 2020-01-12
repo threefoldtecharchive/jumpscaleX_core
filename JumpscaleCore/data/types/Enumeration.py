@@ -113,7 +113,7 @@ class Enumeration(TypeBaseObjFactory):
         o = self.clean(value)
         return o._data
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         can use int or string,
         will find it and return as string

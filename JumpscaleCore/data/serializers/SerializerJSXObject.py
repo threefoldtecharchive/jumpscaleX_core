@@ -6,7 +6,7 @@ class SerializerJSXObject(SerializerBase):
     def __init__(self):
         SerializerBase.__init__(self)
 
-    def dumps(self, obj, test=True):
+    def dumps(self, obj):
         """
         obj is the dataobj for JSX
 
@@ -38,15 +38,11 @@ class SerializerJSXObject(SerializerBase):
             + data
         )
 
-        if test:
-            u = self.loads(data=data2)
-            assert u.id == obj.id
-
         # self._log_debug("DUMPS:%s:%s" % (version, obj.id), data=obj._ddict)
 
         return data2
 
-    def loads(self, data, model=None):
+    def loads(self, data, model=None, parent=None):
         """
         j.data.serializers.jsxdata.loads(..
         :param data:
@@ -63,12 +59,12 @@ class SerializerJSXObject(SerializerBase):
             data2 = data[21:]
             schema_md5 = j.data.schema.get_from_md5(md5)
             schema = j.data.schema.get_from_url(schema_md5.url)
+            assert schema_md5.url == schema.url
             # this will get us the newest version, not the one stored
 
-            # MODEL SHOULD NEVER BE USED TO VALIDAT THE SCHEMA, ITS THE ROOT MODEL (not if subobj)
+            # MODEL SHOULD NEVER BE USED TO VALIDATE THE SCHEMA, ITS THE ROOT MODEL (not if subobj)
 
-            obj = schema.new(capnpdata=data2, schema=schema, model=model)
-            obj._autosave_ = False
+            obj = schema.new(capnpdata=data2, model=model, parent=parent)
             obj.id = obj_id
             if obj.id == 0:
                 obj.id = None
@@ -83,7 +79,7 @@ class SerializerJSXObject(SerializerBase):
                     model._triggers_call(obj, "schema_change", None)  # for the obj itself we need to force
                     model.schema_change(schema)
                     # don't add the obj, because need to do for all obj which are loaded
-            obj._autosave_ = None  # make sure default of model plays
+
             return obj
 
         else:

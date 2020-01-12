@@ -27,7 +27,7 @@ class Guid(String):
         self.BASETYPE = "string"
         self._default = default
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         if value is None or value == "":
             return self.default_get()
         if not self.check(value):
@@ -84,7 +84,7 @@ class Email(String):
             return self.clean(self._default)
         return ""
 
-    def clean(self, v):
+    def clean(self, v, parent=None):
         if isinstance(v, Email):
             return v
         if v is None or v == "None":
@@ -130,7 +130,7 @@ class Url(String):
             default = ""
         self._default = default
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         if value is None or value == "None" or value == "":
             return self._default
         if not self.check(value):
@@ -168,7 +168,7 @@ class Tel(String):
             return True
         return self._RE.fullmatch(value) is not None
 
-    def clean(self, v):
+    def clean(self, v, parent=None):
         if v is None or v == "None":
             return self.default_get()
         v = j.data.types.string.clean(v)
@@ -223,7 +223,7 @@ class IPRange(String):
         except (ValueError):
             return False
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
 
         if value is None or value == "None" or value == "":
             return self.default_get()
@@ -262,7 +262,7 @@ class IPPort(Integer):
             pass
         return False
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         if not value:
             return self.default_get()
         if not self.check(value):
@@ -557,7 +557,7 @@ class Numeric(TypeBaseObjFactory):
         else:
             return struct.pack("B", ttype) + struct.pack("B", curcat) + struct.pack("I", value)
 
-    def clean(self, data=None):
+    def clean(self, data=None, parent=None):
         if isinstance(data, NumericObject):
             return data
         if data is None or data == "None" or data == b"" or data == "":
@@ -628,7 +628,7 @@ class DateTime(Integer):
     def toHR(self, v):
         return self.toString(v)
 
-    def clean(self, v):
+    def clean(self, v, parent=None):
         """
         support following formats:
         - None, 0: means undefined date
@@ -751,7 +751,7 @@ class Date(DateTime):
         self.NOCHECK = True
         self._default = default
 
-    def clean(self, v):
+    def clean(self, v, parent=None):
         """
         support following formats:
         - 0: means undefined date
@@ -774,7 +774,7 @@ class Date(DateTime):
         if v in [0, "0", None, ""]:
             return 0
         # am sure there are better ways how to do this but goes to beginning of day
-        v2 = DateTime.clean(self, v)
+        v2 = DateTime.clean(self, v, parent=None)
         dt = datetime.fromtimestamp(v2)
         dt2 = datetime(dt.year, dt.month, dt.day, 0, 0)
         return int(dt2.strftime("%s"))
@@ -842,7 +842,7 @@ class Duration(String):
     def toHR(self, v):
         return self.toString(v)
 
-    def clean(self, v):
+    def clean(self, v, parent=None):
         """
         support following formats:
         - None, 0: means undefined date

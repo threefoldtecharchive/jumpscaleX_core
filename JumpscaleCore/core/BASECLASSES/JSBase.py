@@ -563,7 +563,9 @@ class JSBase:
                 if filter.startswith("_") and not filter.startswith("__") and name.startswith("__"):
                     # remove __ if we only ask for _
                     continue
-                if filter.endswith("*"):
+                if filter == "*":
+                    pass  # need to process
+                elif filter.endswith("*"):
                     filter2 = filter[:-1]
                     if not name.startswith(filter2):
                         continue
@@ -734,7 +736,7 @@ class JSBase:
         others = self._children_names_get(filter=filter)
         if self._hasattr("_parent"):
             pname = self._parent_name_get()  # why do we need the parent name?
-            if pname not in others:
+            if pname and pname not in others:
                 others.append(pname)
         res = [i for i in self._filter(filter=filter, llist=self._properties) if i not in others]
         return res

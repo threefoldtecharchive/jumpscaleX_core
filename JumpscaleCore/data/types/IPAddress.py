@@ -49,7 +49,7 @@ class IPAddress(String):
         except (AddressValueError, NetmaskValueError):
             return False
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         if value is None or value is "":
             return self.default_get()
         if not self.check(value):
