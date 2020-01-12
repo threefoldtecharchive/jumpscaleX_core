@@ -45,6 +45,7 @@ class JSBase:
         self._init_factory(**kwargs)
         self._init_post(**kwargs)
         self._init_post_attr()
+        self._properties_ = None
 
     def _children_reset(self):
         self._children = JSDict()

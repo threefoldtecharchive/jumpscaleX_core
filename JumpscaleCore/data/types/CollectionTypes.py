@@ -137,6 +137,14 @@ class Dictionary(MSGPACK):
 
         raise j.exceptions.Value("only support dict, JSXObject or string", data=v)
 
+    def check(self, value):
+        try:
+            cleaned = self.clean(value)
+        except Exception as e:
+            return False
+
+        return isinstance(cleaned, dict)
+
 
 class Set(TypeBaseClassSerialized):
 
