@@ -58,7 +58,7 @@ def main(self):
             schema_obj.email = "info%s@something.com" % i
             return schema_obj
 
-        redis_cl = j.clients.redis.get(ipaddr="localhost", port=6380)
+        redis_cl = j.clients.redis.get(addr="localhost", port=6380)
 
         key = f"test:data:despiegk.test2"
 

@@ -112,8 +112,8 @@ def main(self):
     assert len(m3.find(addr="test", email="ename", ipaddr="192.168.1.1")) == 1
     assert len(m3.find(addr="test", email="ename", ipaddr="192.168.1.2")) == 0
 
-    # storclient2 = j.clients.sqlitedb.client_get(namespace="test2_sdb_keys")
-    storclient2 = j.clients.rdb.client_get(namespace="test2_sdb_keys")
+    # storclient2 = j.clients.sqlitedb.client_get(bcdbname="test2_sdb_keys")
+    storclient2 = j.clients.rdb.client_get(bcdbname="test")
     storclient2.flush()
     j.data.bcdb.get(name="test2", storclient=storclient2, reset=True)
     bcdb2 = j.data.bcdb.get("test2")

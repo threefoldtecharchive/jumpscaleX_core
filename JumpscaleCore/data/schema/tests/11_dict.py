@@ -18,6 +18,7 @@ def main(self):
     o = schema_object.new()
 
     o.dd["a"] = 1
+    assert o.dd["a"] == 1
     o.dd["b"] = "a"
 
     assert o.dd == {"a": 1, "b": "a"}

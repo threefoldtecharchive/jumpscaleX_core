@@ -96,7 +96,7 @@ class DMTypeFactory(TypeBaseObjFactory):
     """
 
     def __init__(self):
-        self.BASETYPE = "integer"
+        self.BASETYPE = "int"
         self.NAME = "dmid"  # DIGITAL ME ID
 
     def default_get(self):
@@ -113,7 +113,7 @@ class DMTypeFactory(TypeBaseObjFactory):
     def toData(self, v):
         raise j.exceptions.NotImplemented()
 
-    def clean(self, v):
+    def clean(self, v, parent=None):
         if value is None:
             return self.default_get()
         raise j.exceptions.NotImplemented()

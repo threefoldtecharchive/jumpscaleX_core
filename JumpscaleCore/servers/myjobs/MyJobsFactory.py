@@ -451,7 +451,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 return job.wait(die=die, timeout=timeout)
             return self.wait_queues(queue_names=return_queues, size=len([job.id]), die=die, timeout=timeout)
 
-        assert job._data._autosave is True
         return job
 
     def stop(self, graceful=True, reset=True, timeout=60, hard=True):
@@ -622,7 +621,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         # make sure client for myjobs properly configured
 
         j.core.db.redisconfig_name = "core"
-        storclient = j.clients.rdb.client_get(redisclient=j.core.db)
+        storclient = j.clients.rdb.client_get(bcdbname="myjobs")
         myjobs_bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
         bcdb = j.data.bcdb.system
         adminsecret_ = j.data.hash.md5_string(j.core.myenv.adminsecret)

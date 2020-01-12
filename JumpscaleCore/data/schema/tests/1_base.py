@@ -57,6 +57,7 @@ def main(self):
     assert o.description2 == ""
 
     assert o.llist3 == [1.0, 2.0, 3.0]
+    assert o.llist3._changed
 
     o.llist2.append("yes")
     o.llist2.append("no")
@@ -170,29 +171,42 @@ def main(self):
     schema4 = """
     @url = despiegk.doubletest
     name = ""
-    llist = []
+    llist = [] (LS)
     """
     s0 = j.data.schema.get_from_text(schema4)
     assert s0.properties[-1].name == "llist"
     s_temp = j.data.schema.get_from_url(url="despiegk.doubletest")
     assert s_temp.properties[-1].name == "llist"
 
-    schema4prime = """
+    o = s0.new()
+    o.name = "something"
+    o.llist = ["1", "2", "3", "4"]
+
+    bindata = o._data
+    o2 = s0.new(serializeddata=bindata)
+    assert o == o2
+
+    schema4b = """
     @url = despiegk.doubletest
     name = ""
     llist = ""
     """
+    s1 = j.data.schema.get_from_text(schema4b)
 
-    s1 = j.data.schema.get_from_text(schema4prime)
-    s0._md5 == "faaed00fc2b02f1c2a30d6996a6d7955"
-    s1._md5 == "d6a17249355a08b58ad8ccbfaa8511f6"
+    s0._md5 == "770dab0bfe7fea553ee34b8807e1a058"
+    s1._md5 == "c1f4e7b41754bcbea25301b2c3d1113e"
     a_old = j.data.schema.get(md5=s0._md5)
     a_new = j.data.schema.get(md5=s1._md5)
+
+    assert str(a_old) != str(a_new)
+    assert a_old._md5 != a_new._md5
+
     b = j.data.schema.get(url="despiegk.doubletest")
-    assert a_new == b
     assert a_new._md5 == b._md5
-    assert a_old != b
-    assert a_old._md5 != b._md5
+    assert str(a_old) != str(b)
+
+    assert a_new == b
+    assert a_new._md5 == s1._md5
 
     assert s0.properties[-1].jumpscaletype.NAME == "list"
     assert s1.properties[-1].jumpscaletype.NAME == "string"
@@ -211,10 +225,8 @@ def main(self):
     # do again, just to see reproduceable
     s3 = j.data.schema.get_from_text(schema4)
     assert s3.properties[-1].jumpscaletype.NAME == "list"
-    s5 = j.data.schema.get_from_text(schema4prime)
+    s5 = j.data.schema.get_from_text(schema4b)
     assert s5.properties[-1].jumpscaletype.NAME == "string"
-
-    # j.shell()
 
     self._log_info("TEST DONE BASE")
 

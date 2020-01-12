@@ -9,8 +9,6 @@ class ThreeBotPackageBaseAuthor(JSBase):
         self._package = kwargs["package"]
         self.package_root = self._package.path
 
-        self.bcdb = self._package.bcdb
-
         if hasattr(j.threebot, "servers"):
             self.gedis_server = j.threebot.servers.gedis
             self.gevent_rack = j.threebot.servers.gevent_rack
@@ -20,6 +18,10 @@ class ThreeBotPackageBaseAuthor(JSBase):
         self.actors_namespace = self._package.actor.namespace
 
     ###DO NOT DO ANYTHING IN THE BASECLASSES BELOW PLEASE
+
+    @property
+    def bcdb(self):
+        return self._package.bcdb
 
     def prepare(self):
         """

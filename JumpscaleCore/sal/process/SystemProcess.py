@@ -809,8 +809,8 @@ class SystemProcess(JSBASE):
             try:
                 cc = [x for x in process.connections() if x.status == psutil.CONN_LISTEN]
             except Exception as e:
-                if str(e).find("psutil.AccessDenied") == -1:
-                    raise j.exceptions.RuntimeError(str(e))
+                # if str(e).find("psutil.AccessDenied") == -1:
+                # raise j.exceptions.RuntimeError(str(e))
                 continue
             if cc != []:
                 for conn in cc:

@@ -46,8 +46,8 @@ class JSXObjectTypeFactory(TypeBaseObjFactory):
         """
         return self.clean(val)
 
-    def toData(self, val, model=None):
-        val2 = self.clean(val, model=model)
+    def toData(self, val, parent=None):
+        val2 = self.clean(val, parent=parent)
         return j.data.serializers.jsxdata.dumps(val2)
 
     def toString(self, val):
@@ -63,33 +63,25 @@ class JSXObjectTypeFactory(TypeBaseObjFactory):
         return isinstance(value, j.data.schema._JSXObjectClass)
 
     def default_get(self, model=None):
-        if model:
-            bcdb = model._bcdb
-        else:
-            bcdb = None
-        return self._schema.new(bcdb=bcdb)
+        return self._schema.new(model=model)
 
-    def clean(self, value, model=None):
+    def clean(self, value, model=None, parent=None):
         """
 
         :param value: is the object which needs to be converted to a data object
         :param model: when model specified (BCDB model) can be stored in BCDB
         :return:
         """
-        if model:
-            bcdb = model.bcdb
-        else:
-            bcdb = None
         if isinstance(value, j.data.schema._JSXObjectClass):
             return value
         elif not value:
-            return self._schema.new(bcdb=bcdb)
+            return self._schema.new(model=model, parent=parent)
         elif isinstance(value, bytes):
-            obj = j.data.serializers.jsxdata.loads(value, bcdb=bcdb)
+            obj = j.data.serializers.jsxdata.loads(value, parent=parent)
             # when bytes the version of the jsxobj & the schema is embedded in the bin data
             return obj
         elif isinstance(value, dict):
-            return self._schema.new(datadict=value, bcdb=bcdb)
+            return self._schema.new(datadict=value, model=model, parent=parent)
         elif isinstance(value, j.baseclasses.object_config):
             return value._data
         else:

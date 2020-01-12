@@ -39,7 +39,7 @@ class BCDB(j.baseclasses.object):
 
         self._init_props_()
 
-        self._redis_index = j.clients.redis.core
+        # self._redis_index = j.clients.redis.core
         self._data_dir = j.sal.fs.joinPaths(j.dirs.VARDIR, "bcdb", self.name)
 
         # self._lock_file = "%s/lock" % self._data_dir
@@ -64,14 +64,18 @@ class BCDB(j.baseclasses.object):
         j.data.nacl.default
         self.dataprocessor_start()
 
-        for url in self._urls:
-            self.model_get(url=url, die=False)
-
         self.check()
 
         # dataprocessor_stop
         atexit.register(self.stop)
         self._log_info("BCDB INIT DONE:%s" % self.name)
+
+    @property
+    def models(self):
+        for url in self._urls:
+            if url not in self._models:
+                self.model_get(url=url, die=False)
+        return self._models
 
     def _is_writable_check(self):
         return not self.readonly
@@ -85,7 +89,7 @@ class BCDB(j.baseclasses.object):
         """
         make sure the bcdb is initialized with default values & all is stopped
         """
-        for model in self.models.values():
+        for model in self._models.values():
             # lets make sure the triggers are fired
             model.stop()
 
@@ -116,7 +120,7 @@ class BCDB(j.baseclasses.object):
         self.user = None
         self.circle = None
 
-        self.models = j.baseclasses.dict(name="BCDBMODELS")  # is model based on url as key
+        self._models = j.baseclasses.dict(name="BCDBMODELS")  # is model based on url as key
 
     def _init_system_objects(self):
 
@@ -150,9 +154,6 @@ class BCDB(j.baseclasses.object):
 
         if self.readonly:
             return
-
-        if not self._urls:
-            self.index_rebuild()
 
         # def index_ok():
         #     for m in self.models:
@@ -265,7 +266,7 @@ class BCDB(j.baseclasses.object):
 
         for url_path in paths:
             # load all schemas first to make sure all models schemas are loaded when refrenced by parent schemas
-            print(f"processing {url_path}")
+            print(f"processing schema {url_path}")
             schema_text = j.sal.fs.readFile("%s/_schema.toml" % url_path)
             url = j.sal.fs.getBaseName(url_path)
             schema = j.data.schema.get_from_text(schema_text, url=url)
@@ -282,22 +283,35 @@ class BCDB(j.baseclasses.object):
                 print(f"item {item}")
                 if item.endswith("_schema.toml"):
                     continue
+                if item.endswith("schema_hist.toml"):
+                    continue
                 print(f"processing item: {item}")
                 ext = j.sal.fs.getFileExtension(item)
-                if ext == "data":
+                if ext == "data" or ext == "datae":
                     self._log("encr:%s" % item)
                     data2 = j.sal.fs.readFile(item, binary=True)
-                    data_bin = j.data.nacl.default.decryptSymmetric(data2)
-                    obj = j.data.serializers.jsxdata.loads(data_bin)
-                    print(f"data decrypted {data}")
+                    if ext == "datae":
+                        data2 = j.data.nacl.default.decryptSymmetric(data2)
+                    obj = j.data.serializers.jsxdata.loads(data2)
+                    # print(f"data decrypted {data}")
                     data[obj.id] = (url, obj._ddict)
-                elif ext in ["toml", "yaml"]:
+                elif ext in ["toml", "yaml"] or ext in ["tomle", "yamle"]:
                     if ext == "toml":
                         self._log("toml:%s" % item)
                         datadict = j.data.serializers.toml.load(item)
-                    if ext == "yaml":
+                    elif ext == "yaml":
                         self._log("yaml:%s" % item)
                         datadict = j.data.serializers.yaml.load(item)
+                    elif ext == "tomle":
+                        self._log("toml:%s" % item)
+                        data = j.sal.fs.readFile(item)
+                        data = j.data.nacl.default.decryptSymmetric(data)
+                        datadict = j.data.serializers.toml.loads(data)
+                    elif ext == "yamle":
+                        self._log("yaml:%s" % item)
+                        data = j.sal.fs.readFile(item)
+                        data = j.data.nacl.default.decryptSymmetric(data)
+                        datadict = j.data.serializers.yaml.loads(data)
 
                     data[datadict["id"]] = (url, datadict)
                 else:
@@ -314,7 +328,7 @@ class BCDB(j.baseclasses.object):
 
         # have to import it in the exact same order
         for i in range(1, max_id + 1):
-            print(f"i: {i}")
+            # print(f"i: {i}")
             if i not in data:
                 if i < next_id:
                     continue
@@ -557,11 +571,11 @@ class BCDB(j.baseclasses.object):
             if schema._md5 != self.models[schema.url].schema._md5:
                 # this means we found model in mem but schema changed in mean time
                 # need to use the new one now
-                self.models[schema.url].schema = schema
+                self._models[schema.url].schema = schema
                 if triggers:
-                    self.models[schema.url].schema_change(schema)
+                    self._models[schema.url].schema_change(schema)
                     # don't add the obj, because need to do for all obj
-            return self.models[schema.url]
+            return self._models[schema.url]
 
         # model not known yet need to create
         self._log_info("load model:%s" % schema.url)
@@ -595,7 +609,7 @@ class BCDB(j.baseclasses.object):
                 # j.data.schema.models_in_use = True
                 self._log_debug("model get from schema:%s, original was text." % schema.url)
             else:
-                self._log_debug("model get from schema:%s" % schema.url)
+                # self._log_debug("model get from schema:%s" % schema.url)
                 if not isinstance(schema, j.data.schema.SCHEMA_CLASS):
                     raise j.exceptions.Base("schema needs to be of type: j.data.schema.SCHEMA_CLASS")
         else:
@@ -633,11 +647,12 @@ class BCDB(j.baseclasses.object):
             j.shell()
 
         self._schema_property_add_if_needed(model.schema)
-        self.models[model.schema.url] = model
+
+        self._models[model.schema.url] = model
 
         self._url_set(model.schema.url)
 
-        return self.models[model.schema.url]
+        return self._models[model.schema.url]
 
     def _schema_property_add_if_needed(self, schema, done=[]):
         """
@@ -788,7 +803,8 @@ class BCDB(j.baseclasses.object):
         if return_as_capnp:
             return bdata
         else:
-            obj = j.data.serializers.jsxdata.loads(bdata, bcdb=self, schema=schema)
+            model = self.model_get(schema=schema)
+            obj = j.data.serializers.jsxdata.loads(bdata, model=model)
             if schema:
                 assert obj._schema == schema
             obj.nid = nid

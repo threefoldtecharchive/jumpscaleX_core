@@ -35,14 +35,6 @@ class JSConfigBCDB(JSConfigBCDBBase):
             # assert id(j.data.bcdb.children.system.models[self._model.schema.url]) == id(self._model)
 
     @property
-    def _autosave(self):
-        return self._data._autosave
-
-    @_autosave.setter
-    def _autosave(self, val):
-        self._data._autosave = val
-
-    @property
     def name(self):
         return self._data.name
 
@@ -89,7 +81,6 @@ class JSConfigBCDB(JSConfigBCDBBase):
         if len(jsxobjects) == 0:
             raise j.exceptions.JSBUG("cannot find obj:%s for reload" % self.name)
         self._data = jsxobjects[0]
-        self._data._autosave = True
         return self
 
     def _delete(self):
@@ -100,7 +91,6 @@ class JSConfigBCDB(JSConfigBCDBBase):
                 if not isinstance(self._parent, j.baseclasses.factory):
                     # if factory then cannot delete from the mother because its the only object
                     del self._parent._children[self._data.name]
-
         self._children_delete()
 
     def save(self):

@@ -8,30 +8,24 @@ JSBASE = j.baseclasses.object
 # but for now prob ok, especially when used in read mode e.g. in myworker
 
 
-class RDBClient(j.baseclasses.object_config):
-
-    _SCHEMATEXT = """
-    @url = jumpscale.rdb.client
-    name** = "" (S)
-    nsname = "" (S)
-    type = "RDB" (S)
-    """
-
-    def _init(self, **kwargs):
+class RDBClient(j.baseclasses.object):
+    def _init(self, bcdbname, addr="localhost", port=6379, secret=None):
         """
         is connection to RDB
         """
-        if "redisclient" in kwargs:
-            self._redis = kwargs["redisclient"]
-        else:
-            self._redis = j.clients.redis.get()
-        self.type = self.type
-        self.nsname = self.nsname
+        self.bcdbname = bcdbname
+        assert bcdbname
+        self.addr = addr
+        self.port = port
+        self.secret = secret
+        self._redis = j.clients.redis.get(addr=self.addr, port=self.port, secret=self.secret)
+
         self._logger_enable()
-        self._hsetkey = "rdb:%s" % self.nsname
-        self._incrkey = "rdbmeta:incr:%s" % self.nsname
-        self._keysbinkey = "rdbmeta:keys:%s" % self.nsname
-        self.cat = None
+        self._hsetkey = "rdb:%s" % self.bcdbname
+        self._incrkey = "rdbmeta:incr:%s" % self.bcdbname
+        self._keysbinkey = "rdbmeta:keys:%s" % self.bcdbname
+
+        self.type = "RDB"
 
         assert self.ping()
 
@@ -101,11 +95,11 @@ class RDBClient(j.baseclasses.object_config):
 
     def list(self, key_start=None, reverse=False):
         """
-        list all the keys in the namespace
+        list all the keys in the bcdbname
 
         :param key_start: if specified start to walk from that key instead of the first one, defaults to None
         :param key_start: str, optional
-        :param reverse: decide how to walk the namespace
+        :param reverse: decide how to walk the bcdbname
                         if False, walk from older to newer keys
                         if True walk from newer to older keys
                         defaults to False
@@ -120,11 +114,11 @@ class RDBClient(j.baseclasses.object_config):
 
     def iterate(self, key_start=None, reverse=False, keyonly=False):
         """
-        walk over all the namespace and yield (key,data) for each entries in a namespace
+        walk over all the bcdbname and yield (key,data) for each entries in a bcdbname
 
         :param key_start: if specified start to walk from that key instead of the first one, defaults to None
         :param key_start: str, optional
-        :param reverse: decide how to walk the namespace
+        :param reverse: decide how to walk the bcdbname
                 if False, walk from older to newer keys
                 if True walk from newer to older keys
                 defaults to False
@@ -169,7 +163,7 @@ class RDBClient(j.baseclasses.object_config):
     @property
     def count(self):
         """
-        :return: return the number of entries in the namespace
+        :return: return the number of entries in the bcdbname
         :rtype: int
         """
         return self._redis.hlen(self._hsetkey)
