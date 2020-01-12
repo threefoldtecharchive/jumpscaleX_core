@@ -176,7 +176,7 @@ class GedisClient(JSConfigBase):
             secret = self.password_
 
             self._log_info("redisclient: %s:%s " % (addr, port))
-            self._redis_ = j.clients.redis.get(addr=addr, port=port, password=secret, ping=True, fromcache=False)
+            self._redis_ = j.clients.redis.get(addr=addr, port=port, secret=secret, ping=True, fromcache=False)
 
             # authenticate us
             seed = j.data.idgenerator.generateGUID()  # any seed works, the more random the more secure
