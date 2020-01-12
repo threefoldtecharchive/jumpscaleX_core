@@ -779,27 +779,32 @@ class JSBase:
 
         def add(name, color, items, out):
             # self._log_debug(items)
+            add_dots_in_the_end = False
+            showable_items_length = 20
             if len(items) > 0:
                 out += "{%s}### %s:\n" % (color, name)
-                if len(items) < 20:
-                    for item in items:
-                        self._log_debug(item)
-                        item = item.rstrip()
-                        if name in ["data", "properties"]:
-                            try:
-                                v = j.core._data_serializer_safe(getattr(self, item)).rstrip()
-                                if "\n" in v:
-                                    # v = j.core.tools.text_indent(content=v, nspaces=4)
-                                    v = "\n".join(v.split("\n")[:1])
-                                    out += " - %-20s : {GRAY}%s{%s}\n" % (item, v, color)
-                                else:
-                                    out += " - %-20s : {GRAY}%s{%s}\n" % (item, v, color)
+                if len(items) > showable_items_length:
+                    add_dots_in_the_end = True
+                for i, item in enumerate(items):
+                    if i > showable_items_length:
+                        break
+                    self._log_debug(item)
+                    item = item.rstrip()
+                    if name in ["data", "properties"]:
+                        try:
+                            v = j.core._data_serializer_safe(getattr(self, item)).rstrip()
+                            if "\n" in v:
+                                # v = j.core.tools.text_indent(content=v, nspaces=4)
+                                v = "\n".join(v.split("\n")[:1])
+                                out += " - %-20s : {GRAY}%s{%s}\n" % (item, v, color)
+                            else:
+                                out += " - %-20s : {GRAY}%s{%s}\n" % (item, v, color)
 
-                            except Exception as e:
-                                out += " - %-20s : {GRAY}ERROR ATTRIBUTE{%s}\n" % (item, color)
-                        else:
-                            out += " - %s\n" % item
-                else:
+                        except Exception as e:
+                            out += " - %-20s : {GRAY}ERROR ATTRIBUTE{%s}\n" % (item, color)
+                    else:
+                        out += " - %s\n" % item
+                if add_dots_in_the_end:
                     out += " - ...\n"
             out += "\n"
             return out
