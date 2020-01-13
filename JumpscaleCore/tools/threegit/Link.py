@@ -355,14 +355,16 @@ class Link(j.baseclasses.object):
 
         if not self.link_source.lower().strip().startswith("http"):
             custom_link = MarkdownLinkParser(self.link_source)
-            self.link_source = self.docsite.get_real_link(custom_link, custom_link.host)
+            try:
+                self.link_source = self.docsite.get_real_link(custom_link, custom_link.host)
+            except ValueError as e:
+                self.doc.error_raise(f"cannot get a real link of {self.link_source}\n{e}")
+        # if "?" in self.link_source:
+        #     lsource = self.link_source.split("?", 1)[0]
+        # else:
+        #     lsource = self.link_source
 
-        if "?" in self.link_source:
-            lsource = self.link_source.split("?", 1)[0]
-        else:
-            lsource = self.link_source
-
-        self.extension = j.sal.fs.getFileExtension(lsource)
+        self.extension = j.sal.fs.getFileExtension(self.link_source)
 
         if "http" in self.link_source or "https" in self.link_source:
             self.link_source_original = self.link_source

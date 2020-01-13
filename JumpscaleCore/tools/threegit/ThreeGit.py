@@ -10,7 +10,7 @@ def load_wiki(wiki_name=None, wiki_path=None, reset=False):
     we cannot use name parameter with myjobs.schedule, it has a name parameter itself
     """
     # use default path_dest
-    threegit = j.tools.threegit.get(name=wiki_name, path_sourc_wiki=wiki_path, path_dest="")
+    threegit = j.tools.threegit.get_from_url(wiki_name, url=wiki_path)
     threegit.process(reset=reset)
     threegit.save()
 
@@ -23,9 +23,12 @@ class ThreeGit(j.baseclasses.object_config):
     _SCHEMATEXT = """
         @url = jumpscale.tools.threegit.1
         name** = "" (S)
-        path_source = "" (S)
-        path_source_wiki = ""
-        path_dest_wiki = "" (S)
+
+        local_path = "" (S)
+        # relative_base_path is the wiki directory inside local_path
+        # if empty, then the local_path itself is the wiki directory
+        relative_base_path = "" (S)
+        dest_path = "" (S)
         """
 
     def _init(self, **kwargs):
@@ -36,37 +39,34 @@ class ThreeGit(j.baseclasses.object_config):
         self._docsite = None
         self._wiki_macros = None
         self._gitclient = None
-        if not self.path_source and self.path_source_wiki:
-            self.path_source = j.sal.fs.getParent(self.path_source_wiki)
-        if not self.path_source_wiki:
-            path = "%s/wiki" % (self.path_source)
-            if j.sal.fs.exists(path):
-                self.path_source_wiki = path
+
+    @property
+    def source_path(self):
+        return j.sal.fs.joinPaths(self.local_path, self.relative_base_path)
 
     @property
     def git_client(self):
         if not self._gitclient:
-            path = j.clients.git.findGitPath(self.path_source, die=True)
+            path = j.clients.git.findGitPath(self.local_path, die=True)
             self._gitclient = j.clients.git.get(path)
         return self._gitclient
 
     @property
     def docsite(self):
         if self._docsite == None:
-            if self.path_source_wiki:
-                self._docsite = DocSite(
-                    path=self.path_source_wiki,
-                    name=self.name,
-                    dest=self.path_dest_wiki,
-                    threegit=self,
-                    sonic_client=j.tools.threegit.sonic_client,
-                )
+            self._docsite = DocSite(
+                path=self.source_path,
+                name=self.name,
+                dest=self.dest_path,
+                threegit=self,
+                sonic_client=j.tools.threegit.sonic_client,
+            )
         return self._docsite
 
     @property
     def wiki_macros(self):
         if self._wiki_macros == None:
-            self._wiki_macros = j.tools.threegit._macros_load(self.path_source + "/wiki_macros")
+            self._wiki_macros = j.tools.threegit._macros_load(self.source_path + "/wiki_macros")
         return self._wiki_macros
 
     def process(self, reset=False):

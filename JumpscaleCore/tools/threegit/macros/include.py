@@ -189,7 +189,7 @@ def get_content(custom_link, doc, docsite_name=None, host=None, raw=False):
             new_link = Linker.to_custom_link(repo, host)
             # to match any path, start with root `/`
             url = Linker(host, new_link.account, new_link.repo).tree("/")
-            docsite = j.tools.markdowndocs.load(url, name=new_link.repo, base_path="")
+            docsite = j.tools.threegit.get_from_url(new_link.repo, url, base_path="").docsite
             custom_link.path = new_link.path
 
     try:

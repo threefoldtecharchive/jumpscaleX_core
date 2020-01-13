@@ -30,8 +30,6 @@ class DocSite(j.baseclasses.object):
         if not self.name:
             raise j.exceptions.Base("name cannot be empty")
 
-        self.defs = {}
-        self.htmlpages = {}
         self.content_default = {}  # key is relative path in docsite where default content found
 
         # need to empty again, because was used in config
@@ -45,7 +43,7 @@ class DocSite(j.baseclasses.object):
 
         self.links_verify = False
 
-        self.outpath = dest or j.sal.fs.joinPaths(j.tools.threegit.docsites_path, self.name)
+        self.outpath = dest or j.tools.threegit.get_docsite_path(self.name)
         j.sal.fs.createDir(self.outpath)
 
         self.error_file_path = f"{self.outpath}/errors.md"
@@ -166,12 +164,10 @@ class DocSite(j.baseclasses.object):
             new_link = Linker.to_custom_link(repo, host)
             # to match any path, start with root `/`
             url = Linker(host, new_link.account, new_link.repo).tree("/")
-            j.shell()
-            docsite = self.threegit.load(url, name=new_link.repo, base_path="")
+            docsite = j.tools.threegit.get_from_url(new_link.repo, url, base_path="").docsite
             custom_link = new_link
 
         docsite.load(reset=True)
-        # docsite.write()
 
         try:
             included_doc = docsite.doc_get(custom_link.path)
@@ -190,13 +186,10 @@ class DocSite(j.baseclasses.object):
 
     @property
     def docs(self):
-        if self._docs == {}:
-            self.load()
         return self._docs
 
     @property
     def files(self):
-        self.load()
         return self._files
 
     def _processData(self, path):
@@ -260,6 +253,8 @@ class DocSite(j.baseclasses.object):
 
         def callbackForMatchFile(path, arg):
             base = j.sal.fs.getBaseName(path).lower()
+            if base == "errors.md":
+                return False
             if base == "_sidebar.md":
                 return True
             if base.startswith("_"):
@@ -291,12 +286,6 @@ class DocSite(j.baseclasses.object):
                 base = base[:-3]  # remove extension
                 doc = Doc(path, base, docsite=self, sonic_client=self.sonic_client)
                 self._docs[doc.name_dot_lower] = doc
-            elif ext in ["html", "htm"]:
-                self._log_debug("found html:%s" % path)
-                l = len(ext) + 1
-                base = base[:-l]  # remove extension
-                doc = Doc(path, base, docsite=self, sonic_client=self.sonic_client)
-                self.htmlpages[doc.name_dot_lower] = doc
             else:
                 self.file_add(path)
 
@@ -307,7 +296,7 @@ class DocSite(j.baseclasses.object):
                 path=self.path, from_revision=self.revision, untracked=True
             )
         else:
-            self._files_changed = j.sal.fs.listFilesInDir(self.path)
+            self._files_changed = j.sal.fs.listFilesInDir(self.path, recursive=True)
             revision = self.threegit.git_client.config_3git_get("revision_last_processed_docsite")
             old_files = None
 
@@ -379,7 +368,6 @@ class DocSite(j.baseclasses.object):
         """
         returns path to the file
         """
-        self.load()
         name = self._clean(name)
 
         if name in self.files:
@@ -650,9 +638,8 @@ class DocSite(j.baseclasses.object):
     __str__ = __repr__
 
     def write_metadata(self):
-        return
         # Create file with extra content to be loaded in docsites
-        data = {"name": self.name, "repo": "", "base_path": self.base_path}
+        data = {"name": self.name, "repo": "", "base_path": self.threegit.relative_base_path}
 
         if self.git:
             data["repo"] = "https://github.com/%s/%s" % (self.account, self.repo)
@@ -675,7 +662,6 @@ class DocSite(j.baseclasses.object):
             j.sal.fs.remove(self.outpath)
 
         self.load(reset=reset)
-
         # self.verify(url_check=url_check)
 
         j.sal.fs.createDir(self.outpath)

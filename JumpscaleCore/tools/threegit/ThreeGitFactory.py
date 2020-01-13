@@ -13,7 +13,7 @@ class ThreeGitFactory(j.baseclasses.object_config_collection):
     _CHILDCLASS = ThreeGit
 
     def _init(self):
-        self._docsites_path = j.sal.fs.joinPaths(j.dirs.VARDIR, "docsites")
+        self.docsites_path = j.sal.fs.joinPaths(j.dirs.VARDIR, "docsites")
         self._sonic = None
         self._wiki_macros = None
 
@@ -26,34 +26,6 @@ class ThreeGitFactory(j.baseclasses.object_config_collection):
             )
         return self._sonic
 
-    def docsite_get(self, path="", name="", pull=False):
-        """
-        loads docsite and process it with macros
-        path: source of docsite
-        name: name of docsite/wiki
-        base_path: docsite/wiki dir inside the repo which has the md files will be joined with repo path
-        pull: pull the docsite repo
-        """
-        if self.exists(name=name):
-            return self.get(name=name).docsite
-
-        if path.startswith("http"):
-            # check if we already have a git repo, then the current checked-out branch
-            repo_args = j.clients.git.getGitRepoArgs(path)
-            host = repo_args[0]
-            git_dest = repo_args[-3]
-            repo_dest = j.clients.git.findGitPath(git_dest, die=False)
-            if repo_dest:
-                # replace branch with current one
-                current_branch = j.clients.git.getCurrentBranch(repo_dest)
-                path = Linker.replace_branch(path, current_branch, host)
-        path = j.clients.git.getContentPathFromURLorPath(path, pull=pull)
-
-        j.shell()
-        tgit = self.get(name=name, path_source_wiki=path)
-
-        return tgit.docsite
-
     @property
     def wiki_macros(self):
         if not self._wiki_macros:
@@ -61,7 +33,6 @@ class ThreeGitFactory(j.baseclasses.object_config_collection):
         return self._wiki_macros
 
     def _macros_load(self, path=None):
-
         if not path:
             path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), "macros")
 
@@ -78,8 +49,56 @@ class ThreeGitFactory(j.baseclasses.object_config_collection):
 
         return macros
 
+    def find_git_path(self, path):
+        return j.clients.git.findGitPath(path, die=False)
+
+    def get_base_path(self, path):
+        repo_local_path = self.find_git_path(path)
+        base_path = path[len(repo_local_path) + 1 :]
+        return repo_local_path, base_path
+
     def get_docsite_path(self, name):
         return j.sal.fs.joinPaths(self.docsites_path, name)
+
+    def get_from_path(self, name, path):
+        instance = self.get(name)
+        repo_local_path, base_path = self.get_base_path(path)
+        instance.local_path = repo_local_path
+        instance.relative_base_path = base_path
+        return instance
+
+    def get_from_url(self, name, url, base_path="docs", pull=False):
+        """gets an instance from a url, examples:
+        https://github.com/threefoldtech/jumpscaleX_core
+        https://github.com/threefoldtech/jumpscaleX_core/tree/development/sub_dir/wiki
+
+        :param name: name of the instance
+        :type name: str
+        :param url: url
+        :type url: str
+        :param base_path: a relative base_path to this url, defaults to "docs"
+        :type base_path: str, optional
+        :param pull: if set, will clone/pull the repo, defaults to False
+        :type pull: bool, optional
+        :return: a threegit instance
+        :rtype: ThreeGit
+        """
+        # first check if we have a local clone, then get the current checked-out branch
+        # if not given in the url
+        repo_args = j.clients.git.getGitRepoArgs(url)
+        path = repo_args[-3]
+        repo_local_path = self.find_git_path(path)
+        # replace branch with current one
+        current_branch = j.clients.git.getCurrentBranch(repo_local_path)
+        url = Linker.replace_branch(url, current_branch, host=repo_args[0])
+
+        # now get an instance
+        path = j.clients.git.getContentPathFromURLorPath(url, pull=pull)
+        instance = self.get_from_path(name, path)
+        if not instance.relative_base_path:
+            instance.relative_base_path = j.sal.fs.joinPaths(instance.relative_base_path, base_path)
+
+        return instance
 
     def test(self):
         """
@@ -88,8 +107,8 @@ class ThreeGitFactory(j.baseclasses.object_config_collection):
         """
         test_wiki = j.tools.threegit.get(
             name="test_wiki",
-            path_source_wiki="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/docs/wikis/examples/docs/",
-            path_dest_wiki="/tmp/test/test2",
+            local_path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/docs/wikis/examples/docs/",
+            dest_path="/tmp/test/test2",
         )
         test_wiki.process(reset=True)
         assert j.sal.fs.exists("/tmp/test/test2")

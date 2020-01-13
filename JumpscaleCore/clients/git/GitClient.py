@@ -185,8 +185,8 @@ class GitClient(j.baseclasses.object):
         False otherwise
         """
         if not path:
-            path = self.p
-        cmd = "cd %s;git status --porcelain" % self.path
+            path = self.path
+        cmd = "cd %s;git status --porcelain" % path
         rc, out, err = j.tools.executor.local.execute(cmd, die=False)
         for item in out.split("\n"):
             item = item.strip()
@@ -316,7 +316,6 @@ class GitClient(j.baseclasses.object):
         :param collapse: (Boolean) if True, returns all files in one list
         :param ignore: (List) files to ignore
         """
-
         if not path:
             path = self.path
         if not path.startswith("/"):
@@ -327,6 +326,7 @@ class GitClient(j.baseclasses.object):
         result = {}
         result["D"] = []  # Deleted
         result["N"] = []  # New
+        result["A"] = []  # Added
         result["M"] = []  # Modified
         result["R"] = []  # Renamed
 
@@ -348,11 +348,12 @@ class GitClient(j.baseclasses.object):
                 if checkignore(ignore, _file):
                     continue
                 result["N"].append(_file)
-            if state in ["D", "N", "R", "M"]:
+            # handle other states
+            if state in ["D", "N", "R", "M", "A", "AD", "AA", "DD"]:
                 if checkignore(ignore, _file):
                     continue
-                if _file not in result[state]:
-                    result[state].append(_file)
+                if _file not in result[state[-1]]:
+                    result[state[-1]].append(_file)
 
         # IS DUPLICATION WITH ABOVE
         # # Organize files in lists
