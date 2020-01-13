@@ -35,6 +35,10 @@ class JSConfigBCDB(JSConfigBCDBBase):
             # assert id(j.data.bcdb.children.system.models[self._model.schema.url]) == id(self._model)
 
     @property
+    def _autosave(self):
+        return self._data._autosave
+
+    @property
     def name(self):
         return self._data.name
 

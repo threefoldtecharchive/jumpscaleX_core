@@ -18,15 +18,15 @@ class RDBClient(j.baseclasses.object):
         self.addr = addr
         self.port = port
         self.secret = secret
-        self._redis = j.clients.redis.get(addr=self.addr, port=self.port, secret=self.secret)
-
         self._logger_enable()
+        self.type = "RDB"
+        self._connect()
+
+    def _connect(self):
+        self._redis = j.clients.redis.get(addr=self.addr, port=self.port, secret=self.secret)
         self._hsetkey = "rdb:%s" % self.bcdbname
         self._incrkey = "rdbmeta:incr:%s" % self.bcdbname
         self._keysbinkey = "rdbmeta:keys:%s" % self.bcdbname
-
-        self.type = "RDB"
-
         assert self.ping()
 
     def _incr(self):

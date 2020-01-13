@@ -26,10 +26,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         jsconfig = self._create(name=name, jsxobject=jsxobject, **kwargs)
         self._check(jsconfig)
 
-        jsconfig._autosave = autosave
-
-        if jsconfig._autosave:
-            jsconfig.save()
+        self._autosave_deal(jsconfig, autosave, True)
 
         return jsconfig
 
@@ -100,7 +97,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         return self._children[name]
 
-    def get(self, name="main", id=None, needexist=False, reload=False, autosave=None, **kwargs):
+    def get(self, name="main", id=None, needexist=False, reload=False, autosave=True, **kwargs):
         """
         :param name: of the object
         """
@@ -121,7 +118,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             if not jsconfig._data._model.schema._md5 == jsconfig._model.schema._md5:
                 # means data came from DB and schema is not same as config mgmt class
                 # j.shell()
-                j.debug()
+                # j.debug()
                 raise j.exceptions.Input(
                     "models should be same", data=(jsconfig._data._model.schema.text, jsconfig._model.schema.text)
                 )
@@ -138,14 +135,17 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                         changed = True
                         setattr(jsconfig, key, val)
 
-        jsconfig._autosave = autosave
-        if changed and jsconfig._autosave:
-            jsconfig.save()
+        self._autosave_deal(jsconfig, autosave, changed)
 
         # lets do some tests (maybe in future can be removed, but for now the safe bet)
         self._check(jsconfig)
 
         return jsconfig
+
+    def _autosave_deal(self, jsconfig, autosave, changed=True):
+        jsconfig._data._autosave = autosave
+        if changed and jsconfig._data._autosave:
+            jsconfig._data.save()
 
     def _get(self, name="main", id=None, die=True, reload=False):
         """

@@ -12,11 +12,15 @@ class TypeBaseObjClass:
     def __init__(self, typebase, value=None):
 
         self._typebase = typebase  # is the factory for this object
-        self._changed = False
+        self.__changed = False
         if value is None:
             self._data = 0
         else:
             self._data = self._data_from_init_val(value)
+
+    @property
+    def _changed(self):
+        return self.__changed
 
     def _data_from_init_val(self, value):
         """
@@ -52,7 +56,7 @@ class TypeBaseObjClass:
         d = self._typebase.toData(val)
         if self._data != d:
             self._data = d
-            self._changed = True
+            self.__changed = True
 
     def __str__(self):
         if self._data:

@@ -499,6 +499,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
     def reset_data(self):
         self.wait_queues_delete()
+        bcdb = self._bcdb_selector()
+        # bcdb.destroy()  # no need to walk over the records
         self.model_action.reset()
         self.jobs.reset()
         self.workers.reset()

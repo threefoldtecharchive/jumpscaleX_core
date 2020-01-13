@@ -478,10 +478,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         if ttype not in ["zdb", "sqlite", "redis"]:
             raise j.exceptions.Input("ttype can only be zdb or sqlite")
-        assert namespace
         assert name
-        zdb = self._core_zdb  # has been started in threebot_zdb_sonic_start
         if ttype == "zdb":
+            zdb = self._core_zdb  # has been started in threebot_zdb_sonic_start
+            assert namespace
             adminsecret_ = j.data.hash.md5_string(j.core.myenv.adminsecret)
             self._log_debug("get zdb admin client")
             zdb_admin = zdb.client_admin_get()

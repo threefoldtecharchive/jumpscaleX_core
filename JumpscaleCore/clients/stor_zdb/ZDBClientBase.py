@@ -5,16 +5,13 @@ import struct
 
 class ZDBClientBase(j.baseclasses.object_config):
     def _init(self, jsxobject=None, **kwargs):
-        if "admin" in kwargs:
-            admin = kwargs["admin"]
-        else:
-            admin = self.admin
+        # if "admin" in kwargs:
+        #     admin = kwargs["admin"]
+        # else:
+        #     admin = self.admin
 
-        if admin:
+        if self.admin:
             self.nsname = "default"
-
-        if self.name in ["threebot_phonebook", "threebot.phonebook"]:
-            raise RuntimeError()
 
         self.type = "ZDB"
 
@@ -24,7 +21,13 @@ class ZDBClientBase(j.baseclasses.object_config):
 
         self._logger_enable()
 
-        if admin:
+        if j.data.bcdb._master:
+            self._model.trigger_add(self._update_trigger)
+
+        self._connect()
+
+    def _connect(self):
+        if self.admin:
 
             if self.secret_:
                 # authentication should only happen in zdbadmin client
@@ -41,8 +44,6 @@ class ZDBClientBase(j.baseclasses.object_config):
             self._select_namespace()
 
         assert self.ping()
-        if j.data.bcdb._master:
-            self._model.trigger_add(self._update_trigger)
 
     def _update_trigger(self, obj, action, **kwargs):
         if action in ["save", "change"]:

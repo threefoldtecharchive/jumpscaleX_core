@@ -12,10 +12,16 @@ class DBSQLite(j.baseclasses.object):
 
         self.readonly = readonly
 
-        self._dbpath = j.core.tools.text_replace("{DIR_VAR}/bcdb/%s/sqlite_stor.db" % bcdbname)
+        self._dbpath = j.core.tools.text_replace("{DIR_VAR}/bcdb/%s/sqlite_stor.db" % self.bcdbname)
 
-        if readonly:
-            self._log_info("sqlite file is in readonly mode for: '%s'" % bcdbname)
+        self.sqlitedb = None
+
+        self._connect()
+
+    def _connect(self):
+
+        if self.readonly:
+            self._log_info("sqlite file is in readonly mode for: '%s'" % self.bcdbname)
             db_path = j.core.tools.text_replace("file:%s?mode=ro" % self._dbpath)
         else:
             db_path = j.core.tools.text_replace("file:%s" % self._dbpath)
@@ -111,4 +117,5 @@ class DBSQLite(j.baseclasses.object):
             yield ((item.id) - 1, self.get(item.id - 1))
 
     def close(self):
-        self.sqlitedb.close()
+        if self.sqlitedb:
+            self.sqlitedb.close()

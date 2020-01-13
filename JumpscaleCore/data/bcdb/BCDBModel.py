@@ -86,7 +86,6 @@ class BCDBModel(BCDBModelBase):
     def index(self):
         if not self._index_:
             indexklass = self._index_class_generate()
-
             self._index_ = indexklass(model=self, reset=False)
         return self._index_
 
@@ -206,18 +205,13 @@ class BCDBModel(BCDBModelBase):
     @queue_method
     def delete(self, obj, force=True):
         self.bcdb._is_writable_check()
-        if not isinstance(obj, j.data.schema._JSXObjectClass):
-            if isinstance(obj, int):
-                try:
-                    obj = self.get(obj)
-                except Exception as e:
-                    if not force:
-                        raise
-                    obj_id = obj + 0  # make sure is copy
-                    obj = None
-            else:
-                raise j.exceptions.Base("specify id or obj")
-        if obj:
+
+        if isinstance(obj, int):
+            assert obj > 0
+            self.storclient.delete(obj)
+            self.index.delete_by_id(obj_id=obj, nid=1)
+
+        elif isinstance(obj, j.data.schema._JSXObjectClass):
             assert obj.nid
             if obj.id is not None:
                 obj, stop = self._triggers_call(obj=obj, action="delete")
@@ -227,8 +221,7 @@ class BCDBModel(BCDBModelBase):
                     self.storclient.delete(obj.id)
                     self.index.delete_by_id(obj_id=obj.id, nid=obj.nid)
         else:
-            self.storclient.delete(obj_id)
-            self.index.delete_by_id(obj_id=obj_id, nid=obj.nid)
+            raise j.exceptions.Input("obj need to be JSXObject or int")
 
     def check(self, obj):
         if not isinstance(obj, j.data.schema._JSXObjectClass):

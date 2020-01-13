@@ -462,18 +462,19 @@ class BCDB(j.baseclasses.object):
 
         assert self.storclient
 
-        self._redis_reset()
+        if self.storclient.type == "SDB":
+            self.storclient.close()
+        else:
+            self.storclient.flush()  # not needed for sqlite because closed and dir will be deleted
+
+        # self._redis_reset()
         j.sal.fs.remove(self._data_dir)
         j.sal.fs.createDir(self._data_dir)
-        if self.storclient.type != "SDB":
-            self.storclient.flush()  # not needed for sqlite because closed and dir will be deleted
         # all data is now removed, can be done because sqlite client should be None
 
         # since delete the data directory above, we have to re-init the storclient
-        # so it can do its things and re-connect properly
-        self.storclient._init(nsname=self.storclient.nsname)
-        if self.storclient.type == "SDB":
-            self.storclient.flush()
+        # so it can do its things (e.g. create sqlitedb, init redis, ...) and re-connect properly
+        self.storclient._connect()
 
         if not self.storclient.get(0):
             r = self.storclient.set(b"INIT")
@@ -498,11 +499,11 @@ class BCDB(j.baseclasses.object):
         if self.name in j.data.bcdb._children:
             j.data.bcdb.instances.pop(self.name)
 
-    def _redis_reset(self):
-        # shouldnt this be part of the indexing class?
-        # better not because then we rely on the indexer to be there and in reset function we don't init it
-        for key in self._redis_index.keys("bcdb:%s*" % self.name):
-            self._redis_index.delete(key)
+    # def _redis_reset(self):
+    #     # shouldnt this be part of the indexing class?
+    #     # better not because then we rely on the indexer to be there and in reset function we don't init it
+    #     for key in self._redis_index.keys("bcdb:%s*" % self.name):
+    #         self._redis_index.delete(key)
 
     def _urls_load(self):
         """

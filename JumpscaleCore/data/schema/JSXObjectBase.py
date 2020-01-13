@@ -4,7 +4,7 @@ from Jumpscale import j
 class JSXObjectBase(j.baseclasses.object):
     def _init_pre(self, capnpdata=None, datadict=None, schema=None):
         self._capnp_obj_ = None
-
+        self._autosave = False
         # schema is the schema of the obj, can be subobj
         # the model needs to be empty if subobj
         assert schema
@@ -47,8 +47,8 @@ class JSXObjectBase(j.baseclasses.object):
             datadict = {}
         if not isinstance(datadict, dict):
             raise j.exceptions.Base("need to be dict, was:\n%s" % datadict)
-        if self._root._model is not None:
-            data = self._model._dict_process_in(datadict)
+        if self._model is not None and self._parent is None:
+            datadict = self._model._dict_process_in(datadict)
         for key, val in datadict.items():
             try:
                 setattr(self, key, val)

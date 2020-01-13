@@ -86,8 +86,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         if self.executor == "corex":
             raise j.exceptions.Input("only tmux supported for now")
 
-        assert self._autosave  # needs to autosave or does not work well
-
     @property
     def secret(self):
         if self.adminsecret_ == "":
@@ -197,6 +195,8 @@ class ThreeBotServer(j.baseclasses.object_config):
         :param with_shell: if set, will run j.shell() after a successful start, defaults to True
         :type with_shell: bool
         """
+        assert self._autosave  # needs to autosave or does not work well
+
         packages = packages or []
         self.save()
         if not background:
@@ -204,8 +204,10 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.zdb  # will start sonic & zdb
             self.sonic
 
-            # make sure client for myjobs properly configured
-            j.data.bcdb.get_for_threebot("myjobs", ttype="redis")
+            # think no longer needed
+            # # make sure client for myjobs properly configured
+            # bcdb_myjobs = j.data.bcdb.get_for_threebot("myjobs", ttype="redis")
+            # bcdb_myjobs.reset()
 
             j.threebot.servers = Servers()
             j.threebot.servers.zdb = self.zdb
@@ -237,6 +239,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                 self.openresty_server.start()
             else:
                 self.openresty_server.reload()
+
             # will also find all packages
             self._packages_core_init()
 
@@ -257,7 +260,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             for path in packages:
                 # j.debug()
                 j.threebot.packages.zerobot.packagemanager.actors.package_manager.package_add(
-                    path=path, install=False, reload=False,
+                    path=path, install=False, reload=False
                 )
 
             for package in j.tools.threebot_packages.find():
@@ -361,7 +364,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
     def myjobs_start(self):
         j.threebot.myjobs = j.servers.myjobs
-        self.myjobs_clean()
+        self.myjobs_clean()  # TODO: we can clean this faster, see inside, should just destroy the db
         # j.servers.myjobs.workers_subprocess_start(2, in3bot=True)
         j.servers.myjobs.workers_tmux_start(2, in3bot=True)
         self._log_info("start workers done")
@@ -393,7 +396,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                 p = j.tools.threebot_packages.get(name=name2)
                 p.status = "tostart"  # means we need to start
 
-            self.state == "INSTALLED"
+            self.state = "INSTALLED"
 
         self._log_info("load all packages")
         for package in j.tools.threebot_packages.find():

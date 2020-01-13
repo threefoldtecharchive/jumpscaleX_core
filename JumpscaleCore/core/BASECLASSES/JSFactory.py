@@ -58,7 +58,7 @@ class JSFactory(JSBase, Attr):
             else:
                 raise j.exceptions.JSBUG("only suport j.baseclasses.object")
 
-    def get(self, name="main", needexist=False, autosave=None, reload=False, **kwargs):
+    def get(self, name="main", needexist=False, autosave=True, reload=False, **kwargs):
         """
 
         :param name: of the child to get, if it doesn't need to exist then will try to create new
