@@ -241,11 +241,12 @@ class ServerRack(j.baseclasses.object):
             for key in keys:
                 if key in self.servers:
                     server = self.servers[key]
-                    try:
-                        server.start()
-                    except Exception as e:
-                        j.shell()
-                        w
+                    server.start()
+                    # try:
+                    #     server.start()
+                    # except Exception as e:
+                    #     j.shell()
+                    #     w
                     # started.append(server)
                     name = getattr(server, "name", None) or server.__class__.__name__ or "Server"
                     self._log_info("%s started on %s" % (name, server.address))
