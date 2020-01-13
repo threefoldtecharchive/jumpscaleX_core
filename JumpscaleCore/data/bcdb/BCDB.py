@@ -804,6 +804,10 @@ class BCDB(j.baseclasses.object):
         if return_as_capnp:
             return bdata
         else:
+            if not schema:
+                md5bin = bdata[5:21]
+                md5 = md5bin.hex()
+                schema = j.data.schema.get_from_md5(md5)
             model = self.model_get(schema=schema)
             obj = j.data.serializers.jsxdata.loads(bdata, model=model)
             if schema:
