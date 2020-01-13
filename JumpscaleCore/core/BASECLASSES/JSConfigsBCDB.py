@@ -14,8 +14,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         it it exists will delete if first when delete is True
         :param name:
-        :param jsxobject:
-        :param autosave: sets the autosave argument on the data and also saves the object before the function returns. If set to False, you need to explicitly save the object.
+        :param jsxobject
         :param kwargs:
         :return:
         """
@@ -23,8 +22,12 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             raise j.exceptions.Input("name needs to be specified on a config mgmt obj")
         if self.exists(name=name):
             raise j.exceptions.Base(f"cannot do new object, {name} exists")
-        jsconfig = self._create(name=name, jsxobject=jsxobject, autosave=autosave, **kwargs)
+
+        jsconfig = self._create(name=name, jsxobject=jsxobject, **kwargs)
         self._check(jsconfig)
+
+        self._autosave_deal(jsconfig, autosave, True)
+
         return jsconfig
 
     def _check_children(self):
@@ -43,7 +46,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             assert jsconfig.mother_id == mother_id
         assert jsconfig._model.schema._md5 == self._model.schema._md5
 
-    def _create(self, name, jsxobject=None, autosave=None, **kwargs):
+    def _create(self, name, jsxobject=None, **kwargs):
         """
         :param name: for the CONFIG item (is a unique name for the service, client, ...)
         :param jsxobject: you can right away specify the jsxobject
@@ -92,15 +95,9 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject, **kwargs_to_class)
         self._children[name] = jsconfig
 
-        if autosave != None:
-            jsxobject._autosave = autosave
-
-        if jsxobject._autosave:
-            self._children[name].save()
-
         return self._children[name]
 
-    def get(self, name="main", id=None, needexist=False, autosave=True, reload=False, **kwargs):
+    def get(self, name="main", id=None, needexist=False, reload=False, autosave=True, **kwargs):
         """
         :param name: of the object
         """
@@ -113,46 +110,50 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         if not jsconfig:
             self._log_debug("NEW OBJ:%s:%s" % (name, self._classname))
-            jsconfig = self._create(name=name, autosave=autosave, **kwargs)
+            jsconfig = self._create(name=name, **kwargs)
+            changed = True
         else:
             # check that the stored values correspond with kwargs given
             # means comes from the database
             if not jsconfig._data._model.schema._md5 == jsconfig._model.schema._md5:
                 # means data came from DB and schema is not same as config mgmt class
                 # j.shell()
-                j.debug()
+                # j.debug()
                 raise j.exceptions.Input(
                     "models should be same", data=(jsconfig._data._model.schema.text, jsconfig._model.schema.text)
                 )
             changed = False
-            jsconfig._data._autosave = False
-            props = [i.name for i in self._model.schema.properties]
-            for key, val in kwargs.items():
-                if key not in props:
-                    raise j.exceptions.Input(
-                        "cannot set property:'%s' on obj because not part of the schema" % key, data=jsconfig
-                    )
-                if not getattr(jsconfig, key) == val:
-                    changed = True
-                    setattr(jsconfig, key, val)
-            if changed and autosave:
-                jsconfig.save()
 
-            jsconfig._autosave = autosave
+            if kwargs:
+                props = [i.name for i in self._model.schema.properties]
+                for key, val in kwargs.items():
+                    if key not in props:
+                        raise j.exceptions.Input(
+                            "cannot set property:'%s' on obj because not part of the schema" % key, data=jsconfig
+                        )
+                    if not getattr(jsconfig, key) == val:
+                        changed = True
+                        setattr(jsconfig, key, val)
+
+        self._autosave_deal(jsconfig, autosave, changed)
 
         # lets do some tests (maybe in future can be removed, but for now the safe bet)
         self._check(jsconfig)
 
         return jsconfig
 
-    def _get(self, name="main", id=None, die=True, reload=False, autosave=None):
+    def _autosave_deal(self, jsconfig, autosave, changed=True):
+        jsconfig._data._autosave = autosave
+        if changed and jsconfig._data._autosave:
+            jsconfig._data.save()
+
+    def _get(self, name="main", id=None, die=True, reload=False):
         """
 
         :param name:
         :param id: id will always have priority
         :param die: if False will return None if it cannot be found
         :param reload: if exists, will ask the data to be reloaded
-        :param autosave:
         :return: 1,obj or 2,obj
             2 if exists
             1 if new
@@ -161,7 +162,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         if id:
             obj = self._model.get(id)
             name = obj.name
-            return 1, self._create(name, obj, autosave=autosave)
+            return 1, self._create(name, obj)
 
         obj = self._validate_child(name)
         if obj:
@@ -187,9 +188,6 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             )
         else:
             jsxconfig = res[0]
-
-        if autosave != None:
-            jsxconfig._autosave = autosave
 
         return 2, jsxconfig
 
@@ -260,7 +258,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         ids = self._model.find_ids(**kwargs)
         for id in ids:
             if id not in ids_done:
-                item = self.get(id=id, reload=reload, autosave=False)
+                item = self.get(id=id, reload=reload)
                 res.append(item)
 
         return res

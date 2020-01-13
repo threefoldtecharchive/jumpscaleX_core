@@ -60,7 +60,7 @@ class ZDBAdminClientBase:
         self._log_debug("connect client")
 
         ns = j.clients.zdb.client_get(
-            name=name, addr=self.addr, port=self.port, mode=self.mode, secret=secret, namespace=name
+            name="temp_%s" % name, addr=self.addr, port=self.port, mode=self.mode, secret=secret, namespace=name
         )
 
         assert ns.ping()
@@ -68,7 +68,8 @@ class ZDBAdminClientBase:
             assert ns.nsinfo["public"] == "no"
         else:
             assert ns.nsinfo["public"] == "yes"
-        return ns
+
+        ns._data.delete()
 
     def namespace_get(self, name, secret=""):
         assert self.admin

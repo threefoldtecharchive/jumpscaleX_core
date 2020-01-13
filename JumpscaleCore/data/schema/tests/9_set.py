@@ -5,7 +5,7 @@ def main(self):
     """
     to run:
 
-    kosmos 'j.data.schema.test(name="set")' --debug
+    kosmos 'j.data.schema.test(name="set")'
     """
 
     schema = """

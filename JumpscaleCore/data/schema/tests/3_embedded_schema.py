@@ -21,7 +21,9 @@ def main(self):
             schemacode = ""
             """
 
-        j.data.schema.get_from_text(schema0)
+        s = j.data.schema.get_from_text(schema0)
+        assert s.props.cmd.has_jsxobject
+
         so = j.data.schema.get_from_url(url="jumpscale.schema.test3.a")
         so2 = j.data.schema.get_from_url(url="jumpscale.schema.test3.b")
         o = so.new()
@@ -45,10 +47,11 @@ def main(self):
 
         o2 = j.data.serializers.jsxdata.loads(data)
 
-        print(o2)  # TODO: does not serialize well
+        print(o2)
         assert o2.cmd.name == "a"
         o3 = so.new(serializeddata=data)
         assert o3.cmd.name == "a"
+
         # CLEAN STATE
 
     # j.data.schema.remove_from_text(schema0)
@@ -65,7 +68,9 @@ def main(self):
             schemacode = ""
             """
 
-        j.data.schema.get_from_text(schema1)
+        s = j.data.schema.get_from_text(schema1)
+        assert s.props.cmds.has_jsxobject
+
         so = j.data.schema.get_from_url(url="jumpscale.schema.test3.c")
         so2 = j.data.schema.get_from_url(url="jumpscale.schema.test3.b")
         o = so.new()
@@ -73,11 +78,15 @@ def main(self):
         cmd = o.cmds.new()
         cmd.name = "a"
 
+        assert o._changed
+
         assert o.cmds[0].name == "a"
 
         assert o.cmds[0]._ddict == {"name": "a", "comment": "", "schemacode": ""}
 
         assert len(o.cmds) == 1
+
+        assert o._changed
 
         data = o._data
 
