@@ -22,6 +22,11 @@ class TypeBaseObjClass:
     def _changed(self):
         return self.__changed
 
+    @_changed.setter
+    def _changed(self, value):
+        assert value == False  # only supported mode
+        self.__changed = False
+
     def _data_from_init_val(self, value):
         """
         convert init value to raw type inside this object
