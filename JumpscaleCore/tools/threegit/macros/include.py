@@ -7,6 +7,7 @@ from Jumpscale.tools.threegit.Link import MarkdownLinkParser, Linker, Link, SKIP
 from Jumpscale.clients.http.HttpClient import HTTPError
 
 COMMON_LANG_EXT = {"py": "python", "rb": "ruby", "sh": "bash", "cpp": "c++", "cc": "c++", "pl": "perl"}
+TMP_DOCSITE_CACHE = {}
 
 
 def with_code_block(content, _type=""):
@@ -143,14 +144,11 @@ def guess_codeblock_type(link):
 
 
 def is_plain(url):
-    try:
-        response = j.clients.http.get_response(url)
-        content_type = response.headers.get("content-type")
-        if response.status == 200 and content_type:
-            return "text/plain" in content_type
-        return False
-    except HTTPError:
-        return False
+    response = j.clients.http.get_response(url)
+    content_type = response.headers.get("content-type")
+    if response.status == 200 and content_type:
+        return "text/plain" in content_type
+    return False
 
 
 def get_content(custom_link, doc, docsite_name=None, host=None, raw=False):
@@ -189,7 +187,12 @@ def get_content(custom_link, doc, docsite_name=None, host=None, raw=False):
             new_link = Linker.to_custom_link(repo, host)
             # to match any path, start with root `/`
             url = Linker(host, new_link.account, new_link.repo).tree("/")
-            docsite = j.tools.threegit.get_from_url(new_link.repo, url, base_path="").docsite
+            if new_link.repo in TMP_DOCSITE_CACHE:
+                docsite = TMP_DOCSITE_CACHE[new_link.repo]
+            else:
+                docsite = j.tools.threegit.get_from_url(new_link.repo, url, base_path="").docsite
+                docsite.load(reset=True)
+                TMP_DOCSITE_CACHE[new_link.repo] = docsite
             custom_link.path = new_link.path
 
     try:

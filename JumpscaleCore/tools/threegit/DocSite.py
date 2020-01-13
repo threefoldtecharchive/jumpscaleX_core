@@ -30,11 +30,6 @@ class DocSite(j.baseclasses.object):
         if not self.name:
             raise j.exceptions.Base("name cannot be empty")
 
-        self.content_default = {}  # key is relative path in docsite where default content found
-
-        # need to empty again, because was used in config
-        self.data_default = {}  # key is relative path in docsite where default content found
-
         self._docs = {}
         self._files = {}
         self._sidebars = {}
@@ -192,39 +187,6 @@ class DocSite(j.baseclasses.object):
     def files(self):
         return self._files
 
-    def _processData(self, path):
-        ext = j.sal.fs.getFileExtension(path).lower()
-        if ext == "":
-            # try yaml & toml
-            self._processData(path + ".toml")
-            self._processData(path + ".yaml")
-            return
-
-        if not j.sal.fs.exists(path):
-            return {}
-
-        if ext == "toml":
-            data = j.data.serializers.toml.load(path)
-        elif ext == "yaml":
-            data = j.data.serializers.yaml.load(path)
-        else:
-            raise j.exceptions.Input(message="only toml & yaml supported")
-
-        if not j.data.types.dict.check(data):
-            raise j.exceptions.Input(message="cannot process toml/yaml on path:%s, needs to be dict." % path)
-
-        # dont know why we do this? something todo probably with mustache and dots?
-        keys = [str(key) for key in data.keys()]
-        for key in keys:
-            if key.find(".") != -1:
-                data[key.replace(".", "_")] = data[key]
-                data.pop(key)
-
-        fulldirpath = j.sal.fs.getDirName(path)
-        rdirpath = j.sal.fs.pathRemoveDirPart(fulldirpath, self.path)
-        rdirpath = rdirpath.strip("/").strip().strip("/")
-        self.data_default[rdirpath] = data
-
     def load(self, reset=False):
         """
         walk in right order over all files which we want to potentially use (include)
@@ -243,36 +205,17 @@ class DocSite(j.baseclasses.object):
 
         j.sal.fs.remove(self.error_file_path)
 
-        def callbackForMatchDir(path, arg):
-            base = j.sal.fs.getBaseName(path).lower()
-            if base.startswith("."):
-                return False
-            if base.startswith("_"):
-                return False
-            return True
-
         def callbackForMatchFile(path, arg):
             base = j.sal.fs.getBaseName(path).lower()
             if base == "errors.md":
                 return False
             if base == "_sidebar.md":
-                return True
+                return False
             if base.startswith("_"):
                 return False
             ext = j.sal.fs.getFileExtension(path)
             if ext == "md" and base[:-3] in ["summary", "default"]:
                 return False
-            return True
-
-        def callbackFunctionDir(path, arg):
-            # will see if there is data.toml or data.yaml & load in data structure in this obj
-            self._processData(path + "/data")
-            dpath = path + "/default.md"
-            if j.sal.fs.exists(dpath, followlinks=True):
-                C = j.sal.fs.readFile(dpath)
-                rdirpath = j.sal.fs.pathRemoveDirPart(path, self.path)
-                rdirpath = rdirpath.strip("/").strip().strip("/")
-                self.content_default[rdirpath] = C
             return True
 
         def callbackFunctionFile(path, arg):
@@ -300,8 +243,6 @@ class DocSite(j.baseclasses.object):
             revision = self.threegit.git_client.config_3git_get("revision_last_processed_docsite")
             old_files = None
 
-        callbackFunctionDir(self.path, "")  # to make sure we use first data.yaml in root
-
         for item in self._files_changed:
             if not reset:
                 item = f"{self.threegit.git_client.path}/{item}"
@@ -309,11 +250,6 @@ class DocSite(j.baseclasses.object):
                 if j.sal.fs.isFile(item):
                     if callbackForMatchFile(item, ""):
                         callbackFunctionFile(item, "")
-
-                if j.sal.fs.isDir(item):
-                    if callbackForMatchDir(item, ""):
-                        callbackFunctionDir(item, "")
-
         if old_files:
             for ditem in old_files:
                 item_path = j.sal.fs.joinPaths(self.outpath, ditem)
