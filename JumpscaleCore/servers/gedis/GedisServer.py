@@ -77,7 +77,7 @@ class GedisServer(JSBaseConfig):
         # self.namespaces = ["system", "default"]
         self._threebot_server = None
 
-        j.data.schema.get_from_text(SCHEMA)
+        j.data.schema.get_from_text(SCHEMA, newest=True)
 
         # hook to allow external servers to find this gedis
         # self.server_gedis = self

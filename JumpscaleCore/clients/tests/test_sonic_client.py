@@ -3,8 +3,10 @@ from Jumpscale import j
 from base_test import BaseTest
 
 
-@unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/250, \
-               when un-skipping these tests , please uncomment the SetUpClass and tearDownClass method")
+@unittest.skip(
+    "https://github.com/threefoldtech/jumpscaleX_core/issues/250, \
+               when un-skipping these tests , please uncomment the SetUpClass and tearDownClass method"
+)
 class SonicClient(BaseTest):
     # @classmethod
     # def setUpClass(cls):
@@ -16,7 +18,7 @@ class SonicClient(BaseTest):
     #
     #     cls.info("create a Sonic client")
     #     cls.client = j.clients.sonic.get("test", host="127.0.0.1", port=1491, password="123456")
-               
+
     def setUp(self):
         print("\t")
         self.info("Test case : {}".format(self._testMethodName))
@@ -45,8 +47,8 @@ class SonicClient(BaseTest):
         self.info("Flush all data in {} collection".format(self.COLLECTION))
         self.client.flush(self.COLLECTION)
 
-    #@classmethod
-    #def tearDownClass(cls):
+    # @classmethod
+    # def tearDownClass(cls):
     #    j.servers.sonic.main.stop()
 
     def test001_push_collection_bucket(self):

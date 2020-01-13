@@ -68,8 +68,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
             ssl = False
         elif port == 443:
             ssl = True
-
-        ws = self.websites.get(f"website_{port}", port=port, domain=domain)
+        ws = self.websites.get(name=f"website_{port}", port=port, domain=domain)
         if ssl != None:
             ws.ssl = ssl
 

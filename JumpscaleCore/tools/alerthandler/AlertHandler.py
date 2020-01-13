@@ -4,16 +4,19 @@ import copy
 
 SCHEMA_ALERT = """
 @url = jumpscale.alerthandler.alert
-severity=0 (I)
-status="closed,new,open" (E)
-time="" (I)
+severity** = 0 (I)
+status** = "closed,new,open" (E)
+time** = "" (I)
+#think thats the place where it comes from (the 3bot)
 environment** = "" (S)
 service = "" (S)
-resource = "" (S)
-event = "" (S)
-value** = "" (S)
-messageType = "error,info,warn" (E)
-text = "" (S)
+#place where it comes from in the code I guess, its not clear really
+resource*** = "" (S)
+event*** = "" (S)
+#is for deduplication
+identifier** = "" (S)
+messageType** = "error,info,warn" (E)
+text*** = "" (S)
 count = 1 (I)
 occurrences = (LI)
 """
@@ -55,7 +58,7 @@ class AlertHandler(j.baseclasses.object):
 
     def _init(self, **kwargs):
         # DONT CHANGE NAME PLEASE
-        self.bcdb = j.data.bcdb.get_for_threebot("system.alerta", "alerta", "redis")
+        self.bcdb = j.data.bcdb.get_for_threebot("system.alerta", ttype="redis")
         self.model = self.bcdb.model_get(schema=SCHEMA_ALERT)
 
     def setup(self):
@@ -72,27 +75,23 @@ class AlertHandler(j.baseclasses.object):
         """
         filepath, linenr = logdict["filepath"], logdict["linenr"]
 
-        # TODO: this will not give enough data deduplication !
-        value = "\n".join(
-            [
-                logdict["context"],
-                f"{filepath}:{linenr}",
-                logdict["message"],
-                j.core.tools.traceback_format(logdict["traceback"]),
-            ]
-        )
-
         alert = self.model.new()
         alert.severity = logdict["level"]
         alert.status = "new"
         alert.time = j.data.time.epoch
-        alert.environment = "staging" if j.application.debug else "production"
+        try:
+            alert.environment = j.tools.threebot.me.default.tname
+        except:
+            alert.environment = "unknown"
         alert.service = "jsx"
-        alert.resource = "kosmos"
+        alert.resource = "%s:%s" % (filepath, linenr)
         alert.event = "n/a"
-        alert.value = value
+        alert.identifier = ""
         alert.messageType = "error"
         alert.text = logdict["message"]
+
+        identifier = "%s_%s_%s" % (alert.resource, alert.event, alert.environment)
+        alert.identifier = j.data.hash.md5_string(identifier)
         return alert
 
     def get_original(self, alert):
@@ -104,7 +103,7 @@ class AlertHandler(j.baseclasses.object):
         :rtype: object
         """
         # For now, only indexing value
-        res = self.model.find(value=alert.value)
+        res = self.model.find(identifier=alert.identifier)
         if res:
             return res[0]
 
@@ -134,3 +133,41 @@ class AlertHandler(j.baseclasses.object):
             original_alert.save()
         else:
             alert.save()
+
+    def print(self):
+        for alert in self.model.find():
+            print(alert)
+
+    def reset(self):
+        self.model.reset()
+
+    def find(self, status=None, threebotname=None, event=None, cat=None, text="", timeago=None, code_path=""):
+        """
+
+        :return:
+        """
+        # @url = jumpscale.alerthandler.alert
+        # severity** = 0 (I)
+        # status** = "closed,new,open" (E)
+        # time** = "" (I)
+        # #think thats the place where it comes from (the 3bot)
+        # environment** = "" (S)
+        # service = "" (S)
+        # #place where it comes from in the code I guess, its not clear really
+        # resource*** = "" (S)
+        # event*** = "" (S)
+        # #is for deduplication
+        # identifier** = "" (S)
+        # messageType** = "error,info,warn" (E)
+        # text*** = "" (S)
+        # count = 1 (I)
+        # occurrences = (LI)
+
+        # TODO: implement
+
+        raise NotImplemented()
+
+        j.shell()
+
+    def test(self):
+        raise NotImplemented()

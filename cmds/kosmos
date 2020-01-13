@@ -87,6 +87,8 @@ if options.threebot:
         if "package" in j.threebot.__dict__:
             j.threebot.__dict__.pop("package")
 
+        p = j.threebot.packages
+
 
 if options.quiet:
     j.shell()

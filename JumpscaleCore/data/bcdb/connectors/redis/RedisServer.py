@@ -169,7 +169,7 @@ class RedisServer(j.baseclasses.object):
 
         assert isinstance(schema, str)
 
-        schema = j.data.schema.get_from_text(schema)
+        schema = j.data.schema.get_from_text(schema, newest=True)
         url = schema.url
 
         if not j.data.bcdb.exists(bcdbname):

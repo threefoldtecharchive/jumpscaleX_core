@@ -24,6 +24,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         if j.core.db and starting:
             j.core.db.set("threebot.starting", ex=120, value="1")
         j.data.bcdb._master_set()
+        j.servers.myjobs
         j.tools.executor.local
 
     def threebotserver_check(self):
@@ -56,7 +57,6 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     @property
     def default(self):
         if not self._default:
-            self._threebot_starting()
             self._default = self.get("default")
         return self._default
 
@@ -93,7 +93,9 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         :return:
         """
-        self._threebot_starting()
+        if not background:
+            self._threebot_starting()
+
         packages = packages or []
 
         if background:
@@ -126,8 +128,34 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         """starts 3bot with webplatform package.
         kosmos -p 'j.servers.threebot.local_start_3bot()'
         """
+        if not background:
+            self._threebot_starting()
         packages = [f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform"]
         return self.start(background=background, packages=packages, reload=reload)
+
+    def reset(self, debug=True):
+        """
+
+        resets your full 3bot with all data, CAREFUL
+
+        kosmos -p 'j.servers.threebot.reset()'
+
+        """
+        j.data.bcdb._master_set()
+        C = """
+        rm -rf {DIR_BASE}/cfg/bcdb_config
+        rm -rf {DIR_BASE}/cfg/bcdb
+        rm -rf {DIR_BASE}/cfg/schema_meta.msgpack
+        rm -rf {DIR_BASE}/cfg/sonic_config_threebot.cfg
+        rm -rf {DIR_BASE}/var
+        """
+        if debug:
+            j.core.myenv.config["LOGGER_LEVEL"] = 10
+            j.core.myenv.config_save()
+        j.clients.rdb.reset()
+        j.servers.tmux.server.kill_server()
+        C = j.core.tools.text_replace(C)
+        j.sal.process.execute(C)
 
     def local_start_explorer(self, background=False, reload=False, with_shell=True):
         """
@@ -135,8 +163,11 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         starts 3bot with phonebook, directory, workloads packages.
 
         kosmos -p 'j.servers.threebot.local_start_explorer(with_shell=True)'
+        kosmos -p 'j.servers.threebot.local_start_explorer(with_shell=False)'
 
         """
+        if not background:
+            self._threebot_starting()
         packages = [
             f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/phonebook",
             f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/directory",

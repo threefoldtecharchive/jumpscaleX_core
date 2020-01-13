@@ -34,7 +34,7 @@ class BCDBModel(BCDBModelBase):
             self.schema = j.data.schema.get_from_url(schema_url)
         else:
             if hasattr(self, "_SCHEMA"):  # what is that _schema ?
-                self.schema = j.data.schema.get_from_text(self._SCHEMA)
+                self.schema = j.data.schema.get_from_text(self._SCHEMA, newest=True)
             else:
                 self.schema = self._schema_get()  # _schema_get is overrided by classes like ACL USER CIRCLE NAMESPACE
                 if not self.schema:
@@ -45,7 +45,6 @@ class BCDBModel(BCDBModelBase):
 
         self.readonly = False
         self._index_ = None  # if set it will make sure data is automatically set from object
-        self.autosave = False
         self.nosave = False
 
         self.instances = []
@@ -87,7 +86,6 @@ class BCDBModel(BCDBModelBase):
     def index(self):
         if not self._index_:
             indexklass = self._index_class_generate()
-
             self._index_ = indexklass(model=self, reset=False)
         return self._index_
 
@@ -207,18 +205,13 @@ class BCDBModel(BCDBModelBase):
     @queue_method
     def delete(self, obj, force=True):
         self.bcdb._is_writable_check()
-        if not isinstance(obj, j.data.schema._JSXObjectClass):
-            if isinstance(obj, int):
-                try:
-                    obj = self.get(obj)
-                except Exception as e:
-                    if not force:
-                        raise
-                    obj_id = obj + 0  # make sure is copy
-                    obj = None
-            else:
-                raise j.exceptions.Base("specify id or obj")
-        if obj:
+
+        if isinstance(obj, int):
+            assert obj > 0
+            self.storclient.delete(obj)
+            self.index.delete_by_id(obj_id=obj, nid=1)
+
+        elif isinstance(obj, j.data.schema._JSXObjectClass):
             assert obj.nid
             if obj.id is not None:
                 obj, stop = self._triggers_call(obj=obj, action="delete")
@@ -228,8 +221,7 @@ class BCDBModel(BCDBModelBase):
                     self.storclient.delete(obj.id)
                     self.index.delete_by_id(obj_id=obj.id, nid=obj.nid)
         else:
-            self.storclient.delete(obj_id)
-            self.index.delete_by_id(obj_id=obj_id)
+            raise j.exceptions.Input("obj need to be JSXObject or int")
 
     def check(self, obj):
         if not isinstance(obj, j.data.schema._JSXObjectClass):
@@ -255,10 +247,10 @@ class BCDBModel(BCDBModelBase):
                     nid = data["nid"]
                 else:
                     raise j.exceptions.Base("need to specify nid")
-            obj = self.schema.new(datadict=data, bcdb=self.bcdb)
+            obj = self.schema.new(datadict=data, model=self)
             obj.nid = nid
         elif j.data.types.bytes.check(data):
-            obj = self.schema.new(serializeddata=data, bcdb=self.bcdb)
+            obj = self.schema.new(serializeddata=data, model=self)
             if obj_id is None:
                 raise j.exceptions.Base("objid cannot be None")
             if not obj.nid:
@@ -322,6 +314,7 @@ class BCDBModel(BCDBModelBase):
         :return: obj
         """
         self.check(obj)
+
         if store:
             obj, stop = self._triggers_call(obj, action="set_pre")
             if stop:
@@ -386,17 +379,14 @@ class BCDBModel(BCDBModelBase):
         if index:
             # self._log_debug(obj)
             # print(obj)
+            if not store:  # need to make sure index is clean, used during rebuild index (is safer)
+                self.index.delete(obj)
             try:
                 self.index.set(obj)
             except j.clients.peewee.IntegrityError as e:
                 # this deals with checking on e.g. uniqueness
-                if store and new:
-                    # delete from the storclient was incorrect
-                    # never ever delete when object exists, so only when new
-                    self.storclient.delete(obj.id)
-                else:
-                    # j.shell()
-                    raise j.exceptions.Input("Could not insert object, unique constraint failed:%s" % e, data=obj)
+                j.shell()
+                raise j.exceptions.Input("Could not insert object, unique constraint failed:%s" % e, data=obj)
 
                 obj.id = None
                 if str(e).find("UNIQUE") != -1:
@@ -442,25 +432,27 @@ class BCDBModel(BCDBModelBase):
 
         if data:
             if isinstance(data, dict):
-                obj = self.schema.new(datadict=data, bcdb=self.bcdb)
+                obj = self.schema.new(datadict=data, model=self)
             elif isinstance(data, bytes):
                 try:
 
                     data = j.data.serializers.json.loads(data)
-                    obj = self.schema.new(datadict=data, bcdb=self.bcdb)
+                    obj = self.schema.new(datadict=data, model=self)
                 except:
-                    obj = self.schema.new(serializeddata=data, bcdb=self.bcdb)
+                    obj = self.schema.new(serializeddata=data, model=self)
 
             elif isinstance(data, j.data.schema._JSXObjectClass):
-                obj = self.schema.new(datadict=data._ddict, bcdb=self.bcdb)
+                obj = self.schema.new(datadict=data._ddict, model=self)
             else:
                 raise j.exceptions.Base("need dict")
         else:
-            obj = self.schema.new(bcdb=self.bcdb)
+            obj = self.schema.new()
+            obj._model = self
 
         obj = self._methods_add(obj)
         obj.nid = nid
         obj, stop = self._triggers_call(obj=obj, action="new")
+
         return obj
 
     def _methods_add(self, obj):
