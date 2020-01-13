@@ -10,7 +10,10 @@ def load_wiki(wiki_name=None, wiki_path=None, reset=False):
     we cannot use name parameter with myjobs.schedule, it has a name parameter itself
     """
     # use default path_dest
-    threegit = j.tools.threegit.get_from_url(wiki_name, url=wiki_path)
+    if wiki_path.lower().strip().startswith("http"):
+        threegit = j.tools.threegit.get_from_url(wiki_name, wiki_path)
+    else:
+        threegit = j.tools.threegit.get_from_path(wiki_name, wiki_path)
     threegit.process(reset=reset)
     threegit.save()
 

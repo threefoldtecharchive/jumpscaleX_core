@@ -52,6 +52,16 @@ class ThreeGitFactory(j.baseclasses.object_config_collection):
     def find_git_path(self, path):
         return j.clients.git.findGitPath(path, die=False)
 
+    def find_docs_directory(self, path):
+        if not j.sal.fs.exists(path):
+            raise j.exceptions.Input(f"{path} does not exist")
+
+        for directory in j.sal.fs.listDirsInDir(path, dirNameOnly=True):
+            if directory.lower().strip() in ("doc", "docs", "documentation", "documentations"):
+                return directory
+
+        return ""
+
     def get_base_path(self, path):
         repo_local_path = self.find_git_path(path)
         base_path = path[len(repo_local_path) + 1 :]
@@ -67,7 +77,7 @@ class ThreeGitFactory(j.baseclasses.object_config_collection):
         instance.relative_base_path = base_path
         return instance
 
-    def get_from_url(self, name, url, base_path="docs", pull=False):
+    def get_from_url(self, name, url, base_path=None, pull=False):
         """gets an instance from a url, examples:
         https://github.com/threefoldtech/jumpscaleX_core
         https://github.com/threefoldtech/jumpscaleX_core/tree/development/sub_dir/wiki
@@ -95,6 +105,10 @@ class ThreeGitFactory(j.baseclasses.object_config_collection):
         # now get an instance
         path = j.clients.git.getContentPathFromURLorPath(url, pull=pull)
         instance = self.get_from_path(name, path)
+
+        if base_path is None:
+            base_path = self.find_docs_directory(path)
+
         if not instance.relative_base_path:
             instance.relative_base_path = j.sal.fs.joinPaths(instance.relative_base_path, base_path)
 

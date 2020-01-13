@@ -210,7 +210,7 @@ class DocSite(j.baseclasses.object):
             if base == "errors.md":
                 return False
             if base == "_sidebar.md":
-                return False
+                return True
             if base.startswith("_"):
                 return False
             ext = j.sal.fs.getFileExtension(path)
