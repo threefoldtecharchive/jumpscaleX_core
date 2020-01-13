@@ -90,8 +90,7 @@ class JSXObjectRoot(JSXObjectBase):
                         raise j.exceptions.Input(msg)
                     elif len(r) == 1:
                         msg = "could not save, was not unique.\n%s." % (args_search)
-                        if (self.id and not self.id == r[0].id) or not self.id:
-                            j.debug2()
+                        if self.id and not self.id == r[0].id:
                             raise j.exceptions.Input(msg)
 
                 obj = self._model.set(self)
