@@ -171,6 +171,20 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         if len(res) > 0:
             return res[0]
 
+    def _get_line_number(self, line):
+        """gets a line number from schema text line if set as n: line text
+        e.g. `1 : a = 4:5 (h)`
+
+        :param line: schema text line
+        :type line: str
+        :return: line number or None
+        :rtype: int or None
+        """
+        try:
+            return int(line.partition(":")[0])
+        except ValueError:
+            pass
+
     def _schema_text_rewrite(self, url=None, schema_text=None):
         """
         will add url to schema_text if not there yet
@@ -181,10 +195,14 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         assert schema_text
         schema_text = j.core.tools.text_strip(schema_text)
         found_nrs = False
-        nr = 0
+        nr_generated = 0
         out = ""
+
         for line in schema_text.split("\n"):
             line = line.strip()
+            line_nr = self._get_line_number(line)
+            found_nrs |= bool(line_nr)
+
             line = line.replace("::", ":")  # there was some but at one point of time
             if line.startswith("@url"):
                 if url:
@@ -192,21 +210,15 @@ class SchemaFactory(j.baseclasses.factory_testtools):
                 else:
                     url = line.split("=", 1)[1].strip()
                     continue
-            if line.startswith("@"):
+            if line.startswith("@") or line.startswith("#") or line_nr:
                 out += "%s\n" % line
             elif line.strip() == "":
                 out += "\n"
-            elif line.strip().startswith("#"):
-                out += "%s\n" % line
-            elif ":" in line:
-                found_nrs = True
-                out += "%s\n" % line
             else:
                 if found_nrs:
                     raise j.exceptions.Input("cannot mix nr's and no nrs in schema", data=[url, schema_text])
-                assert ":" not in line
-                out += "%-2s: %s\n" % (nr, line)
-                nr += 1
+                out += "%-2s: %s\n" % (nr_generated, line)
+                nr_generated += 1
         schema_text = out
         assert url
         assert len(url) > 5

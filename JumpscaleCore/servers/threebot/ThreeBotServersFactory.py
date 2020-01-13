@@ -95,6 +95,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         """
         if not background:
             self._threebot_starting()
+
         packages = packages or []
 
         if background:
