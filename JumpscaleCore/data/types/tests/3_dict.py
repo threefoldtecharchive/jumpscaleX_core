@@ -29,4 +29,5 @@ def main(self):
 
     assert {"a": 1, "b": "b"} == e.clean(datastr)
 
+    assert j.data.types.dict.check("hello") is False
     return "OK"

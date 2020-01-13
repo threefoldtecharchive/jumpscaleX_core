@@ -41,7 +41,6 @@ def main(self):
     assert s.props.j.is_primitive_serialized
     assert s.props.y.is_primitive_serialized
     assert s.props.d.is_primitive_serialized
-    assert s.props.d.is_primitive
     assert s.props.n.is_complex_type
     assert s.props.e.is_complex_type
     assert s.props.color.is_primitive
