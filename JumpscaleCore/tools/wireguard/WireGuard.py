@@ -56,7 +56,7 @@ class WireGuard(j.baseclasses.object_config):
             if self.islocal:
                 self._executor = j.tools.executor.local
             else:
-                self._executor = j.clients.ssh.get(self.sshclient_name, client_type="pssh", autosave=False).executor
+                self._executor = j.clients.ssh.get(self.sshclient_name, autosave=False).executor
         return self._executor
 
     def install(self):
