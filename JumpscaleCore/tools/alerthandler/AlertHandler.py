@@ -6,7 +6,7 @@ SCHEMA_ALERT = """
 @url = jumpscale.alerthandler.alert
 severity** = 0 (I)
 status** = "closed,new,open" (E)
-time** = "" (I)
+time** = "" (T)
 #think thats the place where it comes from (the 3bot)
 environment** = "" (S)
 service = "" (S)
