@@ -23,7 +23,8 @@ class WGFactory(j.baseclasses.object_config_collection_testtools):
 
     def get_by_id(self, id):
         data = self._model.get(id)
-        return self._new(data.name, data)
+        if j.tools.wireguard.exists(data.name):
+            return self.get(data.name)
 
     def generate_zos_keys(self, node_public_key):
         """
@@ -32,8 +33,8 @@ class WGFactory(j.baseclasses.object_config_collection_testtools):
 
         This implementation match the format 0-OS except to be able
         to read wireguard keys into network reservations.
-        
-        :param node_public_key: hex encoded public key of 0-OS node. 
+
+        :param node_public_key: hex encoded public key of 0-OS node.
                                 This is the format you find in the explorer
         :type node_public_key: str
         :return: tuple containing 3 fields (private key, private key encrypted, public key)
