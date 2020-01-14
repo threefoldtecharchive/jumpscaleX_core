@@ -171,7 +171,7 @@ class BCDB(j.baseclasses.object):
 
         return
 
-    def export(self, path=None, encrypt=True, reset=True, data=True, yaml=True):
+    def export(self, path=None, encrypt=False, reset=True, data=True, yaml=True):
         """Export all models and objects
 
         :param path: path to export to
@@ -181,6 +181,8 @@ class BCDB(j.baseclasses.object):
         :param reset: reset the export path before exporting, defaults to True
         :type reset: bool, optional
         """
+
+        j.data.bcdb.threebot_zdb_sonic_start()
 
         if not path:
             path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % self.name)
