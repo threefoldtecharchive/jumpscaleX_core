@@ -21,8 +21,6 @@ class SSHKey(j.baseclasses.object_config):
         if self.name == "":
             raise j.exceptions.Base("need to specify name")
 
-        assert self._autosave
-
         if self.path == "":
             keyspath = "%s/keys" % (j.sal.fs.getcwd())
             if j.sal.fs.exists(keyspath):

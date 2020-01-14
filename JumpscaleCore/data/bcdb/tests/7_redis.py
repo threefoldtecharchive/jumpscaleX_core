@@ -75,6 +75,7 @@ def main(self):
         key = f"test:data:despiegk.test2"
         redis_cl.hdel(key, 1)
         assert redis_cl.hlen(key) == 9
+        db.destroy()
 
     do(type="rdb")
     do(type="zdb")

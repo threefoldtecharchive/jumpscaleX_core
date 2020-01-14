@@ -171,7 +171,7 @@ class BCDB(j.baseclasses.object):
 
         return
 
-    def export(self, path=None, encrypt=True, reset=True, data=True, yaml=True):
+    def export(self, path=None, encrypt=False, reset=True, data=True, yaml=True):
         """Export all models and objects
 
         :param path: path to export to
@@ -181,6 +181,8 @@ class BCDB(j.baseclasses.object):
         :param reset: reset the export path before exporting, defaults to True
         :type reset: bool, optional
         """
+
+        j.data.bcdb.threebot_zdb_sonic_start()
 
         if not path:
             path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % self.name)
@@ -443,7 +445,7 @@ class BCDB(j.baseclasses.object):
     def index_reset(self):
         self.stop()  # will stop sqlite client and the dataprocessor
         assert self.storclient
-        self._redis_reset()
+        #self._redis_reset()
         if self.storclient.type != "SDB":
             j.sal.fs.remove(self._data_dir)
         else:
@@ -804,6 +806,10 @@ class BCDB(j.baseclasses.object):
         if return_as_capnp:
             return bdata
         else:
+            if not schema:
+                md5bin = bdata[5:21]
+                md5 = md5bin.hex()
+                schema = j.data.schema.get_from_md5(md5)
             model = self.model_get(schema=schema)
             obj = j.data.serializers.jsxdata.loads(bdata, model=model)
             if schema:

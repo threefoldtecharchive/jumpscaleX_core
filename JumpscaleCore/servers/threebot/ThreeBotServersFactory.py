@@ -164,6 +164,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         kosmos -p 'j.servers.threebot.local_start_explorer(with_shell=True)'
         kosmos -p 'j.servers.threebot.local_start_explorer(with_shell=False)'
+        kosmos -p 'j.servers.threebot.local_start_explorer(with_shell=False,background=True)'
 
         """
         if not background:

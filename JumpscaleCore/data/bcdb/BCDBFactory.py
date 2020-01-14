@@ -550,6 +550,12 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             else:
                 raise j.exceptions.Input("cannot find zdb on port" % data["port"])
         elif data["type"] == "rdb":
+            if "addr" not in data:
+                data["addr"] = "localhost"
+            if "port" not in data:
+                data["port"] = 6379
+            if "secret" not in data:
+                data["secret"] = ""
             storclient = j.clients.rdb.client_get(
                 bcdbname=name, addr=data["addr"], port=data["port"], secret=data["secret"]
             )

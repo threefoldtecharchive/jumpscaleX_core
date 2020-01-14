@@ -16,6 +16,37 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         self._nacl = j.data.nacl.default
         self.explorer = ThreebotExplorer()
 
+    def backup_local(self, stop=True):
+        """
+        kosmos 'j.tools.threebot.backup_local(stop=True)'
+        :return:
+        """
+        if stop:
+            j.servers.threebot.default.stop()
+            j.data.bcdb._master_set()
+
+        j.data.bcdb.export()
+
+        if stop:
+            j.servers.threebot.default.stop()
+
+        j.tools.restic.delete(name="explorer_backup")
+        b = j.tools.restic.get(name="explorer_backup")
+        b.secret_ = j.core.myenv.adminsecret
+        b.sources = []
+        s = b.sources.new()
+        s.paths.append("/sandbox/cfg")
+        s.paths.append("/sandbox/var/bcdb")
+        s.paths.append("/sandbox/var/bcdb_exports")
+        s.paths.append("/sandbox/var/zdb")
+        s.paths.append("/sandbox/code")
+        b.dest.backupdir = "/root/backups"
+        b.backup()
+
+    def backup_remote(self):
+        cl = j.clients.ssh.get(name="explorer")
+        raise RuntimeError("need to implement")
+
     def init_my_threebot(
         self, myidentity="default", name=None, email=None, description=None, ipaddr="", interactive=True
     ):
@@ -365,6 +396,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
 
         kosmos 'j.tools.threebot.test()'
         :return:
+
 
 
         """
