@@ -320,6 +320,9 @@ if not os.path.exists(j.core.application._lib_generation_path):
 import jumpscale_generated
 
 
+j.tools.alerthandler.setup()
+
+
 if generated and len(j.core.application.errors_init) > 0:
     print("THERE ARE ERRORS: look in /tmp/jumpscale/ERRORS_report.md")
 # else:

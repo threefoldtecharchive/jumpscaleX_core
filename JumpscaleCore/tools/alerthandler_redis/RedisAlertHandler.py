@@ -5,11 +5,13 @@ JSBASE = j.application.jsbase_get_class()
 
 SCHEMA_ALERT = """
 @url = jumpscale.alerthandler.alert
+
 level = 0
+error_type** = ""
 message = ""
 message_pub = ""
-cat = ""
-trace= ""
+cat** = ""
+trace***= ""
 time_first = (D)
 time_last = (D)
 count = 0

@@ -9,6 +9,7 @@ status** = "closed,new,open" (E)
 time** = "" (T)
 #think thats the place where it comes from (the 3bot)
 environment** = "" (S)
+#service raising the exception
 service = "" (S)
 #place where it comes from in the code I guess, its not clear really
 resource*** = "" (S)
@@ -16,7 +17,8 @@ event*** = "" (S)
 #is for deduplication
 identifier** = "" (S)
 messageType** = "error,info,warn" (E)
-text*** = "" (S)
+message*** = "" (S)
+details = "" (S)
 count = 1 (I)
 occurrences = (LI)
 """
@@ -88,7 +90,15 @@ class AlertHandler(j.baseclasses.object):
         alert.event = "n/a"
         alert.identifier = ""
         alert.messageType = "error"
-        alert.text = logdict["message"]
+        alert.message = logdict["message"]
+
+        try:
+            details = j.core.tools.log2str(logdict)
+        except:
+            details = "could not convert logdict to str"
+        # details = "\n".join(logdict["traceback"])
+        # details += "\n\n%s\n" % logdict["data"]
+        alert.details = details
 
         identifier = "%s_%s_%s" % (alert.resource, alert.event, alert.environment)
         alert.identifier = j.data.hash.md5_string(identifier)
@@ -114,7 +124,8 @@ class AlertHandler(j.baseclasses.object):
         :type alert: jumpscale.alerthandler.alert
         """
         alert.count += 1
-        alert.occurrences.append(j.data.time.epoch)
+        if len(alert.occurrences) < 50:
+            alert.occurrences.append(j.data.time.epoch)
         if alert.status == "closed":
             # reopen alert
             alert.status = "open"
@@ -125,14 +136,19 @@ class AlertHandler(j.baseclasses.object):
         :param logdict: logging dict (see jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md for keys)
         :type logdict: dict
         """
-        alert = self.to_alert(logdict)
-        original_alert = self.get_original(alert)
+        try:
+            alert = self.to_alert(logdict)
+            original_alert = self.get_original(alert)
 
-        if original_alert:
-            self.add_occurrence(original_alert)
-            original_alert.save()
-        else:
-            alert.save()
+            if original_alert:
+                self.add_occurrence(original_alert)
+                original_alert.save()
+            else:
+                alert.save()
+        except Exception as e:
+            print("********** ERROR *********** allerthandler has error.")
+            print(e)
+            print("**********************")
 
     def print(self):
         for alert in self.model.find():

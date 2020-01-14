@@ -38,21 +38,21 @@ class ThreebotClient(JSConfigBase):
             self._gedis_connections[packagename] = cl
         return self._gedis_connections[packagename]
 
-    def actors_get(self, package_name="all"):
-        """Get actors for package_name given. If package_name="all" then all the actors will be returned
+    def actors_get(self, package_name=None, status="installed"):
+        """Get actors for package_name given. If status="all" then all the actors will be returned
 
         :param package_name: name of package to be loaded that has the actors needed. If value is "all" then all actors from all packages are retrieved
         :type package_name: str
         :return: actors of package(s)
         :type return: GedisClientActors (contains all the actors as properties)
         """
-        if package_name is "all":
+        if not package_name:
             actors = GedisClientActors()
 
             package_manager_actor = j.clients.gedis.get(
                 name="packagemanager", host=self.host, port=self.port, package_name="zerobot.packagemanager"
             ).actors.package_manager
-            for package in package_manager_actor.packages_list().packages:
+            for package in package_manager_actor.packages_list(status=status).packages:
                 name = package.name
                 if name not in self._gedis_connections:
                     g = j.clients.gedis.get(
@@ -76,7 +76,7 @@ class ThreebotClient(JSConfigBase):
 
     @property
     def actors_all(self):
-        return self.actors_get("all")
+        return self.actors_get(status="installed")
 
     def encrypt_for_threebot(self, data, hex=False):
         """

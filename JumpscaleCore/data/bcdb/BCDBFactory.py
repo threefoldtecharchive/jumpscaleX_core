@@ -493,7 +493,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             storclient = j.clients.sdb.client_get(bcdbname=name)
         elif ttype == "redis":
             assert not namespace  # should be empty only relevant in ZDB
-            storclient = j.clients.rdb.client_get()
+            storclient = j.clients.rdb.client_get(bcdbname=name)
         else:
             raise j.exceptions.Input("only redis, sqlite and zdb supported")
 
