@@ -77,7 +77,9 @@ class LocationsConfiguration(j.baseclasses.object_config):
         """
         j.sal.fs.createDir(self.path_cfg_dir)
 
-        for location in self.locations_static:
+        for i, location in enumerate(self.locations_static):
+            print(i, location.name)
+            self._log_info(f"configuring {location.name} ")
             if not location.path_location.endswith("/"):
                 location.path_location += "/"
             content = j.tools.jinja2.file_render(

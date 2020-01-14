@@ -198,8 +198,8 @@ class DocSite(j.baseclasses.object):
 
         if duplicate only the first found will be used
         """
-        if not self.docsite_dir_has_files:
-            reset = True
+        # if not self.docsite_dir_has_files:
+        #     reset = True
 
         if not reset and self._loaded:
             return
