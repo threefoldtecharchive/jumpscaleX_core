@@ -139,7 +139,7 @@ class AlertHandler(j.baseclasses.object):
             print(alert)
 
     def reset(self):
-        self.model.reset()
+        self.model.destroy()
 
     def find(self, status=None, threebotname=None, event=None, cat=None, text="", timeago=None, code_path=""):
         """
