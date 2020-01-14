@@ -192,6 +192,7 @@ class Schema(j.baseclasses.object):
         if name.startswith("&"):
             name = name[1:]
             p.unique = True
+            p.index = True
             # everything which is unique also needs to be indexed
             p.index_key = True
 

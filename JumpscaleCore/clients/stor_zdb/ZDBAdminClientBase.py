@@ -70,6 +70,7 @@ class ZDBAdminClientBase:
             assert ns.nsinfo["public"] == "yes"
 
         ns._data.delete()
+        return ns
 
     def namespace_get(self, name, secret=""):
         assert self.admin
