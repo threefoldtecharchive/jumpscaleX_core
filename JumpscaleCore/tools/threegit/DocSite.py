@@ -187,6 +187,10 @@ class DocSite(j.baseclasses.object):
     def files(self):
         return self._files
 
+    @property
+    def docsite_dir_has_files(self):
+        return j.sal.fs.listFilesInDir(self.outpath)
+
     def load(self, reset=False):
         """
         walk in right order over all files which we want to potentially use (include)
@@ -194,7 +198,10 @@ class DocSite(j.baseclasses.object):
 
         if duplicate only the first found will be used
         """
-        if reset is False and self._loaded:
+        # if not self.docsite_dir_has_files:
+        #     reset = True
+
+        if not reset and self._loaded:
             return
 
         self.revision = self.threegit.git_client.config_3git_set("revision_last_processed_docsite", "")

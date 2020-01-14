@@ -93,15 +93,10 @@ class ListObject(TypeBaseObjClass, MutableSequence):
         return res
 
     def __iter__(self):
-        self._current = 0
-        return self
+        return self._inner_list.__iter__()
 
     def __next__(self):
-        if self._current + 1 > len(self._inner_list):
-            raise StopIteration
-        else:
-            self._current += 1
-            return self._inner_list[self._current - 1]
+        return self._inner_list.__next__()
 
     def insert(self, index, value):
         if self.isjsxobject:
