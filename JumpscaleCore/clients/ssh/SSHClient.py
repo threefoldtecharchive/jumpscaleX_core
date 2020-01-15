@@ -160,11 +160,13 @@ class SSHClient(SSHClientBase):
         try:
             res = self._client.scp_send(local_file, remote_file, recurse=False)
         except Exception as e:
-            # should check if the dir is not there
-            if "no such file or directory" in str(e).lower():
+            if not j.sal.fs.exists(destination):
                 self.execute("mkdir -p %s" % destination)
                 res = self._client.scp_send(local_file, remote_file, recurse=False)
-            raise
+            else:
+                raise j.exceptions.RuntimeError(
+                    f"Couldn't send {local_file} to {remote_file} even though {destination} exists. Error: {e}"
+                )
         if res:
             gevent.joinall(res)
         self._log_info("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
