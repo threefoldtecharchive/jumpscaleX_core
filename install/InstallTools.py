@@ -1135,15 +1135,13 @@ class Tools:
                 data = Tools._data_serializer_safe(data)
 
         logdict["data"] = data
-
-        iserror = tb or exception
-
-        Tools.process_logdict_for_handlers(logdict, iserror)
-
         if stdout:
             logdict = copy.copy(logdict)
             logdict["message"] = Tools.text_replace(logdict["message"])
             Tools.log2stdout(logdict, data_show=data_show)
+
+        iserror = tb or exception
+        return Tools.process_logdict_for_handlers(logdict, iserror)
 
     @staticmethod
     def process_logdict_for_handlers(logdict, iserror=True):
