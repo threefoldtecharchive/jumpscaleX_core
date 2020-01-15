@@ -548,7 +548,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                     mode="seq",
                 )
             else:
-                raise j.exceptions.Input("cannot find zdb on port" % data["port"])
+                raise j.exceptions.Input("cannot find zdb on port:%s" % data["port"])
         elif data["type"] == "rdb":
             if "addr" not in data:
                 data["addr"] = "localhost"

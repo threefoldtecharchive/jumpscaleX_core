@@ -99,6 +99,7 @@ class AlertHandler(j.baseclasses.object):
         self._rediskey_logs = "logs:%s" % (self._threebot_name)
 
     def setup(self):
+        return  # TODO: not ready to be used
         if self.handle_error not in j.errorhandler.handlers:
             j.errorhandler.handlers.append(self.handle_error)
         if self.handle_log not in j.core.myenv.loghandlers:
