@@ -261,7 +261,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         timeout_error = 600
         timeout_busy = 1200
         while True:
-            self._log_debug("check workers")
+            # self._log_debug("check workers")
             for w in self.workers.find(reload=True):
                 if w.state == "HALTED":
                     w.stop(hard=True)

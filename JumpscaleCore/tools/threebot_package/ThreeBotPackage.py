@@ -1,7 +1,6 @@
 import sys
-
-from Jumpscale import j
 from Jumpscale.tools.threegit.ThreeGit import load_wiki
+from Jumpscale import j
 
 from .ThreeBotPackageBase import ThreeBotPackageBase
 
@@ -38,7 +37,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
 
     def _changed(self, path, die=True, reset=False):
         if not path.startswith("/"):
-            path = "%s/%s" % (self.path, path)
+            path = j.sal.fs.joinPaths(self.path, path)
         if not j.sal.fs.exists(path):
             if die:
                 raise j.exceptions.Input("could not find:%s" % path)
@@ -87,10 +86,9 @@ class ThreeBotPackage(ThreeBotPackageBase):
         if self._wikis is None:
             self._wikis = j.baseclasses.dict()
 
-        path = self._changed("wiki", die=False, reset=reset)
-        if path:
-            j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=path, reset=reset)
-            self._wikis[self.name] = path
+        wiki_path = j.sal.fs.joinPaths(self.path, "wiki")
+        j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=wiki_path, reset=reset)
+        self._wikis[self.name] = wiki_path
 
     def actors_load(self):
 

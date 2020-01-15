@@ -18,7 +18,7 @@ class JSXObjectBase(j.baseclasses.object):
         if datadict:
             self._data_update(datadict)
 
-        self._logger_enable()
+        # self._logger_enable()
 
     def _defaults_set(self):
         # j.debug()

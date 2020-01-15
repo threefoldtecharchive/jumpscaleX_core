@@ -204,6 +204,9 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.zdb  # will start sonic & zdb
             self.sonic
 
+            # now we are ready to start the jobs
+            self.myjobs_start()
+
             # think no longer needed
             # # make sure client for myjobs properly configured
             # bcdb_myjobs = j.data.bcdb.get_for_threebot("myjobs", ttype="redis")
@@ -291,9 +294,6 @@ class ThreeBotServer(j.baseclasses.object_config):
                 j.core.db.delete("threebot.starting")
                 if res:
                     break
-
-            # now we are ready to start the jobs
-            self.myjobs_start()
 
             self._log_info("start workers")
 

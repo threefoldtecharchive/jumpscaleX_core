@@ -17,12 +17,13 @@ class EnumerationObj(TypeBaseObjClass):
                     raise j.exceptions.Input("cannot find '%s' in enumeration" % value, data=self._typebase.values)
                 return self._typebase.values.index(value_str)
         elif isinstance(value, int):
-            if value < 0:
+            if str(value) in self._typebase.values:
+                return self._typebase.values.index(str(value))
+            elif value < len(self._typebase.values):
+                return value
+            else:
                 raise j.exceptions.Input("cannot find '%s' in enumeration" % value, data=self._typebase.values)
-            if value + 1 > len(self._typebase.values):
-                raise j.exceptions.Input("cannot find '%s' in enumeration" % value, data=self._typebase.values)
-                return 0
-            return value
+
         else:
             raise j.exceptions.Value("unsupported type for enum, is int or string")
 
@@ -58,7 +59,7 @@ class EnumerationObj(TypeBaseObjClass):
                 # means its not even an enumeration we know so need to return False
                 return False
             raise e
-        return other.value == self.value
+        return other._string == self._string
 
     def __dir__(self):
         res = []  # "_string","_python_code","value"

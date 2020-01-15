@@ -40,7 +40,7 @@ class Doc(j.baseclasses.object):
         self.name_original = name
         self.path_rel = j.sal.fs.pathRemoveDirPart(path, self.docsite.path).strip("/")
 
-        name_dot = "%s/%s" % (self.path_dir_rel, self.name)
+        # name_dot = "%s/%s" % (self.path_dir_rel, self.name)
         self.name_dot_lower = self._clean("%s/%s" % (self.path_dir_rel, self.name))
 
         self.errors = []
@@ -57,8 +57,6 @@ class Doc(j.baseclasses.object):
 
         self._links = []
         self.render_obj = None
-        if self.sonic_client:
-            self.register_sonic()
 
     def render_macro_template(self, name, **kwargs):
         return env.get_template(name).render(**kwargs)
@@ -70,9 +68,9 @@ class Doc(j.baseclasses.object):
             else:
                 yield txt[i : i + length]
 
-    def register_sonic(self):
+    def text_sonic_set(self, text):
         print(f"indexing {self.docsite.name} of {self.path_rel}")
-        text = self.markdown_source.replace("\n", " ").strip()
+        text = text.replace("\n", " ").strip()
         if not text:
             return
         if " " in self.name:
@@ -159,8 +157,8 @@ class Doc(j.baseclasses.object):
             if header.level == level:
                 return header
 
-    def _process(self):
-        if not self._processed:
+    def process(self, reset=False):
+        if not self._processed or reset:
             self._macros_process()
             self._links_process()
             self._processed = True
@@ -170,7 +168,6 @@ class Doc(j.baseclasses.object):
         """
         markdown after processing of the full doc
         """
-        self._process()
         res = self.markdown_obj.markdown
 
         if "{{" in res:
@@ -191,9 +188,8 @@ class Doc(j.baseclasses.object):
     def markdown_clean(self):
         # remove the code blocks (comments are already gone)
         print("markdown_clean")
-        from IPython import embed
-
-        embed(colors="Linux")
+        # TODO:
+        j.shell()
         return None
 
     @property
@@ -284,8 +280,7 @@ class Doc(j.baseclasses.object):
         eval the macros
         """
 
-        if not self.docsite.threegit:
-            return
+        assert self.docsite.threegit
 
         for part in self.parts_get(cat="macro"):
             if part.method.strip() == "":
@@ -293,13 +288,16 @@ class Doc(j.baseclasses.object):
 
             macro_name = part.method.split("(", 1)[0].strip()
 
-            if not macro_name in self.docsite.threegit._macros:
+            if macro_name in self.docsite.threegit.wiki_macros:
+                method = self.docsite.threegit.wiki_macros[macro_name]
+            elif macro_name in j.tools.threegit.wiki_macros:
+                method = j.tools.threegit.wiki_macros[macro_name]
+            else:
                 e = "COULD NOT FIND MACRO"
                 block = "```python\nERROR IN MACRO*** TODO: *1 ***\nmacro:\n%s\nERROR:\n%s\n```\n" % (macro_name, e)
                 self._log_error(block)
                 self.docsite.error_raise(block, doc=self)
 
-            method = self.docsite.threegit._macros[macro_name]
             args = self._args_get(part.method)
             kwargs = self._kwargs_get(part.method)
             if j.data.types.dict.check(part.data):
@@ -354,7 +352,11 @@ class Doc(j.baseclasses.object):
         return self.markdown_obj.parts_get(text_to_find=text_to_find, cat=cat)
 
     def write(self):
+        # process macros and other...
+        self.process()
+
         self._log_info("write:%s" % self)
+
         md = self.markdown  # just to trigger the error checking
         j.sal.fs.createDir(j.sal.fs.joinPaths(self.docsite.outpath, self.path_dir_rel))
         for link in self._links:
@@ -375,6 +377,8 @@ class Doc(j.baseclasses.object):
 
         dest = j.sal.fs.joinPaths(self.docsite.outpath, self.path_dir_rel, self.name) + ".md"
 
+        if self.sonic_client:
+            self.text_sonic_set(md)
         j.sal.fs.writeFile(dest, md, append=False)
 
     def _link_exists(self, link):

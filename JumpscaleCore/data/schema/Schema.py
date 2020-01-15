@@ -197,7 +197,7 @@ class Schema(j.baseclasses.object):
             p.index_key = True
 
         if name in ["id"]:
-            self._error_raise("do not use 'id' in your schema, is reserved for system.", data=text)
+            self._error_raise("do not use 'id' in your schema, is reserved for system\n%s" % line)
         elif name in ["name"]:
             p.unique = True
             # everything which is unique also needs to be indexed
@@ -205,7 +205,7 @@ class Schema(j.baseclasses.object):
 
         if "(" in line:
             line_proptype = line.split("(")[1].split(")")[0].strip().lower()  # in between the ()
-            self._log_debug("line:%s; lineproptype:'%s'" % (line_original, line_proptype))
+            # self._log_debug("line:%s; lineproptype:'%s'" % (line_original, line_proptype))
             line_wo_proptype = line.split("(")[0].strip()  # before the (
 
             if pointer_type:
@@ -276,7 +276,7 @@ class Schema(j.baseclasses.object):
 
         # lets do some tests to see if it will render well, jinja doesn't show errors propertly
         for prop in self.properties:
-            self._log_debug("prop for obj gen: %s:%s" % (prop, prop.js_typelocation))
+            # self._log_debug("prop for obj gen: %s:%s" % (prop, prop.js_typelocation))
             prop.capnp_schema
             prop.default_as_python_code
             prop.js_typelocation

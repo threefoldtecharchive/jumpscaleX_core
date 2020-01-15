@@ -387,14 +387,14 @@ class TestGitClient(BaseTest):
         Test patch gitignore file in git repo.
         **Test scenario**
         #. Make sure that .gitignore file doesn't exist.
-        #. Use patchGitignore method and check if .gitignore file is created.
+        #. Use gitignore_patch method and check if .gitignore file is created.
         #. Remove .gitignore file
         """
         self.info("Make sure that .gitignore file doesn't exist")
         self.assertFalse(os.path.isfile("{}/.gitignore".format(self.GIT_REPO)))
 
-        self.info("Use patchGitignore and check if .gitignore file is created")
-        self.GIT_CLIENT.patchGitignore()
+        self.info("Use gitignore_patch and check if .gitignore file is created")
+        self.GIT_CLIENT.gitignore_patch()
         self.assertTrue(os.path.isfile("{}/.gitignore".format(self.GIT_REPO)))
 
         self.info("Remove .gitignore file")

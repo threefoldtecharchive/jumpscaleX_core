@@ -470,7 +470,7 @@ def wiki_load(name=None, url=None, reset=False, foreground=False):
         wikis.append(
             (
                 "testwikis",
-                "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/docs/wikis/examples/docs",
+                "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/zerobot/wiki_examples/wiki",
             )
         )
         wikis.append(("tokens", "https://github.com/threefoldfoundation/info_tokens/tree/development/docs"))

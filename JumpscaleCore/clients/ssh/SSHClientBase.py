@@ -239,7 +239,7 @@ class SSHClientBase(j.baseclasses.object_config):
             dest,
             keepsymlinks=keepsymlinks,
             deletefirst=False,
-            overwriteFiles=True,
+            overwriteFiles=rsyncdelete,
             ignoredir=ignoredir,
             ignorefiles=ignorefiles,
             rsync=True,

@@ -12,12 +12,13 @@ class RDBFactory(j.baseclasses.object):
     def _init(self):
         self._children = j.baseclasses.dict()
 
-    def client_get(self, bcdbname="test", addr="localhost", port=6379, secret=None):
+    def client_get(self, bcdbname=None, addr="localhost", port=6379, secret=None):
         """
         :param bcdbname: bcdbname name
         :param redisconfig_name: name of the redis config client see j.clients.redis_config
         :return:
         """
+        assert bcdbname
         key = "%s_%s_%s" % (bcdbname, addr, port)
         if key not in self._children:
             self._children[key] = RDBClient(bcdbname=bcdbname, addr=addr, port=port, secret=secret)

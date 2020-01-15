@@ -445,7 +445,7 @@ class BCDB(j.baseclasses.object):
     def index_reset(self):
         self.stop()  # will stop sqlite client and the dataprocessor
         assert self.storclient
-        #self._redis_reset()
+        # self._redis_reset()
         if self.storclient.type != "SDB":
             j.sal.fs.remove(self._data_dir)
         else:
@@ -813,6 +813,8 @@ class BCDB(j.baseclasses.object):
             model = self.model_get(schema=schema)
             obj = j.data.serializers.jsxdata.loads(bdata, model=model)
             if schema:
+                if not obj._schema == schema:
+                    j.shell()
                 assert obj._schema == schema
             obj.nid = nid
             if not obj.id and id:
