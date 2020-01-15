@@ -4324,7 +4324,14 @@ class JumpscaleInstaller:
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
             if branch:
-                BRANCH = branch
+                C = f"""    
+                    git ls-remote --heads {GITURL} {branch} | wc -l
+                    """
+                _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True)
+
+                if out == 1:
+                    BRANCH = branch
+
             try:
                 dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
             except Exception as e:
