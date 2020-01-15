@@ -4323,7 +4323,7 @@ class JumpscaleInstaller:
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
             if branch:
-                C = f"""    
+                C = f"""
                     git ls-remote --heads {GITURL} {branch} | wc -l
                     """
                 _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True)
@@ -4700,8 +4700,8 @@ class DockerContainer:
         if "SSH_Agent" in MyEnv.config and MyEnv.config["SSH_Agent"]:
             MyEnv.sshagent.key_default_name  # means we will load ssh-agent and help user to load it properly
 
-        if len(MyEnv.sshagent.keys_list()) == 0:
-            raise Tools.exceptions.Base("Please load your ssh-agent with a key!")
+            if len(MyEnv.sshagent.keys_list()) == 0:
+                raise Tools.exceptions.Base("Please load your ssh-agent with a key!")
 
         self._wireguard = None
 
