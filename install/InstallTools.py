@@ -4334,16 +4334,17 @@ class JumpscaleInstaller:
             try:
                 dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
             except Exception as e:
-                if MyEnv.interactive:
-                    activate_http = Tools.ask_yes_no(
-                        "\n### SSH cloning Failed, your key isn't on github or you're missing permission, Do you want to clone via http?\n"
-                    )
-                    if not activate_http:
-                        raise Tools.exceptions.Base("\n### Please authenticate your key and try again\n")
 
-                (_, _, _, _, repository_url, _,) = Tools.code_git_rewrite_url(url=GITURL, ssh=False)
-
-                Tools.code_github_get(url=repository_url, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
+                activate_http = Tools.ask_yes_no(
+                    "\n### SSH cloning Failed, your key isn't on github or you're missing permission, Do you want to clone via http?\n"
+                )
+                if activate_http:
+                    MyEnv.interactive = False
+                    r = Tools.code_git_rewrite_url(url=GITURL, ssh=False)
+                    # TODO: *1
+                    Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull)
+                else:
+                    raise Tools.exceptions.Base("\n### Please authenticate your key and try again\n")
 
         if prebuilt:
             self.prebuilt_copy()
