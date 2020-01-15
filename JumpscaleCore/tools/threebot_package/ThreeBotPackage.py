@@ -86,10 +86,9 @@ class ThreeBotPackage(ThreeBotPackageBase):
         if self._wikis is None:
             self._wikis = j.baseclasses.dict()
 
-        path = self._changed("wiki", die=False, reset=reset)
-        if path:
-            j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=path, reset=reset)
-            self._wikis[self.name] = path
+        wiki_path = j.sal.fs.joinPaths(self.path, "wiki")
+        j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=wiki_path, reset=reset)
+        self._wikis[self.name] = wiki_path
 
     def actors_load(self):
 

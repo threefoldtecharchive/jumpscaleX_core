@@ -206,8 +206,6 @@ class DocSite(j.baseclasses.object):
         if not reset and self._loaded:
             return
 
-        self.revision = self.threegit.git_client.config_3git_set("revision_last_processed_docsite", "")
-
         path = self.path
         if not j.sal.fs.exists(path=path):
             raise j.exceptions.NotFound("Cannot find source path in load:'%s'" % path)
@@ -262,11 +260,11 @@ class DocSite(j.baseclasses.object):
                 callbackForMatchFile=callbackForMatchFile,
             )
 
-            revision = self.threegit.git_client.config_3git_get("revision_last_processed_docsite")
+            revision = self.threegit.git_client.config_3git_get("revision_last_processed")
             old_files = None
         else:
             # check changed files and process it using 3git tool
-            self.revision = self.threegit.git_client.config_3git_get("revision_last_processed_docsite")
+            self.revision = self.threegit.git_client.config_3git_get("revision_last_processed")
             revision, self._files_changed, old_files = self.threegit.git_client.logChanges(
                 path=self.path, from_revision=self.revision, untracked=True
             )
