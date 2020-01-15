@@ -34,12 +34,14 @@ class SerializerUJson(SerializerBase):
     def __init__(self):
         SerializerBase.__init__(self)
 
-    def dumps(self, obj, sort_keys=False, indent=None, encoding="ascii"):
+    def dumps(self, obj, sort_keys=False, indent=None, encoding="ascii", ignore_error=False):
         try:
             return json.dumps(
                 obj, ensure_ascii=False, sort_keys=sort_keys, indent=indent, cls=Encoder.get(encoding=encoding)
             )
         except Exception as e:
+            if ignore_error:
+                return ignore_error
             raise j.exceptions.Value("Cannot dump (package) json", data=obj, exception=e)
 
     def loads(self, s):

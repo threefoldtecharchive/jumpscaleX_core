@@ -324,7 +324,7 @@ class RedisServer(j.baseclasses.object):
                 res.append("%s:schemas" % name)
                 res.append("%s:data" % name)
             else:
-                for model in bcdb.models:
+                for model in bcdb.models.values():
                     res.append("{}:schemas:{}".format(name, model.schema.url))
                     res.append("{}:data:{}".format(name, model.schema.url))
 

@@ -87,7 +87,6 @@ class OpenRestyServer(j.baseclasses.factory_data):
         :param reset:
         :return:
         """
-
         if reset or self.status not in ["ok", "installed"]:
 
             # get weblib
@@ -157,6 +156,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
         kosmos 'j.servers.openresty.default.start(reset=False)'
         :return:
         """
+        self.cleanup()
         self.install(reset=reset)
         self.configure()
         self._letsencrypt_configure()

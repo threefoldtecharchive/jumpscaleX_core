@@ -34,8 +34,8 @@ class Syncer(j.baseclasses.object_config):
         sshclient_names = [] (LS)
         paths = [] (LS)
         ignoredir = [] (LS)
-        ignore_delete = true  (B)
-        rsyncdelete = false (B)
+        #ignore_delete = true  (B)
+        rsyncdelete = true (B)
         """
 
     def sshclients_add(self, sshclients=None):

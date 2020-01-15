@@ -20,6 +20,7 @@ class Application(object):
         self.appname = "UNKNOWN"
 
         self.logger = None
+        self.inlogger = False
 
         self._debug = None
 

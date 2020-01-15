@@ -311,7 +311,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             bcdb = self.get(name=name)
             bcdb.stop()
 
-    def export(self, name=None, path=None, yaml=True, data=True, encrypt=True, reset=True):
+    def export(self, name=None, path=None, yaml=True, data=True, encrypt=False, reset=True):
         """Export all models and objects
 
         kosmos 'j.data.bcdb.export(name="system",encrypt=False)'
@@ -493,7 +493,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             storclient = j.clients.sdb.client_get(bcdbname=name)
         elif ttype == "redis":
             assert not namespace  # should be empty only relevant in ZDB
-            storclient = j.clients.rdb.client_get()
+            storclient = j.clients.rdb.client_get(bcdbname=name)
         else:
             raise j.exceptions.Input("only redis, sqlite and zdb supported")
 
@@ -548,7 +548,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                     mode="seq",
                 )
             else:
-                raise j.exceptions.Input("cannot find zdb on port" % data["port"])
+                raise j.exceptions.Input("cannot find zdb on port:%s" % data["port"])
         elif data["type"] == "rdb":
             if "addr" not in data:
                 data["addr"] = "localhost"

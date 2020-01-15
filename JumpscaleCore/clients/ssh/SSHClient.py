@@ -128,7 +128,7 @@ class SSHClient(SSHClientBase):
             cmd += "chgrp %s %s &&" % (group, path)
         cmd = cmd.strip().strip("&")
         if cmd:
-            self.execute(cmd, showout=False, cmd_process=False, interactive=False)
+            self.execute(cmd, showout=False, interactive=False)
 
         # flags = ssh2.sftp.LIBSSH2_FXF_CREAT
         # if append:
