@@ -188,8 +188,10 @@ class DocSite(j.baseclasses.object):
         return self._files
 
     @property
-    def docsite_dir_has_files(self):
-        return j.sal.fs.listFilesInDir(self.outpath)
+    def is_empty(self):
+        if not j.sal.fs.exists(self.outpath):
+            return True
+        return not j.sal.fs.listFilesInDir(self.outpath)
 
     def load(self, reset=False):
         """
@@ -198,8 +200,8 @@ class DocSite(j.baseclasses.object):
 
         if duplicate only the first found will be used
         """
-        # if not self.docsite_dir_has_files:
-        #     reset = True
+        if self.is_empty:
+            reset = True
 
         if not reset and self._loaded:
             return
@@ -212,8 +214,21 @@ class DocSite(j.baseclasses.object):
 
         j.sal.fs.remove(self.error_file_path)
 
+        def callbackForMatchDir(path, arg):
+            base = j.sal.fs.getBaseName(path).lower()
+            if base.startswith("."):
+                return False
+            if base.startswith("_"):
+                return False
+            return True
+
+        def callbackFunctionDir(path, arg):
+            return True
+
         def callbackForMatchFile(path, arg):
             base = j.sal.fs.getBaseName(path).lower()
+            if base.startswith("."):
+                return False
             if base == "errors.md":
                 return False
             if base == "_sidebar.md":
@@ -226,8 +241,6 @@ class DocSite(j.baseclasses.object):
             return True
 
         def callbackFunctionFile(path, arg):
-            if path.find("error.md") != -1:
-                return
             self._log_debug("file:%s" % path)
             ext = j.sal.fs.getFileExtension(path).lower()
             base = j.sal.fs.getBaseName(path)
@@ -239,24 +252,32 @@ class DocSite(j.baseclasses.object):
             else:
                 self.file_add(path)
 
-        if not reset:
+        if reset:
+            j.sal.fswalker.walkFunctional(
+                self.path,
+                callbackFunctionFile=callbackFunctionFile,
+                callbackFunctionDir=callbackFunctionDir,
+                arg="",
+                callbackForMatchDir=callbackForMatchDir,
+                callbackForMatchFile=callbackForMatchFile,
+            )
+
+            revision = self.threegit.git_client.config_3git_get("revision_last_processed_docsite")
+            old_files = None
+        else:
             # check changed files and process it using 3git tool
             self.revision = self.threegit.git_client.config_3git_get("revision_last_processed_docsite")
             revision, self._files_changed, old_files = self.threegit.git_client.logChanges(
                 path=self.path, from_revision=self.revision, untracked=True
             )
-        else:
-            self._files_changed = j.sal.fs.listFilesInDir(self.path, recursive=True)
-            revision = self.threegit.git_client.config_3git_get("revision_last_processed_docsite")
-            old_files = None
 
-        for item in self._files_changed:
-            if not reset:
+            for item in self._files_changed:
                 item = f"{self.threegit.git_client.path}/{item}"
-            if j.sal.fs.exists(item):
-                if j.sal.fs.isFile(item):
-                    if callbackForMatchFile(item, ""):
-                        callbackFunctionFile(item, "")
+                if j.sal.fs.exists(item):
+                    if j.sal.fs.isFile(item):
+                        if callbackForMatchFile(item, ""):
+                            callbackFunctionFile(item, "")
+
         if old_files:
             for ditem in old_files:
                 item_path = j.sal.fs.joinPaths(self.outpath, ditem)
@@ -608,7 +629,6 @@ class DocSite(j.baseclasses.object):
         # self.verify(url_check=url_check)
 
         j.sal.fs.createDir(self.outpath)
-
         self.write_metadata()
 
         keys = [item for item in self.docs.keys()]

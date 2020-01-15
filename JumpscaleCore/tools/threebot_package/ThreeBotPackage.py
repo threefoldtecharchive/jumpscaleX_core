@@ -37,7 +37,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
 
     def _changed(self, path, die=True, reset=False):
         if not path.startswith("/"):
-            path = "%s/%s" % (self.path, path)
+            path = j.sal.fs.joinPaths(self.path, path)
         if not j.sal.fs.exists(path):
             if die:
                 raise j.exceptions.Input("could not find:%s" % path)

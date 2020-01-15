@@ -58,11 +58,6 @@ class Doc(j.baseclasses.object):
         self._links = []
         self.render_obj = None
 
-        # process macro;s and other...
-        self.process()
-        if self.sonic_client:
-            self.text_sonic_set()
-
     def render_macro_template(self, name, **kwargs):
         return env.get_template(name).render(**kwargs)
 
@@ -73,9 +68,9 @@ class Doc(j.baseclasses.object):
             else:
                 yield txt[i : i + length]
 
-    def text_sonic_set(self):
+    def text_sonic_set(self, text):
         print(f"indexing {self.docsite.name} of {self.path_rel}")
-        text = self.markdown_source.replace("\n", " ").strip()
+        text = text.replace("\n", " ").strip()
         if not text:
             return
         if " " in self.name:
@@ -357,7 +352,11 @@ class Doc(j.baseclasses.object):
         return self.markdown_obj.parts_get(text_to_find=text_to_find, cat=cat)
 
     def write(self):
+        # process macros and other...
+        self.process()
+
         self._log_info("write:%s" % self)
+
         md = self.markdown  # just to trigger the error checking
         j.sal.fs.createDir(j.sal.fs.joinPaths(self.docsite.outpath, self.path_dir_rel))
         for link in self._links:
@@ -378,6 +377,8 @@ class Doc(j.baseclasses.object):
 
         dest = j.sal.fs.joinPaths(self.docsite.outpath, self.path_dir_rel, self.name) + ".md"
 
+        if self.sonic_client:
+            self.text_sonic_set(md)
         j.sal.fs.writeFile(dest, md, append=False)
 
     def _link_exists(self, link):
