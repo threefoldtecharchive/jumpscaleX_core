@@ -53,7 +53,7 @@ class JSXObject2(j.data.schema._JSXObjectClassSub):
         {% endif %}
         # self._log_debug("set:{{prop.name}}='%s'"%(val))
         if val != self.{{prop.name}}:
-            self._log_debug("change:{{prop.name}}" + str(val))
+            # self._log_debug("change:{{prop.name}}" + str(val))
             self._deserialized_items["{{prop.name}}"] = val
             self._changed_deserialized_items=True
             {% if prop.is_complex_type %}

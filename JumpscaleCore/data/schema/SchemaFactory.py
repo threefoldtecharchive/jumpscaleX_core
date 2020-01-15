@@ -96,7 +96,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         assert isinstance(md5, str)
         if not md5 in self.schemas_md5:
             data = self.meta.schema_get(md5=md5)
-            s = self.get_from_text(data["text"])
+            s = self.get_from_text(data["text"], newest=False)  # important we don't fetch the newest
             if md5 not in self.schemas_md5:
                 self.schemas_md5[md5] = s
         return self.schemas_md5[md5]
@@ -184,6 +184,12 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         nr = 0
         out = ""
 
+        def remove_comment(line):
+            if "#" not in line:
+                return line
+            line1, line2 = line.split("#", 1)
+            return line1.strip()
+
         for line in schema_text.split("\n"):
             line = line.strip()
             line = line.replace("::", ":")  # there was some but at one point of time
@@ -196,17 +202,17 @@ class SchemaFactory(j.baseclasses.factory_testtools):
             if line.startswith("@"):
                 out += "%s\n" % line
             elif line.strip() == "":
-                out += "\n"
+                continue
             elif line.strip().startswith("#"):
-                out += "%s\n" % line
+                continue
             elif ":" in line[0:3]:
                 found_nrs = True
-                out += "%s\n" % line
+                out += "%s\n" % remove_comment(line)
             else:
                 if found_nrs:
                     raise j.exceptions.Input("cannot mix nr's and no nrs in schema", data=[url, schema_text])
                 assert ":" not in line[0:3]
-                out += "%-2s: %s\n" % (nr, line)
+                out += "%-2s: %s\n" % (nr, remove_comment(line))
                 nr += 1
         schema_text = out
         assert url

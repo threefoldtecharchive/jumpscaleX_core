@@ -296,6 +296,7 @@ class SystemFS(JSBASE, TESTTOOLS):
                 self.createDir(self.getParent(dstpath))
             cmd += " '%s' '%s'" % (src, dst)
             cmd += " --verbose"
+            j.shell()
             j.core.tools.execute(
                 cmd, showout=showout, die=True, retry=retry, errormsg="cannot rsync %s to %s" % (src, dstpath)
             )

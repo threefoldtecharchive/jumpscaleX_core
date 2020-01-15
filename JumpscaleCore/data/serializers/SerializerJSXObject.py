@@ -57,6 +57,7 @@ class SerializerJSXObject(SerializerBase):
             md5bin = data[5:21]
             md5 = md5bin.hex()
             data2 = data[21:]
+            url = model.schema.url
             schema_md5 = j.data.schema.get_from_md5(md5)
             schema = j.data.schema.get_from_url(schema_md5.url)
             assert schema_md5.url == schema.url

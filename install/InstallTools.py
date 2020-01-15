@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 import getpass
 import pickle
 import re
+import copy
 
 DEFAULT_BRANCH = "development"
 GITREPOS = {}
@@ -238,6 +239,10 @@ class RedisTools:
             cl = None
 
         return cl
+
+    @staticmethod
+    def serialize(data):
+        return serializer(data)
 
     @staticmethod
     def core_get(reset=False, tcp=True):
@@ -1102,11 +1107,11 @@ class Tools:
         if not isinstance(msg, str):
             msg = str(msg)
 
-        logdict["message"] = Tools.text_replace(msg)
+        logdict["message"] = msg  # Tools.text_replace(msg)
 
         logdict["linenr"] = linenr
         logdict["filepath"] = fname
-        logdict["processid"] = MyEnv.appname
+        logdict["processid"] = "unknown"  # TODO: get pid
         if source:
             logdict["source"] = source
 
@@ -1131,11 +1136,14 @@ class Tools:
 
         logdict["data"] = data
 
-        if stdout:
-            Tools.log2stdout(logdict, data_show=data_show)
-
         iserror = tb or exception
-        return Tools.process_logdict_for_handlers(logdict, iserror)
+
+        Tools.process_logdict_for_handlers(logdict, iserror)
+
+        if stdout:
+            logdict = copy.copy(logdict)
+            logdict["message"] = Tools.text_replace(logdict["message"])
+            Tools.log2stdout(logdict, data_show=data_show)
 
     @staticmethod
     def process_logdict_for_handlers(logdict, iserror=True):
@@ -1146,19 +1154,19 @@ class Tools:
         :return:
         """
 
-        # assert isinstance(logdict, dict)
+        assert isinstance(logdict, dict)
 
         if iserror:
             for handler in MyEnv.errorhandlers:
                 handler(logdict)
 
-        for handler in MyEnv.loghandlers:
-            try:
-                handler(logdict)
-            except Exception as e:
-                MyEnv.exception_handle(e)
+        else:
 
-        # assert isinstance(logdict, dict)
+            for handler in MyEnv.loghandlers:
+                try:
+                    handler(logdict)
+                except Exception as e:
+                    MyEnv.exception_handle(e)
 
         return logdict
 
@@ -1920,7 +1928,7 @@ class Tools:
             p(text)
 
     @staticmethod
-    def traceback_format(tb):
+    def traceback_format(tb, replace=True):
         """format traceback
 
         :param tb: traceback

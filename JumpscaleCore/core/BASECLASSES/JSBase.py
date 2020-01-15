@@ -7,6 +7,8 @@ import inspect
 import types
 from .JSDict import JSDict
 
+# DO NOT LOG IN THIS CLASS
+
 
 class JSBase:
 
@@ -108,8 +110,6 @@ class JSBase:
 
             self.__class__.__init_class_done = True
 
-            self._log_debug("***CLASS INIT 1: %s" % self.__class__._classname)
-
             # lets make sure the initial loglevel gets set
             self._logger_set(children=False, parents=False)
 
@@ -125,7 +125,6 @@ class JSBase:
 
         :return: (properties,methods)
         """
-        # self._log("INSPECT:%s" % self.__class__)
         properties = []
         methods = []
         for name, obj in inspect.getmembers(self.__class__):
@@ -260,7 +259,7 @@ class JSBase:
             if id2 == "":
                 for item in ["instance", "_instance", "_id", "id", "name", "_name"]:
                     if item in self.__dict__ and self.__dict__[item]:
-                        self._log_debug("found extra for obj_id")
+                        # self._log_debug("found extra for obj_id")
                         id2 = str(self.__dict__[item])
                         break
             if id2 != "":
@@ -448,6 +447,8 @@ class JSBase:
 
         if j.application.debug or (self._logger_enabled and self._logger_min_level - 1 < level):
             # now we will log
+            if j.application.inlogger:
+                return
 
             frame_ = inspect.currentframe().f_back
             if _levelup > 0:

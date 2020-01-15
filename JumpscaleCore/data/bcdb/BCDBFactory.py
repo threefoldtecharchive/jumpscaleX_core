@@ -311,7 +311,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             bcdb = self.get(name=name)
             bcdb.stop()
 
-    def export(self, name=None, path=None, yaml=True, data=True, encrypt=True, reset=True):
+    def export(self, name=None, path=None, yaml=True, data=True, encrypt=False, reset=True):
         """Export all models and objects
 
         kosmos 'j.data.bcdb.export(name="system",encrypt=False)'

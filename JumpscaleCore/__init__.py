@@ -319,8 +319,10 @@ if not os.path.exists(j.core.application._lib_generation_path):
 
 import jumpscale_generated
 
-
-j.tools.alerthandler.setup()
+try:
+    j.tools.alerthandler.setup()
+except:
+    print("could not setup alerthandler")
 
 
 if generated and len(j.core.application.errors_init) > 0:
