@@ -8,14 +8,14 @@ from collections.abc import MutableSequence
 
 
 class ListObject(TypeBaseObjClass, MutableSequence):
-    def __init__(self, list_factory_type, values=[], child_type=None, model=None, parent=None):
+    def __init__(self, list_factory_type, values=None, child_type=None, model=None, parent=None):
         """
 
         :param child_type: is the JSX basetype which is the child of the list, can be None, will be detected when required then
 
         """
         self._list_factory_type = list_factory_type
-        self._inner_list = values
+        self._inner_list = values or []
         self.__changed = False
         self._child_type_ = child_type
         self._current = 0
@@ -93,10 +93,7 @@ class ListObject(TypeBaseObjClass, MutableSequence):
         return res
 
     def __iter__(self):
-        return self._inner_list.__iter__()
-
-    def __next__(self):
-        return self._inner_list.__next__()
+        return iter(self._inner_list)
 
     def insert(self, index, value):
         if self.isjsxobject:
