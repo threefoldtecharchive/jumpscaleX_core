@@ -177,6 +177,7 @@ def configure(
 @click.option("--develop", is_flag=True, help="will use the development docker image to start from.")
 @click.option("--ports", help="Expose extra ports repeat for multiple eg. 80:80", multiple=True)
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
+@click.option("--no-sshagent", is_flag=True, help="do you want to use an ssh-agent")
 def container_install(
     name="3bot",
     scratch=False,
@@ -186,6 +187,7 @@ def container_install(
     branch=None,
     reinstall=False,
     no_interactive=False,
+    no_sshagent=False,
     pull=False,
     develop=False,
     ports=None,
@@ -202,7 +204,7 @@ def container_install(
     # IT.MyEnv.interactive = True
     # interactive = not no_interactive
 
-    _configure(no_interactive=no_interactive)
+    _configure(no_interactive=no_interactive, no_sshagent=no_sshagent)
 
     if scratch:
         image = "threefoldtech/base"

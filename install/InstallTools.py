@@ -3414,7 +3414,7 @@ class MyEnv_:
         if readonly is None and "readonly" in args:
             readonly = True
 
-        if sshagent_use is None or ("no_sshagent" in args and sshagent_use is False):
+        if sshagent_use is None or ("no-sshagent" in args and sshagent_use is False):
             sshagent_use = False
         else:
             sshagent_use = True
@@ -3478,8 +3478,7 @@ class MyEnv_:
         if readonly:
             self.config["READONLY"] = readonly
 
-        if sshagent_use:
-            self.config["SSH_AGENT"] = sshagent_use
+        self.config["SSH_AGENT"] = sshagent_use
         if sshkey:
             self.config["SSH_KEY_DEFAULT"] = sshkey
         if debug_configure:
