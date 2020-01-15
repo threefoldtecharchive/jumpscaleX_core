@@ -21,8 +21,8 @@ SCHEMA_ALERT = """
 10: time_last = (D)
 11: support_trace = (LO) !jumpscale.alerthandler.alert.support.trace
 12: events = (LO) !jumpscale.alerthandler.alert.event
-13: logs = (LO) !jumpscale.alerthandler.alert.log
-14: tracebacks = (LO) !jumpscale.alerthandler.alert.traceback
+13: tracebacks = (LO) !jumpscale.alerthandler.alert.traceback
+# 14: logs = (LO) !jumpscale.alerthandler.alert.log
 
 @url = jumpscale.alerthandler.alert.support.trace
 0 : support_severity = "info,minor,normal,high,critical" (E)        #set by operator
@@ -43,21 +43,21 @@ SCHEMA_ALERT = """
 8 : trace= "" (S)
 9 : data = (S)
 
-#optional log items
-#in line with threefoldtech/jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md
-@url = jumpscale.alerthandler.alert.log
-0 : threebot_name =  (S)            #threebot names, can be more than 1
-1 : process_id = (I)                #the process id if known
-2 : logs = (LO) !jumpscale.alerthandler.alert.logitem
-
-@url = jumpscale.alerthandler.alert.logitem
-0 : filepath = ""
-1 : linenr = (I)
-2 : message = ""
-3 : level = (I)
-4 : context = (S)
-5 : cat = (S)
-6 : data = (S)
+# #optional log items
+# #in line with threefoldtech/jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md
+# @url = jumpscale.alerthandler.alert.log
+# 0 : threebot_name =  (S)            #threebot names, can be more than 1
+# 1 : process_id = (I)                #the process id if known
+# 2 : logs = (LO) !jumpscale.alerthandler.alert.logitem
+#
+# @url = jumpscale.alerthandler.alert.logitem
+# 0 : filepath = ""
+# 1 : linenr = (I)
+# 2 : message = ""
+# 3 : level = (I)
+# 4 : context = (S)
+# 5 : cat = (S)
+# 6 : data = (S)
 
 #optional tracebacks
 @url = jumpscale.alerthandler.alert.traceback
