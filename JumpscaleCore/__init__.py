@@ -335,3 +335,5 @@ if generated and len(j.core.application.errors_init) > 0:
 
 # import time
 # time.sleep(1000)
+
+j.application.log2fs_register("jumpscale")

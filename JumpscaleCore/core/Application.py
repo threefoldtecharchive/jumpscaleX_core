@@ -9,6 +9,77 @@ import sys
 from Jumpscale.servers.gedis.UserSession import UserSessionAdmin
 
 
+class FileSystemLogger:
+    DEFAULT_CONTEXT = "main"
+
+    def __init__(self, j, session):
+        self._j = j
+        self.session = session
+
+        if not session.strip():
+            raise ValueError("session must not be empty")
+
+        self.tt = self._j.data.time.getLocalTimeHRForFilesystem()
+        self.location = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s/%s") % (self.session, self.tt)
+
+        self.contexts = [self.DEFAULT_CONTEXT]  # as a stack
+
+    @property
+    def current_context(self):
+        return self.contexts[-1]
+
+    @property
+    def path(self):
+        return "%s/%s.ansi" % (self.location, self.current_context)
+
+    def reset_context(self):
+        if len(self.contexts) == 1:
+            return
+
+        self.contexts.pop()
+
+    def switch_context(self, context):
+        if not isinstance(context, str):
+            raise ValueError("expected a string for context")
+
+        self.contexts.append(context)
+
+    def log(self, logdict):
+        out = self._j.core.tools.log2str(logdict)
+        out = out.rstrip() + "\n"
+        path = self.path
+
+        try:
+            with open(path, "ab") as fp:
+                fp.write(bytes(out, "UTF-8"))
+        except FileNotFoundError:
+            print(f"Logging file of {path} was deleted")
+
+    def log_error(self, logdict):
+        self.switch_context("error")
+
+        try:
+            self.log(logdict)
+        except Exception as exp:
+            print(exp)
+        finally:
+            self.reset_context()
+
+    def register(self):
+        os.makedirs(self.location)
+
+        if self.log not in self._j.core.myenv.loghandlers:
+            self._j.core.myenv.loghandlers.append(self.log)
+        if self.log_error not in self._j.core.myenv.errorhandlers:
+            self._j.core.myenv.errorhandlers.append(self.log_error)
+
+    def unregister(self):
+        if self.log in self._j.core.myenv.loghandlers:
+            self._j.core.myenv.loghandlers.remove(self.log)
+        if self.log_error in self._j.core.myenv.errorhandlers:
+            self._j.core.myenv.errorhandlers.remove(self.log_error)
+
+
 class Application(object):
     def __init__(self, j):
 
@@ -35,7 +106,7 @@ class Application(object):
         self._in_autocomplete = False
 
         self.exception_handle = self._j.core.myenv.exception_handle
-        self._log2fs_session_name = None
+        self.fs_loggers = {}
 
         self._admin_session = None
 
@@ -109,53 +180,38 @@ class Application(object):
         :param session_name: name of the session
         :return:
         """
-        self._log2fs_session_name = session_name
-        tt = self._j.data.time.getLocalTimeHRForFilesystem()
-        self._log2fs_path_prefix = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s/%s") % (
-            self._log2fs_session_name,
-            tt,
-        )
-        self.log2fs_context_change("init")
+        if session_name in self.fs_loggers:
+            return
 
-        os.makedirs(self._log2fs_path_prefix)
-        assert self._log2fs_path
-        self._j.core.myenv.loghandlers.append(self._log2fs)
+        logger = FileSystemLogger(self._j, session=session_name)
+        logger.register()
+        self.fs_loggers[session_name] = logger
 
-    def log2fs_context_change(self, context):
+    def log2fs_context_change(self, session_name, context):
         """
 
         :param context:
         :return:
         """
-        tt = self._j.data.time.getLocalTimeHRForFilesystem()
-        self._log2fs_context = context
-        self._log2fs_path = "%s/%s_%s.ansi" % (self._log2fs_path_prefix, tt, self._log2fs_context)
+        if session_name not in self.fs_loggers:
+            self.log2fs_register(session_name)
+        self.fs_loggers[session_name].switch_context(context)
 
-    def _log2fs(self, logdict):
+    def log2fs_context_reset(self, session_name):
         """
-        is a log hander for j.core.myenv.loghandlers
 
-        how to use
-
-        if j.core.myenv.loghandlers==[]:
-
-
-        :param logdict:
+        :param context:
         :return:
         """
-        if self._log2fs_session_name:
-            out = self._j.core.tools.log2str(logdict)
-            out = out.rstrip() + "\n"
-            try:
-                fp = open(self._log2fs_path, "ab")
-            except:
-                self._j.shell()
-                w
-            # if self._j.data.types.string.check(contents):
-            fp.write(bytes(out, "UTF-8"))
-            # else:
-            # fp.write(out)
-            fp.close()
+        if session_name not in self.fs_loggers:
+            self.log2fs_register(session_name)
+        self.fs_loggers[session_name].reset_context()
+
+    def log2fs_unregister(self, session_name):
+        if session_name not in self.fs_loggers:
+            return
+
+        self.fs_loggers[session_name].unregister()
 
     # def bcdb_system_configure(self, addr, port, namespace, secret):
     #     """
