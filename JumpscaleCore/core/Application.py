@@ -9,7 +9,7 @@ import sys
 from Jumpscale.servers.gedis.UserSession import UserSessionAdmin
 
 
-class FileSystemLogger:
+class Logger:
     DEFAULT_CONTEXT = "main"
 
     def __init__(self, j, session):
@@ -19,7 +19,7 @@ class FileSystemLogger:
         if not session.strip():
             raise ValueError("session must not be empty")
 
-        self.tt = self._j.data.time.getLocalTimeHRForFilesystem()
+        self.tt = self._j.data.time.getLocalDateHRForFilesystem()
         self.location = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s/%s") % (self.session, self.tt)
 
         self.contexts = [self.DEFAULT_CONTEXT]  # as a stack
@@ -45,15 +45,7 @@ class FileSystemLogger:
         self.contexts.append(context)
 
     def log(self, logdict):
-        out = self._j.core.tools.log2str(logdict)
-        out = out.rstrip() + "\n"
-        path = self.path
-
-        try:
-            with open(path, "ab") as fp:
-                fp.write(bytes(out, "UTF-8"))
-        except FileNotFoundError:
-            print(f"Logging file of {path} was deleted")
+        raise NotImplementedError
 
     def log_error(self, logdict):
         self.switch_context("error")
@@ -66,7 +58,7 @@ class FileSystemLogger:
             self.reset_context()
 
     def register(self):
-        os.makedirs(self.location)
+        os.makedirs(self.location, exist_ok=True)
 
         if self.log not in self._j.core.myenv.loghandlers:
             self._j.core.myenv.loghandlers.append(self.log)
@@ -78,6 +70,19 @@ class FileSystemLogger:
             self._j.core.myenv.loghandlers.remove(self.log)
         if self.log_error in self._j.core.myenv.errorhandlers:
             self._j.core.myenv.errorhandlers.remove(self.log_error)
+
+
+class FileSystemLogger(Logger):
+    def log(self, logdict):
+        out = self._j.core.tools.log2str(logdict)
+        out = out.rstrip() + "\n"
+        path = self.path
+
+        try:
+            with open(path, "ab") as fp:
+                fp.write(bytes(out, "UTF-8"))
+        except FileNotFoundError:
+            print(f"Logging file of {path} was deleted")
 
 
 class Application(object):
