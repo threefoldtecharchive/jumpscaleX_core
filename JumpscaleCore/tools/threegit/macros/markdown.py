@@ -2,11 +2,8 @@ from Jumpscale import j
 from JumpscaleLibs.tools.googleslides.slides2html.google_links_utils import get_document_id
 
 
-CRED_FILE_PATH = j.core.tools.text_replace("{DIR_BASE}/var/cred.json")
-
-
 def markdown(doc, url, **kwargs):
-    client = j.clients.gdrive.get(name="markdown_macro", credfile=CRED_FILE_PATH)
+    client = j.clients.gdrive.get(name="main")
     discovery = client.service_get().files()
 
     output = ""
