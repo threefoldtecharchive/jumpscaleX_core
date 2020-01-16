@@ -385,7 +385,7 @@ class BCDBModel(BCDBModelBase):
                 self.index.set(obj)
             except j.clients.peewee.IntegrityError as e:
                 # this deals with checking on e.g. uniqueness
-                j.shell()
+                # j.shell()
                 raise j.exceptions.Input("Could not insert object, unique constraint failed:%s" % e, data=obj)
 
                 obj.id = None

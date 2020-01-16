@@ -215,7 +215,6 @@ def container_install(
         else:
             image = "threefoldtech/3botdev"
 
-
     portmap = None
     if ports:
         portmap = dict()
