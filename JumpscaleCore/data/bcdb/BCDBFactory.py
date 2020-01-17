@@ -355,6 +355,14 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         self.threebot_zdb_sonic_start()
 
+        ## import all schemas
+        known_schemas = j.core.tools.text_replace("{DIR_VAR}/codegen/schemas")
+        schemas_paths = j.sal.fs.listFilesInDir(known_schemas)
+        schemas_paths.sort(reverse=True)
+
+        for schema_path in schemas_paths:
+            _ = j.data.schema.get_from_text(j.sal.fs.readFile(schema_path))
+
         if not path:
             path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports")
         if not name:
@@ -375,7 +383,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                 j.data.bcdb._config_write()
             else:
                 config = j.data.bcdb._config[name]
-            bcdb = self.get_for_threebot(name, namespace=config["namespace"], ttype=config["type"])
+            bcdb = self.get_for_threebot(name, namespace=config.get("namespace"), ttype=config["type"])
             # bcdb = j.data.bcdb.get(name=name)
             path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
             bcdb.import_(path=path, interactive=False)
