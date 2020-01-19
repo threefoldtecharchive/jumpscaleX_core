@@ -168,15 +168,12 @@ class SchemaFactory(j.baseclasses.factory_testtools):
                 # 2nd one needs to have url specified
                 res.append(self._get_from_text_single(block, newest=newest, save=save))
 
-            ## keep track of all schemas (root, and sub in filesystem)
-            schemas_path = j.core.tools.text_replace("{DIR_VAR}/codegen/schemas")
+            ## keep track of all inner schemas (root, and sub schema meta)
             for block in blocks:
                 url_line = block.splitlines()[0]
                 schema_url = url
                 if "@url" in url_line:
                     schema_url = url_line.split("=")[1].strip()
-                schema_file_path = j.sal.fs.joinPaths(schemas_path, schema_url)
-                j.sal.fs.writeFile(schema_file_path, block)
                 if not self.exists(url=schema_url):
                     rewritten = self._schema_text_rewrite(schema_url, block)
                     md5 = self._md5(rewritten, blocktest=False)
@@ -193,7 +190,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         :param schema_text:
         :return:
         """
-        print(f"calling rewrite on \n\n------\n {schema_text} \nand url {url}\n\n")
+        # print(f"calling rewrite on \n\n------\n {schema_text} \nand url {url}\n\n")
         assert schema_text
         schema_text = j.core.tools.text_strip(schema_text)
         found_nrs = False
@@ -232,7 +229,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
                 nr += 1
         schema_text = out
         assert url
-        print(f"url {url} is greater than 5 and text\n", schema_text)
+        # print(f"url {url} is greater than 5 and text\n", schema_text)
         assert len(url) > 5
         schema_text = "@url = %s\n%s\n" % (url, schema_text.strip())
         return schema_text
@@ -305,9 +302,9 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         # process last block
         if block is not "":
             blocks.append(block)
-        print("Blocks are ")
-        print(f"{block}")
-        print("------------")
+        # print("Blocks are ")
+        # print(f"{block}")
+        # print("------------")
         return blocks
 
     def _check_bcdb_is_not_used(self):

@@ -43,10 +43,11 @@ class SchemaMeta(j.baseclasses.object):
         j.sal.fs.remove(self._data_path)
         self.load()
 
-    def load(self):
-        if j.sal.fs.exists(self._data_path):
+    def load(self, path=None):
+        path = path or self._data_path
+        if j.sal.fs.exists(path):
             self._log_debug("schemas load from db")
-            self._data = j.data.serializers.msgpack.load(self._data_path)
+            self._data = j.data.serializers.msgpack.load(path)
         else:
             self._log_debug("save, empty schema")
             self._data = {"url": {}, "md5": {}}

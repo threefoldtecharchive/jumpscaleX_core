@@ -324,6 +324,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         :param reset: reset the export path before exporting, defaults to True
         :type reset: bool, optional
         """
+
         if not name:
             v = list(self.instances.values())
             for bcdb in v:
@@ -338,6 +339,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                 path = "%s/%s" % (path, name)
             bcdb = self.get(name=name)
             bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
+
+        schema_path = j.core.tools.text_replace("{DIR_CFG}/schema_meta.msgpack")
+        path = path or j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")
+        j.sal.fs.copyFile(schema_path, path)
 
     def import_(self, name=None, path=None):
         """
@@ -356,15 +361,14 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         self.threebot_zdb_sonic_start()
 
         ## import all schemas
-        known_schemas = j.core.tools.text_replace("{DIR_VAR}/codegen/schemas")
-        schemas_paths = j.sal.fs.listFilesInDir(known_schemas)
-        schemas_paths.sort(reverse=True)
-
-        for schema_path in schemas_paths:
-            _ = j.data.schema.get_from_text(j.sal.fs.readFile(schema_path))
+        if path:
+            schemas_path = f"{path}/schema_meta.msgpack"
+        else:
+            schemas_path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")
+        j.data.schema.meta.load(path=schemas_path)
 
         if not path:
-            path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports")
+            path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/")
         if not name:
             names = j.sal.fs.listDirsInDir(path, False, True)
             for name in names:
@@ -379,10 +383,19 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             assert j.sal.fs.exists(path_bcdbconfig)
             if name not in j.data.bcdb._config:
                 config = j.data.serializers.yaml.load(path_bcdbconfig)
-                j.data.bcdb._config[name] = config
-                j.data.bcdb._config_write()
-            else:
-                config = j.data.bcdb._config[name]
+
+            # This caused the factory to consider it has the correct instance
+            # so in `get_for_threebot` it does return with redis error namespace not found
+            # so in `get_for_threebot` it does return with redis error namespace not found
+
+            #     j.data.bcdb._config[name] = config
+            #     j.data.bcdb._config_write()
+            # else:
+            #     config = j.data.bcdb._config[name]
+            if config["type"] not in ["zdb", "sqlite", "redis"]:
+                # these types usually myjobs instance
+                self._log_warning(f"only zdb, sqlite redis are supported your type is: {config['type']}")
+                return
             bcdb = self.get_for_threebot(name, namespace=config.get("namespace"), ttype=config["type"])
             # bcdb = j.data.bcdb.get(name=name)
             path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
@@ -540,7 +553,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         return BCDBVFS(self.instances)
 
     def _get_storclient(self, name):
-
         if name == "system":
             return j.clients.sqlitedb.client_get(bcdbname="system")
         data = self._config[name]
