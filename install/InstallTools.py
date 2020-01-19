@@ -2886,7 +2886,7 @@ class Tools:
             raise Tools.exceptions.JSBUG("branch should be a string or list, now %s" % branch)
 
         Tools.log("get code:%s:%s (%s)" % (url, path, branch))
-        if MyEnv.config["SSH_AGENT"]:
+        if MyEnv.config["SSH_AGENT"] and MyEnv.interactive:
             url = "git@github.com:%s/%s.git"
         else:
             url = "https://github.com/%s/%s.git"
@@ -3420,7 +3420,7 @@ class MyEnv_:
         if readonly is None and "readonly" in args:
             readonly = True
 
-        if sshagent_use is None or ("no_sshagent" in args and sshagent_use is False):
+        if sshagent_use is None or ("no-sshagent" in args and sshagent_use is False):
             sshagent_use = False
         else:
             sshagent_use = True
@@ -3484,8 +3484,7 @@ class MyEnv_:
         if readonly:
             self.config["READONLY"] = readonly
 
-        if sshagent_use:
-            self.config["SSH_AGENT"] = sshagent_use
+        self.config["SSH_AGENT"] = sshagent_use
         if sshkey:
             self.config["SSH_KEY_DEFAULT"] = sshkey
         if debug_configure:
@@ -4324,7 +4323,7 @@ class JumpscaleInstaller:
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
             if branch:
-                C = f"""    
+                C = f"""
                     git ls-remote --heads {GITURL} {branch} | wc -l
                     """
                 _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True)
