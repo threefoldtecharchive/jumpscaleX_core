@@ -4429,6 +4429,10 @@ class DockerFactory:
             cdir = Tools.text_replace("{DIR_BASE}/var/containers")
             Tools.dir_ensure(cdir)
             for name_found in os.listdir(cdir):
+                if not os.path.isdir(cdir):
+                    # https://github.com/threefoldtech/jumpscaleX_core/issues/297
+                    # in case .DS_Store is created when opened in finder
+                    continue
                 # to make sure there is no recursive behaviour if called from a docker container
                 if name_found != name and name_found.strip().lower() not in ["shared"]:
                     DockerContainer(name_found)
