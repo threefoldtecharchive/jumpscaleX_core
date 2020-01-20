@@ -297,33 +297,33 @@ class BCDB(j.baseclasses.object):
                 if item.endswith("schema_hist.toml"):
                     continue
                 print(f"processing item: {item}")
+                encr_ext = j.sal.fs.getFileExtension(item.rstrip(".encr"))
                 ext = j.sal.fs.getFileExtension(item)
-                if ext == "data" or ext == "datae":
+                if ext == "data" or encr_ext == "data":
                     self._log("encr:%s" % item)
                     data2 = j.sal.fs.readFile(item, binary=True)
-                    if ext == "datae":
+                    if ext == "encr":
                         data2 = j.data.nacl.default.decryptSymmetric(data2)
                     obj = j.data.serializers.jsxdata.loads(data2)
                     # print(f"data decrypted {data}")
                     data[obj.id] = (url, obj._ddict)
-                elif ext in ["toml", "yaml"] or ext in ["tomle", "yamle"]:
+                elif ext in ["toml", "yaml"] or encr_ext in ["toml", "yaml"]:
                     if ext == "toml":
                         self._log("toml:%s" % item)
                         datadict = j.data.serializers.toml.load(item)
                     elif ext == "yaml":
                         self._log("yaml:%s" % item)
                         datadict = j.data.serializers.yaml.load(item)
-                    elif ext == "tomle":
+                    elif encr_ext == "toml":
                         self._log("toml:%s" % item)
-                        data = j.sal.fs.readFile(item)
-                        data = j.data.nacl.default.decryptSymmetric(data)
-                        datadict = j.data.serializers.toml.loads(data)
-                    elif ext == "yamle":
+                        data_encr = j.sal.fs.readFile(item, binary=True)
+                        data_encr = j.data.nacl.default.decryptSymmetric(data_encr)
+                        datadict = j.data.serializers.toml.loads(data_encr)
+                    elif encr_ext == "yaml":
                         self._log("yaml:%s" % item)
-                        data = j.sal.fs.readFile(item)
-                        data = j.data.nacl.default.decryptSymmetric(data)
-                        datadict = j.data.serializers.yaml.loads(data)
-
+                        data_encr = j.sal.fs.readFile(item, binary=True)
+                        data_encr = j.data.nacl.default.decryptSymmetric(data_encr)
+                        datadict = j.data.serializers.yaml.loads(data_encr)
                     data[datadict["id"]] = (url, datadict)
                 else:
                     self._log("skip:%s" % item)

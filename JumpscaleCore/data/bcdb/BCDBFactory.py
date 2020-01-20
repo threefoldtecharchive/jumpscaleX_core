@@ -382,8 +382,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         else:
             path_bcdbconfig = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s/bcdbconfig.yaml" % name)
             assert j.sal.fs.exists(path_bcdbconfig)
-            if name not in j.data.bcdb._config:
-                config = j.data.serializers.yaml.load(path_bcdbconfig)
+            # if name not in j.data.bcdb._config:
+            config = j.data.serializers.yaml.load(path_bcdbconfig)
 
             # This caused the factory to consider it has the correct instance
             # so in `get_for_threebot` it does return with redis error namespace not found

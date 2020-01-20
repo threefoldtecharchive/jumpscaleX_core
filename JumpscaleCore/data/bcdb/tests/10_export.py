@@ -88,7 +88,7 @@ def main(self):
             assert len(farm_model.find()) == 10
             assert len(node_model.find()) == 8
 
-    # export_import(encrypt=True)
+    export_import(encrypt=True)
     export_import(encrypt=False)
 
     for namespace in namespaces:
