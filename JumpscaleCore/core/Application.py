@@ -5,12 +5,14 @@ import traceback
 
 import gc
 import sys
+import re
 
 from Jumpscale.servers.gedis.UserSession import UserSessionAdmin
 
 
 class Logger:
     DEFAULT_CONTEXT = "main"
+    ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
     def __init__(self, j, session):
         self._j = j
@@ -23,6 +25,9 @@ class Logger:
         self.location = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s/%s") % (self.session, self.tt)
 
         self.contexts = [self.DEFAULT_CONTEXT]  # as a stack
+        self._j.servers.startupcmd.get(
+            name="cache_logger", cmd_start="redis-server --port 2020 --maxmemory 100000000 -- daemonize yes"
+        ).start()
 
     @property
     def current_context(self):
@@ -83,6 +88,14 @@ class FileSystemLogger(Logger):
                 fp.write(bytes(out, "UTF-8"))
         except FileNotFoundError:
             print(f"Logging file of {path} was deleted")
+
+        cl = self._j.clients.redis.get(port=2020)
+        if cl.exists(self.tt+"_"+self.current_context):
+            val = cl.get(self.tt + "_" + self.current_context)
+            out_logger = val.decode()
+            out = out_logger+"\n"+out
+        out = self.ansi_escape.sub("", out)
+        cl.set(self.tt+"_"+self.current_context,out)
 
 
 class Application(object):
