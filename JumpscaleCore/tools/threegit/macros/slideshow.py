@@ -21,9 +21,7 @@ class Slide:
 
 
 def slideshow(doc, **kwargs):
-    gdrive_cl = j.clients.gdrive.get(
-        "slideshow_macro_client", credfile=j.core.tools.text_replace("{DIR_BASE}/var/cred.json")
-    )
+    gdrive_cl = j.clients.gdrive.get(name="main")
     slides_path = j.sal.fs.joinPaths("sandbox", "var", "gdrive", "static", "slide")
     j.sal.fs.createDir(slides_path)
 
