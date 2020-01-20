@@ -324,11 +324,12 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         :param reset: reset the export path before exporting, defaults to True
         :type reset: bool, optional
         """
-
+        instances_to_skip = ["myjobs", "system"]
         if not name:
             v = list(self.instances.values())
             for bcdb in v:
-                bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
+                if bcdb.name not in instances_to_skip:
+                    bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
         elif name == "system":
             if path:
                 path = "%s/%s" % (path, name)
@@ -341,8 +342,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
             bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
 
         schema_path = j.core.tools.text_replace("{DIR_CFG}/schema_meta.msgpack")
-        path = path or j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")
-        j.sal.fs.copyFile(schema_path, path)
+        scm_path = path or j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")
+        j.sal.fs.copyFile(schema_path, scm_path)
 
     def import_(self, name=None, path=None):
         """

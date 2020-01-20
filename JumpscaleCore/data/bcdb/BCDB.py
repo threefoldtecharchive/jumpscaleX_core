@@ -181,8 +181,17 @@ class BCDB(j.baseclasses.object):
         :param reset: reset the export path before exporting, defaults to True
         :type reset: bool, optional
         """
-
         j.data.bcdb.threebot_zdb_sonic_start()
+
+        # lazy loaded instances to export
+        instances_to_skip = ["myjobs", "system"]
+        if not self.name in instances_to_skip:
+            self.get_all()
+
+        # export schema
+        schema_path = j.core.tools.text_replace("{DIR_CFG}/schema_meta.msgpack")
+        scm_path = path or j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")
+        j.sal.fs.copyFile(schema_path, scm_path, createDirIfNeeded=True)
 
         if not path:
             path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % self.name)
