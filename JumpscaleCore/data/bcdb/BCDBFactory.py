@@ -382,23 +382,13 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         else:
             path_bcdbconfig = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s/bcdbconfig.yaml" % name)
             assert j.sal.fs.exists(path_bcdbconfig)
-            # if name not in j.data.bcdb._config:
             config = j.data.serializers.yaml.load(path_bcdbconfig)
 
-            # This caused the factory to consider it has the correct instance
-            # so in `get_for_threebot` it does return with redis error namespace not found
-            # so in `get_for_threebot` it does return with redis error namespace not found
-
-            #     j.data.bcdb._config[name] = config
-            #     j.data.bcdb._config_write()
-            # else:
-            #     config = j.data.bcdb._config[name]
             if config["type"] not in ["zdb", "sqlite", "redis"]:
                 # these types usually myjobs instance
                 self._log_warning(f"only zdb, sqlite redis are supported your type is: {config['type']}")
                 return
             bcdb = self.get_for_threebot(name, namespace=config.get("namespace"), ttype=config["type"])
-            # bcdb = j.data.bcdb.get(name=name)
             path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
             bcdb.import_(path=path, interactive=False)
 
