@@ -83,3 +83,51 @@ class MemProf:
         # show_refs(roots[:10], refcounts=True, shortnames=False, filename="/sandbox/code/github/rootsjsxobject2.png")
 
         # show_refs(roots[:6], refcounts=True, filename="/sandbox/code/github/roots.png")
+
+    def check_schemas(self, count=1000):
+        for i in range(10):
+            schema = f"""
+            @url = test.jumpscale.objtest{i}
+            field{i} = (I)
+            field_string{i} = (S)
+            """
+            s = j.data.schema.get_from_text(schema_text=schema)
+            for _ in range(1000):
+                o = s.new()
+        self.leak_check()
+
+    def check_client_gedis(self, count=10000):
+        for i in range(count):
+            print(i)
+            g = j.clients.gedis.get(name=f"_gedis_test{i}")
+
+        self.leak_check()
+
+    def check_client_tcprouter(self, count=10000):
+        rand_id = j.data.idgenerator.generateRandomInt(0, 100)
+        for i in range(count):
+            print(i)
+            tcl = j.clients.tcp_router.get(name=f"_tcl_test{rand_id}{i}")
+
+        self.leak_check()
+
+    def check_bcdb_objects(self, count=100000):
+        rand_id = j.data.idgenerator.generateRandomInt(0, 100000)
+
+        s = f"""
+    @url = jumpscale.bcdb.test.house{rand_id}
+    0 : name** = "" (S)
+    1 : active** = "" (B)
+    2 : cost** =  (N)
+
+    """.lstrip()
+        s = j.data.schema.get_from_text(schema_text=s)
+        # check the right schema in meta stor
+        model = j.data.bcdb.system.model_get(url=f"jumpscale.bcdb.test.house{rand_id}")
+        for i in range(count):
+            print(i)
+            o = model.new()
+            o.name = f"obj{i}"
+            o.cost = 100
+            o.active = False
+        self.leak_check()

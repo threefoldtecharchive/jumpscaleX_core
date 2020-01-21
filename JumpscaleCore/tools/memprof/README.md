@@ -78,3 +78,18 @@ e.g
     Graph written to /tmp/objgraph-m6_fu8vm.dot (55 nodes)
     Image generated as /sandbox/code/github/roots.png.png
 ```
+
+## other helpers
+- `check_schemas(count=...)` creates `count` of schema objects
+- `check_bcdb_objects(count=...)` creates `count` of bcdb objects
+- `check_client_gedis(count=...)` creates `count` of gedis client objects
+- `check_client_tcprouter(count=...)` creates `count` of tcprouter client
+
+
+## to profile one of the calls
+e.g
+```
+import cProfile
+
+cProfile.run('j.tools.memprof.check_schemas(5000)', filename=None)
+```
