@@ -96,7 +96,6 @@ class Website(j.baseclasses.factory_data):
         j.sal.fs.writeFile(self.path_cfg, r)
 
         for locationsconfigs in self.locations.find():
-            print(f"location : {locationsconfigs} ")
             locationsconfigs.configure()
 
 

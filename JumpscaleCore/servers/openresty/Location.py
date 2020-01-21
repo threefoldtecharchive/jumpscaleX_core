@@ -78,7 +78,6 @@ class LocationsConfiguration(j.baseclasses.object_config):
         j.sal.fs.createDir(self.path_cfg_dir)
         # FIXME: https://github.com/threefoldtech/jumpscaleX_core/issues/433
         for location in self.locations_static:
-            self._log_debug(f"configuring {location.name} ")
             if not location.path_location.endswith("/"):
                 location.path_location += "/"
             content = j.tools.jinja2.file_render(
