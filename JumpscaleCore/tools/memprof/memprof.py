@@ -97,17 +97,19 @@ class MemProf:
         self.leak_check()
 
     def check_client_gedis(self, count=10000):
+        rand_id = j.data.idgenerator.generateRandomInt(0, 100)
         for i in range(count):
             print(i)
-            g = j.clients.gedis.get(name=f"_gedis_test{i}")
+            g = j.clients.gedis.get(name=f"_gedis_test{i}_{rand_id}")
 
         self.leak_check()
 
-    def check_client_tcprouter(self, count=10000):
+    def check_client_tcprouter_zos(self, count=10000):
         rand_id = j.data.idgenerator.generateRandomInt(0, 100)
         for i in range(count):
             print(i)
             tcl = j.clients.tcp_router.get(name=f"_tcl_test{rand_id}{i}")
+            zos = j.clients.zos.get(name=f"_zos_test{rand_id}{i}")
 
         self.leak_check()
 
@@ -125,7 +127,6 @@ class MemProf:
         # check the right schema in meta stor
         model = j.data.bcdb.system.model_get(url=f"jumpscale.bcdb.test.house{rand_id}")
         for i in range(count):
-            print(i)
             o = model.new()
             o.name = f"obj{i}"
             o.cost = 100
