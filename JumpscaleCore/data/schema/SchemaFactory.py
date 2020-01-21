@@ -112,7 +112,6 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         :param url: url is e.g. jumpscale.bcdb.user.1
         :return: will return the most recent schema, there can be more than 1 schema with same url (changed over time)
         """
-        # print(f"getting {url}")
         # shortcut for performance
         if url in self.schemas_loaded:
             return self.schemas_loaded[url]
@@ -190,7 +189,6 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         :param schema_text:
         :return:
         """
-        # print(f"calling rewrite on \n\n------\n {schema_text} \nand url {url}\n\n")
         assert schema_text
         schema_text = j.core.tools.text_strip(schema_text)
         found_nrs = False
@@ -229,7 +227,6 @@ class SchemaFactory(j.baseclasses.factory_testtools):
                 nr += 1
         schema_text = out
         assert url
-        # print(f"url {url} is greater than 5 and text\n", schema_text)
         assert len(url) > 5
         schema_text = "@url = %s\n%s\n" % (url, schema_text.strip())
         return schema_text
@@ -302,9 +299,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         # process last block
         if block is not "":
             blocks.append(block)
-        # print("Blocks are ")
-        # print(f"{block}")
-        # print("------------")
+
         return blocks
 
     def _check_bcdb_is_not_used(self):

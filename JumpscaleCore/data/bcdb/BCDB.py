@@ -184,8 +184,7 @@ class BCDB(j.baseclasses.object):
         j.data.bcdb.threebot_zdb_sonic_start()
 
         # lazy loaded instances to export
-        instances_to_skip = ["myjobs", "system"]
-        if self.name not in instances_to_skip:
+        if self.storclient.type != "SDB":
             self.get_all()
 
         # export schema

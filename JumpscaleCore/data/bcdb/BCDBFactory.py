@@ -324,11 +324,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         :param reset: reset the export path before exporting, defaults to True
         :type reset: bool, optional
         """
-        instances_to_skip = ["myjobs", "system"]
         if not name:
             v = list(self.instances.values())
             for bcdb in v:
-                if bcdb.name not in instances_to_skip:
+                if bcdb.storclient.type != "SDB":
                     bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
         elif name == "system":
             if path:
