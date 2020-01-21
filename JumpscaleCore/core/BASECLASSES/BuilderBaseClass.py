@@ -128,7 +128,7 @@ class builder_method:
             """
             name = func.__name__
 
-            j.application.log2fs_register(builder._classname)
+            j.application.log2fs_redis_register(builder._classname)
             j.application.log2fs_context_change(builder._classname, name)
             try:
                 kwargs = self.get_all_as_keyword_arguments(func, args, kwargs)
