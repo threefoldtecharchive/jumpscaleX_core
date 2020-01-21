@@ -13,7 +13,7 @@ def main(self):
     kosmos 'j.data.bcdb.test(name="export")'
 
     """
-    sonic, zdb = j.data.bcdb.threebot_zdb_sonic_start()
+    _, zdb = j.data.bcdb.threebot_zdb_sonic_start()
 
     namespaces = ["testexport_zdb", "testexport_sqlite"]
 

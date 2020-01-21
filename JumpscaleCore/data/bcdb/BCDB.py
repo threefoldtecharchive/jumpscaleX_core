@@ -185,7 +185,7 @@ class BCDB(j.baseclasses.object):
 
         # lazy loaded instances to export
         instances_to_skip = ["myjobs", "system"]
-        if not self.name in instances_to_skip:
+        if self.name not in instances_to_skip:
             self.get_all()
 
         # export schema
