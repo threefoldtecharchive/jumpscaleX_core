@@ -300,9 +300,7 @@ class BCDB(j.baseclasses.object):
 
                 # check for files extensions, it file is encrypted will end with .encr
                 item_ext = j.sal.fs.getFileExtension(item.rstrip(".encr"))
-                is_encrypted = False
-                if j.sal.fs.getFileExtension(item) == "encr":
-                    is_encrypted = True
+                is_encrypted = j.sal.fs.getFileExtension(item) == "encr"
 
                 if item_ext == "data":
                     self._log("encr:%s" % item)
