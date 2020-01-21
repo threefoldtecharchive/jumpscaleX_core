@@ -181,8 +181,16 @@ class BCDB(j.baseclasses.object):
         :param reset: reset the export path before exporting, defaults to True
         :type reset: bool, optional
         """
-
         j.data.bcdb.threebot_zdb_sonic_start()
+
+        # lazy loaded instances to export
+        if self.storclient.type != "SDB":
+            self.get_all()
+
+        # export schema
+        schema_path = j.core.tools.text_replace("{DIR_CFG}/schema_meta.msgpack")
+        scm_path = path or j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")
+        j.sal.fs.copyFile(schema_path, scm_path, createDirIfNeeded=True)
 
         if not path:
             path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % self.name)
@@ -288,32 +296,41 @@ class BCDB(j.baseclasses.object):
                 if item.endswith("schema_hist.toml"):
                     continue
                 print(f"processing item: {item}")
-                ext = j.sal.fs.getFileExtension(item)
-                if ext == "data" or ext == "datae":
+
+                # check for files extensions, it file is encrypted will end with .encr
+                item_ext = j.sal.fs.getFileExtension(item.rstrip(".encr"))
+                is_encrypted = j.sal.fs.getFileExtension(item) == "encr"
+
+                if item_ext == "data":
                     self._log("encr:%s" % item)
                     data2 = j.sal.fs.readFile(item, binary=True)
-                    if ext == "datae":
+                    if is_encrypted:
                         data2 = j.data.nacl.default.decryptSymmetric(data2)
                     obj = j.data.serializers.jsxdata.loads(data2)
                     # print(f"data decrypted {data}")
                     data[obj.id] = (url, obj._ddict)
-                elif ext in ["toml", "yaml"] or ext in ["tomle", "yamle"]:
-                    if ext == "toml":
+
+                elif item_ext in ["toml", "yaml"]:
+
+                    if item_ext == "toml":
                         self._log("toml:%s" % item)
-                        datadict = j.data.serializers.toml.load(item)
-                    elif ext == "yaml":
+                        if is_encrypted:
+                            self._log("decrypting toml:%s" % item)
+                            data_encr = j.sal.fs.readFile(item, binary=True)
+                            data_encr = j.data.nacl.default.decryptSymmetric(data_encr)
+                            datadict = j.data.serializers.toml.loads(data_encr)
+                        else:
+                            datadict = j.data.serializers.toml.load(item)
+
+                    elif item_ext == "yaml":
                         self._log("yaml:%s" % item)
-                        datadict = j.data.serializers.yaml.load(item)
-                    elif ext == "tomle":
-                        self._log("toml:%s" % item)
-                        data = j.sal.fs.readFile(item)
-                        data = j.data.nacl.default.decryptSymmetric(data)
-                        datadict = j.data.serializers.toml.loads(data)
-                    elif ext == "yamle":
-                        self._log("yaml:%s" % item)
-                        data = j.sal.fs.readFile(item)
-                        data = j.data.nacl.default.decryptSymmetric(data)
-                        datadict = j.data.serializers.yaml.loads(data)
+                        if is_encrypted:
+                            self._log("decrypting yaml:%s" % item)
+                            data_encr = j.sal.fs.readFile(item, binary=True)
+                            data_encr = j.data.nacl.default.decryptSymmetric(data_encr)
+                            datadict = j.data.serializers.yaml.loads(data_encr)
+                        else:
+                            datadict = j.data.serializers.yaml.load(item)
 
                     data[datadict["id"]] = (url, datadict)
                 else:

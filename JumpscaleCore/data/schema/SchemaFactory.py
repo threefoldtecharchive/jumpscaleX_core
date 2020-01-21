@@ -112,7 +112,6 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         :param url: url is e.g. jumpscale.bcdb.user.1
         :return: will return the most recent schema, there can be more than 1 schema with same url (changed over time)
         """
-        # print(f"getting {url}")
         # shortcut for performance
         if url in self.schemas_loaded:
             return self.schemas_loaded[url]
@@ -167,6 +166,18 @@ class SchemaFactory(j.baseclasses.factory_testtools):
             else:
                 # 2nd one needs to have url specified
                 res.append(self._get_from_text_single(block, newest=newest, save=save))
+
+            ## keep track of all inner schemas (root, and sub schema meta)
+            for block in blocks:
+                url_line = block.splitlines()[0]
+                schema_url = url
+                if "@url" in url_line:
+                    schema_url = url_line.split("=")[1].strip()
+                if not self.exists(url=schema_url):
+                    rewritten = self._schema_text_rewrite(schema_url, block)
+                    md5 = self._md5(rewritten, blocktest=False)
+                    s = Schema(text=rewritten, url=schema_url, md5=md5)
+                    j.data.schema.meta.schema_set(s)
 
         if len(res) > 0:
             return res[0]
@@ -267,7 +278,6 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         :param schema_text:
         :return:
         """
-
         block = ""
         blocks = []
         txt = j.core.text.strip(schema_text)

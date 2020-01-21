@@ -327,7 +327,8 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         if not name:
             v = list(self.instances.values())
             for bcdb in v:
-                bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
+                if bcdb.storclient.type != "SDB":
+                    bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
         elif name == "system":
             if path:
                 path = "%s/%s" % (path, name)
@@ -338,6 +339,10 @@ class BCDBFactory(j.baseclasses.factory_testtools):
                 path = "%s/%s" % (path, name)
             bcdb = self.get(name=name)
             bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
+
+        schema_path = j.core.tools.text_replace("{DIR_CFG}/schema_meta.msgpack")
+        scm_path = path or j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")
+        j.sal.fs.copyFile(schema_path, scm_path)
 
     def import_(self, name=None, path=None):
         """
@@ -355,8 +360,15 @@ class BCDBFactory(j.baseclasses.factory_testtools):
 
         self.threebot_zdb_sonic_start()
 
+        ## import all schemas
+        if path:
+            schemas_path = f"{path}/schema_meta.msgpack"
+        else:
+            schemas_path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")
+        j.data.schema.meta.load(path=schemas_path)
+
         if not path:
-            path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports")
+            path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/")
         if not name:
             names = j.sal.fs.listDirsInDir(path, False, True)
             for name in names:
@@ -369,14 +381,13 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         else:
             path_bcdbconfig = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s/bcdbconfig.yaml" % name)
             assert j.sal.fs.exists(path_bcdbconfig)
-            if name not in j.data.bcdb._config:
-                config = j.data.serializers.yaml.load(path_bcdbconfig)
-                j.data.bcdb._config[name] = config
-                j.data.bcdb._config_write()
-            else:
-                config = j.data.bcdb._config[name]
-            bcdb = self.get_for_threebot(name, namespace=config["namespace"], ttype=config["type"])
-            # bcdb = j.data.bcdb.get(name=name)
+            config = j.data.serializers.yaml.load(path_bcdbconfig)
+
+            if config["type"] not in ["zdb", "sqlite", "redis"]:
+                # these types usually myjobs instance
+                self._log_warning(f"only zdb, sqlite redis are supported your type is: {config['type']}")
+                return
+            bcdb = self.get_for_threebot(name, namespace=config.get("namespace"), ttype=config["type"])
             path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
             bcdb.import_(path=path, interactive=False)
 
@@ -532,7 +543,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         return BCDBVFS(self.instances)
 
     def _get_storclient(self, name):
-
         if name == "system":
             return j.clients.sqlitedb.client_get(bcdbname="system")
         data = self._config[name]
