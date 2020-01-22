@@ -99,7 +99,6 @@ class AlertHandler(j.baseclasses.object):
         self._rediskey_logs = "logs:%s" % (self._threebot_name)
 
     def setup(self):
-        return  # TODO: not ready to be used
         if self.handle_error not in j.errorhandler.handlers:
             j.errorhandler.handlers.append(self.handle_error)
         if self.handle_log not in j.core.myenv.loghandlers:
@@ -162,7 +161,6 @@ class AlertHandler(j.baseclasses.object):
 
     def handle_error(self, logdict):
         j.application.inlogger = True
-        self._handle_error(logdict)
         try:
             self._handle_error(logdict)
         except Exception as e:
@@ -178,6 +176,13 @@ class AlertHandler(j.baseclasses.object):
         logdict["level"] = level
         logdict["alert_type"] = alert_type
         self._handle_error(logdict)
+
+    def get_identifier(self, msg, msg_pub, cat, alert_type):
+        if cat is None:
+            cat = ""
+        if alert_type is None:
+            alert_type = "event_system"
+        return j.data.hash.md5_string("_".join([msg, msg_pub, cat, alert_type]))
 
     def _handle_error(self, logdict):
         """handle error
@@ -195,8 +200,7 @@ class AlertHandler(j.baseclasses.object):
         if "public" not in logdict:
             logdict["public"] = ""
 
-        identifier = "%s_%s_%s_%s" % (logdict["message"], logdict["public"], logdict["cat"], alert_type)
-        identifier = j.data.hash.md5_string(identifier)
+        identifier = self.get_identifier(logdict["message"], logdict["public"], logdict["cat"], alert_type)
         alert = self.get(identifier=identifier, die=None)
 
         if alert.status == "new":
@@ -330,8 +334,21 @@ class AlertHandler(j.baseclasses.object):
         alert = self.schema_alert.new(datadict=datadict)
         return alert
 
-    # def delete(self, key):
-    #     self.db.delete(key)
+    def delete(self, identifier):
+        """delete an alert
+
+        :param identifier: alert unique identifier
+        :type identifier: str
+        :return: 1 or 0 (if it was not already there)
+        :rtype: int
+        """
+        return self.db.hdel(self._rediskey_alerts, identifier)
+
+    def delete_all(self):
+        """
+        delete all alerts
+        """
+        self.db.delete(self._rediskey_alerts)
 
     def walk(self, method, args={}):
         """
