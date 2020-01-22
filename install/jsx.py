@@ -29,6 +29,13 @@ def load_install_tools(branch=None, reset=False):
         if not os.path.exists(path) or reset:  # or path.find("/code/") == -1:
             url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py" % branch
 
+            # fallback to default branch if installation is being done for another branch that doesn't exist in core
+            if branch != DEFAULT_BRANCH and requests.get(url).status_code == 404:
+                url = (
+                    "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py"
+                    % DEFAULT_BRANCH
+                )
+
             with urlopen(url) as resp:
                 if resp.status != 200:
                     raise RuntimeError("fail to download InstallTools.py")
