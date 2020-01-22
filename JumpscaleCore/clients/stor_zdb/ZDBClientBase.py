@@ -24,8 +24,6 @@ class ZDBClientBase(j.baseclasses.object_config):
         if j.data.bcdb._master:
             self._model.trigger_add(self._update_trigger)
 
-        self._connect()
-
     def _connect(self):
         if self.admin:
 
@@ -56,6 +54,7 @@ class ZDBClientBase(j.baseclasses.object_config):
                 j.clients.redis.get(addr=self.addr, port=self.port, fromcache=False, ping=False)
             )
             self._select_namespace(self.nsname)
+            self._connect()
         return self._redis
 
     def _select_namespace(self, nsname=None):
