@@ -4325,10 +4325,7 @@ class JumpscaleInstaller:
             if branch:
                 C = f"""git ls-remote --heads {GITURL} {branch}"""
                 _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True)
-                import ipdb
-
-                ipdb.set_trace()
-                if not out:
+                if out:
                     BRANCH = branch
 
             try:
