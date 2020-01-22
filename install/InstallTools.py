@@ -4330,7 +4330,7 @@ class JumpscaleInstaller:
                     """
                 _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True)
 
-                if out == 1:
+                if "1" in out:
                     BRANCH = branch
 
             try:
