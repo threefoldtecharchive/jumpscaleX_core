@@ -5,6 +5,7 @@ import traceback
 
 import gc
 import sys
+import re
 
 from Jumpscale.servers.gedis.UserSession import UserSessionAdmin
 
@@ -18,10 +19,7 @@ class Logger:
 
         if not session.strip():
             raise ValueError("session must not be empty")
-
         self.tt = self._j.data.time.getLocalDateHRForFilesystem()
-        self.location = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s/%s") % (self.session, self.tt)
-
         self.contexts = [self.DEFAULT_CONTEXT]  # as a stack
 
     @property
@@ -29,8 +27,8 @@ class Logger:
         return self.contexts[-1]
 
     @property
-    def path(self):
-        return "%s/%s.ansi" % (self.location, self.current_context)
+    def location(self):
+        return "%s/%s/%s" % (self.session, self.tt, self.current_context)
 
     def reset_context(self):
         if len(self.contexts) == 1:
@@ -58,8 +56,6 @@ class Logger:
             self.reset_context()
 
     def register(self):
-        os.makedirs(self.location, exist_ok=True)
-
         if self.log not in self._j.core.myenv.loghandlers:
             self._j.core.myenv.loghandlers.append(self.log)
         if self.log_error not in self._j.core.myenv.errorhandlers:
@@ -73,16 +69,47 @@ class Logger:
 
 
 class FileSystemLogger(Logger):
+    @property
+    def path(self):
+        filepath = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s.ansi" % self.location)
+        parent_dir = self._j.sal.fs.getParent(filepath)
+        if not self._j.sal.fs.exists(parent_dir):
+            os.makedirs(parent_dir, exist_ok=True)
+        return filepath
+
     def log(self, logdict):
         out = self._j.core.tools.log2str(logdict)
         out = out.rstrip() + "\n"
-        path = self.path
+        filepath = self.path
 
         try:
-            with open(path, "ab") as fp:
+            with open(filepath, "ab") as fp:
                 fp.write(bytes(out, "UTF-8"))
         except FileNotFoundError:
-            print(f"Logging file of {path} was deleted")
+            print(f"Logging file of {filepath} was deleted")
+
+
+class RedisLogger(Logger):
+    ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+
+    def __init__(self, j, session):
+        super().__init__(j, session)
+        server = self._j.servers.startupcmd.get(
+            name="cache_logger", cmd_start="redis-server --port 2020 --maxmemory 100000000 -- daemonize yes"
+        )
+        server.start()
+        while not server.is_running():
+            continue
+        self.client = self._j.clients.redis.get(port=2020)
+
+    def log(self, logdict):
+        out = self._j.core.tools.log2str(logdict)
+        out = out.rstrip() + "\n"
+        out = self.ansi_escape.sub("", out)
+
+        if self.client.llen(self.location) > 100:
+            self.client.ltrim(self.location, 0, 90)
+        self.client.lpush(self.location, out)
 
 
 class Application(object):
@@ -112,6 +139,7 @@ class Application(object):
 
         self.exception_handle = self._j.core.myenv.exception_handle
         self.fs_loggers = {}
+        self.redis_loggers = {}
 
         self._admin_session = None
 
@@ -176,7 +204,7 @@ class Application(object):
             obj._obj_cache_reset()
             obj._obj_reset()
 
-    def log2fs_register(self, session_name):
+    def log2fs_redis_register(self, session_name):
         """
         will write logs with ansi codes to {DIR_BASE}/var/log/session_name/$hrtime4session/$hrtime4step_context.ansi
 
@@ -185,38 +213,47 @@ class Application(object):
         :param session_name: name of the session
         :return:
         """
-        if session_name in self.fs_loggers:
-            return
+        if session_name not in self.fs_loggers:
+            logger = FileSystemLogger(self._j, session=session_name)
+            logger.register()
+            self.fs_loggers[session_name] = logger
 
-        logger = FileSystemLogger(self._j, session=session_name)
-        logger.register()
-        self.fs_loggers[session_name] = logger
+        if session_name not in self.redis_loggers:
+            logger = RedisLogger(self._j, session=session_name)
+            logger.register()
+            self.redis_loggers[session_name] = logger
+        return
 
-    def log2fs_context_change(self, session_name, context):
+    def log2fs_redis_context_change(self, session_name, context):
         """
 
         :param context:
         :return:
         """
-        if session_name not in self.fs_loggers:
-            self.log2fs_register(session_name)
+
+        if session_name not in self.fs_loggers or session_name not in self.redis_loggers:
+            self.log2fs_redis_register(session_name)
+
         self.fs_loggers[session_name].switch_context(context)
+        self.redis_loggers[session_name].switch_context(context)
 
-    def log2fs_context_reset(self, session_name):
+    def log2fs_redis_context_reset(self, session_name):
         """
 
         :param context:
         :return:
         """
-        if session_name not in self.fs_loggers:
-            self.log2fs_register(session_name)
+        if session_name not in self.fs_loggers or session_name not in self.redis_loggers:
+            self.log2fs_redis_register(session_name)
+
         self.fs_loggers[session_name].reset_context()
+        self.redis_loggers[session_name].reset_context()
 
-    def log2fs_unregister(self, session_name):
-        if session_name not in self.fs_loggers:
-            return
+    def log2fs_redis_unregister(self, session_name):
+        if session_name in self.fs_loggers:
 
-        self.fs_loggers[session_name].unregister()
+            self.fs_loggers[session_name].unregister()
+            self.redis_loggers[session_name].unregister()
 
     # def bcdb_system_configure(self, addr, port, namespace, secret):
     #     """
