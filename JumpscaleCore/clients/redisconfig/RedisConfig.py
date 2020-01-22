@@ -105,7 +105,7 @@ class RedisConfig(j.baseclasses.object_config):
                 self._redis = j.clients.redis.get(
                     addr=addr,
                     port=port,
-                    password=password,
+                    secret=password,
                     unixsocket=unixsocket,
                     ardb_patch=self.ardb_patch,
                     set_patch=self.set_patch,
