@@ -94,11 +94,11 @@ class RedisLogger(Logger):
 
     def __init__(self, j, session):
         super().__init__(j, session)
-        cl = self._j.servers.startupcmd.get(
+        server = self._j.servers.startupcmd.get(
             name="cache_logger", cmd_start="redis-server --port 2020 --maxmemory 100000000 -- daemonize yes"
         )
-        cl.start()
-        while not cl.is_running():
+        server.start()
+        while not server.is_running():
             continue
         self.client = self._j.clients.redis.get(port=2020)
 
@@ -106,10 +106,10 @@ class RedisLogger(Logger):
         out = self._j.core.tools.log2str(logdict)
         out = out.rstrip() + "\n"
         out = self.ansi_escape.sub("", out)
-        key = self.tt + "_" + self.current_context
-        if self.client.llen(key) > 100:
-            self.client.ltrim(key, 0, 90)
-        self.client.lpush(key, out)
+
+        if self.client.llen(self.location) > 100:
+            self.client.ltrim(self.location, 0, 90)
+        self.client.lpush(self.location, out)
 
 
 class Application(object):
