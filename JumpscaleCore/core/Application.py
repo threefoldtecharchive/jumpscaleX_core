@@ -56,8 +56,6 @@ class Logger:
             self.reset_context()
 
     def register(self):
-        os.makedirs(self.location, exist_ok=True)
-
         if self.log not in self._j.core.myenv.loghandlers:
             self._j.core.myenv.loghandlers.append(self.log)
         if self.log_error not in self._j.core.myenv.errorhandlers:
@@ -71,9 +69,13 @@ class Logger:
 
 
 class FileSystemLogger(Logger):
-    @ property
+    @property
     def path(self):
-        return self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s.ansi" % self.location)
+        filepath = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s.ansi" % self.location)
+        parent_dir = self._j.sal.fs.getParent(filepath)
+        if not self._j.sal.fs.exists(parent_dir):
+            os.makedirs(parent_dir, exist_ok=True)
+        return filepath
 
     def log(self, logdict):
         out = self._j.core.tools.log2str(logdict)
@@ -86,23 +88,27 @@ class FileSystemLogger(Logger):
         except FileNotFoundError:
             print(f"Logging file of {filepath} was deleted")
 
+
 class RedisLogger(Logger):
     ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
-    def __init__(self, j, session):
-        super().__init__(j,session)
-        self._j.servers.startupcmd.get(
-            name="cache_logger", cmd_start="redis-server --port 2020 --maxmemory 100000000 -- daemonize yes"
-        ).start()
 
+    def __init__(self, j, session):
+        super().__init__(j, session)
+        cl = self._j.servers.startupcmd.get(
+            name="cache_logger", cmd_start="redis-server --port 2020 --maxmemory 100000000 -- daemonize yes"
+        )
+        cl.start()
+        while not cl.is_running():
+            continue
+        self.client = self._j.clients.redis.get(port=2020)
 
     def log(self, logdict):
         out = self._j.core.tools.log2str(logdict)
         out = out.rstrip() + "\n"
         out = self.ansi_escape.sub("", out)
-        key = self.tt+"_"+self.current_context
-        self.client = self._j.clients.redis.get(port=2020)
-        if self.client.llen(key) > 100 :
-            self.client.ltrim(key,0,90)
+        key = self.tt + "_" + self.current_context
+        if self.client.llen(key) > 100:
+            self.client.ltrim(key, 0, 90)
         self.client.lpush(key, out)
 
 
@@ -133,6 +139,7 @@ class Application(object):
 
         self.exception_handle = self._j.core.myenv.exception_handle
         self.fs_loggers = {}
+        self.redis_loggers = {}
 
         self._admin_session = None
 
@@ -206,42 +213,47 @@ class Application(object):
         :param session_name: name of the session
         :return:
         """
-        if session_name in self.fs_loggers:
-            return
+        if session_name not in self.fs_loggers:
+            logger = FileSystemLogger(self._j, session=session_name)
+            logger.register()
+            self.fs_loggers[session_name] = logger
 
-        logger = FileSystemLogger(self._j, session=session_name)
-        logger.register()
+        if session_name not in self.redis_loggers:
+            logger = RedisLogger(self._j, session=session_name)
+            logger.register()
+            self.redis_loggers[session_name] = logger
+        return
 
-        self.fs_loggers[session_name] = logger
-
-        logger = RedisLogger(self._j, session=session_name)
-        logger.register()
-
-    def log2fs_context_change(self, session_name, context):
+    def log2fs_redis_context_change(self, session_name, context):
         """
 
         :param context:
         :return:
         """
-        if session_name not in self.fs_loggers:
+
+        if session_name not in self.fs_loggers or session_name not in self.redis_loggers:
             self.log2fs_redis_register(session_name)
+
         self.fs_loggers[session_name].switch_context(context)
+        self.redis_loggers[session_name].switch_context(context)
 
-    def log2fs_context_reset(self, session_name):
+    def log2fs_redis_context_reset(self, session_name):
         """
 
         :param context:
         :return:
         """
-        if session_name not in self.fs_loggers:
+        if session_name not in self.fs_loggers or session_name not in self.redis_loggers:
             self.log2fs_redis_register(session_name)
+
         self.fs_loggers[session_name].reset_context()
+        self.redis_loggers[session_name].reset_context()
 
-    def log2fs_unregister(self, session_name):
-        if session_name not in self.fs_loggers:
-            return
+    def log2fs_redis_unregister(self, session_name):
+        if session_name in self.fs_loggers:
 
-        self.fs_loggers[session_name].unregister()
+            self.fs_loggers[session_name].unregister()
+            self.redis_loggers[session_name].unregister()
 
     # def bcdb_system_configure(self, addr, port, namespace, secret):
     #     """

@@ -129,7 +129,7 @@ class builder_method:
             name = func.__name__
 
             j.application.log2fs_redis_register(builder._classname)
-            j.application.log2fs_context_change(builder._classname, name)
+            j.application.log2fs_redis_context_change(builder._classname, name)
             try:
                 kwargs = self.get_all_as_keyword_arguments(func, args, kwargs)
                 kwargs_without_reset = {key: value for key, value in kwargs.items() if key not in ["reset", "self"]}
@@ -188,8 +188,8 @@ class builder_method:
             except Exception:
                 print("There is an error happened during building")
 
-            j.application.log2fs_context_reset(builder._classname)
-            j.application.log2fs_unregister(builder._classname)
+            j.application.log2fs_redis_context_reset(builder._classname)
+            j.application.log2fs_redis_unregister(builder._classname)
             return res
 
         return wrapper_action

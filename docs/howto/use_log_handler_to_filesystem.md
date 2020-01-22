@@ -10,11 +10,11 @@ see [https://vimeo.com/353947167](https://vimeo.com/353947167)
 
 ```python
 
-#check the session has already been set, if not set 
+#check the session has already been set, if not set
 if not j.application._log2fs_session_name:
     j.application.log2fs_redis_register(builder._name)
 
-#do this for each step where you want to start a new file for the logging 
-j.application.log2fs_context_change(name)
+#do this for each step where you want to start a new file for the logging
+j.application.log2fs_redis_context_change(name)
 
 ```
