@@ -53,6 +53,21 @@ class LocationsConfiguration(j.baseclasses.object_config):
 
         """
 
+    def get_location_proxy(self, new_location_name):
+        return check_location_exists(self.locations_proxy, new_location_name)
+
+    def get_location_static(self, new_location_name):
+        return check_location_exists(self.locations_static, new_location_name)
+
+    def get_locations_lapis(self, new_location_name):
+        return check_location_exists(self.locations_lapis, new_location_name)
+
+    def get_locations_spa(self, new_location_name):
+        return check_location_exists(self.location_static, new_location_name)
+
+    def get_locations_custom(self, new_location_name):
+        return check_location_exists(self.get_locations_custom, new_location_name)
+
     @property
     def path_cfg_dir(self):
         return f"{self._parent._parent.path_cfg_dir}/{self._parent._parent.name}_locations"
@@ -130,6 +145,19 @@ class LocationsConfiguration(j.baseclasses.object_config):
         static_dir = j.sal.fs.joinPaths(path, "weblibs")
 
         j.sal.fs.symlink(j.sal.fs.joinPaths(weblibs_path, "static/"), static_dir, True)
+
+    # Helper function
+    def check_location_exists(locations_obj, new_location_name):
+        location = None
+        # check if the location already exists or not
+        location = [location for location in locations_obj if location.name == new_location_name]
+        # if we found the location we return it else we create a new one
+        if len(location) != 0:
+            return location.pop()
+        else:
+            new_location = locations_obj.new()
+            new_location_name = new_location_name
+            return new_location
 
 
 class Locations(j.baseclasses.object_config_collection):
