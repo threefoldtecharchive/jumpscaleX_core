@@ -4872,7 +4872,7 @@ class DockerContainer:
             self.dexec("touch /root/.BASEINSTALL_OK")
 
         if image2 == "threefoldtech/base":
-            BaseInstaller.pips_install("requests")
+            BaseInstaller.pips_install(["requests"])
 
         if update or new:
             print(" - Configure / Start SSH server")
