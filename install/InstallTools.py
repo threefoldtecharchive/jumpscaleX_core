@@ -4319,7 +4319,9 @@ class JumpscaleInstaller:
         assert not prebuilt  # not supported yet
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
+        import ipdb
 
+        ipdb.set_trace()
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
             if branch:
