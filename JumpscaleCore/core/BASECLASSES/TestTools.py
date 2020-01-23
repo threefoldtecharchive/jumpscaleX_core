@@ -1,168 +1,330 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
+import os
+import re
+import traceback
+import types
+from importlib import import_module, sys
+import time
 
 from Jumpscale import j
-import re
 
-"""
-adds test management to JSBASE
-"""
+_VALID_TEST_NAME = re.compile("(?:^|[\b_\./-])[Tt]est")
+
+
+class Skip(Exception):
+    """Raise for skipping test"""
 
 
 class TestTools:
+    @staticmethod
+    def _skip(msg):
+        """Skip is used as a decorator to skip tests with a message.
 
-    #### TESTING FUNCTIONALITY
-
-    def _test_error(self, name, error):
-        j.errorhandler.try_except_error_process(error, die=False)
-        self.__class__._test_runs_error[name] = error
-
-    def _test_run(self, name="", obj_key="main", die=True, **kwargs):
+        :param msg: string message for final report.
         """
 
-        :param name: name of file to execute can be e.g. 10_test_my.py or 10_test_my or subtests/test1.py
-                    the tests are found in subdir tests of this file
+        def dec(func):
+            def wrapper(*args, **kwargs):
+                raise Skip(msg)
 
-                if empty then will use all files sorted in tests subdir, but will not go in subdirs
+            wrapper.__test_skip__ = True
+            return wrapper
 
-        :param obj_key: is the name of the function we will look for to execute, cannot have arguments
-               to pass arguments to the example script, use the templating feature, std = main
+        return dec
 
+    def _run(self, path=""):
+        """Run tests in a certain path.
 
-        :return: result of the tests
-
+        :param path: relative or absolute path that contains tests.
+        :return: 0 in case of success or no test found, 1 in case of failure.
         """
+        if hasattr(self, "_dirpath") and not path:
+            path = j.sal.fs.joinPaths(self._dirpath, "tests")
 
-        res = self.__test_run(name=name, obj_key=obj_key, die=die, **kwargs)
-        if self.__class__._test_runs_error != {}:
-            for key, e in self.__class__._test_runs_error.items():
-                self._log_error("ERROR FOR TEST: %s\n%s" % (key, e))
-            self._log_error("SOME TESTS DIT NOT COMPLETE SUCCESFULLY")
-        else:
-            self._log_info("ALL TESTS OK")
-        return res
+        if not j.sal.fs.isAbsolute(path):
+            path = j.sal.fs.joinPaths(j.sal.fs.getcwd(), path)
 
-    def _code_run(self, path, name=None, obj_key="main", die=True, **kwargs):
-        if not path.startswith("/"):
-            path2 = self._dirpath + "/" + path
-        else:
-            path2 = path
-        assert j.sal.fs.exists(path2)
-        if j.sal.fs.isDir(path2):
-            path3 = self.__find_code(name=name, path=path2)
-        else:
-            path3 = path2
-        method, changed = j.tools.codeloader.load(obj_key=obj_key, path=path3)
-        self._log_debug("##:LOAD: path: %s\n\n" % path2)
-        if die or j.application.debug:
-            res = method(self=self, **kwargs)
-        else:
-            try:
-                res = method(self=self, **kwargs)
-            except Exception as e:
-                if j.application.debug:
-                    raise e
-                else:
-                    j.errorhandler.try_except_error_process(e, die=False)
-                # self.__class__._test_runs_error[name] = e
-                return e
-            # self.__class__._test_runs[name] = res
-        return res
-
-    def __find_code(self, name, path="tests", recursive=True):
-
-        if not path.startswith("/"):
-            path = self._dirpath + "/" + path
-        assert j.sal.fs.exists(path)
-
-        def get_shortname(bname, underscoreprocess=True):
-            # self._log_debug(bname)
-            if underscoreprocess:
-                if "_" in bname:
-                    bname = bname.split("_", 1)[1]
-            if bname.endswith(".py"):
-                bname = bname[:-3]
-            # self._log_debug(bname)
-            return bname.lower()
-
-        # we should test whitout underscore process first
-        # to avoid taking twice the same file if it ends by the same prefix
-        # e.g. base and x_base
-        files = j.sal.fs.listFilesInDir(path, recursive=recursive, filter="*.py")
-        if isinstance(name, int):
-            matches = []
-            for file in files:
-                basename = j.sal.fs.getBaseName(file).split("_", 1)[0]
-                if basename.isdigit() and int(basename) == name:
-                    matches.append(file)
-            if matches:
-                return matches
+        if ":" in path:
+            if len(path.split(":")) is not 2:
+                raise ValueError(f"{path} is not valid")
             else:
-                raise j.exceptions.NotFound(f"Could not find test with nr {name}")
-
-        files_dict = {get_shortname(j.sal.fs.getBaseName(f)): f for f in files}
-        target_file_shortened = get_shortname(name, underscoreprocess=False)
-        if target_file_shortened in files_dict:
-            return files_dict[target_file_shortened]
+                path, test_name = path.split(":")
+                self._discover(path, test_name)
+                self._run_tests(test_name)
         else:
-            target_file_shortened_no_underscore = get_shortname(name, underscoreprocess=True)
-            if target_file_shortened_no_underscore in files_dict:
-                return files_dict[target_file_shortened_no_underscore]
+            self._discover(path)
+            return self._run_tests()
 
-        """ j.shell()
-        for item in j.sal.fs.listFilesInDir(path, recursive=recursive, filter="*.py"):
-            bname = j.sal.fs.getBaseName(item)
-            bname2 = get_shortname(bname)
-            self._log_debug("%s:%s" % (bname2, name))
+    def _discover(self, path, test_name=""):
+        """Discover and get modules that conatains a tests in a certain path.
 
-            if bname2 == get_shortname(name, underscoreprocess=False):
-                return item
-            if bname2 == get_shortname(name, underscoreprocess=True):
-                return item """
-        raise j.exceptions.Base("Could not find code: '%s' in %s" % (name, path))
+        :param path: absolute path to be discovered.
+        :param test_name: (optional) test name for getting only this test.
+        """
+        self.modules = []
+        if test_name:
+            if j.sal.fs.isFile(path):
+                parent_path = j.sal.fs.getDirName(path)
+                sys.path.insert(0, parent_path)
+                self._import_test_module(test_name, path, parent_path)
+            else:
+                raise ValueError(f"File {path} is not found")
 
-    def __test_run(self, name=None, obj_key="main", die=True, **kwargs):
-
-        if name == "":
-            name = None
-
-        if name is not None:
-            self._log_info(f"##: TEST RUN: {name}")
-
-        if name is not None:
-            tpath = self.__find_code(name=name)
-            if not isinstance(tpath, list):
-                tpath = [tpath]
-            for path in tpath:
-                self._code_run(name=name, path=path, obj_key=obj_key, die=die, **kwargs)
-                self._log_debug("##: path: %s\n\n" % path)
+        elif j.sal.fs.isFile(path):
+            parent_path = j.sal.fs.getDirName(path)
+            sys.path.insert(0, parent_path)
+            self._import_file_module(path, parent_path)
         else:
-            items = [
-                j.sal.fs.getBaseName(item)
-                for item in j.sal.fs.listFilesInDir("%s/tests" % self._dirpath, recursive=False, filter="*.py")
-            ]
+            sys.path.insert(0, path)
+            files_pathes = j.sal.fs.listPyScriptsInDir(path=path, recursive=True)
+            for file_path in files_pathes:
+                self._import_file_module(file_path, path)
 
-            natsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split("(\d+)", s)]
-            items.sort(key=natsort)
+    def _import_file_module(self, file_path, path):
+        """Import module (file) if module contains a test.
 
-            for name in items:
-                self.__test_run(name=name, obj_key=obj_key, **kwargs)
-
+        :param file_path: absolute file path.
+        :param path: absolute path for one of file's parents.
+        """
+        relative_path, basename, _, _ = j.sal.fs.pathParse(file_path, baseDir=path)
+        if not _VALID_TEST_NAME.match(basename):
             return
+
+        dotted_path = relative_path[:-1].replace("/", ".")
+        if dotted_path:
+            basename = f".{basename}"
+        module = import_module(name=basename, package=dotted_path)
+        for mod in dir(module):
+            if _VALID_TEST_NAME.match(mod):
+                self.modules.append(module)
+                break
+
+    def _import_test_module(self, test_name, file_path, path):
+        """Import module (test) from file path.
+
+        :param test_name: test name to be imported.
+        :param file_path: absolute file path.
+        :param path: absolute path for one of the file's parents.
+        """
+        relative_path, basename, _, _ = j.sal.fs.pathParse(file_path, baseDir=path)
+        dotted_path = relative_path[:-1].replace("/", ".")
+        if dotted_path:
+            basename = f".{basename}"
+        module = import_module(name=basename, package=dotted_path)
+        self.modules.append(module)
+        if test_name not in dir(module):
+            raise AttributeError(f"Test {test_name} is not found")
+
+    def _run_tests(self, test_name=""):
+        """Run tests has been discovered using discover method.
+
+        :param test_name: (optional) test name for run only this test.
+        :return: 0 in case of success or no test found, 1 in case of failure.
+        """
+        self.results = {
+            "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
+            "testcases": [],
+            "time_taken": 0,
+        }
+        start_time = time.time()
+        for module in self.modules:
+            self._before_all(module)
+            if test_name:
+                self._run_test(test_name, module)
+            else:
+                for method in dir(module):
+                    if _VALID_TEST_NAME.match(method):
+                        self._run_test(method, module)
+
+            self._after_all(module)
+        end_time = time.time()
+        time_taken = end_time - start_time
+        self.results["time_taken"] = "{0:.5f}".format(time_taken)
+        self._report()
+        if (self.results["summary"]["failures"] > 0) or (self.results["summary"]["errors"] > 0):
+            return 1
+        return 0
+
+    def _run_test(self, method, module):
+        """Run one test.
+
+        :param method: test name.
+        :param module: module that contain this test.
+        """
+        module_name = module.__file__
+        test_name = f"{module_name}:{method}"
+        try:
+            test = getattr(module, method)
+            if type(test) is not types.FunctionType:
+                return
+            print(test_name, "...")
+            if not self._is_skipped(test):
+                self._before(module)
+            # TODO: run test with args.
+            test()
+            self._add_success(test_name)
+        except AssertionError as error:
+            self._add_failure(test_name, error)
+
+        except Skip as sk:
+            skip_msg = f"SkipTest: {sk.args[0]}\n"
+            self._add_skip(test_name, skip_msg)
+
+        except Exception as error:
+            self._add_error(test_name, error)
+
+        self._after(module, test_name)
+
+    def _before_all(self, module):
+        """Get and execute before_all in a module if it is exist.
+
+        :param module: module that contains before_all.
+        """
+        module_name = module.__file__
+        if hasattr(module, "before_all"):
+            before_all = getattr(module, "before_all")
+            try:
+                before_all()
+            except Exception as error:
+                self._add_helper_error(module_name, error)
+                print("error\n")
+
+    def _after_all(self, module):
+        """Get and execute after_all in a module if it is exist.
+
+        :param module: module that contains after_all.
+        """
+        module_name = module.__file__
+        if hasattr(module, "after_all"):
+            after_all = getattr(module, "after_all")
+            try:
+                after_all()
+            except Exception as error:
+                self._add_helper_error(module_name, error)
+                print("error\n")
+
+    def _before(self, module):
+        """Get and execute before in a module if it is exist.
+
+        :param module: module that contains before.
+        """
+        if hasattr(module, "before"):
+            before = getattr(module, "before")
+            before()
+
+    def _after(self, module, test_name):
+        """Get and execute after in a module if it is exist.
+
+        :param module: module that contains after.
+        """
+        module_name = f"{module.__file__}:{test_name}"
+        if hasattr(module, "after"):
+            after = getattr(module, "after")
+            try:
+                after()
+            except Exception as error:
+                self._add_helper_error(module_name, error)
+                print("error\n")
+
+    def _is_skipped(self, test):
+        """Check if the test is skipped.
+
+        :param test: test method.
+        """
+        if hasattr(test, "__test_skip__"):
+            return getattr(test, "__test_skip__")
+
+    def _add_success(self, test_name):
+        """Add a succeed test.
+        """
+        self.results["summary"]["passes"] += 1
+        print("ok\n")
+
+    def _add_failure(self, test_name, error):
+        """Add a failed test.
+
+        :param error: test exception error.
+        """
+        self.results["summary"]["failures"] += 1
+        length = len(test_name) + 6
+        msg = "=" * length + f"\nFAIL: {test_name}\n" + "-" * length
+        log_msg = j.core.tools.log("{RED}%s" % msg, stdout=False)
+        str_msg = j.core.tools.log2str(log_msg)
+        log_error = j.core.tools.log("", exception=error, stdout=False)
+        str_error = j.core.tools.log2str(log_error)
+        result = {"msg": str_msg, "error": str_error}
+        self.results["testcases"].append(result)
+        print("fail\n")
+
+    def _add_error(self, test_name, error):
+        """Add a errored test.
+
+        :param error: test exception error.
+        """
+        self.results["summary"]["errors"] += 1
+        length = len(test_name) + 7
+        msg = "=" * length + f"\nERROR: {test_name}\n" + "-" * length
+        log_msg = j.core.tools.log("{YELLOW}%s" % msg, stdout=False)
+        str_msg = j.core.tools.log2str(log_msg)
+        log_error = j.core.tools.log("", exception=error, stdout=False)
+        str_error = j.core.tools.log2str(log_error)
+        result = {"msg": str_msg, "error": str_error}
+        self.results["testcases"].append(result)
+        print("error\n")
+
+    def _add_skip(self, test_name, skip_msg):
+        """Add a skipped test.
+
+        :param skip_msg: reason for skipping the test.
+        """
+        self.results["summary"]["skips"] += 1
+        length = len(test_name) + 6
+        msg = "=" * length + f"\nSKIP: {test_name}\n" + "-" * length
+        log_msg = j.core.tools.log("{BLUE}%s" % msg, stdout=False)
+        str_msg = j.core.tools.log2str(log_msg)
+        skip_msg = "\n" + skip_msg + "\n"
+        log_skip = j.core.tools.log("{BLUE}%s" % skip_msg, stdout=False)
+        str_skip = j.core.tools.log2str(log_skip)
+        result = {"msg": str_msg, "error": str_skip}
+        self.results["testcases"].append(result)
+        print("skip\n")
+
+    def _add_helper_error(self, test_name, error):
+        """Add error that happens in a helper method (before_all, after, after_all).
+
+        :param error: test exception error.
+        """
+        length = len(test_name) + 7
+        msg = "=" * length + f"\nERROR: {test_name}\n" + "-" * length
+        log_msg = j.core.tools.log("{YELLOW}%s" % msg, stdout=False)
+        str_msg = j.core.tools.log2str(log_msg)
+        log_error = j.core.tools.log("", exception=error, stdout=False)
+        str_error = j.core.tools.log2str(log_error)
+        result = {"msg": str_msg, "error": str_error}
+        self.results["testcases"].append(result)
+
+    def _report(self):
+        """Collect and print the final report.
+        """
+        length = 70
+        for result in self.results["testcases"]:
+            msg = result["msg"].split(": ")
+            msg = ": ".join(msg[1:])
+            print(msg)
+            error = result["error"].split(": ")
+            error = ": ".join(error[1:])
+            print(error)
+
+        print("-" * length)
+        all_tests = sum(self.results["summary"].values())
+        print(f"Ran {all_tests} tests in {self.results['time_taken']}\n\n")
+        result_log = j.core.tools.log(
+            "{RED}%s Failed, {YELLOW}%s Errored, {GREEN}%s Passed, {BLUE}%s Skipped"
+            % (
+                self.results["summary"]["failures"],
+                self.results["summary"]["errors"],
+                self.results["summary"]["passes"],
+                self.results["summary"]["skips"],
+            )
+        )
+        result_str = j.core.tools.log2str(result_log)
+        print(result_str.split(": ")[1], "\u001b[0m")
