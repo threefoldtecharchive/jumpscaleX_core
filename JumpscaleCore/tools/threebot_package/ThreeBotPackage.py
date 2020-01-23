@@ -230,6 +230,14 @@ class ThreeBotPackage(ThreeBotPackageBase):
             locations.configure()
             website.configure()
 
+    def _web_unload(self, app_type="frontend"):
+        locations = website.locations.get(f"{self.name}_locations_{port}")
+        if app_type == "frontend":
+            location = locations.get_locations_spa(self.name)
+        elif app_type == "html":
+            location = locations.get_location_static(self.name)
+        j.sal.fs.remove(location.path_location)
+
     def config_load(self):
         self._log_info("load package.toml config", data=self)
         if self.giturl:
@@ -282,6 +290,12 @@ class ThreeBotPackage(ThreeBotPackageBase):
         self.load()
         self.stop()
         self.load()
+        # remove configuration for static and dynamic websites
+        if j.sal.fs.exists(f"{self.path}/frontend"):
+            self._web_unload(app_type="frontend")
+        elif j.sal.fs.exists(f"{self.path}/html"):
+            self._web_unload(app_type="html")
+
         if self.status != "config":
             self.status = "config"
         self._package_author.uninstall()
