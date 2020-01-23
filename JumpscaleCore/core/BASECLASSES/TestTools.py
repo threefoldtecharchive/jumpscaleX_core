@@ -8,13 +8,23 @@ import time
 from Jumpscale import j
 
 _VALID_TEST_NAME = re.compile("(?:^|[\b_\./-])[Tt]est")
+_FAIL_LENGTH = 6
+_ERROR_LENGTH = 7
 
 
-class Skip(Exception):
+class Skip(BaseException):
     """Raise for skipping test"""
 
 
 class TestTools:
+    def __init__(self):
+        self.modules = []
+        self.results = {
+            "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
+            "testcases": [],
+            "time_taken": 0,
+        }
+
     @staticmethod
     def _skip(msg):
         """Skip is used as a decorator to skip tests with a message.
@@ -31,25 +41,26 @@ class TestTools:
 
         return dec
 
-    def _run(self, path=""):
+    def _run(self, path="", name=""):
         """Run tests in a certain path.
 
         :param path: relative or absolute path that contains tests.
         :return: 0 in case of success or no test found, 1 in case of failure.
         """
         if hasattr(self, "_dirpath") and not path:
-            path = j.sal.fs.joinPaths(self._dirpath, "tests")
-
+            # This part for jsx factory
+            if ":" in name:
+                file_name, name = name.split(":")
+                path = j.sal.fs.joinPaths(self._dirpath, f"tests/{file_name}")
+            else:
+                path = j.sal.fs.joinPaths(self._dirpath, f"tests/{name}")
+                name = ""
         if not j.sal.fs.isAbsolute(path):
             path = j.sal.fs.joinPaths(j.sal.fs.getcwd(), path)
 
-        if ":" in path:
-            if len(path.split(":")) is not 2:
-                raise ValueError(f"{path} is not valid")
-            else:
-                path, test_name = path.split(":")
-                self._discover(path, test_name)
-                self._run_tests(test_name)
+        if name:
+            self._discover(path, name)
+            return self._run_tests(name)
         else:
             self._discover(path)
             return self._run_tests()
@@ -61,18 +72,13 @@ class TestTools:
         :param test_name: (optional) test name for getting only this test.
         """
         self.modules = []
-        if test_name:
-            if j.sal.fs.isFile(path):
-                parent_path = j.sal.fs.getDirName(path)
-                sys.path.insert(0, parent_path)
-                self._import_test_module(test_name, path, parent_path)
-            else:
-                raise ValueError(f"File {path} is not found")
-
-        elif j.sal.fs.isFile(path):
+        if j.sal.fs.isFile(path):
             parent_path = j.sal.fs.getDirName(path)
             sys.path.insert(0, parent_path)
-            self._import_file_module(path, parent_path)
+            if test_name:
+                self._import_test_module(test_name, path, parent_path)
+            else:
+                self._import_file_module(path, parent_path)
         else:
             sys.path.insert(0, path)
             files_pathes = j.sal.fs.listPyScriptsInDir(path=path, recursive=True)
@@ -125,6 +131,7 @@ class TestTools:
             "testcases": [],
             "time_taken": 0,
         }
+        # We should keep track of every test (execution time)
         start_time = time.time()
         for module in self.modules:
             self._before_all(module)
@@ -154,12 +161,12 @@ class TestTools:
         test_name = f"{module_name}:{method}"
         try:
             test = getattr(module, method)
-            if type(test) is not types.FunctionType:
+            if not isinstance(test, (types.FunctionType, types.MethodType)):
                 return
             print(test_name, "...")
             if not self._is_skipped(test):
                 self._before(module)
-            # TODO: run test with args.
+            # TODO: run test with args. (only for parameterized tests)
             test()
             self._add_success(test_name)
         except AssertionError as error:
@@ -169,7 +176,7 @@ class TestTools:
             skip_msg = f"SkipTest: {sk.args[0]}\n"
             self._add_skip(test_name, skip_msg)
 
-        except Exception as error:
+        except BaseException as error:
             self._add_error(test_name, error)
 
         self._after(module, test_name)
@@ -184,7 +191,7 @@ class TestTools:
             before_all = getattr(module, "before_all")
             try:
                 before_all()
-            except Exception as error:
+            except BaseException as error:
                 self._add_helper_error(module_name, error)
                 print("error\n")
 
@@ -198,7 +205,7 @@ class TestTools:
             after_all = getattr(module, "after_all")
             try:
                 after_all()
-            except Exception as error:
+            except BaseException as error:
                 self._add_helper_error(module_name, error)
                 print("error\n")
 
@@ -221,7 +228,7 @@ class TestTools:
             after = getattr(module, "after")
             try:
                 after()
-            except Exception as error:
+            except BaseException as error:
                 self._add_helper_error(module_name, error)
                 print("error\n")
 
@@ -245,7 +252,7 @@ class TestTools:
         :param error: test exception error.
         """
         self.results["summary"]["failures"] += 1
-        length = len(test_name) + 6
+        length = len(test_name) + _FAIL_LENGTH
         msg = "=" * length + f"\nFAIL: {test_name}\n" + "-" * length
         log_msg = j.core.tools.log("{RED}%s" % msg, stdout=False)
         str_msg = j.core.tools.log2str(log_msg)
@@ -261,7 +268,7 @@ class TestTools:
         :param error: test exception error.
         """
         self.results["summary"]["errors"] += 1
-        length = len(test_name) + 7
+        length = len(test_name) + _ERROR_LENGTH
         msg = "=" * length + f"\nERROR: {test_name}\n" + "-" * length
         log_msg = j.core.tools.log("{YELLOW}%s" % msg, stdout=False)
         str_msg = j.core.tools.log2str(log_msg)
@@ -277,12 +284,11 @@ class TestTools:
         :param skip_msg: reason for skipping the test.
         """
         self.results["summary"]["skips"] += 1
-        length = len(test_name) + 6
+        length = len(test_name) + _FAIL_LENGTH
         msg = "=" * length + f"\nSKIP: {test_name}\n" + "-" * length
         log_msg = j.core.tools.log("{BLUE}%s" % msg, stdout=False)
         str_msg = j.core.tools.log2str(log_msg)
-        skip_msg = "\n" + skip_msg + "\n"
-        log_skip = j.core.tools.log("{BLUE}%s" % skip_msg, stdout=False)
+        log_skip = j.core.tools.log("\n{BLUE}%s" % skip_msg, stdout=False)
         str_skip = j.core.tools.log2str(log_skip)
         result = {"msg": str_msg, "error": str_skip}
         self.results["testcases"].append(result)
@@ -293,7 +299,7 @@ class TestTools:
 
         :param error: test exception error.
         """
-        length = len(test_name) + 7
+        length = len(test_name) + _ERROR_LENGTH
         msg = "=" * length + f"\nERROR: {test_name}\n" + "-" * length
         log_msg = j.core.tools.log("{YELLOW}%s" % msg, stdout=False)
         str_msg = j.core.tools.log2str(log_msg)
