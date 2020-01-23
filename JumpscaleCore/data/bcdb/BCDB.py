@@ -181,8 +181,6 @@ class BCDB(j.baseclasses.object):
         :param reset: reset the export path before exporting, defaults to True
         :type reset: bool, optional
         """
-        j.data.bcdb.threebot_zdb_sonic_start()
-
         # lazy loaded instances to export
         if self.storclient.type != "SDB":
             self.get_all()
