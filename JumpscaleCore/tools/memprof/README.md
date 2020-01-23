@@ -93,3 +93,48 @@ import cProfile
 
 cProfile.run('j.tools.memprof.check_schemas(5000)', filename=None)
 ```
+
+
+## Summary tracker
+
+
+```
+
+JSX> st = j.tools.memprof.summary_tracker()
+JSX> # create more objects or execute your function here..
+JSX> st.print_diff()
+                        types |   # objects |   total size
+============================== | =========== | ============
+                        list |       19224 |      1.90 MB
+                        str |       22126 |      1.51 MB
+    parso.python.tree.Operator |        5731 |    537.28 KB
+                        int |       13404 |    366.43 KB
+parso.python.tree.PythonNode |        5840 |    365.00 KB
+        parso.python.tree.Name |        4594 |    358.91 KB
+    parso.python.tree.Keyword |        1312 |    123.00 KB
+    parso.python.tree.Newline |        1508 |    117.81 KB
+    parso.python.tree.String |         428 |     33.44 KB
+    parso.python.tree.Param |         422 |     29.67 KB
+    parso.python.tree.ExprStmt |         525 |     28.71 KB
+    parso.python.tree.IfStmt |         190 |     10.39 KB
+    parso.python.tree.Number |         132 |     10.31 KB
+    parso.python.tree.Function |         144 |     10.12 KB
+        function (<lambda>) |          53 |      7.04 KB
+```
+
+
+
+## ClassTracker
+
+To track memory consumption of objects of a certain class
+
+```
+>>> tr = j.tools.memprof.class_tracker()
+>>> tr.track_class(Document)
+>>> tr.create_snapshot()
+>>> create_documents()
+>>> tr.create_snapshot()
+>>> tr.stats.print_summary()
+active      1.42 MB      average   pct
+Document     1000    195.38 KB    200     B   13%
+```

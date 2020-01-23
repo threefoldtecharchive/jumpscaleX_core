@@ -4323,12 +4323,9 @@ class JumpscaleInstaller:
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
             if branch:
-                C = f"""
-                    git ls-remote --heads {GITURL} {branch} | wc -l
-                    """
+                C = f"""git ls-remote --heads {GITURL} {branch}"""
                 _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True)
-
-                if out == 1:
+                if out:
                     BRANCH = branch
 
             try:
@@ -4870,6 +4867,9 @@ class DockerContainer:
             self.dexec("apt-get install wireguard -y")
             self.dexec("apt-get install locales -y")
             self.dexec("touch /root/.BASEINSTALL_OK")
+
+        if image2 == "threefoldtech/base":
+            self.dexec("pip3 install requests>=2.13.0")
 
         if update or new:
             print(" - Configure / Start SSH server")

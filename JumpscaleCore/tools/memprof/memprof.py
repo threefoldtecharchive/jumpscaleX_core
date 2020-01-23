@@ -1,13 +1,22 @@
 try:
     from objgraph import *
+    from pympler import *
+    from pympler import asizeof
+    from pympler import tracker
+    from pympler import classtracker
 except ImportError:
-    print("please pip install objgraph first. `python3 -m pip install objgraph`")
+    print("please pip install objgraph and pympler first. `python3 -m pip install objgraph pympler`")
+
 
 from Jumpscale import j
 
 
 class MemProf:
     __jslocation__ = "j.tools.memprof"
+
+    def __init__(self):
+        self._tr = None
+    
 
     def leak_check(self, limit=20):
         # JSX> show_most_common_types(limit=30, shortnames=False)
@@ -56,7 +65,7 @@ class MemProf:
         """
         roots = by_type(type_long_name)
         return roots
-
+    
     def show_roots(self, roots, filename="roots.png", **show_refs_opts):
         """
         JSX> roots = j.tools.memprof.refs_by_type("JSDict")
@@ -84,7 +93,75 @@ class MemProf:
 
         # show_refs(roots[:6], refcounts=True, filename="/sandbox/code/github/roots.png")
 
+    def size_of(self, obj):
+        """Gets size of certain obj
+
+        Args:
+            obj ([object])
+        """
+        return asizeof.asizeof(obj)
+
+    def size_of_objs_of_type(self, type_name):
+        """Gets size of objects by type_name 
+        
+        Args:
+            type_name ([str])
+        """
+        return self.size_of(self.refs_by_type(type_name))
+
+    def summary_tracker(self):
+        """
+        Gets a summary tracker
+        
+        Example:
+
+        JSX> st = j.tools.memprof.summary_tracker()                                                                                                                                                     
+        JSX> #....                                                                                                                                                                                      
+        JSX> st.print_diff()                                                                                                                                                                            
+                                types |   # objects |   total size
+        ============================== | =========== | ============
+                                list |       19224 |      1.90 MB
+                                str |       22126 |      1.51 MB
+            parso.python.tree.Operator |        5731 |    537.28 KB
+                                int |       13404 |    366.43 KB
+        parso.python.tree.PythonNode |        5840 |    365.00 KB
+                parso.python.tree.Name |        4594 |    358.91 KB
+            parso.python.tree.Keyword |        1312 |    123.00 KB
+            parso.python.tree.Newline |        1508 |    117.81 KB
+            parso.python.tree.String |         428 |     33.44 KB
+            parso.python.tree.Param |         422 |     29.67 KB
+            parso.python.tree.ExprStmt |         525 |     28.71 KB
+            parso.python.tree.IfStmt |         190 |     10.39 KB
+            parso.python.tree.Number |         132 |     10.31 KB
+            parso.python.tree.Function |         144 |     10.12 KB
+                function (<lambda>) |          53 |      7.04 KB
+
+        Returns:
+            [type]: [description]
+        """
+
+
+        return tracker.SummaryTracker()
+
+    def class_tracker(self):
+        """Gets class tracker object
+
+        Example:
+        >>> tr = j.tools.memprof.class_tracker()
+        >>> tr.track_class(Document)
+        >>> tr.create_snapshot()
+        >>> create_documents()
+        >>> tr.create_snapshot()
+        >>> tr.stats.print_summary()
+                    active      1.42 MB      average   pct
+        Document     1000    195.38 KB    200     B   13%
+
+        """
+
+        return classtracker.ClassTracker()
+
     def check_schemas(self, count=1000):
+        # FIXME: improve to use more complex/nested schemas
         for i in range(10):
             schema = f"""
             @url = test.jumpscale.objtest{i}
