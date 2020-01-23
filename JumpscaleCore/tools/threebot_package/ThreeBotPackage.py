@@ -231,12 +231,18 @@ class ThreeBotPackage(ThreeBotPackageBase):
             website.configure()
 
     def _web_unload(self, app_type="frontend"):
-        locations = website.locations.get(f"{self.name}_locations_{port}")
-        if app_type == "frontend":
-            location = locations.get_locations_spa(self.name)
-        elif app_type == "html":
-            location = locations.get_location_static(self.name)
-        j.sal.fs.remove(location.path_location)
+        for port in (443, 80):
+            website = self.openresty.get_from_port(port)
+            locations = website.locations.get(f"{self.name}_locations_{port}")
+            if app_type == "frontend":
+                location = locations.get_locations_spa(self.name)
+                conf_location = locations.path_cfg_get(location.name)
+            elif app_type == "html":
+                location = locations.get_location_static(self.name)
+                conf_location = locations.path_cfg_get(location.name)
+
+            if conf_location:
+                j.sal.fs.remove(conf_location)
 
     def config_load(self):
         self._log_info("load package.toml config", data=self)
@@ -295,6 +301,8 @@ class ThreeBotPackage(ThreeBotPackageBase):
             self._web_unload(app_type="frontend")
         elif j.sal.fs.exists(f"{self.path}/html"):
             self._web_unload(app_type="html")
+
+        self.openresty.reload()
 
         if self.status != "config":
             self.status = "config"
