@@ -50,7 +50,7 @@ def tail(redis_host, redis_port, redis_secret, session, date, context):
 @click.option("--path", required=True, help="output file path")
 def dump(redis_host, redis_port, redis_secret, session, date, context, path):
     """
-    will erase the alerts in the DB
+    dump logs of session to file
     """
     client = get_client(redis_host, redis_port, redis_secret, session, date, context)
     client.dump(path)
