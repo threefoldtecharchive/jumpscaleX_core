@@ -120,6 +120,24 @@ class ThreeBotPackage(ThreeBotPackageBase):
                         # print(f"adding actor {name} {fpath} {self.name}")
                     self.gedis_server.actor_add(name=name, path=fpath, package=self)
 
+    def actors_remove(self):
+        self.load()
+        self.models
+
+        # Get the full path for actors in the package
+        path = "actors"
+        if not path.startswith("/"):
+            path = j.sal.fs.joinPaths(self.path, path)
+        if not j.sal.fs.exists(path):
+            raise j.exceptions.Input("could not find:%s" % path)
+
+        if path:
+            if self._actors is None:
+                self._actors = j.baseclasses.dict()
+            for fpath in j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py", followSymlinks=True):
+                name = j.tools.codeloader._basename(fpath).lower()
+                self.gedis_server.actors_remove(name=name, package=self)
+
     @property
     def actors(self):
         self.models  # always need to have the models
@@ -301,8 +319,9 @@ class ThreeBotPackage(ThreeBotPackageBase):
             self._web_unload(app_type="frontend")
         elif j.sal.fs.exists(f"{self.path}/html"):
             self._web_unload(app_type="html")
-
+        # reload openresty to read the new configuration.
         self.openresty.reload()
+        self.actors_remove()
 
         if self.status != "config":
             self.status = "config"
