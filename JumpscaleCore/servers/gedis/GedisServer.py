@@ -154,6 +154,15 @@ class GedisServer(JSBaseConfig):
         key = "%s.%s" % (package.name, name)
         self.cmds_meta[key] = GedisCmds(path=path, name=name, package=package)
 
+    def actors_remove(self, name, package):
+        assert name
+        assert isinstance(package, ThreeBotPackage)
+
+        key = "%s.%s" % (package.name, name)
+        if key in self.cmds_meta:
+            del self.cmds_meta[key]
+            self._log_debug("actor_removed:%s:%s", package.name)
+
     ####################################################################
 
     def actors_list(self, threebotauthor="threebot", package="base"):
