@@ -122,8 +122,6 @@ class ThreeBotPackage(ThreeBotPackageBase):
 
     def actors_remove(self):
         self.load()
-        self.models
-
         # Get the full path for actors in the package
         path = "actors"
         if not path.startswith("/"):
@@ -131,10 +129,20 @@ class ThreeBotPackage(ThreeBotPackageBase):
         if not j.sal.fs.exists(path):
             raise j.exceptions.Input("could not find:%s" % path)
 
+        # remove the actors
         if path:
             if self._actors is None:
                 self._actors = j.baseclasses.dict()
             for fpath in j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py", followSymlinks=True):
+                # unload the hashed actors
+                try:
+                    j.tools.codeloader.unload(obj_key=None, path=fpath, reload=False, md5=None)
+                except Exception as e:
+                    errormsg = "****ERROR HAPPENED IN unloading ACTOR: %s\n%s" % (fpath, e)
+                    self._log_error(errormsg)
+                    print(errormsg)
+                    raise e
+
                 name = j.tools.codeloader._basename(fpath).lower()
                 self.gedis_server.actors_remove(name=name, package=self)
 
