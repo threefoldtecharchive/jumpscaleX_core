@@ -157,7 +157,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
             return location.pop()
         else:
             new_location = locations_obj.new()
-            new_location_name = new_location_name
+            new_location.name = new_location_name
             return new_location
 
 

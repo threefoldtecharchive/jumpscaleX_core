@@ -116,9 +116,6 @@ class OpenRestyServer(j.baseclasses.factory_data):
             if website.port == 80:
                 listening_80 = website
 
-        if not ssl:
-            return
-
         if not listening_80:
             listening_80 = self.websites.new("listening_80")
             listening_80.port = 80
