@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test002_set():
     """
     to run:
 
