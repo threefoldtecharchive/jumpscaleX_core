@@ -103,9 +103,11 @@ class FileSystemLogger(Logger):
         self.set_path()
 
     def log(self, logdict):
-        if self.start_date != self.date:
+        current_date = self.date
+        if self.start_date != current_date:
             # date changed, re-set path
             self.set_path()
+            self.start_date = current_date
 
         out = self._j.core.tools.log2str(logdict)
         out = out.rstrip() + "\n"
