@@ -12,11 +12,12 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
     def new(self, name, jsxobject=None, autosave=True, **kwargs):
         """
-        it it exists will delete if first when delete is True
-        :param name:
-        :param jsxobject
+        Create a new jsconfig instance
+
+        :param name: instance name
+        :param jsxobject: jsxobject used to create the jsconfig, optional.
         :param kwargs:
-        :return:
+        :return: jsconfig instance
         """
         if not name:
             raise j.exceptions.Input("name needs to be specified on a config mgmt obj")
@@ -48,10 +49,13 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
     def _create(self, name, jsxobject=None, **kwargs):
         """
-        :param name: for the CONFIG item (is a unique name for the service, client, ...)
+        Create the jsconfig instance.
+        If the jsxobject is specified, the function doesn't create an instance, it returns the jsconfig of this jsxobject.
+
+        :param name: instance name
         :param jsxobject: you can right away specify the jsxobject
         :param kwargs: the data elements which will be given to JSXObject underneith (given to constructor)
-        :return: the service
+        :return: jsconfig instance
         """
         if jsxobject:
             if not name:
@@ -79,10 +83,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         kwargs_to_obj_new, kwargs_to_class = process_kwargs(kwargs)
 
         if not jsxobject:
-            if kwargs_to_obj_new:
-                jsxobject = self._model.new(data=kwargs_to_obj_new)
-            else:
-                jsxobject = self._model.new()
+            jsxobject = self._model.new(data=kwargs_to_obj_new)
             jsxobject.name = name
 
         # means we need to remember the parent id
@@ -99,14 +100,20 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
     def get(self, name="main", id=None, needexist=False, reload=False, autosave=True, **kwargs):
         """
-        :param name: of the object
+        get jsconfig instance and create if it doesn't exist
+
+        :param name: instance name
+        :param id: instance id, optional
+        :param needexist:boolena indicating if the instance should exist or not
+        :param reload: if exists, will ask the data to be reloaded
+        :return: jsconfig instance
         """
         name = name.replace("__", ".")
         if not name:
             raise j.exceptions.Input("name needs to be specified on a config mgmt obj")
 
         # will reload if needed (not in self._children)
-        rc, jsconfig = self._get(name=name, id=id, die=needexist, reload=reload)
+        jsconfig = self._get(name=name, id=id, die=needexist, reload=reload)
 
         if not jsconfig:
             self._log_debug("NEW OBJ:%s:%s" % (name, self._classname))
@@ -149,35 +156,31 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
     def _get(self, name="main", id=None, die=True, reload=False):
         """
+        get jsconfig instance using id or name
 
-        :param name:
-        :param id: id will always have priority
+        :param name: instance name
+        :param id: instance id. id will always have priority over name
         :param die: if False will return None if it cannot be found
         :param reload: if exists, will ask the data to be reloaded
-        :return: 1,obj or 2,obj
-            2 if exists
-            1 if new
+        :return: jsconfig instance
         """
 
         if id:
             obj = self._model.get(id)
             name = obj.name
-            return 1, self._create(name, obj)
+            return self._create(name, obj)
 
         obj = self._validate_child(name)
         if obj:
             if reload:
                 obj.load()
-            return 1, obj
+            return obj
 
-        # self._log_debug("get child:'%s'from '%s'" % (name, self._classname))
-
-        # new = False
         res = self.find(name=name)
 
         if len(res) < 1:
             if not die:
-                return 3, None
+                return None
             raise j.exceptions.Base(
                 "Did not find instance for:%s, name searched for:%s" % (self.__class__._location, name)
             )
@@ -186,10 +189,8 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             raise j.exceptions.Base(
                 "Found more than 1 service for :%s, name searched for:%s" % (self.__class__._location, name)
             )
-        else:
-            jsxconfig = res[0]
 
-        return 2, jsxconfig
+        return res[0]
 
     def reset(self):
         """
@@ -301,17 +302,11 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
     def _delete(self, name=None):
         if name:
-            _, child = self._get(name=name, die=False)
+            child = self._get(name=name, die=False)
             if child:
                 return child.delete()
         else:
             return self.reset()
-
-        if not name and self._parent:
-            if self._classname in self._parent._children:
-                if not isinstance(self._parent, j.baseclasses.factory):
-                    # only delete when not a factory means is a custom class we're building
-                    del self._parent._children[self._data.name]
 
     def exists(self, name="main"):
         """
