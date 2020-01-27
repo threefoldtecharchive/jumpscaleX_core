@@ -15,7 +15,6 @@ class GitClient(j.baseclasses.object):
         :param check_path: will find /code/ and put some extra arguments
         """
 
-        self._3git_config = None
         self._ignore_items = None
 
         if baseDir is None or baseDir.strip() == "":
@@ -195,34 +194,6 @@ class GitClient(j.baseclasses.object):
             return True
         return False
 
-    @property
-    def _config_3git_path(self):
-        return self.path + "/.3gitconfig.toml"
-
-    @property
-    def config_3git(self):
-        if not self._3git_config:
-            if j.sal.fs.exists(self._config_3git_path):
-                self._3git_config = j.data.serializers.toml.load(self._config_3git_path)
-            else:
-                self._3git_config = {}
-        return self._3git_config
-
-    def config_3git_save(self):
-        j.data.serializers.toml.dump(self._config_3git_path, self._3git_config)
-
-    def config_3git_get(self, name, default=""):
-        if not name in self.config_3git:
-            self.config_3git[name] = default
-            self.config_3git_save()
-        return self.config_3git[name]
-
-    def config_3git_set(self, name, val=""):
-        v = self.config_3git_get(name=name)
-        if v == "" or v != val:
-            self.config_3git[name] = val
-            self.config_3git_save()
-
     def logChanges(self, from_revision=None, all=False, untracked=True, path=None):
         """
 
@@ -236,8 +207,7 @@ class GitClient(j.baseclasses.object):
 
         """
         revision = None
-        if not from_revision and all is False:
-            from_revision = self.config_3git_get("revision_last_processed")
+
         path = path or self.path
         if from_revision:
             cmd = f"cd {path};git --no-pager log {from_revision}..HEAD --name-status --oneline --reverse {path}"
@@ -297,13 +267,6 @@ class GitClient(j.baseclasses.object):
             revision = from_revision
 
         return (revision, result, to_delete)
-
-    def logChangesRevisionSet(self, revision):
-        """
-        will mark in repo the last revision which has been processed so we don't process previously committed files
-        :return:
-        """
-        self.config_3git_set("revision_last_processed", revision)
 
     def getModifiedFiles(self, collapse=False, ignore=[], path=None):
         """
