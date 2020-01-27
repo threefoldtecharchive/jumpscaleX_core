@@ -16,7 +16,6 @@ class MemProf:
 
     def __init__(self):
         self._tr = None
-    
 
     def leak_check(self, limit=20):
         # JSX> show_most_common_types(limit=30, shortnames=False)
@@ -61,11 +60,10 @@ class MemProf:
     def refs_by_type(self, type_long_name):
         """
         JSX> roots = j.tools.memprof.refs_by_type("JSDict")
-
         """
         roots = by_type(type_long_name)
         return roots
-    
+
     def show_roots(self, roots, filename="roots.png", **show_refs_opts):
         """
         JSX> roots = j.tools.memprof.refs_by_type("JSDict")
@@ -94,7 +92,7 @@ class MemProf:
         # show_refs(roots[:6], refcounts=True, filename="/sandbox/code/github/roots.png")
 
     def size_of(self, obj):
-        """Gets size of certain obj
+        """Gets size of certain obj.
 
         Args:
             obj ([object])
@@ -111,7 +109,7 @@ class MemProf:
 
     def summary_tracker(self):
         """
-        Gets a summary tracker
+        Gets a summary tracker.
         
         Example:
 
@@ -140,11 +138,10 @@ class MemProf:
             [type]: [description]
         """
 
-
         return tracker.SummaryTracker()
 
     def class_tracker(self):
-        """Gets class tracker object
+        """Gets class tracker object.
 
         Example:
         >>> tr = j.tools.memprof.class_tracker()
