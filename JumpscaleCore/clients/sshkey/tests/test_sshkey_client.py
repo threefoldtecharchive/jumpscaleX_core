@@ -5,6 +5,12 @@ from subprocess import Popen, PIPE
 
 skip = j.baseclasses.testtools._skip
 
+sshkeyclient_name = ""
+sshkey_dir = ""
+sshkey_client = ""
+ssh_pubkey = ""
+ssh_pubkey = ""
+
 
 def info(message):
     logging.basicConfig(format="%(message)s", level=logging.INFO)
@@ -21,10 +27,8 @@ def os_command(command):
     return output, error
 
 
-global sshkeyclient_name, sshkey_dir, sshkey_client, ssh_pubkey, ssh_privkey
-
-
 def before():
+    global sshkeyclient_name, sshkey_dir, sshkey_client, ssh_pubkey, ssh_privkey
     sshkeyclient_name = "ssh_client_{}".format(rand_string())
     sshkey_dir = "{}/.ssh".format(j.core.myenv.config["DIR_HOME"])
     info("Create sshkey client with name {}".format(sshkeyclient_name))
