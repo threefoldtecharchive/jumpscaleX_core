@@ -17,12 +17,18 @@ class Skip(BaseException):
 
 
 class TestTools:
-    modules = []
-    results = {
+    _modules = []
+    _results = {
         "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
         "testcases": [],
         "time_taken": 0,
     }
+    _full_results = {
+        "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
+        "testcases": [],
+        "time_taken": 0,
+    }
+    __show_report = True
 
     @staticmethod
     def _skip(msg):
@@ -79,7 +85,7 @@ class TestTools:
         :param path: absolute path to be discovered.
         :param test_name: (optional) test name for getting only this test.
         """
-        self.modules = []
+        self._modules = []
         if j.sal.fs.isFile(path):
             parent_path = j.sal.fs.getDirName(path)
             sys.path.insert(0, parent_path)
@@ -110,7 +116,7 @@ class TestTools:
         module = import_module(name=basename, package=dotted_path)
         for mod in dir(module):
             if _VALID_TEST_NAME.match(mod):
-                self.modules.append(module)
+                self._modules.append(module)
                 break
 
     def _import_test_module(self, test_name, file_path, path):
@@ -125,24 +131,24 @@ class TestTools:
         if dotted_path:
             basename = f".{basename}"
         module = import_module(name=basename, package=dotted_path)
-        self.modules.append(module)
+        self._modules.append(module)
         if test_name not in dir(module):
             raise AttributeError(f"Test {test_name} is not found")
 
-    def _run_tests(self, test_name=""):
+    def _run_tests(self, test_name="", report=True):
         """Run tests has been discovered using discover method.
 
         :param test_name: (optional) test name for run only this test.
         :return: 0 in case of success or no test found, 1 in case of failure.
         """
-        self.results = {
+        self._results = {
             "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
             "testcases": [],
             "time_taken": 0,
         }
         # We should keep track of every test (execution time)
         start_time = time.time()
-        for module in self.modules:
+        for module in self._modules:
             self._before_all(module)
             if test_name:
                 self._run_test(test_name, module)
@@ -154,9 +160,11 @@ class TestTools:
             self._after_all(module)
         end_time = time.time()
         time_taken = end_time - start_time
-        self.results["time_taken"] = "{0:.5f}".format(time_taken)
-        self._report()
-        if (self.results["summary"]["failures"] > 0) or (self.results["summary"]["errors"] > 0):
+        self._results["time_taken"] = time_taken
+        if report and self.__show_report:
+            self._report()
+        self._full_report()
+        if (self._results["summary"]["failures"] > 0) or (self._results["summary"]["errors"] > 0):
             return 1
         return 0
 
@@ -166,8 +174,8 @@ class TestTools:
         :param method: test name.
         :param module: module that contain this test.
         """
-        module_name = module.__file__
-        test_name = f"{module_name}:{method}"
+        module_location = self._get_module_location(module)
+        test_name = f"{module_location}.{method}"
         try:
             test = getattr(module, method)
             if not isinstance(test, (types.FunctionType, types.MethodType)):
@@ -190,18 +198,26 @@ class TestTools:
         if not self._is_skipped(test):
             self._after(module, test_name)
 
+    def _get_module_location(self, module):
+        if hasattr(module, "_location"):
+            module_location = module._location
+        else:
+            module_location = module.__file__
+
+        return module_location
+
     def _before_all(self, module):
         """Get and execute before_all in a module if it is exist.
 
         :param module: module that contains before_all.
         """
-        module_name = module.__file__
+        module_location = self._get_module_location(module)
         if "before_all" in dir(module):
             before_all = getattr(module, "before_all")
             try:
                 before_all()
             except BaseException as error:
-                self._add_helper_error(module_name, error)
+                self._add_helper_error(module_location, error)
                 print("error\n")
 
     def _after_all(self, module):
@@ -209,13 +225,13 @@ class TestTools:
 
         :param module: module that contains after_all.
         """
-        module_name = module.__file__
+        module_location = self._get_module_location(module)
         if "after_all" in dir(module):
             after_all = getattr(module, "after_all")
             try:
                 after_all()
             except BaseException as error:
-                self._add_helper_error(module_name, error)
+                self._add_helper_error(module_location, error)
                 print("error\n")
 
     def _before(self, module):
@@ -232,13 +248,12 @@ class TestTools:
 
         :param module: module that contains after.
         """
-        module_name = f"{module.__file__}:{test_name}"
         if "after" in dir(module):
             after = getattr(module, "after")
             try:
                 after()
             except BaseException as error:
-                self._add_helper_error(module_name, error)
+                self._add_helper_error(test_name, error)
                 print("error\n")
 
     def _is_skipped(self, test):
@@ -252,7 +267,7 @@ class TestTools:
     def _add_success(self, test_name):
         """Add a succeed test.
         """
-        self.results["summary"]["passes"] += 1
+        self._results["summary"]["passes"] += 1
         print("ok\n")
 
     def _add_failure(self, test_name, error):
@@ -260,7 +275,7 @@ class TestTools:
 
         :param error: test exception error.
         """
-        self.results["summary"]["failures"] += 1
+        self._results["summary"]["failures"] += 1
         length = len(test_name) + _FAIL_LENGTH
         msg = "=" * length + f"\nFAIL: {test_name}\n" + "-" * length
         log_msg = j.core.tools.log("{RED}%s" % msg, stdout=False)
@@ -268,7 +283,7 @@ class TestTools:
         log_error = j.core.tools.log("", exception=error, stdout=False)
         str_error = j.core.tools.log2str(log_error)
         result = {"msg": str_msg, "error": str_error}
-        self.results["testcases"].append(result)
+        self._results["testcases"].append(result)
         print("fail\n")
 
     def _add_error(self, test_name, error):
@@ -276,7 +291,7 @@ class TestTools:
 
         :param error: test exception error.
         """
-        self.results["summary"]["errors"] += 1
+        self._results["summary"]["errors"] += 1
         length = len(test_name) + _ERROR_LENGTH
         msg = "=" * length + f"\nERROR: {test_name}\n" + "-" * length
         log_msg = j.core.tools.log("{YELLOW}%s" % msg, stdout=False)
@@ -284,7 +299,7 @@ class TestTools:
         log_error = j.core.tools.log("", exception=error, stdout=False)
         str_error = j.core.tools.log2str(log_error)
         result = {"msg": str_msg, "error": str_error}
-        self.results["testcases"].append(result)
+        self._results["testcases"].append(result)
         print("error\n")
 
     def _add_skip(self, test_name, skip_msg):
@@ -292,7 +307,7 @@ class TestTools:
 
         :param skip_msg: reason for skipping the test.
         """
-        self.results["summary"]["skips"] += 1
+        self._results["summary"]["skips"] += 1
         length = len(test_name) + _FAIL_LENGTH
         msg = "=" * length + f"\nSKIP: {test_name}\n" + "-" * length
         log_msg = j.core.tools.log("{BLUE}%s" % msg, stdout=False)
@@ -300,7 +315,7 @@ class TestTools:
         log_skip = j.core.tools.log("\n{BLUE}%s" % skip_msg, stdout=False)
         str_skip = j.core.tools.log2str(log_skip)
         result = {"msg": str_msg, "error": str_skip}
-        self.results["testcases"].append(result)
+        self._results["testcases"].append(result)
         print("skip\n")
 
     def _add_helper_error(self, test_name, error):
@@ -315,13 +330,15 @@ class TestTools:
         log_error = j.core.tools.log("", exception=error, stdout=False)
         str_error = j.core.tools.log2str(log_error)
         result = {"msg": str_msg, "error": str_error}
-        self.results["testcases"].append(result)
+        self._results["testcases"].append(result)
 
-    def _report(self):
+    def _report(self, results=None):
         """Collect and print the final report.
         """
+        if not results:
+            results = self._results
         length = 70
-        for result in self.results["testcases"]:
+        for result in results["testcases"]:
             msg = result["msg"].split(": ")
             msg = ": ".join(msg[1:])
             print(msg)
@@ -330,32 +347,53 @@ class TestTools:
             print(error)
 
         print("-" * length)
-        all_tests = sum(self.results["summary"].values())
-        print(f"Ran {all_tests} tests in {self.results['time_taken']}\n\n")
+        all_tests = sum(results["summary"].values())
+        print(f"Ran {all_tests} tests in {results['time_taken']}\n\n")
         result_log = j.core.tools.log(
             "{RED}%s Failed, {YELLOW}%s Errored, {GREEN}%s Passed, {BLUE}%s Skipped"
             % (
-                self.results["summary"]["failures"],
-                self.results["summary"]["errors"],
-                self.results["summary"]["passes"],
-                self.results["summary"]["skips"],
+                results["summary"]["failures"],
+                results["summary"]["errors"],
+                results["summary"]["passes"],
+                results["summary"]["skips"],
             )
         )
         result_str = j.core.tools.log2str(result_log)
         print(result_str.split(": ")[1], "\u001b[0m")
 
-    def discover_obj(self, obj=None):
-        for group_name, group in j.core._groups.items():
-            import ipdb
+    def _full_report(self):
+        self._full_results["summary"]["failures"] += self._results["summary"]["failures"]
+        self._full_results["summary"]["errors"] += self._results["summary"]["errors"]
+        self._full_results["summary"]["passes"] += self._results["summary"]["passes"]
+        self._full_results["summary"]["skips"] += self._results["summary"]["skips"]
+        self._full_results["time_taken"] += self._results["time_taken"]
+        self._full_results["testcases"].extend(self._results["testcases"])
 
-            ipdb.set_trace()
-            if not obj or obj == group:
-                for factory in dir(group):
-                    if not factory.startswith("_"):
-                        try:
-                            attr = getattr(group, factory)
-                            attr.__file__ = f"{group_name}.{factory}"
-                        except BaseException as error:
-                            self._add_error(factory, error)
-                            continue
-                        self.modules.append(attr)
+    def _run_tests_from_object(self, obj=None):
+        if obj is None:
+            return
+        elif isinstance(obj, j.baseclasses.object):
+            obj.__show_report = False
+            self._modules.append(obj)
+        elif obj == j:
+            for group_name, group in j.core._groups.items():
+                self._discover_group(group_name, group)
+        else:
+            for group_name, group in j.core._groups.items():
+                if obj == group:
+                    self._discover_group(group_name, group)
+
+        self._run_tests(report=False)
+        self._report(results=self._full_results)
+
+    def _discover_group(self, group_name, group):
+        for factory in dir(group):
+            if not factory.startswith("_"):
+                try:
+                    attr = getattr(group, factory)
+                except BaseException as error:
+                    self._add_error(factory, error)
+                    continue
+                if isinstance(attr, j.baseclasses.object):
+                    attr.__show_report = False
+                    self._modules.append(attr)
