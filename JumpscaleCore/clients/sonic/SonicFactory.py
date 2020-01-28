@@ -42,5 +42,5 @@ class SonicFactory(JSConfigs):
 
         print("TEST OK")
 
-    def test_ssh(self, name):
+    def test_sonic(self, name):
         self._tests_run(name=name)
