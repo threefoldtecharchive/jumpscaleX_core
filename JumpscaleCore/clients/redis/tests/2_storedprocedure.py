@@ -1,12 +1,13 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_storedprocedure():
     """
     to run:
 
-    kosmos 'j.data.schema.test(name="storedprocedure")'
+    kosmos 'j.clients.redis.test(name="storedprocedure")'
     """
+    self = j.clients.redis
 
     lua_test_file_path = "%s/tests/test.lua" % self._dirpath
 
