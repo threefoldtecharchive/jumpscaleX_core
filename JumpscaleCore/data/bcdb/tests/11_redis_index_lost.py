@@ -21,7 +21,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_redis_index_lost():
     """
     to run:
     kosmos 'j.data.bcdb.test(name="redis_index_lost")'
@@ -84,5 +84,5 @@ def main(self):
     r = m.get_by_name("myuser_8")
     assert r.addr == "something:8"
 
-    self._log_info("TEST DONE")
+    j.data.bcdb._log_info("TEST DONE")
     return "OK"

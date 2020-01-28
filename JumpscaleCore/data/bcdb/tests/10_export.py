@@ -7,7 +7,7 @@ from Jumpscale import j
 ###
 
 
-def main(self):
+def test_export():
     """
     to run:
     kosmos 'j.data.bcdb.test(name="export")'
@@ -96,5 +96,5 @@ def main(self):
         bcdb.destroy()
 
     j.servers.zdb.test_instance_stop()
-    self._log_info("TEST DONE")
+    j.data.bcdb._log_info("TEST DONE")
     return "OK"

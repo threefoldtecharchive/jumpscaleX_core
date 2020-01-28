@@ -21,7 +21,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_sqlite():
     """
     to run:
 
@@ -50,7 +50,7 @@ def main(self):
 
     """
 
-    db, m = self._load_test_model(type="sqlite", schema=SCHEMA)
+    db, m = j.data.bcdb._load_test_model(type="sqlite", schema=SCHEMA)
     bcdb = m.bcdb
 
     ###EXAMPLE HOW WE CAN USE TRIGGERS ON MODELS TO BUILD E.G. A CUSTOM INDEX

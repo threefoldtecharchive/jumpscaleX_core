@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_base():
     """
     to run:
 
@@ -21,7 +21,7 @@ def main(self):
         def load(schema_url):
 
             # don't forget the record 0 is always a systems record
-            db, model = self._load_test_model(type=name, schema=schema)
+            db, model = j.data.bcdb._load_test_model(type=name, schema=schema)
 
             for i in range(10):
                 model_obj = model.new()
@@ -149,7 +149,7 @@ def main(self):
 
         assert db_model.bcdb.name == "test"
 
-        self._log_info("TEST DONE: %s" % name)
+        print("TEST DONE: %s" % name)
 
     schema_sqlite = """
     @url = despiegk.test.sqlite
@@ -195,5 +195,5 @@ def main(self):
     j.servers.zdb.test_instance_stop()
     j.servers.sonic.default.stop()
 
-    self._log_info("TEST BASE DONE")
-    return "OK"
+    # self._log_info("TEST BASE DONE")
+    print("OK")
