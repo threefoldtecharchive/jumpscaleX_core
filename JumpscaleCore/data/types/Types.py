@@ -190,7 +190,7 @@ class Types(j.baseclasses.object, j.baseclasses.testtools):
 
         if want run specific test ( write the name of test ) e.g. j.data.schema.test(name="base")
         """
-        self._run(name=name)
+        self._tests_run(name=name)
 
     def fix(self, val, default):
         """
