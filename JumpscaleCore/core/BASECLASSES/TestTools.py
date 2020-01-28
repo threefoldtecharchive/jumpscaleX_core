@@ -17,13 +17,12 @@ class Skip(BaseException):
 
 
 class TestTools:
-    def __init__(self):
-        self.modules = []
-        self.results = {
-            "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
-            "testcases": [],
-            "time_taken": 0,
-        }
+    modules = []
+    results = {
+        "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
+        "testcases": [],
+        "time_taken": 0,
+    }
 
     @staticmethod
     def _skip(msg):
@@ -41,20 +40,29 @@ class TestTools:
 
         return dec
 
-    def _run(self, path="", name=""):
+    def _tests_run(self, path="", name=""):
         """Run tests in a certain path.
 
         :param path: relative or absolute path that contains tests.
         :return: 0 in case of success or no test found, 1 in case of failure.
         """
+
+        def find_file(name, path):
+            files = j.sal.fs.listPyScriptsInDir(path)
+            for file in files:
+                _, basename, _, _ = j.sal.fs.pathParse(file)
+                if name in basename:
+                    return file
+            else:
+                raise ValueError(f"Didn't find file with name {name}")
+
         if hasattr(self, "_dirpath") and not path:
             # This part for jsx factory
-            if ":" in name:
-                file_name, name = name.split(":")
-                path = j.sal.fs.joinPaths(self._dirpath, f"tests/{file_name}")
-            else:
-                path = j.sal.fs.joinPaths(self._dirpath, f"tests/{name}")
+            path = j.sal.fs.joinPaths(self._dirpath, "tests")
+            if name:
+                path = find_file(name, path)
                 name = ""
+
         if not j.sal.fs.isAbsolute(path):
             path = j.sal.fs.joinPaths(j.sal.fs.getcwd(), path)
 
@@ -91,10 +99,11 @@ class TestTools:
         :param file_path: absolute file path.
         :param path: absolute path for one of file's parents.
         """
-        relative_path, basename, _, _ = j.sal.fs.pathParse(file_path, baseDir=path)
-        if not _VALID_TEST_NAME.match(basename):
-            return
-
+        relative_path, basename, _, p = j.sal.fs.pathParse(file_path, baseDir=path)
+        if p:
+            basename = f"{p}_{basename}"
+        # if not _VALID_TEST_NAME.match(basename):
+        #     return
         dotted_path = relative_path[:-1].replace("/", ".")
         if dotted_path:
             basename = f".{basename}"
@@ -139,7 +148,7 @@ class TestTools:
                 self._run_test(test_name, module)
             else:
                 for method in dir(module):
-                    if _VALID_TEST_NAME.match(method):
+                    if not method.startswith("_") and _VALID_TEST_NAME.match(method):
                         self._run_test(method, module)
 
             self._after_all(module)
@@ -166,7 +175,6 @@ class TestTools:
             print(test_name, "...")
             if not self._is_skipped(test):
                 self._before(module)
-            # TODO: run test with args. (only for parameterized tests)
             test()
             self._add_success(test_name)
         except AssertionError as error:
@@ -179,7 +187,8 @@ class TestTools:
         except BaseException as error:
             self._add_error(test_name, error)
 
-        self._after(module, test_name)
+        if not self._is_skipped(test):
+            self._after(module, test_name)
 
     def _before_all(self, module):
         """Get and execute before_all in a module if it is exist.
@@ -187,7 +196,7 @@ class TestTools:
         :param module: module that contains before_all.
         """
         module_name = module.__file__
-        if hasattr(module, "before_all"):
+        if "before_all" in dir(module):
             before_all = getattr(module, "before_all")
             try:
                 before_all()
@@ -201,7 +210,7 @@ class TestTools:
         :param module: module that contains after_all.
         """
         module_name = module.__file__
-        if hasattr(module, "after_all"):
+        if "after_all" in dir(module):
             after_all = getattr(module, "after_all")
             try:
                 after_all()
@@ -214,7 +223,7 @@ class TestTools:
 
         :param module: module that contains before.
         """
-        if hasattr(module, "before"):
+        if "before" in dir(module):
             before = getattr(module, "before")
             before()
 
@@ -224,7 +233,7 @@ class TestTools:
         :param module: module that contains after.
         """
         module_name = f"{module.__file__}:{test_name}"
-        if hasattr(module, "after"):
+        if "after" in dir(module):
             after = getattr(module, "after")
             try:
                 after()
@@ -334,3 +343,19 @@ class TestTools:
         )
         result_str = j.core.tools.log2str(result_log)
         print(result_str.split(": ")[1], "\u001b[0m")
+
+    def discover_obj(self, obj=None):
+        for group_name, group in j.core._groups.items():
+            import ipdb
+
+            ipdb.set_trace()
+            if not obj or obj == group:
+                for factory in dir(group):
+                    if not factory.startswith("_"):
+                        try:
+                            attr = getattr(group, factory)
+                            attr.__file__ = f"{group_name}.{factory}"
+                        except BaseException as error:
+                            self._add_error(factory, error)
+                            continue
+                        self.modules.append(attr)
