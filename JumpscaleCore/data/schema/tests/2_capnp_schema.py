@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_capnp():
     """
     to run:
 
@@ -44,6 +44,6 @@ def main(self):
     # CLEAN STATE
     # j.data.schema.remove_from_text(schema0)
     # j.data.schema.remove_from_text(schema1)
-    self._log_info("TEST DONE CAPNP")
+    j.data.schema._log_info("TEST DONE CAPNP")
 
     return "OK"
