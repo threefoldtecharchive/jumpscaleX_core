@@ -3,8 +3,6 @@ import os.path
 from Jumpscale import j
 from subprocess import Popen, PIPE
 
-skip = j.baseclasses.testtools._skip
-
 sshkeyclient_name = ""
 sshkey_dir = ""
 sshkey_client = ""
