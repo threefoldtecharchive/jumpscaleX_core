@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_embedded_schema():
     """
     to run:
 
@@ -173,6 +173,6 @@ def main(self):
 
     assert schema_test3._data == schema_test4._data
 
-    self._log_info("TEST DONE SCHEMA EMBED")
+    j.data.schema._log_info("TEST DONE SCHEMA EMBED")
 
     return "OK"

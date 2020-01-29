@@ -12,6 +12,8 @@ import binascii
 from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
 
+skip = j.baseclasses.testtools._skip
+
 
 JSBASE = j.baseclasses.object
 
@@ -40,9 +42,7 @@ class NACLFactory(j.baseclasses.object):
 
         """
         n = self.get(name=name, load=False)
-        n.configure(
-            privkey_words=privkey_words, generate=generate, interactive=interactive, reset=reset,
-        )
+        n.configure(privkey_words=privkey_words, generate=generate, interactive=interactive, reset=reset)
         return n
 
     def get(self, name="default", load=True, configure_if_needed=True):
@@ -179,6 +179,7 @@ class NACLFactory(j.baseclasses.object):
 
         print("OK")
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/482")
     def test(self):
         """
         kosmos 'j.data.nacl.test()'
@@ -317,3 +318,6 @@ class NACLFactory(j.baseclasses.object):
             b = cl.decrypt(a)
             assert data2 == b
         j.tools.timer.stop(i)
+
+    def test_NACL(self, name=""):
+        self._tests_run(name=name)

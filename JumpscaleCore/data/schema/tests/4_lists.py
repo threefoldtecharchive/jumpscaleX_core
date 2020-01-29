@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_lists():
     """
     to run:
 
@@ -138,6 +138,6 @@ def main(self):
     except Exception as e:
         assert str(e).find("object readonly, cannot set") != -1
 
-    self._log_info("TEST DONE LIST")
+    j.data.schema._log_info("TEST DONE LIST")
 
     return "OK"

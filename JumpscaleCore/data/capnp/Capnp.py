@@ -8,6 +8,8 @@ from .ModelBaseCollection import ModelBaseCollection
 from .ModelBaseData import ModelBaseData
 from .ModelBase import ModelBase
 
+skip = j.baseclasses.testtools._skip
+
 
 class Tools(j.baseclasses.object):
     def listInDictCreation(self, listInDict, name, manipulateDef=None):
@@ -231,6 +233,7 @@ class Capnp(j.baseclasses.object):
 
         return obj
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/482")
     def test(self):
         """
         kosmos 'j.data.capnp.test()'
@@ -361,3 +364,6 @@ class Capnp(j.baseclasses.object):
     #     msg = schema.new_message(**kwargs)
     #     obj = MemoryObject(msg.to_dict(verbose=True), schema=schema)
     #     return obj
+
+    def test_capnp(self, name=""):
+        self._tests_run(name=name)

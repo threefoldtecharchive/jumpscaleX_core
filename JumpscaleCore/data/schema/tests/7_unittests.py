@@ -2,7 +2,7 @@ from Jumpscale import j
 import nose, os
 
 
-def main(self):
+def test_unittests():
     """
     to run:
 

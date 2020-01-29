@@ -12,6 +12,13 @@ _FAIL_LENGTH = 6
 _ERROR_LENGTH = 7
 
 
+_full_results = {
+    "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
+    "testcases": [],
+    "time_taken": 0,
+}
+
+
 class Skip(BaseException):
     """Raise for skipping test"""
 
@@ -23,12 +30,8 @@ class TestTools:
         "testcases": [],
         "time_taken": 0,
     }
-    _full_results = {
-        "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
-        "testcases": [],
-        "time_taken": 0,
-    }
-    __show_report = True
+
+    __show_tests_report = True
 
     @staticmethod
     def _skip(msg):
@@ -46,11 +49,11 @@ class TestTools:
 
         return dec
 
-    def _tests_run(self, path="", name=""):
-        """Run tests in a certain path.
+    def _tests_run(self, name=""):
+        """This method for jumpscale factories, it is used to run tests in "tests" directory beside jumpscale factory.
+        This method should not be used outside jumpscale factories.
 
-        :param path: relative or absolute path that contains tests.
-        :return: 0 in case of success or no test found, 1 in case of failure.
+        :param name: relative or absolute path that contains tests.
         """
 
         def find_file(name, path):
@@ -62,24 +65,22 @@ class TestTools:
             else:
                 raise ValueError(f"Didn't find file with name {name}")
 
-        if hasattr(self, "_dirpath") and not path:
-            # This part for jsx factory
-            path = j.sal.fs.joinPaths(self._dirpath, "tests")
-            if name:
-                path = find_file(name, path)
-                name = ""
+        if not hasattr(self, "_dirpath"):
+            return
+        path = j.sal.fs.joinPaths(self._dirpath, "tests")
+        if name:
+            path = find_file(name, path)
 
+        self._discover_from_path(path)
+        self._execute_report_tests()
+
+    def _run_from_path(self, path="", name=""):
         if not j.sal.fs.isAbsolute(path):
             path = j.sal.fs.joinPaths(j.sal.fs.getcwd(), path)
+        self._discover_from_path(path, name)
+        return self._execute_report_tests(name)
 
-        if name:
-            self._discover(path, name)
-            return self._run_tests(name)
-        else:
-            self._discover(path)
-            return self._run_tests()
-
-    def _discover(self, path, test_name=""):
+    def _discover_from_path(self, path, test_name=""):
         """Discover and get modules that conatains a tests in a certain path.
 
         :param path: absolute path to be discovered.
@@ -108,8 +109,7 @@ class TestTools:
         relative_path, basename, _, p = j.sal.fs.pathParse(file_path, baseDir=path)
         if p:
             basename = f"{p}_{basename}"
-        # if not _VALID_TEST_NAME.match(basename):
-        #     return
+
         dotted_path = relative_path[:-1].replace("/", ".")
         if dotted_path:
             basename = f".{basename}"
@@ -135,7 +135,7 @@ class TestTools:
         if test_name not in dir(module):
             raise AttributeError(f"Test {test_name} is not found")
 
-    def _run_tests(self, test_name="", report=True):
+    def _execute_report_tests(self, test_name="", report=True):
         """Run tests has been discovered using discover method.
 
         :param test_name: (optional) test name for run only this test.
@@ -151,24 +151,25 @@ class TestTools:
         for module in self._modules:
             self._before_all(module)
             if test_name:
-                self._run_test(test_name, module)
+                self._execute_test(test_name, module)
             else:
                 for method in dir(module):
                     if not method.startswith("_") and _VALID_TEST_NAME.match(method):
-                        self._run_test(method, module)
+                        self._execute_test(method, module)
 
             self._after_all(module)
         end_time = time.time()
         time_taken = end_time - start_time
         self._results["time_taken"] = time_taken
-        if report and self.__show_report:
+        if report and self.__show_tests_report:
             self._report()
-        self._full_report()
+        if not self.__show_tests_report:
+            self._add_to_full_results()
         if (self._results["summary"]["failures"] > 0) or (self._results["summary"]["errors"] > 0):
             return 1
         return 0
 
-    def _run_test(self, method, module):
+    def _execute_test(self, method, module):
         """Run one test.
 
         :param method: test name.
@@ -361,19 +362,20 @@ class TestTools:
         result_str = j.core.tools.log2str(result_log)
         print(result_str.split(": ")[1], "\u001b[0m")
 
-    def _full_report(self):
-        self._full_results["summary"]["failures"] += self._results["summary"]["failures"]
-        self._full_results["summary"]["errors"] += self._results["summary"]["errors"]
-        self._full_results["summary"]["passes"] += self._results["summary"]["passes"]
-        self._full_results["summary"]["skips"] += self._results["summary"]["skips"]
-        self._full_results["time_taken"] += self._results["time_taken"]
-        self._full_results["testcases"].extend(self._results["testcases"])
+    def _add_to_full_results(self):
+        _full_results["summary"]["failures"] += self._results["summary"]["failures"]
+        _full_results["summary"]["errors"] += self._results["summary"]["errors"]
+        _full_results["summary"]["passes"] += self._results["summary"]["passes"]
+        _full_results["summary"]["skips"] += self._results["summary"]["skips"]
+        _full_results["time_taken"] += self._results["time_taken"]
+        _full_results["testcases"].extend(self._results["testcases"])
 
     def _run_tests_from_object(self, obj=None):
+        self._modules = []
         if obj is None:
             return
         elif isinstance(obj, j.baseclasses.object):
-            obj.__show_report = False
+            obj.__show_tests_report = False
             self._modules.append(obj)
         elif obj == j:
             for group_name, group in j.core._groups.items():
@@ -383,8 +385,10 @@ class TestTools:
                 if obj == group:
                     self._discover_group(group_name, group)
 
-        self._run_tests(report=False)
-        self._report(results=self._full_results)
+        self._execute_report_tests(report=False)
+        global _full_results
+        self._report(results=_full_results)
+        self._reset()
 
     def _discover_group(self, group_name, group):
         for factory in dir(group):
@@ -395,5 +399,15 @@ class TestTools:
                     self._add_error(factory, error)
                     continue
                 if isinstance(attr, j.baseclasses.object):
-                    attr.__show_report = False
+                    attr.__show_tests_report = False
                     self._modules.append(attr)
+
+    def _reset(self):
+        for module in self._modules:
+            module.__show_tests_report = True
+        global _full_results
+        _full_results = {
+            "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
+            "testcases": [],
+            "time_taken": 0,
+        }

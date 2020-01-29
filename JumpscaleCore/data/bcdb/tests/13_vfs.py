@@ -22,7 +22,7 @@ from Jumpscale import j
 from unittest import TestCase
 
 
-def main(self):
+def test_vfs():
     """
     to run:
     kosmos 'j.data.bcdb.test(name="vfs")'
@@ -75,7 +75,7 @@ def main(self):
     print("namespaces:%s" % namespaces)
     assert "1" in namespaces
 
-    self._log_info("TEST DELETE DATA DONE")
+    j.data.bcdb._log_info("TEST DELETE DATA DONE")
 
     r = vfs.get("{}/data/1".format(testname))
     identifier_folders = [i for i in r.list()]
@@ -117,7 +117,7 @@ def main(self):
     assert str(obj["addr"]).startswith("something:")
     assert str(obj["name"]).startswith("myuser_")
 
-    self._log_info("TEST GET DATA DONE")
+    j.data.bcdb._log_info("TEST GET DATA DONE")
 
     # schema path
     r3 = vfs.get("schemas/")
@@ -134,7 +134,7 @@ def main(self):
     assert str(obj["url"]) == "threefoldtoken.wallet.test"
     assert "ipaddr" in str(obj.values())
 
-    self._log_info("TEST GET SCHEMA DONE")
+    j.data.bcdb._log_info("TEST GET SCHEMA DONE")
 
     SCHEMAS = [
         """
@@ -168,7 +168,7 @@ def main(self):
     assert obj["url"] == "ben.pc.test"
     sch_dir = vfs.get("data/1")
     assert "ben.pc.test.2" in [i for i in sch_dir.list()]
-    self._log_info("TEST SET SCHEMAS DONE")
+    j.data.bcdb._log_info("TEST SET SCHEMAS DONE")
 
     # defining a new object based on model url threefoldtoken.wallet.test
     def get_obj(i):
@@ -242,7 +242,7 @@ def main(self):
     assert obj_id_42
     assert obj_id_24
 
-    self._log_info("TEST SET DATA DONE")
+    j.data.bcdb._log_info("TEST SET DATA DONE")
     r = vfs.get("data/1/threefoldtoken.wallet.test/%s" % obj_id)
     obj = r.get()
     r.delete()
@@ -272,11 +272,11 @@ def main(self):
     for o in removed_objs:
         assert o.item in objItems
 
-    self._log_info("TEST DELETE DATA DONE")
+    j.data.bcdb._log_info("TEST DELETE DATA DONE")
 
     # clean state
     vfs.delete(testname)
-    self._log_info("TEST ROOT DIR DONE")
+    j.data.bcdb._log_info("TEST ROOT DIR DONE")
 
     with test_case.assertRaises(Exception):
         vfs.get("{}/schema/md5".format(testname))
@@ -293,5 +293,5 @@ def main(self):
     j.servers.zdb.test_instance_stop()
     j.servers.sonic.default.stop()
     vfs._bcdb.destroy()
-    self._log_info("TEST DONE")
+    j.data.bcdb._log_info("TEST DONE")
     return "OK"

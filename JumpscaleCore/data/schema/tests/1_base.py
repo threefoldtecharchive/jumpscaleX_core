@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_base():
     """
     to run:
 
@@ -228,6 +228,6 @@ def main(self):
     s5 = j.data.schema.get_from_text(schema4b)
     assert s5.properties[-1].jumpscaletype.NAME == "string"
 
-    self._log_info("TEST DONE BASE")
+    j.data.schema._log_info("TEST DONE BASE")
 
     return "OK"

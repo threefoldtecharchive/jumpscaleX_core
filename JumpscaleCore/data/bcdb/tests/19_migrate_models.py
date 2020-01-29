@@ -1,14 +1,14 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_migrate_models():
     """
     to run:
 
     kosmos 'j.data.bcdb.test(name="migrate_models")'
     """
 
-    bcdb, _ = self._load_test_model()
+    bcdb, _ = j.data.bcdb._load_test_model()
 
     schema_1 = """
     @url = jumpscale.bcdb.test.house.1

@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_json():
     """
     to run:
 
@@ -34,6 +34,6 @@ def main(self):
 
     assert o2.obj_json == {"a": 1, "2": 1}
 
-    self._log_info("test for json ok")
+    j.data.schema._log_info("test for json ok")
 
     return "OK"

@@ -8,8 +8,9 @@ import os
 import sys
 from .connectors.redis.RedisServer import RedisServer
 
+TESTTOOLS = j.baseclasses.testtools
 
-class BCDBFactory(j.baseclasses.factory_testtools):
+class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
 
     __jslocation__ = "j.data.bcdb"
 
@@ -814,8 +815,6 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         following will run all tests
 
         kosmos 'j.data.bcdb.test()'
-        kosmos 'j.data.bcdb.test("base")'
-
 
         """
         print(name)
@@ -828,7 +827,7 @@ class BCDBFactory(j.baseclasses.factory_testtools):
         j.servers.sonic.default.stop()
 
         try:
-            self._test_run(name=name)
+            self._tests_run(name=name)
         except:
             # clean after errors
             # CLEAN STATE
