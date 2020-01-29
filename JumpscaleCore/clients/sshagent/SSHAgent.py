@@ -8,7 +8,7 @@ Tools = j.core.tools
 MyEnv = j.core.myenv
 
 
-class SSHAgent(j.baseclasses.object):
+class SSHAgent(j.baseclasses.object, j.baseclasses.testtools):
 
     __jslocation__ = "j.clients.sshagent"
 
@@ -244,5 +244,5 @@ class SSHAgent(j.baseclasses.object):
     #
     # __repr__ = __str__
 
-    def test_sshagent(self, name):
+    def test_sshagent(self, name=""):
         self._tests_run(name=name)
