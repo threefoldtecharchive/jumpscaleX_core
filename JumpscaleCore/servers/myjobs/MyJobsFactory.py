@@ -17,7 +17,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
     def _init(self, **kwargs):
         self.BCDB_CONNECTOR_PORT = 6380
         self.queue_jobs_start = j.clients.redis.queue_get(redisclient=j.core.db, key="queue:jobs:start")
-
+        self.queue_debug_jobs_start = j.clients.redis.queue_get(redisclient=j.core.db, key="queue:debug_jobs:start")
         self._workers_gipc = {}
         self._workers_gipc_nr_min = 1
         self._workers_gipc_nr_max = 10
@@ -440,7 +440,12 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         job.category = category
         job.die = die
         self.scheduled_ids.append(job.id)
-        self.queue_jobs_start.put(job.id)
+
+        if job.debug:
+            self.queue_debug_jobs_start.put(job.id)
+            self.worker_inprocess_start(nr=1, debug=True)
+        else:
+            self.queue_jobs_start.put(job.id)
 
         # never timeout
         if timeout == 0:
