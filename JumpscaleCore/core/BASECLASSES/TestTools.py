@@ -388,7 +388,6 @@ class TestTools:
 
     def _run_tests_from_object(self, obj=None):
 
-        self._modules = []
         if obj is None:
             return
         elif isinstance(obj, j.baseclasses.object):
