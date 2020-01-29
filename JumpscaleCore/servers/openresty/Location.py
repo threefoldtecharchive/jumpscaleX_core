@@ -63,7 +63,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
         return self.check_location_exists(self.locations_lapis, new_location_name)
 
     def get_locations_spa(self, new_location_name):
-        return self.check_location_exists(self.location_static, new_location_name)
+        return self.check_location_exists(self.locations_spa, new_location_name)
 
     def get_locations_custom(self, new_location_name):
         return self.check_location_exists(self.get_locations_custom, new_location_name)
@@ -157,7 +157,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
             return location.pop()
         else:
             new_location = locations_obj.new()
-            new_location_name = new_location_name
+            new_location.name = new_location_name
             return new_location
 
 

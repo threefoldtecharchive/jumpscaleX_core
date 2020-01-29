@@ -120,6 +120,32 @@ class ThreeBotPackage(ThreeBotPackageBase):
                         # print(f"adding actor {name} {fpath} {self.name}")
                     self.gedis_server.actor_add(name=name, path=fpath, package=self)
 
+    def actors_remove(self):
+        self.load()
+        # Get the full path for actors in the package
+        path = "actors"
+        if not path.startswith("/"):
+            path = j.sal.fs.joinPaths(self.path, path)
+        if not j.sal.fs.exists(path):
+            raise j.exceptions.Input("could not find:%s" % path)
+
+        # remove the actors
+        if path:
+            if self._actors is None:
+                self._actors = j.baseclasses.dict()
+            for fpath in j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py", followSymlinks=True):
+                # unload the hashed actors
+                try:
+                    j.tools.codeloader.unload(obj_key=None, path=fpath, reload=False, md5=None)
+                except Exception as e:
+                    errormsg = "****ERROR HAPPENED IN unloading ACTOR: %s\n%s" % (fpath, e)
+                    self._log_error(errormsg)
+                    print(errormsg)
+                    raise e
+
+                name = j.tools.codeloader._basename(fpath).lower()
+                self.gedis_server.actors_remove(name=name, package=self)
+
     @property
     def actors(self):
         self.models  # always need to have the models
@@ -230,6 +256,20 @@ class ThreeBotPackage(ThreeBotPackageBase):
             locations.configure()
             website.configure()
 
+    def _web_unload(self, app_type="frontend"):
+        for port in (443, 80):
+            website = self.openresty.get_from_port(port)
+            locations = website.locations.get(f"{self.name}_locations_{port}")
+            if app_type == "frontend":
+                location = locations.get_locations_spa(self.name)
+                conf_location = locations.path_cfg_get(location.name)
+            elif app_type == "html":
+                location = locations.get_location_static(self.name)
+                conf_location = locations.path_cfg_get(location.name)
+
+            if conf_location:
+                j.sal.fs.remove(conf_location)
+
     def config_load(self):
         self._log_info("load package.toml config", data=self)
         if self.giturl:
@@ -282,6 +322,15 @@ class ThreeBotPackage(ThreeBotPackageBase):
         self.load()
         self.stop()
         self.load()
+        # remove configuration for static and dynamic websites
+        if j.sal.fs.exists(f"{self.path}/frontend"):
+            self._web_unload(app_type="frontend")
+        elif j.sal.fs.exists(f"{self.path}/html"):
+            self._web_unload(app_type="html")
+        # reload openresty to read the new configuration.
+        self.openresty.reload()
+        self.actors_remove()
+
         if self.status != "config":
             self.status = "config"
         self._package_author.uninstall()

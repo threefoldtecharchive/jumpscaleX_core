@@ -14,42 +14,45 @@ from Jumpscale import j
 class MemProf:
     __jslocation__ = "j.tools.memprof"
 
-    def __init__(self):
-        self._tr = None
-    
-
     def leak_check(self, limit=20):
-        # JSX> show_most_common_types(limit=30, shortnames=False)
-        # builtins.dict                                    49201
-        # builtins.function                                35563
-        # builtins.list                                    33720
-        # builtins.tuple                                   26458
-        # parso.python.tree.Operator                       15009
-        # parso.python.tree.PythonNode                     10655
-        # parso.python.tree.Name                           10132
-        # builtins.weakref                                 8988
-        # builtins.frozenset                               6933
-        # Jumpscale.core.BASECLASSES.JSDict.JSDict         5908
-        # parso.pgen2.generator.DFAPlan                    5205
-        # builtins.type                                    4487
-        # builtins.cell                                    4202
-        # builtins.set                                     4165
-        # builtins.getset_descriptor                       3984
-        # capnp.lib.capnp._DynamicStructReader             3524
-        # capnp.lib.capnp._PackedMessageReaderBytes        3524
-        # builtins.property                                3394
-        # prompt_toolkit.key_binding.key_bindings._Binding 3196
-        # prompt_toolkit.styles.base.Attrs                 3086
-        # builtins.builtin_function_or_method              2868
-        # parso.python.tree.Newline                        2791
-        # builtins.wrapper_descriptor                      2512
-        # parso.pgen2.grammar_parser.NFAArc                2474
-        # Jumpscale.data.types.List.ListObject             2280
-        # parso.python.tree.Keyword                        2273
-        # parso.pgen2.grammar_parser.NFAState              2180
-        # parso.python.tree.Param                          2063
-        # e952d0570a1f3d31c27fde7140987c9d.JSXObject2      2037
-        # builtins.method_descriptor                       2020
+        """Check leaking objects.
+
+        Args:
+            limit (int): Top `limit` leaking objects. Defaults to 20.
+
+        Example:
+            JSX> show_most_common_types(limit=30, shortnames=False)
+            builtins.dict                                    49201
+            builtins.function                                35563
+            builtins.list                                    33720
+            builtins.tuple                                   26458
+            parso.python.tree.Operator                       15009
+            parso.python.tree.PythonNode                     10655
+            parso.python.tree.Name                           10132
+            builtins.weakref                                 8988
+            builtins.frozenset                               6933
+            Jumpscale.core.BASECLASSES.JSDict.JSDict         5908
+            parso.pgen2.generator.DFAPlan                    5205
+            builtins.type                                    4487
+            builtins.cell                                    4202
+            builtins.set                                     4165
+            builtins.getset_descriptor                       3984
+            capnp.lib.capnp._DynamicStructReader             3524
+            capnp.lib.capnp._PackedMessageReaderBytes        3524
+            builtins.property                                3394
+            prompt_toolkit.key_binding.key_bindings._Binding 3196
+            prompt_toolkit.styles.base.Attrs                 3086
+            builtins.builtin_function_or_method              2868
+            parso.python.tree.Newline                        2791
+            builtins.wrapper_descriptor                      2512
+            parso.pgen2.grammar_parser.NFAArc                2474
+            Jumpscale.data.types.List.ListObject             2280
+            parso.python.tree.Keyword                        2273
+            parso.pgen2.grammar_parser.NFAState              2180
+            parso.python.tree.Param                          2063
+            e952d0570a1f3d31c27fde7140987c9d.JSXObject2      2037
+            builtins.method_descriptor                       2020
+        """
 
         print("most common types in memory")
         show_most_common_types(limit=limit, shortnames=False)
@@ -59,21 +62,22 @@ class MemProf:
         print(typestats(roots, shortnames=False))
 
     def refs_by_type(self, type_long_name):
-        """
-        JSX> roots = j.tools.memprof.refs_by_type("JSDict")
+        """Get objects by type.
 
+        JSX> roots = j.tools.memprof.refs_by_type("JSDict")
         """
         roots = by_type(type_long_name)
         return roots
-    
-    def show_roots(self, roots, filename="roots.png", **show_refs_opts):
-        """
-        JSX> roots = j.tools.memprof.refs_by_type("JSDict")
-        JSX> j.tools.memprof.show_roots(roots[:5])
-        Graph written to /tmp/objgraph-m6_fu8vm.dot (55 nodes)
-        Image generated as /sandbox/code/github/roots.png.png
-        """
 
+    def show_roots(self, roots, filename="roots.png", **show_refs_opts):
+        """Generate graph for roots on file `filename`.
+
+        Example:
+            JSX> roots = j.tools.memprof.refs_by_type("JSDict")
+            JSX> j.tools.memprof.show_roots(roots[:5])
+            Graph written to /tmp/objgraph-m6_fu8vm.dot (55 nodes)
+            Image generated as /sandbox/code/github/roots.png.png
+        """
         show_refs(
             roots,
             refcounts=True,
@@ -82,19 +86,8 @@ class MemProf:
             **show_refs_opts,
         )
 
-        # roots = by_type("Jumpscale.core.BASECLASSES.JSDict.JSDict")
-        # show_refs(roots[:10], refcounts=True, shortnames=False, filename="/sandbox/code/github/rootsjsdict.png")
-
-        # roots = by_type("Jumpscale.data.types.List.ListObject")
-        # show_refs(roots[:10], refcounts=True, shortnames=False, filename="/sandbox/code/github/rootslistobject.png")
-
-        # roots = by_type("JSXObject2")
-        # show_refs(roots[:10], refcounts=True, shortnames=False, filename="/sandbox/code/github/rootsjsxobject2.png")
-
-        # show_refs(roots[:6], refcounts=True, filename="/sandbox/code/github/roots.png")
-
     def size_of(self, obj):
-        """Gets size of certain obj
+        """Get size of certain obj.
 
         Args:
             obj ([object])
@@ -102,49 +95,47 @@ class MemProf:
         return asizeof.asizeof(obj)
 
     def size_of_objs_of_type(self, type_name):
-        """Gets size of objects by type_name 
-        
+        """Get size of objects by type_name.
+
         Args:
             type_name ([str])
         """
         return self.size_of(self.refs_by_type(type_name))
 
     def summary_tracker(self):
-        """
-        Gets a summary tracker
-        
+        """Get a summary tracker.
+
         Example:
 
-        JSX> st = j.tools.memprof.summary_tracker()                                                                                                                                                     
-        JSX> #....                                                                                                                                                                                      
-        JSX> st.print_diff()                                                                                                                                                                            
-                                types |   # objects |   total size
-        ============================== | =========== | ============
-                                list |       19224 |      1.90 MB
-                                str |       22126 |      1.51 MB
-            parso.python.tree.Operator |        5731 |    537.28 KB
-                                int |       13404 |    366.43 KB
-        parso.python.tree.PythonNode |        5840 |    365.00 KB
-                parso.python.tree.Name |        4594 |    358.91 KB
-            parso.python.tree.Keyword |        1312 |    123.00 KB
-            parso.python.tree.Newline |        1508 |    117.81 KB
-            parso.python.tree.String |         428 |     33.44 KB
-            parso.python.tree.Param |         422 |     29.67 KB
-            parso.python.tree.ExprStmt |         525 |     28.71 KB
-            parso.python.tree.IfStmt |         190 |     10.39 KB
-            parso.python.tree.Number |         132 |     10.31 KB
-            parso.python.tree.Function |         144 |     10.12 KB
-                function (<lambda>) |          53 |      7.04 KB
+            JSX> st = j.tools.memprof.summary_tracker()
+            JSX> #....
+            JSX> st.print_diff()
+                                    types |   # objects |   total size
+            ============================== | =========== | ============
+                                    list |       19224 |      1.90 MB
+                                    str |       22126 |      1.51 MB
+                parso.python.tree.Operator |        5731 |    537.28 KB
+                                    int |       13404 |    366.43 KB
+            parso.python.tree.PythonNode |        5840 |    365.00 KB
+                    parso.python.tree.Name |        4594 |    358.91 KB
+                parso.python.tree.Keyword |        1312 |    123.00 KB
+                parso.python.tree.Newline |        1508 |    117.81 KB
+                parso.python.tree.String |         428 |     33.44 KB
+                parso.python.tree.Param |         422 |     29.67 KB
+                parso.python.tree.ExprStmt |         525 |     28.71 KB
+                parso.python.tree.IfStmt |         190 |     10.39 KB
+                parso.python.tree.Number |         132 |     10.31 KB
+                parso.python.tree.Function |         144 |     10.12 KB
+                    function (<lambda>) |          53 |      7.04 KB
 
         Returns:
-            [type]: [description]
+            [SummaryTracker]: [summary tracker]
+
         """
-
-
         return tracker.SummaryTracker()
 
     def class_tracker(self):
-        """Gets class tracker object
+        """Get class tracker object.
 
         Example:
         >>> tr = j.tools.memprof.class_tracker()
@@ -155,12 +146,11 @@ class MemProf:
         >>> tr.stats.print_summary()
                     active      1.42 MB      average   pct
         Document     1000    195.38 KB    200     B   13%
-
         """
-
         return classtracker.ClassTracker()
 
     def check_schemas(self, count=1000):
+        """Create `count` schemas and check the status afterwards."""
         # FIXME: improve to use more complex/nested schemas
         for i in range(10):
             schema = f"""
@@ -174,6 +164,7 @@ class MemProf:
         self.leak_check()
 
     def check_client_gedis(self, count=10000):
+        """Create `count` gedis clients and check the status afterwards."""
         rand_id = j.data.idgenerator.generateRandomInt(0, 100)
         for i in range(count):
             print(i)
@@ -182,6 +173,7 @@ class MemProf:
         self.leak_check()
 
     def check_client_tcprouter_zos(self, count=10000):
+        """Create `count` tcprouter/zos clients and check the status afterwards."""
         rand_id = j.data.idgenerator.generateRandomInt(0, 100)
         for i in range(count):
             print(i)
@@ -191,6 +183,7 @@ class MemProf:
         self.leak_check()
 
     def check_bcdb_objects(self, count=100000):
+        """Create `count` bcdb objects and check the status afterwards."""
         rand_id = j.data.idgenerator.generateRandomInt(0, 100000)
 
         s = f"""

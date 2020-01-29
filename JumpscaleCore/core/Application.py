@@ -19,7 +19,7 @@ class Logger:
 
         if not session.strip():
             raise ValueError("session must not be empty")
-        self.tt = self._j.data.time.getLocalDateHRForFilesystem()
+
         self.contexts = [self.DEFAULT_CONTEXT]  # as a stack
 
     @property
@@ -27,8 +27,12 @@ class Logger:
         return self.contexts[-1]
 
     @property
+    def date(self):
+        return self._j.data.time.getLocalDateHRForFilesystem()
+
+    @property
     def location(self):
-        return "%s/%s/%s" % (self.session, self.tt, self.current_context)
+        return "%s/%s/%s" % (self.session, self.date, self.current_context)
 
     def reset_context(self):
         if len(self.contexts) == 1:
@@ -69,15 +73,42 @@ class Logger:
 
 
 class FileSystemLogger(Logger):
-    @property
-    def path(self):
-        filepath = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s.ansi" % self.location)
-        parent_dir = self._j.sal.fs.getParent(filepath)
-        if not self._j.sal.fs.exists(parent_dir):
+    def __init__(self, j, session):
+        super().__init__(j, session)
+        self.start_date = self.date
+        self.set_path()
+
+    def get_path(self):
+        path = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s.ansi" % self.location)
+        parent_dir = os.path.dirname(path)
+        if not os.path.exists(parent_dir):
             os.makedirs(parent_dir, exist_ok=True)
-        return filepath
+        return path
+
+    def set_path(self, new_path=None):
+        if not new_path:
+            # default
+            self.path = self.get_path()
+        else:
+            self.path = new_path
+
+    def switch_context(self, context):
+        super().switch_context(context)
+        # context changed, re-set path
+        self.set_path()
+
+    def reset_context(self):
+        super().reset_context()
+        # context changed, re-set path
+        self.set_path()
 
     def log(self, logdict):
+        current_date = self.date
+        if self.start_date != current_date:
+            # date changed, re-set path
+            self.set_path()
+            self.start_date = current_date
+
         out = self._j.core.tools.log2str(logdict)
         out = out.rstrip() + "\n"
         filepath = self.path
@@ -91,25 +122,20 @@ class FileSystemLogger(Logger):
 
 class RedisLogger(Logger):
     ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+    # redis list key prefix
+    KEY_PREFIX = "logs:"
+    # maximum numbers of logs to keep in this list
+    LOG_MAX = 100
 
     def __init__(self, j, session):
         super().__init__(j, session)
-        server = self._j.servers.startupcmd.get(
-            name="cache_logger", cmd_start="redis-server --port 2020 --maxmemory 100000000 -- daemonize yes"
-        )
-        server.start()
-        while not server.is_running():
-            continue
-        self.client = self._j.clients.redis.get(port=2020)
+        self.db = self._j.core.db
 
     def log(self, logdict):
         out = self._j.core.tools.log2str(logdict)
-        out = out.rstrip() + "\n"
-        out = self.ansi_escape.sub("", out)
-
-        if self.client.llen(self.location) > 100:
-            self.client.ltrim(self.location, 0, 90)
-        self.client.lpush(self.location, out)
+        key = f"{self.KEY_PREFIX}{self.location}"
+        self.db.lpush(key, out)
+        self.db.ltrim(key, 0, self.LOG_MAX - 1)
 
 
 class Application(object):
