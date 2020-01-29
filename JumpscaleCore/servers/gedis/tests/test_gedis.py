@@ -1,7 +1,9 @@
-import subprocess
+import subprocess, uuid, random
 from Jumpscale import j
 from loguru import logger
-import random, requests, uuid, unittest
+
+
+skip = j.baseclasses.testtools._skip
 
 
 ACTORS_PATH = j.core.tools.text_replace(
@@ -58,9 +60,11 @@ def after():
     gedis_server.stop()
     output, error = os_command("netstat -nltp | grep '{}' ".format(port))
     gedis_server.delete()
-    assert output.decode() is False
+    if output.decode():
+        raise AssertionError("Gedis port should be killed")
 
 
+@skip("Need to be reformatted according to the new changes")
 def test01_actor_add():
     """
     - ​Get gedis server instance.
@@ -86,7 +90,7 @@ def test02_gedis_client():
     result = getattr(cl.actors, ACTOR_FILE_1).ping()
     assert result.decode() == "PONG"
 
-    # info("Get actor client with wrong namesapce should raise error")
+    # info("Get actor client with wrong namesapce should raise error") ==> need to fix this part
     # with assertRaises(Exception):
     #     wrong_namespace = rand_string()
     #     cl = gedis_server.client_get(namespace=wrong_namespace)
@@ -99,7 +103,7 @@ def test02_gedis_client():
     result = getattr(cl.actors, ACTOR_FILE_1).ping()
     assert result.decode() == "PONG"
 
-    # info("Test gedis_client reload method with wrong namespcase")
+    # info("Test gedis_client reload method with wrong namespcase") ==> need to fix this part
     # with assertRaises(Exception):
     #     cl.reload(namespace="WRONG_NAMESPACE")
 
