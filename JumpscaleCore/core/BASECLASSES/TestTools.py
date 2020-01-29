@@ -160,6 +160,7 @@ class TestTools:
             else:
                 for method in dir(module):
                     if not method.startswith("_") and _VALID_TEST_NAME.match(method):
+
                         self._execute_test(method, module)
 
             self._after_all(module)
@@ -188,6 +189,7 @@ class TestTools:
         """
         module_location = self._get_module_location(module)
         test_name = f"{module_location}.{method}"
+
         try:
             test = getattr(module, method)
             if not isinstance(test, (types.FunctionType, types.MethodType)):
@@ -350,6 +352,7 @@ class TestTools:
         if not results:
             results = self._results
         length = 70
+
         for result in results["testcases"]:
             msg = result["msg"].split(": ")
             msg = ": ".join(msg[1:])
@@ -384,6 +387,8 @@ class TestTools:
         _full_results["testcases"].extend(self._results["testcases"])
 
     def _run_tests_from_object(self, obj=None):
+
+        self._modules = []
         if obj is None:
             return
         elif isinstance(obj, j.baseclasses.object):
