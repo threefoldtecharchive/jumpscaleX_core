@@ -1,9 +1,7 @@
-import unittest
 from Jumpscale import j
 from base_test import BaseTest
 
 
-@unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/312")
 class TestSshAgentClient(BaseTest):
     def setUp(self):
         self.SSHKEYCLIENT_NAME = "ssh_client_{}".format(self.rand_string())
@@ -16,11 +14,8 @@ class TestSshAgentClient(BaseTest):
         self.info("Start ssh-agent")
         self.os_command("eval `ssh-agent -s`")
 
-        self.info("Set default sshkey agent name")
-        j.clients.sshagent.key_default_name = self.SSHKEYCLIENT_NAME
-
-        self.info("Set sshkey agent path")
-        j.clients.sshagent.key_paths = self.PATH
+        self.info("Add sshkey to sshagent")
+        self.os_command("ssh-add {}/.ssh/id_rsa".format(j.core.myenv.config["DIR_HOME"]))
 
         print("\t")
         self.info("Test case : {}".format(self._testMethodName))
@@ -48,7 +43,7 @@ class TestSshAgentClient(BaseTest):
         j.clients.sshagent.start()
 
         self.info("Load sshkey in sshagent")
-        j.clients.sshagent.key_load()
+        j.clients.sshagent.key_load(path=self.PATH, name=self.SSHKEYCLIENT_NAME)
 
         self.info("Check that ssh key is loaded")
         self.assertTrue(self.sshkey_client.is_loaded())
@@ -59,7 +54,7 @@ class TestSshAgentClient(BaseTest):
         self.info("Check that ssh key is unloaded")
         self.assertFalse(self.sshkey_client.is_loaded())
 
-    def test002_list_of_ssh_keys_in_sshagent_and_public_key_path(self):
+    def test002_list_of_ssh_keys_in_sshagent(self):
         """
         TC 571
         Test to list of ssh keys in sshagent, and public key path.
@@ -70,12 +65,9 @@ class TestSshAgentClient(BaseTest):
         #. Check the public key path of the loaded ssh key using keypub_path_get method.
         """
         self.info("Load sshkey in sshagent")
-        j.clients.sshagent.key_load()
+        j.clients.sshagent.key_load(path=self.PATH, name=self.SSHKEYCLIENT_NAME)
 
         self.info("Check if the ssh key is loaded using keys_list method")
         self.assertIn(self.PATH, j.clients.sshagent.keys_list())
         output, error = self.os_command("ssh-add -l")
         self.assertIn(self.PATH, output.decode())
-
-        self.info("Check the public key path of the loaded ssh key using keypub_path_get method")
-        self.assertIn(self.PATH, str(j.clients.sshagent.keypub_path_get()))

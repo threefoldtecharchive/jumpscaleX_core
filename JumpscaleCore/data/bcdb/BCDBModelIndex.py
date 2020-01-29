@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 
 
@@ -58,6 +38,8 @@ class BCDBModelIndex(j.baseclasses.object):
         if self.index_key_needed:
             self.bcdb._redis_index.ping()
 
+        # if master will try to create the index table and set .sql property
+        # if not: will set .sql property only, check BCDBModelIndexClass
         self._sql_index_init()
 
         if self.index_text_needed:
@@ -73,7 +55,7 @@ class BCDBModelIndex(j.baseclasses.object):
         :param nid:
         :return:
         """
-
+        self.bcdb._is_writable_check()
         # id's are always used, otherwise the iteration does not work
         # self._ids_destroy(nid=nid)
 
@@ -94,6 +76,7 @@ class BCDBModelIndex(j.baseclasses.object):
         :param obj:
         :return:
         """
+        self.bcdb._is_writable_check()
         # if self.index_sql_needed:
         self._sql_index_set(obj)
 
@@ -113,6 +96,7 @@ class BCDBModelIndex(j.baseclasses.object):
         :param obj:
         :return:
         """
+        self.bcdb._is_writable_check()
         assert isinstance(obj_id, int)
         self._sql_index_delete_by_id(obj_id=obj_id)
         if self.index_text_needed:
@@ -124,8 +108,7 @@ class BCDBModelIndex(j.baseclasses.object):
         :param obj:
         :return:
         """
-        assert not obj_id
-        assert not nid
+        self.bcdb._is_writable_check()
         if obj.id is not None:
 
             # self._id_delete(obj.id)
@@ -181,12 +164,12 @@ class BCDBModelIndex(j.baseclasses.object):
         if val:
             return (
                 self.bcdb.name,
-                "{}:{}".format(nid, self.model.mid),
+                "{}:{}".format(nid, self.model.key),
                 "{}:{}".format(obj_id, property_name),
                 self._clean_text_for_sonic(val),
             )
         else:
-            return self.bcdb.name, "{}:{}".format(nid, self.model.mid), "{}:{}".format(obj_id, property_name)
+            return self.bcdb.name, "{}:{}".format(nid, self.model.key), "{}:{}".format(obj_id, property_name)
 
     def _text_index_set_(self, property_name, val, obj_id, nid=1):
         if not nid:
@@ -626,6 +609,7 @@ class BCDBModelIndex(j.baseclasses.object):
         :param nid:
         :return:
         """
+        self.bcdb._is_writable_check()
         if nid:
             self.sql.delete().where(self.sql.nid == nid).execute()
         else:

@@ -3,15 +3,11 @@ import os
 import gevent
 import time
 from gevent import event
-import os
+import sys
 
 # from .OpenPublish import OpenPublish
 
 JSConfigs = j.baseclasses.object_config_collection
-
-
-class ThreeBotRoot:
-    pass
 
 
 class Actors:
@@ -30,22 +26,22 @@ class Packages:
     pass
 
 
-class PackageInstall(j.baseclasses.object):
-    def _init(self, name=None, path=None):
-        self.path = path
-        self.name = name
-        self._zdb = None
-        self._sonic = None
-
-    def install(self):
-        server = j.servers.threebot.default
-        package = j.tools.threebot_packages.get(self.name, path=self.path, threebot_server_name=server.name)
-        package.prepare()
-        package.save()
-        name = self.name
-        package.start()
-        j.threebot.packages.__dict__[self.name] = package
-        return "OK"
+# class PackageInstall(j.baseclasses.object):
+#     def _init(self, name=None, path=None):
+#         self.path = path
+#         self.name = name
+#         self._zdb = None
+#         self._sonic = None
+#
+#     def install(self):
+#         server = j.servers.threebot.default
+#         package = j.tools.threebot_packages.get(self.name, path=self.path, threebot_server_name=server.name)
+#         package.prepare()
+#         package.save()
+#         name = self.name
+#         package.start()
+#         j.threebot.packages.__dict__[self.name] = package
+#         return "OK"
 
 
 class ThreeBotServer(j.baseclasses.object_config):
@@ -58,7 +54,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         name** = "main" (S)
         executor = tmux,corex (E)
         adminsecret_ = ""  (S)
-        state = "init,installed"
+        state = "init,installed" (E)
         """
 
     def _init(self, **kwargs):
@@ -67,29 +63,25 @@ class ThreeBotServer(j.baseclasses.object_config):
         self._openresty_server = None
         self._startup_cmd = None
         self._zdb = None
+        self._sonic = None
         self.threebot_server = None
         self.web = False
         self.ssl = False
         self.client = None
-        j.threebot = ThreeBotRoot()
         j.servers.threebot.current = self
 
-        if "adminsecret" in kwargs:
-            secret = kwargs["adminsecret"]
-        elif "adminsecret_" in kwargs:
-            secret = kwargs["adminsecret_"]
-        elif "secret" in kwargs:
-            secret = kwargs["secret"]
-        else:
-            secret = j.core.myenv.adminsecret
+        # if "adminsecret" in kwargs:
+        #     secret = kwargs["adminsecret"]
+        # elif "adminsecret_" in kwargs:
+        #     secret = kwargs["adminsecret_"]
+        # elif "secret" in kwargs:
+        #     secret = kwargs["secret"]
+        # else:
+        #     secret = j.core.myenv.adminsecret
 
         if not self.adminsecret_:
-            self.adminsecret_ = secret
+            self.adminsecret_ = j.core.myenv.adminsecret
             assert self.adminsecret_
-
-        if self.state == "init":
-            j.tools.threebot_packages.load()
-            self.state = "installed"
 
         if self.executor == "corex":
             raise j.exceptions.Input("only tmux supported for now")
@@ -161,7 +153,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         # check all models are mapped to global namespace
         for bcdb in j.data.bcdb.instances.values():
             if bcdb.name not in j.threebot.bcdb.__dict__:
-                j.threebot.bcdb.__dict__[bcdb.name] = bcdb.children
+                j.threebot.bcdb.__dict__[bcdb.name] = bcdb.models
 
         # check state workers
         for key, worker in j.threebot.myjobs.workers._children.items():
@@ -189,7 +181,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             gevent.sleep(day1)
 
-    def start(self, background=False, restart=False, packages=None):
+    def start(self, background=False, restart=False, packages=None, with_shell=True):
         """
 
         kosmos -p 'j.servers.threebot.default.start(background=True)'
@@ -200,32 +192,34 @@ class ThreeBotServer(j.baseclasses.object_config):
         :type packages: list of str
         ports & paths used for threebotserver
         see: {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/docs/3Bot/web_environment.md
-
+        :param with_shell: if set, will run j.shell() after a successful start, defaults to True
+        :type with_shell: bool
         """
+        assert self._autosave  # needs to autosave or does not work well
+
         packages = packages or []
-
         self.save()
-
         if not background:
-
+            j.servers.threebot._threebot_starting()
             self.zdb  # will start sonic & zdb
             self.sonic
-            # reset myjobs after zdb is ready
-            j.servers.myjobs.reset_data()
 
-            # remove the package
+            # now we are ready to start the jobs
+            self.myjobs_start()
+
+            # think no longer needed
+            # # make sure client for myjobs properly configured
+            # bcdb_myjobs = j.data.bcdb.get_for_threebot("myjobs", ttype="redis")
+            # bcdb_myjobs.reset()
 
             j.threebot.servers = Servers()
             j.threebot.servers.zdb = self.zdb
-            j.threebot.servers.zonic = self.sonic
+            j.threebot.servers.sonic = self.sonic
             j.threebot.servers.gedis = self.gedis_server
             j.threebot.servers.web = self.openresty_server
             j.threebot.servers.core = self
             j.threebot.servers.gevent_rack = self.rack_server
-            j.threebot.myjobs = j.servers.myjobs
-            # j.threebot.bcdb_get = j.servers.threebot.bcdb_get
-            # j.threebot.bcdb = BCDBS()
-            j.threebot.bcdb = j.data.bcdb
+            j.threebot.bcdb = j.data.bcdb._children
 
             # to allow gedis server to get the right package
             j.threebot.package_get = self.package_get
@@ -234,16 +228,14 @@ class ThreeBotServer(j.baseclasses.object_config):
             # add system actors and basic chat flows
             self.rack_server.add("gedis", self.gedis_server.gevent_server)
 
-            # needed for myjobs
-            bcdb = j.data.bcdb.system
+            # needed for myjobs (is bcdb redis server)
             adminsecret_ = j.data.hash.md5_string(self.adminsecret_)
-            redis_server = bcdb.redis_server_get(port=6380, secret=adminsecret_)
+            redis_server = j.data.bcdb.redis_server_get(port=6380, secret=adminsecret_)
             # just to make sure we don't have it open to external
             assert redis_server.host == "127.0.0.1"
             assert redis_server.secret == adminsecret_
             self.rack_server.add("bcdb_system_redis", redis_server.gevent_server)
-
-            if restart or j.sal.nettools.tcpPortConnectionTest("localhost", 80) == False:
+            if restart or j.sal.nettools.tcpPortConnectionTest("localhost", 80) is False:
                 self._log_info("OPENRESTY START")
                 if restart:
                     self.openresty_server.stop()
@@ -251,25 +243,37 @@ class ThreeBotServer(j.baseclasses.object_config):
             else:
                 self.openresty_server.reload()
 
-            self._log_info("start workers")
-
-            self.rack_server.start(wait=False)
-
-            self.myjobs_start()
-
-            self._log_info("start workers done")
-
-            # j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
-            self._maintenance()
-
+            # will also find all packages
             self._packages_core_init()
 
-            j.threebot.__dict__["packages"] = Packages()
+            # LETS NOT DO SERVERS YET, STILL BREAKS TOO MUCH
+            # j.__dict__.pop("servers")
+            # j.__dict__.pop("builders")
+            # j.__dict__.pop("shell")
+            # j.__dict__.pop("shelli")
+            if j.__dict__.get("tutorials") != None:
+                j.__dict__.pop("tutorials")
+            if j.__dict__.get("sal_zos") != None:
+                j.__dict__.pop("sal_zos")
+
+            # at this point all packages are known but all in config mode, not installed yet
+            # all internal services started but not the gevent rack yet, and should be like this
+
+            # if someone passed along packages  (lazy loading will work for actor, package management in process)
+            for path in packages:
+                # j.debug()
+                j.threebot.packages.zerobot.packagemanager.actors.package_manager.package_add(
+                    path=path, install=False, reload=False
+                )
 
             for package in j.tools.threebot_packages.find():
 
-                if package.status in ["installed", "error"]:
-                    self._log_warning("START:%s" % package.name)
+                if package.status in ["toinstall"]:
+                    self._log_info("INSTALL:%s" % package.name)
+                    package.install()
+
+                if package.status in ["tostart", "installed", "error"]:
+                    self._log_info("START:%s" % package.name)
                     try:
                         package.start()
                     except Exception as e:
@@ -277,44 +281,45 @@ class ThreeBotServer(j.baseclasses.object_config):
                         package.status = "error"
                     package.save()
 
-                class PackageGroup:
-                    pass
-
-                if package.source.threebot not in j.threebot.packages.__dict__:
-                    j.threebot.packages.__dict__[package.source.threebot] = PackageGroup()
-                g = j.threebot.packages.__dict__[package.source.threebot]
-                g.__dict__[package.source.name.replace(".", "__")] = package
-
-            if "package" in j.threebot.__dict__:
-                j.threebot.__dict__.pop("package")
-            # LETS NOT DO SERVERS YET, STILL BREAKS TOO MUCH
-            # j.__dict__.pop("servers")
-            j.__dict__.pop("builders")
-            # j.__dict__.pop("shell")
-            # j.__dict__.pop("shelli")
-            j.__dict__.pop("tutorials")
-            j.__dict__.pop("sal_zos")
-
-            for path in packages:
-                j.threebot.packages.zerobot.packagemanager.actors.package_manager.package_add(path=path)
-
             # reload nginx at the end after loading packages and its config is written
             self.openresty_server.reload()
+
+            # only now we want to start the external components
+            self.rack_server.start(wait=False)
+
+            # lets wait till the gevent servers are active (e.g. gedis redis server)
+            timeout2 = j.data.time.epoch + 2
+            while j.data.time.epoch < timeout2:
+                res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380, timeout=0.1)
+                j.core.db.delete("threebot.starting")
+                if res:
+                    break
+
+            self._log_info("start workers")
+
+            # j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
+            self._maintenance()
 
             print("*****************************")
             print("*** 3BOTSERVER IS RUNNING ***")
             print("*****************************")
+            j.core.db.delete("threebot.starting")  # remove the marker in redis so we know we started
 
             p = j.threebot.packages
 
-            # j.shell()  # for now removed otherwise debug does not work
+            if with_shell:
+                j.shell()  # for now removed otherwise debug does not work
+
             forever = event.Event()
             try:
                 forever.wait()
             except KeyboardInterrupt:
-                self.stop()
-            return
+                print("KEYB INTERUPT")
 
+            # dont call stop
+            # delete the fact that maybe we are still in starting mode
+            j.data.bcdb._master_set(False)
+            sys.exit()
         else:
             if not self.startup_cmd.is_running():
                 self.startup_cmd.start()
@@ -333,7 +338,9 @@ class ThreeBotServer(j.baseclasses.object_config):
         for _ in range(retries):
             try:
                 self.client = j.clients.gedis.get(name="threebot", port=8901)
-                break
+                self.client.reload()
+                assert self.client.ping()
+                return self.client
             except Exception as e:
                 time.sleep(1)
                 last_error = e
@@ -341,14 +348,9 @@ class ThreeBotServer(j.baseclasses.object_config):
             raise last_error
         # TODO: will have to authenticate myself
 
-        self.client.reload()
-        assert self.client.ping()
-
-        return self.client
-
     def package_get(self, author3bot, package_name):
         if author3bot not in j.threebot.packages.__dict__:
-            raise j.exceptions.Input("cannot find package from threebot:%s in threebotserver" % author3bot)
+            raise j.exceptions.Input("cannot find package '%s' in threebotserver" % author3bot)
         tbot = j.threebot.packages.__dict__[author3bot]
         if package_name not in tbot.__dict__:
             raise j.exceptions.Input("cannot find package with name:'%s' of threebot:'%s'" % (package_name, author3bot))
@@ -356,42 +358,77 @@ class ThreeBotServer(j.baseclasses.object_config):
 
     def actor_get(self, author3bot, package_name, actor_name):
         p = self.package_get(author3bot=author3bot, package_name=package_name)
-        if actor_name not in p.__dict__["_actors"].keys():
+        if actor_name not in p.actors.keys():
             raise j.exceptions.Input(f"cannot find package from threebot:{author3bot}:{package_name}:{actor_name}")
-        return p.__dict__["_actors"][actor_name]
+        return p.actors[actor_name]
 
     def myjobs_start(self):
+        j.threebot.myjobs = j.servers.myjobs
+        self.myjobs_clean()  # TODO: we can clean this faster, see inside, should just destroy the db
+        # j.servers.myjobs.workers_subprocess_start(2, in3bot=True)
         j.servers.myjobs.workers_tmux_start(2, in3bot=True)
-        # j.servers.myjobs._workers_gipc_nr_max = 10
-        # j.servers.myjobs.workers_subprocess_start()
+        self._log_info("start workers done")
+
+    def myjobs_clean(self):
+        # for now we better delete all when starting, there is some syncing issue
+        j.servers.myjobs.reset_data()
+        # rebuild indexes before starting the workers to make sure they're up-to-date
+        # j.servers.myjobs.model_action.model.index_rebuild()
+        # j.servers.myjobs.workers._model.index_rebuild()
+        # j.servers.myjobs.jobs._model.index_rebuild()
 
     def _packages_core_init(self):
+        """
+        this one registers all packages to the j.threebot.packages
+        the core ones are put on to install
 
-        if not j.tools.threebot_packages.exists(name="zerobot.webinterface"):
+        :return:
+        """
+        if self.state == "INIT":
+            self._log_info("FIND THE PACKAGES ON THE FILESYSTEM")
             j.tools.threebot_packages.load()
 
-        names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta_ui"]
-        for name in names:
-            name2 = f"zerobot.{name}"
-            if not j.tools.threebot_packages.exists(name=name2):
-                raise j.exceptions.Input("Could not find package:%s" % name2)
-            p = j.tools.threebot_packages.get(name=name2)
+            names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta_ui"]
+            for name in names:
+                name2 = f"zerobot.{name}"
+                if not j.tools.threebot_packages.exists(name=name2):
+                    raise j.exceptions.Input("Could not find package:%s" % name2)
+                p = j.tools.threebot_packages.get(name=name2)
+                p.status = "tostart"  # means we need to start
 
-            if p.status in ["config", "init"]:
-                p.install()
-                p.save()
+            self.state = "INSTALLED"
 
-            # start should be called everytime server starts
-            # TODO: NOT THE INTENTION !!!!
-            p.actors_reload()
-            p.start()
+        self._log_info("load all packages")
+        for package in j.tools.threebot_packages.find():
+            self._package_add(package)
+
+        if "package" in j.threebot.__dict__:
+            j.threebot.__dict__.pop("package")
+
+    def _package_add(self, package):
+        if not hasattr(j.threebot, "packages"):
+            j.threebot.__dict__["packages"] = Packages()
+
+        class PackageGroup:
+            pass
+
+        if package.source.threebot not in j.threebot.packages.__dict__:
+            j.threebot.packages.__dict__[package.source.threebot] = PackageGroup()
+        g = j.threebot.packages.__dict__[package.source.threebot]
+        g.__dict__[package.source.name.replace(".", "__")] = package
 
     def stop(self):
         """
-        :return:
+        Stop threebot server. Use it only when it's started using background=True
         """
-        self.startup_cmd.stop(waitstop=False, force=True)
         self.openresty_server.stop()
+        self.startup_cmd.stop(waitstop=False, force=True)
+        self._zdb = None
+        self._sonic = None
+        self._gedis_server = None
+        self._rack_server = None
+        self.client = None
+        j.data.bcdb._master_set(False)
 
     @property
     def startup_cmd(self):
@@ -403,7 +440,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         from gevent import monkey
         monkey.patch_all(subprocess=False)
         from Jumpscale import j
-        server = j.servers.threebot.get("{name}", executor='{executor}', web={web})
+        server = j.servers.threebot.get("{name}", executor='{executor}')
         server.start(background=False)
         """.format(
             name=self.name, executor=self.executor, web=web

@@ -6,7 +6,7 @@ class SerializerJSXObject(SerializerBase):
     def __init__(self):
         SerializerBase.__init__(self)
 
-    def dumps(self, obj, test=True):
+    def dumps(self, obj):
         """
         obj is the dataobj for JSX
 
@@ -38,15 +38,11 @@ class SerializerJSXObject(SerializerBase):
             + data
         )
 
-        if test:
-            u = self.loads(data=data2)
-            assert u.id == obj.id
-
         # self._log_debug("DUMPS:%s:%s" % (version, obj.id), data=obj._ddict)
 
         return data2
 
-    def loads(self, data, bcdb=None, schema=None):
+    def loads(self, data, model=None, parent=None):
         """
         j.data.serializers.jsxdata.loads(..
         :param data:
@@ -61,20 +57,29 @@ class SerializerJSXObject(SerializerBase):
             md5bin = data[5:21]
             md5 = md5bin.hex()
             data2 = data[21:]
-            if not schema:
-                schema_md5 = j.data.schema.get_from_md5(md5)
-                schema = j.data.schema.get_from_url(
-                    schema_md5.url
-                )  # this will get us the newest version, not the one stored
-            else:
-                if md5 != schema._md5:
-                    # lets put a test in to make sure the schema url's correspond
-                    schema_old = j.data.schema.get_from_md5(md5)
-                    assert schema_old.url == schema.url
-            obj = schema.new(capnpdata=data2, bcdb=bcdb)
+            schema_md5 = j.data.schema.get_from_md5(md5)
+            schema = j.data.schema.get_from_url(schema_md5.url)
+            assert schema_md5.url == schema.url
+            # this will get us the newest version, not the one stored
+
+            # MODEL SHOULD NEVER BE USED TO VALIDATE THE SCHEMA, ITS THE ROOT MODEL (not if subobj)
+
+            obj = schema.new(capnpdata=data2, model=model, parent=parent)
             obj.id = obj_id
             if obj.id == 0:
                 obj.id = None
+
+            if model and model.schema.url == schema.url:
+                # here the model retrieved will be linked to a schema with the same url
+                model._triggers_call(obj=obj, action="new")
+                # can only be done when a new root obj
+
+            if md5 != schema._md5:
+                if model and model.schema.url == schema.url:
+                    model._triggers_call(obj, "schema_change", None)  # for the obj itself we need to force
+                    model.schema_change(schema)
+                    # don't add the obj, because need to do for all obj which are loaded
+
             return obj
 
         else:

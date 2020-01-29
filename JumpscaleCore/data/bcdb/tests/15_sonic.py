@@ -28,6 +28,9 @@ def main(self):
     kosmos 'j.data.bcdb.test(name="sonic")'
 
     """
+    j.servers.sonic.default.stop()
+    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.core.myenv.adminsecret))
+    sonic.start()
 
     data = [
         {"name": "test1", "content": "lorem epsum"},
@@ -62,3 +65,7 @@ def main(self):
     res[0].delete()
 
     assert len(model.search("love")) == 0
+
+    sonic.stop()
+    self._log_info("TEST SONIC DONE")
+    return "OK"

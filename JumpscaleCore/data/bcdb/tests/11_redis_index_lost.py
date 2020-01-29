@@ -35,10 +35,10 @@ def main(self):
     ipaddr = (ipaddr)           # IP Address
     email = "" (S)              # Email address
     username = "" (S)           # User name
-    
+
     """
 
-    bcdb = j.data.bcdb.new("test", reset=True)
+    bcdb = j.data.bcdb.get("test", reset=True)
     m = bcdb.model_get(schema=SCHEMA)
     for i in range(10):
         o = m.new()
@@ -69,7 +69,7 @@ def main(self):
     # stop redis
 
     # j.core.redistools.core_stop()
-    # assert j.core.redistools.core_running() == False
+    # assert j.core.redistools.core_running() is False
 
     # db = j.core.redistools.core_get()
     # assert j.core.redistools.core_running()

@@ -42,7 +42,7 @@ class SystemProcess(JSBASE):
 
     @property
     def platform_is_unix(self):
-        if self._isunix == None:
+        if self._isunix is None:
             if "posix" in sys.builtin_module_names:
                 self._isunix = True
             else:
@@ -134,7 +134,7 @@ class SystemProcess(JSBASE):
         same for errMethod
         resout&reserr are lists with output/error
         return rc, resout, reserr
-        @param captureOutput, if that one == False then will not populate resout/reserr
+        @param captureOutput, if that one is False then will not populate resout/reserr
         @param outMethod,errMethod if None then will print to out
         """
         # TODO: *2 check if this works on windows
@@ -225,7 +225,7 @@ class SystemProcess(JSBASE):
         )
 
         # TODO: *1 if I close this then later on there is problem, says loop is closed
-        # # if loop.is_closed() == False:
+        # # if loop.is_closed() is False:
         # print("STOP")
         # # executor.shutdown(wait=True)
         # loop.stop()
@@ -484,7 +484,8 @@ class SystemProcess(JSBASE):
             line = line.strip()
             pid = line.split(" ")[0]
             self._log_info("kill:%s (%s)" % (name, pid))
-            self.kill(pid)
+            if self.isPidAlive(int(pid)):
+                self.kill(pid)
         if self.psfind(name):
             raise j.exceptions.Base("Could not kill:%s, is still, there check if its not autorestarting." % name)
 
@@ -550,6 +551,28 @@ class SystemProcess(JSBASE):
             return res
         else:
             raise j.exceptions.Base("filterstr or regexes")
+
+    def getPidsByFilter2(self, filterstr="", regex_list=[], excludes=[]):
+        res = []
+        for process in psutil.process_iter():
+            try:
+                cmdline = process.cmdline()
+            except psutil.NoSuchProcess:
+                cmdline = None
+            except psutil.AccessDenied:
+                cmdline = None
+            if cmdline:
+                name = " ".join(cmdline)
+                if filterstr:
+                    # print(name)
+                    if filterstr in name:
+                        res.append(process.pid)
+                else:
+                    for r in regex_list:
+                        if name.strip() != "":
+                            if j.data.regex.match(r, name):
+                                res.append(process.pid)
+        return res
 
     def checkstart(self, cmd, filterstr, nrtimes=1, retry=1):
         """
@@ -786,8 +809,8 @@ class SystemProcess(JSBASE):
             try:
                 cc = [x for x in process.connections() if x.status == psutil.CONN_LISTEN]
             except Exception as e:
-                if str(e).find("psutil.AccessDenied") == -1:
-                    raise j.exceptions.RuntimeError(str(e))
+                # if str(e).find("psutil.AccessDenied") == -1:
+                # raise j.exceptions.RuntimeError(str(e))
                 continue
             if cc != []:
                 for conn in cc:

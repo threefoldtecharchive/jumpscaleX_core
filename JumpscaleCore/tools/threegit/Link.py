@@ -355,14 +355,16 @@ class Link(j.baseclasses.object):
 
         if not self.link_source.lower().strip().startswith("http"):
             custom_link = MarkdownLinkParser(self.link_source)
-            self.link_source = self.docsite.get_real_link(custom_link, custom_link.host)
+            try:
+                self.link_source = self.docsite.get_real_link(custom_link, custom_link.host)
+            except ValueError as e:
+                self.doc.error_raise(f"cannot get a real link of {self.link_source}\n{e}")
+        # if "?" in self.link_source:
+        #     lsource = self.link_source.split("?", 1)[0]
+        # else:
+        #     lsource = self.link_source
 
-        if "?" in self.link_source:
-            lsource = self.link_source.split("?", 1)[0]
-        else:
-            lsource = self.link_source
-
-        self.extension = j.sal.fs.getFileExtension(lsource)
+        self.extension = j.sal.fs.getFileExtension(self.link_source)
 
         if "http" in self.link_source or "https" in self.link_source:
             self.link_source_original = self.link_source
@@ -374,9 +376,7 @@ class Link(j.baseclasses.object):
                 self.filename = self._clean(j.sal.fs.getBaseName(link_source))
 
                 if not self.extension in ["png", "jpg", "jpeg", "mov", "mp4", "mp3", "docx"]:
-                    self.extension = (
-                        "jpeg"
-                    )  # to support url's like https://images.unsplash.com/photo-1533157961145-8cb586c448e1?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=4e252bcd55caa8958985866ad15ec954&auto=format&fit=crop&w=1534&q=80
+                    self.extension = "jpeg"  # to support url's like https://images.unsplash.com/photo-1533157961145-8cb586c448e1?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=4e252bcd55caa8958985866ad15ec954&auto=format&fit=crop&w=1534&q=80
                     self.filename = self.filename + ".jpeg"
 
                 if j.sal.fs.getFileExtension(self.filename) != self.extension:
@@ -460,7 +460,7 @@ class Link(j.baseclasses.object):
             import requests
 
             response = requests.get(self.link_source_original, stream=True)
-            j.sal.fs.writeFile(dest, response, append=False)
+            j.sal.fs.writeFile(dest, response.content, append=False)
 
     def should_skip(self):
         return any(link in self.link_source for link in SKIPPED_LINKS) or j.data.types.email.check(self.link_source)

@@ -9,8 +9,6 @@ def main(self):
 
     # TODO: implement this?
 
-    self.reset()
-
     def testa():
         # NO ARGEMENTS NEEDED
 
@@ -22,10 +20,10 @@ def main(self):
             stringIsNone = j.data.types.string.clean(stringA)
             stringNotNone = j.data.types.string.clean(stringB)
             assert isinstance(bbool, bool)
-            assert stringIsNone == None
+            assert stringIsNone is None
             assert isinstance(stringNotNone, str)
             assert llist == [1, 2, "b"]
-            assert bbool == True
+            assert bbool is True
             assert stringNotNone == "string"
             return llist
 

@@ -14,11 +14,14 @@ class ThreebotExplorer(j.baseclasses.object):
 
     @property
     def _redis(self):
-        return j.clients.threebot.explorer_redis
+        return j.clients.threebot._explorer_redis
 
     @property
     def actors(self):
-        return self._client.actors_all
+        return self._client.actors_get("tfgrid.phonebook")
+
+    def reload(self):
+        self._client.reload()
 
     def threebot_record_get(self, tid=None, name=None, die=True):
         """

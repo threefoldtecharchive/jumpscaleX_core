@@ -167,12 +167,15 @@ class DocResource(DAVNonCollection):
 
 
 class BCDBFSProvider(DAVProvider):
-    def __init__(self, bcdb_name):
+    def __init__(self, bcdb_name, models_dir=None):
         DAVProvider.__init__(self)
+        if not models_dir:
+            models_dir = "{}/models_threebot".format(self._bcdb._dirpath)
+
         self._bcdb = j.data.bcdb.get(bcdb_name)
-        self._file_model = self._bcdb.model_get_from_file("{}/models_threebot/FILE.py".format(self._bcdb._dirpath))
-        self._dir_model = self._bcdb.model_get_from_file("{}/models_threebot/DIR.py".format(self._bcdb._dirpath))
-        self._block_model = self._bcdb.model_get_from_file("{}/models_threebot/BLOCK.py".format(self._bcdb._dirpath))
+        self._file_model = self._bcdb.model_get_from_file("{}/FILE.py".format(models_dir))
+        self._dir_model = self._bcdb.model_get_from_file("{}/DIR.py".format(models_dir))
+        self._block_model = self._bcdb.model_get_from_file("{}/BLOCK.py".format(models_dir))
 
     def get_resource_inst(self, path, environ):
         """

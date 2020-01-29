@@ -330,12 +330,12 @@ class HttpClient(j.baseclasses.object):
         kosmos 'j.clients.http.test()'
         """
         c = self.connection_get()
-        assert c.ping("https://github.com/Jumpscale") == True
+        assert c.ping("https://github.com/Jumpscale") is True
 
-        assert c.ping("https://something/j") == False
+        assert c.ping("https://something/j") is False
 
         assert (
-            c.ping("https://docs.grid.tf/dividi/values/src/branch/master/veda_values.md") == True
+            c.ping("https://docs.grid.tf/dividi/values/src/branch/master/veda_values.md") is True
         )  # authentication error
 
         self._log_info("TEST OK")

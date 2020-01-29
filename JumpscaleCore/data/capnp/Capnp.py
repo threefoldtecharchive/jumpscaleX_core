@@ -102,8 +102,16 @@ class Capnp(j.baseclasses.object):
         )
 
     def getId(self, schemaInText):
-        id = [item for item in schemaInText.split("\n") if item.strip() != ""][0][3:-1]
-        return id
+        r = None
+        for line in schemaInText.split("\n"):
+            line = line.strip()
+            if line.startswith("@0x"):
+                if r:
+                    raise j.exceptions.Input("can only have 1 capnp_id in file", data=schemaInText)
+                r = line.strip()[3:-1]
+        if not r:
+            raise j.exceptions.Input("did not find capnp_id in file", data=schemaInText)
+        return r
 
     def removeFromCache(self, schemaId):
         self._schema_cache.pop(schemaId, None)
@@ -135,16 +143,16 @@ class Capnp(j.baseclasses.object):
         return self._schema_cache[schemaId]
 
     def getSchemaFromText(self, schemaInText, name="Schema"):
-        if not schemaInText.strip():
-            schemaInText = (
-                """
-            @%s;
-            struct Schema {
-
-            }
-            """
-                % j.data.idgenerator.generateCapnpID()
-            )
+        # if not schemaInText.strip():
+        #     schemaInText = (
+        #         """
+        #     @%s;
+        #     struct Schema {
+        #
+        #     }
+        #     """
+        #         % j.data.idgenerator.generateCapnpID()
+        #     )
 
         schemas = self._getSchemas(schemaInText)
         schema = eval("schemas.%s" % name)

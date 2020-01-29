@@ -4,18 +4,30 @@ from base_test import BaseTest
 from parameterized import parameterized
 
 
+@skip(
+    "https://github.com/threefoldtech/jumpscaleX_core/issues/369 , when unskipping these tests, please uncomment the SetUpClass and tearDownClass methods"
+)
 class RegistryTests(BaseTest):
 
-    bcdb = j.data.bcdb.get("threebot_registery")
+    # bcdb = j.data.bcdb.get("threebot_registery")
 
-    @classmethod
-    def setUpClass(cls):
-        cls.cl = cls.addRegistryPackage()
+    # @classmethod
+    # def setUpClass(cls):
+    #     try:
+    #         cls.cl = cls.addRegistryPackage()
+    #     except Exception:
+    #         cls.tearDownClass()
+    #         raise
+
+    # @classmethod
+    # def tearDownClass(cls):
+    #     j.servers.threebot.default.stop()
+    #     j.sal.process.killall("tmux")
 
     @classmethod
     def addRegistryPackage(cls):
         # . Start threebot server, add registery package, then reload the client.
-        cl = j.servers.threebot.local_start_default(background=True)
+        cl = j.servers.threebot.start(background=True)
         cl = j.clients.gedis.get("threebot_registery", port=8901)
         cl.actors.package_manager.package_add(
             path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry"
@@ -30,8 +42,8 @@ class RegistryTests(BaseTest):
 
     def getSchemaAndModel(self, x="hello"):
         schema = """
-            @url = threebot.registry.test.schema.1 
-            url = "" 
+            @url = threebot.registry.test.schema.1
+            url = ""
             x = ""
             tags = (LS)
         """

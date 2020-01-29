@@ -33,7 +33,7 @@ class String(TypeBaseClass):
         """Check whether provided value is a string"""
         return isinstance(value, str)
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         will do a strip
         """
@@ -46,7 +46,7 @@ class String(TypeBaseClass):
         try:
             value = str(value)
         except Exception as e:
-            raise j.exceptions.input("cannot convert to string")
+            raise j.exceptions.Input("cannot convert to string", data=value)
 
         value2 = value.strip()
         if len(value2) > 1:
@@ -74,7 +74,7 @@ class StringMultiLine(String):
         """Check whether provided value is a string and has \n inside"""
         return isinstance(value, str) and ("\\n" in value or "\n" in value)
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         will do a strip on multiline
         """
@@ -160,7 +160,7 @@ class Bytes(TypeBaseClass):
         """Check whether provided value is a array of bytes"""
         return isinstance(value, bytes)
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         supports b64encoded strings, std strings which can be encoded and binary strings
         """
@@ -215,7 +215,7 @@ class Boolean(TypeBaseClass):
     def toJSON(self, v):
         return self.clean(v)
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         if string and true, yes, y, 1 then True
         if int and 1 then True
@@ -292,7 +292,7 @@ class Integer(TypeBaseClass):
     def toJSON(self, v):
         return self.clean(v)
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         used to change the value to a predefined standard for this type
         """
@@ -358,7 +358,7 @@ class Float(TypeBaseClass):
         s = self.clean(s)
         return j.core.text.getFloat(s)
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         """
         if value is None:
@@ -407,7 +407,7 @@ class Percent(Float):
             default = 0.0
         self._default = default
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         used to change the value to a predefined standard for this type
         """
@@ -454,7 +454,7 @@ class CapnpBin(Bytes):
             default = b""
         self._default = default
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         """
         return value

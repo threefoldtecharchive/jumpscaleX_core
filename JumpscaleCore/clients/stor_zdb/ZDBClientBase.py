@@ -5,12 +5,12 @@ import struct
 
 class ZDBClientBase(j.baseclasses.object_config):
     def _init(self, jsxobject=None, **kwargs):
-        if "admin" in kwargs:
-            admin = kwargs["admin"]
-        else:
-            admin = self.admin
+        # if "admin" in kwargs:
+        #     admin = kwargs["admin"]
+        # else:
+        #     admin = self.admin
 
-        if admin:
+        if self.admin:
             self.nsname = "default"
 
         self.type = "ZDB"
@@ -21,7 +21,11 @@ class ZDBClientBase(j.baseclasses.object_config):
 
         self._logger_enable()
 
-        if admin:
+        if j.data.bcdb._master:
+            self._model.trigger_add(self._update_trigger)
+
+    def _connect(self):
+        if self.admin:
 
             if self.secret_:
                 # authentication should only happen in zdbadmin client
@@ -38,7 +42,6 @@ class ZDBClientBase(j.baseclasses.object_config):
             self._select_namespace()
 
         assert self.ping()
-        self._model.trigger_add(self._update_trigger)
 
     def _update_trigger(self, obj, action, **kwargs):
         if action in ["save", "change"]:
@@ -48,9 +51,10 @@ class ZDBClientBase(j.baseclasses.object_config):
     def redis(self):
         if not self._redis:
             self._redis = _patch_redis_client(
-                j.clients.redis.get(ipaddr=self.addr, port=self.port, fromcache=False, ping=False)
+                j.clients.redis.get(addr=self.addr, port=self.port, fromcache=False, ping=False)
             )
             self._select_namespace(self.nsname)
+            self._connect()
         return self._redis
 
     def _select_namespace(self, nsname=None):

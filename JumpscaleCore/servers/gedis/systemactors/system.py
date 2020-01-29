@@ -3,7 +3,7 @@ from Jumpscale import j
 JSBASE = j.baseclasses.object
 
 
-class system(JSBASE):
+class system_dontuse(JSBASE):
     def _init(self, gedis_server=None):
         assert gedis_server
         self._gedis_server = gedis_server

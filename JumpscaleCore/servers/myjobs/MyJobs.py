@@ -9,28 +9,12 @@ class MyJob(j.baseclasses.object_config):
     _name = "job"
     _SCHEMATEXT = schemas.job
 
-    def _init(
-        self, method=None, dependencies=None, args_replace=None, return_queues=None, return_queues_reset=None, **kwargs2
-    ):
-
-        # leave this check for now please
-        assert self._parent._bcdb.storclient.cat == "myjobs"
-
-        if dependencies:
-            for dep in dependencies:
-                if isinstance(dep, j.data.schema._JSXObjectClass):
-                    self.dependencies.append(dep.id)
-                elif isinstance(dep, int):
-                    self.dependencies.append(dep)
-                else:
-                    raise j.exceptions.Input("only jsx obj (job) or int supported in dependencies")
-
-        if return_queues:
-            for qname in return_queues:
+    def _init(self, method=None, args_replace=None, return_queues_reset=None, **kwargs):
+        if self.return_queues:
+            for qname in self.return_queues:
                 q = j.clients.redis.queue_get(redisclient=j.clients.redis.core_get(), key="myjobs:%s" % qname)
                 if return_queues_reset:
                     q.reset()
-                self.return_queues.append(qname)
         if method:
             self.process_code(method, args_replace)
 

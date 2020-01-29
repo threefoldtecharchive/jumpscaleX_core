@@ -34,8 +34,8 @@ class Syncer(j.baseclasses.object_config):
         sshclient_names = [] (LS)
         paths = [] (LS)
         ignoredir = [] (LS)
-        ignore_delete = true  (B)  
-        rsyncdelete = false (B)
+        #ignore_delete = true  (B)
+        rsyncdelete = true (B)
         """
 
     def sshclients_add(self, sshclients=None):
@@ -60,6 +60,7 @@ class Syncer(j.baseclasses.object_config):
 
             cl = j.clients.ssh.get(name=name)
         else:
+            j.shell()
             raise j.exceptions.Base("only support name of sshclient or the sshclient instance itself")
 
         if cl.name not in self.sshclients:
@@ -67,6 +68,10 @@ class Syncer(j.baseclasses.object_config):
             if not cl.name in self.sshclient_names:
                 self.sshclient_names.append(cl.name)
                 self.save()
+
+    def reset(self):
+        self.paths = []
+        self._init()
 
     def _init(self, **kwargs):
 
@@ -88,6 +93,7 @@ class Syncer(j.baseclasses.object_config):
                 "jumpscaleX_libs",
                 "jumpscaleX_libs_extra",
                 "jumpscaleX_threebot",
+                "jumpscaleX_weblibs",
             ]:
                 self.paths.append(
                     "{DIR_CODE}/github/threefoldtech/%s:/sandbox/code/github/threefoldtech/%s" % (item, item)
@@ -144,13 +150,13 @@ class Syncer(j.baseclasses.object_config):
         time.sleep(3600)
 
     def handler(self, event, action="copy"):
-        self._log_info("......................new event........................")
-        self._log_info("syncer handle")
-        self._log_info("event:%s" % event)
-        self._log_info("action:%s" % action)
-        self._log_debug("%s:%s" % (event, action))
+        # self._log_info("......................new event........................")
+        # self._log_info("syncer handle")
+        # self._log_info("event:%s" % event)
+        # self._log_info("action:%s" % action)
+        # self._log_debug("%s:%s" % (event, action))
         for key, sshclient in self.sshclients.items():
-            if sshclient.executor.isContainer:
+            if sshclient.executor.container_check:
                 continue
             changedfile = event.src_path
             if event.src_path.endswith((".swp", ".swx")):
@@ -167,7 +173,6 @@ class Syncer(j.baseclasses.object_config):
                 self._log_info("directory changed")
                 return self.sync(monitor=False)  # no need to continue
             else:
-                self._log_info("changed file name: %s" % changedfile)
                 if changedfile.find("/.git") != -1:
                     return
                 elif changedfile.find("/__pycache__/") != -1:
@@ -183,11 +188,12 @@ class Syncer(j.baseclasses.object_config):
                 elif hasattr(event, "dest_path"):
                     if event.dest_path.endswith("~"):
                         return
+                self._log_info("changed file name: %s" % changedfile)
                 dest = self._path_dest_get(executor=sshclient.executor, src=changedfile)
-                self._log_info("destination file name: %s" % dest)
+                # self._log_debug("destination file name: %s" % dest)
 
                 e = ""
-                self._log_debug("action:%s for %s" % (action, changedfile))
+                # self._log_debug("action:%s for %s" % (action, changedfile))
 
                 rc = 1
                 counter = 0
@@ -248,10 +254,10 @@ class Syncer(j.baseclasses.object_config):
                         pass  # no idea why we need to do this, but e not known
                     return self.sync(monitor=False)
 
-    def delete(self):
-        for item in j.clients.ssh.find(name=self.sshclient_name):
-            item.delete()
-        j.baseclasses.object_config.delete(self)
+    # def delete(self):
+    #     for item in j.clients.ssh.find(name=self.sshclient_name):
+    #         item.delete()
+    #     j.baseclasses.object_config.delete(self)
 
     def sync(self, monitor=True):
         """
@@ -261,7 +267,7 @@ class Syncer(j.baseclasses.object_config):
 
         for key, sshclient in self.sshclients.items():
 
-            if sshclient.executor.isContainer:
+            if sshclient.executor.container_check:
                 continue
 
             for item in self._get_paths(executor=sshclient.executor):

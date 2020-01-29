@@ -12,8 +12,8 @@ class UserSessionAdmin(UserSessionBase):
         self.threebot_name = None
         self.threebot_circles = []
         self.kwargs = []
-        self.response_type = None
-        self.content_type = None
+        self.response_type = j.data.types.get("e", default="auto,json,msgpack").clean(0)
+        self.content_type = j.data.types.get("e", default="auto,json,msgpack").clean(0)
         self.threebot_client = None
 
     def admin_check(self):
@@ -38,7 +38,7 @@ class UserSession(UserSessionBase):
 
     @property
     def admin(self):
-        if self._admin == None:
+        if self._admin is None:
             if self.threebot_name == j.tools.threebot.me.default.tname:
                 self._admin = True
             elif int(self.threebot_id) == j.tools.threebot.me.default.tid:

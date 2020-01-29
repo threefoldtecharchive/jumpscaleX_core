@@ -83,5 +83,5 @@ class SockExec(j.baseclasses.object_config):
         res = self.execute("ls /")
         assert len(res) == 4
         self.stop()
-        assert j.servers.startupcmd.sockexec.is_running() == False
+        assert j.servers.startupcmd.sockexec.is_running() is False
         print("test ok")

@@ -153,16 +153,13 @@ class NACL(j.baseclasses.object):
 
         self._load_singing_key(die=False)
 
-    def configure(self, privkey_words=None, sshagent_use=None, interactive=None, generate=True, reset=False):
+    def configure(self, privkey_words=None, interactive=None, generate=True, reset=False):
         """
 
         secret is used to encrypt/decrypt the private key when stored on local filesystem
         privkey_words is used to put the private key back
 
         will ask for the details of the configuration
-        :param: sshagent_use is True, will derive the secret from the private key of the ssh-agent if only 1 ssh key loaded
-                                secret needs to be None at that point
-
         :param: generate if True and interactive is False then will autogenerate a key
 
         :return: None
@@ -171,9 +168,6 @@ class NACL(j.baseclasses.object):
 
         if interactive is None:
             interactive = j.application.interactive
-
-        if sshagent_use:
-            raise j.exceptions.Base("does not work yet")
 
         if reset:
             self.reset()

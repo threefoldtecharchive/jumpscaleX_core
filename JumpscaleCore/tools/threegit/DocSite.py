@@ -1,38 +1,34 @@
+import copy
+import sys
+import traceback
+
 from urllib.parse import urlparse
+
 from Jumpscale import j
+
 from .Doc import Doc
 from .Link import Linker, MarkdownLinkParser
 
 JSBASE = j.baseclasses.object
-
-import copy
-
-import sys
 
 
 class DocSite(j.baseclasses.object):
     """
     """
 
-    def __init__(self, path, name="", dest="", sonic_client=None):
+    def __init__(self, path, name="", dest="", sonic_client=None, threegit=None):
         JSBASE.__init__(self)
         self._j = j
 
-        self.docgen = j.tools.threegit.get(name)
-        # init initial arguments
-
+        self.threegit = threegit
         self.path = path
         if not j.sal.fs.exists(path):
             raise j.exceptions.Base("Cannot find path:%s" % path)
 
         self.sonic_client = sonic_client
-        self.name = prepare_name(name)
-        self.defs = {}
-        self.htmlpages = {}
-        self.content_default = {}  # key is relative path in docsite where default content found
-
-        # need to empty again, because was used in config
-        self.data_default = {}  # key is relative path in docsite where default content found
+        self.name = j.core.text.strip_to_ascii_dense(name.lower())
+        if not self.name:
+            raise j.exceptions.Base("name cannot be empty")
 
         self._docs = {}
         self._files = {}
@@ -42,7 +38,9 @@ class DocSite(j.baseclasses.object):
 
         self.links_verify = False
 
-        self.outpath = dest or f"/docsites/{self.name}"
+        self.outpath = dest or j.tools.threegit.get_docsite_path(self.name)
+        j.sal.fs.createDir(self.outpath)
+
         self.error_file_path = f"{self.outpath}/errors.md"
 
         self._log_level = 1
@@ -64,36 +62,24 @@ class DocSite(j.baseclasses.object):
         #         name="/".join(name) #not sure this is correct
         return j.core.text.convert_to_snake_case(name)
 
-    @classmethod
-    def get_from_name(cls, name):
-        name = prepare_name(name)
-        meta_path = f"{cls.outpath}/.data"
-        repo_meta = j.sal.fs.readFile(meta_path).decode()
-        repo_data = j.data.serializers.json.loads(repo_meta)
-        repo_args = j.clients.git.getGitRepoArgs(repo_data["repo"])
-        path = j.sal.fs.joinPaths(repo_args[-3], repo_data.get("base_path", ""))
-
-        return cls(name=name, path=path)
-
-    @property
-    def git(self):
-        if self._git is None:
-            gitpath = j.clients.git.findGitPath(self.path, die=False)
-            if not gitpath:
-                return
-
-            if gitpath not in self.docgen._git_repos:
-                self._git = j.tools.threegit.get(self.name)._git_get(gitpath)
-                self.docgen._git_repos[gitpath] = self.git
-
-        if not self._git:
-            self._log_debug(f"docsite of {self.path} has not git repo")
-        return self._git
-        # MARKER FOR INCLUDE TO STOP  (HIDE)
+    # @classmethod
+    # def get_from_name(cls, name):
+    #     name = prepare_name(name)
+    #     meta_path = f"{cls.outpath}/.data"
+    #     repo_meta = j.sal.fs.readFile(meta_path).decode()
+    #     repo_data = j.data.serializers.json.loads(repo_meta)
+    #     repo_args = j.clients.git.getGitRepoArgs(repo_data["repo"])
+    #     path = j.sal.fs.joinPaths(repo_args[-3], repo_data.get("base_path", ""))
+    #
+    #     return cls(name=name, path=path)
 
     @property
     def host(self):
         return urlparse(self.metadata["repo"]).hostname
+
+    @property
+    def git(self):
+        return self.threegit.git_client
 
     @property
     def account(self):
@@ -135,7 +121,7 @@ class DocSite(j.baseclasses.object):
         :return: a path or a full link
         :rtype: str
         """
-        if custom_link.is_url or not self.git:
+        if custom_link.is_url:
             # as-is
             return custom_link.path
 
@@ -173,8 +159,10 @@ class DocSite(j.baseclasses.object):
             new_link = Linker.to_custom_link(repo, host)
             # to match any path, start with root `/`
             url = Linker(host, new_link.account, new_link.repo).tree("/")
-            docsite = j.tools.threegit.load(url, name=new_link.repo)
+            docsite = j.tools.threegit.get_from_url(new_link.repo, url, base_path="").docsite
             custom_link = new_link
+
+        docsite.load(reset=True)
 
         try:
             included_doc = docsite.doc_get(custom_link.path)
@@ -193,61 +181,30 @@ class DocSite(j.baseclasses.object):
 
     @property
     def docs(self):
-        if self._docs == {}:
-            self.load()
         return self._docs
 
     @property
     def files(self):
-        self.load()
         return self._files
 
-    def _processData(self, path):
-        ext = j.sal.fs.getFileExtension(path).lower()
-        if ext == "":
-            # try yaml & toml
-            self._processData(path + ".toml")
-            self._processData(path + ".yaml")
-            return
+    @property
+    def is_empty(self):
+        if not j.sal.fs.exists(self.outpath):
+            return True
+        return not j.sal.fs.listFilesInDir(self.outpath)
 
-        if not j.sal.fs.exists(path):
-            return {}
-
-        if ext == "toml":
-            data = j.data.serializers.toml.load(path)
-        elif ext == "yaml":
-            data = j.data.serializers.yaml.load(path)
-        else:
-            raise j.exceptions.Input(message="only toml & yaml supported")
-
-        if not j.data.types.dict.check(data):
-            raise j.exceptions.Input(message="cannot process toml/yaml on path:%s, needs to be dict." % path)
-
-        # dont know why we do this? something todo probably with mustache and dots?
-        keys = [str(key) for key in data.keys()]
-        for key in keys:
-            if key.find(".") != -1:
-                data[key.replace(".", "_")] = data[key]
-                data.pop(key)
-
-        fulldirpath = j.sal.fs.getDirName(path)
-        rdirpath = j.sal.fs.pathRemoveDirPart(fulldirpath, self.path)
-        rdirpath = rdirpath.strip("/").strip().strip("/")
-        self.data_default[rdirpath] = data
-
-    def load(self, reset=False, check=False):
+    def load(self, reset=False):
         """
         walk in right order over all files which we want to potentially use (include)
         and remember their paths
 
         if duplicate only the first found will be used
         """
-        if reset == False and self._loaded and check == False:
-            return
+        if self.is_empty:
+            reset = True
 
-        if reset == True:
-            git_client = j.clients.git.get(self.path)
-            self.revision = git_client.config_3git_set("revision_last_processed", "")
+        if not reset and self._loaded:
+            return
 
         path = self.path
         if not j.sal.fs.exists(path=path):
@@ -263,8 +220,15 @@ class DocSite(j.baseclasses.object):
                 return False
             return True
 
+        def callbackFunctionDir(path, arg):
+            return True
+
         def callbackForMatchFile(path, arg):
             base = j.sal.fs.getBaseName(path).lower()
+            if base.startswith("."):
+                return False
+            if base == "errors.md":
+                return False
             if base == "_sidebar.md":
                 return True
             if base.startswith("_"):
@@ -274,20 +238,7 @@ class DocSite(j.baseclasses.object):
                 return False
             return True
 
-        def callbackFunctionDir(path, arg):
-            # will see if there is data.toml or data.yaml & load in data structure in this obj
-            self._processData(path + "/data")
-            dpath = path + "/default.md"
-            if j.sal.fs.exists(dpath, followlinks=True):
-                C = j.sal.fs.readFile(dpath)
-                rdirpath = j.sal.fs.pathRemoveDirPart(path, self.path)
-                rdirpath = rdirpath.strip("/").strip().strip("/")
-                self.content_default[rdirpath] = C
-            return True
-
         def callbackFunctionFile(path, arg):
-            if path.find("error.md") != -1:
-                return
             self._log_debug("file:%s" % path)
             ext = j.sal.fs.getFileExtension(path).lower()
             base = j.sal.fs.getBaseName(path)
@@ -296,38 +247,41 @@ class DocSite(j.baseclasses.object):
                 base = base[:-3]  # remove extension
                 doc = Doc(path, base, docsite=self, sonic_client=self.sonic_client)
                 self._docs[doc.name_dot_lower] = doc
-            elif ext in ["html", "htm"]:
-                self._log_debug("found html:%s" % path)
-                l = len(ext) + 1
-                base = base[:-l]  # remove extension
-                doc = Doc(path, base, docsite=self, sonic_client=self.sonic_client)
-                self.htmlpages[doc.name_dot_lower] = doc
             else:
                 self.file_add(path)
 
-        # check changed files and process it using 3git tool
-        git_client = j.clients.git.get(self.path)
-        self.revision = git_client.config_3git_get("revision_last_processed")
-        revision, self._files_changed, old_files = git_client.logChanges(path=self.path, from_revision=self.revision)
+        if reset:
+            j.sal.fswalker.walkFunctional(
+                self.path,
+                callbackFunctionFile=callbackFunctionFile,
+                callbackFunctionDir=callbackFunctionDir,
+                arg="",
+                callbackForMatchDir=callbackForMatchDir,
+                callbackForMatchFile=callbackForMatchFile,
+            )
 
-        callbackFunctionDir(self.path, "")  # to make sure we use first data.yaml in root
-        for item in self._files_changed:
-            item = f"{git_client.BASEDIR}/{item}"
-            if j.sal.fs.exists(item):
-                if j.sal.fs.isFile(item):
-                    if callbackForMatchFile(item, ""):
-                        callbackFunctionFile(item, "")
+            revision = self.threegit.git_client.config_3git_get("revision_last_processed")
+            old_files = None
+        else:
+            # check changed files and process it using 3git tool
+            self.revision = self.threegit.git_client.config_3git_get("revision_last_processed")
+            revision, self._files_changed, old_files = self.threegit.git_client.logChanges(
+                path=self.path, from_revision=self.revision, untracked=True
+            )
 
-                if j.sal.fs.isDir(item):
-                    if callbackForMatchDir(item, ""):
-                        callbackFunctionDir(item, "")
+            for item in self._files_changed:
+                item = f"{self.threegit.git_client.path}/{item}"
+                if j.sal.fs.exists(item):
+                    if j.sal.fs.isFile(item):
+                        if callbackForMatchFile(item, ""):
+                            callbackFunctionFile(item, "")
 
         if old_files:
             for ditem in old_files:
-                item_path = j.sal.fs.joinPaths(self.outpath, j.sal.fs.getBaseName(ditem))
+                item_path = j.sal.fs.joinPaths(self.outpath, ditem)
                 j.sal.fs.remove(item_path)
 
-        git_client.logChangesRevisionSet(revision)
+        self.threegit.git_client.logChangesRevisionSet(revision)
         print("git revision set with value: ", revision)
         self._loaded = True
 
@@ -376,7 +330,6 @@ class DocSite(j.baseclasses.object):
         """
         returns path to the file
         """
-        self.load()
         name = self._clean(name)
 
         if name in self.files:
@@ -403,7 +356,6 @@ class DocSite(j.baseclasses.object):
 
         name = name.replace("/", ".").strip(".")
 
-        self.load()
         name = self._clean(name)
 
         name = name.strip("/")
@@ -618,8 +570,7 @@ class DocSite(j.baseclasses.object):
 
         return out
 
-    def verify(self, reset=False):
-        self.load(reset=reset)
+    def verify(self, url_check=False):
         keys = [item for item in self.docs.keys()]
         keys.sort()
         for key in keys:
@@ -628,7 +579,7 @@ class DocSite(j.baseclasses.object):
             try:
                 doc.markdown  # just to trigger the error checking
             except Exception as e:
-                msg = "unknown error to get markdown for doc, error:\n%s" % e
+                msg = "unknown error to get markdown for doc, error:\n%s\n%s" % (e, traceback.format_exc())
                 self.error_raise(msg, doc=doc)
             # doc.html
         return self.errors
@@ -648,17 +599,9 @@ class DocSite(j.baseclasses.object):
 
     __str__ = __repr__
 
-    @property
-    def base_path(self):
-        try:
-            repo_path = j.clients.git.findGitPath(self.path)
-            return self.path[len(repo_path) :].lstrip("/")
-        except j.exceptions.Input:
-            return ""
-
     def write_metadata(self):
         # Create file with extra content to be loaded in docsites
-        data = {"name": self.name, "repo": "", "base_path": self.base_path}
+        data = {"name": self.name, "repo": "", "base_path": self.threegit.relative_base_path}
 
         if self.git:
             data["repo"] = "https://github.com/%s/%s" % (self.account, self.repo)
@@ -676,14 +619,14 @@ class DocSite(j.baseclasses.object):
     def metadata_path(self):
         return self.outpath + "/.data"
 
-    def write(self, reset=False, check=True):
-        self.load(check=check, reset=reset)
-        self.verify(reset=reset)
+    def write(self, reset=False, url_check=False):
         if reset:
             j.sal.fs.remove(self.outpath)
 
-        j.sal.fs.createDir(self.outpath)
+        self.load(reset=reset)
+        # self.verify(url_check=url_check)
 
+        j.sal.fs.createDir(self.outpath)
         self.write_metadata()
 
         keys = [item for item in self.docs.keys()]
@@ -692,11 +635,3 @@ class DocSite(j.baseclasses.object):
             doc = self.doc_get(key, die=False)
             if doc:
                 doc.write()
-
-
-def prepare_name(name):
-    name = j.core.text.strip_to_ascii_dense(name.lower())
-    if name == "":
-        raise j.exceptions.Base("name cannot be empty")
-
-    return name

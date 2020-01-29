@@ -23,7 +23,7 @@ from .JSConfigBCDB import JSConfigBCDB
 from .JSConfigsBCDB import JSConfigsBCDB
 from .JSConfigBCDBBase import JSConfigBCDBBase
 from .ThreeBotActorBase import ThreeBotActorBase
-from .ThreeBotPackageBase import ThreeBotPackageBase
+from .ThreeBotPackageBaseAuthor import ThreeBotPackageBaseAuthor
 from .ThreeBotFactoryBase import ThreeBotFactoryBase
 from .TestTools import TestTools
 from .JSFactory import JSFactory
@@ -130,7 +130,6 @@ class BaseClasses(JSBase, TestTools):
 
         deals with base functionality as required for the object(s)_config classes
 
-        - triggers
         - change schema's inside object
         - initialization
 
@@ -156,7 +155,7 @@ class BaseClasses(JSBase, TestTools):
 
         :return:
         """
-        return ThreeBotPackageBase
+        return ThreeBotPackageBaseAuthor
 
     @property
     def threebot_factory(self):

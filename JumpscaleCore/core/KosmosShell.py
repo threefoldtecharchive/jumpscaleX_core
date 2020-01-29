@@ -132,6 +132,7 @@ def get_completions(self, document, complete_event):
 
     def colored_completions(names, color):
         for name in names:
+            name = name.replace(".", "__")
             if not isinstance(name, str):
                 raise j.exceptions.JSBUG("name need to be str")
             if not name:
@@ -223,6 +224,7 @@ def patched_handle_exception(self, e):
 
 class LogPane:
     Buffer = Buffer(name="logging")
+    limit = 20
     Show = True
 
 
@@ -281,9 +283,17 @@ def setup_docstring_containers(repl):
 
 
 def add_logs_to_pane(msg):
-    LogPane.Buffer.insert_text(data=msg, fire_event=False)
-    LogPane.Buffer.newline()
-    LogPane.Buffer.auto_down(count=LogPane.Buffer.document.line_count)
+    # TODO: better to have a circular buffer behavior
+    line_count = LogPane.Buffer.document.line_count
+    buffer = LogPane.Buffer
+
+    if line_count >= LogPane.limit:
+        buffer.reset()
+        line_count = 1
+
+    buffer.insert_text(data=msg, fire_event=False)
+    buffer.newline()
+    buffer.auto_down(count=line_count)
 
 
 def setup_logging_containers(repl):

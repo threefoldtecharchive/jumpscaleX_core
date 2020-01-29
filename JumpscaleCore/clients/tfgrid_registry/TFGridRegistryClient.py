@@ -32,14 +32,15 @@ class TFGridRegistryClient(j.baseclasses.object):
         self.me = j.tools.threebot.me.get(
             name="test", tid=3, email="test.test@gmail", tname="testUser", pubkey="asdf3dsfasdlfkjasd88893n"
         )
-        self.gedis_client = j.servers.threebot.local_start_default()
-        self.gedis_client.actors.package_manager.package_add(
-            path=j.core.tools.text_replace(
-                "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry"
-            )
+        cl = j.clients.gedis.new("registry_client", port=8901, package_name="zerobot.packagemanager")
+        cl.reload()
+        cl.actors.package_manager.package_add(
+            path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry"
         )
-        self.gedis_client.reload()
-        self.registry_client = self.gedis_client.actors.registry
+        registry_client = j.clients.gedis.new("registry", port=8901, package_name="tfgrid.registry")
+        registry_client.reload()
+
+        self.registry_client = registry_client.actors.registry
         self.nacl = self.me.nacl
         self.bcdb = j.data.bcdb.get("threebot_registry")
         self.schema_entry_data = j.data.schema.get_from_text(self.registry_client.get_meta_entry_data().decode())

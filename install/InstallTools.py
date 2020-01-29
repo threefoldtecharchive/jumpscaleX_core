@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 import getpass
 import pickle
 import re
+import copy
 
 DEFAULT_BRANCH = "development"
 GITREPOS = {}
@@ -240,6 +241,10 @@ class RedisTools:
         return cl
 
     @staticmethod
+    def serialize(data):
+        return serializer(data)
+
+    @staticmethod
     def core_get(reset=False, tcp=True):
         """
 
@@ -345,7 +350,7 @@ class RedisTools:
         :rtype: Redis
         """
 
-        if reset == False:
+        if reset is False:
             if RedisTools.core_running(tcp=tcp):
                 return RedisTools.core_get()
 
@@ -424,8 +429,8 @@ if redis:
             make empty
             :return:
             """
-            while self.empty == False:
-                if self.get_nowait() == None:
+            while self.empty is False:
+                if self.get_nowait() is None:
                     self.empty = True
 
         def put(self, item):
@@ -1102,11 +1107,11 @@ class Tools:
         if not isinstance(msg, str):
             msg = str(msg)
 
-        logdict["message"] = Tools.text_replace(msg)
+        logdict["message"] = msg  # Tools.text_replace(msg)
 
         logdict["linenr"] = linenr
         logdict["filepath"] = fname
-        logdict["processid"] = MyEnv.appname
+        logdict["processid"] = "unknown"  # TODO: get pid
         if source:
             logdict["source"] = source
 
@@ -1130,8 +1135,9 @@ class Tools:
                 data = Tools._data_serializer_safe(data)
 
         logdict["data"] = data
-
         if stdout:
+            logdict = copy.copy(logdict)
+            logdict["message"] = Tools.text_replace(logdict["message"])
             Tools.log2stdout(logdict, data_show=data_show)
 
         iserror = tb or exception
@@ -1146,19 +1152,19 @@ class Tools:
         :return:
         """
 
-        # assert isinstance(logdict, dict)
+        assert isinstance(logdict, dict)
 
         if iserror:
             for handler in MyEnv.errorhandlers:
                 handler(logdict)
 
-        for handler in MyEnv.loghandlers:
-            try:
-                handler(logdict)
-            except Exception as e:
-                MyEnv.exception_handle(e)
+        else:
 
-        # assert isinstance(logdict, dict)
+            for handler in MyEnv.loghandlers:
+                try:
+                    handler(logdict)
+                except Exception as e:
+                    MyEnv.exception_handle(e)
 
         return logdict
 
@@ -1198,7 +1204,7 @@ class Tools:
         # else:
         #     mswindows = subprocess.mswindows
 
-        if env == None or env == {}:
+        if env is None or env == {}:
             env = os.environ
 
         if useShell:
@@ -1723,10 +1729,10 @@ class Tools:
         if not "{" in content:
             return content
 
-        if executor and executor.config:
+        if executor:
             content2 = Tools.args_replace(
                 content,
-                args_list=(args, executor.config),
+                args_list=(args, executor.config, executor.info.cfg_jumpscale),
                 ignorecolors=ignorecolors,
                 die_if_args_left=die_if_args_left,
                 primitives_only=primitives_only,
@@ -1765,7 +1771,7 @@ class Tools:
         def arg_process(key, val):
             if key in ["self"]:
                 return None
-            if val == None:
+            if val is None:
                 return ""
             if isinstance(val, str):
                 if val.strip().lower() == "none":
@@ -1920,7 +1926,7 @@ class Tools:
             p(text)
 
     @staticmethod
-    def traceback_format(tb):
+    def traceback_format(tb, replace=True):
         """format traceback
 
         :param tb: traceback
@@ -2888,10 +2894,6 @@ class Tools:
         repo_url = url % (account, repo)
         exists, foundgit, dontpull, ACCOUNT_DIR, REPO_DIR = Tools._code_location_get(account=account, repo=repo)
 
-        if reset:
-            Tools.delete(REPO_DIR)
-            exists, foundgit, dontpull, ACCOUNT_DIR, REPO_DIR = Tools._code_location_get(account=account, repo=repo)
-
         args = {}
         args["ACCOUNT_DIR"] = ACCOUNT_DIR
         args["REPO_DIR"] = REPO_DIR
@@ -2909,7 +2911,7 @@ class Tools:
             """means code is already there, maybe synced?"""
             return gitpath
 
-        if git_on_system and MyEnv.config["USEGIT"] and ((exists and foundgit) or not exists):
+        if git_on_system and MyEnv.config["USEGIT"]:
             # there is ssh-key loaded
             # or there is a dir with .git inside and exists
             # or it does not exist yet
@@ -2923,7 +2925,7 @@ class Tools:
                 mkdir -p {ACCOUNT_DIR}
                 """
                 Tools.log("get code [git] (first time): %s" % repo)
-                Tools.execute(C, args=args, showout=False, die_if_args_left=True)
+                Tools.execute(C, args=args, showout=True, die_if_args_left=True)
                 C = """
                 cd {ACCOUNT_DIR}
                 # git clone  --depth 1 {URL} -b {BRANCH}
@@ -2934,7 +2936,7 @@ class Tools:
                     C,
                     args=args,
                     die=True,
-                    showout=False,
+                    showout=True,
                     retry=4,
                     errormsg="Could not clone %s" % repo_url,
                     die_if_args_left=True,
@@ -2952,42 +2954,31 @@ class Tools:
                         Tools.execute(
                             C, args=args, retry=1, errormsg="Could not checkout %s" % repo_url, die_if_args_left=True
                         )
-                        C = """
-                        set -x
-                        cd {REPO_DIR}
-                        git pull
-                        """
-                        Tools.log("get code & ignore changes: %s" % repo)
-                        Tools.execute(
-                            C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, die_if_args_left=True
-                        )
-
-                    elif Tools.code_changed(REPO_DIR):
-                        if Tools.ask_yes_no("\n**: found changes in repo '%s', do you want to commit?" % repo):
-                            if "GITMESSAGE" in os.environ:
-                                args["MESSAGE"] = os.environ["GITMESSAGE"]
+                    else:
+                        if Tools.code_changed(REPO_DIR):
+                            if Tools.ask_yes_no("\n**: found changes in repo '%s', do you want to commit?" % repo):
+                                if "GITMESSAGE" in os.environ:
+                                    args["MESSAGE"] = os.environ["GITMESSAGE"]
+                                else:
+                                    args["MESSAGE"] = input("\nprovide commit message: ")
+                                    assert args["MESSAGE"].strip() != ""
                             else:
-                                args["MESSAGE"] = input("\nprovide commit message: ")
-                                assert args["MESSAGE"].strip() != ""
-                        else:
-                            raise Tools.exceptions.Input("found changes, do not want to commit")
-                        C = """
-                        set -x
-                        cd {REPO_DIR}
-                        git add . -A
-                        git commit -m "{MESSAGE}"
-                        """
-                        Tools.log("get code & commit [git]: %s" % repo)
-                        Tools.execute(C, args=args, die_if_args_left=True)
-                        C = """
-                        set -x
-                        cd {REPO_DIR}
-                        git pull
-                        """
-                        Tools.log("get code & commit [git]: %s" % repo)
-                        Tools.execute(
-                            C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, die_if_args_left=True
-                        )
+                                raise Tools.exceptions.Input("found changes, do not want to commit")
+                            C = """
+                            set -x
+                            cd {REPO_DIR}
+                            git add . -A
+                            git commit -m "{MESSAGE}"
+                            """
+                            Tools.log("get code & commit [git]: %s" % repo)
+                            Tools.execute(C, args=args, die_if_args_left=True)
+                    C = """
+                    set -x
+                    cd {REPO_DIR}
+                    git pull
+                    """
+                    Tools.log("pull code: %s" % repo)
+                    Tools.execute(C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, die_if_args_left=True)
 
                     if not checkoutbranch(args, branch):
                         raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
@@ -3112,9 +3103,9 @@ class Tools:
                 val = "'%s'" % val
             elif isinstance(val, int) or isinstance(val, float):
                 val = str(val)
-            elif val == True:
+            elif val is True:
                 val = "true"
-            elif val == False:
+            elif val is False:
                 val = "false"
             out += "%s = %s\n" % (key, val)
 
@@ -3177,9 +3168,7 @@ class MyEnv_:
             "REVERSE": "",
         }
 
-        LOGFORMATBASE = (
-            "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"
-        )  # DO NOT CHANGE COLOR
+        LOGFORMATBASE = "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"  # DO NOT CHANGE COLOR
 
         self.LOGFORMAT = {
             "DEBUG": LOGFORMATBASE.replace("{COLOR}", "{CYAN}"),
@@ -3431,7 +3420,7 @@ class MyEnv_:
         if readonly is None and "readonly" in args:
             readonly = True
 
-        if sshagent_use is None or ("no_sshagent" in args and sshagent_use is False):
+        if sshagent_use is None or ("no-sshagent" in args and sshagent_use is False):
             sshagent_use = False
         else:
             sshagent_use = True
@@ -3495,8 +3484,7 @@ class MyEnv_:
         if readonly:
             self.config["READONLY"] = readonly
 
-        if sshagent_use:
-            self.config["SSH_AGENT"] = sshagent_use
+        self.config["SSH_AGENT"] = sshagent_use
         if sshkey:
             self.config["SSH_KEY_DEFAULT"] = sshkey
         if debug_configure:
@@ -3609,7 +3597,7 @@ class MyEnv_:
             # exception_type, exception_obj, tb = sys.exc_info()
             pudb.post_mortem(tb)
 
-        if die == False:
+        if die is False:
             return logdict
         else:
             sys.exit(1)
@@ -3724,7 +3712,7 @@ MyEnv = MyEnv_()
 
 class BaseInstaller:
     @staticmethod
-    def install(configdir=None, force=False, sandboxed=False):
+    def install(configdir=None, force=False, sandboxed=False, branch=None):
 
         MyEnv.init(configdir=configdir)
 
@@ -3775,7 +3763,7 @@ class BaseInstaller:
 
         ji = JumpscaleInstaller()
         print("- get sandbox repos from git")
-        ji.repos_get(pull=False)
+        ji.repos_get(pull=False, branch=branch)
         print("- copy files to sandbox (non binaries)")
         # will get the sandbox installed
         if not sandboxed:
@@ -3879,6 +3867,8 @@ class BaseInstaller:
         pips = {
             # level 0: most basic needed
             0: [
+                "cmake",
+                "scikit-build",
                 "blosc>=1.5.1",
                 "Brotli>=0.6.0",
                 "captcha",
@@ -3945,10 +3935,12 @@ class BaseInstaller:
                 "wsgidav",
                 "bottle==0.12.17",  # why this version?
                 "beaker",
+                "Mnemonic",
             ],
             # level 1: in the middle
             1: [
                 "zerotier>=1.1.2",
+                "python-digitalocean",
                 "python-jose>=2.0.1",
                 "itsdangerous>=0.24",
                 "jsonschema>=2.5.1",
@@ -3964,6 +3956,7 @@ class BaseInstaller:
                 "Pillow>=4.1.1",
                 "bottle==0.12.17",
                 "bottle-websocket==0.2.9",
+                "stellar-sdk",
             ],
             # level 2: full install
             2: [
@@ -4241,7 +4234,7 @@ class UbuntuInstaller:
 
 
 class JumpscaleInstaller:
-    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False):
+    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False, branch=None):
 
         MyEnv.check_platform()
         # will check if there's already a key loaded (forwarded) will continue installation with it
@@ -4250,11 +4243,11 @@ class JumpscaleInstaller:
             if "SSH_Agent" in MyEnv.config and MyEnv.config["SSH_Agent"]:
                 MyEnv.sshagent.key_default_name  # means we will load ssh-agent and help user to load it properly
 
-        BaseInstaller.install(sandboxed=sandboxed, force=force)
+        BaseInstaller.install(sandboxed=sandboxed, force=force, branch=branch)
 
         Tools.file_touch(os.path.join(MyEnv.config["DIR_BASE"], "lib/jumpscale/__init__.py"))
 
-        self.repos_get(pull=gitpull)
+        self.repos_get(pull=gitpull, branch=branch)
         self.repos_link()
         self.cmds_link()
 
@@ -4322,26 +4315,31 @@ class JumpscaleInstaller:
     #     Tools.execute("cp {DIR_CODE}/github/threefoldtech/sandbox_threebot_linux64/.startup.toml /")
     #     Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
     #
-    def repos_get(self, pull=False, prebuilt=False):
+    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False):
+        assert not prebuilt  # not supported yet
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
 
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
-            dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull)
+            if branch:
+                C = f"""git ls-remote --heads {GITURL} {branch}"""
+                _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True)
+                if out:
+                    BRANCH = branch
+
             try:
-                dest = Tools.code_github_get(url=GITURL, branch=BRANCH, pull=pull)
-            except Exception:
+                dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
+            except Exception as e:
+
                 activate_http = Tools.ask_yes_no(
                     "\n### SSH cloning Failed, your key isn't on github or you're missing permission, Do you want to clone via http?\n"
                 )
                 if activate_http:
                     MyEnv.interactive = False
-                    r = Tools.code_git_rewrite_url(url=URL, ssh=False)
+                    r = Tools.code_git_rewrite_url(url=GITURL, ssh=False)
                     # TODO: *1
-                    Tools.shell()
-                    w
-                    Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, dest=DEST)
+                    Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull)
                 else:
                     raise Tools.exceptions.Base("\n### Please authenticate your key and try again\n")
 
@@ -4373,9 +4371,6 @@ class JumpscaleInstaller:
             script = Tools.text_replace(script, args=locals())
             script = Tools.text_replace(script, args=locals())  # NEED TO DO THIS 2x
             if "{" in script:
-                from pudb import set_trace
-
-                set_trace()
                 script = Tools.text_replace(script, args=locals())
                 Tools.shell()
                 raise Tools.exceptions.BUG("replace did not work")
@@ -4431,6 +4426,10 @@ class DockerFactory:
             cdir = Tools.text_replace("{DIR_BASE}/var/containers")
             Tools.dir_ensure(cdir)
             for name_found in os.listdir(cdir):
+                if not os.path.isdir(cdir):
+                    # https://github.com/threefoldtech/jumpscaleX_core/issues/297
+                    # in case .DS_Store is created when opened in finder
+                    continue
                 # to make sure there is no recursive behaviour if called from a docker container
                 if name_found != name and name_found.strip().lower() not in ["shared"]:
                     DockerContainer(name_found)
@@ -4690,7 +4689,7 @@ class DockerContainer:
 
         self.config = DockerConfig(name=name, image=image, startupcmd=startupcmd, delete=delete, ports=ports)
 
-        if self.config.portrange == None:
+        if self.config.portrange is None:
             self.config._find_port_range()
             self.config.save()
 
@@ -4780,7 +4779,7 @@ class DockerContainer:
         if not self.container_exists_config:
             # means is a new one
             new = True
-            if update == None:
+            if update is None:
                 if image2 in ["threefoldtech/base", "threefoldtech/3bot", "threefoldtech/3botdev"]:
                     update = False
             if not update:
@@ -4868,6 +4867,9 @@ class DockerContainer:
             self.dexec("apt-get install wireguard -y")
             self.dexec("apt-get install locales -y")
             self.dexec("touch /root/.BASEINSTALL_OK")
+
+        if image2 == "threefoldtech/base":
+            self.dexec("pip3 install requests>=2.13.0")
 
         if update or new:
             print(" - Configure / Start SSH server")
@@ -5136,9 +5138,7 @@ class DockerContainer:
         """
         Starts then stops the threebotserver to make sure all needed packages are installed
         """
-        self.sshexec(
-            ". /sandbox/env.sh; kosmos -p 'j.servers.threebot.local_start_default(); j.servers.threebot.default.stop()'"
-        )
+        self.sshexec(". /sandbox/env.sh; kosmos -p 'j.servers.threebot.start(); j.servers.threebot.default.stop()'")
 
     def install_tcprouter(self):
         """
@@ -5602,543 +5602,6 @@ class SSHAgent:
         self.reset()
 
 
-class ExecutorSSH:
-    def __init__(self, addr=None, port=22, debug=False, checkok=True):
-        self.addr = addr
-        self.port = port
-        self.debug = debug
-        self.checkok = checkok
-        self._id = None
-        self._env = {}
-        self.readonly = False
-        self.CURDIR = ""
-        self._data_path = "/var/executor_data"
-        self._init3()
-
-    def reset(self):
-        self.state_reset()
-        self._init3()
-        self.save()
-
-    def _init3(self):
-        self._config = None
-        # self._env_on_system = None
-
-    @property
-    def config(self):
-        if not self._config:
-            self.load()
-        return self._config
-
-    def load(self):
-        if self.exists(self._data_path):
-            data = self.file_read(self._data_path, binary=True)
-            self._config = pickle.loads(data)
-        else:
-            self._config = {}
-
-    def cmd_installed(self, cmd):
-        rc, out, err = self.execute("which %s" % cmd, die=False, showout=False)
-        if rc > 0:
-            return False
-        return True
-
-    def save(self):
-        """
-        only relevant for ssh
-        :return:
-        """
-        data = pickle.dumps(self.config)
-        self.file_write(self._data_path, data)
-
-    def delete(self, path):
-        path = self._replace(path)
-        cmd = "rm -rf %s" % path
-        self.execute(cmd)
-
-    def exists(self, path):
-        path = self._replace(path)
-        rc, _, _ = self.execute("test -e %s" % path, die=False, showout=False, asfile=False)
-        if rc > 0:
-            return False
-        else:
-            return True
-
-    def _replace(self, content, args=None):
-        """
-        args will be substitued to .format(...) string function https://docs.python.org/3/library/string.html#formatspec
-        MyEnv.config will also be given to the format function
-
-        content example:
-
-        "{name!s:>10} {val} {n:<10.2f}"  #floating point rounded to 2 decimals
-
-        performance is +100k per sec
-        """
-        return Tools.text_replace(content=content, args=args, executor=self)
-
-    def dir_ensure(self, path):
-        cmd = "mkdir -p %s" % path
-        self.execute(cmd, interactive=False)
-
-    def path_isdir(self, path):
-        """
-        checks if the path is a directory
-        :return:
-        """
-        rc, out, err = self.execute('if [ -d "%s" ] ;then echo DIR ;fi' % path, interactive=False)
-        return out.strip() == "DIR"
-
-    def path_isfile(self, path):
-        """
-        checks if the path is a directory
-        :return:
-        """
-        rc, out, err = self.execute('if [ -f "%s" ] ;then echo FILE ;fi' % path, interactive=False)
-        return out.strip() == "FILE"
-
-    @property
-    def platformtype(self):
-        raise Tools.exceptions("not implemented")
-
-    def file_read(self, path, binary=False):
-        Tools.log("file read:%s" % path)
-        if not binary:
-            rc, out, err = self.execute("cat %s" % path, showout=False, interactive=False)
-            return out
-        else:
-            p = Tools._file_path_tmp_get("data")
-            self.download(path, dest=p)
-            data = Tools.file_read(p)
-            Tools.delete(p)
-            return data
-
-    def file_write(self, path, content, mode=None, owner=None, group=None, showout=True):
-        """
-        @param append if append then will add to file
-        """
-        path = self._replace(path)
-        if showout:
-            Tools.log("file write:%s" % path)
-
-        assert isinstance(path, str)
-        if isinstance(content, str) and not "'" in content:
-
-            cmd = 'echo -n -e "%s" > %s' % (content, path)
-            self.execute(cmd, asfile=False)
-        else:
-            temp = Tools._file_path_tmp_get(ext="data")
-            Tools.file_write(temp, content)
-            self.upload(temp, path)
-            Tools.delete(temp)
-            cmd = ""
-            if mode:
-                cmd += "chmod %s %s && " % (mode, path)
-            if owner:
-                cmd += "chown %s %s && " % (owner, path)
-            if group:
-                cmd += "chgrp %s %s &&" % (group, path)
-            cmd = cmd.strip().strip("&")
-            if cmd:
-                self.execute(cmd, showout=False, script=False, interactive=False, asfile=False)
-
-        return None
-
-    @property
-    def uid(self):
-        if self._id is None:
-            raise j.exceptions.Base("self._id cannot be None")
-        return self._id
-
-    def _commands_transform(self, cmds, die=True, checkok=False, env=None, sudo=False, shell=False):
-        # print ("TRANSF:%s"%cmds)
-
-        if sudo or shell:
-            checkok = False
-
-        if not env:
-            env = {}
-
-        multicommand = "\n" in cmds or ";" in cmds
-
-        if shell:
-            if "\n" in cmds:
-                raise j.exceptions.Base("cannot do shell for multiline scripts")
-            else:
-                cmds = "bash -c '%s'" % cmds
-
-        pre = ""
-
-        checkok = checkok or self.checkok
-
-        if die:
-            # first make sure not already one
-            if "set -e" not in cmds:
-                # now only do if multicommands
-                if multicommand:
-                    if self.debug:
-                        pre += "set -ex\n"
-                    else:
-                        pre += "set -e\n"
-
-        if self.CURDIR != "":
-            pre += "cd %s\n" % (self.CURDIR)
-
-        if env != {}:
-            for key, val in env.items():
-                pre += "export %s=%s\n" % (key, val)
-
-        cmds = "%s\n%s" % (pre, cmds)
-
-        if checkok and multicommand:
-            if not cmds.endswith("\n"):
-                cmds += "\n"
-            cmds += "echo '**OK**'"
-
-        # if "\n" in cmds:
-        #     cmds = cmds.replace("\n", ";")
-        #     cmds.strip() + "\n"
-
-        # cmds = cmds.replace(";;", ";").strip(";")
-
-        if sudo:
-            cmds = self.sudo_cmd(cmds)
-
-        cmds = Tools.text_strip(cmds)
-
-        Tools.log(cmds)
-
-        return cmds
-
-    def find(self, path):
-        rc, out, err = self.execute("find %s" % path, die=False, interactive=False)
-        if rc > 0:
-            if err.lower().find("no such file") != -1:
-                return []
-            raise Tools.exceptions.Base("could not find:%s \n%s" % (path, err))
-        res = []
-        for line in out.split("\n"):
-            if line.strip() == path:
-                continue
-            if line.strip() == "":
-                continue
-            res.append(line)
-        res.sort()
-        return res
-
-    @property
-    def container_check(self):
-        """
-        means we don't work with ssh-agent ...
-        """
-
-        if not "IN_DOCKER" in self.config:
-            rc, out, _ = self.execute("cat /proc/1/cgroup", die=False, showout=False, interactive=False)
-            if rc == 0 and out.find("/docker/") != -1:
-                self.config["IN_DOCKER"] = True
-            else:
-                self.config["IN_DOCKER"] = False
-            self.save()
-        return self.config["IN_DOCKER"]
-
-    # @property
-    # def env_on_system(self):
-    #     if not self._env_on_system:
-    #         self.systemenv_load()
-    #         self._env_on_system = pickle.loads(self.env_on_system_msgpack)
-    #     return self._env_on_system
-    #
-    # @property
-    # def env(self):
-    #     return self.env_on_system["ENV"]
-
-    @property
-    def state(self):
-        if "state" not in self.config:
-            self.config["state"] = {}
-        return self.config["state"]
-
-    def state_exists(self, key):
-        key = j.core.text.strip_to_ascii_dense(key)
-        return key in self.state
-
-    def state_set(self, key, val=None, save=True):
-        key = j.core.text.strip_to_ascii_dense(key)
-        if key not in self.state or self.state[key] != val:
-            self.state[key] = val
-            self.save()
-
-    def state_get(self, key, default_val=None):
-        key = j.core.text.strip_to_ascii_dense(key)
-        if key not in self.state:
-            if default_val:
-                self.state[key] = default_val
-                return default_val
-            else:
-                return None
-        else:
-            return self.state[key]
-
-    def state_delete(self, key):
-        key = j.core.text.strip_to_ascii_dense(key)
-        if key in self.state:
-            self.state.pop(key)
-            self.save()
-
-    def systemenv_load(self):
-        """
-        get relevant information from remote system e.g. hostname, env variables, ...
-        :return:
-        """
-        C = """
-        set +ex
-
-        if [ -e /sandbox ]; then
-            export PBASE=/sandbox
-        else
-            export PBASE=~/sandbox
-        fi
-
-        ls $PBASE  > /dev/null 2>&1 && echo 'ISSANDBOX = 1' || echo 'ISSANDBOX = 0'
-
-        ls "$PBASE/bin/python3"  > /dev/null 2>&1 && echo 'ISSANDBOX_BIN = 1' || echo 'ISSANDBOX_BIN = 0'
-        echo UNAME = \""$(uname -mnprs)"\"
-        echo "HOME = $HOME"
-        echo HOSTNAME = "$(hostname)"
-        if [[ "$(uname -s)" == "Darwin" ]]; then
-            echo OS_TYPE = "darwin"
-        else
-            echo OS_TYPE = "ubuntu"
-        fi
-
-        echo "CFG_JUMPSCALE = --TEXT--"
-        cat $PBASE/cfg/jumpscale_config.msgpack 2>/dev/null || echo ""
-        echo --TEXT--
-
-        echo "BASHPROFILE = --TEXT--"
-        cat $HOME/.profile_js 2>/dev/null || echo ""
-        echo --TEXT--
-
-        echo "ENV = --TEXT--"
-        export
-        echo --TEXT--
-        """
-        rc, out, err = self.execute(C, showout=False, interactive=False, replace=False)
-        res = {}
-        state = ""
-        for line in out.split("\n"):
-            if line.find("--TEXT--") != -1 and line.find("=") != -1:
-                varname = line.split("=")[0].strip().lower()
-                state = "TEXT"
-                txt = ""
-                continue
-
-            if state == "TEXT":
-                if line.strip() == "--TEXT--":
-                    res[varname.upper()] = txt
-                    state = ""
-                    continue
-                else:
-                    txt += line + "\n"
-                    continue
-
-            if "=" in line:
-                varname, val = line.split("=", 1)
-                varname = varname.strip().lower()
-                val = str(val).strip().strip('"')
-                if val.lower() in ["1", "true"]:
-                    val = True
-                elif val.lower() in ["0", "false"]:
-                    val = False
-                else:
-                    try:
-                        val = int(val)
-                    except BaseException:
-                        pass
-                res[varname.upper()] = val
-
-        if res["CFG_JUMPSCALE"].strip() != "":
-            rconfig = j.core.tools.config_load(content=res["CFG_JUMPSCALE"])
-            res["CFG_JUMPSCALE"] = rconfig
-        else:
-            res["CFG_JUMPSCALE"] = {}
-
-        envdict = {}
-        for line in res["ENV"].split("\n"):
-            line = line.replace("declare -x", "")
-            line = line.strip()
-            if line.strip() == "":
-                continue
-            if "=" in line:
-                pname, pval = line.split("=", 1)
-                pval = pval.strip("'").strip('"')
-                envdict[pname.strip().upper()] = pval.strip()
-
-        res["ENV"] = envdict
-
-        def get_cfg(name, default):
-            name = name.upper()
-            if "CFG_JUMPSCALE" in res and name in res["CFG_JUMPSCALE"]:
-                self.config[name] = res["CFG_JUMPSCALE"]
-                return
-            if name not in self.config:
-                self.config[name] = default
-
-        get_cfg("DIR_HOME", res["ENV"]["HOME"])
-        get_cfg("DIR_BASE", "/sandbox")
-        get_cfg("DIR_CFG", "%s/cfg" % self.config[name])
-        get_cfg("DIR_TEMP", "/tmp")
-        get_cfg("DIR_VAR", "%s/var" % self.config[name])
-        get_cfg("DIR_CODE", "%s/code" % self.config[name])
-        get_cfg("DIR_BIN", "/usr/local/bin")
-
-    def execute(
-        self,
-        cmd,
-        die=True,
-        showout=False,
-        timeout=1000,
-        env=None,
-        sudo=False,
-        replace=True,
-        interactive=False,
-        asfile=None,
-        retry=None,
-        args=None,
-    ):
-        if replace:
-            cmd = self._replace(cmd, args=args)
-        if env or args or asfile or sudo:
-            cmd = self._commands_transform(cmds=cmd, die=die, checkok=self.checkok, env=env, sudo=sudo, shell=False)
-        if asfile == None:
-            if asfile or "\n" in cmd or "'" in cmd:
-                asfile = True
-            else:
-                asfile = False
-        if asfile:
-            self.file_write("/tmp/executor.sh", cmd)
-            cmd = "bash /tmp/executor.sh"
-        if interactive:
-            cmd2 = "ssh -oStrictHostKeyChecking=no -t root@%s -A -p %s '%s'" % (self.addr, self.port, cmd)
-        else:
-            cmd2 = "ssh -oStrictHostKeyChecking=no root@%s -A -p %s '%s'" % (self.addr, self.port, cmd)
-        return Tools.execute(
-            cmd2,
-            interactive=interactive,
-            showout=showout,
-            replace=False,
-            asfile=False,
-            timeout=timeout,
-            retry=retry,
-            die=die,
-        )
-
-    def upload(
-        self,
-        source,
-        dest=None,
-        recursive=True,
-        createdir=False,
-        rsyncdelete=True,
-        ignoredir=None,
-        ignorefiles=None,
-        keepsymlinks=True,
-        retry=4,
-    ):
-        """
-
-        :param source:
-        :param dest:
-        :param recursive:
-        :param createdir:
-        :param rsyncdelete:
-        :param ignoredir: the following are always in, no need to specify ['.egg-info', '.dist-info', '__pycache__']
-        :param ignorefiles: the following are always in, no need to specify: ["*.egg-info","*.pyc","*.bak"]
-        :param keepsymlinks:
-        :param showout:
-        :return:
-        """
-        source = self._replace(source)
-        if not dest:
-            dest = source
-        else:
-            dest = self._replace(dest)
-        if not os.path.exists(source):
-            raise Tools.exceptions.Input("path '%s' not found" % source)
-
-        if os.path.isfile(source):
-            if createdir:
-                destdir = os.path.dirname(source)
-                self.dir_ensure(destdir)
-            cmd = "scp -P %s %s root@%s:%s" % (self.port, source, self.addr, dest)
-            Tools.execute(cmd, showout=True, replace=False, asfile=False)
-            return
-        raise Tools.exceptions.RuntimeError("not implemented")
-        dest = self._replace(dest)
-        if dest[0] != "/":
-            raise j.exceptions.RuntimeError("need / in beginning of dest path")
-        if source[-1] != "/":
-            source += "/"
-        if dest[-1] != "/":
-            dest += "/"
-        dest = "%s@%s:%s" % (self.login, self.addr, dest)
-
-    def download(self, source, dest=None, ignoredir=None, ignorefiles=None, recursive=True):
-        """
-
-        :param source:
-        :param dest:
-        :param recursive:
-        :param ignoredir: the following are always in, no need to specify ['.egg-info', '.dist-info', '__pycache__']
-        :param ignorefiles: the following are always in, no need to specify: ["*.egg-info","*.pyc","*.bak"]
-        :return:
-        """
-        if not dest:
-            dest = source
-        else:
-            dest = self._replace(dest)
-        source = self._replace(source)
-
-        destdir = os.path.dirname(source)
-        Tools.dir_ensure(destdir)
-
-        cmd = "scp -P %s root@%s:%s %s" % (self.port, self.addr, source, dest)
-        Tools.execute(cmd, showout=True, replace=False, asfile=False)
-
-    def jsxexec(self, cmd, **kwargs):
-        """
-        execute a jumpscale command in container, can be multiline
-        :param cmd:
-        :return:
-        """
-        if callable(cmd):
-            method_name, cmd = Tools.method_code_get(cmd, **kwargs)
-            cmd += "%s()" % method_name
-        name = "executor"
-        sshport = self.sshport
-        cmd = "from Jumpscale import j\n%s" % cmd
-        # Tools.file_write(f"/tmp/{name}.py", cmd)
-        # cmd = f"scp -P {sshport} /tmp/{name}.py root@localhost:/tmp/{name}.py"
-        # Tools.execute(cmd, showout=False, replace=False)
-        self.file_write(f"/tmp/{name}.py", cmd)
-        cmd = f"source /sandbox/env.sh;kosmos -p /tmp/{name}.py"
-        self.execute(cmd)
-
-    def kosmos(self):
-        self.jsxexec("j.shell()")
-
-    @property
-    def uid(self):
-        if not "uid" in self.config:
-            self.config["uid"] = str(random.getrandbits(32))
-            self.save()
-        return self.config["uid"]
-
-    def state_reset(self):
-        self.config["state"] = {}
-        self.save()
-
-
 class WireGuardServer:
     """
     the server is over SSH, the one running this tool is the client
@@ -6158,7 +5621,13 @@ class WireGuardServer:
         self.serverid = 200
 
         self._config_local = None
-        self.executor = ExecutorSSH(addr, port)
+        from Jumpscale import j
+
+        sshcl = j.clients.ssh.get("wireguardhost", addr=addr, port=port)
+        self.executor = sshcl.executor
+
+        # j.shell()
+        # self.executor = ExecutorSSH(addr, port)
 
     def install(self):
         ubuntu_install = """

@@ -1,93 +1,37 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 import os
 from copy import copy
 from .SchemaProperty import SchemaProperty
 from Jumpscale import j
 
 
-class SystemProps:
-    def __str__(self):
-        if len(self.__dict__.items()) > 0:
-            out = "\n### systemprops:\n\n"
-            for key, item in self.__dict__.items():
-                out += str(key) + ":" + str(item) + "\n"
-            return out
-        return ""
-
-    __repr__ = __str__
-
-
 class Schema(j.baseclasses.object):
-    def _init(self, text, md5=None, url=None, package=None):
-        self.properties = []
+    def _init(self, text=None, url=None, md5=None):
         self._systemprops = {}
-        self._obj_class = None
+        self._obj_class_root = None
+        self._obj_class_sub = None
         self._capnp = None
         self._index_list = None
-        self.package = package
 
-        self.systemprops = SystemProps()
+        self.systemprops = j.baseclasses.dict()
+
+        self.text = text
 
         self.url = url
 
-        self.hasdata = False  # only used in BCDB, this tells us if the ID iterator should be there
+        assert md5
+        self._md5 = md5
 
-        if md5:
-            self._md5 = md5
-            assert j.data.schema._md5(text) == self._md5
-        else:
-            self._md5 = j.data.schema._md5(text)
-
-        self._schema_from_text(text, package=self.package)
+        self._schema_from_text(text)
+        self.props = self._children
 
         if not self.url:
-            self.url = j.data.hash.md5_string(text)
-
-        self.url = j.data.schema._urlclean(self.url, package=package)
+            raise j.exceptions.Input("url needs to be specified", data=text)
 
         self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
 
-        # if self.url:
-        #     self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
-        # else:
-        #     raise j.exceptions.Input("url not defined in schema", data=text)
-
-        # urls = self.url.split(".")
-        # if len(urls) > 0:
-        #     try:
-        #         v = int(urls[-1])
-        #     except:
-        #         v = None
-        #         self.version = 1
-        #         self.url = self.url
-        #     if v is not None:
-        #         self.version = urls.pop(len(urls) - 1)
-        #         self.url = ".".join(urls)
-        #     # if self.url in j.data.schema.schemas_versionless:
-        #     #     if j.data.schema.schemas_versionless[self.url].version < self.version + 1:
-        #     #         # version itself can be replaced as well, there could be an update
-        #     #         j.data.schema.schemas_versionless[self.url] = self
-        #     # else:
-        #     #     j.data.schema.schemas_versionless[self.url] = self
+    @property
+    def properties(self):
+        return list(self._children.values())
 
     @property
     def url_str(self):
@@ -99,9 +43,9 @@ class Schema(j.baseclasses.object):
             u = u.split("jumpscale", 1)[1]
         return u
 
-    @property
-    def _path(self):
-        return j.sal.fs.getDirName(os.path.abspath(__file__))
+    # @property
+    # def _path(self):
+    #     return j.sal.fs.getDirName(os.path.abspath(__file__))
 
     def _error_raise(self, msg, e=None, schema=None):
         if self.url == "" and "url" in self._systemprops:
@@ -144,7 +88,7 @@ class Schema(j.baseclasses.object):
         else:
             raise j.exceptions.Base("cannot find type for:%s" % txt)
 
-    def _schema_from_text(self, text, package=None):
+    def _schema_from_text(self, text):
         """
         get schema object from schema text
         """
@@ -153,108 +97,16 @@ class Schema(j.baseclasses.object):
 
         if text.count("@url") > 1:
             raise j.exceptions.Input("there should only be 1 url in the schema", data=text)
+        if text.count("@url") == 0 and not self.url:
+            raise j.exceptions.Input("url not specified", data=text)
 
-        self.text = j.core.text.strip(text)
+        text = j.core.text.strip(text)
 
         systemprops = {}
-        self.properties = []
-        # self._systemprops = systemprops
 
-        def process(line):
-            def _getdefault(txt):
-                if '"' in txt or "'" in txt:
-                    txt = txt.strip().strip('"').strip("'").strip()
-                if txt.strip() == "":
-                    return None
-                txt = txt.strip()
-                return txt
-
-            line_original = copy(line)
-            propname, line = line.split("=", 1)
-            propname = propname.strip()
-            if ":" in propname:
-                self._error_raise(
-                    "Aliases no longer supported in names, remove  ':' in name '%s'" % propname, schema=text
-                )
-            line = line.strip()
-
-            if "!" in line:
-                line, pointer_type = line.split("!", 1)
-                pointer_type = pointer_type.strip()
-                pointer_type = j.data.schema._urlclean(pointer_type, package=package)
-                line = line.strip()
-            else:
-                pointer_type = None
-
-            if "#" in line:
-                line, comment = line.split("#", 1)
-                line = line.strip()
-                comment = comment.strip()
-            else:
-                comment = ""
-
-            p = SchemaProperty()
-
-            name = propname + ""  # make sure there is copy
-            if name.endswith("***"):
-                name = name[:-3]
-                p.index_text = True
-            if name.endswith("**"):
-                name = name[:-2]
-                p.index = True
-            if name.endswith("*"):
-                raise j.exceptions.Input("key based indexing (*) for now not supported use **", data=text)
-                name = name[:-1]
-                p.index_key = True
-            if name.startswith("&"):
-                name = name[1:]
-                p.unique = True
-                # everything which is unique also needs to be indexed
-                p.index_key = True
-
-            if name in ["id"]:
-                self._error_raise("do not use 'id' in your schema, is reserved for system.", data=text)
-            elif name in ["name"]:
-                p.unique = True
-                # everything which is unique also needs to be indexed
-                p.index_key = True
-
-            if "(" in line:
-                line_proptype = line.split("(")[1].split(")")[0].strip().lower()  # in between the ()
-                self._log_debug("line:%s; lineproptype:'%s'" % (line_original, line_proptype))
-                line_wo_proptype = line.split("(")[0].strip()  # before the (
-
-                if pointer_type:
-                    pointer_type = j.data.schema._urlclean(pointer_type, package=self.package)
-                    default = pointer_type
-                    # means the default is a link to another object
-                else:
-                    # will make sure we convert the default to the right possible type int,float, string
-                    default = _getdefault(line_wo_proptype)
-
-                jumpscaletype = j.data.types.get(line_proptype, default=default)
-
-                defvalue = None
-
-            else:
-                jumpscaletype = self._proptype_get(line)
-                defvalue = None
-
-            jumpscaletype._jsx_location
-
-            p.name = name
-            if defvalue:
-                p._default = defvalue
-            p.comment = comment
-            p.jumpscaletype = jumpscaletype
-
-            return p
-
-        nr = 0
         for line in text.split("\n"):
             line = line.strip()
             self._log_debug("L:%s" % line)
-            nr += 1
             if line.strip() == "":
                 continue
             if line.startswith("@"):
@@ -263,6 +115,8 @@ class Schema(j.baseclasses.object):
                 systemprop_name = line.split("=")[0].strip()[1:]
                 systemprop_val = line.split("=")[1].strip()
                 systemprops[systemprop_name] = systemprop_val.strip('"').strip("'")
+                if systemprop_name == "url":
+                    self.url = j.data.schema._urlclean(systemprops[systemprop_name])
                 continue
             if line.startswith("#"):
                 continue
@@ -271,30 +125,120 @@ class Schema(j.baseclasses.object):
                     "did not find =, need to be there to define field, line=%s\ntext:%s" % (line, text)
                 )
 
-            p = process(line)
-
-            if p.jumpscaletype.NAME is "list":
-                raise j.exceptions.Base("no longer used")
-                # j.shell()
-                # print(p.capnp_schema)
-                # self.lists.append(p)
-            else:
-                self.properties.append(p)
+            p = self._property_get_from_line(line)
 
         for key, val in systemprops.items():
-            if key == "url":
-                if self.url and self.package:
-                    assert self.url == j.data.schema._urlclean(val, package=self.package)
+            if not key == "url":
+                self.systemprops[key] = val
 
-                self.url = j.data.schema._urlclean(val, package=self.package)
+    @property
+    def _meta_url(self):
+        assert self.url
+        return j.data.schema.meta._data_url_get(self.url)
+
+    def _property_get_from_line(self, line):
+        assert self.url
+
+        def _getdefault(txt):
+            if '"' in txt or "'" in txt:
+                txt = txt.strip().strip('"').strip("'").strip()
+            if txt.strip() == "":
+                return None
+            txt = txt.strip()
+            return txt
+
+        assert ":" in line
+        nr, line = line.split(":", 1)
+        nr = int(nr)
+
+        assert "=" in line
+        key, _line = line.split("=", 1)
+        key = key.replace("*", "").replace("&", "").lower().strip()
+
+        line_original = copy(line)
+        propname, line = line.split("=", 1)
+        propname = propname.strip()
+
+        line = line.strip()
+
+        if "!" in line:
+            line, pointer_type = line.split("!", 1)
+            pointer_type = pointer_type.strip()
+            pointer_type = j.data.schema._urlclean(pointer_type)
+            line = line.strip()
+        else:
+            pointer_type = None
+
+        if "#" in line:
+            line, comment = line.split("#", 1)
+            line = line.strip()
+            comment = comment.strip()
+        else:
+            comment = ""
+
+        p = SchemaProperty(nr=nr)
+
+        name = propname + ""  # make sure there is copy
+        if name.endswith("***"):
+            name = name[:-3]
+            p.index_text = True
+        if name.endswith("**"):
+            name = name[:-2]
+            p.index = True
+        if name.endswith("*"):
+            raise j.exceptions.Input("key based indexing (*) for now not supported use **", data=line)
+            # name = name[:-1]
+            # p.index_key = True
+        if name.startswith("&"):
+            name = name[1:]
+            p.unique = True
+            p.index = True
+            # everything which is unique also needs to be indexed
+            p.index_key = True
+
+        if name in ["id"]:
+            self._error_raise("do not use 'id' in your schema, is reserved for system\n%s" % line)
+        elif name in ["name"]:
+            p.unique = True
+            # everything which is unique also needs to be indexed
+            p.index_key = True
+
+        if "(" in line:
+            line_proptype = line.split("(")[1].split(")")[0].strip().lower()  # in between the ()
+            # self._log_debug("line:%s; lineproptype:'%s'" % (line_original, line_proptype))
+            line_wo_proptype = line.split("(")[0].strip()  # before the (
+
+            if pointer_type:
+                pointer_type = j.data.schema._urlclean(pointer_type)
+                default = pointer_type
+                # means the default is a link to another object
             else:
-                self.systemprops.__dict__[key] = self.url
+                # will make sure we convert the default to the right possible type int,float, string
+                default = _getdefault(line_wo_proptype)
 
-        nr = 0
-        for s in self.properties:
-            s.nr = nr
-            self.__dict__["property_%s" % s.name] = s
-            nr += 1
+            jumpscaletype = j.data.types.get(line_proptype, default=default)
+
+            defvalue = None
+
+        else:
+            jumpscaletype = self._proptype_get(line)
+            defvalue = None
+
+        jumpscaletype._jsx_location
+
+        p.name = name
+        if defvalue:
+            p._default = defvalue
+        p.comment = comment
+        p.jumpscaletype = jumpscaletype
+        p.nr = nr
+
+        self._children[p.name] = p
+        # self.__dict__["property_%s" % p.name] = p
+
+        assert p.jumpscaletype.NAME is not "list"
+
+        return p
 
     @property
     def _capnp_id(self):
@@ -310,34 +254,48 @@ class Schema(j.baseclasses.object):
 
     @property
     def _capnp_schema_text(self):
-        tpath = "%s/templates/schema.capnp" % self._path
+        tpath = "%s/templates/schema.capnp" % self._dirpath
         # j.shell()
         _capnp_schema_text = j.tools.jinja2.template_render(path=tpath, reload=False, obj=self, objForHash=self._md5)
+        if "@0x" not in _capnp_schema_text:
+            j.shell()
         return _capnp_schema_text
 
-    @property
-    def objclass(self):
-        if self._obj_class is None:
+    def objclass(self, root=True):
+        if root:
+            if self._obj_class_root:
+                return self._obj_class_root
+        else:
+            if self._obj_class_sub:
+                return self._obj_class_sub
 
-            if self._md5 in [None, ""]:
-                raise j.exceptions.Base("md5 cannot be None")
+        if self._md5 in [None, ""]:
+            raise j.exceptions.Base("md5 cannot be None")
 
-            for prop in self.properties:
-                self._log_debug("prop for obj gen: %s:%s" % (prop, prop.js_typelocation))
+        tpath = "%s/templates/JSXObject2.py" % self._dirpath
 
-            tpath = "%s/templates/JSXObject2.py" % self._path
+        # lets do some tests to see if it will render well, jinja doesn't show errors propertly
+        for prop in self.properties:
+            # self._log_debug("prop for obj gen: %s:%s" % (prop, prop.js_typelocation))
+            prop.capnp_schema
+            prop.default_as_python_code
+            prop.js_typelocation
 
-            # lets do some tests to see if it will render well, jinja doesn't show errors propertly
-            for prop in self.properties:
-                prop.capnp_schema
-                prop.default_as_python_code
-                prop.js_typelocation
+        cl = j.tools.jinja2.code_python_render(
+            name="schema_%s_%s" % (self.key, root),
+            obj_key="JSXObject2",
+            path=tpath,
+            obj=self,
+            objForHash=self._md5 + "%s" % root,
+            root=root,
+        )
 
-            self._obj_class = j.tools.jinja2.code_python_render(
-                name="schema_%s" % self.key, obj_key="JSXObject2", path=tpath, obj=self, objForHash=self._md5
-            )
+        if root:
+            self._obj_class_root = cl
+        else:
+            self._obj_class_sub = cl
 
-        return self._obj_class
+        return cl
 
     def index_needed(self):
         """
@@ -361,7 +319,7 @@ class Schema(j.baseclasses.object):
             #     index_key = True
         return (index_key, index_sql, index_text)
 
-    def new(self, capnpdata=None, serializeddata=None, datadict=None, bcdb=None):
+    def new(self, capnpdata=None, serializeddata=None, datadict=None, model=None, parent=None):
         """
         new schema_object using data and capnpbin
 
@@ -374,29 +332,25 @@ class Schema(j.baseclasses.object):
         """
 
         # self._log_debug("LOADS:%s:%s" % (versionnr, obj_id))
-
-        if bcdb:
-            model = bcdb.model_get(url=self.url)
-            # here the model retrieved will be linked to a schema with the same url
-            # but can be a different md5
+        if parent:
+            root = False
         else:
-            model = None
+            root = True
 
         if serializeddata:
             assert isinstance(serializeddata, bytes)
-            obj = j.data.serializers.jsxdata.loads(serializeddata, bcdb=bcdb)
+            # schema does not have to be passed because the serialized data should have right md5 inside
+            obj = j.data.serializers.jsxdata.loads(serializeddata, model=model, parent=parent)
         else:
-            if capnpdata and isinstance(capnpdata, bytes):
-                obj = self.objclass(schema=self, capnpdata=capnpdata, model=model)
-            elif datadict and datadict != {}:
-                obj = self.objclass(schema=self, datadict=datadict, model=model)
-            elif capnpdata is None and serializeddata is None and datadict == None:
-                obj = self.objclass(schema=self, model=model)
-            else:
-                raise j.exceptions.Base("wrong arguments to new on schema")
 
-        if model is not None:
-            model._triggers_call(obj=obj, action="new")
+            if root:
+                obj = self.objclass(root)(schema=self, capnpdata=capnpdata, datadict=datadict, model=model)
+            else:
+                assert model == None
+                obj = self.objclass(root)(schema=self, capnpdata=capnpdata, datadict=datadict, parent=parent)
+
+            if model:
+                model._triggers_call(obj=obj, action="new")
 
         return obj
 
@@ -418,6 +372,7 @@ class Schema(j.baseclasses.object):
         list of the properties which are used for indexing in sql db (sqlite)
         :return:
         """
+        # IS TOO SLOW AND WE CREATE MANY TIMES THESE OBJEXTS
         res = []
         for prop in self.properties:
             if prop.index:
@@ -436,17 +391,17 @@ class Schema(j.baseclasses.object):
                     res.append(sprop)
         return res
 
-    @property
-    def properties_index_keys(self):
-        """
-        list of the properties which are used for indexing with keys
-        :return:
-        """
-        res = []
-        for prop in self.properties:
-            if prop.index_key:
-                res.append(prop)
-        return res
+    # @property
+    # def properties_index_keys(self):
+    #     """
+    #     list of the properties which are used for indexing with keys
+    #     :return:
+    #     """
+    #     res = []
+    #     for prop in self.properties:
+    #         if prop.index_key:
+    #             res.append(prop)
+    #     return res
 
     @property
     def properties_index_text(self):
@@ -478,15 +433,14 @@ class Schema(j.baseclasses.object):
         lists all the property names
         :return:
         """
-        res = [item.name for item in self.properties]
-        return res
+        return list(self._children.keys())
 
     @property
     def _json(self):
         out = "{"
         out += '"url":"%s",' % self.url
         for item in self.propertynames:
-            prop = self.__getattribute__("property_%s" % item)
+            prop = self.props[item]
             out += '"%s":"%s",' % (str(prop.name), str(prop.jumpscaletype.NAME))
         out = out.rstrip(",")
         out += "}"

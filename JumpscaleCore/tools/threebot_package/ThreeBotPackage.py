@@ -1,61 +1,15 @@
 import sys
-
+from Jumpscale.tools.threegit.ThreeGit import load_wiki
 from Jumpscale import j
 
-JSConfigBase = j.baseclasses.object_config
+from .ThreeBotPackageBase import ThreeBotPackageBase
 
 
-class ThreeBotPackage(JSConfigBase):
-
-    _SCHEMATEXT = """
-        @url = jumpscale.threebot.package.1
-        name** = "main"
-        giturl = "" (S)  #if empty then local
-        branch = "" (S)
-        path = ""
-        status = "init,config,installed,disabled,error" (E)
-        source = (O) !jumpscale.threebot.package.source.1
-        actor = (O) !jumpscale.threebot.package.actor.1
-        bcdbs = (LO) !jumpscale.threebot.package.bcdb.1
-
-
-        @url = jumpscale.threebot.package.source.1
-        name = ""
-        threebot = ""
-        description = ""
-        version = "" (S)
-
-        @url = jumpscale.threebot.package.actor.1
-        namespace = ""
-
-        @url = jumpscale.threebot.package.bcdb.1
-        namespace = ""
-        type = "zdb,sqlite,redis" (E)
-        instance = "default"
-
-        """
-
-    def _init(self, **kwargs):
-        self._init_ = False
-        self._bcdb_ = None  # cannot use self._bcdb already used
-        if self.status == "init":
-            self.config_load()
-        self.running = False
-        if self.giturl and not self.branch:
-            self.branch = "master"
-
-        # should not be part of our DB object
+class ThreeBotPackage(ThreeBotPackageBase):
+    def _init_actor(self, **kwargs):
+        self._changes = []
         self._actors = None
-        self._models = None
-        self._wikis = None
         self._chatflows = None
-
-        # self.chat_names = []
-        # self.wiki_names = []
-        # self.model_urls = []
-
-        # load current models
-        self.models
 
     @property
     def threebot_server(self):
@@ -63,124 +17,98 @@ class ThreeBotPackage(JSConfigBase):
 
     @property
     def gedis_server(self):
-        return j.threebot.servers.gedis
+        return j.servers.gedis.threebot
 
     @property
     def openresty(self):
         return j.threebot.servers.web
 
-    def _model_get_fields_schema(self, model):
-        lines = []
-        model_prefix = f"{self.source.threebot}.{self.source.name}"
-
-        for line in model.schema.text.splitlines():
-            line = line.strip().lower()
-            if line.startswith("@url"):
-                continue
-
-            try:
-                model_url = line[line.index("!") + 1 :].split("#")[0]
-                for prefix in ["jumpscale", "zerobot", "tfgrid", "threefold"]:
-                    if model_url.startswith(prefix):
-                        break
-                else:
-                    old_model_url = model_url
-                    model_url = f"{model_prefix}.{model_url}"
-                    line = line.replace(old_model_url, model_url)
-            except ValueError:
-                # ! is not in line
-                pass
-
-            lines.append(line)
-
-        return "\n        ".join(lines)
-
     def load(self):
-        if not "bcdb" in j.threebot.__dict__:
-            # means we are not in a threebot server, should not allow the following to happen
-            raise j.exceptions.Base("cannot use threebot package data model from process out of threebot")
-
-        if self._init_ == False:
-
-            # Parent root directory for packages needed to be in sys.path
-            # in order to be able to import file properly inside packages
-            packages_root = j.sal.fs.getParent(self.path)
-            if not packages_root in sys.path:
-                sys.path.append(packages_root)
-
-            self._path_package = "%s/package.py" % (self.path)
-
-            if not j.sal.fs.exists(self._path_package):
-                raise j.exceptions.Input(
-                    "cannot find package.py in the package directory", data={"path": self._path_package}
-                )
-
-            klass = j.tools.codeloader.load(obj_key="Package", path=self._path_package, reload=False)
-            self._package_author = klass(package=self)
-
-            if j.sal.fs.exists(self.path + "/html"):
-                self._web_load("html")
-            elif j.sal.fs.exists(self.path + "/frontend"):
-                self._web_load("frontend")
-
-            # if j.sal.fs.exists(self.path + "/bottle"):
-            #     # load webserver
-            #     j.shell()
-
-            def load_wiki(wiki_name=None, wiki_path=None):
-                """we cannot use name parameter with myjobs.schedule, it has a name parameter itself"""
-                wiki = j.tools.markdowndocs.load(name=wiki_name, path=wiki_path, pull=False)
-                wiki.write()
-
-            if self._wikis is None:
-                self._wikis = j.baseclasses.dict()
-
-            path = self.path + "/wiki"
-            if j.sal.fs.exists(path):
-                j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=path)
-                self._wikis[self.name] = path
-
+        """
+        SHOULD ONLY LOAD THE PACKAGE FILE, NOTHING MORE
+        :return:
+        """
+        if not self._init_:
+            path = self._changed("package.py")
+            if path:
+                klass, changed = j.tools.codeloader.load(obj_key="Package", path=path, reload=False)
+                self._package_author = klass(package=self)
         self._init_ = True
 
-    def actors_reload(self, reset=False):
-        def actors_crud_generate():
-            for model_url in self.model_urls:
-                found = True
-                # Exclude bcdb meta data models
-                model = self.bcdb.model_get(url=model_url, package=self)
-                if model.schema.url.startswith("jumpscale.bcdb."):
-                    continue
-                assert model_url.startswith(self.name)
+    def _changed(self, path, die=True, reset=False):
+        if not path.startswith("/"):
+            path = j.sal.fs.joinPaths(self.path, path)
+        if not j.sal.fs.exists(path):
+            if die:
+                raise j.exceptions.Input("could not find:%s" % path)
+            else:
+                return None
+        if j.sal.fs.isDir(path):
+            md5 = j.sal.fs.getFolderMD5sum(path, ignore_empty_files=True)
+        elif j.sal.fs.isFile(path):
+            md5 = j.sal.fs.md5sum(path)
+        else:
+            raise j.exceptions.Input("could not check change only file or dir supported:%s" % path)
+        if md5 not in self._changes or reset:
+            self._changes.append(md5)
+            return path
+        return None
 
-                shorturl = model_url[len(self.name) + 1 :].replace(".", "_")
-                dest = self.path + "/actors/" + shorturl + "_model.py"
-                # for now generate all the time TODO: change later
-                if True or not j.sal.fs.exists(dest):
-                    j.tools.jinja2.file_render(
-                        self._dirpath + "/templates/ThreebotModelCrudActorTemplate.py",
-                        dest=dest,
-                        model=model,
-                        fields_schema=self._model_get_fields_schema(model),
-                        shorturl=shorturl,
-                    )
+    def reload(self, reset=False):
 
-        if self._actors is None or reset:
-            self._actors = j.baseclasses.dict()
-            package_toml = j.data.serializers.toml.load(f"{self.path}/package.toml")
-            if not ("disable_crud" in package_toml and package_toml["source"]["disable_crud"]):
-                actors_crud_generate()  # will generate the actors for the model
+        self.load()
 
-            path = self.path + "/actors"
-            if j.sal.fs.exists(path):
+        # Parent root directory for packages needed to be in sys.path
+        # in order to be able to import file properly inside packages
 
-                for fpath in j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py", followSymlinks=True):
-                    try:
-                        cl = j.tools.codeloader.load(obj_key=None, path=fpath, reload=False, md5=None)
-                    except Exception as e:
-                        errormsg = "****ERROR HAPPENED IN LOADING ACTOR: %s\n%s" % (fpath, e)
-                        self._log_error(errormsg)
-                        print(errormsg)
-                        raise e
+        path = self._changed("html", die=False)
+        if path:
+            self._web_load("html")
+
+        path = self._changed("frontend", die=False)
+        if path:
+            self._web_load("frontend")
+
+        # if j.sal.fs.exists(self.path + "/bottle"):
+        #     # load webserver
+        #     j.shell()
+
+        self.actors_load()
+        self.chatflows_load()
+        self.wiki_load(reset=reset)
+
+        if hasattr(j.threebot, "servers"):
+            self.openresty.reload()
+
+    def wiki_load(self, reset=False):
+        self.load()
+
+        if self._wikis is None:
+            self._wikis = j.baseclasses.dict()
+
+        wiki_path = j.sal.fs.joinPaths(self.path, "wiki")
+        j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=wiki_path, reset=reset)
+        self._wikis[self.name] = wiki_path
+
+    def actors_load(self):
+
+        self.load()
+        self.models
+
+        path = self._changed("actors", die=False)
+        if path:
+            if self._actors is None:
+                self._actors = j.baseclasses.dict()
+            for fpath in j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py", followSymlinks=True):
+                # TODO: why do we use this try/except construct?
+                try:
+                    cl, changed = j.tools.codeloader.load(obj_key=None, path=fpath, reload=False, md5=None)
+                except Exception as e:
+                    errormsg = "****ERROR HAPPENED IN LOADING ACTOR: %s\n%s" % (fpath, e)
+                    self._log_error(errormsg)
+                    print(errormsg)
+                    raise e
+                if changed:
                     name = j.tools.codeloader._basename(fpath).lower()
                     try:
                         self._actors[name] = cl(package=self)
@@ -189,29 +117,91 @@ class ThreeBotPackage(JSConfigBase):
                         self._log_error(errormsg)
                         print(errormsg)
                         raise e
-                    # print(f"adding actor {name} {fpath} {self.name}")
+                        # print(f"adding actor {name} {fpath} {self.name}")
                     self.gedis_server.actor_add(name=name, path=fpath, package=self)
-        return self._actors
+
+    def actors_remove(self):
+        self.load()
+        # Get the full path for actors in the package
+        path = "actors"
+        if not path.startswith("/"):
+            path = j.sal.fs.joinPaths(self.path, path)
+        if not j.sal.fs.exists(path):
+            raise j.exceptions.Input("could not find:%s" % path)
+
+        # remove the actors
+        if path:
+            if self._actors is None:
+                self._actors = j.baseclasses.dict()
+            for fpath in j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py", followSymlinks=True):
+                # unload the hashed actors
+                try:
+                    j.tools.codeloader.unload(obj_key=None, path=fpath, reload=False, md5=None)
+                except Exception as e:
+                    errormsg = "****ERROR HAPPENED IN unloading ACTOR: %s\n%s" % (fpath, e)
+                    self._log_error(errormsg)
+                    print(errormsg)
+                    raise e
+
+                name = j.tools.codeloader._basename(fpath).lower()
+                self.gedis_server.actors_remove(name=name, package=self)
 
     @property
     def actors(self):
+        self.models  # always need to have the models
         if self._actors is None:
-            self._actors = self.actors_reload()
+            self.load()
+            self.reload()
+            # self.actors_load()
         return self._actors
 
     @property
+    def bcdb(self):
+        if not self._bcdb_:
+            ##GET THE BCDB, ONLY 1 support for now
+            if len(self.bcdbs) == 1:
+                config = self.bcdbs[0]
+                if not config.name:
+                    config.name = self.name
+                self._bcdb_ = j.data.bcdb.get_for_threebot(
+                    name=config.name, namespace=config.namespace, ttype=config.type
+                )
+            elif len(self.bcdbs) == 0:
+                self._bcdb_ = j.data.bcdb.system
+            else:
+                raise j.exceptions.Input("only support 1 BCDB per package for now")
+        return self._bcdb_
+
     def actor_names(self):
-        return list(self.actors.keys())
+        res = []
+        path = self.path + "actors"
+        if j.sal.fs.exists(path):
+            for fpath in j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py", followSymlinks=True):
+                res.append(j.sal.fs.getBaseName(fpath)[:-3])
+        return res
+
+    @property
+    def model_urls(self):
+        return [item.schema.url for item in self.models.values()]
+
+    @property
+    def chat_names(self):
+        return [item for item in self.chatflows]
+
+    @property
+    def wiki_names(self):
+        return [item for item in self.wikis.keys()]
 
     @property
     def models(self):
         if self._models is None:
+            self.load()
             self._models = j.baseclasses.dict()
-            path = self.path + "/models"
-            if j.sal.fs.exists(path):
-                model_urls = self.bcdb.models_add(path, package=self)
+            path = self._changed("models", die=False)
+            if path:
+                model_urls = self.bcdb.models_add(path)
                 for model_url in model_urls:
-                    m = self.bcdb.model_get(url=model_url, package=self)
+                    m = self.bcdb.model_get(url=model_url)
                     if model_url.startswith(self.name):
                         model_url2 = model_url[len(self.name) + 1 :]
                     else:
@@ -225,50 +215,33 @@ class ThreeBotPackage(JSConfigBase):
         return [item.schema.url for item in self.models.values()]
 
     @property
-    def chatflows(self):
+    def chat_names(self):
         if self._chatflows is None:
-            self._chatflows = j.baseclasses.dict()
-            path = self.path + "/chatflows"
-            if j.sal.fs.exists(path):
-                self._chatflows = self.gedis_server.chatbot.chatflows_load(path)
+            self.load()
+            self.chatflows_load()
         return self._chatflows
 
-    @property
-    def chat_names(self):
-        return [item for item in self.chatflows]
+    def chatflows_load(self):
+        self._chatflows = j.baseclasses.dict()
+        self.load()
+        path = self._changed("chatflows", die=False)
+        if path:
+            self._chatflows = self.gedis_server.chatbot.chatflows_load(path)
 
     @property
     def wikis(self):
         # lazy-loading of wikis would take time, user will wait for too long
         # and need to refresh to see loaded wikis
+        self.wiki_load()
         return self._wikis
 
-    @property
-    def wiki_names(self):
-        return [item for item in self.wikis.keys()]
-
-    @property
-    def bcdb(self):
-        if not self._bcdb_:
-            ##GET THE BCDB, ONLY 1 support for now
-            if len(self.bcdbs) == 1:
-                config = self.bcdbs[0]
-                assert config.instance == "default"  # for now we don't support anything else
-                self._bcdb_ = j.data.bcdb.get_for_threebot(
-                    namespace=config.namespace, ttype=config.type, instance=config.instance
-                )
-            if len(self.bcdbs) == 0:
-                self._bcdb_ = j.data.bcdb.system
-
-        return self._bcdb_
-
     def bcdb_model_get(self, url):
-        return self.bcdb.model_get(url=url, package=self)
+        return self.bcdb.model_get(url=url)
 
     def _web_load(self, app_type="frontend"):
         for port in (443, 80):
             website = self.openresty.get_from_port(port)
-            locations = website.locations.get(f"{self.name}_locations")
+            locations = website.locations.get(f"{self.name}_locations_{port}")
             if app_type == "frontend":
                 website_location = locations.locations_spa.new()
             elif app_type == "html":
@@ -283,11 +256,26 @@ class ThreeBotPackage(JSConfigBase):
             locations.configure()
             website.configure()
 
+    def _web_unload(self, app_type="frontend"):
+        for port in (443, 80):
+            website = self.openresty.get_from_port(port)
+            locations = website.locations.get(f"{self.name}_locations_{port}")
+            if app_type == "frontend":
+                location = locations.get_locations_spa(self.name)
+                conf_location = locations.path_cfg_get(location.name)
+            elif app_type == "html":
+                location = locations.get_location_static(self.name)
+                conf_location = locations.path_cfg_get(location.name)
+
+            if conf_location:
+                j.sal.fs.remove(conf_location)
+
     def config_load(self):
         self._log_info("load package.toml config", data=self)
         if self.giturl:
             self.path = j.clients.git.getContentPathFromURLorPath(self.giturl, branch=self.branch)
         tomlfile = f"{self.path}/package.toml"
+        # print(f"tomfile: {tomlfile}")
         if not j.sal.fs.exists(tomlfile):
             raise j.exceptions.Input(f"cannot find config file in path {tomlfile} for package {self.name}")
         config = j.data.serializers.toml.loads(j.sal.fs.readFile(tomlfile))
@@ -298,20 +286,29 @@ class ThreeBotPackage(JSConfigBase):
             self.save()
 
     def install(self):
+        self._log_debug("install:%s" % self)
         self.load()
         if self.status != "config":  # make sure we load the config is not that state yet
             self.config_load()
         self._package_author.prepare()
+        self.wiki_load(reset=True)
         if self.status != "installed":
             self.status = "installed"
             self.save()
 
     def start(self):
+        self.load()
+        if self.status == "toinstall":
+            self.install()
         if self.status != "installed":
             self.install()
-        self.load()
-        # should be merged into load method later on
+        self.actors_load()
         self._package_author.start()
+        # self.wiki_load()  #when wiki is fixed we can do this & should do this
+        if j.sal.fs.exists(f"{self.path}/frontend"):
+            self._web_load(app_type="frontend")
+        elif j.sal.fs.exists(f"{self.path}/html"):
+            self._web_load(app_type="html")
         self.running = True
         self.save()
 
@@ -322,22 +319,36 @@ class ThreeBotPackage(JSConfigBase):
         self.save()
 
     def uninstall(self):
+        self.load()
         self.stop()
+        self.load()
+        # remove configuration for static and dynamic websites
+        if j.sal.fs.exists(f"{self.path}/frontend"):
+            self._web_unload(app_type="frontend")
+        elif j.sal.fs.exists(f"{self.path}/html"):
+            self._web_unload(app_type="html")
+        # reload openresty to read the new configuration.
+        self.openresty.reload()
+        self.actors_remove()
+
         if self.status != "config":
             self.status = "config"
         self._package_author.uninstall()
         self.save()
 
     def disable(self):
+        self.load()
         self.stop()
         if self.status != "disabled":
             self.status = "disabled"
         self.save()
 
     def enable(self):
+        self.load()
         if self.status != "init":
             self.status = "init"
         self.install()
 
     def prepare(self):
+        self.load()
         self._package_author.prepare()

@@ -1,23 +1,3 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 
 
@@ -34,14 +14,16 @@ def main(self):
             @url = jumpscale.schema.test3.a
             cmd = (O) !jumpscale.schema.test3.b
             x = "1"
-    
+
             @url = jumpscale.schema.test3.b
             name = ""
             comment = ""
             schemacode = ""
             """
 
-        j.data.schema.get_from_text(schema0)
+        s = j.data.schema.get_from_text(schema0)
+        assert s.props.cmd.has_jsxobject
+
         so = j.data.schema.get_from_url(url="jumpscale.schema.test3.a")
         so2 = j.data.schema.get_from_url(url="jumpscale.schema.test3.b")
         o = so.new()
@@ -49,7 +31,7 @@ def main(self):
         assert o._changed
         assert o.x == "2"
 
-        assert o.cmd._changed == False
+        assert o.cmd._changed is False
         o.cmd.name = "a"
         assert o.cmd._changed
         assert o.cmd.name == "a"
@@ -65,10 +47,11 @@ def main(self):
 
         o2 = j.data.serializers.jsxdata.loads(data)
 
-        print(o2)  # TODO: does not serialize well
+        print(o2)
         assert o2.cmd.name == "a"
         o3 = so.new(serializeddata=data)
         assert o3.cmd.name == "a"
+
         # CLEAN STATE
 
     # j.data.schema.remove_from_text(schema0)
@@ -78,14 +61,16 @@ def main(self):
         schema1 = """
             @url = jumpscale.schema.test3.c
             cmds = (LO) !jumpscale.schema.test3.b
-    
+
             @url = jumpscale.schema.test3.b
             name = ""
             comment = ""
             schemacode = ""
             """
 
-        j.data.schema.get_from_text(schema1)
+        s = j.data.schema.get_from_text(schema1)
+        assert s.props.cmds.has_jsxobject
+
         so = j.data.schema.get_from_url(url="jumpscale.schema.test3.c")
         so2 = j.data.schema.get_from_url(url="jumpscale.schema.test3.b")
         o = so.new()
@@ -93,11 +78,15 @@ def main(self):
         cmd = o.cmds.new()
         cmd.name = "a"
 
+        assert o._changed
+
         assert o.cmds[0].name == "a"
 
         assert o.cmds[0]._ddict == {"name": "a", "comment": "", "schemacode": ""}
 
         assert len(o.cmds) == 1
+
+        assert o._changed
 
         data = o._data
 
@@ -152,7 +141,7 @@ def main(self):
         @url = jumpscale.schema.test3.cmdbox
         cmd = (O) !jumpscale.schema.test3.cmd
         cmd2 = (O) !jumpscale.schema.test3.cmd
-        
+
         """
     j.data.schema.get_from_text(schema2)  # just add
     schema_object2 = j.data.schema.get_from_url(url="jumpscale.schema.test3.serverschema")

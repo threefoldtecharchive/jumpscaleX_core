@@ -35,15 +35,16 @@ class JSDict(MutableMapping):
         for item in self._data.values():
             yield item
 
-    def _name_clean(self, name):
-        name = name + ""
-        name = name.replace(".", "_")
-        if self._prefix:
-            name = self._prefix + name
-        return name
+    # def _name_clean(self, name):
+    #     name = name + ""
+    #     name = name.replace(".", "_")
+    #     if self._prefix:
+    #         name = self._prefix + name
+    #     return name
 
     def _add(self, name, value):
-        name = self._name_clean(name)
+        # TODO: we should not use this
+        name = name.replace("__", ".")
         self._data[name] = value
 
     def __iter__(self):
@@ -53,15 +54,19 @@ class JSDict(MutableMapping):
         return len(self._data)
 
     def __getitem__(self, key):
+        key = key.replace("__", ".")
         return self._data[key]
 
     def __delitem__(self, key):
+        key = key.replace("__", ".")
         del self._data[key]
 
     def __setitem__(self, key, value):
+        key = key.replace("__", ".")
         self._data[key] = value
 
     def __getattr__(self, name):
+        name = name.replace("__", ".")
         if name.startswith("_"):
             return self.__getattribute__(name)
         # don't clean here
@@ -71,6 +76,7 @@ class JSDict(MutableMapping):
         return self.__getattribute__(name)
 
     def __setattr__(self, name, value):
+        name = name.replace("__", ".")
         if name.startswith("_"):
             self.__dict__[name] = value
             return
@@ -95,8 +101,6 @@ class JSDict(MutableMapping):
 
         out += "{RESET}"
 
-        print(j.core.tools.text_replace(out))
-
-        return ""
+        return j.core.tools.text_replace(out)
 
     __str__ = __repr__

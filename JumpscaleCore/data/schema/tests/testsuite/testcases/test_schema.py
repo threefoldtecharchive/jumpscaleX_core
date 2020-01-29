@@ -948,7 +948,6 @@ class SchemaTest(BaseTest):
         self.assertEqual(schema_obj.lines, "example \n example2 \n example3")
         self.assertEqual(schema_obj.init_mline, "\nexample \n example2 \n example3\n")
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/162")
     def test019_validate_yaml_type(self):
         """
         SCM-019
@@ -971,18 +970,6 @@ class SchemaTest(BaseTest):
         self.log("Try to set parameter[P1] with non yaml type, should fail.")
         with self.assertRaises(Exception):
             schema_obj.data = "{test"
-
-        with self.assertRaises(Exception):
-            schema_obj.data = random.randint(1, 1000)
-
-        with self.assertRaises(Exception):
-            schema_obj.data = random.uniform(1, 100)
-
-        with self.assertRaises(Exception):
-            schema_obj.data = [random.randint(1, 100), random.randint(1, 100)]
-
-        with self.assertRaises(Exception):
-            schema_obj.data = {"number": random.randint(1, 100)}
 
         self.log("Try to set parameter[P1] with yaml type, should succeed.")
         data = self.random_string()

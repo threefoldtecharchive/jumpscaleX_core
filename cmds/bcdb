@@ -2,11 +2,14 @@
 
 from Jumpscale import *
 
-j.tools.bash.get().profile.locale_check()
+# j.tools.bash.get().profile.locale_check()
 import os
 import click
 
 os.environ["LC_ALL"] = "en_US.UTF-8"
+
+# needs to become master !
+j.data.bcdb._master_set(True)
 
 
 @click.group()
@@ -33,24 +36,21 @@ def delete(name=None, all=False):
 
     if all:
         if j.tools.console.askYesNo("Are you sure you want to destroy all BCDB's"):
-            j.data.bcdb.threebot_stop()
+            # _unlock()
+            try:
+                j.data.bcdb.threebot_stop()
+            except:
+                pass
             j.data.bcdb.destroy_all()
+            j.sal.fs.remove(j.core.tools.text_replace("{DIR_VAR}/codegen"))
+            path_metaschema = j.core.tools.text_replace("{DIR_CFG}/schema_meta.msgpack")
+            if j.sal.fs.exists(path_metaschema):
+                j.sal.fs.remove(path_metaschema)
+
     else:
         if j.tools.console.askYesNo("Are you sure you want to destroy:%s" % name):
+            # _unlock(name)
             do(name)
-
-
-# @click.command()
-# @click.option("--name", default=None, help="specify which bcdb you want to fix, if not specified will use all")
-# def check(name=None):
-#     """
-#     will check and if issues found in index it will rebuild the index
-#     :return:
-#     """
-#     j.application.check()
-#     if not name:
-#         j.shell()
-#     j.shell()
 
 
 @click.command()
@@ -71,13 +71,17 @@ def rebuild(name=None):
     :return:
     """
 
-    j.data.bcdb.threebot_start()
+    j.data.bcdb.threebot_zdb_sonic_start()
 
     if not name:
         for bcdb in j.data.bcdb.instances.values():
+            # load all objects to make sure all models loaded
+            bcdb.get_all()
             bcdb.index_rebuild()
     else:
         bcdb = j.data.bcdb.get(name=name, reset=False)
+        # load all objects to make sure all models loaded
+        bcdb.get_all()
         bcdb.index_rebuild()
 
 

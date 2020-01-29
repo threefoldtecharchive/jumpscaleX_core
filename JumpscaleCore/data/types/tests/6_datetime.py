@@ -27,9 +27,12 @@ def main(self):
             continue
         epoch = tt.clean(line)
         out += "%s -> %s\n" % (line, tt.toString(epoch))
-    out_compare = """
-    11/30 22:50 -> 2019/11/30 22:50:00
-    11/30 -> 2019/11/30 00:00:00
+    import datetime
+
+    current_year = datetime.date.today().year
+    out_compare = f"""
+    11/30 22:50 -> {current_year}/11/30 22:50:00
+    11/30 -> {current_year}/11/30 00:00:00
     1990/11/30 -> 1990/11/30 00:00:00
     1990/11/30 10am:50 -> 1990/11/30 10:50:00
     1990/11/30 10pm:50 -> 1990/11/30 22:50:00
@@ -64,8 +67,8 @@ def main(self):
             continue
         epoch = tt.clean(line)
         out += "%s -> %s\n" % (line, tt.toString(epoch))
-    out_compare = """
-    11/30 -> 2019/11/30
+    out_compare = f"""
+    11/30 -> {current_year}/11/30
     1990/11/30 -> 1990/11/30
     30/11/1990 -> 1990/11/30
     """

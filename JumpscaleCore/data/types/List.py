@@ -8,18 +8,27 @@ from collections.abc import MutableSequence
 
 
 class ListObject(TypeBaseObjClass, MutableSequence):
-    def __init__(self, list_factory_type, values=[], child_type=None, model=None):
+    def __init__(self, list_factory_type, values=None, child_type=None, model=None, parent=None):
         """
 
         :param child_type: is the JSX basetype which is the child of the list, can be None, will be detected when required then
 
         """
         self._list_factory_type = list_factory_type
-        self._inner_list = values
+        self._inner_list = values or []
         self.__changed = False
         self._child_type_ = child_type
         self._current = 0
         self._model = model
+        self._parent = parent
+        current = self
+        while current._parent:
+            current = current._parent
+        self._root = current
+
+    @property
+    def isjsxobject(self):
+        return self._list_factory_type.SUBTYPE.BASETYPE == "JSXOBJ"
 
     @property
     def _changed(self):
@@ -33,14 +42,19 @@ class ListObject(TypeBaseObjClass, MutableSequence):
                     return True
         return False
 
+    def serialize(self):
+        for item in self._inner_list:
+            if isinstance(item, j.data.schema._JSXObjectClass):
+                item.serialize()
+
     @_changed.setter
     def _changed(self, value):
-        assert value == False  # only supported mode
-        # need to make sure the objects (list(jsxobj) or jsxobj need to set their state to changed)
-        for item in self._inner_list:
-            # need to check if underlying jsxobjexts will change their change state
-            if isinstance(item, j.data.schema._JSXObjectClass):
-                item._changed = False
+        if value == False:
+            # need to make sure the objects (list(jsxobj) or jsxobj need to set their state to changed)
+            for item in self._inner_list:
+                # need to check if underlying jsxobjexts will change their change state
+                if isinstance(item, j.data.schema._JSXObjectClass):
+                    item._changed = False
         self.__changed = False
 
     def __len__(self):
@@ -50,7 +64,10 @@ class ListObject(TypeBaseObjClass, MutableSequence):
         return len(self._inner_list)
 
     def __eq__(self, val):
-        val = self._list_factory_type.clean(val, model=self._model)
+        if self.isjsxobject:
+            val = self._list_factory_type.clean(val, model=self._model, parent=self._parent)
+        else:
+            val = self._list_factory_type.clean(val)
         return val._inner_list == self._inner_list
 
     def __delitem__(self, index):
@@ -76,19 +93,11 @@ class ListObject(TypeBaseObjClass, MutableSequence):
         return res
 
     def __iter__(self):
-        self._current = 0
-        return self
-
-    def __next__(self):
-        if self._current + 1 > len(self._inner_list):
-            raise StopIteration
-        else:
-            self._current += 1
-            return self._inner_list[self._current - 1]
+        return iter(self._inner_list)
 
     def insert(self, index, value):
-        if isinstance(value, j.data.schema._JSXObjectClass):
-            self._inner_list.insert(index, self._child_type.clean(value, model=self._model))
+        if self.isjsxobject:
+            self._inner_list.insert(index, self._child_type.clean(value, model=self._model, parent=self._parent))
         else:
             self._inner_list.insert(index, self._child_type.clean(value))
         self.__changed = True
@@ -100,8 +109,8 @@ class ListObject(TypeBaseObjClass, MutableSequence):
             index : location in collections
             value : value that add in collections
         """
-        if isinstance(value, j.data.schema._JSXObjectClass):
-            self._inner_list[index] = self._child_type.clean(value, model=self._model)
+        if self.isjsxobject:
+            self._inner_list[index] = self._child_type.clean(value, model=self._model, parent=self._parent)
         else:
             self._inner_list[index] = self._child_type.clean(value)
         self.__changed = True
@@ -153,8 +162,10 @@ class ListObject(TypeBaseObjClass, MutableSequence):
         """
         return new subitem, only relevant when there are pointer_types used
         """
-
-        data2 = self._child_type.clean(data, model=self._model)
+        if self.isjsxobject:
+            data2 = self._child_type.clean(data, model=self._model, parent=self._parent)
+        else:
+            data2 = self._child_type.clean(data)
         self.append(data2)
         self.__changed = True
         return data2
@@ -247,18 +258,18 @@ class List(TypeBaseObjFactory):
                     return False
         return True
 
-    def toHR(self, val):
-        val2 = self.clean(val)
+    def toHR(self, val, parent=None):
+        val2 = self.clean(val, parent=parent)
         return val2.pylist(subobj_format="H")
 
-    def toData(self, val=None):
-        val2 = self.clean(val)
+    def toData(self, val=None, parent=None):
+        val2 = self.clean(val, parent=parent)
         if self.SUBTYPE.BASETYPE == "JSXOBJ":
             return [j.data.serializers.jsxdata.dumps(i) for i in val2]
         else:
             return val2._inner_list
 
-    def clean(self, val=None, toml=False, sort=False, unique=False, ttype=None, model=None):
+    def clean(self, val=None, toml=False, sort=False, unique=False, ttype=None, model=None, parent=None):
 
         if isinstance(val, ListObject):
             return val
@@ -283,7 +294,7 @@ class List(TypeBaseObjFactory):
             raise j.exceptions.Input("need list or set as input for clean on list")
 
         if len(val) == 0:
-            return ListObject(self, [], ttype)
+            return ListObject(self, [], ttype, parent=parent)
 
         res = []
         for item in val:
@@ -292,7 +303,7 @@ class List(TypeBaseObjFactory):
             if toml:
                 item = ttype.toml_string_get(item)
             else:
-                item = ttype.clean(item)
+                item = ttype.clean(item, parent=parent)
 
             if unique:
                 if item not in res:
@@ -302,11 +313,11 @@ class List(TypeBaseObjFactory):
         if sort:
             res.sort()
 
-        res = ListObject(self, res, ttype, model=model)
+        res = ListObject(self, res, ttype, model=model, parent=parent)
 
         return res
 
-    def fromString(self, v, ttype=None):
+    def fromString(self, v, ttype=None, parent=None):
         if ttype is None:
             ttype = self.SUBTYPE
         if v is None:
@@ -315,15 +326,15 @@ class List(TypeBaseObjFactory):
             ttype = ttype.NAME
         v = v.replace('"', "'")
         v = j.core.text.getList(v, ttype)
-        v = self.clean(v)
+        v = self.clean(v, parent=parent)
         return v
 
-    def toString(self, val, clean=True, sort=False, unique=False):
+    def toString(self, val, clean=True, sort=False, unique=False, parent=None):
         """
         will translate to what we need in toml
         """
         if clean:
-            val = self.clean(val, toml=False, sort=sort, unique=unique)
+            val = self.clean(val, toml=False, sort=sort, unique=unique, parent=parent)
             val = val._inner_list
         if len(str(val)) > 30:
             # multiline
@@ -338,11 +349,11 @@ class List(TypeBaseObjFactory):
             out = out.strip().strip(",").strip()
         return out
 
-    def python_code_get(self, value, sort=False):
+    def python_code_get(self, value, sort=False, parent=None):
         """
         produce the python code which represents this value
         """
-        value = self.clean(value, toml=False, sort=sort)
+        value = self.clean(value, toml=False, sort=sort, parent=parent)
         out = "[ "
         for item in value:
             out += "%s, " % self.SUBTYPE.python_code_get(item)
@@ -350,12 +361,12 @@ class List(TypeBaseObjFactory):
         out += " ]"
         return out
 
-    def toml_string_get(self, val, key="", clean=True, sort=True):
+    def toml_string_get(self, val, key="", clean=True, sort=True, parent=None):
         """
         will translate to what we need in toml
         """
         if clean:
-            val = self.clean(val, toml=True, sort=sort)
+            val = self.clean(val, toml=True, sort=sort, parent=parent)
         if key == "":
             raise NotImplemented()
         else:

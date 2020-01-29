@@ -36,7 +36,7 @@ class ZDBServers(JSConfigs):
 
         start a test instance with self.adminsecret 123456
         will use port 9901
-        and name = test
+        and name = test_instance
 
         production is using other ports and other secret
 
@@ -44,7 +44,7 @@ class ZDBServers(JSConfigs):
         """
         if not namespaces:
             namespaces = []
-        zdb = self.get(name="test", port=9901, autosave=True)
+        zdb = self.get(name="test_instance", port=9901, autosave=True)
 
         if destroydata:
             zdb.destroy()
@@ -69,7 +69,7 @@ class ZDBServers(JSConfigs):
         return zdb
 
     def test_instance_stop(self, destroy=True):
-        zdb = self.get(name="test", port=9901)
+        zdb = self.get(name="test_instance", port=9901)
         zdb.stop()
         if destroy:
             zdb.destroy()
@@ -83,9 +83,9 @@ class ZDBServers(JSConfigs):
 
         if build:
             self.build()
-        zdb = self.test_instance_start(namespaces=["test"], restart=True, destroydata=True)
+        zdb = self.test_instance_start(namespaces=["test_instance"], restart=True, destroydata=True)
 
-        cl = zdb.client_get(name="test")
+        cl = zdb.client_get("test_instance", nsname="test_instance")
 
         assert cl.ping()
 

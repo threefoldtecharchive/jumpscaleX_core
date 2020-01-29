@@ -2,7 +2,6 @@ import os
 import socket
 import inspect
 import sys
-from importlib import util
 
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
@@ -45,9 +44,6 @@ def profileStop(pr):
 
 # pr=profileStart()
 
-spec = util.spec_from_file_location("IT", "/%s/core/InstallTools.py" % os.path.dirname(__file__))
-
-
 from .core.InstallTools import BaseInstaller
 from .core.InstallTools import JumpscaleInstaller
 from .core.InstallTools import Tools
@@ -64,7 +60,7 @@ class Core:
     def __init__(self, j):
         self._dir_home = None
         self._dir_jumpscale = None
-        self._isSandbox = None
+        self._sandbox_check = None
         self.db = MyEnv.db
 
     def db_reset(self, j):
@@ -79,13 +75,13 @@ class Core:
         return self._dir_jumpscale
 
     @property
-    def isSandbox(self):
-        if self._isSandbox is None:
+    def sandbox_check(self):
+        if self._sandbox_check is None:
             if self.dir_jumpscale.startswith("/sandbox"):
-                self._isSandbox = True
+                self._sandbox_check = True
             else:
-                self._isSandbox = False
-        return self._isSandbox
+                self._sandbox_check = False
+        return self._sandbox_check
 
     def is_gevent_monkey_patched(self):
         try:
@@ -186,7 +182,7 @@ class Jumpscale:
             embed(globals_, locals_, configure=ptconfig, history_filename=history_filename)
 
     def shelli(self, loc=True, name=None, stack_depth=2):
-        if self._shell == None:
+        if self._shell is None:
             from IPython.terminal.embed import InteractiveShellEmbed
 
             if name is not "":
@@ -224,6 +220,8 @@ class Jumpscale:
 
                 debugger = pdb.Pdb()
             debugger.set_trace(sys._getframe().f_back)
+
+    debug2 = debug  # this is to be able to do a search replace & remove it when required
 
 
 j = Jumpscale()
@@ -291,6 +289,14 @@ j.exceptions = j.errorhandler.exceptions
 j.core.exceptions = j.exceptions
 
 
+class ThreeBotRoot:
+    pass
+
+
+j.threebot = ThreeBotRoot()
+j.threebot.active = False
+
+
 # THIS SHOULD BE THE END OF OUR CORE, EVERYTHING AFTER THIS SHOULD BE LOADED DYNAMICALLY
 
 j.core.application._lib_generation_path = j.core.tools.text_replace("{DIR_BASE}/lib/jumpscale/jumpscale_generated.py")
@@ -313,6 +319,11 @@ if not os.path.exists(j.core.application._lib_generation_path):
 
 import jumpscale_generated
 
+try:
+    j.tools.alerthandler.setup()
+except:
+    print("could not setup alerthandler")
+
 
 if generated and len(j.core.application.errors_init) > 0:
     print("THERE ARE ERRORS: look in /tmp/jumpscale/ERRORS_report.md")
@@ -324,3 +335,5 @@ if generated and len(j.core.application.errors_init) > 0:
 
 # import time
 # time.sleep(1000)
+
+j.application.log2fs_redis_register("jumpscale")

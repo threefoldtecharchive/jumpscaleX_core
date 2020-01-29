@@ -16,8 +16,7 @@ class TestIConfigManager(BaseTest):
 
     def tearDown(self):
         self.info("Delete test clients")
-        j.clients.tfchain.delete(self.client_one.name)
-        j.clients.tfchain.delete(self.client_two.name)
+        j.clients.tfchain.reset()
 
     def test01_create_new_client(self):
         """

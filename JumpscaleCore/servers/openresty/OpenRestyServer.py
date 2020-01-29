@@ -41,7 +41,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
         j.sal.fs.createDir(self.path_web)
         j.sal.fs.createDir(self.path_cfg_dir)
         # clean old websites config
-        j.sal.fs.remove("%s/servers" % self.path_cfg_dir)
+        self.cleanup()
         self.executor = "tmux"  # only tmux for now
 
         self.install()
@@ -53,24 +53,30 @@ class OpenRestyServer(j.baseclasses.factory_data):
         configtext = j.tools.jinja2.file_render(path=f"{self._dirpath}/templates/nginx.conf", obj=self)
         j.sal.fs.writeFile(self.path_cfg, configtext)
 
-    def get_from_port(self, port, domain=None):
+    def get_from_port(self, port, domain=None, ssl=None):
         """
         will try to get a website listening on port, if it doesn't exist it will create one
-        :param port: port to search for
+        :param port:
         :return: website
+
+        :param port: port to search for
+        :type port: int
+        :param domain: domain, defaults to None
+        :type domain: str, optional
+        :param ssl: set ssl, defaults to None
+        :type ssl: bool, optional
+        :return: a new or an old website instance with the same port
+        :rtype: Website
         """
 
         for website in self.websites.find():
             if website.port == port:
                 return website
-        ssl = None
-        if port == 80:
-            ssl = False
-        elif port == 443:
-            ssl = True
 
         ws = self.websites.get(f"website_{port}", port=port, domain=domain)
-        if ssl != None:
+        if ssl is None:
+            ws.ssl = port == 443
+        else:
             ws.ssl = ssl
 
         return ws
@@ -81,7 +87,6 @@ class OpenRestyServer(j.baseclasses.factory_data):
         :param reset:
         :return:
         """
-
         if reset or self.status not in ["ok", "installed"]:
 
             # get weblib
@@ -111,9 +116,6 @@ class OpenRestyServer(j.baseclasses.factory_data):
             if website.port == 80:
                 listening_80 = website
 
-        if not ssl:
-            return
-
         if not listening_80:
             listening_80 = self.websites.new("listening_80")
             listening_80.port = 80
@@ -139,6 +141,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
                 name="lapis",
                 cmd_start=cmd,
                 path=self.path_cfg_dir,
+                process_name="openresty",
                 process_strings_regex="^nginx",
                 executor=self.executor,
             )
@@ -150,6 +153,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
         kosmos 'j.servers.openresty.default.start(reset=False)'
         :return:
         """
+        self.cleanup()
         self.install(reset=reset)
         self.configure()
         self._letsencrypt_configure()
@@ -187,3 +191,6 @@ class OpenRestyServer(j.baseclasses.factory_data):
         self.configure()
         cmd = "cd  %s;lapis build" % self.path_cfg_dir
         j.sal.process.execute(cmd)
+
+    def cleanup(self):
+        j.sal.fs.remove("%s/servers" % self.path_cfg_dir)

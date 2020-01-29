@@ -4,18 +4,29 @@ from Jumpscale import j
 from .SSHClientBase import SSHClientBase
 import time
 import gevent
-import ssh2.sftp
+
+# import ssh2.sftp
+# from ssh2.session import Session
 
 
 class SSHClient(SSHClientBase):
     def _init2(self, **kwargs):
-        self._logger_prefix = "ssh client: %s:%s(%s)" % (self.addr_variable, self.port, self.login)
+
+        self._logger_prefix = "ssh client: %s:%s(%s)" % (self.addr, self.port, self.login)
         self._logger_enable()
+
+        self.__ssh2 = None
 
         if self.passwd == "" and self.sshkey_name == "":
             if j.clients.sshagent.key_default_name:
                 self.sshkey_name = j.clients.sshagent.key_default_name
                 self.save()
+
+    # def _ssh2(self):
+    #     if not self.__ssh2:
+    #         self.__ssh2.Session()
+    #         self.__ssh2.direct_tcpip(self.add, self.port)
+    #     return self.__ssh2
 
     @property
     def _client(self):
@@ -34,30 +45,19 @@ class SSHClient(SSHClientBase):
 
             passwd = None
 
-            from pssh.clients import ParallelSSHClient as PSSHCLIENT
-
-            # from pssh.clients import SSHClient as PSSHCLIENT
-
-            # SSHClient = functools.partial(PSSHClient, retry_delay=1)
-
-            # if self.stdout:
-            #     from pssh.utils import enable_host_logger
-            #
-            #     enable_host_logger()
+            from pssh.clients import SSHClient
 
             self._log_debug(
-                "ssh connection: %s@%s:%s (passwd:%s,key:%s)"
-                % (self.login, self.addr_variable, self.port_variable, passwd, pkey)
+                "ssh connection: %s@%s:%s (passwd:%s,key:%s)" % (self.login, self.addr, self.port, passwd, pkey)
             )
-            hosts = []
-            hosts.append(self.addr_variable)
+
             try:
-                self._client_ = PSSHCLIENT(
-                    hosts,
+                self._client_ = SSHClient(
+                    host=self.addr,
                     user=self.login,
                     password=passwd,
-                    port=self.port_variable,
-                    proxy_pkey=pkey,
+                    port=self.port,
+                    # proxy_pkey=pkey,
                     num_retries=10,
                     allow_agent=self.allow_agent,
                     timeout=self.timeout,
@@ -67,6 +67,7 @@ class SSHClient(SSHClientBase):
                 if str(e).find("Error connecting to host") != -1:
                     msg = e.args[0] % e.args[1:]
                     raise j.exceptions.Base("PSSH:%s" % msg)
+                raise
 
         return self._client_
 
@@ -76,16 +77,15 @@ class SSHClient(SSHClientBase):
         # channel, _, stdout, stderr, _ = self._client.run_command(cmd, timeout=timeout, use_pty=True)
 
         output = self._client.run_command(cmd)
-        client = output[self.addr_variable]
-        channel = client.channel
-        stdout = client.stdout
-        stderr = client.stderr
+        channel, addr, stdout, stderr, _ = output
+        # client = output[0]
+        # channel = client.channel
+        # stdout = client.stdout
+        # stderr = client.stderr
 
         # for host, host_output in output.items():
         #     for line in host_output.stdout:
         #         print(line)
-
-        # self._client.wait_finished(channel)
 
         def _consume_stream(stream, printer, buf=None):
             buffer = buf or io.StringIO()
@@ -113,15 +113,31 @@ class SSHClient(SSHClientBase):
 
         return rc, output, error
 
-    def file_write(self, path, content, mode=0o755, append=False):
-        flags = ssh2.sftp.LIBSSH2_FXF_CREAT
-        if append:
-            flags |= ssh2.sftp.LIBSSH2_FXF_APPEND
-        else:
-            flags |= ssh2.sftp.LIBSSH2_FXF_WRITE
-        file = self.sftp.open(path, flags, mode)
-        file.write(content)
-        file.close()
+    def file_write(self, path, content, mode=None, owner=None, group=None):
+        temp = j.sal.fs.getTmpFilePath()
+        j.sal.fs.writeFile(filename=temp, contents=content, append=False)
+        self.file_copy(temp, path)
+        j.sal.fs.remove(temp)
+        cmd = ""
+        if mode:
+            # 0o755
+            cmd += "chmod %s %s && " % (mode, path)
+        if owner:
+            cmd += "chown %s %s && " % (owner, path)
+        if group:
+            cmd += "chgrp %s %s &&" % (group, path)
+        cmd = cmd.strip().strip("&")
+        if cmd:
+            self.execute(cmd, showout=False, interactive=False)
+
+        # flags = ssh2.sftp.LIBSSH2_FXF_CREAT
+        # if append:
+        #     flags |= ssh2.sftp.LIBSSH2_FXF_APPEND
+        # else:
+        #     flags |= ssh2.sftp.LIBSSH2_FXF_WRITE
+        # file = self.sftp.open(path, flags, mode)
+        # file.write(content)
+        # file.close()
 
     def file_copy(self, local_file, remote_file):
         """Copy local file to host via SFTP/SCP
@@ -138,14 +154,21 @@ class SSHClient(SSHClientBase):
         :raises: :py:class:`IOError` on I/O errors writing files
         :raises: :py:class:`OSError` on OS errors like permission denied
         """
-        local_file = self._replace(local_file, paths_executor=False)
-        remote_file = self._replace(remote_file)
         if os.path.isdir(local_file):
             raise j.exceptions.Value("Local file cannot be a dir")
         destination = j.sal.fs.getDirName(remote_file)
-        self.executor.dir_ensure(destination)
-        res = self._client.scp_send(local_file, remote_file, recurse=False)
-        gevent.joinall(res)
+        try:
+            res = self._client.scp_send(local_file, remote_file, recurse=False)
+        except Exception as e:
+            if not j.sal.fs.exists(destination):
+                self.execute("mkdir -p %s" % destination)
+                res = self._client.scp_send(local_file, remote_file, recurse=False)
+            else:
+                raise j.exceptions.RuntimeError(
+                    f"Couldn't send {local_file} to {remote_file} even though {destination} exists. Error: {e}"
+                )
+        if res:
+            gevent.joinall(res)
         self._log_info("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))
 
     def sftp_stat(self, path):
@@ -187,11 +210,6 @@ class SSHClient(SSHClientBase):
 
     #     return self._client
 
-    def _reset(self):
-        with self._lock:
-            if self._client is not None:
-                self._client = None
-
     @property
     def sftp(self):
         if self._ftp is None:
@@ -201,6 +219,3 @@ class SSHClient(SSHClientBase):
     def _close(self):
         # TODO: make sure we don't need to clean anything
         pass
-
-    # def file_copy(self, local_file, remote_file, recurse=False):
-    #     return self._client.file_copy(local_file, remote_file, recurse=recurse, sftp=self.sftp)

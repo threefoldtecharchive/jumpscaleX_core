@@ -80,6 +80,11 @@ class Time_(object):
         # TODO: check if correct implementation
         return time.strftime("%d_%b_%Y_%H_%M_%S", time.gmtime())
 
+    def getLocalDateHRForFilesystem(self, format=None):
+        if not format:
+            format = "%d-%b-%Y"
+        return time.strftime(format, time.gmtime())
+
     def formatTime(self, epoch, formatstr="%Y/%m/%d %H:%M:%S", local=True):
         """
         Returns a formatted time string representing the current time

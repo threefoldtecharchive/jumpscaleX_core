@@ -1,6 +1,7 @@
 import toml
 import copy
 import re
+import traceback
 
 from urllib.parse import urlparse, parse_qs, parse_qsl
 from .Link import Link
@@ -39,7 +40,7 @@ class Doc(j.baseclasses.object):
         self.name_original = name
         self.path_rel = j.sal.fs.pathRemoveDirPart(path, self.docsite.path).strip("/")
 
-        name_dot = "%s/%s" % (self.path_dir_rel, self.name)
+        # name_dot = "%s/%s" % (self.path_dir_rel, self.name)
         self.name_dot_lower = self._clean("%s/%s" % (self.path_dir_rel, self.name))
 
         self.errors = []
@@ -56,8 +57,6 @@ class Doc(j.baseclasses.object):
 
         self._links = []
         self.render_obj = None
-        if self.sonic_client:
-            self.register_sonic()
 
     def render_macro_template(self, name, **kwargs):
         return env.get_template(name).render(**kwargs)
@@ -69,16 +68,17 @@ class Doc(j.baseclasses.object):
             else:
                 yield txt[i : i + length]
 
-    def register_sonic(self):
-        text = self.markdown_source.replace("\n", " ").strip()
+    def text_sonic_set(self, text):
+        print(f"indexing {self.docsite.name} of {self.path_rel}")
+        text = text.replace("\n", " ").strip()
         if not text:
             return
         if " " in self.name:
             print("file {} can't be indexed it contains space in the file name")
             return
-        for chunck in self.chunks(text, int(self.sonic_client.bufsize) // 2):
+        for chunk in self.chunks(text, int(self.sonic_client.bufsize) // 2):
             try:
-                self.sonic_client.push("docsites", self.docsite.name, self.path_rel, chunck)
+                self.sonic_client.push("docsites", self.docsite.name, self.path_rel, chunk)
             except Exception as e:
                 print("Couldn't index {}".format(self.name))
 
@@ -157,8 +157,8 @@ class Doc(j.baseclasses.object):
             if header.level == level:
                 return header
 
-    def _process(self):
-        if not self._processed:
+    def process(self, reset=False):
+        if not self._processed or reset:
             self._macros_process()
             self._links_process()
             self._processed = True
@@ -168,7 +168,6 @@ class Doc(j.baseclasses.object):
         """
         markdown after processing of the full doc
         """
-        self._process()
         res = self.markdown_obj.markdown
 
         if "{{" in res:
@@ -189,9 +188,8 @@ class Doc(j.baseclasses.object):
     def markdown_clean(self):
         # remove the code blocks (comments are already gone)
         print("markdown_clean")
-        from IPython import embed
-
-        embed(colors="Linux")
+        # TODO:
+        j.shell()
         return None
 
     @property
@@ -282,19 +280,24 @@ class Doc(j.baseclasses.object):
         eval the macros
         """
 
+        assert self.docsite.threegit
+
         for part in self.parts_get(cat="macro"):
             if part.method.strip() == "":
                 return self.docsite.error_raise("empty macro cannot be executed", doc=self)
 
             macro_name = part.method.split("(", 1)[0].strip()
 
-            if not macro_name in j.tools.markdowndocs._macros:
+            if macro_name in self.docsite.threegit.wiki_macros:
+                method = self.docsite.threegit.wiki_macros[macro_name]
+            elif macro_name in j.tools.threegit.wiki_macros:
+                method = j.tools.threegit.wiki_macros[macro_name]
+            else:
                 e = "COULD NOT FIND MACRO"
                 block = "```python\nERROR IN MACRO*** TODO: *1 ***\nmacro:\n%s\nERROR:\n%s\n```\n" % (macro_name, e)
                 self._log_error(block)
                 self.docsite.error_raise(block, doc=self)
 
-            method = j.tools.markdowndocs._macros[macro_name]
             args = self._args_get(part.method)
             kwargs = self._kwargs_get(part.method)
             if j.data.types.dict.check(part.data):
@@ -306,7 +309,11 @@ class Doc(j.baseclasses.object):
             except Exception as e:
                 if hasattr(e, "message"):
                     e = e.message
-                block = "```python\nERROR IN MACRO*** TODO: *1 ***\nmacro:\n%s\nERROR:\n%s\n```\n" % (macro_name, e)
+                block = "```python\nERROR IN MACRO*** TODO: *1 ***\nmacro:\n%s\nERROR:\n%s\n%s```\n" % (
+                    macro_name,
+                    e,
+                    traceback.format_exc(),
+                )
                 self._log_error(block)
                 self.docsite.error_raise(block, doc=self)
                 part.result = block
@@ -345,18 +352,23 @@ class Doc(j.baseclasses.object):
         return self.markdown_obj.parts_get(text_to_find=text_to_find, cat=cat)
 
     def write(self):
+        # process macros and other...
+        self.process()
+
         self._log_info("write:%s" % self)
+
         md = self.markdown  # just to trigger the error checking
         j.sal.fs.createDir(j.sal.fs.joinPaths(self.docsite.outpath, self.path_dir_rel))
         for link in self._links:
             if link.filename:
                 dest_file = j.sal.fs.joinPaths(self.docsite.outpath, self.path_dir_rel, link.filename)
 
-                if link.filepath:
+                if link.filepath and j.sal.fs.exists(link.filepath) and not j.sal.fs.exists(dest_file):
+                    # make sure parent dir of dest_file exists
+                    j.sal.fs.createDir(j.sal.fs.getParent(dest_file))
                     j.sal.fs.copyFile(link.filepath, dest_file)
-                else:
-                    if link.source.startswith("!"):
-                        link.download(dest=dest_file)
+                elif link.source.startswith("!"):
+                    link.download(dest=dest_file)
                 # now change the right link in the doc
                 # link.link_source = j.sal.fs.pathRemoveDirPart(dest_file,self.docsite.outpath)
                 # Set link source to the file name only as it gets its files from current page path
@@ -364,6 +376,9 @@ class Doc(j.baseclasses.object):
             md = link.replace_in_txt(md)
 
         dest = j.sal.fs.joinPaths(self.docsite.outpath, self.path_dir_rel, self.name) + ".md"
+
+        if self.sonic_client:
+            self.text_sonic_set(md)
         j.sal.fs.writeFile(dest, md, append=False)
 
     def _link_exists(self, link):

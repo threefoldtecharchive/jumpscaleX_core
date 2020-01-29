@@ -34,35 +34,20 @@ def test():
 
 
 @click.command()
-@click.option("--cat", "-c", default="", help="filter on category")
-@click.option("--message", "-m", default="", help="filter on message")
-def find(cat="", message=""):
+def find():
     """
     find specific alerts
 
-    e.g. js_alerts find -m 'division by zero'
-
-    e.g. js_alerts find -c HaltException
-
-
     """
-    res = j.tools.alerthandler.find(cat=cat, message=message)
-    for i in res:
-        key, obj = i
-        j.core.errorhandler._trace_print(obj.trace)
-        print(obj.hr_get(exclude=["trace"]))
+    raise RuntimeError("not implemented")
 
 
 @click.command()
-@click.option("--cat", "-c", default="", help="filter on category")
-@click.option("--message", "-m", default="", help="filter on message")
 def delete(cat="", message=""):
     """
     delete specific alerts
     """
-    res = j.tools.alerthandler.find(cat=cat, message=message)
-    for (key, obj) in res:
-        j.tools.alerthandler.delete(key)
+    raise RuntimeError("not implemented")
 
 
 cli.add_command(list)

@@ -24,7 +24,7 @@ class DNSServerFactory(j.baseclasses.factory_testtools):
     def get_gevent_server(self, name="default", port=53, bcdb_name="system", resolvername="default"):
         s = self.servers.get(name=name, port=port, resolvername=resolvername)
         # make sure there is a resolver created
-        if resolvername == "default" and self.resolvers.exists(name=resolvername) == False:
+        if resolvername == "default" and self.resolvers.exists(name=resolvername) is False:
             r = self.resolvers.new(name="default")
             r.save()
         s.save()
@@ -100,7 +100,7 @@ class DNSServerFactory(j.baseclasses.factory_testtools):
         pprint(ns.namerecords_get("google.com"))
         pprint(ns.namerecords_get("info.despiegk"))
 
-        bcdb = j.data.bcdb.new("test_dns")
+        bcdb = j.data.bcdb.get("test_dns")
         dns = self.get(port, bcdb)
         obj = dns.resolver.model.find(zone="test.com")
         if obj:

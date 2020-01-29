@@ -1,5 +1,7 @@
 from Jumpscale import j
-import os
+import gevent
+
+import time
 
 
 class SSHClientBase(j.baseclasses.object_config):
@@ -10,58 +12,34 @@ class SSHClientBase(j.baseclasses.object_config):
     _SCHEMATEXT = """
         @url = jumpscale.sshclient.1
         name** = ""
-        addr = ""
+        addr = "localhost"
         port = 22
-        #addr_priv = ""
-        #port_priv = 22
         login = "root"
         passwd = ""
         sshkey_name = ""
-        #if we want to use other key compared to the one we have by default, can specify the name here
-        sshkey_deployment = ""
         proxy = ""
         stdout = True (B)
         forward_agent = True (B)
         allow_agent = True (B)
-        client_type = "paramiko,pssh" (E)
+        # client_type = "paramiko,pssh" (E)
         timeout = 60
-        config_msgpack = "" (bytes)
-        env_on_system_msgpack = "" (bytes)
-        meta = {} (DICT)
         """
-
-    @property
-    def wireguard_server(self):
-        if not self._wireguard:
-            from Jumpscale.core.InstallTools import WireGuardServer
-
-            self._wireguard = WireGuardServer(self.addr, port=self.port)
-        return self._wireguard
 
     def _init(self, **kwargs):
         self._client_ = None
-        self._env_on_system = None
-        self._uid = None
-        self.executor = j.tools.executor.ssh_get(self)
+        self._executor = None
         self._wireguard = None
         self._init3()
         if self.sshkey_name and self.sshkey_name not in j.core.myenv.sshagent.key_names:
             j.core.myenv.sshagent.start()
             self.sshkey_obj.load()
 
-    def state_reset(self):
-        """
-        set the following:
+    @property
+    def executor(self):
+        if not self._executor:
+            self._executor = j.tools.executor.ssh_get(self)
 
-        self.config_msgpack = b""
-        self.env_on_system_msgpack = b""
-
-        so it can get reloaded from remote
-
-        :return:
-        """
-        self.config_msgpack = b""
-        self.env_on_system_msgpack = b""
+        return self._executor
 
     def reset(self):
 
@@ -76,79 +54,21 @@ class SSHClientBase(j.baseclasses.object_config):
             except:
                 pass
 
-        self.executor.reset()
-        self.save()
         self._init3()
 
     def _init3(self):
-
-        self.executor._init3()
-
         self.async_ = False
-        # self._private = None
         self._connected = None
-
         self._transport_ = None
-
         self._ftp = None
         self._syncer = None
 
     @property
     def uid(self):
-        if self._uid is None:
-            if self._id in [0, None, ""]:
-                self.save()
-            if self._id in [0, None, ""]:
-                raise j.exceptions.Base("id cannot be empty")
-            self._uid = "%s-%s-%s" % (self.addr, self.port, self._id)
-        return self._uid
+        return "%s-%s-%s" % (self.addr, self.port, self.name)
 
-    def sftp_stat(self, path):
-        return self.sftp.stat(path)
-
-    def _replace(self, txt, paths_executor=True):
-        if "{" in txt:
-            res = {}
-            for key, item in self._data._ddict.items():
-                res[key.upper()] = item
-            txt = j.core.tools.text_replace(txt, args=res)
-        return txt
-
-    # @property
-    # def isprivate(self):
-    #     if self._private is None:
-    #         if self.addr_priv == "":
-    #             self._private = False
-    #         else:
-    #             self._private = j.sal.nettools.tcpPortConnectionTest(self.addr_priv, self.port_priv, 1)
-    #     return self._private
-    def execute_jumpscale(self, script, interactive=True, **kwargs):
-        script = "from Jumpscale import j\n{}".format(script)
-
-        script = j.core.tools.text_replace(script, **kwargs)
-
-        scriptname = j.data.hash.md5_string(script)
-        filename = "{}/{}".format(j.dirs.TMPDIR, scriptname)
-
-        j.sal.fs.writeFile(filename, contents=script)
-        self.file_copy(filename, filename)  # local -> remote
-        self.execute("source /sandbox/env.sh && python3 {}".format(filename), interactive=interactive)
-
-    @property
-    def addr_variable(self):
-        return self.addr
-        # if self.isprivate:
-        #     return self.addr_priv
-        # else:
-        #     return self.addr
-
-    @property
-    def port_variable(self):
-        return self.port
-        # if self.isprivate:
-        #     return self.port_priv
-        # else:
-        #     return self.port
+    # def sftp_stat(self, path):
+    #     return self.sftp.stat(path)
 
     @property
     def sshkey_obj(self):
@@ -187,29 +107,6 @@ class SSHClientBase(j.baseclasses.object_config):
                 'echo "{sshkey}" >> {homedir}/.ssh/authorized_keys'.format(**locals()), interactive=interactive
             )
 
-    def shell(self, cmd=None):
-        if cmd:
-            j.shell()
-        cmd = "ssh {LOGIN}@{ADDR} -A -p {PORT}"
-        cmd = self._replace(cmd)
-        j.sal.process.executeWithoutPipe(cmd)
-
-    def mosh(self, ssh_private_key_name=None, interactive=True):
-        """
-        if private key specified
-        :param ssh_private_key:
-        :return:
-        """
-        self.executor.installer.mosh()
-        C = j.clients.sshagent._script_get_sshload(keyname=ssh_private_key_name)
-        r = self.execute(C, interactive=interactive)
-        cmd = "mosh -ssh='ssh -tt -oStrictHostKeyChecking=no -p {PORT}' {LOGIN}@{ADDR} -p 6000:6100 'bash'"
-        cmd = self._replace(cmd)
-        j.sal.process.executeWithoutPipe(cmd)
-
-    def kosmos(self, cmd=None):
-        j.shell()
-
     @property
     def syncer(self):
         """
@@ -220,22 +117,67 @@ class SSHClientBase(j.baseclasses.object_config):
             self._syncer = j.tools.syncer.get(name=self.name, sshclient_names=[self.name])
         return self._syncer
 
-    def portforward_to_local(self, remoteport, localport):
+    def portforward_to_local(self, remoteport=6379, localport=6380):
         """
-        forward remote port on host to the local one, so we can connect over localhost
+        forward remote port on ssh host to the local one, so we can connect over localhost to the remote one
+
+        e.g. expose your remote redis (in container) to your machine you're using this env from
+
         :param remoteport: the port to forward to local
         :param localport: the local tcp port to be used (will terminate on remote)
         :return:
         """
-        self.portforwardKill(localport)
-        C = "ssh -L %s:localhost:%s %s@%s -p %s" % (remoteport, localport, self.login, self.addr, self.port)
+        self.portforward_kill(localport)
+        C = f"ssh -4 -f -N -L {localport}:127.0.0.1:{remoteport} {self.login}@{self.addr} -p {self.port}"
         print(C)
-        pm = j.builders.system.processmanager.get()  # need to use other one, no longer working #TODO:
-        pm.ensure(cmd=C, name="ssh_%s" % localport, wait=0.5)
+
+        j.sal.process.execute(C)
         print("Test tcp port to:%s" % localport)
-        if not j.sal.nettools.waitConnectionTest("127.0.0.1", localport, 10):
+        if not j.sal.nettools.waitConnectionTest("localhost", localport, 10):
             raise j.exceptions.Base("Cannot open ssh forward:%s_%s_%s" % (self, remoteport, localport))
         print("Connection ok")
+
+    def portforward_to_remote(self, remoteport, localport, timeout=50):
+        """
+        forward local port to remote host port
+        :param remoteport: port used on ssh host
+        :param localport: the local tcp port to be used
+        :return:
+        """
+        if not j.sal.nettools.tcpPortConnectionTest("localhost", localport):
+            raise j.exceptions.Base(
+                "Cannot open ssh forward:%s_%s_%s (local port:%s)" % (self, remoteport, localport, localport)
+            )
+        # self.portforwardKill(localport)
+        C = f"ssh -4 -R {remoteport}:127.0.0.1:{localport} {self.login}@{self.addr} -p {self.port}"
+        print(C)
+        key = f"{self.addr}_{self.port}_{remoteport}_{localport}"
+        cmd = j.servers.startupcmd.get(name=key)
+        cmd.cmd_start = C
+        cmd.ports = []
+        cmd.timeout = 20
+        cmd.process_strings = []  # ["ssh -R 8112:localhost:8111 root@explorer.testnet.grid.tf -p 22"]
+        cmd.executor = "tmux"
+        cmd.start()
+
+        start = j.data.time.epoch
+        end = start + timeout
+        while j.data.time.epoch < end:
+            if self.tcp_remote_port_check("127.0.0.1", remoteport):
+                self._log_info(f"Connection ok for {remoteport} to local:{localport}")
+                return
+            time.sleep(0.1)
+            # if not cmd.is_running():
+            #     raise j.exceptions.Base("could not start:%s in tmux" % C)
+        raise j.exceptions.Base("could not start:%s in tmux" % C)
+
+    def tcp_remote_port_check(self, addr="localhost", port=22):
+        cmd = f"nc -zv {addr} {port}"
+        rc, _, _ = self.execute(cmd)
+        if rc == 0:
+            return True
+        else:
+            return False
 
     def portforward_kill(self, localport):
         """
@@ -243,9 +185,8 @@ class SSHClientBase(j.baseclasses.object_config):
         :param localport:
         :return:
         """
-        print("kill portforward %s" % localport)
-        pm = j.builders.system.processmanager.get()
-        pm.processmanager.stop("ssh_%s" % localport)
+        self._log_warning("kill portforward localport: %s" % localport)
+        j.sal.process.killProcessByPort(localport)
 
     def upload(
         self,
@@ -272,8 +213,6 @@ class SSHClientBase(j.baseclasses.object_config):
         :param showout:
         :return:
         """
-
-        source = self._replace(source)
         if not dest:
             dest = source
         if not j.sal.fs.isDir(source):
@@ -281,23 +220,26 @@ class SSHClientBase(j.baseclasses.object_config):
                 return self.file_copy(source, dest)
             else:
                 raise j.exceptions.Base("only support dir or file for upload")
-        dest = self._replace(dest)
-        # self._check_base()
-        # if dest_prefix != "":
-        #     dest = j.sal.fs.joinPaths(dest_prefix, dest)
         if dest[0] != "/":
             raise j.exceptions.RuntimeError("need / in beginning of dest path")
         if source[-1] != "/":
             source += "/"
         if dest[-1] != "/":
             dest += "/"
+
+        if j.sal.fs.isDir(source):
+            if source[-1] != "/":
+                source += "/"
+            if dest[-1] != "/":
+                dest += "/"
+
         dest = "%s@%s:%s" % (self.login, self.addr, dest)
         j.sal.fs.copyDirTree(
             source,
             dest,
             keepsymlinks=keepsymlinks,
             deletefirst=False,
-            overwriteFiles=True,
+            overwriteFiles=rsyncdelete,
             ignoredir=ignoredir,
             ignorefiles=ignorefiles,
             rsync=True,
@@ -321,26 +263,27 @@ class SSHClientBase(j.baseclasses.object_config):
         :param ignorefiles: the following are always in, no need to specify: ["*.egg-info","*.pyc","*.bak"]
         :return:
         """
+
         if not dest:
             dest = source
-        source = self._replace(source)
-        dest = self._replace(dest)
         if not self.executor.path_isdir(source):
             if self.executor.path_isfile(source):
-                return self._client.scp_recv(source, dest, recurse=False, sftp=None, encoding="utf-8")
+                res = self._client.scp_recv(source, dest)
+                gevent.joinall(res)
+                self._log_info("Copied remote file %s to local destination %s for %s" % (dest, source, self))
+                return
             else:
-                if not self.exists(source):
+                if not self.executor.exists(source):
                     raise j.exceptions.Base("%s does not exists, cannot download" % source)
                 raise j.exceptions.Base("src:%s needs to be dir or file" % source)
-        # self._check_base()
-        # if source_prefix != "":
-        #     source = j.sal.fs.joinPaths(source_prefix, source)
-        if source[0] != "/":
-            raise j.exceptions.RuntimeError("need / in beginning of source path")
-        if source[-1] != "/":
-            source += "/"
-        if dest[-1] != "/":
-            dest += "/"
+        else:
+            # we know now its a dir
+            if source[0] != "/":
+                raise j.exceptions.RuntimeError("need / in beginning of source path")
+            if source[-1] != "/":
+                source += "/"
+            if dest[-1] != "/":
+                dest += "/"
 
         source = "root@%s:%s" % (self.addr, source)
         j.sal.fs.copyDirTree(
@@ -357,7 +300,7 @@ class SSHClientBase(j.baseclasses.object_config):
             recursive=recursive,
         )
 
-    def execute(self, cmd, interactive=True, showout=True, replace=True, die=True, timeout=None, script=None):
+    def execute(self, cmd, interactive=True, showout=True, die=True, timeout=None):
         """
 
         :param cmd: cmd to execute, can be multiline or even a script
@@ -373,17 +316,9 @@ class SSHClientBase(j.baseclasses.object_config):
 
         if not isinstance(cmd, str):
             raise j.exceptions.Base("cmd needs to be string")
-        if replace:
-            cmd = self._replace(cmd)
-        if ("\n" in cmd and script in [None, True]) or len(cmd) > 100000:
-            return self._execute_script(
-                content=cmd,
-                die=die,
-                showout=showout,
-                checkok=None,
-                sudo=False,
-                interactive=interactive,
-                timeout=timeout,
+        if "\n" in cmd or len(cmd) > 100000:
+            raise RuntimeError(
+                "NOT IMPLEMENTED, need to use execute on executor level which will convert from script to command"
             )
         elif interactive:
             return self._execute_interactive(cmd, showout=showout, die=die)
@@ -396,51 +331,8 @@ class SSHClientBase(j.baseclasses.object_config):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
         cmd2 = "ssh -oStrictHostKeyChecking=no -t {LOGIN}@{ADDR} -A -p {PORT} '%s'" % (cmd)
-        cmd3 = self._replace(cmd2)
+        cmd3 = j.core.tools.text_replace(cmd2, args={"LOGIN": self.login, "ADDR": self.addr, "PORT": self.port})
         return j.core.tools.execute(cmd3, interactive=True, showout=False, replace=False, asfile=True, die=die)
-
-    def _execute_script(
-        self, content="", die=True, showout=True, checkok=None, sudo=False, interactive=False, timeout=None
-    ):
-        """
-        @param remote can be ip addr or hostname of remote,
-                    if given will execute cmds there
-        """
-        if "sudo -H -SE" in content:
-            raise j.exceptions.Base(content)
-
-        if showout:
-            self._log_info("EXECUTESCRIPT {}:{}:\n'''\n{}\n'''\n".format(self.addr, self.port, content))
-
-        if content[-1] != "\n":
-            content += "\n"
-
-        if die:
-            content = "set -e\n{}".format(content)
-
-        dpath = "/tmp/jsxssh_{}.sh".format(j.data.idgenerator.generateRandomInt(1, 100000))
-
-        self.executor.file_write(dpath, content, mode="777")
-
-        # j.sal.fs.writeFile(path, content)
-        #
-        # # just in case of the same machine.
-        # path2 = "/tmp/jsxssh_{}.sh".format(j.data.idgenerator.generateRandomInt(1, 100000))
-        # self.file_copy(path, path2)  # is now always on tmp
-        # if sudo and "LEDE" not in j.core.platformtype.get(self).osname:
-        #     passwd = self.config.data["passwd_"]
-        #     cmd = "echo '{}' | sudo -H -SE -p '' bash \"{}\"".format(passwd, path2)
-        # else:
-        #     cmd = "bash {}".format(path2)
-
-        rc, out, err = self.execute(dpath, die=die, showout=showout, interactive=interactive, timeout=timeout)
-
-        if checkok and die:
-            out = self._docheckok(content, out)
-
-        # j.sal.fs.remove(path)
-        # self.sftp.unlink(path2)
-        return rc, out, err
 
     def __repr__(self):
         return "SSHCLIENT ssh: %s (%s)" % (self.addr, self.port)

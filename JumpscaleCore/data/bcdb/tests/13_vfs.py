@@ -36,13 +36,11 @@ def main(self):
     ipaddr = (ipaddr)           # IP Address
     email = "" (S)              # Email address
     username = "" (S)           # User name
-    
+
     """
-    # md5 = "cbf134f55d0c7149ef188cf8a52db0eb"
-    # sid = "7"
 
     testname = "testvfs"
-    bcdb = j.data.bcdb.new(testname, reset=True)
+    bcdb = j.data.bcdb.get(testname, reset=True)
 
     vfs = j.data.bcdb._get_vfs()
 
@@ -130,6 +128,7 @@ def main(self):
     assert "threefoldtoken.wallet.test" in schemas3  # multiple url link to the same schema id ?
 
     r = vfs.get("schemas/threefoldtoken.wallet.test")
+
     schema = r.get()
     obj = j.data.serializers.json.loads(schema)
     assert str(obj["url"]) == "threefoldtoken.wallet.test"
@@ -137,23 +136,28 @@ def main(self):
 
     self._log_info("TEST GET SCHEMA DONE")
 
-    SCHEMAS = """
+    SCHEMAS = [
+        """
     @url = ben.pc.test
     description** =  "top_pc"
     cpu = "6ghz" (S)            # power
-    ram =  (LI)                   
-    enable = true (B)  
-    @url = ben.pc.test.2
+    ram =  (LI)
+    enable = true (B)""",
+        """@url = ben.pc.test.2
     description** =  "super_top_pc"
     cpu = "12ghz" (S)            # power
-    ram =  (LI)                   
-    enable = false (B)            
-    """
-    res = vfs.add_schemas(SCHEMAS)
-    assert len(res) == 2
+    ram =  (LI)
+    enable = false (B)
+    """,
+    ]
+    res = []
 
-    s1 = vfs.get("schemas/%s" % (res[1].url))
-    s2 = vfs.get("schemas/%s" % (res[0].url))
+    for schema_text in SCHEMAS:
+        res.append(vfs.add_schema(schema_text))
+
+    assert len(res) == 2
+    s1 = vfs.get("schemas/%s" % (res[1].schema.url))
+    s2 = vfs.get("schemas/%s" % (res[0].schema.url))
     obj1 = j.data.serializers.json.loads(s1.get())
     obj2 = j.data.serializers.json.loads(s2.get())
     assert obj1["url"] == "ben.pc.test" or obj1["url"] == "ben.pc.test.2"
@@ -242,6 +246,7 @@ def main(self):
     r = vfs.get("data/1/threefoldtoken.wallet.test/%s" % obj_id)
     obj = r.get()
     r.delete()
+
     schema_wallet_obj = j.data.serializers.json.loads(schema)
 
     with test_case.assertRaises(Exception) as cm:  # can't delete an already deleted data
@@ -284,5 +289,9 @@ def main(self):
     with test_case.assertRaises(Exception):
         vfs.get("{}/data/2/md6".format(testname))
 
+    # CLEAN STATE
+    j.servers.zdb.test_instance_stop()
+    j.servers.sonic.default.stop()
+    vfs._bcdb.destroy()
     self._log_info("TEST DONE")
     return "OK"

@@ -22,7 +22,7 @@ class Website(j.baseclasses.factory_data):
         ssl = True (B)
         domain = ""
         path = ""
-
+        mother_id** = 0 (I)
         """
 
     CONFIG = """

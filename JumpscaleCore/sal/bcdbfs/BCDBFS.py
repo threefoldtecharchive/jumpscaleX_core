@@ -14,7 +14,7 @@ class BCDBFS(j.baseclasses.object):
     __jslocation__ = "j.sal.bcdbfs"
 
     def _init(self, bcdb_name="bcdbfs"):
-        sql = j.clients.sqlitedb.client_get(namespace="bcdbfs")
+        sql = j.clients.sqlitedb.client_get(bcdbname="bcdbfs")
         self._bcdb = j.data.bcdb.get(bcdb_name, storclient=sql)
 
         j.data.schema.add_from_path("%s/models_threebot" % j.data.bcdb._dirpath)
@@ -352,8 +352,8 @@ class BCDBFS(j.baseclasses.object):
         assert j.sal.bcdbfs.dir_exists("/yolo")
         assert j.sal.bcdbfs.dir_exists("/yolo/")
         j.sal.bcdbfs.dir_remove("/yolo/")
-        assert j.sal.bcdbfs.dir_exists("/yolo") == False
-        assert j.sal.bcdbfs.dir_exists("/yolo/") == False
+        assert j.sal.bcdbfs.dir_exists("/yolo") is False
+        assert j.sal.bcdbfs.dir_exists("/yolo/") is False
         with test_case.assertRaises(Exception) as cm:
             j.sal.bcdbfs.file_create_empty("/yolofile/")
         ex = cm.exception
@@ -372,7 +372,7 @@ class BCDBFS(j.baseclasses.object):
         assert "filename path :%s should not end with a /" % "/yolofile/" in str(ex.args[0])
 
         j.sal.bcdbfs.file_delete("/yolofile")
-        assert j.sal.bcdbfs.file_exists("/yolofile") == False
+        assert j.sal.bcdbfs.file_exists("/yolofile") is False
 
         j.sal.fs.createDir("/tmp/test_bcdbfs")
         j.sal.fs.writeFile("/tmp/test_bcdbfs/yolofile", "yolo content")
@@ -385,7 +385,7 @@ class BCDBFS(j.baseclasses.object):
         assert j.sal.bcdbfs.file_read("/test/yolofile") == b"yolo content"
         j.sal.bcdbfs.file_delete("/test/yolofile")
 
-        assert j.sal.bcdbfs.file_exists("/tmp/test_bcdbfs/yolofile") == False
+        assert j.sal.bcdbfs.file_exists("/tmp/test_bcdbfs/yolofile") is False
 
         j.sal.bcdbfs.dir_create("/test")
         for i in range(5):

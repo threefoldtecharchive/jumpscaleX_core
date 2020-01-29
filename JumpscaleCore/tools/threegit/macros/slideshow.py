@@ -21,9 +21,7 @@ class Slide:
 
 
 def slideshow(doc, **kwargs):
-    gdrive_cl = j.clients.gdrive.get(
-        "slideshow_macro_client", credfile=j.core.tools.text_replace("{DIR_BASE}/var/cred.json")
-    )
+    gdrive_cl = j.clients.gdrive.get(name="main")
     slides_path = j.sal.fs.joinPaths("sandbox", "var", "gdrive", "static", "slide")
     j.sal.fs.createDir(slides_path)
 
@@ -62,12 +60,13 @@ def slideshow(doc, **kwargs):
     for slide in slides.slides_get():
         gdrive_cl.exportSlides(slide.presentation_guid, slides_path)
         filepath = f"{slides_path}/{slide.presentation_guid}/{slide.name}.png"
-        dest = j.sal.fs.joinPaths(doc.docsite.outpath, doc.path_dir_rel, slide.name + ".png")
+        relative_path = j.sal.fs.joinPaths(doc.path_dir_rel, slide.name + ".png")
+        dest = j.sal.fs.joinPaths(doc.docsite.outpath, relative_path)
         j.sal.fs.copyFile(filepath, dest)
         image_tag = """
         <img src="$path{dest}" alt='{slide_name}'"/>
         """.format(
-            slide_name=slide.name, dest=dest
+            slide_name=slide.name, dest=j.sal.fs.joinPaths(doc.docsite.name, relative_path)
         )
         output += """
             <section>

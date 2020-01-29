@@ -28,12 +28,16 @@ def main(self):
     kosmos 'j.data.bcdb.test(name="fs")'
 
     """
+    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.core.myenv.adminsecret))
+    sonic.start()
+
     tags = ["color:blue", "color:white", "font:arial", "font:tahoma", "style:italian"]
     types = ["md", "pdf", "xls", "doc", "jpg"]
     contents = ["threefold foundation", "the new internet", "change the world", "digital freedom", "the future of IT"]
-    bcdb = j.data.bcdb.new("test_fs", reset=True)
+    bcdb = j.data.bcdb.get("test_fs", reset=True)
 
-    bcdb.models_add_threebot()
+    mpath = "/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/filemanager/models"
+    bcdb.models_add(mpath)
 
     cl = j.clients.sonic.get_client_bcdb()
     cl.flush("test_fs")
@@ -90,12 +94,17 @@ def main(self):
     rack = j.servers.rack.get()
     from Jumpscale.data.bcdb.connectors.webdav.BCDBFSProvider import BCDBFSProvider
 
-    rack.webdav_server_add(webdavprovider=BCDBFSProvider("test_fs"), port=4444)
+    rack.webdav_server_add(webdavprovider=BCDBFSProvider("test_fs", models_dir='{}'), port=4444)
     rack.start()
-    """
+    """.format(
+        mpath
+    )
 
     s = j.servers.startupcmd.get(
         name="webdav_fs_test", cmd_start=start_cmd, interpreter="python", executor="tmux", ports=[4444]
     )
     s.start()
     print("Dav server running on port 4444")
+
+    sonic.stop()
+    s.stop()

@@ -1,46 +1,38 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 
 
 class DBSQLite(j.baseclasses.object):
-    def _init(self, nsname=None, **kwargs):
+    def _init(self, bcdbname=None, readonly=False, **kwargs):
 
-        assert nsname
+        assert bcdbname
         assert "name" not in kwargs
-        self.nsname = nsname
+        self.bcdbname = bcdbname
 
         self.type = "SDB"
 
-        db_path = j.core.tools.text_replace("{DIR_VAR}/bcdb/%s/sqlite_stor.db" % nsname)
+        self.readonly = readonly
 
-        self._dbpath = db_path
+        self._dbpath = j.core.tools.text_replace("{DIR_VAR}/bcdb/%s/sqlite_stor.db" % self.bcdbname)
+
+        self.sqlitedb = None
+
+        self._connect()
+
+    def _connect(self):
+
+        if self.readonly:
+            self._log_info("sqlite file is in readonly mode for: '%s'" % self.bcdbname)
+            db_path = j.core.tools.text_replace("file:%s?mode=ro" % self._dbpath)
+        else:
+            db_path = j.core.tools.text_replace("file:%s" % self._dbpath)
 
         if j.sal.fs.exists(self._dbpath):
             self._log_debug("EXISTING SQLITEDB in %s" % self._dbpath)
         else:
-            j.sal.fs.touch(db_path)
+            j.sal.fs.touch(self._dbpath)
             self._log_debug("NEW SQLITEDB in %s" % self._dbpath)
 
-        self.sqlitedb = j.data.peewee.SqliteDatabase(self._dbpath)
+        self.sqlitedb = j.data.peewee.SqliteDatabase(db_path, uri=True, pragmas={"journal_mode": "wal"})
         if self.sqlitedb.is_closed():
             self.sqlitedb.connect()
 
@@ -66,7 +58,7 @@ class DBSQLite(j.baseclasses.object):
         return {"entries": self.count}
 
     def set(self, data, key=None):
-        if key == None:
+        if key is None:
             res = self._table_model(value=data)
             res.save()
             return res.id - 1
@@ -125,4 +117,5 @@ class DBSQLite(j.baseclasses.object):
             yield ((item.id) - 1, self.get(item.id - 1))
 
     def close(self):
-        self.sqlitedb.close()
+        if self.sqlitedb:
+            self.sqlitedb.close()

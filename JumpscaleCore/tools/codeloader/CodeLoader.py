@@ -68,19 +68,22 @@ class CodeLoader(j.baseclasses.object):
         if path is not None and not j.sal.fs.exists(path):
             raise j.exceptions.Base("path:%s does not exist" % path)
 
+        path = j.core.tools.text_replace(path)
         if md5 is None:
             txt = j.sal.fs.readFile(path)
             md5 = j.data.hash.md5_string(txt)
 
+        changed = False
+        # there is a memory leak here because we don't unload the modules which have newer version
         if reload or md5 not in self._hash_to_codeobj:
-
+            changed = True
             try:
                 m = imp.load_source(name=md5, pathname=path)
             except Exception as e:
                 out = j.sal.fs.readFile(path)
                 msg = "SCRIPT CONTENT:\n%s\n\n" % out
                 msg += "---------------------------------\n"
-                msg += "COULD not load source:%s\n" % path
+                msg += "COULD not load:%s\n" % path
                 msg += "ERROR WAS:%s\n\n" % e
                 raise j.exceptions.Base(msg)
             try:
@@ -96,4 +99,21 @@ class CodeLoader(j.baseclasses.object):
 
             self._hash_to_codeobj[md5] = obj
 
-        return self._hash_to_codeobj[md5]
+        return self._hash_to_codeobj[md5], changed
+
+    def unload(self, obj_key=None, path=None, reload=False, md5=None):
+        if not obj_key:
+            obj_key = self._basename(path)
+
+        if not j.data.types.string.check(path):
+            raise j.exceptions.Base("path needs to be string")
+        if path is not None and not j.sal.fs.exists(path):
+            raise j.exceptions.Base("path:%s does not exist" % path)
+
+        path = j.core.tools.text_replace(path)
+        if md5 is None:
+            txt = j.sal.fs.readFile(path)
+            md5 = j.data.hash.md5_string(txt)
+
+        if md5 in self._hash_to_codeobj:
+            del self._hash_to_codeobj[md5]

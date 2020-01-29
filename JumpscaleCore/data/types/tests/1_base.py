@@ -8,26 +8,6 @@ def main(self):
     kosmos 'j.data.types.test(name="base")'
     """
 
-    # some basic tests for code completion, doesn't really belong here but needs to be done
-    class A(j.baseclasses.object):
-        def _init_post(self, a, b):
-            self.a = a
-            self.b = b
-
-        def shout(self):
-            pass
-
-        def some(self):
-            pass
-
-    a = A(a="1", b=2)
-    assert len(a._methods_names_get(filter="s*")) == 2
-    assert len(a._methods_names_get(filter="some")) == 1
-    assert len(a._properties_names_get(filter="*")) == 2
-    assert len(a._methods_names_get()) == 2
-
-    # NOW THE REAL TESTS
-
     assert j.data.types.string.__class__.NAME == "string"
 
     assert j.data.types.get("s") == j.data.types.get("string")
@@ -54,23 +34,23 @@ def main(self):
 
     t = j.data.types.email
     assert t.check("kristof@in.com")
-    assert t.check("kristof.in.com") == False
+    assert t.check("kristof.in.com") is False
 
     t = j.data.types.bool
-    assert t.clean("true") == True
-    assert t.clean("True") == True
-    assert t.clean(1) == True
-    assert t.clean("1") == True
-    assert t.clean("False") == False
-    assert t.clean("false") == False
-    assert t.clean("0") == False
-    assert t.clean(0) == False
-    assert t.check(1) == False
-    assert t.check(True) == True
+    assert t.clean("true") is True
+    assert t.clean("True") is True
+    assert t.clean(1) is True
+    assert t.clean("1") is True
+    assert t.clean("False") is False
+    assert t.clean("false") is False
+    assert t.clean("0") is False
+    assert t.clean(0) is False
+    assert t.check(1) is False
+    assert t.check(True) is True
 
     b = j.data.types.get("b", default="true")
 
-    assert b.default_get() == True
+    assert b.default_get() is True
 
     # TODO: need more tests here
 

@@ -48,7 +48,8 @@ class Types(j.baseclasses.object, j.baseclasses.testtools):
         ]
 
         self._TypeBaseObjClass = TypeBaseObjClass
-        self._TypeBaseClassUnserialized = TypeBaseClassUnserialized
+        self._TypeBaseClassSerialized = TypeBaseClassSerialized
+        self._TypeBaseObjFactory = TypeBaseObjFactory
 
         self._type_check_list = []
         self._aliases = {}

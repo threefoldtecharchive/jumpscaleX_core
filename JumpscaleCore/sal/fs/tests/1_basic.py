@@ -119,13 +119,14 @@ def main(self):
     assert res[2] == "txt"
     assert res[3] == 0
 
-    res = j.sal.fs.pathParse(j.core.tools.text_replace("{DIR_BASE}/cfg/jumpscale_config.toml", baseDir=j.core.tools.text_replace("{DIR_BASE}/cfg")))
+    res = j.sal.fs.pathParse(
+        j.core.tools.text_replace(
+            "{DIR_BASE}/cfg/jumpscale_config.toml", baseDir=j.core.tools.text_replace("{DIR_BASE}/cfg")
+        )
+    )
     # should return a list of dirpath,filename,extension,priority
     print(res)
     assert res[0] == "/"
     assert res[1] == "jumpscale_config"
     assert res[2] == "toml"
     assert res[3] == 0
-
-
-

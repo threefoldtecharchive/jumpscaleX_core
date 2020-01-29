@@ -135,7 +135,7 @@ class JSGenerator:
         write reports to /tmp/jumpscale/code_report.md
         :return:
         """
-        # if self._generated == False:
+        # if self._generated is False:
         #     self.generate()
         for name, jsgroup in self.md.jsgroups.items():
             path = "%s/jumpscale/code_report_%s.md" % (self._j.dirs.TMPDIR, jsgroup.name)

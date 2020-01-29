@@ -77,11 +77,7 @@ class GedisServer(JSBaseConfig):
         # self.namespaces = ["system", "default"]
         self._threebot_server = None
 
-        j.data.schema.get_from_text(SCHEMA)
-
-        # j.threebot.actors = Actors()
-        # j.threebot.actors_add = self.actors_add
-        # j.threebot.actors_list = self.actors_list
+        j.data.schema.get_from_text(SCHEMA, newest=True)
 
         # hook to allow external servers to find this gedis
         # self.server_gedis = self
@@ -140,32 +136,6 @@ class GedisServer(JSBaseConfig):
 
         return gedis_server
 
-    # def actors_add(self, path, package):
-    #     """
-    #     add commands from 1 actor (or other python) file
-    #
-    #     :param name:  each set of cmds need to have a unique name
-    #     :param path: of the actor file
-    #     :return:
-    #     """
-    #     actor_names = []
-    #     assert isinstance(package, ThreeBotPackage)
-    #     if not j.sal.fs.isDir(path):
-    #         raise j.exceptions.Value("actor_add: path needs to point to an existing directory")
-    #
-    #     path = j.data.types.string.clean(path)
-    #     namespace = j.data.types.string.clean(package.source.threebot)
-    #     assert len(namespace) > 5
-    #
-    #     files = j.sal.fs.listFilesInDir(path, recursive=False, filter="*.py")
-    #     actors = j.baseclasses.dict()
-    #     for file_path in files:
-    #         basepath = j.sal.fs.getBaseName(file_path)
-    #         if "__" in basepath or basepath.startswith("test"):
-    #             continue
-    #         actor_names.append(basepath[:-3])
-    #         self.actor_add(file_path, package=package)
-
     def actor_add(self, name, path, package):
         """
         add commands from 1 actor (or other python) file
@@ -182,15 +152,16 @@ class GedisServer(JSBaseConfig):
 
         self._log_debug("actor_add:%s:%s", package.name, path)
         key = "%s.%s" % (package.name, name)
-        # if key not in self.actors.keys():
-        #     self.actors_data.append("%s:%s" % (namespace, path))
+        self.cmds_meta[key] = GedisCmds(path=path, name=name, package=package)
 
-        try:
-            self.cmds_meta[key] = GedisCmds(path=path, name=name, package=package)
-        except Exception as e:
-            print(e)
-            raise e
-        # return self.cmds_meta[key]
+    def actors_remove(self, name, package):
+        assert name
+        assert isinstance(package, ThreeBotPackage)
+
+        key = "%s.%s" % (package.name, name)
+        if key in self.cmds_meta:
+            del self.cmds_meta[key]
+            self._log_debug("actor_removed:%s:%s", package.name)
 
     ####################################################################
 
