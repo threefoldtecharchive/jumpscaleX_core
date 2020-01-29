@@ -1,11 +1,11 @@
-import os
 import atexit
-import psutil
-import traceback
-
 import gc
-import sys
+import json
+import os
+import psutil
 import re
+import sys
+import traceback
 
 from Jumpscale.servers.gedis.UserSession import UserSessionAdmin
 
@@ -125,14 +125,15 @@ class RedisLogger(Logger):
     # redis list key prefix
     KEY_PREFIX = "logs:"
     # maximum numbers of logs to keep in this list
-    LOG_MAX = 100
+    LOG_MAX = 1000
 
     def __init__(self, j, session):
         super().__init__(j, session)
         self.db = self._j.core.db
 
     def log(self, logdict):
-        out = self._j.core.tools.log2str(logdict)
+        logdict["TIME"] = self._j.core.tools.logtime(logdict)
+        out = json.dumps(logdict)
         key = f"{self.KEY_PREFIX}{self.location}"
         self.db.lpush(key, out)
         self.db.ltrim(key, 0, self.LOG_MAX - 1)

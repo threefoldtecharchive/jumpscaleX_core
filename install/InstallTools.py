@@ -1111,7 +1111,7 @@ class Tools:
 
         logdict["linenr"] = linenr
         logdict["filepath"] = fname
-        logdict["processid"] = "unknown"  # TODO: get pid
+        logdict["processid"] = os.getpid()
         if source:
             logdict["source"] = source
 
@@ -1952,6 +1952,14 @@ class Tools:
         return out
 
     @staticmethod
+    def logtime(logdict):
+        if "epoch" in logdict:
+            timetuple = time.localtime(logdict)
+        else:
+            timetuple = time.localtime(time.time())
+        return time.strftime(MyEnv.FORMAT_TIME, timetuple)
+
+    @staticmethod
     def log2str(logdict, data_show=True, replace=True):
         """
 
@@ -1970,12 +1978,8 @@ class Tools:
 
         :return:
         """
-
-        if "epoch" in logdict:
-            timetuple = time.localtime(logdict)
-        else:
-            timetuple = time.localtime(time.time())
-        logdict["TIME"] = time.strftime(MyEnv.FORMAT_TIME, timetuple)
+        if not logdict.get("TIME"):
+            logdict["TIME"] = Tools.logtime(logdict)
 
         if logdict["level"] < 11:
             LOGLEVEL = "DEBUG"

@@ -102,11 +102,6 @@ class AlertHandler(j.baseclasses.object):
         if self.handle_error not in j.errorhandler.handlers:
             j.errorhandler.handlers.append(self.handle_error)
 
-    def _process_logdict(self, logdict):
-        if "processid" not in logdict or not logdict["processid"] or logdict["processid"] == "unknown":
-            logdict["processid"] = j.application.systempid
-        return logdict
-
     def _dumps(self, data):
         if isinstance(data, str):
             return data
@@ -162,9 +157,6 @@ class AlertHandler(j.baseclasses.object):
         :param logdict: logging dict (see jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md for keys)
         :type logdict: dict
         """
-
-        logdict = self._process_logdict(logdict)
-
         alert_type = "event_system"
 
         if "cat" not in logdict:
