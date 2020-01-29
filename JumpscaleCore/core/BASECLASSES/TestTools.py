@@ -19,7 +19,7 @@ _full_results = {
 }
 
 
-class Skip(BaseException):
+class Skip(Exception):
     """Raise for skipping test"""
 
 
@@ -57,6 +57,11 @@ class TestTools:
         """
 
         def find_file(name, path):
+            """Find a file in path with a part of its name.
+
+            :param name: part of file name.
+            :param path: parent path.
+            """
             files = j.sal.fs.listPyScriptsInDir(path)
             for file in files:
                 _, basename, _, _ = j.sal.fs.pathParse(file)
@@ -75,13 +80,18 @@ class TestTools:
         self._execute_report_tests()
 
     def _run_from_path(self, path="", name=""):
+        """Run tests from absolute or relative path.
+
+        :param path: tests path.
+        :param name: testcase name to be run in case of running only one test.
+        """
         if not j.sal.fs.isAbsolute(path):
             path = j.sal.fs.joinPaths(j.sal.fs.getcwd(), path)
         self._discover_from_path(path, name)
         return self._execute_report_tests(name)
 
     def _discover_from_path(self, path, test_name=""):
-        """Discover and get modules that conatains a tests in a certain path.
+        """Discover and get modules that contains tests in a certain path.
 
         :param path: absolute path to be discovered.
         :param test_name: (optional) test name for getting only this test.
@@ -136,16 +146,11 @@ class TestTools:
             raise AttributeError(f"Test {test_name} is not found")
 
     def _execute_report_tests(self, test_name="", report=True):
-        """Run tests has been discovered using discover method.
+        """Run tests has been discovered using a discover method.
 
         :param test_name: (optional) test name for run only this test.
         :return: 0 in case of success or no test found, 1 in case of failure.
         """
-        self._results = {
-            "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
-            "testcases": [],
-            "time_taken": 0,
-        }
         # We should keep track of every test (execution time)
         start_time = time.time()
         for module in self._modules:
@@ -161,16 +166,22 @@ class TestTools:
         end_time = time.time()
         time_taken = end_time - start_time
         self._results["time_taken"] = time_taken
+        tests_status = (self._results["summary"]["failures"] > 0) or (self._results["summary"]["errors"] > 0)
         if report and self.__show_tests_report:
+            # in case of running test from path or jsx factory.
             self._report()
+            self._reset()
         if not self.__show_tests_report:
+            # in case of collecting all tests to be reported at the end.
             self._add_to_full_results()
-        if (self._results["summary"]["failures"] > 0) or (self._results["summary"]["errors"] > 0):
+            self._reset()
+
+        if tests_status:
             return 1
         return 0
 
     def _execute_test(self, method, module):
-        """Run one test.
+        """Execute one test.
 
         :param method: test name.
         :param module: module that contain this test.
@@ -363,6 +374,8 @@ class TestTools:
         print(result_str.split(": ")[1], "\u001b[0m")
 
     def _add_to_full_results(self):
+        """Add results from test
+        """
         _full_results["summary"]["failures"] += self._results["summary"]["failures"]
         _full_results["summary"]["errors"] += self._results["summary"]["errors"]
         _full_results["summary"]["passes"] += self._results["summary"]["passes"]
@@ -371,7 +384,6 @@ class TestTools:
         _full_results["testcases"].extend(self._results["testcases"])
 
     def _run_tests_from_object(self, obj=None):
-        self._modules = []
         if obj is None:
             return
         elif isinstance(obj, j.baseclasses.object):
@@ -385,10 +397,11 @@ class TestTools:
                 if obj == group:
                     self._discover_group(group_name, group)
 
+        self.__show_tests_report = False
         self._execute_report_tests(report=False)
         global _full_results
         self._report(results=_full_results)
-        self._reset()
+        self._reset(full=True)
 
     def _discover_group(self, group_name, group):
         for factory in dir(group):
@@ -402,11 +415,19 @@ class TestTools:
                     attr.__show_tests_report = False
                     self._modules.append(attr)
 
-    def _reset(self):
-        for module in self._modules:
-            module.__show_tests_report = True
-        global _full_results
-        _full_results = {
+    def _reset(self, full=False):
+        if full:
+            for module in self._modules:
+                module.__show_tests_report = True
+
+            global _full_results
+            _full_results = {
+                "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
+                "testcases": [],
+                "time_taken": 0,
+            }
+        self._modules = []
+        self._results = {
             "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
             "testcases": [],
             "time_taken": 0,
