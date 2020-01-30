@@ -2,6 +2,8 @@ from Jumpscale import j
 from .Syncer import Syncer
 import gevent
 
+skip = j.baseclasses.testtools._skip
+
 
 class SyncerFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.tools.syncer"
@@ -18,6 +20,7 @@ class SyncerFactory(j.baseclasses.object_config_collection_testtools):
         threads = [gevent.spawn(syncer.sync()) for syncer in syncs]
         gevent.joinall(threads)
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/489")
     def test(self):
         """
         kosmos 'j.tools.syncer.test()'
