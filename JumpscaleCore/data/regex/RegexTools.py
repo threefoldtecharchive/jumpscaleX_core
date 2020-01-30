@@ -500,7 +500,8 @@ class RegexTools(j.baseclasses.object):
     def test(self):
         # content = j.sal.fs.readFile("examplecontent1.txt")
         # print(self.getClassName("class iets(test):"))
-        content = "class iets(test):"
+        matched_word = "iets"
+        content = "class {}(test):".format(matched_word)
         # find all occurences of class and find positions
         regexmatches = j.data.regex.getRegexMatches(r"(?m)(?<=^class )[ A-Za-z0-9_\-]*\b", content)
-        return regexmatches
+        assert matched_word == str(regexmatches).split()[0]
