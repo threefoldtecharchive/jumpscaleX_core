@@ -150,7 +150,6 @@ def test005_load_sshkey_in_sshagent():
     info("Check if the ssh key has been loaded")
     output, error = os_command("ssh-add -l")
     assert "{}/{}".format(sshkey_dir, sshkeyclient_name) in output.decode()
-    assert error is False
 
 
 def test006_unload_sshkey_from_sshagent():

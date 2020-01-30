@@ -726,5 +726,5 @@ class GitFactory(j.baseclasses.object):
         if pushmessage != "":
             self.pushGitRepos(pushmessage, name=name, update=True, provider=provider, account=account)
 
-    def test_git_client(self, name):
+    def test_git_client(self, name=""):
         self._tests_run(name=name)

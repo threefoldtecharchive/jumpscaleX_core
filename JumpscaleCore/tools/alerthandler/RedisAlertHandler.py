@@ -84,6 +84,8 @@ SCHEMA_ALERT = """
 
 import redis
 
+skip = j.baseclasses.testtools._skip
+
 
 class AlertHandler(j.baseclasses.object):
 
@@ -413,6 +415,7 @@ class AlertHandler(j.baseclasses.object):
             print(obj._hr_get(exclude=["trace"]))
             print("\n############################\n")
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/483")
     def test(self, delete=True):
         """
         kosmos 'j.tools.alerthandler.test()'
