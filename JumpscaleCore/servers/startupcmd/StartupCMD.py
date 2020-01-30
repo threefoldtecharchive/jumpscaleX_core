@@ -715,9 +715,13 @@ class StartupCMD(j.baseclasses.object_config):
     def _corex_client(self):
         corex_client = j.clients.corex.get(name=self.corex_client_name)
         server_process = j.sal.process.getProcessByPort(corex_client.port)
+        corex_server = j.servers.corex.get(name=self.corex_client_name, port=corex_client.port)
         if not server_process:
-            corex_server = j.servers.corex.get(name=self.corex_client_name, port=corex_client.port)
             corex_server.start()
+        corex_client = j.clients.corex.get(
+            name=self.corex_client_name, login=corex_server.user, passwd_=corex_server.password
+        )
+        corex_client.save()
         return corex_client
 
     def _corex_start(self, toexec):

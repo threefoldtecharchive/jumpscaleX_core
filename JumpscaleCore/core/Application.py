@@ -134,8 +134,9 @@ class RedisLogger(Logger):
     def log(self, logdict):
         out = self._j.core.tools.log2str(logdict)
         key = f"{self.KEY_PREFIX}{self.location}"
-        self.db.lpush(key, out)
-        self.db.ltrim(key, 0, self.LOG_MAX - 1)
+        if self.db:
+            self.db.lpush(key, out)
+            self.db.ltrim(key, 0, self.LOG_MAX - 1)
 
 
 class Application(object):
