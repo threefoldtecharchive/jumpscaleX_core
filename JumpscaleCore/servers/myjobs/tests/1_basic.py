@@ -1,31 +1,33 @@
 from Jumpscale import j
 
+myjob = j.servers.myjobs
 
-def main(self):
+
+def test_basic():
     """
     kosmos -p 'j.servers.myjobs.test("basic")'
     """
 
     j.tools.logger.debug = True
 
-    self._test_setup()
+    j.servers.myjobs._test_setup()
 
     def add(a=None, b=None):
         assert a
         assert b
         return a + b
 
-    job = self.schedule(add, a=1, b=2)
+    job = j.servers.myjobs.schedule(add, a=1, b=2)
     jobid = job.id
     assert isinstance(jobid, int)
 
     # means work scheduled)
-    assert self.scheduled_ids == [jobid]
+    assert j.servers.myjobs.scheduled_ids == [jobid]
 
-    assert self.jobs
+    assert j.servers.myjobs.jobs
 
-    self.worker_inprocess_start()  # will only run 1 time
-    assert self.scheduled_ids == [jobid]
+    j.servers.myjobs.worker_inprocess_start()  # will only run 1 time
+    assert j.servers.myjobs.scheduled_ids == [jobid]
 
     job.load()
     assert job.state == "OK"
@@ -35,29 +37,29 @@ def main(self):
     assert job.id == jobid
     assert job.check_ready()
 
-    res = self.results()
+    res = j.servers.myjobs.results()
 
     assert len(res) == 1
     assert res[0] == 3
 
-    job = self.jobs.find()[0]
+    job = j.servers.myjobs.jobs.find()[0]
     assert job.error == {}
     assert job.result == 3
     assert job.state == "OK"
     assert job.time_stop > 0
 
-    job = self.schedule(add, a=3, b=4)
+    job = j.servers.myjobs.schedule(add, a=3, b=4)
     jobid = job.id
-    self.worker_inprocess_start()
+    j.servers.myjobs.worker_inprocess_start()
 
-    res = self.results([jobid])
+    res = j.servers.myjobs.results([jobid])
     v = [i for i in res]
     assert v[0] == 7
 
-    job = self.schedule(add, a=3, b=4)
-    self.worker_inprocess_start()
+    job = j.servers.myjobs.schedule(add, a=3, b=4)
+    j.servers.myjobs.worker_inprocess_start()
     res = job.wait()
     print(res)
-    self._test_teardown()
+    j.servers.myjobs._test_teardown()
     print("Basic TEST OK")
     print("TEST OK")

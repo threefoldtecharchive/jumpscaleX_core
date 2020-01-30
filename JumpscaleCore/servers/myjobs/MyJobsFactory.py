@@ -9,8 +9,10 @@ from .MyWorkerProcess import MyWorkerProcess
 from .MyJobs import MyJobs
 from .MyWorker import MyWorkers
 
+TESTTOOLS = j.baseclasses.testtools
 
-class MyJobsFactory(j.baseclasses.factory_testtools):
+
+class MyJobsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
     __jslocation__ = "j.servers.myjobs"
     _CHILDCLASSES = [MyWorkers, MyJobs]
 
@@ -651,7 +653,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         """
 
         try:
-            self._test_run(name=name, **kwargs)
+            self._tests_run(name=name, **kwargs)
         except:
             self._test_teardown()
             raise
