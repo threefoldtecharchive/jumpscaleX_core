@@ -23,11 +23,6 @@ def get_client(redis_host, redis_port, redis_secret, session, date, context, pid
     return client
 
 
-@click.group()
-def cli():
-    pass
-
-
 def common_options(function):
     click.option("--redis-host", default=None, help="redis host (defaults to localhost)")(function)
     click.option("--redis-port", default=6379, help="redis port (defaults to 6379)")(function)
@@ -44,29 +39,31 @@ def common_options(function):
     return function
 
 
-@click.command()
+@click.group()
 @common_options
-def tail(redis_host, redis_port, redis_secret, session, date, context, pid, wait_interval):
+@click.pass_context
+def cli(ctx, redis_host, redis_port, redis_secret, session, date, context, pid, wait_interval):
+    ctx.obj = get_client(redis_host, redis_port, redis_secret, session, date, context, pid, wait_interval)
+
+
+@cli.command()
+@click.pass_obj
+def tail(client):
     """
     tail logs from session
     """
-    client = get_client(redis_host, redis_port, redis_secret, session, date, context, pid, wait_interval)
     client.tail()
 
 
-@click.command()
-@common_options
+@cli.command()
 @click.option("--path", required=True, help="output file path")
-def dump(redis_host, redis_port, redis_secret, session, date, context, path, pid, wait_interval):
+@click.pass_obj
+def dump(client, path):
     """
     dump logs of session to file
     """
-    client = get_client(redis_host, redis_port, redis_secret, session, date, context, pid, wait_interval)
     client.dump(path)
 
-
-cli.add_command(tail)
-cli.add_command(dump)
 
 if __name__ == "__main__":
     cli()
