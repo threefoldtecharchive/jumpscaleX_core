@@ -1,9 +1,11 @@
-from Jumpscale import j
+import redis
 
 try:
     import ujson as json
 except BaseException:
     import json
+
+from Jumpscale import j
 
 
 SCHEMA_ALERT = """
@@ -74,15 +76,8 @@ SCHEMA_ALERT = """
 
 """
 
-# ## log (error) levels
-# - CRITICAL 	50
-# - ERROR 	40
-# - WARNING 	30
-# - INFO 	    20
-# - STDOUT 	15
-# - DEBUG 	10
-
-import redis
+# log (error) levels
+LEVELS = {50: "CRITICAL", 40: "ERROR", 30: "WARNING", 20: "INFO", 15: "STDOUT", 10: "DEBUG"}
 
 
 class AlertHandler(j.baseclasses.object):
@@ -292,7 +287,7 @@ class AlertHandler(j.baseclasses.object):
         res = self.db.hget(self._rediskey_alerts, identifier)
         if not res:
             if die:
-                raise RuntimeError("could not find alert with identifier:%s" % identifier)
+                raise j.exceptions.NotFound("could not find alert with identifier:%s" % identifier)
             return self.schema_alert.new()
         datadict = self._loads(res)
         alert = self.schema_alert.new(datadict=datadict)
@@ -346,36 +341,82 @@ class AlertHandler(j.baseclasses.object):
         args = self.walk(llist, args={"res": []})
         return args["res"]
 
-    def find(self, cat="", message=""):
-        """
-        :param cat: filter against category (can be part of category)
-        :param message:
-        :return: list([key,err])
+    def find(self, cat="", message="", pid=None, time=None):
+        """filter alerts by cat, message, pid or time
+
+        :param cat: category, defaults to ""
+        :type cat: str, optional
+        :param message: message (can be public message too), defaults to ""
+        :type message: str, optional
+        :param pid: process id, defaults to None
+        :type pid: int, optional
+        :param time: time (epoch), defaults to None
+        :type time: int, optional
+        :return: list of alert objects
+        :rtype: list
         """
         res = []
-        for res0 in self.list():
-            key, err = res0
-            found = True
-            if message is not "" and err.message.find(message) == -1:
-                found = False
-            if cat is not "" and err.cat.find(cat) == -1:
-                found = False
+        cat = cat.strip().lower()
+        message = message.strip().lower()
+
+        for _, alert in self.list():
+            found = False
+
+            if message:
+                if message in alert.message.strip().lower() or message in alert.message_pub.strip().lower():
+                    found = True
+
+            if cat:
+                if cat in alert.cat.strip().lower():
+                    found = True
+
+            if pid:
+                for event in alert.events:
+                    if pid in event.process_ids:
+                        found = True
+            if time:
+                if alert.time_first <= time <= alert.time_last:
+                    found = True
+
             if found:
-                res.append([key, err])
+                res.append(alert)
+
         return res
 
     def count(self):
         return len(self.list())
 
-    def print(self):
+    def print(self, alert, exclude=None):
+        """print alert information
+
+        TODO: implement printing for events and tracebacks
+              maybe we can store traceback to be easily formatted using
+              j.core.tools.traceback_format
+
+        :param alert: [description]
+        :type alert: [type]
         """
-        kosmos 'j.tools.alerthandler.print()'
+        if not exclude:
+            exclude = []
+
+        exclude += ["support_trace", "events", "tracebacks"]  # for now
+
+        props = alert._ddict_hr_get(exclude=exclude)
+        props["level"] = LEVELS.get(int(props["level"]), "Unknown")
+        print(alert._hr_get_properties(props))
+
+    def print_list(self, alerts):
         """
-        for (key, obj) in self.list():
-            tb_text = obj.trace
-            j.core.errorhandler._trace_print(tb_text)
-            print(obj._hr_get(exclude=["trace"]))
-            print("\n############################\n")
+        print alerts
+        TODO: better printing, maybe as a tabular list
+        with date, count, identifier and message
+
+        :param alerts: list of alert objects
+        :type alerts: list of Alert
+        """
+        exclude = ["alert_id", "cat", "message_pub", "alert_type"]
+        for alert in alerts:
+            self.print(alert, exclude=exclude)
 
     def test(self, delete=True):
         """
