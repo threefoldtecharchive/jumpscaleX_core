@@ -998,7 +998,7 @@ class Tools:
         data_show=True,
         exception=None,
         replace=True,
-        stdout=True,
+        stdout=False,
         source=None,
         frame_=None,
     ):
@@ -1013,8 +1013,8 @@ class Tools:
             - CRITICAL 	50
             - ERROR 	40
             - WARNING 	30
+            - ENDUSER 	25
             - INFO 	    20
-            - STDOUT 	15
             - DEBUG 	10
 
 
@@ -1027,6 +1027,8 @@ class Tools:
         :return:
         """
         logdict = {}
+        if MyEnv.debug or level > 39:  # error+ is shown
+            stdout = True
 
         if isinstance(msg, Exception):
             raise Tools.exceptions.JSBUG("msg cannot be an exception raise by means of exception=... in constructor")
@@ -1139,6 +1141,8 @@ class Tools:
             logdict = copy.copy(logdict)
             logdict["message"] = Tools.text_replace(logdict["message"])
             Tools.log2stdout(logdict, data_show=data_show)
+        elif level > 24:
+            Tools.log2stdout(logdict, data_show=False, enduser=True)
 
         iserror = tb or exception
         return Tools.process_logdict_for_handlers(logdict, iserror)
@@ -1903,17 +1907,29 @@ class Tools:
         return res
 
     @staticmethod
-    def log2stdout(logdict, data_show=True):
+    def log2stdout(logdict, data_show=True, enduser=False):
         def show():
             # always show in debugmode and critical
             if MyEnv.debug or logdict["level"] >= 50:
                 return True
             if not MyEnv.log_console:
                 return False
-            return logdict["level"] >= MyEnv.log_loglevel
+            return logdict["level"] >= MyEnv.log_level
 
         if not show():
             return
+
+        if enduser:
+            if "public" in logdict and logdict["public"]:
+                msg = logdict["public"]
+            else:
+                msg = logdict["message"]
+            if logdict["level"] > 29:
+                print(Tools.text_replace("{RED} * %s{RESET}\n" % msg))
+            else:
+                print(Tools.text_replace("{YELLOW} * %s{RESET}\n" % msg))
+            return
+
         text = Tools.log2str(logdict, data_show=True, replace=True)
         p = print
         if MyEnv.config.get("LOGGER_PANEL_NRLINES"):
@@ -3134,8 +3150,8 @@ class MyEnv_:
         self.state = None
         self.__init = False
         self.debug = False
-        self.log_console = True
-        self.log_loglevel = 15
+        self.log_console = False
+        self.log_level = 15
 
         self.sshagent = None
         self.interactive = False
@@ -3220,9 +3236,9 @@ class MyEnv_:
 
             self.log_includes = [i for i in self.config.get("LOGGER_INCLUDE", []) if i.strip().strip("''") != ""]
             self.log_excludes = [i for i in self.config.get("LOGGER_EXCLUDE", []) if i.strip().strip("''") != ""]
-            self.log_loglevel = self.config.get("LOGGER_LEVEL", 50)
-            self.log_console = self.config.get("LOGGER_CONSOLE", True)
-            self.log_redis = self.config.get("LOGGER_REDIS", False)
+            self.log_level = self.config.get("LOGGER_LEVEL", 10)
+            self.log_console = self.config.get("LOGGER_CONSOLE", False)
+            self.log_redis = self.config.get("LOGGER_REDIS", True)
             self.debug = self.config.get("DEBUG", False)
             self.debugger = self.config.get("DEBUGGER", "pudb")
             self.interactive = self.config.get("INTERACTIVE", True)

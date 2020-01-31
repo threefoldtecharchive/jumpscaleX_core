@@ -17,8 +17,8 @@ SCHEMA_ALERT = """
 6 : cat = ""                          #a freely chosen category can be in dot notation e.g. performance.cpu.high
 7: count = 0 (I)
 8: status = "closed,new,open,reopen" (E)
-9: time_first = (D)
-10: time_last = (D)
+9: time_first = (T)
+10: time_last = (T)
 11: support_trace = (LO) !jumpscale.alerthandler.alert.support.trace
 12: events = (LO) !jumpscale.alerthandler.alert.event
 13: tracebacks = (LO) !jumpscale.alerthandler.alert.traceback
@@ -29,6 +29,7 @@ SCHEMA_ALERT = """
 1 : support_status = "closed,new,open,troubleshoot,ignore" (E)
 2 : support_assigned = ""                                           #optional support operator who takes responsiblity
 3 : support_comment = ""
+4:  modtime = (T)
 
 #is an event of the alert
 @url = jumpscale.alerthandler.alert.event
@@ -101,11 +102,39 @@ class AlertHandler(j.baseclasses.object):
     def setup(self):
         if self.handle_error not in j.errorhandler.handlers:
             j.errorhandler.handlers.append(self.handle_error)
+        if self.handle_log not in j.core.myenv.loghandlers:
+            j.core.myenv.loghandlers.append(self.handle_log)
+
+    def handle_log(self, logdict):
+        j.application.inlogger = True  # not working
+        try:
+            self._handle_log(logdict)
+        except Exception as e:
+            print("**ERROR IN LOG HANDLER**")
+            print(str(e))
+        j.application.inlogger = False
 
     def _process_logdict(self, logdict):
         if "processid" not in logdict or not logdict["processid"] or logdict["processid"] == "unknown":
             logdict["processid"] = j.application.systempid
         return logdict
+
+    def _handle_log(self, logdict):
+        """handle error
+
+        :param logdict: logging dict (see jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md for keys)
+        :type logdict: dict
+        """
+
+        if "traceback" in logdict:
+            logdict.pop("traceback")
+
+        logdict = self._process_logdict(logdict)
+
+        data = self._dumps(logdict)
+
+        self.db.lpush(self._rediskey_logs, data)
+        self.db.ltrim(self._rediskey_logs, 0, 1000)
 
     def _dumps(self, data):
         if isinstance(data, str):

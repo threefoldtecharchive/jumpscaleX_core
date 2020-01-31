@@ -59,7 +59,7 @@ class JSConfigBCDBBase(JSBase, Attr):
                     if "name" not in schema.props:
                         raise j.exceptions.Input("name not found in schema", data=schema.text)
                     if not schema.props["name"].index:
-                        raise j.exceptions.Input("name need to be a field and index (**)", data=schema._ext)
+                        raise j.exceptions.Input("name need to be a field and index (**)", data=schema)
                     if has_mother:
                         if "mother_id" not in schema.props:
                             raise j.exceptions.Input(
