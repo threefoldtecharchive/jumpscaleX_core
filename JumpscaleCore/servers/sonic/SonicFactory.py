@@ -2,7 +2,6 @@ from Jumpscale import j
 from .SonicServer import SonicServer
 
 JSConfigs = j.baseclasses.object_config_collection
-skip = j.baseclasses.testtools._skip
 
 
 class SonicFactory(JSConfigs):
@@ -28,12 +27,13 @@ class SonicFactory(JSConfigs):
         """
         j.builders.apps.sonic.install(reset=reset)
 
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/500")
     def test(self, start=True):
         """
         kosmos 'j.servers.sonic.test()'
         :return:
         """
+        j.servers.sonic.threebot.stop()
+
         self.install()
         s = self.get(name="test_instance", port=1492)
         s.save()
