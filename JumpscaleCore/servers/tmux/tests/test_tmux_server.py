@@ -7,7 +7,7 @@ def info(message):
     logger.info(message)
 
 
-def rand_string(self, size=10):
+def rand_string(size=10):
     return str(uuid.uuid4()).replace("-", "")[1:10]
 
 
