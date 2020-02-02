@@ -84,9 +84,12 @@ class StartupCMD(j.baseclasses.object_config):
     def pid(self):
         # try to get process ID from process itself if pid is default
         if self._pid == self.DEFAULT_PROCESS_ID:
-            pids = j.sal.process.getProcessPid("startupcmd_%s" % self.name)
-            if pids:
-                return pids[0]
+            try:
+                pids = j.sal.process.getProcessPid("startupcmd_%s" % self.name)
+                if pids:
+                    return pids[0]
+            except:
+                pass
         if self._pid:
             return self._pid
         return 0
