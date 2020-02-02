@@ -155,7 +155,7 @@ class Application(object):
 
         self._systempid = None
 
-        self.schemas = None
+        # self.schemas = None
 
         self.errors_init = []
 
@@ -373,12 +373,15 @@ class Application(object):
             self._systempid = os.getpid()
         return self._systempid
 
-    def start(self, name=None):
+    def start(self, name=None, loghandler=True):
         """Start the application
 
         You can only stop the application with return code 0 by calling
         self._j.application.stop(). Don't call sys.exit yourself, don't try to run
         to end-of-script, I will find you anyway!
+
+        this start will also start the redis log handler (IS THE ONLYONE WHICH SHOULD BE USED)
+
         """
         if name:
             self.appname = name
@@ -394,7 +397,12 @@ class Application(object):
         # Set state
         self.state = "RUNNING"
 
-        self._log_info("***Application started***: %s" % self.appname)
+        logger = self._j.core.myenv.loghandler_redis.handle_log
+        self._j.core.myenv.loghandler_redis.appname = self.appname
+
+        if loghandler:
+            if logger not in self._j.core.myenv.loghandlers:
+                self._j.core.myenv.loghandlers.append(logger)
 
     def stop(self, exitcode=0):
         """Stop the application cleanly using a given exitcode
@@ -428,8 +436,6 @@ class Application(object):
         sys.exit(exitcode)
 
     def _exithandler(self):
-        j.shell()
-
         self.stop()
 
     # def getCPUUsage(self):

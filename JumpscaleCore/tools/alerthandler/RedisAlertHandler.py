@@ -97,44 +97,45 @@ class AlertHandler(j.baseclasses.object):
         self.db = redis.Redis()
         self.serialize_json = True
         self._rediskey_alerts = "alerts"
-        self._rediskey_logs = "logs:%s" % (self._threebot_name)
+        # self._rediskey_logs = "logs:%s" % (self._threebot_name)
 
     def setup(self):
         if self.handle_error not in j.errorhandler.handlers:
             j.errorhandler.handlers.append(self.handle_error)
-        if self.handle_log not in j.core.myenv.loghandlers:
-            j.core.myenv.loghandlers.append(self.handle_log)
+        # if self.handle_log not in j.core.myenv.loghandlers:
+        #     j.core.myenv.loghandlers.append(self.handle_log)
 
-    def handle_log(self, logdict):
-        j.application.inlogger = True  # not working
-        try:
-            self._handle_log(logdict)
-        except Exception as e:
-            print("**ERROR IN LOG HANDLER**")
-            print(str(e))
-        j.application.inlogger = False
+    # def handle_log(self, logdict):
+    #     j.application.inlogger = True  # not working
+    #     try:
+    #         self._handle_log(logdict)
+    #     except Exception as e:
+    #         print("**ERROR IN LOG HANDLER**")
+    #         print(str(e))
+    #     j.application.inlogger = False
+    #
 
     def _process_logdict(self, logdict):
         if "processid" not in logdict or not logdict["processid"] or logdict["processid"] == "unknown":
             logdict["processid"] = j.application.systempid
         return logdict
 
-    def _handle_log(self, logdict):
-        """handle error
-
-        :param logdict: logging dict (see jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md for keys)
-        :type logdict: dict
-        """
-
-        if "traceback" in logdict:
-            logdict.pop("traceback")
-
-        logdict = self._process_logdict(logdict)
-
-        data = self._dumps(logdict)
-
-        self.db.lpush(self._rediskey_logs, data)
-        self.db.ltrim(self._rediskey_logs, 0, 1000)
+    # def _handle_log(self, logdict):
+    #     """handle error
+    #
+    #     :param logdict: logging dict (see jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md for keys)
+    #     :type logdict: dict
+    #     """
+    #
+    #     if "traceback" in logdict:
+    #         logdict.pop("traceback")
+    #
+    #     logdict = self._process_logdict(logdict)
+    #
+    #     data = self._dumps(logdict)
+    #
+    #     self.db.lpush(self._rediskey_logs, data)
+    #     self.db.ltrim(self._rediskey_logs, 0, 1000)
 
     def _dumps(self, data):
         if isinstance(data, str):

@@ -30,8 +30,9 @@ def common_options(function):
     click.option("--redis-port", default=6379, help="redis port (defaults to 6379)")(function)
     click.option("--redis-secret", default=None, help="redis secret (empty by default)")(function)
     click.option("--session", default=None, help="session name (defaults to jumpscale)")(function)
-    click.option("--date", default=j.data.time.epoch, help="filter by date (epoch), defaults to today")(function)
-    click.option("--context", default="main", help="current context (can be main, error...etc)")(function)
+    click.option("--timefrom", default=None, help="filter by date (epoch), defaults to -1h")(function)
+    click.option("--timeto", default=None, help="filter by date (epoch), defaults to -1h")(function)
+    click.option("-a", "--appname", default="init", help="application name")(function)
     return function
 
 
