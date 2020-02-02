@@ -20,6 +20,10 @@ class GedisWebsocketFactory(JSConfigClient):
         return self._default
 
     def test(self):
-        self.client_gedis = j.clients.gedis.get("main", port=8900)
+        """
+        kosmos 'j.servers.gedis_websocket.test()'
+        """
+        j.servers.threebot.local_start_explorer(background=True)
+        self.client_gedis = j.clients.gedis.get("test_gedis", port=8901, package_name="zerobot.webinterface")
         self.client_gedis.actors.chatbot.ping()
         return "DONE"
