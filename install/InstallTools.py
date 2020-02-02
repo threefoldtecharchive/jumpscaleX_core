@@ -896,6 +896,7 @@ class LogHandler:
     def _data_container_dump(self, latest_id):
         startid = latest_id - 2000 + 1
         stopid = latest_id - 1000 + 1
+        # TODO, need to verify, for the next 2000 logs items we will not have them all
         if msgpack:
             r = []
             for i in range(startid, stopid):
