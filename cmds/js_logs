@@ -4,7 +4,7 @@ import click
 from Jumpscale import j
 
 
-def get_client(redis_host, redis_port, redis_secret, session, date, context, pid, wait_interval):
+def get_client(redis_host, redis_port, redis_secret, session, date, context):
     client = j.clients.logger.get("js_logs")
     if redis_host:
         client.redis_host = redis_host
@@ -14,13 +14,15 @@ def get_client(redis_host, redis_port, redis_secret, session, date, context, pid
         client.redis_secret = redis_secret
     if session:
         client.session = session
-    if wait_interval:
-        client.wait_interval = wait_interval
 
-    client.pid = pid
     client.date = date
     client.context = context
     return client
+
+
+@click.group()
+def cli():
+    pass
 
 
 def common_options(function):
@@ -28,42 +30,35 @@ def common_options(function):
     click.option("--redis-port", default=6379, help="redis port (defaults to 6379)")(function)
     click.option("--redis-secret", default=None, help="redis secret (empty by default)")(function)
     click.option("--session", default=None, help="session name (defaults to jumpscale)")(function)
-    click.option("--date", default=j.data.time.epoch, help="filter by date (epoch), defaults to today")(function)
-    click.option("--context", default="main", help="filter by context (can be main, error...etc), defaults to main")(
-        function
-    )
-    click.option("--pid", default=0, help="filter by process id, defaults to all")(function)
-    click.option("--wait-interval", default=0.0, help="wait interval for polling logs from server, defaults to 0")(
-        function
-    )
+    click.option("--timefrom", default=None, help="filter by date (epoch), defaults to -1h")(function)
+    click.option("--timeto", default=None, help="filter by date (epoch), defaults to -1h")(function)
+    click.option("-a", "--appname", default="init", help="application name")(function)
     return function
 
 
-@click.group()
+@click.command()
 @common_options
-@click.pass_context
-def cli(ctx, redis_host, redis_port, redis_secret, session, date, context, pid, wait_interval):
-    ctx.obj = get_client(redis_host, redis_port, redis_secret, session, date, context, pid, wait_interval)
-
-
-@cli.command()
-@click.pass_obj
-def tail(client):
+def tail(redis_host, redis_port, redis_secret, session, date, context):
     """
     tail logs from session
     """
+    client = get_client(redis_host, redis_port, redis_secret, session, date, context)
     client.tail()
 
 
-@cli.command()
+@click.command()
+@common_options
 @click.option("--path", required=True, help="output file path")
-@click.pass_obj
-def dump(client, path):
+def dump(redis_host, redis_port, redis_secret, session, date, context, path):
     """
     dump logs of session to file
     """
+    client = get_client(redis_host, redis_port, redis_secret, session, date, context)
     client.dump(path)
 
+
+cli.add_command(tail)
+cli.add_command(dump)
 
 if __name__ == "__main__":
     cli()

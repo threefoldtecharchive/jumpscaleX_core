@@ -260,11 +260,11 @@ class DocSite(j.baseclasses.object):
                 callbackForMatchFile=callbackForMatchFile,
             )
 
-            revision = self.threegit.git_client.config_3git_get("revision_last_processed")
+            revision = self.threegit.revision
             old_files = None
         else:
             # check changed files and process it using 3git tool
-            self.revision = self.threegit.git_client.config_3git_get("revision_last_processed")
+            self.revision = self.threegit.revision
             revision, self._files_changed, old_files = self.threegit.git_client.logChanges(
                 path=self.path, from_revision=self.revision, untracked=True
             )
@@ -281,7 +281,8 @@ class DocSite(j.baseclasses.object):
                 item_path = j.sal.fs.joinPaths(self.outpath, ditem)
                 j.sal.fs.remove(item_path)
 
-        self.threegit.git_client.logChangesRevisionSet(revision)
+        self.threegit.revision = revision
+        self.threegit.save()
         print("git revision set with value: ", revision)
         self._loaded = True
 

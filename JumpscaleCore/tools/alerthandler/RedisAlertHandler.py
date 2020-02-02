@@ -1,11 +1,9 @@
-import redis
+from Jumpscale import j
 
 try:
     import ujson as json
 except BaseException:
     import json
-
-from Jumpscale import j
 
 
 SCHEMA_ALERT = """
@@ -19,8 +17,8 @@ SCHEMA_ALERT = """
 6 : cat = ""                          #a freely chosen category can be in dot notation e.g. performance.cpu.high
 7: count = 0 (I)
 8: status = "closed,new,open,reopen" (E)
-9: time_first = (D)
-10: time_last = (D)
+9: time_first = (T)
+10: time_last = (T)
 11: support_trace = (LO) !jumpscale.alerthandler.alert.support.trace
 12: events = (LO) !jumpscale.alerthandler.alert.event
 13: tracebacks = (LO) !jumpscale.alerthandler.alert.traceback
@@ -31,6 +29,7 @@ SCHEMA_ALERT = """
 1 : support_status = "closed,new,open,troubleshoot,ignore" (E)
 2 : support_assigned = ""                                           #optional support operator who takes responsiblity
 3 : support_comment = ""
+4:  modtime = (T)
 
 #is an event of the alert
 @url = jumpscale.alerthandler.alert.event
@@ -76,8 +75,15 @@ SCHEMA_ALERT = """
 
 """
 
-# log (error) levels
-LEVELS = {50: "CRITICAL", 40: "ERROR", 30: "WARNING", 20: "INFO", 15: "STDOUT", 10: "DEBUG"}
+# ## log (error) levels
+# - CRITICAL 	50
+# - ERROR 	40
+# - WARNING 	30
+# - INFO 	    20
+# - STDOUT 	15
+# - DEBUG 	10
+
+import redis
 
 
 class AlertHandler(j.baseclasses.object):
@@ -91,11 +97,45 @@ class AlertHandler(j.baseclasses.object):
         self.db = redis.Redis()
         self.serialize_json = True
         self._rediskey_alerts = "alerts"
-        self._rediskey_logs = "logs:%s" % (self._threebot_name)
+        # self._rediskey_logs = "logs:%s" % (self._threebot_name)
 
     def setup(self):
         if self.handle_error not in j.errorhandler.handlers:
             j.errorhandler.handlers.append(self.handle_error)
+        # if self.handle_log not in j.core.myenv.loghandlers:
+        #     j.core.myenv.loghandlers.append(self.handle_log)
+
+    # def handle_log(self, logdict):
+    #     j.application.inlogger = True  # not working
+    #     try:
+    #         self._handle_log(logdict)
+    #     except Exception as e:
+    #         print("**ERROR IN LOG HANDLER**")
+    #         print(str(e))
+    #     j.application.inlogger = False
+    #
+
+    def _process_logdict(self, logdict):
+        if "processid" not in logdict or not logdict["processid"] or logdict["processid"] == "unknown":
+            logdict["processid"] = j.application.systempid
+        return logdict
+
+    # def _handle_log(self, logdict):
+    #     """handle error
+    #
+    #     :param logdict: logging dict (see jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md for keys)
+    #     :type logdict: dict
+    #     """
+    #
+    #     if "traceback" in logdict:
+    #         logdict.pop("traceback")
+    #
+    #     logdict = self._process_logdict(logdict)
+    #
+    #     data = self._dumps(logdict)
+    #
+    #     self.db.lpush(self._rediskey_logs, data)
+    #     self.db.ltrim(self._rediskey_logs, 0, 1000)
 
     def _dumps(self, data):
         if isinstance(data, str):
@@ -152,6 +192,9 @@ class AlertHandler(j.baseclasses.object):
         :param logdict: logging dict (see jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md for keys)
         :type logdict: dict
         """
+
+        logdict = self._process_logdict(logdict)
+
         alert_type = "event_system"
 
         if "cat" not in logdict:
@@ -287,7 +330,7 @@ class AlertHandler(j.baseclasses.object):
         res = self.db.hget(self._rediskey_alerts, identifier)
         if not res:
             if die:
-                raise j.exceptions.NotFound("could not find alert with identifier:%s" % identifier)
+                raise RuntimeError("could not find alert with identifier:%s" % identifier)
             return self.schema_alert.new()
         datadict = self._loads(res)
         alert = self.schema_alert.new(datadict=datadict)
@@ -341,82 +384,36 @@ class AlertHandler(j.baseclasses.object):
         args = self.walk(llist, args={"res": []})
         return args["res"]
 
-    def find(self, cat="", message="", pid=None, time=None):
-        """filter alerts by cat, message, pid or time
-
-        :param cat: category, defaults to ""
-        :type cat: str, optional
-        :param message: message (can be public message too), defaults to ""
-        :type message: str, optional
-        :param pid: process id, defaults to None
-        :type pid: int, optional
-        :param time: time (epoch), defaults to None
-        :type time: int, optional
-        :return: list of alert objects
-        :rtype: list
+    def find(self, cat="", message=""):
+        """
+        :param cat: filter against category (can be part of category)
+        :param message:
+        :return: list([key,err])
         """
         res = []
-        cat = cat.strip().lower()
-        message = message.strip().lower()
-
-        for _, alert in self.list():
-            found = False
-
-            if message:
-                if message in alert.message.strip().lower() or message in alert.message_pub.strip().lower():
-                    found = True
-
-            if cat:
-                if cat in alert.cat.strip().lower():
-                    found = True
-
-            if pid:
-                for event in alert.events:
-                    if pid in event.process_ids:
-                        found = True
-            if time:
-                if alert.time_first <= time <= alert.time_last:
-                    found = True
-
+        for res0 in self.list():
+            key, err = res0
+            found = True
+            if message is not "" and err.message.find(message) == -1:
+                found = False
+            if cat is not "" and err.cat.find(cat) == -1:
+                found = False
             if found:
-                res.append(alert)
-
+                res.append([key, err])
         return res
 
     def count(self):
         return len(self.list())
 
-    def print(self, alert, exclude=None):
-        """print alert information
-
-        TODO: implement printing for events and tracebacks
-              maybe we can store traceback to be easily formatted using
-              j.core.tools.traceback_format
-
-        :param alert: [description]
-        :type alert: [type]
+    def print(self):
         """
-        if not exclude:
-            exclude = []
-
-        exclude += ["support_trace", "events", "tracebacks"]  # for now
-
-        props = alert._ddict_hr_get(exclude=exclude)
-        props["level"] = LEVELS.get(int(props["level"]), "Unknown")
-        print(alert._hr_get_properties(props))
-
-    def print_list(self, alerts):
+        kosmos 'j.tools.alerthandler.print()'
         """
-        print alerts
-        TODO: better printing, maybe as a tabular list
-        with date, count, identifier and message
-
-        :param alerts: list of alert objects
-        :type alerts: list of Alert
-        """
-        exclude = ["alert_id", "cat", "message_pub", "alert_type"]
-        for alert in alerts:
-            self.print(alert, exclude=exclude)
+        for (key, obj) in self.list():
+            tb_text = obj.trace
+            j.core.errorhandler._trace_print(tb_text)
+            print(obj._hr_get(exclude=["trace"]))
+            print("\n############################\n")
 
     def test(self, delete=True):
         """
