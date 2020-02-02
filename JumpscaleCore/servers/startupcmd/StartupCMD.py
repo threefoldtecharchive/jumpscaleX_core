@@ -82,14 +82,13 @@ class StartupCMD(j.baseclasses.object_config):
 
     @property
     def pid(self):
-        if self._pid:
-            return self._pid
-        try:
+        # try to get process ID from process itself if pid is default
+        if self._pid == self.DEFAULT_PROCESS_ID:
             pids = j.sal.process.getProcessPid("startupcmd_%s" % self.name)
             if pids:
                 return pids[0]
-        except Exception:  # This is keeping with the old implementation this handling might not be needed
-            pass
+        if self._pid:
+            return self._pid
         return 0
 
     @pid.setter
