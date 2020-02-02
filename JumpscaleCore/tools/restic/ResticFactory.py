@@ -1,6 +1,8 @@
 from Jumpscale import j
 from .ResticBackupJob import ResticBackupJob
 
+skip = j.baseclasses.testtools._skip
+
 
 class ResticFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.tools.restic"
@@ -66,6 +68,7 @@ class ResticFactory(j.baseclasses.object_config_collection_testtools):
         b = self._default_job_get()
         b.mount()
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/497")
     def test(self):
         """
         kosmos 'j.tools.restic.test()'

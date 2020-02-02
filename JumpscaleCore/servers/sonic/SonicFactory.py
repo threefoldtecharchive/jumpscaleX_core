@@ -2,6 +2,7 @@ from Jumpscale import j
 from .SonicServer import SonicServer
 
 JSConfigs = j.baseclasses.object_config_collection
+skip = j.baseclasses.testtools._skip
 
 
 class SonicFactory(JSConfigs):
@@ -27,6 +28,7 @@ class SonicFactory(JSConfigs):
         """
         j.builders.apps.sonic.install(reset=reset)
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/500")
     def test(self, start=True):
         """
         kosmos 'j.servers.sonic.test()'
