@@ -1778,6 +1778,6 @@ class SystemFS(JSBASE, TESTTOOLS):
         kosmos 'j.sal.fs.test()'
 
         """
-        self._test_run(name=name)
+        self._tests_run(name=name)
 
         print("TEST OK ALL PASSED")

@@ -1,12 +1,14 @@
 from Jumpscale import j
 
+myjobs = j.servers.myjobs
 
-def main(self):
+
+def test_simple_error():
     """
     kosmos -p 'j.servers.myjobs.test("simple_error")'
     """
 
-    self._test_setup()
+    myjobs._test_setup()
 
     j.tools.logger.debug = True
 
@@ -15,35 +17,35 @@ def main(self):
         assert b
         raise ValueError("aaa")
 
-    job = self.schedule(add, a=1, b=2)
+    job = myjobs.schedule(add, a=1, b=2)
 
     error = False
 
-    self.worker_inprocess_start()
+    myjobs.worker_inprocess_start()
 
     ##there should be job in errorstate
 
     try:
-        self.results()
+        myjobs.results()
     except Exception as e:
         error = True
 
     assert error
 
-    job = self.schedule(add, a=1, b=2)
+    job = myjobs.schedule(add, a=1, b=2)
     job_id = job.id
 
-    self._log_info("job id waiting for:%s" % job_id)
+    myjobs._log_info("job id waiting for:%s" % job_id)
 
-    self.worker_inprocess_start()
+    myjobs.worker_inprocess_start()
 
-    jobs = {job.id: job for job in self.wait(die=False)}
+    jobs = {job.id: job for job in j.servers.myjobs.wait(die=False)}
     jobs[job_id].error["traceback"]
 
     assert len(jobs[job_id].error["traceback"]) > 0
 
-    print(self.results([job_id], die=False))
+    print(myjobs.results([job_id], die=False))
 
-    self._log_info("basic error test done")
+    myjobs._log_info("basic error test done")
     print("Simple_error TEST OK")
     print("TEST OK")

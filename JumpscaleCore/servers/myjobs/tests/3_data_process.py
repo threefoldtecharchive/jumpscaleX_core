@@ -1,12 +1,14 @@
 import gevent
 from Jumpscale import j
 
+myjob = j.servers.myjobs
 
-def main(self, count=20):
+
+def test_data_process(count=20):
     """
     kosmos -p 'j.servers.myjobs.test("data_process")'
     """
-    self._test_setup()
+    myjob._test_setup()
 
     def wait_1sec():
         gevent.sleep(1)
@@ -55,13 +57,13 @@ def main(self, count=20):
     r = [(item.id, item.state) for item in Jobs.select().where(Jobs.state == "NEW")]
     assert len(r) == count
 
-    self.workers_tmux_start(4)
+    myjob.workers_tmux_start(4)
 
     print(ids)
-    jobs = self.wait(ids)
+    jobs = myjob.wait(ids)
 
     for job in jobs:
         assert job.result == "OK"
-    self._test_teardown()
+    myjob._test_teardown()
     print("Data_process TEST OK")
     print("TEST OK")

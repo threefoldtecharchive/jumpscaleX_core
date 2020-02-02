@@ -2,9 +2,10 @@ from Jumpscale import j
 from .TLS import TLS
 
 JSBASE = j.baseclasses.object
+TESTTOOLS = j.baseclasses.testtools
 
 
-class TLSFactory(JSBASE):
+class TLSFactory(JSBASE, TESTTOOLS):
     """Factory class to deal with TLS, key and certificate generation"""
 
     __jslocation__ = "j.sal.tls"
@@ -19,3 +20,11 @@ class TLSFactory(JSBASE):
         :rtype: TLS class
         """
         return TLS(path=path)
+
+    def test(self, name=""):
+        """Run tests under tests
+
+        :param name: basename of the file to run, defaults to ''.
+        :type name: str, optional
+        """
+        self._tests_run(name=name)
