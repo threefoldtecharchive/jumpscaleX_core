@@ -6321,7 +6321,6 @@ class WireGuardServer:
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
             cmd = "wg-quick up %s" % path
             Tools.execute(cmd)
-            Tools.shell()
         else:
             cmd = "wg-quick down %s" % path
             Tools.execute(cmd, die=False)
