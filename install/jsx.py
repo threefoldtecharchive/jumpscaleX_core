@@ -767,7 +767,7 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         )
         j.clients.threebot.explorer.reload()  # make sure we have the actors loaded
         # lets low level talk to the phonebook actor
-        print(j.clients.threebot.explorer.actors_all.phonebook.get(name="{docker_name}.3bot"))
+        # print(j.clients.threebot.explorer.actors_all.phonebook.get(name="{docker_name}.3bot"))
         cl = j.clients.threebot.client_get("{docker_name}.3bot")
 
         r1 = j.tools.threebot.explorer.threebot_record_get(name="{docker_name}.3bot")
