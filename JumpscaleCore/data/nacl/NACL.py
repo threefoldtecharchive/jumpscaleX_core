@@ -139,7 +139,7 @@ class NACL(j.baseclasses.object):
         once the key is generated it is stored in chosen path encrypted using the local secret
         """
         if words:
-            seed = bytes(j.data.encryption.mnemonic.to_entropy(words))
+            seed = j.data.encryption.mnemonic.to_entropy(words)
             key = SigningKey(seed)
         else:
             key = SigningKey.generate()
