@@ -1,7 +1,11 @@
 from Jumpscale import j
 
 
-def main(self):
+skip = j.baseclasses.testtools._skip
+
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
+def test_http_proxy():
     """
     kosmos -p 'j.servers.openresty.test(name="http_proxy")'
     kosmos 'j.servers.openresty.test(name="http_proxy")'
@@ -21,7 +25,7 @@ def main(self):
     website_location = locations.locations_static.new()
     website_location.name = "home"
     website_location.path_url = "/"
-    website_location.path_location = f"{self._dirpath}/examples/website/"
+    website_location.path_location = f"{j.servers.openresty._dirpath}/examples/website/"
 
     locations.configure()
     website.configure()

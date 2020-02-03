@@ -20,22 +20,24 @@
 
 from Jumpscale import j
 
+startupcmd = j.servers.startupcmd
 
-def main(self):
+
+def test_background():
     """
     to run:
 
     kosmos 'j.servers.startupcmd.test(name="background")' --debug
     """
 
-    self.http_back.cmd_start = "python3 -m http.server"  # starts on port 8000
-    self.http_back.ports = 8000
-    self.http_back.executor = "background"
-    self.http_back.timeout = 5
-    self.http_back.start()
-    assert self.http_back.pid
-    assert self.http_back.is_running() is True
-    self.http_back.stop()
-    assert self.http_back.is_running() is False
+    startupcmd.http_back.cmd_start = "python3 -m http.server"  # starts on port 8000
+    startupcmd.http_back.ports = 8000
+    startupcmd.http_back.executor = "background"
+    startupcmd.http_back.timeout = 5
+    startupcmd.http_back.start()
+    assert startupcmd.http_back.pid
+    assert startupcmd.http_back.is_running() is True
+    startupcmd.http_back.stop()
+    assert startupcmd.http_back.is_running() is False
 
     return "OK"

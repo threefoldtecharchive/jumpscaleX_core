@@ -1,10 +1,14 @@
 from Jumpscale import j
 
 
-def main(self):
+skip = j.baseclasses.testtools._skip
+
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
+def test_websocket_proxy():
     """
-    kosmos -p 'j.servers.openresty.test(name="tcp_proxy")'
-    kosmos 'j.servers.openresty.test(name="tcp_proxy")'
+    kosmos -p 'j.servers.openresty.test(name="websocket_proxy")'
+    kosmos 'j.servers.openresty.test(name="websocket_proxy")'
     :return:
     """
 

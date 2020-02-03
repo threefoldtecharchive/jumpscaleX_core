@@ -6,7 +6,10 @@ import time
 
 myjobs = j.servers.myjobs
 
+skip = j.baseclasses.testtools._skip
 
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/493")
 def test_tmux():
     """
     kosmos -p 'j.servers.myjobs.test("tmux")'

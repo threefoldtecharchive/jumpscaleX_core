@@ -1,7 +1,10 @@
 from Jumpscale import j
 
+skip = j.baseclasses.testtools._skip
 
-def main(self):
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
+def test_basic():
     """
     kosmos -p 'j.servers.openresty.test(name="basic")'
     kosmos 'j.servers.openresty.test(name="basic")'
@@ -20,17 +23,17 @@ def main(self):
     website_location = locations.locations_static.new()
     website_location.name = "home"
     website_location.path_url = "/website"
-    website_location.path_location = f"{self._dirpath}/examples/website/"
+    website_location.path_location = f"{j.servers.openresty._dirpath}/examples/website/"
 
     lapis_location = locations.locations_lapis.new()
     lapis_location.name = "apps"
     lapis_location.path_url = "/"
-    lapis_location.path_location = f"{self._dirpath}/examples/lapis"
+    lapis_location.path_location = f"{j.servers.openresty._dirpath}/examples/lapis"
 
     static_location = locations.locations_static.new()
     static_location.name = "static"
     static_location.path_url = "/static"
-    static_location.path_location = f"{self._dirpath}/web_resources/static"
+    static_location.path_location = f"{j.servers.openresty._dirpath}/web_resources/static"
     static_location.use_jumpscale_weblibs = True
 
     locations.configure()

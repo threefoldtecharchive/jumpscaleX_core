@@ -3,7 +3,10 @@ from Jumpscale import j
 
 myjob = j.servers.myjobs
 
+skip = j.baseclasses.testtools._skip
 
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/493")
 def test_data_process(count=20):
     """
     kosmos -p 'j.servers.myjobs.test("data_process")'

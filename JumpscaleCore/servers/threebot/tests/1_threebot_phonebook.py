@@ -1,7 +1,10 @@
 from Jumpscale import j
 
+skip = j.baseclasses.testtools._skip
 
-def main(self):
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
+def test_threebot_phonebook():
     """
     kosmos 'j.servers.threebot.test(name="threebot_phonebook")'
     :return:
@@ -9,7 +12,7 @@ def main(self):
 
     # add an actor
 
-    cl = self.client
+    cl = j.servers.threebot.client
 
     nacl_test = j.data.nacl.get(name="test", configure_if_needed=True)
 
@@ -18,4 +21,4 @@ def main(self):
 
     # not such a good testthere is better in j.tools.threebot
 
-    self._log_info("3bot worked")
+    j.servers.threebot._log_info("3bot worked")

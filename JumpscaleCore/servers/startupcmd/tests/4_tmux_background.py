@@ -20,6 +20,8 @@
 
 from Jumpscale import j
 
+startupcmd = j.servers.startupcmd
+
 """
 there are issues when running on console
 no need to run, but we leave it here, its a good reference
@@ -55,7 +57,7 @@ def main(self):
     kosmos 'j.servers.startupcmd.test(name="tmux_background")' --debug
     """
 
-    startup_cmd = self.tmuxserver  # grab an instance
+    startup_cmd = startupcmd.tmuxserver  # grab an instance
     startup_cmd.executor = "foreground"  # because detaches itself automatically
     startup_cmd.interpreter = "direct"
     startup_cmd.cmd_start = j.core.tools.text_replace(j.core.text.strip(START_BASH))

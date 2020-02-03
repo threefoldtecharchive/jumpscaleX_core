@@ -4,7 +4,10 @@ from Jumpscale import j
 
 myjobs = j.servers.myjobs
 
+skip = j.baseclasses.testtools._skip
 
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/493")
 def test_start(count=10):
     """
     kosmos -p 'j.servers.myjobs.test("start")'
