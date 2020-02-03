@@ -762,10 +762,12 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         """
         j.clients.threebot.explorer_addr_set("{explorer_addr}")
         docker_name = "{docker_name}"
-        j.tools.threebot.init_my_threebot(name="{docker_name}.3bot", interactive=False)
+        j.tools.threebot.init_my_threebot(
+            name="{docker_name}.3bot", email="{docker_name}@threefold.io", interactive=False
+        )
         j.clients.threebot.explorer.reload()  # make sure we have the actors loaded
         # lets low level talk to the phonebook actor
-        print(j.clients.threebot.explorer.actors_all.phonebook.get(name="{docker_name}.3bot"))
+        # print(j.clients.threebot.explorer.actors_all.phonebook.get(name="{docker_name}.3bot"))
         cl = j.clients.threebot.client_get("{docker_name}.3bot")
 
         r1 = j.tools.threebot.explorer.threebot_record_get(name="{docker_name}.3bot")
@@ -791,19 +793,22 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         if i == 0:
             # the master 3bot
             explorer_addr = docker.config.ipaddr
-            if IT.MyEnv.platform() != "linux":
-                if docker.config.done_get("wireguard") is False:
-                    # only need to use wireguard if on osx or windows (windows not implemented)
-                    # only do it on the first container
-                    docker.wireguard.server_start()
-                    docker.wireguard.connect()
-                    docker.config.done_set("wireguard")
+
+        if IT.MyEnv.platform() != "linux":
+            if docker.config.done_get("wireguard") is False:
+                # only need to use wireguard if on osx or windows (windows not implemented)
+                # only do it on the first container
+                docker.wireguard.server_start()
+                docker.wireguard.connect()
+                docker.config.done_set("wireguard")
 
         if not docker.config.done_get("start_cmd"):
             if web:
-                docker.sshexec("source /sandbox/env.sh; kosmos -p 'j.servers.threebot.start()';jsx wiki-load")
+                docker.sshexec(
+                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.start(background=True)';jsx wiki-load"
+                )
             else:
-                start_cmd = "j.servers.threebot.start()"
+                start_cmd = "j.servers.threebot.start(background=True)"
                 docker.jsxexec(start_cmd)
         docker.config.done_set("start_cmd")
         if not docker.config.done_get("config"):

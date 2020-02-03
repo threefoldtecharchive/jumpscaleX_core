@@ -1186,11 +1186,13 @@ class Tools:
 
         methodname = ""
         for line in code3.split("\n"):
+            line = line.strip()
             if line.startswith("def "):
                 methodname = line.split("(", 1)[0].strip().replace("def ", "")
+                break
 
         if methodname == "":
-            raise j.exceptions.Base("defname cannot be empty")
+            raise Exception("defname cannot be empty")
 
         return methodname, code3
 
