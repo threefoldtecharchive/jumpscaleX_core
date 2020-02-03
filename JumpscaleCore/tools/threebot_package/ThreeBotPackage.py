@@ -284,7 +284,9 @@ class ThreeBotPackage(ThreeBotPackageBase):
             self.status = "config"
             self.save()
 
-    def install(self):
+    def install(self, **kwargs):
+        # The installation parameters
+        self.params = kwargs.get("kwargs")
         self._log_debug("install:%s" % self)
         self.load()
         if self.status != "config":  # make sure we load the config is not that state yet
