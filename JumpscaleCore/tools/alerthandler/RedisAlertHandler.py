@@ -22,7 +22,7 @@ SCHEMA_ALERT = """
 11: support_trace = (LO) !jumpscale.alerthandler.alert.support.trace
 12: events = (LO) !jumpscale.alerthandler.alert.event
 13: tracebacks = (LO) !jumpscale.alerthandler.alert.traceback
-# 14: logs = (LO) !jumpscale.alerthandler.alert.log
+14: logs = (LO) !jumpscale.alerthandler.alert.log   #should only keep e.g. last 5 instances per threebot
 
 @url = jumpscale.alerthandler.alert.support.trace
 0 : support_severity = "info,minor,normal,high,critical" (E)        #set by operator
@@ -44,21 +44,10 @@ SCHEMA_ALERT = """
 8 : trace= "" (S)
 9 : data = (S)
 
-# #optional log items
-# #in line with threefoldtech/jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md
-# @url = jumpscale.alerthandler.alert.log
-# 0 : threebot_name =  (S)            #threebot names, can be more than 1
-# 1 : process_id = (I)                #the process id if known
-# 2 : logs = (LO) !jumpscale.alerthandler.alert.logitem
-#
-# @url = jumpscale.alerthandler.alert.logitem
-# 0 : filepath = ""
-# 1 : linenr = (I)
-# 2 : message = ""
-# 3 : level = (I)
-# 4 : context = (S)
-# 5 : cat = (S)
-# 6 : data = (S)
+@url = jumpscale.alerthandler.alert.log
+0 : threebot_name =  (S)            #threebot names, can be more than 1
+1 : app_name = (I)                  #allows us to find the log back
+2 : latest_logid = (I)              #latest logid
 
 #optional tracebacks
 @url = jumpscale.alerthandler.alert.traceback
@@ -102,40 +91,11 @@ class AlertHandler(j.baseclasses.object):
     def setup(self):
         if self.handle_error not in j.errorhandler.handlers:
             j.errorhandler.handlers.append(self.handle_error)
-        # if self.handle_log not in j.core.myenv.loghandlers:
-        #     j.core.myenv.loghandlers.append(self.handle_log)
-
-    # def handle_log(self, logdict):
-    #     j.application.inlogger = True  # not working
-    #     try:
-    #         self._handle_log(logdict)
-    #     except Exception as e:
-    #         print("**ERROR IN LOG HANDLER**")
-    #         print(str(e))
-    #     j.application.inlogger = False
-    #
 
     def _process_logdict(self, logdict):
         if "processid" not in logdict or not logdict["processid"] or logdict["processid"] == "unknown":
             logdict["processid"] = j.application.systempid
         return logdict
-
-    # def _handle_log(self, logdict):
-    #     """handle error
-    #
-    #     :param logdict: logging dict (see jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md for keys)
-    #     :type logdict: dict
-    #     """
-    #
-    #     if "traceback" in logdict:
-    #         logdict.pop("traceback")
-    #
-    #     logdict = self._process_logdict(logdict)
-    #
-    #     data = self._dumps(logdict)
-    #
-    #     self.db.lpush(self._rediskey_logs, data)
-    #     self.db.ltrim(self._rediskey_logs, 0, 1000)
 
     def _dumps(self, data):
         if isinstance(data, str):
@@ -221,6 +181,14 @@ class AlertHandler(j.baseclasses.object):
         if not alert.time_first:
             alert.time_first = j.data.time.epoch
         alert.time_last = j.data.time.epoch
+
+        # add the link to the logs at that point, allows to retrieve info later
+        if len(alert.logs) > 10:
+            alert.logs.pop(-1)
+        l = alert.logs.new()
+        l.latest_logid = j.core.myenv.loghandlers.last_logid
+        l.threebot_name = self._threebot_name
+        l.app_name = j.application.name
 
         self._add_event_from_logdict(alert, logdict)
 

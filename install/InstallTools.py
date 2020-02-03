@@ -815,6 +815,8 @@ class LogHandler:
         else:
             self.appname = "init"
 
+        self.last_logid
+
     def _process_logdict(self, logdict):
         if "processid" not in logdict or not logdict["processid"] or logdict["processid"] == "unknown":
             logdict["processid"] = os.getpid()
@@ -846,6 +848,7 @@ class LogHandler:
         rediskey_logs_incr = self.rediskey_logs_incr
 
         latest_id = self.db.incr(rediskey_logs_incr)
+        self.last_logid = latest_id
         logdict["id"] = latest_id
 
         logdict = self._process_logdict(logdict)
