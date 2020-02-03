@@ -106,4 +106,14 @@ def main(self):
     res = cl.tail(appname="test", lastid=lastid, wait=False)
     assert len(res) == 10
 
+    for i in range(2000 + 1):
+        j.core.tools.log(msg="logs2:%s" % i, cat=None, level=10, data=None, context=None, replace=True)
+
+    # TODO: check there are 3 files in the logging directory
+    j.shell()
+
+    # TODO: implement a count function
+
+    # TODO: implement/test find feature
+
     print("OK")

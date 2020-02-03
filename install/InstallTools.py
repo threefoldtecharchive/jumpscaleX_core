@@ -814,7 +814,6 @@ class LogHandler:
             self.appname = appname
         else:
             self.appname = "init"
-        self.maxitems = 2000
 
     def _process_logdict(self, logdict):
         if "processid" not in logdict or not logdict["processid"] or logdict["processid"] == "unknown":
@@ -855,8 +854,8 @@ class LogHandler:
 
         self.db.hset(rediskey_logs, latest_id, data)
 
-        if latest_id > 900:
-            if (latest_id) / self.maxitems == int((latest_id) / self.maxitems):
+        if latest_id > 1500:
+            if (latest_id) / 1000 == int((latest_id) / 1000):
                 # means we need to check and maybe do some cleanup, like this we only check this every 1000 items
                 # only one log handler can have this, because id's are unique because of redis
                 self._data_container_dump(latest_id)

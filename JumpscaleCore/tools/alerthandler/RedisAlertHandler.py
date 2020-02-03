@@ -79,8 +79,8 @@ SCHEMA_ALERT = """
 # - CRITICAL 	50
 # - ERROR 	40
 # - WARNING 	30
+# - INFO PUB 	25  (send as default message too stdout normally)
 # - INFO 	    20
-# - STDOUT 	15
 # - DEBUG 	10
 
 import redis

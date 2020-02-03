@@ -29,9 +29,9 @@ def common_options(function):
     click.option("--redis-host", default=None, help="redis host (defaults to localhost)")(function)
     click.option("--redis-port", default=6379, help="redis port (defaults to 6379)")(function)
     click.option("--redis-secret", default=None, help="redis secret (empty by default)")(function)
-    click.option("--session", default=None, help="session name (defaults to jumpscale)")(function)
     click.option("--timefrom", default=None, help="filter by date (epoch), defaults to -1h")(function)
     click.option("--timeto", default=None, help="filter by date (epoch), defaults to -1h")(function)
+    click.option("--category", default=None, help="filter bycategory, defaults to -1h")(function)
     click.option("-a", "--appname", default="init", help="application name")(function)
     return function
 
@@ -43,7 +43,7 @@ def tail(redis_host, redis_port, redis_secret, session, date, context):
     tail logs from session
     """
     client = get_client(redis_host, redis_port, redis_secret, session, date, context)
-    client.tail()
+    client.tail()  # TODO: put arguments in
 
 
 @click.command()
