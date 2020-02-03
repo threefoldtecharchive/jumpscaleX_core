@@ -219,8 +219,6 @@ class LoggerClient(j.baseclasses.object_config):
 
         nrdone = 1
 
-        # TODO: implement id from
-
         ids = self._data_container_ids_get_from_time(epoch_from=epoch_from, epoch_to=epoch_to, appname=appname)
         for container_id in ids:
             for logdict_json in self._data_container_get(container_id, appname=appname):
@@ -231,6 +229,7 @@ class LoggerClient(j.baseclasses.object_config):
                 if id_from:
                     if id_from > logdict["id"]:
                         # means id_from was specified, should only walk on items which are higher
+                        # TODO: needs to be verified
                         continue
                 args, nrdone = self.__do(method, logdict, epoch_from, epoch_to, args, nrdone)
 
