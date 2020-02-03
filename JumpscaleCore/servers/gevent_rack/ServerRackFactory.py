@@ -20,6 +20,7 @@ import sys
 import time
 
 JSBASE = j.baseclasses.object
+skip = j.baseclasses.testtools._skip
 
 
 class ServerRackFactory(JSBASE):
@@ -137,6 +138,7 @@ class ServerRackFactory(JSBASE):
                 s.stop()
             s.start()
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/508")
     def test(self, start=True, gedis=True, gedis_ssl=False, webdav=False, bottle=True, websockets=False):
         """
         kosmos 'j.servers.rack.test()'
