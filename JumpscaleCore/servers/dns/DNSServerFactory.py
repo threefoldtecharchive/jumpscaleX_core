@@ -8,6 +8,7 @@ import os
 from Jumpscale import j
 
 JSBASE = j.baseclasses.object
+skip = j.baseclasses.testtools._skip
 
 # http://mirror1.malwaredomains.com/files/justdomains  domains we should not query, lets download & put in redis core
 # https://blog.cryptoaustralia.org.au/2017/12/05/build-your-private-dns-server/
@@ -86,6 +87,7 @@ class DNSServerFactory(j.baseclasses.factory_testtools):
                 self._extensions[line] = True
         return self._extensions
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/501")
     def test(self, start=True, port=5354):
         """
         kosmos 'j.servers.dns.test()'

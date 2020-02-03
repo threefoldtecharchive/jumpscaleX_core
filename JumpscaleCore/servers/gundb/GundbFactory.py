@@ -4,6 +4,7 @@ from geventwebsocket import WebSocketServer, WebSocketApplication, Resource
 from collections import OrderedDict
 
 JSBASE = j.baseclasses.object
+skip = j.baseclasses.testtools._skip
 
 
 class GundbFactory(JSBASE):
@@ -105,6 +106,7 @@ class GundbFactory(JSBASE):
                 s.stop()
             s.start()
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/499")
     def test(self):
         """
         kosmos 'j.servers.gundb.test()'

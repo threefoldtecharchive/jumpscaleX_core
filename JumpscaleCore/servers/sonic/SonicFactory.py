@@ -32,6 +32,8 @@ class SonicFactory(JSConfigs):
         kosmos 'j.servers.sonic.test()'
         :return:
         """
+        j.servers.sonic.threebot.stop()
+
         self.install()
         s = self.get(name="test_instance", port=1492)
         s.save()

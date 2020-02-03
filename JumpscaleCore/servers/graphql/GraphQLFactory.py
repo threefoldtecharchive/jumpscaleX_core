@@ -189,7 +189,7 @@ class GraphQLFactory(JSBASE):
 
     def test(self):
         """
-        kosmos 'j.servers.gundb.test()'
+        kosmos 'j.servers.graphql.test()'
 
         """
 
