@@ -114,6 +114,6 @@ def main(self):
 
     # TODO: implement a count function
 
-    # TODO: implement/test find feature
+    # TODO: implement/test find feature, use many arguments, create some new logs to make sure it works well
 
     print("OK")

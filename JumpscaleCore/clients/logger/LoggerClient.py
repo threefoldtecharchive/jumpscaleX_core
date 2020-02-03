@@ -195,7 +195,7 @@ class LoggerClient(j.baseclasses.object_config):
             args = args2
         return args, nrdone
 
-    def walk(self, method, time_from=None, time_to=None, maxitems=10000, appname=None, args={}):
+    def walk(self, method, id_from=None, time_from=None, time_to=None, maxitems=10000, appname=None, args={}):
         """
 
         def method(key,errorobj,args):
@@ -219,6 +219,8 @@ class LoggerClient(j.baseclasses.object_config):
 
         nrdone = 1
 
+        # TODO: implement id from
+
         ids = self._data_container_ids_get_from_time(epoch_from=epoch_from, epoch_to=epoch_to, appname=appname)
         for container_id in ids:
             for logdict_json in self._data_container_get(container_id, appname=appname):
@@ -226,6 +228,10 @@ class LoggerClient(j.baseclasses.object_config):
                 logdict = json.loads(logdict_json)
                 if nrdone > maxitems:
                     return args
+                if id_from:
+                    if id_from > logdict["id"]:
+                        # means id_from was specified, should only walk on items which are higher
+                        continue
                 args, nrdone = self.__do(method, logdict, epoch_from, epoch_to, args, nrdone)
 
         incrkey = "logs:%s:incr" % (appname)
@@ -262,13 +268,29 @@ class LoggerClient(j.baseclasses.object_config):
         args, lastid = self.walk_reverse(do, args=args, appname=appname, lastid=lastid, maxitems=maxitems)
         return args["res"], lastid
 
-    def find(self, cat="", message=""):
+    def find(
+        self,
+        id_from=None,
+        time_from=None,
+        time_to=None,
+        appname=None,
+        cat=None,
+        message=None,
+        processid=None,
+        context=None,
+        file_path=None,
+    ):
         """
         :param cat: filter against category (can be part of category)
+        :param processid = pid = int
+        :param: context (matches on any part of context)
+        :param: message, checks in messagepub & message, can be part of the message
+        :param: id_from, as used in walk function, will only starting finding from that position
+        :param: file_path, filter on filepath, can be part of template args like {DIR_BASE} are supported
         :param message:
         :return: list([key,err])
         """
-        # TODO: implement using walk
+        # TODO: implement using walk (arguments above need to be passed as args to the walker method)
         res = []
         for res0 in self.list():
             key, err = res0
@@ -304,12 +326,34 @@ class LoggerClient(j.baseclasses.object_config):
     def count(self):
         return len(self.list())
 
-    def print(self):
+    def print(
+        self,
+        id_from=None,
+        time_from=None,
+        time_to=None,
+        appname=None,
+        cat=None,
+        message=None,
+        processid=None,
+        context=None,
+        file_path=None,
+    ):
         """
-        kosmos 'j.tools.alerthandler.print()'
+        print on stdout the records which match the arguments
+
+        :param cat: filter against category (can be part of category)
+        :param processid = pid = int
+        :param: context (matches on any part of context)
+        :param: message, checks in messagepub & message, can be part of the message
+        :param: id_from, as used in walk function, will only starting finding from that position
+        :param: file_path, filter on filepath, can be part of template args like {DIR_BASE} are supported
+        :param message:
+        :return: list([key,err])
         """
-        for (key, obj) in self.list():
-            tb_text = obj.trace
-            j.core.errorhandler._trace_print(tb_text)
-            print(obj._hr_get(exclude=["trace"]))
-            print("\n############################\n")
+        for (key, obj) in self.find(...):
+            raise RuntimeError("todo")
+
+        # tb_text = obj.trace
+        # j.core.errorhandler._trace_print(tb_text)
+        # print(obj._hr_get(exclude=["trace"]))
+        # print("\n############################\n")
