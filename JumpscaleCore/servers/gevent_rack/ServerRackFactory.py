@@ -3,6 +3,7 @@
 # monkey.patch_all(subprocess=False)
 
 from Jumpscale import j
+from Jumpscale.servers.gedis_http.GedisHTTPFactory import enable_cors
 
 import gevent
 
@@ -12,12 +13,15 @@ from .ServerRack import ServerRack
 
 # from .Package import Package
 import time
+from bottle import route, request, Bottle, response
+
 from gevent import event, sleep
 import os
 import socket
 import netstr
 import sys
 import time
+import mimetypes
 
 JSBASE = j.baseclasses.object
 
@@ -67,13 +71,13 @@ class ServerRackFactory(JSBASE):
                 cl = admin_zdb_cl.namespace_new("test", secret="1234")
 
             if gedis:
-                gedis = j.servers.gedis.get_gevent_server("test", port=8901)
+                gedis = j.servers.gedis.get_gevent_server("test_rack", port=8901)
 
             rack = self.get()
             rack.add("gedis", gedis)
 
             if gedis_ssl:
-                gedis_ssl = j.servers.gedis.get_gevent_server("test", ssl=True, port=8901)
+                gedis_ssl = j.servers.gedis.get_gevent_server("test_rack", ssl=True, port=8901)
                 rack.add("gedis_ssl", gedis_ssl)
 
             if webdav:
@@ -84,7 +88,14 @@ class ServerRackFactory(JSBASE):
                 # rack.websocket_bottle_server_add
 
             if bottle:
-                rack.bottle_server_add()
+                app = Bottle()
+
+                @app.route("/ping")
+                @enable_cors
+                def ping():
+                    return "pong"
+
+                rack.bottle_server_add(app=app)
 
             rack.start()
 
@@ -155,18 +166,12 @@ class ServerRackFactory(JSBASE):
 
         namespace = "system"
         secret = "1234"
-        cl = j.clients.gedis.new(namespace, namespace=namespace, port=8901, secret=secret, host="localhost")
+        cl = j.clients.gedis.get(namespace, port=8901, host="localhost")
         assert cl.ping()
-        cl.actors
-        assert cl.actors.system.ping() == b"PONG"
 
         if gedis_ssl:
-            cl2 = j.clients.gedis.new(
-                namespace, namespace=namespace, port=8901, secret=secret, host="localhost", ssl=True
-            )
+            cl2 = j.clients.gedis.get(namespace, port=8901, host="localhost", ssl=True)
             assert cl2.ping()
-            cl.actors
-            assert cl.actors.system.ping() == b"PONG"
 
         if webdav:
             # how to use see https://github.com/ezhov-evgeny/webdav-client-python-3/blob/da46592c6f1cc9fb810ca54019763b1e7dce4583/webdav3/client.py#L197
@@ -192,19 +197,10 @@ class ServerRackFactory(JSBASE):
 
             # https://realpython.com/python-requests/#the-get-request
 
-            r1 = requests.get("http://localhost:4442/")
+            r1 = requests.get("http://localhost:4442/ping")
             self._log(r1.status_code)
             self._log(r1.content)
-            assert r1.content == b"<b>Hello World</b>!"
+            assert r1.content == b"pong"
             assert r1.status_code == 200
-            self._log_info("hello kds")
-            r2 = requests.get("http://localhost:4442/hello/kds")
-            assert r2.status_code == 200
-            self._log(r2.status_code)
-            self._log_info("stream")
-            r3 = requests.get("http://localhost:4442/stream")
-            assert r3.status_code == 200
-            self._log(r3.status_code)
-            self._log(r3.content)
 
         print("tests are ok")
