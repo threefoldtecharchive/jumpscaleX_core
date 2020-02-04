@@ -51,9 +51,7 @@ class ServerRackFactory(JSBASE):
         j.builders.runtimes.python3.pip_package_install("bottle,webdavclient3")
         j.builders.runtimes.python3.pip_package_install("git+https://github.com/mar10/wsgidav.git")
 
-    def _server_test_start(
-        self, zdb=False, background=False, gedis=True, webdav=True, bottle=True, websockets=True, gedis_ssl=False
-    ):
+    def _server_test_start(self, zdb=False, background=False, gedis=True, webdav=True, bottle=True, websockets=True):
         """
         kosmos 'j.servers.rack._server_test_start()'
 
@@ -75,10 +73,6 @@ class ServerRackFactory(JSBASE):
 
             rack = self.get()
             rack.add("gedis", gedis)
-
-            if gedis_ssl:
-                gedis_ssl = j.servers.gedis.get_gevent_server("test_rack", ssl=True, port=8901)
-                rack.add("gedis_ssl", gedis_ssl)
 
             if webdav:
                 rack.webdav_server_add()
@@ -107,11 +101,6 @@ class ServerRackFactory(JSBASE):
                 args["gedis"] = "True"
             else:
                 args["gedis"] = "False"
-            if gedis_ssl:
-                # ports.append(8901)
-                args["gedis_ssl"] = "True"
-            else:
-                args["gedis_ssl"] = "False"
             if webdav:
                 # ports.append(4443)
                 args["webdav"] = "True"
@@ -132,7 +121,7 @@ class ServerRackFactory(JSBASE):
             from gevent import monkey
             monkey.patch_all(subprocess=False)
             from Jumpscale import j
-            j.servers.rack._server_test_start(gedis={gedis},gedis_ssl={gedis_ssl},webdav={webdav}, bottle={bottle}, websockets={websockets})
+            j.servers.rack._server_test_start(gedis={gedis},webdav={webdav}, bottle={bottle}, websockets={websockets})
             """
 
             S = j.core.tools.text_replace(S, args)
@@ -148,7 +137,7 @@ class ServerRackFactory(JSBASE):
                 s.stop()
             s.start()
 
-    def test(self, start=True, gedis=True, gedis_ssl=False, webdav=False, bottle=True, websockets=False):
+    def test(self, start=True, gedis=True, webdav=False, bottle=True, websockets=False):
         """
         kosmos 'j.servers.rack.test()'
         kosmos 'j.servers.rack.test(gedis_ssl=True)'
@@ -160,18 +149,12 @@ class ServerRackFactory(JSBASE):
         """
 
         if start:
-            self._server_test_start(
-                background=True, gedis=gedis, gedis_ssl=gedis_ssl, webdav=webdav, bottle=bottle, websockets=websockets
-            )
+            self._server_test_start(background=True, gedis=gedis, webdav=webdav, bottle=bottle, websockets=websockets)
 
         namespace = "system"
         secret = "1234"
         cl = j.clients.gedis.get(namespace, port=8901, host="localhost")
         assert cl.ping()
-
-        if gedis_ssl:
-            cl2 = j.clients.gedis.get(namespace, port=8901, host="localhost", ssl=True)
-            assert cl2.ping()
 
         if webdav:
             # how to use see https://github.com/ezhov-evgeny/webdav-client-python-3/blob/da46592c6f1cc9fb810ca54019763b1e7dce4583/webdav3/client.py#L197
