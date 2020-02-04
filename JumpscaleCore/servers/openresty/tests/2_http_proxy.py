@@ -1,3 +1,4 @@
+import gevent
 from Jumpscale import j
 
 
@@ -13,6 +14,9 @@ def main(self):
 
     server.install(reset=True)
     server.configure()
+    server.cleanup()
+    server.start()
+
     website = server.websites.get("test")
     website.ssl = False
     website.port = 8080
@@ -37,8 +41,9 @@ def main(self):
     locations.configure()
     website.configure()
 
-    server.start()
+    server.reload()
 
+    gevent.sleep(1)
     static_content = j.clients.http.get("http://0.0.0.0:8080/app")
     assert static_content == "<html>\nHello from static!\n</html>\n"
 

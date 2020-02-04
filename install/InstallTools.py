@@ -4212,7 +4212,8 @@ class UbuntuInstaller:
             "net-tools",
             "libgeoip-dev",
             "libcapnp-dev",
-        ]  # "graphviz"
+            "graphviz",
+        ]
 
     @staticmethod
     def apts_install():
