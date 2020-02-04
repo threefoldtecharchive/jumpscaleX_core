@@ -815,7 +815,7 @@ class LogHandler:
         else:
             self.appname = "init"
 
-        self.last_logid
+        self.last_logid = 0
 
     def _process_logdict(self, logdict):
         if "processid" not in logdict or not logdict["processid"] or logdict["processid"] == "unknown":
@@ -857,11 +857,10 @@ class LogHandler:
 
         self.db.hset(rediskey_logs, latest_id, data)
 
-        if latest_id > 1500:
-            if (latest_id) / 1000 == int((latest_id) / 1000):
-                # means we need to check and maybe do some cleanup, like this we only check this every 1000 items
-                # only one log handler can have this, because id's are unique because of redis
-                self._data_container_dump(latest_id)
+        if latest_id / 1000 >= 2 and latest_id % 1000 == 0:
+            # means we need to check and maybe do some cleanup, like this we only check this every 1000 items
+            # only one log handler can have this, because id's are unique because of redis
+            self._data_container_dump(latest_id)
 
     def _dumps(self, data):
         if isinstance(data, str):
@@ -888,7 +887,11 @@ class LogHandler:
         if not appname:
             appname = self.appname
         rediskey_logs = "logs:%s:data" % appname
-        res = self.db.hget(rediskey_logs, identifier)
+        try:
+            res = self.db.hget(rediskey_logs, identifier)
+        except:
+            raise RuntimeError("could not find log with identifier:%s" % identifier)
+
         if not res:
             if die:
                 raise RuntimeError("could not find log with identifier:%s" % identifier)
@@ -896,25 +899,23 @@ class LogHandler:
         return res
 
     def _data_container_dump(self, latest_id):
-        startid = latest_id - 2000 + 1
-        stopid = latest_id - 1000 + 1
+        startid = latest_id - 2000
+        stopid = latest_id - 1000
         # TODO, need to verify, for the next 2000 logs items we will not have them all
         if msgpack:
             r = []
-            for i in range(startid, stopid):
-                # if not self._redis_get(i, die=False):
-                #     Tools.shell()
-                #     w
+            # for redis which is 1 indexed
+            for i in range(startid + 1, stopid + 1):
                 d = self._redis_get(i)
                 r.append(d)
             assert len(r) == 1000
             log_dir = Tools.text_replace("{DIR_VAR}/logs")
             path = "%s/%s" % (log_dir, self.appname)
             Tools.dir_ensure(path)
-            path = "%s/%s/%s.msgpack" % (log_dir, self.appname, latest_id - 1000)
+            path = "%s/%s/%s.msgpack" % (log_dir, self.appname, stopid)
             Tools.file_write(path, msgpack.dumps(r))
         # now remove from redis
-        for i in range(startid, stopid):
+        for i in range(startid + 1, stopid + 1):
             self.db.hdel(self.rediskey_logs, i)
         assert self.db.hlen(self.rediskey_logs) == 1000
 
@@ -2043,7 +2044,7 @@ class Tools:
         return res
 
     @staticmethod
-    def log2stdout(logdict, data_show=True, enduser=False):
+    def log2stdout(logdict, data_show=False, enduser=False):
         def show():
             # always show in debugmode and critical
             if MyEnv.debug or logdict["level"] >= 50:
@@ -2052,7 +2053,7 @@ class Tools:
                 return False
             return logdict["level"] >= MyEnv.log_level
 
-        if not show():
+        if not show() and not data_show:
             return
 
         if enduser:

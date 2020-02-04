@@ -7,8 +7,8 @@ def main(self):
 
     kosmos 'j.clients.logger.test(name="base")'
     """
-
-    j.application.start("test")
+    if j.application.appname != "test":
+        j.application.start("test")
 
     cl = self.get(name="main")
     cl.delete_all()
@@ -109,11 +109,31 @@ def main(self):
     for i in range(2000 + 1):
         j.core.tools.log(msg="logs2:%s" % i, cat=None, level=10, data=None, context=None, replace=True)
 
-    # TODO: check there are 3 files in the logging directory
-    j.shell()
+    logging_dir = j.sal.fs.joinPaths(cl._log_dir, "test")
+    assert len(j.sal.fs.listFilesInDir(logging_dir)) == 3
 
-    # TODO: implement a count function
+    assert cl.count("test") == 1142
+    assert cl.count("test", all=True) == 4142
 
-    # TODO: implement/test find feature, use many arguments, create some new logs to make sure it works well
+    for i in range(6000, 6010):
+        j.core.tools.log(msg="logs2:%s" % i, cat=None, level=10, data=None, context=None, replace=True)
+
+    assert cl.count("test") == 1142 + 10
+    assert cl.count("test", all=True) == 4142 + 10
+
+    for i in range(6020, 6030):
+        j.core.tools.log(msg="testfind:%s" % i, cat=None, level=20, data=None, context=None, replace=True)
+
+    for i in range(6030, 6035):
+        j.core.tools.log(msg="testcount:%s" % i, cat=None, level=30, data=None, context=None, replace=True)
+
+    # tests for find & filters
+    assert len(cl.find(message="testfind")) == 10
+    assert len(cl.find(message="testfind", level=20)) == 10
+    assert len(cl.find(message="testcount", level=30)) == 5
+    for i in range(6030, 6032):
+        j.core.tools.log(msg="testcount:%s" % i, cat="test_cat", level=30, data="some data", context=None, replace=True)
+
+    assert len(cl.find(message="testcount", level=30, cat="test_cat", data="some data")) == 2
 
     print("OK")

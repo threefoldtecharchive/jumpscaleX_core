@@ -185,10 +185,10 @@ class AlertHandler(j.baseclasses.object):
         # add the link to the logs at that point, allows to retrieve info later
         if len(alert.logs) > 10:
             alert.logs.pop(-1)
-        l = alert.logs.new()
-        l.latest_logid = j.core.myenv.loghandlers.last_logid
-        l.threebot_name = self._threebot_name
-        l.app_name = j.application.name
+        # l = alert.logs.new()
+        # l.latest_logid = j.core.myenv.loghandlers.last_logid
+        # l.threebot_name = self._threebot_name
+        # l.app_name = j.application.name
 
         self._add_event_from_logdict(alert, logdict)
 

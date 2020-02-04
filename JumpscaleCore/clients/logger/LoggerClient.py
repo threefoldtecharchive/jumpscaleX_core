@@ -161,7 +161,11 @@ class LoggerClient(j.baseclasses.object_config):
         def walk(appname, lastid):
             nrdone = 1
             incrkey = "logs:%s:incr" % (appname)
-            lastkey = int(self.db.get(incrkey))
+            lastkey_redis = self.db.get(incrkey)
+            if lastkey_redis:
+                lastkey = int(lastkey_redis)
+            else:
+                lastkey = 0
             firstkey = lastkey - 2000
             res = []
             for i in range(lastkey, firstkey, -1):
@@ -180,7 +184,7 @@ class LoggerClient(j.baseclasses.object_config):
         res.reverse()
         for logdict in res:
             args, nrdone = self.__do(method, logdict, epoch_from, epoch_to, args, nrdone)
-        if len(res) > 1:
+        if res:
             lastid = res[-1]["id"]
         return args, lastid
 
@@ -207,8 +211,11 @@ class LoggerClient(j.baseclasses.object_config):
         :param method:
         :return:
         """
+
         if time_from:
             epoch_from = j.data.types.datetime.clean(time_from)
+        else:
+            epoch_from = 0
         if time_to:
             epoch_to = j.data.types.datetime.clean(time_to)
         else:
@@ -267,6 +274,19 @@ class LoggerClient(j.baseclasses.object_config):
         args, lastid = self.walk_reverse(do, args=args, appname=appname, lastid=lastid, maxitems=maxitems)
         return args["res"], lastid
 
+    def list(self, appname, id_from=None, id_to=None, time_from=None, time_to=None):
+        if not id_from:
+            id_from = 0
+
+        args = {"counter": 0, "objs": []}
+
+        def do(logdict, args):
+            args["counter"] += 1
+            args["objs"].append(logdict)
+
+        self.walk_reverse(do, appname=appname, lastid=id_from, args=args, time_from=time_from, time_to=time_to)
+        return args["objs"], args["counter"]
+
     def find(
         self,
         id_from=None,
@@ -278,6 +298,8 @@ class LoggerClient(j.baseclasses.object_config):
         processid=None,
         context=None,
         file_path=None,
+        level=None,
+        data=None,
     ):
         """
         :param cat: filter against category (can be part of category)
@@ -289,18 +311,33 @@ class LoggerClient(j.baseclasses.object_config):
         :param message:
         :return: list([key,err])
         """
-        # TODO: implement using walk (arguments above need to be passed as args to the walker method)
-        res = []
-        for res0 in self.list():
-            key, err = res0
-            found = True
-            if message is not "" and err.message.find(message) == -1:
-                found = False
-            if cat is not "" and err.cat.find(cat) == -1:
-                found = False
-            if found:
-                res.append([key, err])
-        return res
+
+        def _filter(log):
+            if cat and not log["cat"] == cat:
+                return False
+            if message and not message in log["message"]:
+                return False
+            if processid and not log["processid"] == processid:
+                return False
+            if file_path and not log["filepath"] == file_path:
+                return False
+            if context and not log["context"] == context:
+                return False
+            if level and not log["level"] == level:
+                return False
+            if data and not log["data"] == data:
+                return False
+
+            return True
+
+        logs, _ = self.list(appname=appname, id_from=id_from, time_from=time_from, time_to=time_to)
+
+        if not cat and not message and not processid and not file_path and not context and not level and not data:
+            return logs
+
+        find_res = list(filter(_filter, logs))
+
+        return find_res
 
     def tail(self, appname, maxitems=200, lastid=None, wait=True):
         """
@@ -313,17 +350,25 @@ class LoggerClient(j.baseclasses.object_config):
         """
         while True:
             res, lastid = self.tail_get(appname=appname, maxitems=maxitems, lastid=lastid)
+            if len(res) == 1 and "OK" in res[0]["message"]:
+                res, lastid = self.tail_get(appname=appname, maxitems=maxitems, lastid=lastid)
             if len(res) > 0:
                 for ld in res:
-                    j.core.tools.log2stdout(ld)
+                    j.core.tools.log2stdout(ld, data_show=True)
             else:
                 time.sleep(0.1)
 
             if not wait:
                 return res
 
-    def count(self):
-        return len(self.list())
+    def count(self, appname, all=False):
+        count = 0
+        if all:
+            logging_dir = j.sal.fs.joinPaths(self._log_dir, appname)
+            count += len(j.sal.fs.listFilesInDir(logging_dir)) * 1000
+
+        count += self.db.hlen(f"logs:{appname}:data")
+        return count
 
     def print(
         self,
@@ -336,6 +381,8 @@ class LoggerClient(j.baseclasses.object_config):
         processid=None,
         context=None,
         file_path=None,
+        level=None,
+        data=None,
     ):
         """
         print on stdout the records which match the arguments
@@ -349,10 +396,19 @@ class LoggerClient(j.baseclasses.object_config):
         :param message:
         :return: list([key,err])
         """
-        for (key, obj) in self.find(...):
-            raise RuntimeError("todo")
+        logs = self.find(
+            id_from=id_from,
+            time_from=time_from,
+            time_to=time_to,
+            appname=appname,
+            cat=cat,
+            message=message,
+            processid=processid,
+            context=context,
+            file_path=file_path,
+            level=level,
+            data=data,
+        )
 
-        # tb_text = obj.trace
-        # j.core.errorhandler._trace_print(tb_text)
-        # print(obj._hr_get(exclude=["trace"]))
-        # print("\n############################\n")
+        for item in logs:
+            j.core.tools.log2stdout(item, data_show=True, enduser=True)
