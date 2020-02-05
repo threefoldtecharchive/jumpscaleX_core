@@ -127,9 +127,12 @@ class builder_method:
             :return: if the method was already done it will return BuilderBase.ALREADY_DONE_VALUE
             """
             name = func.__name__
+            if j.application.appname != builder._classname and j.application.state != "RUNNING":
+                j.application.start(builder._classname)
 
             # j.application.log2fs_redis_register(builder._classname)
             # j.application.log2fs_redis_context_change(builder._classname, name)
+
             try:
                 kwargs = self.get_all_as_keyword_arguments(func, args, kwargs)
                 kwargs_without_reset = {key: value for key, value in kwargs.items() if key not in ["reset", "self"]}
