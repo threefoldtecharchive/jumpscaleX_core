@@ -71,11 +71,11 @@ def find(client, cat="", message="", pid=None, time=None):
 
 
 @cli.command()
-@click.option("--identifier", required=True, help="show alert with given identifier")
+@click.argument("identifier")
 @click.pass_obj
 def show(client, identifier):
     """
-    show a specific alert
+    show alert with given identifier
     """
     try:
         alert = client.get(identifier, die=True)
@@ -85,11 +85,11 @@ def show(client, identifier):
 
 
 @cli.command()
-@click.option("--identifier", required=True, help="delete alert with given identifier")
+@click.argument("identifier")
 @click.pass_obj
 def delete(client, identifier):
     """
-    delete specific alert
+    delete alert with given identifier
     """
     client.delete(identifier)
 

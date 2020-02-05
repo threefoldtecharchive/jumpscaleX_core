@@ -1,9 +1,11 @@
-from Jumpscale import j
+import redis
 
 try:
     import ujson as json
 except BaseException:
     import json
+
+from Jumpscale import j
 
 
 SCHEMA_ALERT = """
@@ -64,15 +66,8 @@ SCHEMA_ALERT = """
 
 """
 
-# ## log (error) levels
-# - CRITICAL 	50
-# - ERROR 	40
-# - WARNING 	30
-# - INFO PUB 	25  (send as default message too stdout normally)
-# - INFO 	    20
-# - DEBUG 	10
-
-import redis
+# log (error) levels
+LEVELS = {50: "CRITICAL", 40: "ERROR", 30: "WARNING", 20: "INFO", 15: "STDOUT", 10: "DEBUG"}
 
 
 class AlertHandler(j.baseclasses.object):
@@ -353,36 +348,99 @@ class AlertHandler(j.baseclasses.object):
         args = self.walk(llist, args={"res": []})
         return args["res"]
 
-    def find(self, cat="", message=""):
-        """
-        :param cat: filter against category (can be part of category)
-        :param message:
-        :return: list([key,err])
+    def find(self, cat="", message="", pid=None, time=None):
+        """filter alerts by cat, message, pid or time
+        :param cat: category, defaults to ""
+        :type cat: str, optional
+        :param message: message (can be public message too), defaults to ""
+        :type message: str, optional
+        :param pid: process id, defaults to None
+        :type pid: int, optional
+        :param time: time (epoch), defaults to None
+        :type time: int, optional
+        :return: list of alert objects
+        :rtype: list
         """
         res = []
-        for res0 in self.list():
-            key, err = res0
-            found = True
-            if message is not "" and err.message.find(message) == -1:
-                found = False
-            if cat is not "" and err.cat.find(cat) == -1:
-                found = False
+        cat = cat.strip().lower()
+        message = message.strip().lower()
+
+        for _, alert in self.list():
+            found = False
+
+            if message:
+                if message in alert.message.strip().lower() or message in alert.message_pub.strip().lower():
+                    found = True
+
+            if cat:
+                if cat in alert.cat.strip().lower():
+                    found = True
+
+            if pid:
+                for event in alert.events:
+                    if pid in event.process_ids:
+                        found = True
+            if time:
+                if alert.time_first <= time <= alert.time_last:
+                    found = True
+
             if found:
-                res.append([key, err])
+                res.append(alert)
+
         return res
 
     def count(self):
         return len(self.list())
 
-    def print(self):
+    def format_traceback(self, traceback):
+        """format a single traceback
+
+        :param traceback: traceback object
+        :type traceback: jumpscale.alerthandler.alert.traceback
+        :return: formatted traceback as a string with colors
+        :rtype: str
         """
-        kosmos 'j.tools.alerthandler.print()'
+        tb_list = []
+        for item in traceback.items:
+            tb_list.append((item.filepath, item.context, item.linenr, item.line, {}))
+        return j.core.tools.traceback_format(tb_list)
+
+    def print(self, alert, exclude=None, show_tb=True):
+        """print alert information
+        :param alert: alert object
+        :type alert: jumpscale.alerthandler.alert
+        :param exclude: property names to exclude
+        :type exclude: list of str, optional
+        :param show_tb: if set, tracebakcs will be printed too, defaults to True
+        :type show_tb: bool, optional
         """
-        for (key, obj) in self.list():
-            tb_text = obj.trace
-            j.core.errorhandler._trace_print(tb_text)
-            print(obj._hr_get(exclude=["trace"]))
-            print("\n############################\n")
+        if not exclude:
+            exclude = []
+
+        exclude += ["support_trace", "events", "tracebacks"]  # for now
+        exclude += ["support_trace", "events", "tracebacks"]
+
+        props = alert._ddict_hr_get(exclude=exclude)
+        props["level"] = LEVELS.get(int(props["level"]), "Unknown")
+        print(alert._hr_get_properties(props))
+
+        if show_tb:
+            for tb in alert.tracebacks:
+                if tb.items:
+                    print(f"Traceback (PID: {tb.process_id}, 3bot: {tb.threebot_name})")
+                    print(self.format_traceback(tb))
+
+    def print_list(self, alerts):
+        """
+        print alerts
+        with date, count, identifier and message
+
+        :param alerts: list of alert objects
+        :type alerts: list of Alert
+        """
+        exclude = ["alert_id", "cat", "message_pub", "alert_type"]
+        for alert in alerts:
+            self.print(alert, exclude=exclude, show_tb=False)
 
     def test(self, delete=True):
         """
