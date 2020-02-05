@@ -6238,7 +6238,7 @@ class WireGuardServer:
 
         return "%s.%s" % (first, second)
 
-    def server_start(self):
+    def server_start(self, ip_last_byte="2"):
         self.install()
         config = self.config["server"]
         if "WIREGUARD_SERVER_PUBKEY" not in config:
@@ -6246,6 +6246,7 @@ class WireGuardServer:
             config["WIREGUARD_SERVER_PUBKEY"] = pubkey
             config["WIREGUARD_SERVER_PRIVKEY"] = privkey
             config["SUBNET"] = self._subnet_calc(self.serverid)
+            config["IP_ADDRESS"] = f'10.{config["SUBNET"]}.{ip_last_byte}/24'
 
         self.config_server_mine["WIREGUARD_CLIENT_PUBKEY"] = self.config_local["WIREGUARD_CLIENT_PUBKEY"]
         self.config_server_mine["SUBNET"] = self._subnet_calc(self.myid)
@@ -6254,7 +6255,7 @@ class WireGuardServer:
 
         C = """
         [Interface]
-        Address = 10.{SUBNET}.1/24
+        Address = {IP_ADDRESS}
         SaveConfig = true
         PrivateKey = {WIREGUARD_SERVER_PRIVKEY}
         ListenPort = {WIREGUARD_PORT}
@@ -6284,7 +6285,7 @@ class WireGuardServer:
 
         C = """
         [Interface]
-        Address = 10.{SUBNET}.2/24
+        Address = 10.{SUBNET}.1/24
         PrivateKey = {WIREGUARD_CLIENT_PRIVKEY}
         """
         self.config_local["SUBNET"] = self._subnet_calc(self.myid)
