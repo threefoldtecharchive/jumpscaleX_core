@@ -50,7 +50,7 @@ START_BASH = """
     """
 
 
-def main(self):
+def test_tmux_background():
     """
     to run:
 

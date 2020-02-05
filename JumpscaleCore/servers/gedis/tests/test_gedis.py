@@ -64,7 +64,7 @@ def after():
         raise AssertionError("Gedis port should be killed")
 
 
-@skip("Need to be reformatted according to the new changes")
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
 def test01_actor_add():
     """
     - ​Get gedis server instance.
@@ -75,7 +75,7 @@ def test01_actor_add():
     assert namespace in gedis_server.actors_list(namespace)
 
 
-@skip("Need to be reformatted according to the new changes")
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
 def test02_gedis_client():
     """
      - ​Get gedis server instance.
@@ -109,7 +109,7 @@ def test02_gedis_client():
     #     cl.reload(namespace="WRONG_NAMESPACE")
 
 
-@skip("Need to be reformatted according to the new changes")
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
 def test03_gedis_add_actors():
     """
     - ​Get gedis server instance.
@@ -135,7 +135,7 @@ def test03_gedis_add_actors():
     assert "{} {} ".format(arg_1, arg_2) == result.decode()
 
 
-@skip("Need to be reformatted according to the new changes")
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
 def test04_gedis_load_actors():
     """
     - ​Add actor to actors_data

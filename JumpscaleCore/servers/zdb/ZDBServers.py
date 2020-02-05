@@ -2,9 +2,10 @@ from Jumpscale import j
 from .ZDBServer import ZDBServer
 
 JSConfigs = j.baseclasses.object_config_collection_testtools
+TESTTOOLS = j.baseclasses.testtools
 
 
-class ZDBServers(JSConfigs):
+class ZDBServers(JSConfigs, TESTTOOLS):
     """
     Open Publish factory
     """
@@ -75,7 +76,7 @@ class ZDBServers(JSConfigs):
             zdb.destroy()
             zdb.delete()
 
-    def test(self, build=False):
+    def test(self, name="", build=False):
         """
         kosmos 'j.servers.zdb.test(build=True)'
         kosmos 'j.servers.zdb.test()'
@@ -88,7 +89,7 @@ class ZDBServers(JSConfigs):
         cl = zdb.client_get("test_instance")
 
         assert cl.ping()
-
+        self._tests_run(name=name)
         self.test_instance_stop()
 
         print("TEST OK")
