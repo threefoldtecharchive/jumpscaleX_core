@@ -4,6 +4,7 @@ from collections import OrderedDict
 
 # import capnp
 
+TESTTOOLS = j.baseclasses.testtools
 skip = j.baseclasses.testtools._skip
 
 
@@ -32,7 +33,7 @@ class Tools(j.baseclasses.object):
         return listInDict
 
 
-class Capnp(j.baseclasses.object):
+class Capnp(j.baseclasses.object, TESTTOOLS):
     """
     """
 

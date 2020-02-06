@@ -12,13 +12,15 @@ import binascii
 from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
 
+
+TESTTOOLS = j.baseclasses.testtools
 skip = j.baseclasses.testtools._skip
 
 
 JSBASE = j.baseclasses.object
 
 
-class NACLFactory(j.baseclasses.object):
+class NACLFactory(j.baseclasses.object, TESTTOOLS):
     __jslocation__ = "j.data.nacl"
 
     def _init(self, **kwargs):
