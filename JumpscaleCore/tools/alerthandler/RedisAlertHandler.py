@@ -442,11 +442,6 @@ class AlertHandler(j.baseclasses.object):
         exclude = ["alert_id", "cat", "message_pub", "alert_type"]
         for alert in alerts:
             self.print(alert, exclude=exclude, show_tb=False)
-        for (key, obj) in self.list():
-            tb_text = obj.trace
-            j.core.errorhandler._trace_print(tb_text)
-            print(obj._hr_get(exclude=["trace"]))
-            print("\n############################\n")
 
     def test(self, delete=True):
         """

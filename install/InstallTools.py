@@ -847,7 +847,11 @@ class LogHandler:
         rediskey_logs = self.rediskey_logs
         rediskey_logs_incr = self.rediskey_logs_incr
 
+        if not self.db:
+            self.db = MyEnv.db
+
         latest_id = self.db.incr(rediskey_logs_incr)
+
         self.last_logid = latest_id
         logdict["id"] = latest_id
 
