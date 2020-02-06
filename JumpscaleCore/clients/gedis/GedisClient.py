@@ -24,10 +24,6 @@ class GedisClient(JSConfigBase):
     package_name = "zerobot.base" (S)  #is the full package name e.g. threebot.blog
     threebot_local_profile = "default"
     password_ = ""
-    # ssl = False (B)
-    # ssl_keyfile = "" (S)
-    # ssl_certfile = "" (S)
-    # ssl_ca_certs = "" (S)
     """
 
     def _init(self, **kwargs):

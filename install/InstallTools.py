@@ -4222,9 +4222,14 @@ class OSXInstaller:
     def base():
         MyEnv._init()
         OSXInstaller.brew_install()
-        if not Tools.cmd_installed("curl") or not Tools.cmd_installed("unzip") or not Tools.cmd_installed("rsync"):
+        if (
+            not Tools.cmd_installed("curl")
+            or not Tools.cmd_installed("unzip")
+            or not Tools.cmd_installed("rsync")
+            or not Tools.cmd_installed("graphviz")
+        ):
             script = """
-            brew install curl unzip rsync
+            brew install curl unzip rsync graphviz
             """
             Tools.execute(script, replace=True)
         BaseInstaller.pips_install(["click"])  # TODO: *1
@@ -4366,7 +4371,8 @@ class UbuntuInstaller:
             "net-tools",
             "libgeoip-dev",
             "libcapnp-dev",
-        ]  # "graphviz"
+            "graphviz",
+        ]
 
     @staticmethod
     def apts_install():

@@ -441,6 +441,11 @@ class AlertHandler(j.baseclasses.object):
         exclude = ["alert_id", "cat", "message_pub", "alert_type"]
         for alert in alerts:
             self.print(alert, exclude=exclude, show_tb=False)
+        for (key, obj) in self.list():
+            tb_text = obj.trace
+            j.core.errorhandler._trace_print(tb_text)
+            print(obj._hr_get(exclude=["trace"]))
+            print("\n############################\n")
 
     def test(self, delete=True):
         """
@@ -482,11 +487,9 @@ class AlertHandler(j.baseclasses.object):
         j.errorhandler.exception_handle(error, die=False)
 
         if delete:
-            assert self.count() == 2
+            assert self.count() == 102
 
         print(j.tools.alerthandler.list())
-
-        j.tools.alerthandler.print()
 
     # DO NOT REMOVE, can do traicks later with the eco.lua to make faster
     # def redis_enable(self):

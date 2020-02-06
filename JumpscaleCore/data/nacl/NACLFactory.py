@@ -256,9 +256,8 @@ class NACLFactory(j.baseclasses.object):
 
         words = j.data.nacl.default.words
         j.sal.fs.copyDirTree(
-            j.core.tools.text_replace(
-                "{DIR_BASE}/cfg/keys/default", j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup")
-            )
+            j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default"),
+            j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup"),
         )  # make backup
         j.sal.fs.remove(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default"))
         try:
@@ -272,14 +271,14 @@ class NACLFactory(j.baseclasses.object):
             self.default._keys_generate(words=words)
             self.default.load()
 
+            a = cl.encrypt("something", hex=True)
             b = cl.decrypt(a, hex=True)
             assert b == b"something"
 
         finally:
             j.sal.fs.copyDirTree(
-                j.core.tools.text_replace(
-                    "{DIR_BASE}/cfg/keys/default_backup", j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default")
-                )
+                j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup"),
+                j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default"),
             )
             j.sal.fs.remove(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup"))
 
