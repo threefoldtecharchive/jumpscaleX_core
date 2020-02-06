@@ -335,7 +335,7 @@ class AlertHandler(j.baseclasses.object):
 
     def reset(self):
         self.db.delete(self._rediskey_alerts)
-        self.db.delete(self._rediskey_logs)
+        # self.db.delete(self._rediskey_logs)
 
     def list(self):
         """
@@ -382,7 +382,7 @@ class AlertHandler(j.baseclasses.object):
                     if pid in event.process_ids:
                         found = True
             if time:
-                if alert.time_first <= time <= alert.time_last:
+                if alert.time_first <= int(time) <= alert.time_last:
                     found = True
 
             if found:
@@ -418,7 +418,6 @@ class AlertHandler(j.baseclasses.object):
         if not exclude:
             exclude = []
 
-        exclude += ["support_trace", "events", "tracebacks"]  # for now
         exclude += ["support_trace", "events", "tracebacks"]
 
         props = alert._ddict_hr_get(exclude=exclude)
@@ -486,6 +485,7 @@ class AlertHandler(j.baseclasses.object):
             assert self.count() == 102
 
         print(j.tools.alerthandler.list())
+        print("TEST OK")
 
     # DO NOT REMOVE, can do traicks later with the eco.lua to make faster
     # def redis_enable(self):

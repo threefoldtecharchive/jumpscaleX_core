@@ -21,8 +21,7 @@ We can either use logger client or js_logs
 
 - Client params
 
-```toml
-@url = jumpscale.clients.logger.1
+```bash
 name** = ""
 redis_addr = "127.0.0.1" (ipaddr)
 redis_port = 6379 (ipport)

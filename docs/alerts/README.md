@@ -6,29 +6,26 @@ Jumpscale alerts stores alerts in Redis so we can get local/remote alerts throug
 
 ## Usage:
 
-- Get alerts client
+### Get alerts client
 
 - params
-    ```toml
+    ```bash
     redis_addr = "127.0.0.1" (ipaddr)
     redis_port = 6379 (ipport)
     redis_secret = ""
     ```
 
-- Usage of the client
+- Get a client
 
-```python
-client = j.clients.alerts.get("js_alerts")
-```
+    ```python
+    client = j.clients.alerts.get("js_alerts")
+    ```
 
-- Then there's a lot of methods to find/search alerts
+### Usage of the client
 
-example:
+- `client.list()`: list all alerts
 
-```python
-client.print_list() # print all alerts
-client.find(message="no")  # find alerts by message / cat
-```
+- `client.find(message="no")` : find alerts by message, time, cat
 
 ## js_alerts
 
@@ -66,6 +63,12 @@ Count of alerts is 3
 
 ```bash
 js_alerts list
+```
+
+- Find alerts
+
+```bash
+js_alerts find --time 1580989035
 ```
 
 ### References:
