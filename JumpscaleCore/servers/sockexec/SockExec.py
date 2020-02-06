@@ -4,6 +4,8 @@ import netstr
 import socket
 import time
 
+skip = j.baseclasses.testtools._skip
+
 
 class SockExec(j.baseclasses.object_config):
 
@@ -72,6 +74,7 @@ class SockExec(j.baseclasses.object_config):
                 return res
             time.sleep(0.01)
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/509")
     def test(self, reset=False):
         """
         kosmos 'j.servers.sockexec.test()'

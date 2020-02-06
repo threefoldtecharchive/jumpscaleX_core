@@ -4,6 +4,9 @@ from collections import OrderedDict
 
 # import capnp
 
+TESTTOOLS = j.baseclasses.testtools
+skip = j.baseclasses.testtools._skip
+
 
 class Tools(j.baseclasses.object):
     def listInDictCreation(self, listInDict, name, manipulateDef=None):
@@ -30,7 +33,7 @@ class Tools(j.baseclasses.object):
         return listInDict
 
 
-class Capnp(j.baseclasses.object):
+class Capnp(j.baseclasses.object, TESTTOOLS):
     """
     """
 
@@ -174,6 +177,7 @@ class Capnp(j.baseclasses.object):
 
         return obj
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/482")
     def test(self):
         """
         kosmos 'j.data.capnp.test()'
@@ -217,3 +221,7 @@ class Capnp(j.baseclasses.object):
 
     def getBinaryData(self, obj):
         return obj.to_bytes_packed()
+
+    def test_capnp(self, name=""):
+        self._tests_run(name=name)
+

@@ -4,6 +4,8 @@ from .SSHClient import SSHClient
 # from .SSHClientParamiko import SSHClientParamiko
 from .SSHClientBase import SSHClientBase
 
+skip = j.baseclasses.testtools._skip
+
 
 class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
 
@@ -30,6 +32,7 @@ class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
         #     return SSHClient
         #     # return SSHClientParamiko
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/507")
     def test(self):
         """
         kosmos 'j.clients.ssh.test()'
@@ -48,7 +51,6 @@ class SSHClientFactory(j.baseclasses.object_config_collection_testtools):
         wg.server_start()
 
         j.shell()
-        w
 
         # TODO:*1 create docker make sure default key is used in the docker
         # d = j.sal.docker.create(name='test', ports='22:8022', vols='', volsro='', stdout=True, base='phusion/baseimage',

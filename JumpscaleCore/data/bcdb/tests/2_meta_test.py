@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_meta():
     """
     to run:
 
@@ -9,7 +9,7 @@ def main(self):
 
     """
 
-    bcdb, _ = self._load_test_model()
+    bcdb, _ = j.data.bcdb._load_test_model()
 
     assert len(bcdb.get_all()) == 0
 
@@ -104,6 +104,6 @@ def main(self):
     j.servers.zdb.test_instance_stop()
     j.servers.sonic.default.stop()
 
-    self._log_info("TEST META DONE")
+    j.data.bcdb._log_info("TEST META DONE")
 
     return "OK"

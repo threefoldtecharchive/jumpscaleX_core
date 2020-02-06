@@ -11,7 +11,7 @@ from .clients_impl import ZDBClientDirectModeAdmin, ZDBClientSeqModeAdmin, ZDBCl
 JSBASE = j.baseclasses.object
 
 
-class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
+class ZDBClientFactory(j.baseclasses.object_config_collection_testtools, j.baseclasses.testtools):
     """
 
     different modes: seq,user,direct
@@ -86,6 +86,6 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
         zdb = j.servers.zdb.test_instance_start()
         cl = zdb.client_admin_get()
         assert cl.ping()
-        self._test_run(name=name)
+        self._tests_run(name=name)
 
         j.servers.zdb.test_instance_stop()

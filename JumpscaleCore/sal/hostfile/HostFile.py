@@ -5,9 +5,10 @@ import re
 from Jumpscale import j
 
 JSBASE = j.baseclasses.object
+TESTTOOLS = j.baseclasses.testtools
 
 
-class HostFile(JSBASE):
+class HostFile(JSBASE, TESTTOOLS):
     __jslocation__ = "j.sal.hostsfile"
 
     def _init(self, **kwargs):
@@ -78,9 +79,9 @@ class HostFile(JSBASE):
 
         j.sal.fs.writeFile(self._host_filepath, filecontents)
 
-    def _test(self, name=""):
+    def test(self, name=""):
         """Run tests under tests
         :param name: basename of the file to run, defaults to "".
         :type name: str, optional
         """
-        self._test_run(name=name, obj_key="test_main")
+        self._tests_run(name=name)

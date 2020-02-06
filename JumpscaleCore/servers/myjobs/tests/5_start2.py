@@ -1,21 +1,27 @@
 import gevent
+from Jumpscale import j
+
+myjobs = j.servers.myjobs
+
+skip = j.baseclasses.testtools._skip
 
 
-def main(self, count=20):
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/493")
+def test_start2(count=20):
     """
     kosmos -p 'j.servers.myjobs.test("start2")'
     """
 
-    self._test_setup()
-    self.workers_subprocess_start()
+    myjobs._test_setup()
+    myjobs.workers_subprocess_start()
 
     def wait_2sec():
         gevent.sleep(2)
 
     for x in range(count):
-        self.schedule(wait_2sec)
+        myjobs.schedule(wait_2sec)
 
-    assert self._mainloop_gipc.ready()
-    self._test_teardown()
+    assert myjobs._mainloop_gipc.ready()
+    myjobs._test_teardown()
     print("start2 TEST OK")
     print("TEST OK")

@@ -6,7 +6,7 @@ from socket import gethostname
 JSBASE = j.baseclasses.object
 
 
-class SSLFactory(JSBASE):
+class SSLFactory(JSBASE, j.baseclasses.testtools):
     __jslocation__ = "j.sal.ssl"
     __imports__ = "pyopenssl"
 
@@ -239,9 +239,9 @@ class SSLFactory(JSBASE):
         x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, certificate)
         return x509
 
-    def _test(self, name=""):
+    def test(self, name=""):
         """Run tests under tests
         :param name: basename of the file to run, defaults to ''.
         :type name: str, optional
         """
-        self._test_run(name=name, obj_key="test_main")
+        self._tests_run(name=name)

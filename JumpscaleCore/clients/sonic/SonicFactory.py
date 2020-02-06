@@ -4,7 +4,7 @@ from .SonicClient import SonicClient
 JSConfigs = j.baseclasses.object_config_collection
 
 
-class SonicFactory(JSConfigs):
+class SonicFactory(JSConfigs, j.baseclasses.testtools):
 
     """
     Sonic Client factory
@@ -40,7 +40,7 @@ class SonicFactory(JSConfigs):
             client.push("forum", "posts", articleid, content)
         assert client.query("forum", "posts", "love") == ["post:5", "post:4"]
 
-        # that doesnt seem to work, no idea what it is supposed to do
-        # assert client.suggest("forum", "posts", "lo") == ["lorde", "love"]
-
         print("TEST OK")
+
+    def test_sonic(self, name=""):
+        self._tests_run(name=name)

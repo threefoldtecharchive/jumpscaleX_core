@@ -1,12 +1,17 @@
 from Jumpscale import j
 import gevent
 
+myjob = j.servers.myjobs
 
-def main(self):
+skip = j.baseclasses.testtools._skip
+
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/493")
+def test_timeout():
     """
     kosmos -p 'j.servers.myjobs.test("timeout")'
     """
-    self._test_setup()
+    myjob._test_setup()
     j.tools.logger.debug = True
 
     def add(a=None, b=None):
@@ -15,12 +20,12 @@ def main(self):
         assert b
         return a + b
 
-    job = self.schedule(add, a=1, b=2, timeout=1)
+    job = myjob.schedule(add, a=1, b=2, timeout=1)
 
-    self.worker_inprocess_start()
-    job = self.wait([job.id], die=False)[0]
+    myjob.worker_inprocess_start()
+    job = myjob.wait([job.id], die=False)[0]
     assert job.state == "ERROR"
     assert job.error_cat == "TIMEOUT"
-    self._test_teardown()
+    myjob._test_teardown()
     print("timeout TEST OK")
     print("TEST OK")

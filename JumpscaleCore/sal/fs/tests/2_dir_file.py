@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_dir_file():
     """
     kosmos 'j.sal.fs.test("dir_file")'
     """

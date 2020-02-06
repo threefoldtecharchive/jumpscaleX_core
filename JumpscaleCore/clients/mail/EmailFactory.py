@@ -26,3 +26,6 @@ class EmailFactory(JSConfigs):
         assert j.clients.email.test_c.smtp_server == "localhost"
         assert j.clients.email.test_c.smtp_port == 27
         print("TEST OK")
+
+    def test_mail(self, name=""):
+        self._tests_run(name=name)

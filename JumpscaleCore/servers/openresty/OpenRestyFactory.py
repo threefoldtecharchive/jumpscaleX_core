@@ -4,8 +4,10 @@ import os
 
 from .OpenRestyServer import OpenRestyServer
 
+TESTTOOLS = j.baseclasses.testtools
 
-class OpenRestyFactory(j.baseclasses.object_config_collection_testtools):
+
+class OpenRestyFactory(j.baseclasses.object_config_collection_testtools, TESTTOOLS):
     """
     Factory for openresty
     """
@@ -43,4 +45,4 @@ class OpenRestyFactory(j.baseclasses.object_config_collection_testtools):
         if install:
             self.install()
 
-        self._test_run(name=name)
+        self._tests_run(name=name)

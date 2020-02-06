@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test012_collection_types():
     """
     to run:
 

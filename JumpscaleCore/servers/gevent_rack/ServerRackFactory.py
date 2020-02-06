@@ -24,6 +24,7 @@ import time
 import mimetypes
 
 JSBASE = j.baseclasses.object
+skip = j.baseclasses.testtools._skip
 
 
 class ServerRackFactory(JSBASE):

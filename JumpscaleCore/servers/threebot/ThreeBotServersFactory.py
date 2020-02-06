@@ -2,10 +2,12 @@ from .ThreebotServer import ThreeBotServer
 from Jumpscale import j
 import time
 
+TESTTOOLS = j.baseclasses.testtools
+
 # from .OpenPublish import OpenPublish
 
 
-class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
+class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, TESTTOOLS):
     """
     Factory for 3bots
     """
@@ -185,7 +187,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
 
         packages = ["threebot.blog"]
 
-        cl = j.servers.threebot.start(packages=packages)
+        cl = j.servers.threebot.start(background=True, packages=packages)
 
         # if fileserver:
         #     gedis_client.actors.package_manager.package_add(
@@ -199,7 +201,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         #
         # gedis_client.reload()
 
-        self._test_run(name=name)
+        self._tests_run(name=name)
 
     def test_explorer(self):
         """

@@ -13,7 +13,7 @@ class TestClass(j.baseclasses.object):
         j.shell()
 
 
-def main(self):
+def test_memusage_classes():
     """
     to run:
 

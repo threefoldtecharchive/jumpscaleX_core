@@ -2,6 +2,8 @@ from Jumpscale import j
 from enum import Enum  # for enum34, or the stdlib version
 from pprint import pprint
 
+TESTTOOLS = j.baseclasses.testtools
+
 
 class Format(Enum):
     WEBSITE = 1
@@ -12,7 +14,7 @@ class Format(Enum):
     THREEBOTPACKAGE = 6
 
 
-class TFGridRegistryClient(j.baseclasses.object):
+class TFGridRegistryClient(j.baseclasses.object, TESTTOOLS):
     """
 
     A class is used as a client to be able to handle registry actors.
@@ -32,12 +34,12 @@ class TFGridRegistryClient(j.baseclasses.object):
         self.me = j.tools.threebot.me.get(
             name="test", tid=3, email="test.test@gmail", tname="testUser", pubkey="asdf3dsfasdlfkjasd88893n"
         )
-        cl = j.clients.gedis.new("registry_client", port=8901, package_name="zerobot.packagemanager")
+        cl = j.clients.gedis.get("registry_client", port=8901, package_name="zerobot.packagemanager")
         cl.reload()
         cl.actors.package_manager.package_add(
             path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry"
         )
-        registry_client = j.clients.gedis.new("registry", port=8901, package_name="tfgrid.registry")
+        registry_client = j.clients.gedis.get("registry", port=8901, package_name="tfgrid.registry")
         registry_client.reload()
 
         self.registry_client = registry_client.actors.registry
@@ -330,3 +332,10 @@ class TFGridRegistryClient(j.baseclasses.object):
         verifykey = self.me.nacl.verify_key.encode()
         signed_data = self.me.nacl.sign(dataobj._data)
         return verifykey, signed_data
+
+    def test(self, name=""):
+        """
+        kosmos 'j.clients.tfgrid_registry.test()'
+
+        """
+        self._tests_run(name=name)

@@ -21,7 +21,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_performance():
     """
     to run:
 
@@ -60,7 +60,7 @@ def main(self):
         @url = test.index.1
         text** = (S)
         """
-        bcdb, _ = self._load_test_model(type=type, schema=schema)
+        bcdb, _ = j.data.bcdb._load_test_model(type=type, schema=schema)
         string_model = bcdb.model_get(url="test.text.1")
         indexed_model = bcdb.model_get(url="test.index.1")
 
@@ -84,7 +84,7 @@ def main(self):
     @url = test.sonic.1
     text*** = (S)
     """
-    bcdb, model = self._load_test_model(schema=schema)
+    bcdb, model = j.data.bcdb._load_test_model(schema=schema)
     j.servers.sonic.default.stop()
     sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.servers.threebot.default.adminsecret_))
     sonic.start()

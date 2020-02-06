@@ -25,7 +25,7 @@ aim is to see if the subschema's are loaded properly in the metadata db
 """
 
 
-def main(self):
+def test_subschemas():
     """
     to run:
     kosmos 'j.data.bcdb.test(name="subschemas")'
@@ -86,7 +86,7 @@ def main(self):
         """
 
     # bcdb = j.data.bcdb.get("test")
-    bcdb, model = self._load_test_model(type="sqlite")
+    bcdb, model = j.data.bcdb._load_test_model(type="sqlite")
     bcdb.reset()
     m = bcdb.model_get(schema=schema)
 
