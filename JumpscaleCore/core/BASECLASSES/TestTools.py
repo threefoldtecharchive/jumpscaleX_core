@@ -71,13 +71,13 @@ class TestTools:
                 raise ValueError(f"Didn't find file with name {name}")
 
         if not hasattr(self, "_dirpath"):
-            return
+            return 0
         path = j.sal.fs.joinPaths(self._dirpath, "tests")
         if name:
             path = find_file(name, path)
 
         self._discover_from_path(path)
-        self._execute_report_tests()
+        return self._execute_report_tests()
 
     def _run_from_path(self, path="", name=""):
         """Run tests from absolute or relative path.
@@ -167,7 +167,7 @@ class TestTools:
         end_time = time.time()
         time_taken = end_time - start_time
         self._results["time_taken"] = time_taken
-        tests_status = (self._results["summary"]["failures"] > 0) or (self._results["summary"]["errors"] > 0)
+        fail_status = (self._results["summary"]["failures"] > 0) or (self._results["summary"]["errors"] > 0)
         if report and self.__show_tests_report:
             # in case of running test from path or jsx factory.
             self._report()
@@ -175,9 +175,9 @@ class TestTools:
         if not self.__show_tests_report:
             # in case of collecting all tests to be reported at the end.
             self._add_to_full_results()
-            self._reset()
+            self._reset(modules=False)
 
-        if tests_status:
+        if fail_status:
             return 1
         return 0
 
@@ -377,7 +377,7 @@ class TestTools:
         print(result_str.split(": ")[1], "\u001b[0m")
 
     def _add_to_full_results(self):
-        """Add results from test
+        """Add results from test runner to full result to report them once at the end.
         """
         _full_results["summary"]["failures"] += self._results["summary"]["failures"]
         _full_results["summary"]["errors"] += self._results["summary"]["errors"]
@@ -387,7 +387,7 @@ class TestTools:
         _full_results["testcases"].extend(self._results["testcases"])
 
     def _run_tests_from_object(self, obj=None):
-
+        self._reset()
         if obj is None:
             return
         elif isinstance(obj, j.baseclasses.object):
@@ -405,7 +405,11 @@ class TestTools:
         self._execute_report_tests(report=False)
         global _full_results
         self._report(results=_full_results)
+        fail_status = (_full_results["summary"]["failures"] > 0) or (_full_results["summary"]["errors"] > 0)
         self._reset(full=True)
+        if fail_status:
+            return 1
+        return 0
 
     def _discover_group(self, group_name, group):
         for factory in dir(group):
@@ -413,13 +417,14 @@ class TestTools:
                 try:
                     attr = getattr(group, factory)
                 except BaseException as error:
+                    print(f"{group_name}.{factory} ...")
                     self._add_error(factory, error)
                     continue
                 if isinstance(attr, j.baseclasses.object):
                     attr.__show_tests_report = False
                     self._modules.append(attr)
 
-    def _reset(self, full=False):
+    def _reset(self, modules=True, full=False):
         if full:
             for module in self._modules:
                 module.__show_tests_report = True
@@ -430,7 +435,8 @@ class TestTools:
                 "testcases": [],
                 "time_taken": 0,
             }
-        self._modules = []
+        if modules:
+            self._modules = []
         self._results = {
             "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
             "testcases": [],
