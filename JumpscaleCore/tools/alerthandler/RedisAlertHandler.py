@@ -48,7 +48,7 @@ SCHEMA_ALERT = """
 
 @url = jumpscale.alerthandler.alert.log
 0 : threebot_name =  (S)            #threebot names, can be more than 1
-1 : app_name = (I)                  #allows us to find the log back
+1 : app_name = (S)                  #allows us to find the log back
 2 : latest_logid = (I)              #latest logid
 
 #optional tracebacks
@@ -118,6 +118,7 @@ class AlertHandler(j.baseclasses.object):
 
     def handle_error(self, logdict):
         j.application.inlogger = True
+        # self._handle_error(logdict)
         try:
             self._handle_error(logdict)
         except Exception as e:

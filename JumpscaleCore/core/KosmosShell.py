@@ -31,7 +31,8 @@ from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.shortcuts import print_formatted_text
 from ptpython.filters import ShowDocstring, PythonInputFilter
 from ptpython.prompt_style import PromptStyle
-from ptpython.repl import _lex_python_result
+
+# from ptpython.repl import _lex_python_result
 from pygments.lexers import PythonLexer
 
 

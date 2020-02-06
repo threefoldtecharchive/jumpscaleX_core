@@ -192,8 +192,6 @@ class builder_method:
                 res = None
                 print("There is an error happened during building")
 
-            j.application.log2fs_redis_context_reset(builder._classname)
-            j.application.log2fs_redis_unregister(builder._classname)
             return res
 
         return wrapper_action
