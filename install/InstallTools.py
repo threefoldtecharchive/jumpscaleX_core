@@ -219,6 +219,7 @@ class RedisTools:
                 return None
 
         try:
+            unix_socket_path = Tools.text_replace(unix_socket_path)
             cl = Redis(unix_socket_path=unix_socket_path, db=0)
             cl.fake = False
             assert cl.ping()
