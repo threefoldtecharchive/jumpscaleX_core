@@ -37,18 +37,6 @@ class LoggerClient(j.baseclasses.object_config):
 
         return self._redis_client
 
-    # def _data_container_set(self, container, appname):
-    #     assert isinstance(container, list)
-    #     assert len(container) == 1000
-    #     j.shell()
-    #     logdir = "%s/%s" % (self._log_dir, appname)
-    #     if not j.sal.fs.exists(logdir):
-    #         return []
-    #     else:
-    #         data = msgpack.dumps(container)
-    #         j.shell()
-    #         w
-
     def _data_container_get(self, identifier, appname):
         logdir = "%s/%s" % (self._log_dir, appname)
         if not j.sal.fs.exists(logdir):
@@ -289,10 +277,10 @@ class LoggerClient(j.baseclasses.object_config):
 
     def find(
         self,
+        appname=None,
         id_from=None,
         time_from=None,
         time_to=None,
-        appname=None,
         cat=None,
         message=None,
         processid=None,
@@ -301,6 +289,7 @@ class LoggerClient(j.baseclasses.object_config):
         level=None,
         data=None,
     ):
+
         """
         :param cat: filter against category (can be part of category)
         :param processid = pid = int
@@ -365,10 +354,15 @@ class LoggerClient(j.baseclasses.object_config):
         count = 0
         if all:
             logging_dir = j.sal.fs.joinPaths(self._log_dir, appname)
-            count += len(j.sal.fs.listFilesInDir(logging_dir)) * 1000
+            if j.sal.fs.exists(logging_dir):
+                count += len(j.sal.fs.listFilesInDir(logging_dir)) * 1000
 
         count += self.db.hlen(f"logs:{appname}:data")
         return count
+
+    def _print(self, items):
+        for item in items:
+            print(j.core.tools.log2str(item))
 
     def print(
         self,
@@ -411,4 +405,4 @@ class LoggerClient(j.baseclasses.object_config):
         )
 
         for item in logs:
-            j.core.tools.log2stdout(item, data_show=True, enduser=True)
+            print(j.core.tools.log2str(item))
