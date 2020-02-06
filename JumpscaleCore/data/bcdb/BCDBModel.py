@@ -561,7 +561,7 @@ class BCDBModel(BCDBModelBase):
         """
         return property_name, val, obj_id, nid
 
-    def _find_query(self, nid, _count=False, **kwargs):
+    def _find_query(self, nid, _count=False, offset=None, limit=None, **kwargs):
         values = []
         field = "id"
         if _count:
@@ -578,17 +578,22 @@ class BCDBModel(BCDBModelBase):
                         val = 0
                 whereclause += f" {key} = ?"
                 values.append(val)
-            whereclause += ";"
-        return self.query_model([field], whereclause, values)
 
-    def query_model(self, fields, whereclause=None, values=None):
+        return self.query_model([field], whereclause, limit=limit, offset=offset, values=values)
+
+    def query_model(self, fields, whereclause=None, limit=None, offset=None, values=None):
         fieldstring = ", ".join(fields)
         query = f"select {fieldstring} FROM {self.index.sql_table_name} "
         if whereclause:
             query += f"where {whereclause}"
+        if limit and isinstance(limit, int):
+            query += f" LIMIT {limit}"
+        if offset and isinstance(offset, int):
+            query += f" OFFSET {offset}"
+        query += ";"
         return self.index.db.execute_sql(query, values)
 
-    def find_ids(self, nid=None, **kwargs):
+    def find_ids(self, nid=None, limit=None, offset=None, **kwargs):
         """
         is an iterator !!!
         :param nid:
@@ -597,7 +602,7 @@ class BCDBModel(BCDBModelBase):
         """
         if not nid:
             nid = 1
-        cursor = self._find_query(nid, **kwargs)
+        cursor = self._find_query(nid, limit=limit, offset=offset, **kwargs)
         r = cursor.fetchone()
         res = []
         while r:
@@ -623,9 +628,9 @@ class BCDBModel(BCDBModelBase):
         """
         return self.index.db.execute_sql(query, values)
 
-    def find(self, nid=None, **kwargs):
+    def find(self, nid=None, limit=None, offset=None, **kwargs):
         res = []
-        for id in self.find_ids(nid=nid, **kwargs):
+        for id in self.find_ids(nid=nid, limit=limit, offset=offset, **kwargs):
             res.append(self.get(id))
         return res
 

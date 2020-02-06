@@ -23,6 +23,7 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
         6:  actor = (O) !jumpscale.threebot.package.actor.1
         7:  bcdbs = (LO) !jumpscale.threebot.package.bcdb.1
         8:  description = (S)
+        9:  install_kwargs = (dict)
 
 
         @url = jumpscale.threebot.package.source.1

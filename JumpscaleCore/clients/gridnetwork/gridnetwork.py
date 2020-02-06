@@ -11,11 +11,12 @@ class GridnetworkFactory(j.baseclasses.object):
 
 class GridnetworkClient(j.baseclasses.object):
     def __init__(self, gedisclient):
+        super().__init__()
         self._gedisclient = gedisclient
         self._network = self._gedisclient.actors.gridnetwork
 
     def networks_find(self):
-        return self._network.networks_find()
+        return self._network.network_find()
 
     def network_connect(self, networkname, doublename=None, sshclient_name=None, port=7777, interface_name="wg0"):
         wg = j.tools.wireguard.get(f"{networkname}_{sshclient_name}", autosave=False)

@@ -19,7 +19,7 @@ class Logger:
 
         if not session.strip():
             raise ValueError("session must not be empty")
-        self.tt = self._j.data.time.getLocalDateHRForFilesystem()
+
         self.contexts = [self.DEFAULT_CONTEXT]  # as a stack
 
     @property
@@ -27,8 +27,12 @@ class Logger:
         return self.contexts[-1]
 
     @property
+    def date(self):
+        return self._j.data.time.getLocalDateHRForFilesystem()
+
+    @property
     def location(self):
-        return "%s/%s/%s" % (self.session, self.tt, self.current_context)
+        return "%s/%s/%s" % (self.session, self.date, self.current_context)
 
     def reset_context(self):
         if len(self.contexts) == 1:
@@ -71,11 +75,22 @@ class Logger:
 class FileSystemLogger(Logger):
     def __init__(self, j, session):
         super().__init__(j, session)
-
+        self.start_date = self.date
         self.set_path()
 
-    def set_path(self):
-        self.path = self.get_file_path()
+    def get_path(self):
+        path = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s.ansi" % self.location)
+        parent_dir = os.path.dirname(path)
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir, exist_ok=True)
+        return path
+
+    def set_path(self, new_path=None):
+        if not new_path:
+            # default
+            self.path = self.get_path()
+        else:
+            self.path = new_path
 
     def switch_context(self, context):
         super().switch_context(context)
@@ -87,16 +102,13 @@ class FileSystemLogger(Logger):
         # context changed, re-set path
         self.set_path()
 
-    def get_file_path(self):
-        filepath = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s.ansi" % self.location)
-        # calling any j.sal.fs.exists or createDir will cause an infinite recursion
-        # because they use logging
-        parent_dir = os.path.dirname(filepath)
-        if not os.path.exists(parent_dir):
-            os.makedirs(parent_dir, exist_ok=True)
-        return filepath
-
     def log(self, logdict):
+        current_date = self.date
+        if self.start_date != current_date:
+            # date changed, re-set path
+            self.set_path()
+            self.start_date = current_date
+
         out = self._j.core.tools.log2str(logdict)
         out = out.rstrip() + "\n"
         filepath = self.path

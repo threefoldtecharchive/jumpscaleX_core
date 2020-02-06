@@ -32,6 +32,7 @@ class ThreeGit(j.baseclasses.object_config):
         # if empty, then the local_path itself is the wiki directory
         relative_base_path = "" (S)
         dest_path = "" (S)
+        revision = "" (S)
         """
 
     def _init(self, **kwargs):
