@@ -4233,7 +4233,7 @@ class OSXInstaller:
             or not Tools.cmd_installed("graphviz")
         ):
             script = """
-            brew install curl unzip rsync graphviz
+            brew install curl unzip rsync graphviz tmux
             """
             Tools.execute(script, replace=True)
         BaseInstaller.pips_install(["click"])  # TODO: *1
