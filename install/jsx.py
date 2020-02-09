@@ -680,7 +680,6 @@ def container_kosmos(name="3bot"):
         ],
     )
 
-
 @click.command()
 @click.option("-n", "--name", default="3bot", help="name of container")
 @click.option("-t", "--target", default="auto", help="auto,local,container, default is auto will try container first")
@@ -707,19 +706,36 @@ def container_shell(name="3bot"):
 
 
 @click.command()
-@click.option("-n", "--name", default="3bot", help="name of container")
-def wireguard(name=None):
+@click.option("-n", "--names", help="comma separated container names")
+def wireguard(names=None):
     """
     jsx wireguard
     enable wireguard, can be on host or server
     :return:
     """
-    docker = container_get(name=name)
-    wg = docker.wireguard
-    wg.server_start()
-    wg.connect()
+    containers = names.split(",") if names else e.DF.list()
+    usedLastIPBytes = []
+    new_containers = []
 
-
+    # Get wireguard preconfigured containers, so we can maintain same old IP & configs
+    for name in containers:
+        docker = container_get(name=name)
+        wg = docker.wireguard
+        configured, ip = wg.isConfigured()
+        if configured:
+            last_byte = ip.split('.')[-1]
+            usedLastIPBytes.append(int(last_byte))
+            wg.server_start(last_byte)
+            wg.connect()
+        else:
+            new_containers.append(name)
+    freeRange = sorted(set(range(2, 255)) - set(usedLastIPBytes))
+    for i, container in enumerate(new_containers):
+        docker = container_get(name=name)
+        wg = docker.wireguard
+        wg.server_start(freeRange[i])
+        wg.connect()
+    
 @click.command()
 @click.option("-c", "--count", default=1, help="nr of containers")
 @click.option("-n", "--net", default="172.0.0.0/16", help="network range for docker")

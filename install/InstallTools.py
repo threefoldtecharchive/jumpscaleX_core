@@ -4472,8 +4472,11 @@ class DockerFactory:
 
     @staticmethod
     def list():
+        res = []
         for d in DockerFactory.containers():
             print(" - %-10s : %-15s : %-25s (sshport:%s)" % (d.name, d.config.ipaddr, d.config.image, d.config.sshport))
+            res.append(d.name)
+        return res
 
     @staticmethod
     def container_name_exists(name):
@@ -4940,7 +4943,7 @@ class DockerContainer:
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
         cmd2 = "ssh -oStrictHostKeyChecking=no -t root@localhost -A -p %s '%s'" % (self.config.sshport, cmd)
-        Tools.execute(
+        return Tools.execute(
             cmd2, interactive=True, showout=False, replace=False, asfile=asfile, timeout=3600 * 2, retry=retry
         )
 
@@ -4960,7 +4963,7 @@ class DockerContainer:
         cmd = f"scp -P {sshport} /tmp/{name}.py root@localhost:/tmp/{name}.py"
         Tools.execute(cmd, showout=False, replace=False)
         cmd = f"source /sandbox/env.sh;kosmos -p /tmp/{name}.py"
-        self.sshexec(cmd, asfile=True)
+        return self.sshexec(cmd, asfile=True)
 
     def kosmos(self):
         self.jsxexec("j.shell()")
@@ -6238,6 +6241,27 @@ class WireGuardServer:
 
         return "%s.%s" % (first, second)
 
+    def isConfigured(self):
+        """
+        Check wireguard
+        :return:
+        """
+        file = '/etc/wireguard/wg0.conf'
+        if not self.executor.exists(file):
+            return False, None
+
+        text = self.executor.file_read(file)
+        import configparser
+        import io
+        buf = io.StringIO(text)
+        config = configparser.ConfigParser()
+        config.read_file(buf)
+        try:
+            ip = config['Interface']['Address']
+            ip = ip.split('/')[0]
+            return True, ip
+        except:
+            return False, None
     def server_start(self, ip_last_byte="2"):
         self.install()
         config = self.config["server"]
@@ -6282,7 +6306,6 @@ class WireGuardServer:
         self.executor.execute(cmd)
 
     def connect(self):
-
         C = """
         [Interface]
         Address = 10.{SUBNET}.1/24
@@ -6290,6 +6313,7 @@ class WireGuardServer:
         """
         self.config_local["SUBNET"] = self._subnet_calc(self.myid)
         C = Tools.text_replace(C, args=self.config_local)
+        self.config_local["ADDRESS"] = f"10.{self.config_local['SUBNET']}.1/24"
         # Creating the peer for Linux, it shall not contain the docker interface as it already happened on Linux
         if MyEnv.platform() == "linux":
             C2 = """
@@ -6330,3 +6354,5 @@ class WireGuardServer:
             cmd = "wg-quick up %s" % path
             print(cmd)
             Tools.execute(cmd)
+        return self.config_local["ADDRESS"]
+
