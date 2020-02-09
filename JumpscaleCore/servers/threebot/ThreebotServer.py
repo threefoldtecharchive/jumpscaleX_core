@@ -1,4 +1,6 @@
 from Jumpscale import j
+from Jumpscale.core.KosmosShell import LogPane
+
 import os
 import gevent
 import time
@@ -302,6 +304,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.core.db.delete("threebot.starting")  # remove the marker in redis so we know we started
 
             p = j.threebot.packages
+            LogPane.Show = False
 
             if with_shell:
                 j.shell()  # for now removed otherwise debug does not work

@@ -158,11 +158,13 @@ class ListObject(TypeBaseObjClass, MutableSequence):
                     raise j.exceptions.Value("only support type J,D,H")
         return res
 
-    def new(self, data=None):
+    def new(self, data=None, **kwargs):
         """
         return new subitem, only relevant when there are pointer_types used
         """
         if self.isjsxobject:
+            if kwargs:
+                data = kwargs
             data2 = self._child_type.clean(data, model=self._model, parent=self._parent)
         else:
             data2 = self._child_type.clean(data)

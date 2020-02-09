@@ -453,7 +453,7 @@ class BCDB(j.baseclasses.object):
 
         self.dataprocessor_greenlet = None
 
-        self._log_warning("DATAPROCESSOR & SQLITE STOPPED OK")
+        self._log_info("DATAPROCESSOR & SQLITE STOPPED OK")
 
         return True
 
@@ -829,7 +829,7 @@ class BCDB(j.baseclasses.object):
             obj = j.data.serializers.jsxdata.loads(bdata, model=model)
             if schema:
                 # if not obj._schema == schema:
-                # j.shell()
+                #     j.shell()
                 assert obj._schema == schema
             obj.nid = nid
             if not obj.id and id:

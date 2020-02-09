@@ -19,9 +19,12 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
         self._default = None
         self.current = None
         self.client = None
+        if j.application.appname != "threebotserver" and j.application.state != "RUNNING":
+            j.application.start("threebotserver")
 
     def _threebot_starting(self, starting=True):
         print("MARK THREEBOT IS STARTING")
+
         j.threebot.active = True
         if j.core.db and starting:
             j.core.db.set("threebot.starting", ex=120, value="1")

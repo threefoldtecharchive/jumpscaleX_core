@@ -48,22 +48,12 @@ do not change the schema without consulting despiegk please
 1 : process_id = (I)                #the process id if known
 2 : logs = (LO) !jumpscale.alerthandler.alert.logitem
 
-@url = jumpscale.alerthandler.alert.logitem
-0 : filepath = ""
-1 : linenr = (I)
-2 : message = ""
-3 : level = (I)
-4 : context = (S)
-5 : cat = (S)
-6 : data = (S)
-
 """
 
 # ## log (error) levels
 # - CRITICAL 	50
 # - ERROR 	40
 # - WARNING 	30
-# - INFO 	    20
 # - STDOUT 	15
 # - DEBUG 	10
 ```

@@ -10,132 +10,132 @@ import re
 from Jumpscale.servers.gedis.UserSession import UserSessionAdmin
 
 
-class Logger:
-    DEFAULT_CONTEXT = "main"
-
-    def __init__(self, j, session):
-        self._j = j
-        self.session = session
-
-        if not session.strip():
-            raise ValueError("session must not be empty")
-
-        self.contexts = [self.DEFAULT_CONTEXT]  # as a stack
-
-    @property
-    def current_context(self):
-        return self.contexts[-1]
-
-    @property
-    def date(self):
-        return self._j.data.time.getLocalDateHRForFilesystem()
-
-    @property
-    def location(self):
-        return "%s/%s/%s" % (self.session, self.date, self.current_context)
-
-    def reset_context(self):
-        if len(self.contexts) == 1:
-            return
-
-        self.contexts.pop()
-
-    def switch_context(self, context):
-        if not isinstance(context, str):
-            raise ValueError("expected a string for context")
-
-        self.contexts.append(context)
-
-    def log(self, logdict):
-        raise NotImplementedError
-
-    def log_error(self, logdict):
-        self.switch_context("error")
-
-        try:
-            self.log(logdict)
-        except Exception as exp:
-            print(exp)
-        finally:
-            self.reset_context()
-
-    def register(self):
-        if self.log not in self._j.core.myenv.loghandlers:
-            self._j.core.myenv.loghandlers.append(self.log)
-        if self.log_error not in self._j.core.myenv.errorhandlers:
-            self._j.core.myenv.errorhandlers.append(self.log_error)
-
-    def unregister(self):
-        if self.log in self._j.core.myenv.loghandlers:
-            self._j.core.myenv.loghandlers.remove(self.log)
-        if self.log_error in self._j.core.myenv.errorhandlers:
-            self._j.core.myenv.errorhandlers.remove(self.log_error)
-
-
-class FileSystemLogger(Logger):
-    def __init__(self, j, session):
-        super().__init__(j, session)
-        self.start_date = self.date
-        self.set_path()
-
-    def get_path(self):
-        path = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s.ansi" % self.location)
-        parent_dir = os.path.dirname(path)
-        if not os.path.exists(parent_dir):
-            os.makedirs(parent_dir, exist_ok=True)
-        return path
-
-    def set_path(self, new_path=None):
-        if not new_path:
-            # default
-            self.path = self.get_path()
-        else:
-            self.path = new_path
-
-    def switch_context(self, context):
-        super().switch_context(context)
-        # context changed, re-set path
-        self.set_path()
-
-    def reset_context(self):
-        super().reset_context()
-        # context changed, re-set path
-        self.set_path()
-
-    def log(self, logdict):
-        current_date = self.date
-        if self.start_date != current_date:
-            # date changed, re-set path
-            self.set_path()
-            self.start_date = current_date
-
-        out = self._j.core.tools.log2str(logdict)
-        out = out.rstrip() + "\n"
-        filepath = self.path
-
-        try:
-            with open(filepath, "ab") as fp:
-                fp.write(bytes(out, "UTF-8"))
-        except FileNotFoundError:
-            print(f"Logging file of {filepath} was deleted")
-
-
-class RedisLogger(Logger):
-    ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
-    # redis list key prefix
-    KEY_PREFIX = "logs:"
-    # maximum numbers of logs to keep in this list
-    LOG_MAX = 100
-
-    def __init__(self, j, session):
-        super().__init__(j, session)
-        self.db = self._j.core.db
-
-    def log(self, logdict):
-        out = self._j.core.tools.log2str(logdict)
-        key = f"{self.KEY_PREFIX}{self.location}"
-        self.db.lpush(key, out)
-        self.db.ltrim(key, 0, self.LOG_MAX - 1)
+# class Logger:
+#     DEFAULT_CONTEXT = "main"
+#
+#     def __init__(self, j, session):
+#         self._j = j
+#         self.session = session
+#
+#         if not session.strip():
+#             raise ValueError("session must not be empty")
+#
+#         self.contexts = [self.DEFAULT_CONTEXT]  # as a stack
+#
+#     @property
+#     def current_context(self):
+#         return self.contexts[-1]
+#
+#     @property
+#     def date(self):
+#         return self._j.data.time.getLocalDateHRForFilesystem()
+#
+#     @property
+#     def location(self):
+#         return "%s/%s/%s" % (self.session, self.date, self.current_context)
+#
+#     def reset_context(self):
+#         if len(self.contexts) == 1:
+#             return
+#
+#         self.contexts.pop()
+#
+#     def switch_context(self, context):
+#         if not isinstance(context, str):
+#             raise ValueError("expected a string for context")
+#
+#         self.contexts.append(context)
+#
+#     def log(self, logdict):
+#         raise NotImplementedError
+#
+#     def log_error(self, logdict):
+#         self.switch_context("error")
+#
+#         try:
+#             self.log(logdict)
+#         except Exception as exp:
+#             print(exp)
+#         finally:
+#             self.reset_context()
+#
+#     def register(self):
+#         if self.log not in self._j.core.myenv.loghandlers:
+#             self._j.core.myenv.loghandlers.append(self.log)
+#         if self.log_error not in self._j.core.myenv.errorhandlers:
+#             self._j.core.myenv.errorhandlers.append(self.log_error)
+#
+#     def unregister(self):
+#         if self.log in self._j.core.myenv.loghandlers:
+#             self._j.core.myenv.loghandlers.remove(self.log)
+#         if self.log_error in self._j.core.myenv.errorhandlers:
+#             self._j.core.myenv.errorhandlers.remove(self.log_error)
+#
+#
+# class FileSystemLogger(Logger):
+#     def __init__(self, j, session):
+#         super().__init__(j, session)
+#         self.start_date = self.date
+#         self.set_path()
+#
+#     def get_path(self):
+#         path = self._j.core.tools.text_replace("{DIR_BASE}/var/log/%s.ansi" % self.location)
+#         parent_dir = os.path.dirname(path)
+#         if not os.path.exists(parent_dir):
+#             os.makedirs(parent_dir, exist_ok=True)
+#         return path
+#
+#     def set_path(self, new_path=None):
+#         if not new_path:
+#             # default
+#             self.path = self.get_path()
+#         else:
+#             self.path = new_path
+#
+#     def switch_context(self, context):
+#         super().switch_context(context)
+#         # context changed, re-set path
+#         self.set_path()
+#
+#     def reset_context(self):
+#         super().reset_context()
+#         # context changed, re-set path
+#         self.set_path()
+#
+#     def log(self, logdict):
+#         current_date = self.date
+#         if self.start_date != current_date:
+#             # date changed, re-set path
+#             self.set_path()
+#             self.start_date = current_date
+#
+#         out = self._j.core.tools.log2str(logdict)
+#         out = out.rstrip() + "\n"
+#         filepath = self.path
+#
+#         try:
+#             with open(filepath, "ab") as fp:
+#                 fp.write(bytes(out, "UTF-8"))
+#         except FileNotFoundError:
+#             print(f"Logging file of {filepath} was deleted")
+#
+#
+# class RedisLogger(Logger):
+#     ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+#     # redis list key prefix
+#     KEY_PREFIX = "logs:"
+#     # maximum numbers of logs to keep in this list
+#     LOG_MAX = 10000
+#
+#     def __init__(self, j, session):
+#         super().__init__(j, session)
+#         self.db = self._j.core.db
+#
+#     def log(self, logdict):
+#         out = self._j.core.tools.log2str(logdict)
+#         key = f"{self.KEY_PREFIX}{self.location}"
+#         self.db.lpush(key, out)
+#         self.db.ltrim(key, 0, self.LOG_MAX - 1)
 
 
 class Application(object):
@@ -146,26 +146,23 @@ class Application(object):
         self._calledexit = False
 
         self.state = "UNKNOWN"
-        self.appname = "UNKNOWN"
 
-        self.logger = None
+        # self.logger = None
         self.inlogger = False
 
         self._debug = None
 
         self._systempid = None
 
-        self.schemas = None
+        # self.schemas = None
 
         self.errors_init = []
-
-        self.appname = "unknown"
 
         self._in_autocomplete = False
 
         self.exception_handle = self._j.core.myenv.exception_handle
-        self.fs_loggers = {}
-        self.redis_loggers = {}
+        # self.fs_loggers = {}
+        # self.redis_loggers = {}
 
         self._admin_session = None
 
@@ -230,56 +227,57 @@ class Application(object):
             obj._obj_cache_reset()
             obj._obj_reset()
 
-    def log2fs_redis_register(self, session_name):
-        """
-        will write logs with ansi codes to {DIR_BASE}/var/log/session_name/$hrtime4session/$hrtime4step_context.ansi
-
-        use less -r to see the logs with color output
-
-        :param session_name: name of the session
-        :return:
-        """
-        if session_name not in self.fs_loggers:
-            logger = FileSystemLogger(self._j, session=session_name)
-            logger.register()
-            self.fs_loggers[session_name] = logger
-
-        if session_name not in self.redis_loggers:
-            logger = RedisLogger(self._j, session=session_name)
-            logger.register()
-            self.redis_loggers[session_name] = logger
-        return
-
-    def log2fs_redis_context_change(self, session_name, context):
-        """
-
-        :param context:
-        :return:
-        """
-
-        if session_name not in self.fs_loggers or session_name not in self.redis_loggers:
-            self.log2fs_redis_register(session_name)
-
-        self.fs_loggers[session_name].switch_context(context)
-        self.redis_loggers[session_name].switch_context(context)
-
-    def log2fs_redis_context_reset(self, session_name):
-        """
-
-        :param context:
-        :return:
-        """
-        if session_name not in self.fs_loggers or session_name not in self.redis_loggers:
-            self.log2fs_redis_register(session_name)
-
-        self.fs_loggers[session_name].reset_context()
-        self.redis_loggers[session_name].reset_context()
-
-    def log2fs_redis_unregister(self, session_name):
-        if session_name in self.fs_loggers:
-
-            self.fs_loggers[session_name].unregister()
-            self.redis_loggers[session_name].unregister()
+    #
+    # def log2fs_redis_register(self, session_name):
+    #     """
+    #     will write logs with ansi codes to {DIR_BASE}/var/log/session_name/$hrtime4session/$hrtime4step_context.ansi
+    #
+    #     use less -r to see the logs with color output
+    #
+    #     :param session_name: name of the session
+    #     :return:
+    #     """
+    #     if session_name not in self.fs_loggers:
+    #         logger = FileSystemLogger(self._j, session=session_name)
+    #         logger.register()
+    #         self.fs_loggers[session_name] = logger
+    #
+    #     if session_name not in self.redis_loggers:
+    #         logger = RedisLogger(self._j, session=session_name)
+    #         logger.register()
+    #         self.redis_loggers[session_name] = logger
+    #     return
+    #
+    # def log2fs_redis_context_change(self, session_name, context):
+    #     """
+    #
+    #     :param context:
+    #     :return:
+    #     """
+    #
+    #     if session_name not in self.fs_loggers or session_name not in self.redis_loggers:
+    #         self.log2fs_redis_register(session_name)
+    #
+    #     self.fs_loggers[session_name].switch_context(context)
+    #     self.redis_loggers[session_name].switch_context(context)
+    #
+    # def log2fs_redis_context_reset(self, session_name):
+    #     """
+    #
+    #     :param context:
+    #     :return:
+    #     """
+    #     if session_name not in self.fs_loggers or session_name not in self.redis_loggers:
+    #         self.log2fs_redis_register(session_name)
+    #
+    #     self.fs_loggers[session_name].reset_context()
+    #     self.redis_loggers[session_name].reset_context()
+    #
+    # def log2fs_redis_unregister(self, session_name):
+    #     if session_name in self.fs_loggers:
+    #
+    #         self.fs_loggers[session_name].unregister()
+    #         self.redis_loggers[session_name].unregister()
 
     # def bcdb_system_configure(self, addr, port, namespace, secret):
     #     """
@@ -354,14 +352,14 @@ class Application(object):
         self._j.core.myenv.config["DEBUG"] = True
         self._j.core.myenv.config.config_save()
 
-    def break_into_jshell(self, msg="DEBUG NOW"):
-        if self.debug is True:
-            self._log_debug(msg)
-            from IPython import embed
-
-            embed()
-        else:
-            raise self._j.exceptions.RuntimeError("Can't break into jsshell in production mode.")
+    # def break_into_jshell(self, msg="DEBUG NOW"):
+    #     if self.debug is True:
+    #         self._log_debug(msg)
+    #         from IPython import embed
+    #
+    #         embed()
+    #     else:
+    #         raise self._j.exceptions.RuntimeError("Can't break into jsshell in production mode.")
 
     def init(self, **kwargs):
         pass
@@ -372,12 +370,15 @@ class Application(object):
             self._systempid = os.getpid()
         return self._systempid
 
-    def start(self, name=None):
+    def start(self, name=None, loghandler=True):
         """Start the application
 
         You can only stop the application with return code 0 by calling
         self._j.application.stop(). Don't call sys.exit yourself, don't try to run
         to end-of-script, I will find you anyway!
+
+        this start will also start the redis log handler (IS THE ONLYONE WHICH SHOULD BE USED)
+
         """
         if name:
             self.appname = name
@@ -393,7 +394,12 @@ class Application(object):
         # Set state
         self.state = "RUNNING"
 
-        # self._log_info("***Application started***: %s" % self.appname)
+        logger = self._j.core.myenv.loghandler_redis.handle_log
+        self._j.core.myenv.loghandler_redis.appname = self.appname
+
+        if loghandler:
+            if logger not in self._j.core.myenv.loghandlers:
+                self._j.core.myenv.loghandlers.append(logger)
 
     def stop(self, exitcode=0):
         """Stop the application cleanly using a given exitcode
@@ -427,8 +433,6 @@ class Application(object):
         sys.exit(exitcode)
 
     def _exithandler(self):
-        j.shell()
-
         self.stop()
 
     # def getCPUUsage(self):
