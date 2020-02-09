@@ -264,12 +264,23 @@ class DocSite(j.baseclasses.object):
             old_files = None
         else:
             # check changed files and process it using 3git tool
+
             self.revision = self.threegit.revision
+
+            # this will empty the uncommited files (custom index) when a commit is made aka revision changes
+            if self.threegit.uncommited_files_revision != self.threegit.revision:
+                self.threegit.uncommited_files = []
+                self.threegit.uncommited_files_revision = self.threegit.revision
+
             revision, self._files_changed, old_files = self.threegit.git_client.logChanges(
                 path=self.path, from_revision=self.revision, untracked=True
             )
 
-            for item in self._files_changed:
+            # files stored in threegit config (modified/untracked but not commited)
+            modified_files = set(self._files_changed + self.threegit.uncommited_files._inner_list)
+            self.threegit.uncommited_files = list(modified_files)
+
+            for item in modified_files:
                 item = f"{self.threegit.git_client.path}/{item}"
                 if j.sal.fs.exists(item):
                     if j.sal.fs.isFile(item):
