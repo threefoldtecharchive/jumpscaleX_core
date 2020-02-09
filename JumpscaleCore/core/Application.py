@@ -146,7 +146,6 @@ class Application(object):
         self._calledexit = False
 
         self.state = "UNKNOWN"
-        self.appname = "UNKNOWN"
 
         # self.logger = None
         self.inlogger = False
@@ -158,8 +157,6 @@ class Application(object):
         # self.schemas = None
 
         self.errors_init = []
-
-        self.appname = "unknown"
 
         self._in_autocomplete = False
 

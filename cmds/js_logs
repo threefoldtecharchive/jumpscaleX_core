@@ -20,7 +20,7 @@ def common_options(function):
     click.option("--redis-host", default=None, help="redis host (defaults to localhost)")(function)
     click.option("--redis-port", default=6379, help="redis port (defaults to 6379)")(function)
     click.option("--redis-secret", default=None, help="redis secret (empty by default)")(function)
-    click.option("-a", "--appname", default="init", help="application name")(function)
+    click.option("-a", "--appname", default="init", help="application name, default: init")(function)
     return function
 
 

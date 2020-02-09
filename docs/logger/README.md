@@ -7,6 +7,8 @@ in `/sandbox/var/logs/<APP-NAME>`
 
 To define app we use for example: `j.application.start("threebotserver")` add this to your application init
 
+*Note* Default appname is **init**
+
 ## Logger client
 
 Gets logs for local/remote machine via redis
