@@ -121,7 +121,7 @@ class ThreeGitFactory(j.baseclasses.object_config_collection):
         """
         test_wiki = j.tools.threegit.get(
             name="test_wiki",
-            local_path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/docs/wikis/examples/docs/",
+            local_path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/wiki_examples/wiki",
             dest_path="/tmp/test/test2",
         )
         test_wiki.process(reset=True)
