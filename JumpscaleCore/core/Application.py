@@ -133,6 +133,7 @@ class RedisLogger(Logger):
 
     def log(self, logdict):
         if not self.db:
+            print("Redis server is not running yet")
             return
 
         out = self._j.core.tools.log2str(logdict)
