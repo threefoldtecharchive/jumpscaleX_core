@@ -680,6 +680,7 @@ def container_kosmos(name="3bot"):
         ],
     )
 
+
 @click.command()
 @click.option("-n", "--name", default="3bot", help="name of container")
 @click.option("-t", "--target", default="auto", help="auto,local,container, default is auto will try container first")
@@ -716,6 +717,8 @@ def wireguard(names=None):
     containers = names.split(",") if names else e.DF.list()
     usedLastIPBytes = []
     new_containers = []
+    # Get the containers with udp ports for wireguard
+    containers_udp_ports_wireguard = IT.DockerFactory.container_running_with_udp_ports_wireguard
 
     # Get wireguard preconfigured containers, so we can maintain same old IP & configs
     for name in containers:
@@ -723,7 +726,7 @@ def wireguard(names=None):
         wg = docker.wireguard
         configured, ip = wg.isConfigured()
         if configured:
-            last_byte = ip.split('.')[-1]
+            last_byte = ip.split(".")[-1]
             usedLastIPBytes.append(int(last_byte))
             wg.server_start(last_byte)
             wg.connect()
@@ -735,7 +738,8 @@ def wireguard(names=None):
         wg = docker.wireguard
         wg.server_start(freeRange[i])
         wg.connect()
-    
+
+
 @click.command()
 @click.option("-c", "--count", default=1, help="nr of containers")
 @click.option("-n", "--net", default="172.0.0.0/16", help="network range for docker")

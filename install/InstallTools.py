@@ -3,6 +3,7 @@ import getpass
 import pickle
 import re
 import copy
+import docker
 
 DEFAULT_BRANCH = "development"
 GITREPOS = {}
@@ -1426,6 +1427,17 @@ class Tools:
             p.write_text(content)
         else:
             p.write_bytes(content)
+
+    @staticmethod
+    def file_append(path, content):
+        dirname = os.path.dirname(path)
+        try:
+            os.makedirs(dirname, exist_ok=True)
+        except FileExistsError:
+            pass
+        my_path = Path(path)
+        with my_path.open("a") as f:
+            f.write(content)
 
     @staticmethod
     def file_text_read(path):
@@ -4526,6 +4538,18 @@ class DockerFactory:
             if image_id:
                 Tools.execute("docker rmi -f %s" % image_id)
 
+    @staticmethod
+    def container_running_with_udp_ports_wireguard():
+        wireguard_udp_port = "9001/udp"
+        containers_ports = dict()
+        # To talk to a Docker daemon, you first need to instantiate a client
+        client = docker.from_env()
+        # list of running containers
+        containers = client.containers.list()
+        for container in containers:
+            containers_ports[contianer.name] = container.ports[wireguard_udp_port][0].get("HostPort")
+        return container_ports
+
 
 class DockerConfig:
     def __init__(self, name, image=None, startupcmd=None, delete=False, ports=None):
@@ -6246,22 +6270,24 @@ class WireGuardServer:
         Check wireguard
         :return:
         """
-        file = '/etc/wireguard/wg0.conf'
+        file = "/etc/wireguard/wg0.conf"
         if not self.executor.exists(file):
             return False, None
 
         text = self.executor.file_read(file)
         import configparser
         import io
+
         buf = io.StringIO(text)
         config = configparser.ConfigParser()
         config.read_file(buf)
         try:
-            ip = config['Interface']['Address']
-            ip = ip.split('/')[0]
+            ip = config["Interface"]["Address"]
+            ip = ip.split("/")[0]
             return True, ip
         except:
             return False, None
+
     def server_start(self, ip_last_byte="2"):
         self.install()
         config = self.config["server"]
@@ -6305,7 +6331,7 @@ class WireGuardServer:
         cmd = "wg-quick up %s" % path
         self.executor.execute(cmd)
 
-    def connect(self):
+    def connect(self, wireguard_port_udb):
         C = """
         [Interface]
         Address = 10.{SUBNET}.1/24
@@ -6336,6 +6362,7 @@ class WireGuardServer:
             AllowedIPs = 172.17.0.0/16
             PersistentKeepalive = 25
             """
+
         C2 = Tools.text_replace(C2, args=self.config_server)
         C += C2
         path = "{DIR_BASE}/cfg/wireguard/%s/wg0.conf" % self.serverid
@@ -6355,4 +6382,3 @@ class WireGuardServer:
             print(cmd)
             Tools.execute(cmd)
         return self.config_local["ADDRESS"]
-
