@@ -132,6 +132,10 @@ class RedisLogger(Logger):
         self.db = self._j.core.db
 
     def log(self, logdict):
+        if not self.db:
+            print("Redis server is not running yet")
+            return
+
         out = self._j.core.tools.log2str(logdict)
         key = f"{self.KEY_PREFIX}{self.location}"
         self.db.lpush(key, out)
