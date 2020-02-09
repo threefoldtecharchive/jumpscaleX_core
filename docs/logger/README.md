@@ -21,7 +21,7 @@ We can either use logger client or js_logs
 
 #### Get a client for logger
 
-- Client params
+- Client params (if u need to access remote logs)
 
 ```bash
 name** = ""
@@ -63,6 +63,10 @@ client = j.clients.logger.get("js_logs")
 ### js_logs
 
 #### Get logs via shell
+
+- you can pass redis-host and port to get remote logs
+
+example: `js_logs --redis-host 172.17.0.2 --redis-port 6379 --appname threebotserver tail`
 
 ```bash
 3BOTDEVEL:3bot:test: js_logs
