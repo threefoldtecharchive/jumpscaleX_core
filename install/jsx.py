@@ -719,7 +719,8 @@ def wireguard(names=None):
     new_containers = []
     # Get the containers with udp ports for wireguard
     containers_udp_ports_wireguard = IT.DockerFactory.container_running_with_udp_ports_wireguard
-
+    # Write interface configuration
+    connect.write_interface_configuration()
     # Get wireguard preconfigured containers, so we can maintain same old IP & configs
     for name in containers:
         docker = container_get(name=name)
@@ -729,7 +730,9 @@ def wireguard(names=None):
             last_byte = ip.split(".")[-1]
             usedLastIPBytes.append(int(last_byte))
             wg.server_start(last_byte)
-            wg.connect()
+            # Write peer configurations
+            port = int(containers_udp_ports_wireguard.get(name))
+            wg.write_peer_configuration(wireguard_port_udb=port)
         else:
             new_containers.append(name)
     freeRange = sorted(set(range(2, 255)) - set(usedLastIPBytes))
@@ -737,7 +740,12 @@ def wireguard(names=None):
         docker = container_get(name=name)
         wg = docker.wireguard
         wg.server_start(freeRange[i])
-        wg.connect()
+        # Write peer configurations
+        port = int(containers_udp_ports_wireguard.get(name))
+        wg.write_peer_configuration(wireguard_port_udb=port)
+
+    # Connect the host wireguard and make it running
+    IT.WireGuardServer.connect_wireguard
 
 
 @click.command()

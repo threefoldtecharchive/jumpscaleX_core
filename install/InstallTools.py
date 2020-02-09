@@ -6331,18 +6331,12 @@ class WireGuardServer:
         cmd = "wg-quick up %s" % path
         self.executor.execute(cmd)
 
-    def connect(self, wireguard_port_udb):
-        C = """
-        [Interface]
-        Address = 10.{SUBNET}.1/24
-        PrivateKey = {WIREGUARD_CLIENT_PRIVKEY}
-        """
-        self.config_local["SUBNET"] = self._subnet_calc(self.myid)
-        C = Tools.text_replace(C, args=self.config_local)
-        self.config_local["ADDRESS"] = f"10.{self.config_local['SUBNET']}.1/24"
+    def write_peer_configuration(self, wireguard_port_udb=9001):
+        # Override the default wireguard port with the right one
+        self.config_server["WIREGUARD_PORT"] = wireguard_port_udb
         # Creating the peer for Linux, it shall not contain the docker interface as it already happened on Linux
         if MyEnv.platform() == "linux":
-            C2 = """
+            C = """
 
             [Peer]
             PublicKey = {WIREGUARD_SERVER_PUBKEY}
@@ -6353,7 +6347,7 @@ class WireGuardServer:
 
         else:
             # Creating the peer for Mac, Shall add the docker interface as it is not there on Mac.
-            C2 = """
+            C = """
 
             [Peer]
             PublicKey = {WIREGUARD_SERVER_PUBKEY}
@@ -6363,14 +6357,32 @@ class WireGuardServer:
             PersistentKeepalive = 25
             """
 
-        C2 = Tools.text_replace(C2, args=self.config_server)
-        C += C2
+        C = Tools.text_replace(C, args=self.config_server)
+
+        path = "{DIR_BASE}/cfg/wireguard/%s/wg0.conf" % self.serverid
+        path = Tools.text_replace(path)
+        Tools.dir_ensure(os.path.dirname(path))
+        Tools.file_append(path, C)
+        # print("WIREGUARD CONFIFURATION:\n\n%s" % config)
+        # print("WIREGUARD CONFIG PATH:%s" % path)
+
+    def write_interface_configuration(self):
+        C = """
+        [Interface]
+        Address = 10.{SUBNET}.1/24
+        PrivateKey = {WIREGUARD_CLIENT_PRIVKEY}
+        """
+        self.config_local["SUBNET"] = self._subnet_calc(self.myid)
+        C = Tools.text_replace(C, args=self.config_local)
+        self.config_local["ADDRESS"] = f"10.{self.config_local['SUBNET']}.1/24"
+
         path = "{DIR_BASE}/cfg/wireguard/%s/wg0.conf" % self.serverid
         path = Tools.text_replace(path)
         Tools.dir_ensure(os.path.dirname(path))
         Tools.file_write(path, C)
-        # print("WIREGUARD CONFIFURATION:\n\n%s" % config)
-        # print("WIREGUARD CONFIG PATH:%s" % path)
+
+    @staticmethod
+    def connect_wireguard(self):
         if MyEnv.platform() == "linux":
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
             cmd = "wg-quick up %s" % path
