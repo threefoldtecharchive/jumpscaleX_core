@@ -714,14 +714,20 @@ def wireguard(names=None):
     enable wireguard, can be on host or server
     :return:
     """
-    containers = names.split(",") if names else e.DF.list()
+
+    containers = names.split(",") if names else IT.DockerFactory.containers_names()
     usedLastIPBytes = []
     new_containers = []
     # Get the containers with udp ports for wireguard
-    containers_udp_ports_wireguard = IT.DockerFactory.container_running_with_udp_ports_wireguard
+    containers_udp_ports_wireguard = IT.DockerFactory.container_running_with_udp_ports_wireguard()
     # Write interface configuration
-    connect.write_interface_configuration()
+    if len(containers) == 0:
+        raise RuntimeError("There is no  docker containers running to install wireguard on.")
+
+    temp_docker = container_get(name=containers[0]).wireguard
+    temp_docker.write_interface_configuration()
     # Get wireguard preconfigured containers, so we can maintain same old IP & configs
+
     for name in containers:
         docker = container_get(name=name)
         wg = docker.wireguard
@@ -732,20 +738,19 @@ def wireguard(names=None):
             wg.server_start(last_byte)
             # Write peer configurations
             port = int(containers_udp_ports_wireguard.get(name))
-            wg.write_peer_configuration(wireguard_port_udb=port)
+            wg.write_peer_configuration(wireguard_port_udb=port, last_byte=last_byte)
         else:
             new_containers.append(name)
     freeRange = sorted(set(range(2, 255)) - set(usedLastIPBytes))
-    for i, container in enumerate(new_containers):
+    for i, name in enumerate(new_containers):
         docker = container_get(name=name)
         wg = docker.wireguard
         wg.server_start(freeRange[i])
         # Write peer configurations
         port = int(containers_udp_ports_wireguard.get(name))
-        wg.write_peer_configuration(wireguard_port_udb=port)
-
+        wg.write_peer_configuration(wireguard_port_udb=port, last_byte=freeRange[i])
     # Connect the host wireguard and make it running
-    IT.WireGuardServer.connect_wireguard
+    temp_docker.connect_wireguard()
 
 
 @click.command()

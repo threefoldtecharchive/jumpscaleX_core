@@ -4547,8 +4547,8 @@ class DockerFactory:
         # list of running containers
         containers = client.containers.list()
         for container in containers:
-            containers_ports[contianer.name] = container.ports[wireguard_udp_port][0].get("HostPort")
-        return container_ports
+            containers_ports[container.name] = container.ports[wireguard_udp_port][0].get("HostPort")
+        return containers_ports
 
 
 class DockerConfig:
@@ -6331,9 +6331,10 @@ class WireGuardServer:
         cmd = "wg-quick up %s" % path
         self.executor.execute(cmd)
 
-    def write_peer_configuration(self, wireguard_port_udb=9001):
+    def write_peer_configuration(self, wireguard_port_udb=9001, last_byte="0"):
         # Override the default wireguard port with the right one
         self.config_server["WIREGUARD_PORT"] = wireguard_port_udb
+        self.config_server["LAST_BYTE"] = last_byte
         # Creating the peer for Linux, it shall not contain the docker interface as it already happened on Linux
         if MyEnv.platform() == "linux":
             C = """
@@ -6341,7 +6342,7 @@ class WireGuardServer:
             [Peer]
             PublicKey = {WIREGUARD_SERVER_PUBKEY}
             Endpoint = {WIREGUARD_ADDR}:{WIREGUARD_PORT}
-            AllowedIPs = 10.{SUBNET}.0/24
+            AllowedIPs = 10.{SUBNET}.{LAST_BYTE}/32
             PersistentKeepalive = 25
             """
 
@@ -6352,7 +6353,7 @@ class WireGuardServer:
             [Peer]
             PublicKey = {WIREGUARD_SERVER_PUBKEY}
             Endpoint = {WIREGUARD_ADDR}:{WIREGUARD_PORT}
-            AllowedIPs = 10.{SUBNET}.0/24
+            AllowedIPs = 10.{SUBNET}.{LAST_BYTE}/32
             AllowedIPs = 172.17.0.0/16
             PersistentKeepalive = 25
             """
@@ -6376,13 +6377,13 @@ class WireGuardServer:
         C = Tools.text_replace(C, args=self.config_local)
         self.config_local["ADDRESS"] = f"10.{self.config_local['SUBNET']}.1/24"
 
-        path = "{DIR_BASE}/cfg/wireguard/%s/wg0.conf" % self.serverid
-        path = Tools.text_replace(path)
-        Tools.dir_ensure(os.path.dirname(path))
-        Tools.file_write(path, C)
+        self.path = "{DIR_BASE}/cfg/wireguard/%s/wg0.conf" % self.serverid
+        self.path = Tools.text_replace(self.path)
+        Tools.dir_ensure(os.path.dirname(self.path))
+        Tools.file_write(self.path, C)
 
-    @staticmethod
     def connect_wireguard(self):
+        path = self.path
         if MyEnv.platform() == "linux":
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
             cmd = "wg-quick up %s" % path
