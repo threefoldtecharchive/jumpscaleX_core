@@ -4218,6 +4218,7 @@ class UbuntuInstaller:
             "libgeoip-dev",
             "libcapnp-dev",
             "graphviz",
+            "fuse",
         ]
 
     @staticmethod
