@@ -4030,8 +4030,8 @@ class BaseInstaller:
         pips = {
             # level 0: most basic needed
             0: [
-                "cmake",
                 "scikit-build",
+                "cmake",
                 "blosc>=1.5.1",
                 "Brotli>=0.6.0",
                 "captcha",
@@ -4381,6 +4381,8 @@ class UbuntuInstaller:
             "libgeoip-dev",
             "libcapnp-dev",
             "graphviz",
+            "libssl-dev",
+            "cmake",
         ]
 
     @staticmethod
