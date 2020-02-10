@@ -3298,7 +3298,7 @@ class MyEnv_:
     def _basedir_get(self):
         if self.readonly:
             return "/tmp/jumpscale"
-        if "darwin" not in platform:
+        if "darwin" not in self.platform():
             isroot = None
             rc, out, err = Tools.execute("whoami", showout=False, die=False)
             if rc == 0:
