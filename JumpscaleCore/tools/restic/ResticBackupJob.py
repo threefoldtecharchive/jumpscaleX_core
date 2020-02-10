@@ -141,5 +141,4 @@ class ResticBackupJob(ResticBase, j.baseclasses.object_config):
         if not self.secret_:
             raise j.exceptions.Input("please specify restic secret_ ")
         cmd = f"export RESTIC_PASSWORD='{self.secret_}';rm -rf {mountpath};restic -r {self.dest.backupdir} mount {mountpath}"
-        # print(cmd)
         self.executor.execute(cmd)

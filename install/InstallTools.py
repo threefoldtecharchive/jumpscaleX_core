@@ -4383,6 +4383,7 @@ class UbuntuInstaller:
             "graphviz",
             "libssl-dev",
             "cmake",
+            "fuse",
         ]
 
     @staticmethod
