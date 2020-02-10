@@ -34,6 +34,15 @@ class MyJob(j.baseclasses.object_config):
         if methodname == "":
             raise j.exceptions.Base("defname cannot be empty")
 
+        self.debug = False
+
+        for line in code.split("\n"):
+            line = line.strip()
+            if "j.shell()" in line or "j.debug()" in line:
+                if not line.startswith("#"):
+                    self.debug = True
+                    break
+
         key = j.data.hash.md5_string(code)
         new, action = j.servers.myjobs.action_get(key)
         if new:

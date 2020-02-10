@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test010_jsxobj():
     """
     to run:
 
@@ -62,6 +62,6 @@ def main(self):
 
     print(o)
 
-    self._log_info("TEST DONE JSXOBJ")
+    j.data.types._log_info("TEST DONE JSXOBJ")
 
     return "OK"

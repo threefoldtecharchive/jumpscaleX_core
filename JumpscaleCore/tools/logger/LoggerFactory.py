@@ -66,8 +66,8 @@ class LoggerFactory(j.baseclasses.object, j.baseclasses.testtools):
                 obj._logger_set(children=True)
             # self._print(obj._key)
 
-    def test(self, name="base"):
+    def test(self, name=""):
         """
         kosmos 'j.tools.logger.test()'
         """
-        self._test_run(name=name)
+        self._tests_run(name=name)

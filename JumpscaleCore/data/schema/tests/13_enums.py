@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_enums():
     """
     to run:
 
@@ -46,7 +46,7 @@ def main(self):
     o2.category = 1
 
     assert o2.status == o1.status
-    assert o2.category == o2.category
-    self._log_info("TEST DONE FOR ENUMS")
+    assert o2.category == o1.category
+    j.data.schema._log_info("TEST DONE FOR ENUMS")
 
     return "OK"

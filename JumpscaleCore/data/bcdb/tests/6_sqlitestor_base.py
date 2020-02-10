@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_sqlitestor_base():
     """
     to run:
 
@@ -11,9 +11,9 @@ def main(self):
 
     """
 
-    bcdb, _ = self._load_test_model(type="sqlite")
+    bcdb, _ = j.data.bcdb._load_test_model(type="sqlite")
 
-    mpath = self._dirpath + "/tests/models"
+    mpath = j.data.bcdb._dirpath + "/tests/models"
     assert j.sal.fs.exists(mpath)
 
     # make sure we remove the maybe already previously generated model file
@@ -63,5 +63,5 @@ def main(self):
     # assert model.index.select().first().cost == 11.0  # is always in usd
 
     print("TEST FOR MODELS DONE in SQLITE")
-    self._log_info("TEST SQLITE DONE")
+    j.data.bcdb._log_info("TEST SQLITE DONE")
     return "OK"

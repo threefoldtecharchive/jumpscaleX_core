@@ -243,11 +243,10 @@ class ThreeBotPackage(ThreeBotPackageBase):
             website = self.openresty.get_from_port(port)
             locations = website.locations.get(f"{self.name}_locations_{port}")
             if app_type == "frontend":
-                website_location = locations.locations_spa.new()
+                website_location = locations.get_location_spa(self.name)
             elif app_type == "html":
-                website_location = locations.locations_static.new()
+                website_location = locations.get_location_static(self.name)
 
-            website_location.name = self.name
             website_location.path_url = f"/{self.source.threebot}/{self.source.name}"
             website_location.use_jumpscale_weblibs = False
             fullpath = j.sal.fs.joinPaths(self.path, f"{app_type}/")
@@ -261,7 +260,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
             website = self.openresty.get_from_port(port)
             locations = website.locations.get(f"{self.name}_locations_{port}")
             if app_type == "frontend":
-                location = locations.get_locations_spa(self.name)
+                location = locations.get_location_spa(self.name)
                 conf_location = locations.path_cfg_get(location.name)
             elif app_type == "html":
                 location = locations.get_location_static(self.name)
@@ -285,7 +284,9 @@ class ThreeBotPackage(ThreeBotPackageBase):
             self.status = "config"
             self.save()
 
-    def install(self):
+    def install(self, install_kwargs=None):
+        # The installation parameters
+        self.install_kwargs = install_kwargs or {}
         self._log_debug("install:%s" % self)
         self.load()
         if self.status != "config":  # make sure we load the config is not that state yet

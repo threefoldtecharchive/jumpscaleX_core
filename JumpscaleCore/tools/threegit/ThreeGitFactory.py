@@ -119,6 +119,9 @@ class ThreeGitFactory(j.baseclasses.object_config_collection):
         kosmos 'j.tools.threegit.test()'
         :return:
         """
+
+        j.servers.sonic.threebot.start()
+
         test_wiki = j.tools.threegit.get(
             name="test_wiki",
             local_path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/docs/wikis/examples/docs/",

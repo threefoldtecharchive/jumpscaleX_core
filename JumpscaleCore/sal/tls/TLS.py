@@ -2,11 +2,8 @@ import subprocess
 
 from Jumpscale import j
 
-JSBASE = j.baseclasses.object
-TESTTOOLS = j.baseclasses.testtools
 
-
-class TLS(JSBASE, TESTTOOLS):
+class TLS(JSBASE):
     def _init(self, **kwargs):
         self.cwd = j.tools.path.get(kwargs["path"])
 
@@ -188,10 +185,3 @@ class TLS(JSBASE, TESTTOOLS):
             "names": subjects,
         }
 
-    def test(self, name=""):
-        """Run tests under tests
-
-        :param name: basename of the file to run, defaults to ''.
-        :type name: str, optional
-        """
-        self._test_run(name=name, obj_key="test_main")

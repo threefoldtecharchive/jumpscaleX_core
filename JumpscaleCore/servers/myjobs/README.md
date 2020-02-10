@@ -1,5 +1,67 @@
 # myjobs
 
+## How to debug a job / function
+
+**Steps**
+
+- put `j.shell()` inside your job code
+- don't start any workers yourself
+
+by doing the above, myjobs will start a special in process worker for this task and add the
+job to a dedicated debug queue so it is not consumed by any other workers running
+job object will have the flag/attribute `debug=True`
+and the special in process worker will also have the flag/attribute `debug=True`
+
+**limitations**
+
+for now, we can not use j.debug() or ipdb effectively, the reason is the function
+code is dynamicly created and executed so there's no source code available for the function
+object being executed, that is why you can not see lines in the context of
+j.debug() or ipdb
+we need a better way of executing code with maintaining source code
+
+
+
+**example**
+
+```
+    def add(a=None, b=None):
+        j.shell()
+        assert a
+        assert b
+        return a + b
+
+    job = self.schedule(add, a=1, b=2)
+    jobid = job.id
+    assert isinstance(jobid, int)
+
+    # means work scheduled)
+    assert self.scheduled_ids == [jobid]
+
+    assert self.jobs
+
+    assert self.scheduled_ids == [jobid]
+
+    job.load()
+    assert job.state == "OK"
+    assert job.time_start > j.data.time.epoch - 10
+    assert job.time_stop > j.data.time.epoch - 10
+    assert job.result == 3
+    assert job.id == jobid
+    assert job.check_ready()
+
+    res = self.results()
+
+    assert len(res) == 1
+    assert res[0] == 3
+
+    job = self.jobs.find()[0]
+    assert job.error == {}
+    assert job.result == 3
+    assert job.state == "OK"
+    assert job.time_stop > 0
+```
+
 ## Design
 
 `myjobs` manages workers to execute `async` tasks. meaning it keeps track of the workers in a dict `self.workers`
@@ -27,8 +89,8 @@ else:
   - A method needs to be self contained no globals or imports are reused from the module the method was originated in.
   - Methods need to be inside a file not in a repl (kosmos or ipython).
   - `job.wait()` does not work when  workers are in different process for this you need to `schedule()` task and provide a `queue` for results
-  then you can wait on a queue using `results()`, [Examples found here](./tests/11_wait_queues.py): 
-  
+  then you can wait on a queue using `results()`, [Examples found here](./tests/11_wait_queues.py):
+
 See the [tests](tests) for more examples.
 
 
@@ -78,7 +140,7 @@ Note: should not be used in production.
 ## Models
 
 ### Job
-Job represents a runnable `action` or `task` that needs to be executed `asynchronously` 
+Job represents a runnable `action` or `task` that needs to be executed `asynchronously`
 
 ```toml
 @url = jumpscale.myjobs.job
@@ -157,7 +219,7 @@ nr = 0 (I)
     - we get the referenced `action` using `action_id` in job model
     - we `exec` the `action` code and get a reference to the action method using `eval`
     - we get the `kwargs` saved on the job model
-    - we invoke the action method with `kwargs` 
+    - we invoke the action method with `kwargs`
         - if execution was ok we update the `job.result` and state to `OK`
         - if there was an exception we update `job.error` with the stacktrace and state to `ERROR`
 

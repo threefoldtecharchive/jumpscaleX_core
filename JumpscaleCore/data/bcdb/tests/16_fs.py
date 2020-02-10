@@ -21,7 +21,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_fs():
     """
     to run:
 

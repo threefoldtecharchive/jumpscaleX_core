@@ -6,7 +6,7 @@ def main(self):
     """
     to run:
 
-    kosmos 'j.clients.zdb._test_run(name="base")'
+    kosmos 'j.clients.zdb._tests_run(name="base")'
 
     """
 

@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_load_data():
     """
     to run:
 
@@ -64,6 +64,6 @@ def main(self):
     assert schema_test.loaders[1].dest == "blueprints/base/static"
     assert schema_test.loaders[1].enable is True
 
-    self._log_info("TEST DONE LOAD DATA")
+    j.data.schema._log_info("TEST DONE LOAD DATA")
 
     return "OK"

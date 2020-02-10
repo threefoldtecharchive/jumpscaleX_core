@@ -1,3 +1,4 @@
+import os
 from Jumpscale import j
 
 from .RDBClient import RDBClient

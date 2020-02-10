@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_models():
     """
     to run:
 
@@ -11,14 +11,14 @@ def main(self):
 
     """
 
-    mpath = self._dirpath + "/tests/models"
+    mpath = j.data.bcdb._dirpath + "/tests/models"
     assert j.sal.fs.exists(mpath)
 
     # make sure we remove the maybe already previously generated model file
     for item in j.sal.fs.listFilesInDir(mpath, filter="*.py"):
         j.sal.fs.remove(item)
 
-    bcdb, _ = self._load_test_model()
+    bcdb, _ = j.data.bcdb._load_test_model()
 
     assert bcdb.name in j.data.bcdb.instances
 

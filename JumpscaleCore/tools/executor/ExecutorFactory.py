@@ -5,6 +5,8 @@ from .ExecutorSSH import ExecutorSSH
 from .ExecutorLocal import ExecutorLocal
 from .ExecutorSerial import ExecutorSerial
 
+skip = j.baseclasses.testtools._skip
+
 
 class ExecutorFactory(j.baseclasses.object_config_collection_testtools):
     _executors = {}
@@ -46,6 +48,7 @@ class ExecutorFactory(j.baseclasses.object_config_collection_testtools):
     #         device, baudrate=baudrate, type=type, parity=parity, stopbits=stopbits, bytesize=bytesize, timeout=timeout
     #     )
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/490")
     def test(self):
         """
         kosmos 'j.tools.executor.test()'

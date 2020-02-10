@@ -110,9 +110,9 @@ class FormattersFactory(j.baseclasses.object):
         C = j.core.tools.text_replace(text)
         print(pygments.highlight(C, self.lexers.get("toml"), self.formatters.get(formatter)))
 
-    def test(self):
+    def _test(self):
         """
-        kosmos 'j.tools.formatters.test()'
+        kosmos 'j.tools.formatters._test()'
         :return:
         """
 
@@ -155,4 +155,4 @@ class FormattersFactory(j.baseclasses.object):
                 
         """
 
-        j.tools.formatters.print_toml(C)
+        pr = j.tools.formatters.print_toml(C)
