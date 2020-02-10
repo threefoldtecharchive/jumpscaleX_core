@@ -3298,14 +3298,15 @@ class MyEnv_:
     def _basedir_get(self):
         if self.readonly:
             return "/tmp/jumpscale"
-        isroot = None
-        rc, out, err = Tools.execute("whoami", showout=False, die=False)
-        if rc == 0:
-            if out.strip() == "root":
-                isroot = 1
-        if Tools.exists("/sandbox") or isroot == 1:
-            Tools.dir_ensure("/sandbox")
-            return "/sandbox"
+        if "darwin" not in platform:
+            isroot = None
+            rc, out, err = Tools.execute("whoami", showout=False, die=False)
+            if rc == 0:
+                if out.strip() == "root":
+                    isroot = 1
+            if Tools.exists("/sandbox") or isroot == 1:
+                Tools.dir_ensure("/sandbox")
+                return "/sandbox"
         p = "%s/sandbox" % self._homedir_get()
         if not Tools.exists(p):
             Tools.dir_ensure(p)
