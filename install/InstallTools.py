@@ -2051,11 +2051,11 @@ class Tools:
     def log2stdout(logdict, data_show=False, enduser=False):
         def show():
             # always show in debugmode and critical
-            if MyEnv.debug or logdict["level"] >= 50:
+            if MyEnv.debug or (logdict and logdict["level"] >= 50):
                 return True
             if not MyEnv.log_console:
                 return False
-            return logdict["level"] >= MyEnv.log_level
+            return logdict and (logdict["level"] >= MyEnv.log_level)
 
         if not show() and not data_show:
             return
