@@ -23,9 +23,6 @@ class MyWorker(j.baseclasses.object_config):
         if not self.nr > 0 and self.nr < 20:
             raise j.exceptions.JSBUG(f"worker '{self.nr}' nr is not between 1 and 20 ")
 
-        if j.application.appname != f"worker '{self.nr}'" and j.application.state != "RUNNING":
-            j.application.start(f"worker_'{self.nr}'")
-
     def _state_set_new(self):
         self.time_start = 0
         self.last_update = 0
@@ -86,6 +83,7 @@ class MyWorker(j.baseclasses.object_config):
         :param: nr is the nr of the tmux session workers_$nr is the name
 
         """
+
         if not reset:
             self.load()
             if self.state in ["WAITING", "BUSY"]:
@@ -96,7 +94,9 @@ class MyWorker(j.baseclasses.object_config):
         def start(nr):
             self._log_info("start worker:%s" % nr)
             cmd = j.servers.startupcmd.get(name="workers_%s" % nr)
-            cmd.cmd_start = "j.servers.myjobs._worker_inprocess_start_from_tmux(%s)" % nr
+            cmd.cmd_start = (
+                f"j.application.start('workers_{nr}'); j.servers.myjobs._worker_inprocess_start_from_tmux(%s)" % nr
+            )
             # COREX has still issues so fall back on tmux
             cmd.executor = "tmux"
             cmd.interpreter = "jumpscale_gevent"
