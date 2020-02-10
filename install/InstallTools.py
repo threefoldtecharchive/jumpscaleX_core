@@ -4551,6 +4551,16 @@ class DockerFactory:
             containers_ports[container.name] = container.ports[wireguard_udp_port][0].get("HostPort")
         return containers_ports
 
+    @staticmethod
+    def containers_running_ip_address():
+        containers_ip_addresses = dict()
+        client = docker.from_env()
+        containers = client.containers.list()
+        for container in containers:
+            network_settings = container.attrs.get("NetworkSettings")
+            containers_ip_addresses[container.name] = network_settings.get("IPAddress")
+        return containers_ip_addresses
+
 
 class DockerConfig:
     def __init__(self, name, image=None, startupcmd=None, delete=False, ports=None):
@@ -6332,10 +6342,11 @@ class WireGuardServer:
         cmd = "wg-quick up %s" % path
         self.executor.execute(cmd)
 
-    def write_peer_configuration(self, wireguard_port_udb=9001, last_byte="0"):
+    def write_peer_configuration(self, wireguard_port_udb=9001, last_byte="0", container_ip="172.17.0.2"):
         # Override the default wireguard port with the right one
         self.config_server["WIREGUARD_PORT"] = wireguard_port_udb
         self.config_server["LAST_BYTE"] = last_byte
+        self.config_server["CONTAINER_IP"] = container_ip
         # Creating the peer for Linux, it shall not contain the docker interface as it already happened on Linux
         if MyEnv.platform() == "linux":
             C = """
@@ -6355,7 +6366,7 @@ class WireGuardServer:
             PublicKey = {WIREGUARD_SERVER_PUBKEY}
             Endpoint = {WIREGUARD_ADDR}:{WIREGUARD_PORT}
             AllowedIPs = 10.{SUBNET}.{LAST_BYTE}/32
-            AllowedIPs = 172.17.0.0/16
+            AllowedIPs = {CONTAINER_IP}/32
             PersistentKeepalive = 25
             """
 
