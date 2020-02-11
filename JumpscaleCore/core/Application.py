@@ -386,8 +386,8 @@ class Application(object):
         if "JSPROCNAME" in os.environ:
             self.appname = os.environ["JSPROCNAME"]
 
-        if self.state == "RUNNING":
-            raise self._j.exceptions.RuntimeError("Application %s already started" % self.appname)
+        # if self.state == "RUNNING":
+        #     raise self._j.exceptions.RuntimeError("Application %s already started" % self.appname)
 
         # Register exit handler for sys.exit and for script termination
         atexit.register(self._exithandler)
