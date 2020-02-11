@@ -54,9 +54,13 @@ https://github.com/threefoldtech/zos/tree/master/docs/tfuser
         corex_user = COREX_USER_LOGIN
         corex_password = COREX_PASSWORD_LOGIN
         ```
+     - passing public key as env variables to connect using ssh :
+        ```buildoutcfg
+        pub_key = YOUR_PUBLIC_KEY
+        ```
 
 ```
-    tfuser generate --schema ubuntu.json container --flist  https://hub.grid.tf/bola_nasr_1/threefoldtech-3bot-corex.flist --ip 172.20.1.20 --network NETWORK_NAME  --entrypoint "/usr/bin/zinit init -d"  --envs corex_user=COREX_USER_LOGIN --envs  corex_password=COREX_PASSWORD_LOGIN  --mounts STORAGEID:/sandbox/var > ubuntu.json
+    tfuser generate --schema ubuntu.json container --flist  https://hub.grid.tf/bola_nasr_1/threefoldtech-3bot-corex.flist --ip 172.20.1.20 --network NETWORK_NAME  --entrypoint "/usr/bin/zinit init -d"  --envs corex_user=COREX_USER_LOGIN --envs  corex_password=COREX_PASSWORD_LOGIN  --envs pub_key="YOUR_PUBLIC_KEY" --mounts STORAGEID:/sandbox/var > ubuntu.json
     tfuser provision --schema ubuntu.json --duration 5h --seed user.seed --node NODE_ID
 ```
 - coreX page in web browser  ```172.20.1.20:1500```
