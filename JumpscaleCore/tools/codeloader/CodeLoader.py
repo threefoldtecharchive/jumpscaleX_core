@@ -100,3 +100,20 @@ class CodeLoader(j.baseclasses.object):
             self._hash_to_codeobj[md5] = obj
 
         return self._hash_to_codeobj[md5], changed
+
+    def unload(self, obj_key=None, path=None, reload=False, md5=None):
+        if not obj_key:
+            obj_key = self._basename(path)
+
+        if not j.data.types.string.check(path):
+            raise j.exceptions.Base("path needs to be string")
+        if path is not None and not j.sal.fs.exists(path):
+            raise j.exceptions.Base("path:%s does not exist" % path)
+
+        path = j.core.tools.text_replace(path)
+        if md5 is None:
+            txt = j.sal.fs.readFile(path)
+            md5 = j.data.hash.md5_string(txt)
+
+        if md5 in self._hash_to_codeobj:
+            del self._hash_to_codeobj[md5]

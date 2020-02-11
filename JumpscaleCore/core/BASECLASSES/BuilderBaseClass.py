@@ -186,6 +186,7 @@ class builder_method:
                 if self.log:
                     builder._log_debug("action:%s() done -> %s" % (name, res))
             except Exception:
+                res = None
                 print("There is an error happened during building")
 
             j.application.log2fs_redis_context_reset(builder._classname)

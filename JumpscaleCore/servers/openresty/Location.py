@@ -54,19 +54,19 @@ class LocationsConfiguration(j.baseclasses.object_config):
         """
 
     def get_location_proxy(self, new_location_name):
-        return check_location_exists(self.locations_proxy, new_location_name)
+        return self.check_location_exists(self.locations_proxy, new_location_name)
 
     def get_location_static(self, new_location_name):
-        return check_location_exists(self.locations_static, new_location_name)
+        return self.check_location_exists(self.locations_static, new_location_name)
 
-    def get_locations_lapis(self, new_location_name):
-        return check_location_exists(self.locations_lapis, new_location_name)
+    def get_location_lapis(self, new_location_name):
+        return self.check_location_exists(self.locations_lapis, new_location_name)
 
-    def get_locations_spa(self, new_location_name):
-        return check_location_exists(self.location_static, new_location_name)
+    def get_location_spa(self, new_location_name):
+        return self.check_location_exists(self.locations_spa, new_location_name)
 
-    def get_locations_custom(self, new_location_name):
-        return check_location_exists(self.get_locations_custom, new_location_name)
+    def get_location_custom(self, new_location_name):
+        return self.check_location_exists(self.locations_custom, new_location_name)
 
     @property
     def path_cfg_dir(self):
@@ -147,8 +147,8 @@ class LocationsConfiguration(j.baseclasses.object_config):
         j.sal.fs.symlink(j.sal.fs.joinPaths(weblibs_path, "static/"), static_dir, True)
 
     # Helper function
+    @staticmethod
     def check_location_exists(locations_obj, new_location_name):
-        location = None
         # check if the location already exists or not
         location = [location for location in locations_obj if location.name == new_location_name]
         # if we found the location we return it else we create a new one
@@ -156,7 +156,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
             return location.pop()
         else:
             new_location = locations_obj.new()
-            new_location_name = new_location_name
+            new_location.name = new_location_name
             return new_location
 
 

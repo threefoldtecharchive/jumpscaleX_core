@@ -3363,6 +3363,11 @@ class MyEnv_:
         if not "DIR_APPS" in config:
             config["DIR_APPS"] = "%s/apps" % config["DIR_BASE"]
 
+        if not "EXPLORER_ADDR" in config:
+            config["EXPLORER_ADDR"] = "explorer.testnet.grid.tf"
+        if not "THREEBOT_DOMAIN" in config:
+            config["THREEBOT_DOMAIN"] = "3bot.testnet.grid.tf"
+
         return config
 
     def configure(
@@ -4212,7 +4217,8 @@ class UbuntuInstaller:
             "net-tools",
             "libgeoip-dev",
             "libcapnp-dev",
-        ]  # "graphviz"
+            "graphviz",
+        ]
 
     @staticmethod
     def apts_install():

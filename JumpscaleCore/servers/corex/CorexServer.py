@@ -25,7 +25,7 @@ class CorexServer(JSConfigClient):
         """
         self._log_info("start corex server")
         if not j.core.tools.cmd_installed("corex"):
-            raise j.exceptions.Base("install corex: 'j.servers.corex.install()'")
+            j.servers.corex.install()
         self.startupcmd.start()
 
     @property
