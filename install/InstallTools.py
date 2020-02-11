@@ -6128,7 +6128,10 @@ class ExecutorSSH:
             dest = self._replace(dest)
         source = self._replace(source)
 
-        destdir = os.path.dirname(source)
+        sourcedir = os.path.dirname(source)
+        Tools.dir_ensure(sourcedir)
+
+        destdir = os.path.dirname(dest)
         Tools.dir_ensure(destdir)
 
         cmd = "scp -P %s root@%s:%s %s" % (self.port, self.addr, source, dest)
