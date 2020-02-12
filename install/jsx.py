@@ -452,7 +452,6 @@ def wiki_load(name=None, url=None, reset=False, foreground=False):
 
     import redis
 
-    monkey.patch_all(subprocess=False)
     from Jumpscale import j
 
     try:
