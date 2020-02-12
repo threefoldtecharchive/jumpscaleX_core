@@ -26,6 +26,8 @@ Commands:
   generate           generate the loader file, important to do when new...
   threebotbuilder    create the 3bot and 3botdev images
   install            install jumpscale in the local system (only supported...
+  wireguard          enable wireguard, can be on host or server
+
   kosmos
 ```
 
@@ -118,6 +120,26 @@ Options:
   --help            Show this message and exit.
 
 ```
+## wireguard
+
+**This command will**
+* Configure ```wireguard``` on the ```Host``` machine.
+* Install and configure the wireguard on all the running containers.
+* Add the running containers as peers in the ```wireguard``` configuration on the ```Host``` machine.
+* Create a ```wireguard``` network between the ``Host`` machine and the running containers.
+
+**Notes**
+* If you want to allow the running containers to ```ping``` each other **i.e** to send data to each other on the ```wireguard``` network, you will have to allow the traffic on the ```Host``` machine.
+This can be done with this command
+```bash
+sudo sysctl -w net.inet.ip.forwarding=1
+```
+
+* ```wireguard``` command must be run as ```sudo``` to allow thre required privileges.
+
+* You must install ```wireguard``` [from here](https://www.wireguard.com/install/) on the ```Host``` machine before running this command.
+
+
 
 ## other commands
 

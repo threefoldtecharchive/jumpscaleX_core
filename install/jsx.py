@@ -703,17 +703,54 @@ def container_shell(name="3bot"):
 
 
 @click.command()
-@click.option("-n", "--name", default="3bot", help="name of container")
-def wireguard(name=None):
+@click.option("-n", "--names", help="comma separated container names")
+def wireguard(names=None):
     """
     jsx wireguard
     enable wireguard, can be on host or server
     :return:
     """
-    docker = container_get(name=name)
-    wg = docker.wireguard
-    wg.server_start()
-    wg.connect()
+
+    containers = names.split(",") if names else IT.DockerFactory.containers_names()
+    usedLastIPBytes = []
+    new_containers = []
+    # Get the containers with udp ports for wireguard
+    containers_udp_ports_wireguard = IT.DockerFactory.container_running_with_udp_ports_wireguard()
+    containers_ip_addresses = IT.DockerFactory.containers_running_ip_address()
+
+    # Write interface configuration
+    if len(containers) == 0:
+        raise RuntimeError("There is no  docker containers running to install wireguard on.")
+
+    temp_docker = container_get(name=containers[0]).wireguard
+    temp_docker.write_interface_configuration()
+    # Get wireguard preconfigured containers, so we can maintain same old IP & configs
+
+    for name in containers:
+        docker = container_get(name=name)
+        wg = docker.wireguard
+        configured, ip = wg.isConfigured()
+        if configured:
+            last_byte = ip.split(".")[-1]
+            usedLastIPBytes.append(int(last_byte))
+            wg.server_start(last_byte)
+            # Write peer configurations
+            port = int(containers_udp_ports_wireguard.get(name))
+            ip_address = containers_ip_addresses.get(name)
+            wg.write_peer_configuration(wireguard_port_udb=port, last_byte=last_byte, container_ip=ip_address)
+        else:
+            new_containers.append(name)
+    freeRange = sorted(set(range(2, 255)) - set(usedLastIPBytes))
+    for i, name in enumerate(new_containers):
+        docker = container_get(name=name)
+        wg = docker.wireguard
+        wg.server_start(freeRange[i])
+        # Write peer configurations
+        port = int(containers_udp_ports_wireguard.get(name))
+        ip_address = containers_ip_addresses.get(name)
+        wg.write_peer_configuration(wireguard_port_udb=port, last_byte=freeRange[i], container_ip=ip_address)
+    # Connect the host wireguard and make it running
+    temp_docker.connect_wireguard()
 
 
 @click.command()
@@ -758,10 +795,12 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         """
         j.clients.threebot.explorer_addr_set("{explorer_addr}")
         docker_name = "{docker_name}"
-        j.tools.threebot.init_my_threebot(name="{docker_name}.3bot", interactive=False)
+        j.tools.threebot.init_my_threebot(
+            name="{docker_name}.3bot", email="{docker_name}@threefold.io", interactive=False
+        )
         j.clients.threebot.explorer.reload()  # make sure we have the actors loaded
         # lets low level talk to the phonebook actor
-        print(j.clients.threebot.explorer.actors_all.phonebook.get(name="{docker_name}.3bot"))
+        # print(j.clients.threebot.explorer.actors_all.phonebook.get(name="{docker_name}.3bot"))
         cl = j.clients.threebot.client_get("{docker_name}.3bot")
 
         r1 = j.tools.threebot.explorer.threebot_record_get(name="{docker_name}.3bot")
@@ -787,19 +826,14 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         if i == 0:
             # the master 3bot
             explorer_addr = docker.config.ipaddr
-            if IT.MyEnv.platform() != "linux":
-                if docker.config.done_get("wireguard") is False:
-                    # only need to use wireguard if on osx or windows (windows not implemented)
-                    # only do it on the first container
-                    docker.wireguard.server_start()
-                    docker.wireguard.connect()
-                    docker.config.done_set("wireguard")
 
         if not docker.config.done_get("start_cmd"):
             if web:
-                docker.sshexec("source /sandbox/env.sh; kosmos -p 'j.servers.threebot.start()';jsx wiki-load")
+                docker.sshexec(
+                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.start(background=True)';jsx wiki-load"
+                )
             else:
-                start_cmd = "j.servers.threebot.start()"
+                start_cmd = "j.servers.threebot.start(background=True)"
                 docker.jsxexec(start_cmd)
         docker.config.done_set("start_cmd")
         if not docker.config.done_get("config"):
