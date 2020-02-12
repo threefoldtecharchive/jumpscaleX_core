@@ -831,14 +831,6 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
             # the master 3bot
             explorer_addr = docker.config.ipaddr
 
-        if IT.MyEnv.platform() != "linux":
-            if docker.config.done_get("wireguard") is False:
-                # only need to use wireguard if on osx or windows (windows not implemented)
-                # only do it on the first container
-                docker.wireguard.server_start()
-                docker.wireguard.connect()
-                docker.config.done_set("wireguard")
-
         if not docker.config.done_get("start_cmd"):
             if web:
                 docker.sshexec(
