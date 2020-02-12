@@ -25,7 +25,7 @@ from uuid import uuid4
 from datetime import datetime
 from Jumpscale import j
 from Jumpscale.data.schema.tests.schema import Schema
-
+import unittest
 
 def log(msg):
     j.core.tools.log(msg, level=20)
@@ -37,6 +37,7 @@ def random_string():
 def almost_equal(value_1, value_2, delta):
     return abs(value_1 - value_2) < delta
 
+T = unittest.TestCase() 
 schema = Schema
 
 
@@ -88,21 +89,12 @@ def test_002_validate_integer_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with type which cannot convert to integer should fail.")
-  
-    try:
-        schema_obj.number = random_string()
-        raise "error should be raised here"
+    with T.assertRaises(Exception):
+        schema_obj.number = random_string() 
 
-    except Exception as e:
-        log("error raised {}".format(e))
-
-    try:
+    with T.assertRaises(Exception):
         schema_obj.number = [random.randint(1, 1000), random.randint(1, 1000)]
-        raise "error should be raised here"
-
-    except Exception as e:
-        log("error raised {}".format(e))
-
+        
     log("Try to set parameter[P1] with integer type, should succeed.")
     rand_num = random.randint(1, 1000)
     schema_obj.number = rand_num
@@ -130,27 +122,14 @@ def test_003_validate_float_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non float type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.number = random_string()
-        raise "error should be raised here"
 
-    except Exception as e:
-        log("error raised {}".format(e))
-
-    try:
+    with T.assertRaises(Exception):
         schema_obj.number = [random.uniform(10, 20), random.uniform(10, 20)]
-        raise "error should be raised here"
 
-    except Exception as e:
-        log("error raised {}".format(e))
-
-    try:
+    with T.assertRaises(Exception):
         schema_obj.number = {"number": random.uniform(10, 20)}
-        raise "error should be raised here"
-
-    except Exception as e:
-        log("error raised {}".format(e))
-
 
     log("Try to set parameter[P1] with float type, should succeed.")
     rand_num = random.uniform(10, 20)
@@ -250,43 +229,22 @@ def test_005_validate_mobile_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non mobile type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.mobile = random_string()
-        raise "error should be raised here"
 
-    except Exception as e:
-        log("error raised {}".format(e))
-
-    try:
+    with T.assertRaises(Exception):
         schema_obj.mobile = random.randint(10, 20)
-        raise "error should be raised here"
 
-    except Exception as e:
-        log("error raised {}".format(e))
-
-    try:
+    with T.assertRaises(Exception):
         schema_obj.mobile = random.uniform(10, 20)
-        raise "error should be raised here"
 
-    except Exception as e:
-        log("error raised {}".format(e))
-
-    try:
+    with T.assertRaises(Exception):
         schema_obj.mobile = [
             "{}".format(random.randint(100000, 1000000)),
             "{}".format(random.randint(100000, 1000000)),
         ]
-        raise "error should be raised here"
-
-    except Exception as e:
-        log("error raised {}".format(e))
-
-    try:
+    with T.assertRaises(Exception):
         schema_obj.mobile = {"number": "{}".format(random.randint(100000, 1000000))}
-        raise "error should be raised here"
-
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter[P1] with mobile type, should succeed.")
     number = "{}".format(random.randint(100000, 1000000))
@@ -325,48 +283,27 @@ def test_006_validate_email_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non email type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.email = random.randint(1, 100)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-
-    try:
+    with T.assertRaises(Exception):
         schema_obj.email = random.uniform(1, 100)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.email = random_string()
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.email = "example.com"
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.email = "example@com"
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.email = ["test.example@domain.com", "test.example@domain.com"]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.email = {"number": "test.example@domain.com"}
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
+
     log("Try to set parameter[P1] with email type, should succeed.")
     schema_obj.email = "test.example@domain.com"
     assert schema_obj.email == "test.example@domain.com" 
@@ -394,30 +331,17 @@ def test_007_validate_ipport_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non ipport type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.port = random.randint(10000000, 100000000)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.port = random_string()
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.port = [random.randint(1, 10000), random.randint(1, 10000)]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.port = {"port": random.randint(1, 10000)}
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-
     log("Try to set parameter[P1] with ipport type, should succeed.")
     port = random.randint(1, 10000)
     schema_obj.port = port
@@ -445,41 +369,23 @@ def test_008_validate_ipaddr_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non ipaddr type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.ip = random.uniform(1, 100)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.ip = random_string()
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.ip = "10.20.256.1"
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.ip = "10.20.1"
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.ip = [random.randint(0, 255), random.randint(0, 255)]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.ip = {"number": random.randint(0, 255)}
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter[P1] with ipaddr type, should succeed.")
     ip = "10.15.{}.1".format(random.randint(0, 255))
@@ -508,47 +414,26 @@ def test_009_validate_iprange_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non iprange type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.iprange = random.uniform(1, 100)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-
-    try:
+ 
+    with T.assertRaises(Exception):
         schema_obj.iprange = random_string()
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.iprange = "10.20.256.1"
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.iprange = "10.20.1"
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.iprange = "10.20.1.0/"
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-    try:
+
+    with T.assertRaises(Exception):
         schema_obj.iprange = [random.randint(1, 100), random.randint(1, 100)]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.iprange = {"number": random.randint(1, 100)}
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-
     log("Try to set parameter[P1] with iprange type, should succeed.")
     iprange = random.randint(1, 100)
     schema_obj.iprange = iprange
@@ -586,57 +471,33 @@ def test_010_validate_date_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non date type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.date_time = random.uniform(1, 100)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.date_time = random_string()
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         date_time = "{:02}/31".format(random.choice([2, 4, 6, 9, 11]))
         schema_obj.date_time = date_time
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         date_time = "2014/02/29"
         schema_obj.date = date_time
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         date_time = "201/02/29"
         schema_obj.date_time = date_time
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         date_time = "2014/02/01 {}{}:12".format(random.choice(random.randint(13, 23), 0), random.choice("am", "pm"))
         schema_obj.date_time = date_time
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.date_time = [random.randint(1, 9), random.randint(1, 9)]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.date_time = {"date": random.randint(1, 9)}
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-
     log("Try to set parameter[P1] with date type, should succeed.")
     date_time = 0
     schema_obj.date_time = date_time
@@ -722,35 +583,20 @@ def test_011_validate_percent_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non percent type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.percent = random_string()
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.percent = "10$"
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.percent = ["10", "20"]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.percent = [random.randint(1, 100), random.randint(1, 100)]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.percent = {"number": random.randint(1, 100)}
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter[P1] with percent type, should succeed.")
     percent = random.randint(0, 1)
@@ -805,48 +651,26 @@ def test_012_validate_url_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non url type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.site = random.randint(1, 100)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.site = random.uniform(1, 100)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.site = random_string()
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.site = "example@com"
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-
-    try:
+        
+    with T.assertRaises(Exception):
         schema_obj.site = "test/example.com"
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.site = [random.randint(1, 100), random.randint(1, 100)]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.site = {"number": random.randint(1, 100)}
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-
     log("Try to set parameter[P1] with url type, should succeed.")
     schema_obj.site = "test.example.com"
     assert schema_obj.site == "test.example.com"
@@ -879,24 +703,14 @@ def test_013_validate_numeric_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non numeric type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.currency = random_string()
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.currency = [random.randint(1, 100), random.randint(1, 100)]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.currency = {"number": random.randint(1, 100)}
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-
     log("Try to set parameter[P1] with numeric type, should succeed.")
     number = random.randint(1, 1000)
     schema_obj.number = number
@@ -963,41 +777,24 @@ def test_015_validate_guid_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non guid type, should fail.")
-    try:
+
+    with T.assertRaises(Exception):
         schema_obj.guid = random_string()
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.guid = str(uuid4())[:15]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.guid = random.randint(1, 1000)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.guid = random.uniform(1, 1000)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.guid = [random.randint(1, 100), random.randint(1, 100)]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.guid = {"number": random.randint(1, 100)}
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter[P1] with guid type, should succeed.")
     guid = str(uuid4())
@@ -1027,30 +824,17 @@ def test_016_validate_dict_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non dict type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.info = random_string()
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.info = random.randint(1, 1000)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.info = random.uniform(1, 100)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.info = [random.randint(1, 100), random.randint(1, 100)]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-
     log("Try to set parameter[P1] with dict type, should succeed.")
     value = random.randint(1, 1000)
     schema_obj.info = {"number": value}
@@ -1078,30 +862,17 @@ def test_017_validate_hash_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non hash type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.data = [random.randint(1, 100), random.randint(10, 1000), random.randint(1, 500)]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.data = random_string()
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.data = random.uniform(1, 100)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.data = {"number": random.randint(1, 100)}
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-
     log("Try to set parameter[P1] with hash type, should succeed.")
     data = (random.randint(1, 1000), random.randint(1000, 1000000))
     schema_obj.data = data
@@ -1135,36 +906,20 @@ def test_018_validate_multiline_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non multiline type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.lines = random_string()
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.lines = random.randint(1, 1000)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.lines = random.uniform(1, 100)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.lines = [random.randint(1, 100), random.randint(1, 100)]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-
-    try:
+        
+    with T.assertRaises(Exception):
         schema_obj.lines = {"number": random.randint(1, 100)}
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-
     log("Try to set parameter[P1] with multiline type, should succeed.")
     schema_obj.lines = "example \n example2 \n example3"
     assert schema_obj.lines == "example \n example2 \n example3" 
@@ -1190,11 +945,8 @@ def test_019_validate_yaml_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non yaml type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.data = "{test"
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter[P1] with yaml type, should succeed.")
     data = random_string()
@@ -1228,36 +980,20 @@ def test_020_validate_enum_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non enum type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.colors = random_string()
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.colors = random.randint(5, 1000)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.colors = random.uniform(5, 100)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.colors = ["RED", "GREEN", "BLUE", "BLACK"]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.colors = {"colors": ["RED", "GREEN", "BLUE", "BLACK"]}
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-
     log("Try to set parameter[P1] with enum type, should succeed.")
     colors = ["RED", "GREEN", "BLUE", "BLACK"]
     color = random.choice(colors)
@@ -1289,30 +1025,17 @@ def test_021_validate_binary_type():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non binary type, should fail.")
-
-    try:
+    with T.assertRaises(Exception):
         schema_obj.binary = random.randint(1, 1000)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.binary = random.uniform(1, 100)
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.binary = [random_string().encode(), random_string().encode()]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.binary = {"binary": random_string().encode()}
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter[P1] with binary type, should succeed.")
     binary = random_string().encode()

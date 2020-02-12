@@ -19,23 +19,18 @@ def rand_string(size=10):
     return str(uuid4())[:size]
 
 
-def os_command(command):
-    info("Execute : {} ".format(command))
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    output, error = process.communicate()
-    return output, error
-
-
 def after():
-    output, error = os_command("ps -aux | grep -v -e grep -e tmux | grep 'tail -f' | awk '{{print $2}}'")
+    _, output, error = j.sal.process.execute("ps -aux | grep -v -e grep -e tmux | grep 'tail -f' | awk '{{print $2}}'")
     if output:
-        pids = output.decode().splitlines()
-        os_command(f"kill -9 {' '.join(pids)}")
+        pids = output.splitlines()
+        _, output, error = j.sal.process.execute(f"kill -9 {' '.join(pids)}")
 
-    output, error = os_command("ps -aux | grep -v -e grep -e tmux | grep 'SimpleHTTPServer' | awk '{{print $2}}'")
+    _, output, error = j.sal.process.execute(
+        "ps -aux | grep -v -e grep -e tmux | grep 'SimpleHTTPServer' | awk '{{print $2}}'", die=False
+    )
     if output:
-        pids = output.decode().splitlines()
-        os_command(f"kill -9 {' '.join(pids)}")
+        pids = output.splitlines()
+        _, output, error = j.sal.process.execute(f"kill -9 {' '.join(pids)}")
 
 
 def test01_checkInstalled():
@@ -67,21 +62,27 @@ def test02_checkProcessForPid():
     """
     info("Start process [p1], get its pid[PID1].")
     PT = random.randint(1000, 2000)
-    output, error = os_command("tmux  new -d -s {} 'python -m SimpleHTTPServer {}' ".format(rand_string(), PT))
+    _, output, error = j.sal.process.execute(
+        "tmux  new -d -s {} 'python -m SimpleHTTPServer {}' ".format(rand_string(), PT)
+    )
     time.sleep(2)
-    output, error = os_command(" ps -aux | grep -v -e tmux -e  grep  | grep SimpleHTTPServer | awk  '{{print $2}}'")
-    assert output.decode("utf-8") != ""
-    PID_1 = int(output.decode())
+    _, output, error = j.sal.process.execute(
+        " ps -aux | grep -v -e tmux -e  grep  | grep SimpleHTTPServer | awk  '{{print $2}}'"
+    )
+    assert output != ""
+    PID_1 = int(output)
 
     info("Use checkProcessForPid method with process [P1] and PID1, should return 0.")
     assert j.sal.process.checkProcessForPid(PID_1, "python") == 0
 
     info("Start another process [p2], get its pid[PID2].")
-    output, error = os_command("tmux  new -d -s {} 'tail -f /dev/null'".format(rand_string()))
+    _, output, error = j.sal.process.execute("tmux  new -d -s {} 'tail -f /dev/null'".format(rand_string()))
     time.sleep(2)
-    output, error = os_command(" ps -aux | grep -v -e grep -e tmux | grep '{}' | awk '{{print $2}}'".format("tail -f"))
-    assert output.decode("utf-8") != ""
-    PID_2 = int(output.decode())
+    _, output, error = j.sal.process.execute(
+        " ps -aux | grep -v -e grep -e tmux | grep '{}' | awk '{{print $2}}'".format("tail -f")
+    )
+    assert output != ""
+    PID_2 = int(output)
 
     info("Use checkProcessForPid method with process[P1] and wrong pid[PID2], should return 1.")
     assert j.sal.process.checkProcessForPid(PID_2, "python") == 1
@@ -90,7 +91,7 @@ def test02_checkProcessForPid():
     assert j.sal.process.checkProcessForPid(PID_1, "tail") == 1
 
     info("Kill process[P1] and [P2], use checkProcessForPid with[P1] and PID1, should return 1.")
-    output, error = os_command("kill -9 {} {}".format(PID_1, PID_2))
+    _, output, error = j.sal.process.execute("kill -9 {} {}".format(PID_1, PID_2))
     time.sleep(2)
     assert j.sal.process.checkProcessForPid(PID_1, "python") == 1
 
@@ -107,17 +108,21 @@ def test03_checkProcessRunning():
     """
     info("Start process [p1].")
     PT = random.randint(1000, 2000)
-    output, error = os_command("tmux  new -d -s {} 'python -m SimpleHTTPServer {}'".format(rand_string(), PT))
+    _, output, error = j.sal.process.execute(
+        "tmux  new -d -s {} 'python -m SimpleHTTPServer {}'".format(rand_string(), PT)
+    )
     time.sleep(2)
 
     info("Use checkProcessRunning method with process [P1], should True.")
     assert j.sal.process.checkProcessRunning("SimpleHTTPServer") is True
 
     info("Stop process [p1].")
-    output, error = os_command(" ps -aux | grep -v -e grep -e tmux  | grep SimpleHTTPServer | awk '{{print $2}}'")
-    assert output.decode("utf-8") != ""
-    PID = int(output.decode())
-    output, error = os_command("kill -9 {}".format(PID))
+    _, output, error = j.sal.process.execute(
+        " ps -aux | grep -v -e grep -e tmux  | grep SimpleHTTPServer | awk '{{print $2}}'"
+    )
+    assert output != ""
+    PID = int(output)
+    _, output, error = j.sal.process.execute("kill -9 {}".format(PID))
     time.sleep(2)
 
     info("Use checkProcessRunning method with process [P1], should return False.")
@@ -136,10 +141,12 @@ def test04_execute_process():
     process = "tmux  new -d -s {} 'python -m SimpleHTTPServer {}'".format(rand_string(), PT)
     j.sal.process.execute(process)
     time.sleep(2)
-    output, error = os_command(" ps -aux | grep -v -e grep -e tmux | grep SimpleHTTPServer | awk '{{print $2}}'")
-    assert output.decode("utf-8") != ""
-    PID = int(output.decode())
-    output, error = os_command("kill -9 {}".format(PID))
+    _, output, error = j.sal.process.execute(
+        " ps -aux | grep -v -e grep -e tmux | grep SimpleHTTPServer | awk '{{print $2}}'"
+    )
+    assert output != ""
+    PID = int(output)
+    _, output, error = j.sal.process.execute("kill -9 {}".format(PID))
 
 
 @parameterized.expand(["process", "pids"])
@@ -155,13 +162,15 @@ def test05_getByPort(result_type):
     info("Start process [P] in specific port [PT]")
     PT = random.randint(10, 800)
     P = "SimpleHTTPServer"
-    output, error = os_command("tmux  new -d -s {} 'python -m {} {}' ".format(rand_string(), P, PT))
+    _, output, error = j.sal.process.execute("tmux  new -d -s {} 'python -m {} {}' ".format(rand_string(), P, PT))
     time.sleep(2)
 
     info("Get process [P] Pid.")
-    output, error = os_command(" ps -aux | grep -v -e grep -e tmux | grep {} | awk '{{print $2}}'".format(P))
-    assert output.decode("utf-8") != ""
-    PID = int(output.decode())
+    _, output, error = j.sal.process.execute(
+        " ps -aux | grep -v -e grep -e tmux | grep {} | awk '{{print $2}}'".format(P)
+    )
+    assert output != ""
+    PID = int(output)
     if result_type == "process":
         info("Use getProcessByPort to get P, should succeed.")
         process = j.sal.process.getProcessByPort(PT)
@@ -170,7 +179,7 @@ def test05_getByPort(result_type):
         info("Use getPidsByPort to get PID, should succeed.")
         process_pid = j.sal.process.getPidsByPort(PT)
         assert PID == process_pid[0]
-    output, error = os_command("kill -9 {} ".format(PID))
+    _, output, error = j.sal.process.execute("kill -9 {} ".format(PID))
 
 
 def test06_getDefunctProcesses():
@@ -183,8 +192,8 @@ def test06_getDefunctProcesses():
     #. [z1] and [z2] should be same.
     """
     info("Get zombie processes list [z1] by ps -aux")
-    output, error = os_command("ps aux | awk '{{ print $8 " " $2 }}' | grep -w Z ")
-    z1 = output.decode().splitlines()
+    _, output, error = j.sal.process.execute("ps aux | grep -w Z | awk '{{ print $2 }}'  ")
+    z1 = output.splitlines()
     z1 = list(map(int, z1))
     info("Get zombie processes list [z2] by getDefunctProcesses ")
     z2 = j.sal.process.getDefunctProcesses()
@@ -203,8 +212,8 @@ def test07_getPidsByFilter():
     #. Compare PIDs_1 and PIDs_2 should be same.
     """
     info("Get all processes PIDs which using  python[PIDs_1].")
-    output, error = os_command(" ps -aux | grep -v grep | grep python | awk '{{print $2}}'")
-    PIDS_1 = output.decode().splitlines()
+    _, output, error = j.sal.process.execute(" ps -aux | grep -v grep | grep python | awk '{{print $2}}'")
+    PIDS_1 = output.splitlines()
     PIDS_1 = list(map(int, PIDS_1))
 
     info("Use getPidsByFilter method  to get processess PIDs which using python[PIDs_2].")
@@ -228,11 +237,15 @@ def test08_getProcessObject():
     """
     info("Start process [p1] with python.")
     PT = random.randint(1000, 2000)
-    output, error = os_command("tmux  new -d -s {} 'python -m SimpleHTTPServer {}' ".format(rand_string(), PT))
+    _, output, error = j.sal.process.execute(
+        "tmux  new -d -s {} 'python -m SimpleHTTPServer {}' ".format(rand_string(), PT)
+    )
     time.sleep(2)
-    output, error = os_command(" ps -aux | grep -v -e grep -e tmux | grep SimpleHTTPServer | awk '{{print $2}}'")
-    assert output.decode("utf-8") != ""
-    PID = int(output.decode())
+    _, output, error = j.sal.process.execute(
+        " ps -aux | grep -v -e grep -e tmux | grep SimpleHTTPServer | awk '{{print $2}}'"
+    )
+    assert output != ""
+    PID = int(output)
 
     info("Use getProcessObject to get object of process.")
     process_object = j.sal.process.getProcessObject(PID)
@@ -244,8 +257,10 @@ def test08_getProcessObject():
     info("Kill the process [P] using process object, check it works sucessfuly.")
     process_object.kill()
     time.sleep(2)
-    output, error = os_command(" ps -aux | grep -v -e grep -e tmux | grep SimpleHTTPServer | awk '{{print $2}}'")
-    assert output.decode("utf-8") == ""
+    _, output, error = j.sal.process.execute(
+        " ps -aux | grep -v -e grep -e tmux | grep SimpleHTTPServer | awk '{{print $2}}'"
+    )
+    assert output == ""
 
     info("Try to get object of this process again, should fail.")
     try:
@@ -266,15 +281,17 @@ def test09_getProcessPid_and_getProcessPidsFromUser():
     """
     info("Start process [p1] with python.")
     P = "python -m SimpleHTTPServer {}".format(random.randint(1000, 2000))
-    output, error = os_command("tmux  new -d -s {} '{}'  ".format(rand_string(), P))
+    _, output, error = j.sal.process.execute("tmux  new -d -s {} '{}'  ".format(rand_string(), P))
     time.sleep(2)
-    output, error = os_command("ps ax | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'")
-    pids = output.decode().split()
+    _, output, error = j.sal.process.execute("ps ax | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'")
+    pids = output.split()
     pids = list(map(int, pids))
     assert len(pids) == 2
 
-    output, error = os_command("ps -aux | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'| tail -n+2")
-    user = output.decode().strip()
+    _, output, error = j.sal.process.execute(
+        "ps -aux | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'| tail -n+2"
+    )
+    user = output.strip()
 
     info("Use getProcessPid to get process pid [PID], Check that it returns right PID.")
     assert pids == j.sal.process.getProcessPid(P)
@@ -282,7 +299,7 @@ def test09_getProcessPid_and_getProcessPidsFromUser():
     info("Use getProcessPidsFromUser to get process pid [PID], Check that it returs right PID.")
     assert set(pids).issubset(set(j.sal.process.getProcessPidsFromUser(user))) is True
 
-    output, error = os_command("kill -9 {} {}".format(pids[0], pids[1]))
+    _, output, error = j.sal.process.execute("kill -9 {} {}".format(pids[0], pids[1]))
 
 
 def test10_isPidAlive():
@@ -297,17 +314,19 @@ def test10_isPidAlive():
     """
     info("Stat process [p1] with python.")
     P = "python -m SimpleHTTPServer"
-    output, error = os_command("tmux  new -d -s {} '{}'  ".format(rand_string(), P))
+    _, output, error = j.sal.process.execute("tmux  new -d -s {} '{}'  ".format(rand_string(), P))
     time.sleep(2)
-    output, error = os_command(" ps -aux | grep -v -e grep -e tmux | grep SimpleHTTPServer | awk '{{print $2}}'")
-    assert output.decode("utf-8") != ""
-    PID = int(output.decode())
+    _, output, error = j.sal.process.execute(
+        " ps -aux | grep -v -e grep -e tmux | grep SimpleHTTPServer | awk '{{print $2}}'"
+    )
+    assert output != ""
+    PID = int(output)
 
     info("Use isPidAlive, should return True.")
     assert j.sal.process.isPidAlive(PID) is True
 
     info("Kill process [P].")
-    output, error = os_command("kill -9 {}".format(PID))
+    _, output, error = j.sal.process.execute("kill -9 {}".format(PID))
 
     info("Use isPidAlive, should return False.")
     time.sleep(10)
@@ -328,25 +347,29 @@ def test11_kill_process(filter):
     """
     info("Start process [p1].")
     P1 = "tail -f /dev/null"
-    output, error = os_command("tmux  new -d -s {} '{}'  ".format(rand_string(), P1))
+    _, output, error = j.sal.process.execute("tmux  new -d -s {} '{}'  ".format(rand_string(), P1))
     time.sleep(2)
-    output, error = os_command(" ps -aux | grep -v -e grep -e tmux | grep '{}' | awk '{{print $2}}'".format(P1))
-    assert output.decode("utf-8") != ""
-    PID_1 = int(output.decode())
+    _, output, error = j.sal.process.execute(
+        " ps -aux | grep -v -e grep -e tmux | grep '{}' | awk '{{print $2}}'".format(P1)
+    )
+    assert output != ""
+    PID_1 = int(output)
 
     info("Create new user.")
     new_user = rand_string()
-    output, error = os_command("sudo useradd {}".format(new_user))
+    _, output, error = j.sal.process.execute("sudo useradd {}".format(new_user))
 
     info("Start process [P2] with new user, gets its PID2.")
     new_file = rand_string()
-    output, error = os_command("touch /home/{}".format(new_file))
+    _, output, error = j.sal.process.execute("touch /home/{}".format(new_file))
     P2 = "tail -f /home/{}".format(new_file)
-    output, error = os_command("tmux  new -d -s {} 'sudo -u {} {}'  ".format(rand_string(), new_user, P2))
+    _, output, error = j.sal.process.execute("tmux  new -d -s {} 'sudo -u {} {}'  ".format(rand_string(), new_user, P2))
     time.sleep(2)
-    output, error = os_command(" ps -aux | grep -v -e grep -e tmux -e sudo | grep '{}' | awk '{{print $2}}'".format(P2))
-    assert output.decode("utf-8") != ""
-    PID_2 = int(output.decode())
+    _, output, error = j.sal.process.execute(
+        " ps -aux | grep -v -e grep -e tmux -e sudo | grep '{}' | awk '{{print $2}}'".format(P2)
+    )
+    assert output != ""
+    PID_2 = int(output)
 
     info("kill the process using {}".format(filter))
     if filter == "kill":
@@ -362,13 +385,13 @@ def test11_kill_process(filter):
     time.sleep(2)
 
     info("Check that processes killed successfully.")
-    output, error = os_command(" ps -aux | grep -v -e grep -e tmux | grep tail | awk '{{print $2}}'")
-    result = output.decode().splitlines()
+    _, output, error = j.sal.process.execute(" ps -aux | grep -v -e grep -e tmux | grep tail | awk '{{print $2}}'")
+    result = output.splitlines()
     result = list(map(int, result))
 
     if filter == "killall":
-        assert output.decode("utf-8") == ""
+        assert output == ""
     else:
         assert PID_1 in result
         assert PID_2 not in result
-        output, error = os_command("kill -9 {} ".format(PID_1))
+        _, output, error = j.sal.process.execute("kill -9 {} ".format(PID_1))

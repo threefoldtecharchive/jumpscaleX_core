@@ -1,5 +1,4 @@
 from Jumpscale import j
-from base_test import BaseTest
 import random, requests, uuid, subprocess
 from loguru import logger
 
@@ -12,13 +11,6 @@ zdb = j.servers.zdb.get()
 
 def info(message):
     LOGGER.info(message)
-
-
-def os_command(command):
-    info("Execute : {} ".format(command))
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    output, error = process.communicate()
-    return output, error
 
 
 def rand_string(size=10):
@@ -59,8 +51,8 @@ def test_01_client_admin_get_and_client_get_and_destroy():
     zdb.destroy()
 
     info("Check that server stopped and database removed successfully.")
-    output, error = os_command(" ps -aux | grep -v grep | grep startupcmd_zdb ")
-    assert output.decode() == ""
+    _, output, error = j.sal.process.execute(" ps -aux | grep -v grep | grep startupcmd_zdb ")
+    assert output == ""
 
-    output, error = os_command(" ls {DIR_BASE}/var/zdb")
-    assert zdb.name not in output.decode()
+    _, output, error = j.sal.process.execute(" ls {DIR_BASE}/var/zdb")
+    assert zdb.name not in output

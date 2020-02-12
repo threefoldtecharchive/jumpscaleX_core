@@ -18,17 +18,10 @@ def after():
 
     j.clients.redis._cache_clear()
     j.sal.process.killProcessByName("redis-server")
-    super().tearDown()
 
 
 def after_all():
     j.clients.redis.core_get(reset=True)
-
-
-def os_command(command):
-    process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-    output, error = process.communicate()
-    return output, error
 
 
 def info(message):
@@ -70,7 +63,7 @@ def wait_for_server(port=None):
         return response
     else:
         for _ in range(5):
-            output, error = os_command("fuser -a /tmp/redis.sock")
+            _, output, error = j.sal.process.execute("fuser -a /tmp/redis.sock", die=False)
             if output:
                 sleep(1)
                 return True

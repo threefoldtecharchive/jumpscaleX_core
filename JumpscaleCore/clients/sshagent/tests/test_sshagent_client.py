@@ -12,12 +12,6 @@ def info(message):
     logging.info(message)
 
 
-def os_command(command):
-    process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-    output, error = process.communicate()
-    return output, error
-
-
 def rand_string():
     return j.data.idgenerator.generateXCharID(10)
 
@@ -34,10 +28,10 @@ def before():
     sshkey_client.save()
 
     info("Start ssh-agent")
-    os_command("eval `ssh-agent -s`")
+    j.sal.process.execute("eval `ssh-agent -s`")
 
     info("Add sshkey to sshagent")
-    os_command("ssh-add {}/.ssh/id_rsa".format(j.core.myenv.config["DIR_HOME"]))
+    j.sal.process.execute("ssh-add {}/.ssh/id_rsa".format(j.core.myenv.config["DIR_HOME"]))
 
 
 def after():
@@ -91,5 +85,5 @@ def test002_list_of_ssh_keys_in_sshagent():
 
     info("Check if the ssh key is loaded using keys_list method")
     assert PATH in j.clients.sshagent.keys_list()
-    output, error = os_command("ssh-add -l")
+    output, error = j.sal.process.execute("ssh-add -l")
     assert PATH in output.decode()

@@ -220,7 +220,7 @@ class Tmux(j.baseclasses.object, j.baseclasses.testtools):
 
         return window
 
-    def test(self):
+    def test(self, name=""):
         """
         kosmos 'j.servers.tmux.test()'
 
@@ -266,6 +266,5 @@ class Tmux(j.baseclasses.object, j.baseclasses.testtools):
         p = self.pane_get("test2", "test2", reset=True)
 
         self._log_info("tests ok for tmux")
-
-    def test_tmux(self, name=""):
         self._tests_run(name=name)
+

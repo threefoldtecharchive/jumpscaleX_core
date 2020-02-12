@@ -24,6 +24,11 @@ from uuid import uuid4
 from datetime import datetime
 from Jumpscale import j
 from Jumpscale.data.schema.tests.schema import Schema
+import unittest
+
+skip = j.baseclasses.testtools._skip
+
+T = unittest.TestCase()
 
 
 def log(msg):
@@ -91,18 +96,11 @@ def test_002_validate_list_of_integers():
     schema_obj = schema_new.new()
 
     log("Try to set parameter with non integer type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.list_numbers = [random.randint(1, 1000), random_string()]
-        raise "error should be raised here"
 
-    except Exception as e:
-        log("error raised {}".format(e))
-
-    try:
+    with T.assertRaises(Exception):
         schema_obj.list_numbers.append(random_string())
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter with integer type, should succeed.")
     list_numbers = [random.randint(1, 1000), random.randint(1, 1000)]
@@ -138,17 +136,11 @@ def test_003_validate_list_floats():
     schema_obj = schema_new.new()
 
     log("Try to set parameter with non float type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.list_numbers = [random.uniform(1, 1000), random_string()]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.list_numbers.append(random_string())
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter with float type, should succeed.")
     list_numbers = [random.uniform(1, 1000), random.uniform(1, 1000)]
@@ -217,17 +209,8 @@ def test_005_validate_list_of_mobiles():
     schema_obj = schema_new.new()
 
     log("Try to set parameter with non mobile type, should fail.")
-    try:
-        schema_obj.mobile_list = [random.uniform(1, 100), random.randint(100000, 1000000)]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-
-    try:
+    with T.assertRaises(Exception):
         schema_obj.mobile_list.append(random.uniform(1, 100))
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter with mobile type, should succeed.")
     mobile_list = ["{}".format(random.randint(100000, 1000000)), "{}".format(random.randint(100000, 1000000))]
@@ -264,17 +247,11 @@ def test_006_validate_list_of_emails():
 
     log("Try to set parameter with non email type, should fail.")
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.email_list = [random.uniform(1, 100), "test.example@domain.com"]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.email_list.append(random.uniform(1, 100))
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter with email type, should succeed.")
     email_list = ["test.example@domain.com", "test.example2@domain.com"]
@@ -311,12 +288,8 @@ def test_007_validate_list_of_ipports():
     schema_obj = schema_new.new()
 
     log("Try to set parameter with non ipport type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.port_list = [random_string(), random.randint(1, 10000)]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-
     log("Try to set parameter with ipport type, should succeed.")
     port_list = [random.randint(1, 10000), random.randint(1, 10000)]
     schema_obj.port_list = port_list
@@ -352,17 +325,11 @@ def test_008_validate_list_of_ipaddrs():
     schema_obj = schema_new.new()
 
     log("Try to set parameter with non ipaddr type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.ip_list = [random_string(), random.randint(1, 10000)]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.ip_list.append(random.uniform(1, 100))
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter with ipaddr type, should succeed.")
     ip_list = ["10.15.{}.1".format(random.randint(0, 255)), "192.168.{}.1".format(random.randint(0, 255))]
@@ -397,17 +364,12 @@ def test_009_validate_list_of_ipranges():
     schema_obj = schema_new.new()
 
     log("Try to set parameter with non iprange type, should fail.")
-    try:
-        schema_obj.range_list = [random_string(), "10.15.{}.1/24".format(random.randint(0, 255))]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
+        schema_obj.range_list = [random_string(), "10.15.{}.1/24".format(random.randint(0, 255))]
+
+    with T.assertRaises(Exception):
         schema_obj.range_list.append(random.uniform(1, 100))
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter with iprange type, should succeed.")
     range_list = ["10.15.{}.1/24".format(random.randint(0, 255)), "10.15.{}.1/24".format(random.randint(0, 255))]
@@ -443,18 +405,11 @@ def test_010_validate_list_of_dates():
     schema_obj = schema_new.new()
 
     log("Try to set parameter with non date type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.date_list = [random_string(), "01/08/2018 8am:30"]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.date_list.append(random_string())
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
-
     log("Try to set parameter with date type, should succeed.")
     year = random.randint(1000, 2020)
     month = random.randint(1, 12)
@@ -503,17 +458,11 @@ def test_011_validate_list_of_percents():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter with non percent type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.percent_list = [random_string(), random_string()]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.percent_list.append(random_string())
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter with percent type, should succeed.")
     percent_list = [random.randint(0, 1), random.uniform(0, 1), "{}".format(random.uniform(0, 1))]
@@ -550,17 +499,11 @@ def test_012_validate_list_of_urls():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter with non url type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.url_list = [random.uniform(1, 100), "test.example.com/home"]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.url_list.append(random_string())
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter with url type, should succeed.")
     url_list = ["test.example.com/home", "test.example.com/login"]
@@ -597,11 +540,8 @@ def test_013_validate_list_of_numerics():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter with non numeric type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.curr_list = [random.uniform(1, 100), random_string()]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter with numeric type, should succeed.")
     curr_list = [random.randint(1, 100), random.uniform(1, 100)]
@@ -637,17 +577,11 @@ def test_014_validate_list_of_guids():
     schema_obj = schema_new.new()
 
     log("Try to set parameter with non guid type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.guid_list = [str(uuid4())[:15], str(uuid4())]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.guid_list.append(random_string())
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter with guid type, should succeed.")
     guid_list = [str(uuid4()), str(uuid4())]
@@ -684,17 +618,11 @@ def test_015_validate_list_of_multilines():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter with non multiline type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.lines_list = [random.randint(1, 1000), "example \n example2 \n example3"]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
-    try:
+    with T.assertRaises(Exception):
         schema_obj.lines_list.append(random_string())
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter with multiline type, should succeed.")
     lines_list = ["example \n example2 \n example4", "example \n example2 \n example3"]
@@ -707,6 +635,7 @@ def test_015_validate_list_of_multilines():
     assert schema_obj.lines_list == lines_list
 
 
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/523")
 def test_016_validate_list_of_yaml():
     """
     SCM-037
@@ -723,15 +652,13 @@ def test_016_validate_list_of_yaml():
     yaml_list = (Lyaml)
     list_yaml = "[{'example':'test1'}]" (Lyaml)
     """
-    schema_new = schema(scm)
-    schema_obj = schema_new.new()
+    schema_nw = schema(scm)
+    time.sleep(1)
+    schema_obj = schema_nw.new()
 
     log("Try to set parameter with non yaml type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.yaml_list = ["{test", ""]
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter with yaml type, should succeed.")
     yaml_list = [{"example": "test1"}]
@@ -762,11 +689,8 @@ def test_017_validate_list_of_binary():
     schema_obj = schema_nw.new()
 
     log("Try to set parameter with non binary type, should fail.")
-    try:
+    with T.assertRaises(Exception):
         schema_obj.bin_list.append(random.randint(1, 1000))
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
 
     log("Try to set parameter with binary type, should succeed.")
     bin_list = [random_string().encode(), random_string().encode()]

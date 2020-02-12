@@ -23,6 +23,9 @@ from uuid import uuid4
 from datetime import datetime
 from Jumpscale import j
 from Jumpscale.data.schema.tests.schema import Schema
+import unittest
+
+skip = j.baseclasses.testtools._skip
 
 
 def log(msg):
@@ -33,16 +36,19 @@ def random_string():
     return "s" + str(uuid4()).replace("-", "")[:10]
 
 
+T = unittest.TestCase()
+schema = Schema
+
+
 schema = Schema
 
 # raise j.exceptions.Base("needs to be part of tests on BCDB not here")
 bcdb = j.data.bcdb.get("test")
+T = unittest.TestCase()
+schema = Schema
 
 
-def after():
-    bcdb.reset()
-
-
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/522")
 def test022_unique_attributes():
     """
     SCM-022
@@ -81,20 +87,15 @@ def test022_unique_attributes():
     schema_obj.test = test
     schema_obj.number = number
     schema_obj.save()
-    import ipdb
-
-    ipdb.set_trace()
     log("Create another object and try to use same name for first one, should fail")
     schema_obj2 = model.new()
     schema_obj2.name = random_string()
 
     log("On the second object, try to use same test var for first one, should fail")
     schema_obj2.test = test
-    try:
+    with T.assertRaises(Exception):
         schema_obj2.save()
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
+
     schema_obj2.test = random_string()
 
     log("On the second object, try to use same new_name for first one, should success")
@@ -103,11 +104,8 @@ def test022_unique_attributes():
 
     log("On the second object, try to use same number for first one, should fail")
     schema_obj2.number = number
-    try:
+    with T.assertRaises(Exception):
         schema_obj2.save()
-        raise "error should be raised here"
-    except Exception as e:
-        log("error raised {}".format(e))
     schema_obj2.number = random.randint(100, 199)
 
     log("Change name of the first object and try to use the first name again, should success")
@@ -138,3 +136,4 @@ def test022_unique_attributes():
     schema_obj3.new_name = new_name
     schema_obj3.number = number
     schema_obj3.save()
+    bcdb.reset()

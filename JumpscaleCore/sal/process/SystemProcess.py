@@ -27,7 +27,7 @@ from Jumpscale import j
 JSBASE = j.baseclasses.object
 
 
-class SystemProcess(JSBASE):
+class SystemProcess(JSBASE, j.baseclasses.testtools):
     __jslocation__ = "j.sal.process"
 
     def _init(self, **kwargs):
@@ -846,6 +846,9 @@ class SystemProcess(JSBASE):
                 key, value = line.split("=", 1)
                 env[key] = value
         return env
+
+    def test(self, name=""):
+        self._tests_run(name=name)
 
     # DO NOT REENABLE, if you need it, call the j.sal.process.executeASyncIO
 
