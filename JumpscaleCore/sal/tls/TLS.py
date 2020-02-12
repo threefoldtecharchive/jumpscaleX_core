@@ -2,6 +2,8 @@ import subprocess
 
 from Jumpscale import j
 
+JSBASE = j.baseclasses.object
+
 
 class TLS(JSBASE):
     def _init(self, **kwargs):
