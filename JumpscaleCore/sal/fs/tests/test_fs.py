@@ -9,12 +9,13 @@ from datetime import datetime
 from pwd import getpwuid
 from subprocess import run, PIPE
 from string import punctuation
-from checksumdir import dirhash
 import pickle
 from loguru import logger
 
+
 LOGGER = logger
 LOGGER.add("SAL_FS_{time}.log")
+
 
 skip = j.baseclasses.testtools._skip
 
@@ -32,6 +33,7 @@ temp_path = os.path.join("/tmp", temp_dir)
 
 
 def before_all():
+    j.builders.runtimes.python3.pip_package_install("checksumdir") 
     j.sal.fs.createDir(temp_path)
 
 
@@ -85,6 +87,8 @@ def create_tree(symlinks=True):
 
 
 def md5sum(file_or_dir):
+    j.builders.runtimes.python3.pip_package_install("checksumdir") 
+    from checksumdir import dirhash
     if not os.path.exists(file_or_dir):
         return False
     if os.path.isfile(file_or_dir):

@@ -85,6 +85,7 @@ class TestTools:
         :param path: tests path.
         :param name: testcase name to be run in case of running only one test.
         """
+        self._reset(modules=False)
         if not j.sal.fs.isAbsolute(path):
             path = j.sal.fs.joinPaths(j.sal.fs.getcwd(), path)
         self._discover_from_path(path, name)
@@ -96,7 +97,7 @@ class TestTools:
         :param path: absolute path to be discovered.
         :param test_name: (optional) test name for getting only this test.
         """
-        self._modules = []
+        self._reset()
         if j.sal.fs.isFile(path):
             parent_path = j.sal.fs.getDirName(path)
             sys.path.insert(0, parent_path)
@@ -379,6 +380,7 @@ class TestTools:
     def _add_to_full_results(self):
         """Add results from test runner to full result to report them once at the end.
         """
+        global _full_results
         _full_results["summary"]["failures"] += self._results["summary"]["failures"]
         _full_results["summary"]["errors"] += self._results["summary"]["errors"]
         _full_results["summary"]["passes"] += self._results["summary"]["passes"]
@@ -417,8 +419,9 @@ class TestTools:
                 try:
                     attr = getattr(group, factory)
                 except BaseException as error:
-                    print(f"{group_name}.{factory} ...")
-                    self._add_error(factory, error)
+                    factory_location = f"{group_name}.{factory}"
+                    print(f"{factory_location}...")
+                    self._add_error(factory_location, error)
                     continue
                 if isinstance(attr, j.baseclasses.object):
                     attr.__show_tests_report = False
