@@ -84,3 +84,6 @@ class SSHKeys(j.baseclasses.object_config_collection_testtools):
         sshkey_client.delete()
 
         print("TEST FOR SSHKEYS OK")
+
+    def test_sshkey(self, name=""):
+        self._tests_run(name=name)

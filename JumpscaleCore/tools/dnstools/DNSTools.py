@@ -47,7 +47,7 @@ class DNSTools(j.baseclasses.object):
         kosmos 'j.tools.dnstools.test()'
         """
 
-        answer = self.default.resolver.query("www.yelp.com", "A")
+        self.default.resolver.query("www.yelp.com", "A")
 
 
 class DNSClient(j.baseclasses.object):

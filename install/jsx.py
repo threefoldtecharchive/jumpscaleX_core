@@ -519,14 +519,11 @@ def threebot_flist(username=None, secret=None, app_id=None):
     resp.raise_for_status()
     jwt = resp.content.decode("utf8")
 
-    params = {"image": "threefoldtech/3bot"}
+    params = {"image": "threefoldtech/3bot:corex"}
     url = "https://hub.grid.tf/api/flist/me/docker"
     headers = {"Authorization": "Bearer %s" % jwt}
     requests.post(url, headers=headers, data=params)
-    print("uploaded 3bot flist , wait for 3bot-production flist")
-    params = {"image": "threefoldtech/3bot-production"}
-    requests.post(url, headers=headers, data=params)
-    print("uploaded 3bot-production flist ")
+    print("uploaded 3bot flist")
 
 
 @click.command(name="wiki-reload")

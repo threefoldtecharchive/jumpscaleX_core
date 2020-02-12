@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_schema_update():
     """
     to run:
 
@@ -11,7 +11,7 @@ def main(self):
     automatically use the latest schema, as long as the changes don't include indexed fields
     """
 
-    bcdb, _ = self._load_test_model()
+    bcdb, _ = j.data.bcdb._load_test_model()
 
     # to cover all cases, we'll test adding/removing fields of simeple types, and also type object. Also, test that a sub object's fields change
 

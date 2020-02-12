@@ -7,8 +7,10 @@ from .JSXObjectSub import JSXObjectSub
 from .JSXObjectRoot import JSXObjectRoot
 from .JSXObjectBase import JSXObjectBase
 
+TESTTOOLS = j.baseclasses.testtools
 
-class SchemaFactory(j.baseclasses.factory_testtools):
+
+class SchemaFactory(j.baseclasses.factory_testtools, TESTTOOLS):
     __jslocation__ = "j.data.schema"
 
     def _init(self, **kwargs):
@@ -340,4 +342,4 @@ class SchemaFactory(j.baseclasses.factory_testtools):
 
         if want run specific test ( write the name of test ) e.g. j.data.schema.test(name="base")
         """
-        self._test_run(name=name)
+        self._tests_run(name=name)

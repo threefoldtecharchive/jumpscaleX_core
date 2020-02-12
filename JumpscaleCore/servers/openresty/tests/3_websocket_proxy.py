@@ -1,10 +1,12 @@
 from Jumpscale import j
 
 
-def main(self):
+
+
+def test_websocket_proxy():
     """
-    kosmos -p 'j.servers.openresty.test(name="tcp_proxy")'
-    kosmos 'j.servers.openresty.test(name="tcp_proxy")'
+    kosmos -p 'j.servers.openresty.test(name="websocket_proxy")'
+    kosmos 'j.servers.openresty.test(name="websocket_proxy")'
     :return:
     """
 

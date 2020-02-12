@@ -1,60 +1,98 @@
 #! /usr/bin/env python3
+import click
+
 from Jumpscale import j
 
-j.tools.bash.get().profile.locale_check()
-import click
+
+def get_client(redis_host, redis_port, redis_secret):
+    client = j.clients.alerts.get("js_alerts")
+    if redis_host:
+        client.redis_host = redis_host
+    if redis_port:
+        client.redis_port = redis_port
+    if redis_secret:
+        client.redis_secret = redis_secret
+
+    return client
+
+
+def common_options(function):
+    click.option("--redis-host", default=None, help="redis host (defaults to localhost)")(function)
+    click.option("--redis-port", default=6379, help="redis port (defaults to 6379)")(function)
+    click.option("--redis-secret", default=None, help="redis secret (empty by default)")(function)
+    return function
 
 
 @click.group()
-def cli():
-    pass
+@common_options
+@click.pass_context
+def cli(ctx, redis_host, redis_port, redis_secret):
+    ctx.obj = get_client(redis_host, redis_port, redis_secret)
 
 
-@click.command()
-def list():
+@cli.command()
+@click.pass_obj
+def list(client):
     """
+    print all alerts
     """
-    j.tools.alerthandler.print()
+    alerts = [item[1] for item in client.list()]
+    client.print_list(alerts)
 
 
-@click.command()
-def reset():
+@cli.command()
+@click.pass_obj
+def reset(client):
     """
-    will erase the alerts in the DB
+    erase the alerts in the DB
     """
-    j.tools.alerthandler.reset()
+    client.reset()
 
 
-@click.command()
-def test():
+@cli.command()
+@click.pass_obj
+def count(client):
+    """print count of alerts"""
+    print(f"Count of alerts is {client.count()}")
+
+
+@cli.command()
+@click.option("--cat", default="", help="filter by category, defaults to empty string")
+@click.option("--message", default="", help="filter by string")
+@click.option("--pid", default=None, help="filter by process id, defaults to None")
+@click.option("--time", default=None, help="filter by time within a span of first to last seen, defaults to None")
+@click.pass_obj
+def find(client, cat="", message="", pid=None, time=None):
     """
-    a small test script
+    filter by category, message, pid and/or time
     """
-    j.tools.alerthandler.test(delete=False)
+    alerts = client.find(cat, message, pid, time)
+    client.print_list(alerts)
 
 
-@click.command()
-def find():
+@cli.command()
+@click.argument("identifier")
+@click.pass_obj
+def show(client, identifier):
     """
-    find specific alerts
-
+    show alert with given identifier
     """
-    raise RuntimeError("not implemented")
+    try:
+        alert = client.get(identifier, die=True)
+        client.print(alert)
+    except j.exceptions.NotFound:
+        print(f"Alert of '{identifier}' cannot be found")
 
 
-@click.command()
-def delete(cat="", message=""):
+@cli.command()
+@click.argument("identifier")
+@click.pass_obj
+def delete(client, identifier):
     """
-    delete specific alerts
+    delete alert with given identifier
     """
-    raise RuntimeError("not implemented")
+    client.delete(identifier)
 
-
-cli.add_command(list)
-cli.add_command(reset)
-cli.add_command(test)
-cli.add_command(find)
-cli.add_command(delete)
 
 if __name__ == "__main__":
     cli()

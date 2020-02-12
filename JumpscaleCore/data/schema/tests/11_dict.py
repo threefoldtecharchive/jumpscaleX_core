@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_dict():
     """
     to run:
 
@@ -29,6 +29,6 @@ def main(self):
 
     assert o3.dd == {"a": 1, "b": "a"}
 
-    self._log_info("test for dict ok")
+    j.data.schema._log_info("test for dict ok")
 
     return "OK"

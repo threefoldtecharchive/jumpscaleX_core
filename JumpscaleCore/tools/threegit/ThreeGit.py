@@ -33,6 +33,8 @@ class ThreeGit(j.baseclasses.object_config):
         relative_base_path = "" (S)
         dest_path = "" (S)
         revision = "" (S)
+        uncommited_files = (LS)
+        uncommited_files_revision = (S)
         """
 
     def _init(self, **kwargs):

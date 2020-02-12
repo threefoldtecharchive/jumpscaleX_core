@@ -75,18 +75,27 @@ class JSXObjectBase(j.baseclasses.object):
         else:
             raise RuntimeError()
 
+    def _hr_get_properties(self, props):
+        """human readable format for given properties
+
+        :param props: properties as a dict
+        :type props: dict
+        :return: humand readable string
+        :rtype: str
+        """
+        out = "\n"
+        keys = [name for name in props.keys()]
+        keys.sort()
+        for key in keys:
+            item = props[key]
+            out += "- %-30s: %s\n" % (key, item)
+        return out
+
     def _hr_get(self, exclude=[]):
         """
         human readable test format
         """
-        out = "\n"
-        res = self._ddict_hr_get(exclude=exclude)
-        keys = [name for name in res.keys()]
-        keys.sort()
-        for key in keys:
-            item = res[key]
-            out += "- %-30s: %s\n" % (key, item)
-        return out
+        return self._hr_get_properties(self._ddict_hr_get(exclude=exclude))
 
     def check_empty_indexed_fields(self):
         for prop in self._model.schema.properties_index_sql:

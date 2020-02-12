@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_changed():
     """
     to run:
 
@@ -135,6 +135,6 @@ def main(self):
     assert o._changed == False
     assert o.cmd.deeper[0].comment == "aac"
 
-    self._log_info("TEST DONE CHANGED")
+    j.data.schema._log_info("TEST DONE CHANGED")
 
     return "OK"

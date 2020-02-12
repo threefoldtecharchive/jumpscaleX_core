@@ -631,7 +631,19 @@ class BCDBModel(BCDBModelBase):
     def find(self, nid=None, limit=None, offset=None, **kwargs):
         res = []
         for id in self.find_ids(nid=nid, limit=limit, offset=offset, **kwargs):
-            res.append(self.get(id))
+            try:
+                obj = self.get(id)
+            except Exception as e:
+                if isinstance(e, j.exceptions.NotFound):
+                    self._log_warning(
+                        "I found object with id:%s in index but not in backendstor, will ignore in find" % id
+                    )
+                    obj = None
+                    continue
+                else:
+                    raise
+            if obj:
+                res.append(obj)
         return res
 
     def count(self, nid=None, **kwargs):

@@ -1,8 +1,8 @@
 from Jumpscale import j
-
 from .peewee import *
-
 import uuid
+
+skip = j.baseclasses.testtools._skip
 
 
 class PeeweeFactory(j.baseclasses.object):
@@ -48,9 +48,7 @@ class PeeweeFactory(j.baseclasses.object):
             db = PostgresqlDatabase(dbname, user=login, password=passwd, host=ipaddr, port=port)
         return db
 
-    def test_model_create(self, psqlclient):
-        pass
-
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/486")
     def test(self):
         """
         kosmos 'j.clients.peewee.test()'

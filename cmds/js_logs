@@ -1,10 +1,10 @@
 #! /usr/bin/env python3
 import click
-
+from types import SimpleNamespace
 from Jumpscale import j
 
 
-def get_client(redis_host, redis_port, redis_secret, session, date, context):
+def get_client(redis_host, redis_port, redis_secret):
     client = j.clients.logger.get("js_logs")
     if redis_host:
         client.redis_host = redis_host
@@ -12,52 +12,88 @@ def get_client(redis_host, redis_port, redis_secret, session, date, context):
         client.redis_port = redis_port
     if redis_secret:
         client.redis_secret = redis_secret
-    if session:
-        client.session = session
 
-    client.date = date
-    client.context = context
     return client
-
-
-@click.group()
-def cli():
-    pass
 
 
 def common_options(function):
     click.option("--redis-host", default=None, help="redis host (defaults to localhost)")(function)
     click.option("--redis-port", default=6379, help="redis port (defaults to 6379)")(function)
     click.option("--redis-secret", default=None, help="redis secret (empty by default)")(function)
-    click.option("--session", default=None, help="session name (defaults to jumpscale)")(function)
-    click.option("--date", default=j.data.time.epoch, help="filter by date (epoch), defaults to today")(function)
-    click.option("--context", default="main", help="current context (can be main, error...etc)")(function)
+    click.option("-a", "--appname", default="init", help="application name, default: init")(function)
     return function
 
 
-@click.command()
+@click.group()
 @common_options
-def tail(redis_host, redis_port, redis_secret, session, date, context):
+@click.pass_context
+def cli(ctx, redis_host, redis_port, redis_secret, appname):
+    ctx.obj = SimpleNamespace()
+    ctx.obj.client = get_client(redis_host, redis_port, redis_secret)
+    ctx.obj.appname = appname
+
+
+@cli.command()
+@click.pass_obj
+def tail(ctx_obj):
     """
     tail logs from session
     """
-    client = get_client(redis_host, redis_port, redis_secret, session, date, context)
-    client.tail()
+    ctx_obj.client.tail(appname=ctx_obj.appname)
 
 
-@click.command()
-@common_options
-@click.option("--path", required=True, help="output file path")
-def dump(redis_host, redis_port, redis_secret, session, date, context, path):
+@cli.command()
+@click.argument("all", default=False, required=False)
+@click.pass_obj
+def count(ctx_obj, all=None):
     """
-    dump logs of session to file
+    tail logs from session
     """
-    client = get_client(redis_host, redis_port, redis_secret, session, date, context)
-    client.dump(path)
+    print(ctx_obj.client.count(appname=ctx_obj.appname, all=all))
 
 
-cli.add_command(tail)
-cli.add_command(dump)
+@cli.command()
+@click.option("--file_path", default=None, help="filter by logsfilepath logs come from , defaults to None")
+@click.option("--level", default=None, help="filter by log level , defaults to None")
+@click.option("--data", default=None, help="filter by log data , defaults to None")
+@click.option("--cat", default="", help="filter by category, defaults to empty string")
+@click.option("--message", default="", help="filter by string")
+@click.option("--processid", default=None, help="filter by process id, defaults to None")
+@click.option("--time_from", default=None, help="filter by time within a span from specific time, defaults to None")
+@click.option("--time_to", default=None, help="filter by time within a span until specific time , defaults to None")
+@click.option("--id_from", default=None, help="filter by logs id from , defaults to None")
+@click.pass_obj
+def find(
+    ctx_obj,
+    file_path=None,
+    level=None,
+    data=None,
+    context=None,
+    cat="",
+    message="",
+    processid=None,
+    time_from=None,
+    time_to=None,
+    id_from=None,
+):
+    """
+    filter by appname, filepath, category, message, pid and/or time ..
+    """
+    logs = ctx_obj.client.find(
+        appname=ctx_obj.appname,
+        file_path=file_path,
+        level=level,
+        data=data,
+        cat=cat,
+        context=context,
+        message=message,
+        processid=processid,
+        time_from=time_from,
+        time_to=time_to,
+        id_from=id_from,
+    )
+    ctx_obj.client._print(logs)
+
 
 if __name__ == "__main__":
     cli()

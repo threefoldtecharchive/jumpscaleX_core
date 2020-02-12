@@ -1,4 +1,3 @@
-from unittest import TestCase, skip
 from uuid import uuid4
 
 from Jumpscale import j
@@ -9,170 +8,177 @@ LOGGER = logger
 LOGGER.add("PACKAGE_MANAGER_{time}.log")
 
 PACKAGE_NAME = "test_package"
+path = "/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/test_package"
+result_path = j.sal.fs.joinPaths(path, "result")
+gedis_client = j.clients.gedis.get("pm", port=8901, package_name="zerobot.packagemanager")
+package_manager = gedis_client.actors.package_manager
+skip = j.baseclasses.testtools._skip
 
 
-class TestPackageManager(TestCase):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.result_path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), PACKAGE_NAME, "result")
-        self.gedis_client = j.servers.threebot.start()
-        self.package_manager = self.gedis_client.actors.package_manager
-        self.path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), PACKAGE_NAME)
+def random_string():
+    return str(uuid4())[:10]
 
-    @staticmethod
-    def random_string():
-        return str(uuid4())[:10]
 
-    @staticmethod
-    def info(message):
-        LOGGER.info(message)
+def info(message):
+    LOGGER.info(message)
 
-    def get_package(self, package_name):
-        packages = self.package_manager.packages_list().packages
-        for package in packages:
-            if package.name == package_name:
-                return package
-        return None
 
-    def tearDown(self):
-        self.package_manager.package_delete(PACKAGE_NAME)
-        j.sal.fs.remove(self.result_path)
-        super().tearDown()
+def get_package(package_name):
+    packages = package_manager.packages_list().packages
+    for package in packages:
+        if package_name in package.name:
+            return package
+    return None
 
-    @classmethod
-    def tearDownClass(cls):
-        j.servers.threebot.default.stop()
-        super().tearDownClass()
 
-    @parameterized.expand(["path", "giturl"])
-    def test_001_package_add(self, method):
-        """
-        Test case for adding package (test package) in threebot server
+def before_all():
+    j.servers.threebot.start(background=True)
 
-        **Test scenario**
-        #. Start threebot server.
-        #. Add test package.
-        #. Check that the test package has been added.
-        """
-        self.info("Add test package.")
-        if method == "path":
-            package = {"path": self.path}
-        else:
-            giturl = "https://github.com/threefoldtech/jumpscaleX_core/tree/development/JumpscaleCore/servers/threebot/tests/test_package"
-            package = {"git_url": giturl}
 
-        self.package_manager.package_add(**package)
-        self.gedis_client.reload()
+def after():
+    package_manager.package_delete(PACKAGE_NAME)
+    j.sal.fs.remove(result_path)
 
-        self.info("Check that the test package has been added.")
-        content = j.sal.fs.readFile(self.result_path)
-        self.assertIn("preparing package", content)
-        self.assertIn("starting packag", content)
 
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/183")
-    def test_002_package_list_delete(self):
-        """
-        Test case for listing and deleting packages
+def after_all():
+    j.servers.threebot.default.stop()
 
-        **Test scenario**
-        #. Start threebot server.
-        #. Add test package.
-        #. List packages, test package should be found.
-        #. Delete test package.
-        #. List packages again, test package should not be found.
-        """
-        self.info("Add test package.")
-        self.package_manager.package_add(path=self.path)
-        self.gedis_client.reload()
 
-        self.info("List packages, test_package should be found.")
-        package = self.get_package(PACKAGE_NAME)
-        self.assertTrue(package, "Package not found after adding it")
+@parameterized.expand(["path", "giturl"])
+def test_001_package_add(method):
+    """
+    Test case for adding package (test package) in threebot server
 
-        self.info("Delete test package.")
-        self.package_manager.package_delete(PACKAGE_NAME)
-        content = j.sal.fs.readFile(self.result_path)
-        self.assertIn("uninstalling package", content)
+    **Test scenario**
+    #. Start threebot server.
+    #. Add test package.
+    #. Check that the test package has been added.
+    """
+    info("Add test package.")
 
-        # TODO: check that there is no model in bcdb for this package
+    if method == "path":
+        package = {"path": path}
+    else:
+        giturl = "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development_testrunner/ThreeBotPackages/examples/test_package"
+        package = {"git_url": giturl}
 
-        self.info("List packages again, test_package should not be found.")
-        package = self.get_package(PACKAGE_NAME)
-        self.assertFalse(package, "Package found after deleting it")
+    package_manager.package_add(**package)
+    gedis_client.reload()
 
-    def test_003_package_enable_disable(self):
-        """
-        Test case for enabling and disabling packages.
+    info("Check that the test package has been added.")
+    content = j.sal.fs.readFile(result_path)
+    assert "preparing package" in content
+    assert "starting packag" in content
 
-        **Test scenario**
-        #. Add test package.
-        #. Enable this package.
-        #. Check that package is enabled.
-        #. Disable this package.
-        #. Check that package
-        """
-        self.info("Add test package.")
-        self.package_manager.package_add(path=self.path)
-        self.gedis_client.reload()
 
-        package = self.get_package(PACKAGE_NAME)
-        self.assertTrue(package, "Package is not found after adding it")
-        self.assertEqual(package.status, "RUNNING")
+def test_002_package_list_delete():
+    """
+    Test case for listing and deleting packages
 
-        self.info("Enable this package.")
-        self.package_manager.package_enable(PACKAGE_NAME)
+    **Test scenario**
+    #. Start threebot server.
+    #. Add test package.
+    #. List packages, test package should be found.
+    #. Delete test package.
+    #. List packages again, test package should not be found.
+    """
+    info("Add test package.")
+    package_manager.package_add(path=path)
+    gedis_client.reload()
 
-        self.info("Check that package is enabled.")
-        package = self.get_package(PACKAGE_NAME)
-        self.assertTrue(package, "Package is not found after adding it")
-        self.assertEqual(package.status, "INSTALLED")
+    info("List packages, test_package should be found.")
+    package = get_package(PACKAGE_NAME)
+    assert package is not None
 
-        self.info("Disable this package.")
-        self.package_manager.package_disable(PACKAGE_NAME)
+    info("Delete test package.")
+    package_manager.package_delete(package.name)
+    content = j.sal.fs.readFile(result_path)
+    assert "uninstalling package" in content
 
-        self.info("Check that package")
-        package = self.get_package(PACKAGE_NAME)
-        self.assertTrue(package, "Package is not found after adding it")
-        self.assertEqual(package.status, "DISABLED")
+    # TODO: check that there is no model in bcdb for this package
 
-    def test_004_package_start_stop(self):
-        """
-        Test case for starting and stopping packages.
+    info("List packages again, test_package should not be found.")
+    package = get_package(PACKAGE_NAME)
+    assert package is None
 
-        **Test scenario**
-        #. Add test package.
-        #. Stop this package.
-        #. Check that this package has been stopped.
-        #. Start this package.
-        #. Check that this package has been started.
-        """
-        self.info("Add test package.")
-        self.package_manager.package_add(path=self.path)
-        self.gedis_client.reload()
 
-        package = self.get_package(PACKAGE_NAME)
-        self.assertTrue(package, "Package is not found after adding it")
-        self.assertEqual(package.status, "RUNNING")
+def test_003_package_enable_disable():
+    """
+    Test case for enabling and disabling packages.
 
-        self.info("Stop this package.")
-        self.package_manager.package_stop(PACKAGE_NAME)
+    **Test scenario**
+    #. Add test package.
+    #. Disable this package.
+    #. Check that package
+    #. Enable this package.
+    #. Check that package is enabled.
 
-        self.info("Check that this package has been stopped.")
-        package = self.get_package(PACKAGE_NAME)
-        self.assertTrue(package, "Package is not found after adding it")
-        self.assertEqual(package.status, "HALTED")
+    """
+    info("Add test package.")
+    package_manager.package_add(path=path)
+    gedis_client.reload()
 
-        content = j.sal.fs.readFile(self.result_path)
-        self.assertIn("stopping package", content)
-        j.sal.fs.remove(self.result_path)
+    package = get_package(PACKAGE_NAME)
+    assert package is not None
+    assert package.status == "INSTALLED"
 
-        self.info("Start this package.")
-        self.package_manager.package_start(PACKAGE_NAME)
+    info("Disable this package.")
+    package_manager.package_disable(package.name)
 
-        self.info("Check that this package has been started.")
-        package = self.get_package(PACKAGE_NAME)
-        self.assertTrue(package, "Package is not found after adding it")
-        self.assertEqual(package.status, "RUNNING")
+    info("Check that package")
+    package = get_package(PACKAGE_NAME)
+    assert package is not None
+    assert package.status == "DISABLED"
 
-        content = j.sal.fs.readFile(self.result_path)
-        self.assertIn("starting package", content)
+    info("Enable this package.")
+    package_manager.package_enable(package.name)
+
+    info("Check that package is enabled.")
+    package = get_package(PACKAGE_NAME)
+    assert package is not None
+    assert package.status == "INSTALLED"
+
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/510")
+def test_004_package_start_stop():
+    """
+    Test case for starting and stopping packages.
+
+    **Test scenario**
+    #. Add test package.
+    #. Stop this package.
+    #. Check that this package has been stopped.
+    #. Start this package.
+    #. Check that this package has been started.
+    """
+    info("Add test package.")
+    package_manager.package_add(path=path)
+    gedis_client.reload()
+
+    package = get_package(PACKAGE_NAME)
+    assert package is not None
+    assert package.status == "INSTALLED"
+
+    info("Stop this package.")
+    package_manager.package_stop(package.name)
+
+    info("Check that this package has been stopped.")
+    package = get_package(PACKAGE_NAME)
+    assert package is not None
+    assert package.status == "HALTED"
+
+    content = j.sal.fs.readFile(result_path)
+    assert "stopping package" in content
+    j.sal.fs.remove(result_path)
+
+    info("Start this package.")
+    package_manager.package_start(package.name)
+
+    info("Check that this package has been started.")
+    package = get_package(PACKAGE_NAME)
+    assert package is not None
+    assert package.status == "INSTALLED"
+
+    content = j.sal.fs.readFile(result_path)
+    assert "starting package" in content
+

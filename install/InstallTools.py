@@ -5,6 +5,11 @@ import re
 import copy
 import docker
 
+try:
+    import msgpack
+except:
+    msgpack = None
+
 DEFAULT_BRANCH = "development"
 GITREPOS = {}
 
@@ -99,6 +104,11 @@ from pathlib import Path
 from subprocess import Popen, check_output
 import inspect
 import json
+
+try:
+    import ujson as ujson
+except BaseException:
+    import json as ujson
 
 try:
     import traceback
@@ -220,6 +230,7 @@ class RedisTools:
                 return None
 
         try:
+            unix_socket_path = Tools.text_replace(unix_socket_path)
             cl = Redis(unix_socket_path=unix_socket_path, db=0)
             cl.fake = False
             assert cl.ping()
@@ -798,6 +809,137 @@ class OurTextFormatter(Formatter):
         return used_args, args, kwargs
 
 
+class LogHandler:
+    def __init__(self, db, appname=None):
+        self.db = db
+        if appname:
+            self.appname = appname
+        else:
+            self.appname = "init"
+
+        self.last_logid = 0
+
+    def _process_logdict(self, logdict):
+        if "processid" not in logdict or not logdict["processid"] or logdict["processid"] == "unknown":
+            logdict["processid"] = os.getpid()
+
+        if "epoch" not in logdict or not logdict["epoch"] or logdict["epoch"] == 0:
+            logdict["epoch"] = int(time.time())
+
+        return logdict
+
+    @property
+    def rediskey_logs(self):
+        return "logs:%s:data" % (self.appname)
+
+    @property
+    def rediskey_logs_incr(self):
+        return "logs:%s:incr" % (self.appname)
+
+    def handle_log(self, logdict):
+        """handle error
+
+        :param logdict: logging dict (see jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md for keys)
+        :type logdict: dict
+        """
+
+        if "traceback" in logdict:
+            logdict.pop("traceback")
+
+        rediskey_logs = self.rediskey_logs
+        rediskey_logs_incr = self.rediskey_logs_incr
+
+        if not self.db:
+            return
+
+        latest_id = self.db.incr(rediskey_logs_incr)
+
+        self.last_logid = latest_id
+        logdict["id"] = latest_id
+
+        logdict = self._process_logdict(logdict)
+
+        data = self._dumps(logdict)
+
+        self.db.hset(rediskey_logs, latest_id, data)
+
+        if latest_id / 1000 >= 2 and latest_id % 1000 == 0:
+            # means we need to check and maybe do some cleanup, like this we only check this every 1000 items
+            # only one log handler can have this, because id's are unique because of redis
+            self._data_container_dump(latest_id)
+
+    def _dumps(self, data):
+        if isinstance(data, str):
+            return data
+        try:
+            data = json.dumps(data, ensure_ascii=False, sort_keys=False, indent=True)
+            return data
+        except Exception as e:
+            pass
+        try:
+            data = str(data)
+        except Exception as e:
+            data = "CANNOT SERIALIZE DATA"
+        return data
+
+    def _redis_get(self, identifier, appname=None, die=True):
+        """
+        returns json (is the format in redis)
+        :param identifier:
+        :param appname:
+        :param die:
+        :return:
+        """
+        if not appname:
+            appname = self.appname
+        rediskey_logs = "logs:%s:data" % appname
+        try:
+            res = self.db.hget(rediskey_logs, identifier)
+        except:
+            raise RuntimeError("could not find log with identifier:%s" % identifier)
+
+        if not res:
+            if die:
+                raise RuntimeError("could not find log with identifier:%s" % identifier)
+            return
+        return res
+
+    def _data_container_dump(self, latest_id):
+        startid = latest_id - 2000
+        stopid = latest_id - 1000
+        # TODO, need to verify, for the next 2000 logs items we will not have them all
+        if msgpack:
+            r = []
+            # for redis which is 1 indexed
+            for i in range(startid + 1, stopid + 1):
+                d = self._redis_get(i)
+                r.append(d)
+            assert len(r) == 1000
+            log_dir = Tools.text_replace("{DIR_VAR}/logs")
+            path = "%s/%s" % (log_dir, self.appname)
+            Tools.dir_ensure(path)
+            path = "%s/%s/%s.msgpack" % (log_dir, self.appname, stopid)
+            Tools.file_write(path, msgpack.dumps(r))
+        # now remove from redis
+        for i in range(startid + 1, stopid + 1):
+            self.db.hdel(self.rediskey_logs, i)
+        assert self.db.hlen(self.rediskey_logs) == 1000
+
+    def _data_container_set(self, container, appname):
+        if not msgpack:
+            return
+        assert isinstance(container, list)
+        assert len(container) == 1000
+        j.shell()
+        logdir = "%s/%s" % (self._log_dir, appname)
+        if not j.sal.fs.exists(logdir):
+            return []
+        else:
+            data = msgpack.dumps(container)
+            j.shell()
+            w
+
+
 class Tools:
 
     _supported_editors = ["micro", "mcedit", "joe", "vim", "vi"]  # DONT DO AS SET  OR ITS SORTED
@@ -999,7 +1141,7 @@ class Tools:
         data_show=True,
         exception=None,
         replace=True,
-        stdout=True,
+        stdout=False,
         source=None,
         frame_=None,
     ):
@@ -1014,8 +1156,8 @@ class Tools:
             - CRITICAL 	50
             - ERROR 	40
             - WARNING 	30
+            - ENDUSER 	25
             - INFO 	    20
-            - STDOUT 	15
             - DEBUG 	10
 
 
@@ -1028,6 +1170,8 @@ class Tools:
         :return:
         """
         logdict = {}
+        if MyEnv.debug or level > 39:  # error+ is shown
+            stdout = True
 
         if isinstance(msg, Exception):
             raise Tools.exceptions.JSBUG("msg cannot be an exception raise by means of exception=... in constructor")
@@ -1140,6 +1284,8 @@ class Tools:
             logdict = copy.copy(logdict)
             logdict["message"] = Tools.text_replace(logdict["message"])
             Tools.log2stdout(logdict, data_show=data_show)
+        elif level > 24:
+            Tools.log2stdout(logdict, data_show=False, enduser=True)
 
         iserror = tb or exception
         return Tools.process_logdict_for_handlers(logdict, iserror)
@@ -1917,17 +2063,29 @@ class Tools:
         return res
 
     @staticmethod
-    def log2stdout(logdict, data_show=True):
+    def log2stdout(logdict, data_show=False, enduser=False):
         def show():
             # always show in debugmode and critical
-            if MyEnv.debug or logdict["level"] >= 50:
+            if MyEnv.debug or (logdict and logdict["level"] >= 50):
                 return True
             if not MyEnv.log_console:
                 return False
-            return logdict["level"] >= MyEnv.log_loglevel
+            return logdict and (logdict["level"] >= MyEnv.log_level)
 
-        if not show():
+        if not show() and not data_show:
             return
+
+        if enduser:
+            if "public" in logdict and logdict["public"]:
+                msg = logdict["public"]
+            else:
+                msg = logdict["message"]
+            if logdict["level"] > 29:
+                print(Tools.text_replace("{RED} * %s{RESET}\n" % msg))
+            else:
+                print(Tools.text_replace("{YELLOW} * %s{RESET}\n" % msg))
+            return
+
         text = Tools.log2str(logdict, data_show=True, replace=True)
         p = print
         if MyEnv.config.get("LOGGER_PANEL_NRLINES"):
@@ -1986,7 +2144,7 @@ class Tools:
         """
 
         if "epoch" in logdict:
-            timetuple = time.localtime(logdict)
+            timetuple = time.localtime(logdict["epoch"])
         else:
             timetuple = time.localtime(time.time())
         logdict["TIME"] = time.strftime(MyEnv.FORMAT_TIME, timetuple)
@@ -3148,8 +3306,8 @@ class MyEnv_:
         self.state = None
         self.__init = False
         self.debug = False
-        self.log_console = True
-        self.log_loglevel = 15
+        self.log_console = False
+        self.log_level = 15
 
         self.sshagent = None
         self.interactive = False
@@ -3234,9 +3392,9 @@ class MyEnv_:
 
             self.log_includes = [i for i in self.config.get("LOGGER_INCLUDE", []) if i.strip().strip("''") != ""]
             self.log_excludes = [i for i in self.config.get("LOGGER_EXCLUDE", []) if i.strip().strip("''") != ""]
-            self.log_loglevel = self.config.get("LOGGER_LEVEL", 50)
-            self.log_console = self.config.get("LOGGER_CONSOLE", True)
-            self.log_redis = self.config.get("LOGGER_REDIS", False)
+            self.log_level = self.config.get("LOGGER_LEVEL", 10)
+            self.log_console = self.config.get("LOGGER_CONSOLE", False)
+            self.log_redis = self.config.get("LOGGER_REDIS", True)
             self.debug = self.config.get("DEBUG", False)
             self.debugger = self.config.get("DEBUGGER", "pudb")
             self.interactive = self.config.get("INTERACTIVE", True)
@@ -3377,6 +3535,11 @@ class MyEnv_:
             config["DIR_BIN"] = "%s/bin" % config["DIR_BASE"]
         if not "DIR_APPS" in config:
             config["DIR_APPS"] = "%s/apps" % config["DIR_BASE"]
+
+        if not "EXPLORER_ADDR" in config:
+            config["EXPLORER_ADDR"] = "explorer.testnet.grid.tf"
+        if not "THREEBOT_DOMAIN" in config:
+            config["THREEBOT_DOMAIN"] = "3bot.testnet.grid.tf"
 
         return config
 
@@ -3723,6 +3886,7 @@ class MyEnv_:
 
 
 MyEnv = MyEnv_()
+MyEnv.loghandler_redis = LogHandler(db=MyEnv.db)
 
 
 class BaseInstaller:
@@ -3882,8 +4046,8 @@ class BaseInstaller:
         pips = {
             # level 0: most basic needed
             0: [
-                "cmake",
                 "scikit-build",
+                "cmake",
                 "blosc>=1.5.1",
                 "Brotli>=0.6.0",
                 "captcha",
@@ -4083,9 +4247,14 @@ class OSXInstaller:
     def base():
         MyEnv._init()
         OSXInstaller.brew_install()
-        if not Tools.cmd_installed("curl") or not Tools.cmd_installed("unzip") or not Tools.cmd_installed("rsync"):
+        if (
+            not Tools.cmd_installed("curl")
+            or not Tools.cmd_installed("unzip")
+            or not Tools.cmd_installed("rsync")
+            or not Tools.cmd_installed("graphviz")
+        ):
             script = """
-            brew install curl unzip rsync
+            brew install curl unzip rsync graphviz tmux
             """
             Tools.execute(script, replace=True)
         BaseInstaller.pips_install(["click"])  # TODO: *1
@@ -4227,7 +4396,11 @@ class UbuntuInstaller:
             "net-tools",
             "libgeoip-dev",
             "libcapnp-dev",
-        ]  # "graphviz"
+            "graphviz",
+            "libssl-dev",
+            "cmake",
+            "fuse",
+        ]
 
     @staticmethod
     def apts_install():

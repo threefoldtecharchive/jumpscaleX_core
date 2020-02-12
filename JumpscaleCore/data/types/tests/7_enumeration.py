@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test007_enumeration():
     """
     to run:
 
@@ -55,6 +55,6 @@ def main(self):
     assert enum3.BLUE == enum2.BLUE
     assert str(enum3) == "BLUE"
 
-    self._log_info("TEST DONE ENUMERATION")
+    j.data.types._log_info("TEST DONE ENUMERATION")
 
     return "OK"

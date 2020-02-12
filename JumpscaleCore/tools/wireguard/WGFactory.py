@@ -9,6 +9,8 @@ from nacl.public import SealedBox
 
 import netaddr
 
+skip = j.baseclasses.testtools._skip
+
 
 class WGFactory(j.baseclasses.object_config_collection_testtools):
     """
@@ -55,6 +57,7 @@ class WGFactory(j.baseclasses.object_config_collection_testtools):
 
         return (wg_private_base64.decode(), wg_private_encrypted_hex.decode(), wg_public_base64.decode())
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/496")
     def test(self):
         """
         kosmos -p 'j.tools.wireguard.test()'

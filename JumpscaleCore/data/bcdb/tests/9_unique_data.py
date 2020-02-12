@@ -5,7 +5,7 @@ from uuid import uuid4
 from unittest import TestCase
 
 
-def main(self):
+def test_unique_data():
     """
     to run:
 
@@ -33,7 +33,7 @@ def main(self):
     &number = 0 (I)
     """
 
-    bcdb, model = self._load_test_model(type="zdb", schema=scm)
+    bcdb, model = j.data.bcdb._load_test_model(type="zdb", schema=scm)
 
     schema_obj = model.new()
     name = "s" + str(uuid4()).replace("-", "")[:10]

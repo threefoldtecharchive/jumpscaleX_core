@@ -1,7 +1,10 @@
+import gevent
 from Jumpscale import j
 
 
-def main(self):
+
+
+def test_http_proxy():
     """
     kosmos -p 'j.servers.openresty.test(name="http_proxy")'
     kosmos 'j.servers.openresty.test(name="http_proxy")'
@@ -13,6 +16,9 @@ def main(self):
 
     server.install(reset=True)
     server.configure()
+    server.cleanup()
+    server.start()
+
     website = server.websites.get("test")
     website.ssl = False
     website.port = 8080
@@ -21,7 +27,7 @@ def main(self):
     website_location = locations.locations_static.new()
     website_location.name = "home"
     website_location.path_url = "/"
-    website_location.path_location = f"{self._dirpath}/examples/website/"
+    website_location.path_location = f"{j.servers.openresty._dirpath}/examples/website/"
 
     locations.configure()
     website.configure()
@@ -37,8 +43,9 @@ def main(self):
     locations.configure()
     website.configure()
 
-    server.start()
+    server.reload()
 
+    gevent.sleep(1)
     static_content = j.clients.http.get("http://0.0.0.0:8080/app")
     assert static_content == "<html>\nHello from static!\n</html>\n"
 
