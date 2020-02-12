@@ -4540,25 +4540,58 @@ class DockerFactory:
                 Tools.execute("docker rmi -f %s" % image_id)
 
     @staticmethod
+    def get_container_port_binding(container_name="3obt", port="9001/udp"):
+        ports_bindings = Tools.execute(
+            "docker inspect {container_name} --format={data}".format(
+                container_name=container_name, data="'{{json .HostConfig.PortBindings}}'"
+            ),
+            showout=False,
+            replace=False,
+        )
+        # Get and serialize the binding ports data
+        all_ports_data = json.loads(ports_bindings[1])
+        port_binding_data = all_ports_data.get(port, None)
+        if not port_binding_data:
+            raise Tools.exceptions.Input(
+                f"Error happened during parsing the binding ports data from container {conitainer_name} and port {port}"
+            )
+
+        host_port = port_binding_data[-1].get("HostPort")
+        return host_port
+
+    @staticmethod
     def container_running_with_udp_ports_wireguard():
-        wireguard_udp_port = "9001/udp"
         containers_ports = dict()
-        # To talk to a Docker daemon, you first need to instantiate a client
-        client = docker.from_env()
-        # list of running containers
-        containers = client.containers.list()
-        for container in containers:
-            containers_ports[container.name] = container.ports[wireguard_udp_port][0].get("HostPort")
+        containers_names = DockerFactory.containers_names()
+        for name in containers_names:
+            port_binding = DockerFactory.get_container_port_binding(container_name=name, port="9001/udp")
+            containers_ports[name] = port_binding
         return containers_ports
+
+    @staticmethod
+    def get_container_ip_address(container_name="3bot"):
+        container_ip = Tools.execute(
+            "docker inspect {container_name} --format={data}".format(
+                container_name=container_name, data="'{{json .NetworkSettings.Networks.bridge.IPAddress}}'"
+            ),
+            showout=False,
+            replace=False,
+        )[1].split("\n")
+        if not container_ip:
+            raise Tools.exceptions.Input(
+                f"Error happened during parsing the container {conitainer_name} ip address data "
+            )
+        # Get the data in the required format
+        formatted_container_ip = container_ip[0].strip("\"'")
+        return formatted_container_ip
 
     @staticmethod
     def containers_running_ip_address():
         containers_ip_addresses = dict()
-        client = docker.from_env()
-        containers = client.containers.list()
-        for container in containers:
-            network_settings = container.attrs.get("NetworkSettings")
-            containers_ip_addresses[container.name] = network_settings.get("IPAddress")
+        containers_names = DockerFactory.containers_names()
+        for name in containers_names:
+            container_ip = DockerFactory.get_container_ip_address(container_name=name)
+            containers_ip_addresses[name] = container_ip
         return containers_ip_addresses
 
 
