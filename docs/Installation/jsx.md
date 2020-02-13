@@ -137,7 +137,7 @@ sudo sysctl -w net.inet.ip.forwarding=1
 
 * ```wireguard``` command must be run as ```sudo``` to allow thre required privileges.
 
-* You must install ```wireguard``` [from here](https://www.wireguard.com/install/) on the ```Host``` machine before running this command.
+* You must install ```wireguard``` [from here](https://www.wireguard.com/install/) on the ```Host``` machine before running `jsx wireguard`.
 
 
 
