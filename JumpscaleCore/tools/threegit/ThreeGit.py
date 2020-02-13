@@ -26,11 +26,11 @@ def reload_wiki(wiki_name=None, reset=False):
     :param reset: process from scratch if set, defaults to False
     :type reset: bool, optional
     """
-    if not wiki_name:
-        return
-    if not j.tools.threegit.exists(name=wiki_name):
-        return
-    j.tools.threegit.get(name=wiki_name).process(reset=reset)
+    if not wiki_name or not j.tools.threegit.exists(wiki_name):
+        raise j.exceptions.NotFound(f"wiki of {wiki_name} is not found")
+
+    threegit = j.tools.threegit.get(name=wiki_name)
+    threegit.process(reset=reset)
 
 
 class ThreeGit(j.baseclasses.object_config):

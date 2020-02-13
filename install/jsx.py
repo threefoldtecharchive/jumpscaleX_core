@@ -534,10 +534,12 @@ def wiki_reload(name, reset=False):
     ex: jsx wiki-reload -n foundation
     """
     j = jumpscale_get()
-    if not j.tools.threegit.exists(name=name):
+    from Jumpscale.tools.threegit.ThreeGit import reload_wiki
+
+    try:
+        reload_wiki(name, reset=reset)
+    except j.exceptions.NotFound:
         print("Need to load the wiki first using wiki-load command")
-        return
-    j.tools.threegit.get(name=name).process(reset=reset)
 
 
 @click.command(name="threebotbuilder")
