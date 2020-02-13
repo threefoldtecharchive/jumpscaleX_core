@@ -3,7 +3,6 @@ import getpass
 import pickle
 import re
 import copy
-import docker
 
 try:
     import msgpack
