@@ -20,4 +20,4 @@ class LoggerFactory(j.baseclasses.object_config_collection_testtools):
         """
         kosmos 'j.clients.logger.test()'
         """
-        self._test_run(name=name)
+        self._tests_run(name=name)

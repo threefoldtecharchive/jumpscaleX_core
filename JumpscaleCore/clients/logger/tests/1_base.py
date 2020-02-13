@@ -1,12 +1,13 @@
 from Jumpscale import j
 
 
-def main(self):
+def test():
     """
     to run:
 
     kosmos 'j.clients.logger.test(name="base")'
     """
+    self = j.clients.logger
     if j.application.appname != "test":
         j.application.start("test")
 
