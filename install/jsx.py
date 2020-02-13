@@ -890,7 +890,6 @@ def package_new(name, dest=None):
     dirs = ["wiki", "models", "actors", "chatflows"]
     package_toml_path = j.sal.fs.joinPaths(dest, f"{name}/package.toml")
     package_py_path = j.sal.fs.joinPaths(dest, f"{name}/package.py")
-    factory_py_path = j.sal.fs.joinPaths(dest, f"{name}/{capitalized_name}Factory.py")
 
     for d in dirs:
         j.sal.fs.createDir(j.sal.fs.joinPaths(dest, name, d))
@@ -917,39 +916,12 @@ from Jumpscale import j
 
 
 class Package(j.baseclasses.threebot_package):
-    def start(self):
-        server = self.openresty
-        server.install(reset=False)
-        server.configure()
-
-        # for port in (443, 80):
-        #     website = server.get_from_port(port)
-
-        #     locations = website.locations.get()
-
-        #     website_location = locations.locations_spa.new()
-        #     website_location.name = "{name}"
-        #     website_location.path_url = "/{name}"
-
-
-        #     locations.configure()
-        #     website.configure()
+    pass
 
     """
 
     with open(package_py_path, "w") as f:
         f.write(package_py_content)
-
-    factory_py_content = f"""
-from Jumpscale import j
-
-
-class {capitalized_name}Factory(j.baseclasses.threebot_factory):
-    __jslocation__ = "j.threebot_factories.package.{name}"
-
-    """
-    with open(factory_py_path, "w") as f:
-        f.write(factory_py_content)
 
     actor_py_path = j.sal.fs.joinPaths(dest, name, "actors", f"{name}.py")
     actor_py_content = f"""
