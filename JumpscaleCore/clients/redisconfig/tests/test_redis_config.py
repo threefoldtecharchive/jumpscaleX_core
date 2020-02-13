@@ -124,9 +124,10 @@ def test002_set_password(password):
         assert cl.ping()
     else:
         redis_client = j.clients.redis_config.get(name=name, unixsocket="/tmp/redis.sock", port=0, addr=None)
-        # with assertRaises((ResponseError, AuthenticationError)) as e:
-        #     cl = redis_client.redis
-        # assert "Authentication required" in e.exception.args[0]
+        try:
+            cl = redis_client.redis
+        except Exception as e:
+            assert "Authentication required" in e.exception.args[0]
 
 
 @parameterized.expand([(True,), (False,)])
