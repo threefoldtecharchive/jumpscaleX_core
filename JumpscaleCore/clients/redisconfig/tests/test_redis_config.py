@@ -2,7 +2,6 @@ from time import sleep
 from Jumpscale import j
 from parameterized import parameterized
 import logging
-from subprocess import Popen, PIPE
 
 
 startup = None
