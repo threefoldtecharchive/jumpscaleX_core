@@ -199,7 +199,7 @@ if options.instruct:
 # if options.init:
 #     j.data.nacl.configure(name="default", interactive=True, generate=False)
 
-
+j.application.start("init")
 if len(args) == 1:
     j.application.interactive = True
     if "(" not in args[0] and j.sal.fs.exists(args[0]):

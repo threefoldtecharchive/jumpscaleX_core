@@ -1,9 +1,11 @@
-from Jumpscale import j
+import redis
 
 try:
     import ujson as json
 except BaseException:
     import json
+
+from Jumpscale import j
 
 
 SCHEMA_ALERT = """
@@ -17,18 +19,19 @@ SCHEMA_ALERT = """
 6 : cat = ""                          #a freely chosen category can be in dot notation e.g. performance.cpu.high
 7: count = 0 (I)
 8: status = "closed,new,open,reopen" (E)
-9: time_first = (D)
-10: time_last = (D)
+9: time_first = (T)
+10: time_last = (T)
 11: support_trace = (LO) !jumpscale.alerthandler.alert.support.trace
 12: events = (LO) !jumpscale.alerthandler.alert.event
 13: tracebacks = (LO) !jumpscale.alerthandler.alert.traceback
-# 14: logs = (LO) !jumpscale.alerthandler.alert.log
+14: logs = (LO) !jumpscale.alerthandler.alert.log   #should only keep e.g. last 5 instances per threebot
 
 @url = jumpscale.alerthandler.alert.support.trace
 0 : support_severity = "info,minor,normal,high,critical" (E)        #set by operator
 1 : support_status = "closed,new,open,troubleshoot,ignore" (E)
 2 : support_assigned = ""                                           #optional support operator who takes responsiblity
 3 : support_comment = ""
+4:  modtime = (T)
 
 #is an event of the alert
 @url = jumpscale.alerthandler.alert.event
@@ -43,21 +46,10 @@ SCHEMA_ALERT = """
 8 : trace= "" (S)
 9 : data = (S)
 
-# #optional log items
-# #in line with threefoldtech/jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md
-# @url = jumpscale.alerthandler.alert.log
-# 0 : threebot_name =  (S)            #threebot names, can be more than 1
-# 1 : process_id = (I)                #the process id if known
-# 2 : logs = (LO) !jumpscale.alerthandler.alert.logitem
-#
-# @url = jumpscale.alerthandler.alert.logitem
-# 0 : filepath = ""
-# 1 : linenr = (I)
-# 2 : message = ""
-# 3 : level = (I)
-# 4 : context = (S)
-# 5 : cat = (S)
-# 6 : data = (S)
+@url = jumpscale.alerthandler.alert.log
+0 : threebot_name =  (S)            #threebot names, can be more than 1
+1 : app_name = (S)                  #allows us to find the log back
+2 : latest_logid = (I)              #latest logid
 
 #optional tracebacks
 @url = jumpscale.alerthandler.alert.traceback
@@ -74,15 +66,8 @@ SCHEMA_ALERT = """
 
 """
 
-# ## log (error) levels
-# - CRITICAL 	50
-# - ERROR 	40
-# - WARNING 	30
-# - INFO 	    20
-# - STDOUT 	15
-# - DEBUG 	10
-
-import redis
+# log (error) levels
+LEVELS = {50: "CRITICAL", 40: "ERROR", 30: "WARNING", 20: "INFO", 15: "STDOUT", 10: "DEBUG"}
 
 skip = j.baseclasses.testtools._skip
 
@@ -98,7 +83,7 @@ class AlertHandler(j.baseclasses.object):
         self.db = redis.Redis()
         self.serialize_json = True
         self._rediskey_alerts = "alerts"
-        self._rediskey_logs = "logs:%s" % (self._threebot_name)
+        # self._rediskey_logs = "logs:%s" % (self._threebot_name)
 
     def setup(self):
         if self.handle_error not in j.errorhandler.handlers:
@@ -135,6 +120,7 @@ class AlertHandler(j.baseclasses.object):
 
     def handle_error(self, logdict):
         j.application.inlogger = True
+        # self._handle_error(logdict)
         try:
             self._handle_error(logdict)
         except Exception as e:
@@ -193,6 +179,15 @@ class AlertHandler(j.baseclasses.object):
         if not alert.time_first:
             alert.time_first = j.data.time.epoch
         alert.time_last = j.data.time.epoch
+
+        # add the link to the logs at that point, allows to retrieve info later
+        if len(alert.logs) > 10:
+            alert.logs.pop(-1)
+
+        l = alert.logs.new()
+        l.latest_logid = j.core.myenv.loghandler_redis.last_logid
+        l.threebot_name = self._threebot_name
+        l.app_name = j.application.appname
 
         self._add_event_from_logdict(alert, logdict)
 
@@ -342,7 +337,7 @@ class AlertHandler(j.baseclasses.object):
 
     def reset(self):
         self.db.delete(self._rediskey_alerts)
-        self.db.delete(self._rediskey_logs)
+        # self.db.delete(self._rediskey_logs)
 
     def list(self):
         """
@@ -356,37 +351,98 @@ class AlertHandler(j.baseclasses.object):
         args = self.walk(llist, args={"res": []})
         return args["res"]
 
-    def find(self, cat="", message=""):
-        """
-        :param cat: filter against category (can be part of category)
-        :param message:
-        :return: list([key,err])
+    def find(self, cat="", message="", pid=None, time=None):
+        """filter alerts by cat, message, pid or time
+        :param cat: category, defaults to ""
+        :type cat: str, optional
+        :param message: message (can be public message too), defaults to ""
+        :type message: str, optional
+        :param pid: process id, defaults to None
+        :type pid: int, optional
+        :param time: time (epoch), defaults to None
+        :type time: int, optional
+        :return: list of alert objects
+        :rtype: list
         """
         res = []
-        for res0 in self.list():
-            key, err = res0
-            found = True
-            if message is not "" and err.message.find(message) == -1:
-                found = False
-            if cat is not "" and err.cat.find(cat) == -1:
-                found = False
+        cat = cat.strip().lower()
+        message = message.strip().lower()
+
+        for _, alert in self.list():
+            found = False
+
+            if message:
+                if message in alert.message.strip().lower() or message in alert.message_pub.strip().lower():
+                    found = True
+
+            if cat:
+                if cat in alert.cat.strip().lower():
+                    found = True
+
+            if pid:
+                for event in alert.events:
+                    if pid in event.process_ids:
+                        found = True
+            if time:
+                if alert.time_first <= int(time) <= alert.time_last:
+                    found = True
+
             if found:
-                res.append([key, err])
+                res.append(alert)
+
         return res
 
     def count(self):
         return len(self.list())
 
-    def print(self):
-        """
-        kosmos 'j.tools.alerthandler.print()'
-        """
+    def format_traceback(self, traceback):
+        """format a single traceback
 
-        for (key, obj) in self.list():
-            tb_text = obj.trace
-            j.core.errorhandler._trace_print(tb_text)
-            print(obj._hr_get(exclude=["trace"]))
-            print("\n############################\n")
+        :param traceback: traceback object
+        :type traceback: jumpscale.alerthandler.alert.traceback
+        :return: formatted traceback as a string with colors
+        :rtype: str
+        """
+        tb_list = []
+        for item in traceback.items:
+            tb_list.append((item.filepath, item.context, item.linenr, item.line, {}))
+        return j.core.tools.traceback_format(tb_list)
+
+    def print(self, alert, exclude=None, show_tb=True):
+        """print alert information
+        :param alert: alert object
+        :type alert: jumpscale.alerthandler.alert
+        :param exclude: property names to exclude
+        :type exclude: list of str, optional
+        :param show_tb: if set, tracebakcs will be printed too, defaults to True
+        :type show_tb: bool, optional
+        """
+        if not exclude:
+            exclude = []
+
+        exclude += ["support_trace", "events", "tracebacks"]
+
+        props = alert._ddict_hr_get(exclude=exclude)
+        props["level"] = LEVELS.get(int(props["level"]), "Unknown")
+        print(alert._hr_get_properties(props))
+
+        if show_tb:
+            for tb in alert.tracebacks:
+                if tb.items:
+                    print(f"Traceback (PID: {tb.process_id}, 3bot: {tb.threebot_name})")
+                    print(self.format_traceback(tb))
+
+    def print_list(self, alerts):
+        """
+        print alerts
+        with date, count, identifier and message
+
+        :param alerts: list of alert objects
+        :type alerts: list of Alert
+        """
+        exclude = ["alert_id", "cat", "message_pub", "alert_type"]
+        for alert in alerts:
+            self.print(alert, exclude=exclude, show_tb=False)
 
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/483")
     def test(self, delete=True):
@@ -432,6 +488,7 @@ class AlertHandler(j.baseclasses.object):
             assert self.count() == 102
 
         print(j.tools.alerthandler.list())
+        print("TEST OK")
 
     # DO NOT REMOVE, can do traicks later with the eco.lua to make faster
     # def redis_enable(self):

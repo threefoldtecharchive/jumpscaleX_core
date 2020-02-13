@@ -1,4 +1,6 @@
 from Jumpscale import j
+from Jumpscale.core.KosmosShell import LogPane
+
 import os
 import gevent
 import time
@@ -302,6 +304,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.core.db.delete("threebot.starting")  # remove the marker in redis so we know we started
 
             p = j.threebot.packages
+            LogPane.Show = False
 
             if with_shell:
                 j.shell()  # for now removed otherwise debug does not work
@@ -384,7 +387,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             self._log_info("FIND THE PACKAGES ON THE FILESYSTEM")
             j.tools.threebot_packages.load()
 
-            names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta_ui"]
+            names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta"]
             for name in names:
                 name2 = f"zerobot.{name}"
                 if not j.tools.threebot_packages.exists(name=name2):

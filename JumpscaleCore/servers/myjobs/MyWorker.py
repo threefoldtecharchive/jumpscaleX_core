@@ -83,6 +83,7 @@ class MyWorker(j.baseclasses.object_config):
         :param: nr is the nr of the tmux session workers_$nr is the name
 
         """
+
         if not reset:
             self.load()
             if self.state in ["WAITING", "BUSY"]:
@@ -93,7 +94,9 @@ class MyWorker(j.baseclasses.object_config):
         def start(nr):
             self._log_info("start worker:%s" % nr)
             cmd = j.servers.startupcmd.get(name="workers_%s" % nr)
-            cmd.cmd_start = "j.servers.myjobs._worker_inprocess_start_from_tmux(%s)" % nr
+            cmd.cmd_start = (
+                f"j.application.start('workers_{nr}'); j.servers.myjobs._worker_inprocess_start_from_tmux({nr})"
+            )
             # COREX has still issues so fall back on tmux
             cmd.executor = "tmux"
             cmd.interpreter = "jumpscale_gevent"

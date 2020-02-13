@@ -4,8 +4,9 @@ from collections import OrderedDict
 
 # import capnp
 
-TESTTOOLS = j.baseclasses.testtools
-skip = j.baseclasses.testtools._skip
+from .ModelBaseCollection import ModelBaseCollection
+from .ModelBaseData import ModelBaseData
+from .ModelBase import ModelBase
 
 
 class Tools(j.baseclasses.object):
@@ -33,7 +34,7 @@ class Tools(j.baseclasses.object):
         return listInDict
 
 
-class Capnp(j.baseclasses.object, TESTTOOLS):
+class Capnp(j.baseclasses.object):
     """
     """
 
@@ -46,6 +47,59 @@ class Capnp(j.baseclasses.object, TESTTOOLS):
         if self._capnpVarDir not in sys.path:
             sys.path.append(self._capnpVarDir)
         self.tools = Tools()
+
+    def getModelBaseClass(self):
+        return ModelBase
+
+    def getModelBaseClassWithData(self):
+        return ModelBaseWithData
+
+    def getModelBaseClassCollection(self):
+        return ModelBaseCollection
+
+    def getModelCollection(
+        self,
+        schema,
+        category,
+        namespace=None,
+        modelBaseClass=None,
+        modelBaseCollectionClass=None,
+        db=None,
+        indexDb=None,
+    ):
+        """
+        @param schema is capnp_schema
+
+        example to use:
+            ```
+            #if we use a modelBaseClass do something like
+            ModelBaseWithData = j.data.capnp.getModelBaseClass()
+            class MyModelBase(ModelBaseWithData):
+                def index(self):
+                    # put indexes in db as specified
+                    ind = "%s" % (self.dbobj.path)
+                    self._index.index({ind: self.key})
+
+
+            import capnp
+            #there is model.capnp in $libdir/Jumpscale/tools/issuemanager
+            from JumpscaleLibs.tools.issuemanager import model as ModelCapnp
+
+            mydb=j.data.kvs.getMemoryStore(name="mymemdb")
+
+            collection=j.data.capnp.getModelCollection(schema=ModelCapnp,
+                                    category="issue",
+                                    modelBaseClass=MyModelBase,
+                                    db=mydb)
+
+            ```
+        """
+        if modelBaseCollectionClass is None:
+            modelBaseCollectionClass = ModelBaseCollection
+
+        return modelBaseCollectionClass(
+            schema=schema, category=category, namespace=namespace, db=db, indexDb=indexDb, modelBaseClass=modelBaseClass
+        )
 
     def getId(self, schemaInText):
         r = None
@@ -177,7 +231,6 @@ class Capnp(j.baseclasses.object, TESTTOOLS):
 
         return obj
 
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/482")
     def test(self):
         """
         kosmos 'j.data.capnp.test()'
@@ -206,13 +259,90 @@ class Capnp(j.baseclasses.object, TESTTOOLS):
 
         # dummy test, not used later
         obj = self.getObj(capnpschema, name="Issue")
-        assert obj.state == "new"
         obj.state = "ok"
 
         # now we just get the capnp schema for this object
         schema = self.getSchemaFromText(capnpschema, name="Issue")
-        obj = schema.new_message()
-        assert obj.state == "new"
+
+        # mydb = j.data.kvs.getRedisStore(name="mymemdb")
+        mydb = None  # is memory
+
+        collection = self.getModelCollection(schema, category="test", modelBaseClass=None, db=mydb)
+        start = time.time()
+        self._log_debug("start populate 100.000 records")
+        collection.logger.disabled = True
+        for i in range(100000):
+            obj = collection.new()
+            obj.dbobj.name = "test%s" % i
+            obj.save()
+
+        self._log_debug("population done")
+        end_populate = time.time()
+        collection.logger.disabled = False
+
+        self._log_debug(collection.find(name="test839"))
+        end_find = time.time()
+        self._log_debug("population in %.2fs" % (end_populate - start))
+        self._log_debug("find in %.2fs" % (end_find - end_populate))
+
+        # tests need to be non-interactive.  use a different function name
+        # (e.g. noninteractive_test or just _test())
+        # from IPython import embed
+        # embed(colors='Linux')
+
+    def testWithRedis(self):
+        capnpschema = """
+        @0x93c1ac9f09464fc9;
+        struct Issue {
+          state @0 :State;
+          enum State {
+            new @0;
+            ok @1;
+            error @2;
+            disabled @3;
+          }
+          #name of actor e.g. node.ssh (role is the first part of it)
+          name @1 :Text;
+          tlist @2: List(Text);
+          olist @3: List(Issue2);
+          struct Issue2 {
+              state @0 :State;
+              enum State {
+                new @0;
+                ok @1;
+                error @2;
+                disabled @3;
+              }
+              text @1: Text;
+          }
+        }
+        """
+        # mydb = j.data.kvs.getRedisStore("test")
+        mydb = j.data.kvs.getRedisStore(name="test", unixsocket="%s/redis.sock" % j.dirs.TMPDIR)
+        schema = self.getSchemaFromText(capnpschema, name="Issue")
+        collection = self.getModelCollection(schema, category="test", modelBaseClass=None, db=mydb, indexDb=mydb)
+        for i in range(100):
+            obj = collection.new()
+            obj.dbobj.name = "test%s" % i
+            obj.save()
+            self._log_debug(collection.list())
+
+        subobj = collection.list_olist_constructor(state="new", text="something")
+        obj.addSubItem("olist", subobj)
+
+        subobj = collection.list_tlist_constructor("sometext")
+        obj.addSubItem(name="tlist", data=subobj)
+        obj.addSubItem(name="tlist", data="sometext2")
+
+        self._log_debug(obj)
+
+        obj.initSubItem("tlist")
+        assert len(obj.list_tlist) == 2
+
+        obj.addSubItem(name="tlist", data="sometext3")
+        assert len(obj.list_tlist) == 3
+
+        obj.reSerialize()
 
     def getJSON(self, obj):
         configdata2 = obj.to_dict()
@@ -222,6 +352,12 @@ class Capnp(j.baseclasses.object, TESTTOOLS):
     def getBinaryData(self, obj):
         return obj.to_bytes_packed()
 
-    def test_capnp(self, name=""):
-        self._tests_run(name=name)
-
+    # def getMemoryObj(self, schema, *args, **kwargs):
+    #     """
+    #     creates an object similar as a capnp message but without the constraint of the capnpn on the type and list.
+    #     Use this to store capnp object in memory instead of using directly capnp object, BUT BE AWARE THIS WILL TAKE MUCH MORE MEMORY
+    #     It will be converted in capnp message when saved
+    #     """
+    #     msg = schema.new_message(**kwargs)
+    #     obj = MemoryObject(msg.to_dict(verbose=True), schema=schema)
+    #     return obj

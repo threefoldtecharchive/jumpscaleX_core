@@ -1,9 +1,7 @@
 from Jumpscale import j
 
-skip = j.baseclasses.testtools._skip
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
 def test_basic():
     """
     kosmos -p 'j.servers.openresty.test(name="basic")'

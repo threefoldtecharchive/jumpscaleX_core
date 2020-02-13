@@ -1,33 +1,41 @@
 
+# Getting started: a Docker container with jsx
+
+## Preparation
+
+### Get jsx file
+- Get jsx file from github repository on (Ubuntu) machine
+
+    ```bash
+    curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py > /tmp/jsx;
+    chmod +x /tmp/jsx;
+    ```
+OR
+-  Copy jsx bin to a running (Ubuntu) machine using scp from a machine</br>
+
+    ```bash
+    scp /sandbox/bin/jsx root@REMOTE_MACHINE_IP:/tmp/;
+    scp /sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py  root@REMOTE_MACHINE_IP:/tmp/
+    ```
 
 
-## preparation
-
-### copy jsx to a running machine
-
-- in example will use Ubuntu
-- to copy with scp from a machine with jumpscale you can do
-
-```
-scp /sandbox/bin/jsx root@192.168.8.209:/tmp/;scp /sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py  root@192.168.8.209:/tmp/
-```
-
-### login
+### Login to remote machine
 
 - login to the remote machine, make sure ssh-key is forwarded
-- e.g. ```ssh -A root@192.168.8.209```
+- e.g. ```ssh -A root@REMOTE_MACHINE_IP```
 
-### reset
+### Reset
 
-make sure you have no old images or containers 
+**this will remove all images & docker containers (BE CAREFUL).**
+
+make sure you have no old images or containers
 
 ```bash
 jsx containers-reset
 ```
 
-this will remove all images & docker containers (BE CAREFUL).
 
-### deploy 3bots
+### Deploy 3bots
 
 ```bash
 cd /tmp
@@ -40,9 +48,11 @@ cd /tmp
 ./jsx threebot-test -w -d -c 3
 ```
 
-### work with the 3bots
+### Work with the 3bots
 
-to see the containers:
+to see the containers run the following :
+
+`./jsx containers`
 
 ![](images/containers_3bot.png)
 
@@ -54,7 +64,7 @@ jsx container-shell -n 3bot2
 jsx container-kosmos -n 3bot2
 ```
 
-### to create your own base images
+### To create your own base images
 
 Useful to have an up to date version which will speed up your deployments
 
@@ -66,6 +76,3 @@ jsx threebotbuilder -b
 
 this will have all the required components in an ubuntu to start from
 and a full 3bot environment. Now its very quick to start 3bots.
-
-
-
