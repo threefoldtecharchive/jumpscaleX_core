@@ -2,8 +2,10 @@ from Jumpscale import j
 
 from .RedisConfig import RedisConfig
 
+TESTTOOLS = j.baseclasses.testtools
 
-class RedisConfigFactory(j.baseclasses.object_config_collection_testtools):
+
+class RedisConfigFactory(j.baseclasses.object_config_collection_testtools, TESTTOOLS):
     __jslocation__ = "j.clients.redis_config"
     _CHILDCLASS = RedisConfig
 

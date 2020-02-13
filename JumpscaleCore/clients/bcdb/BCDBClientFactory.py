@@ -1,6 +1,8 @@
 from Jumpscale import j
 from .BCDBModelClient import BCDBModelClient
 
+skip = j.baseclasses.testtools._skip
+
 
 class BCDBModelClientFactory(j.baseclasses.object):
 
@@ -51,6 +53,7 @@ class BCDBModelClientFactory(j.baseclasses.object):
             res[name] = models
         return res
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/531")
     def test(self):
         """
         kosmos -p 'j.clients.bcdbmodel.test()'

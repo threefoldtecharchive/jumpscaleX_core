@@ -11,13 +11,6 @@ def rand_string(size=10):
     return str(uuid.uuid4()).replace("-", "")[1:10]
 
 
-def os_command(command):
-    info("Execute : {} ".format(command))
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    output, error = process.communicate()
-    return output, error
-
-
 def test01_tmux_create_new_session():
     """
     - Create new session.
@@ -33,8 +26,8 @@ def test01_tmux_create_new_session():
     assert [session for session in sessions_list if session.name == session_name]
 
     info("Check that tmux session opened with right name.")
-    output, error = os_command("tmux ls")
-    assert session_name in output.decode()
+    _, output, error = j.sal.process.execute("tmux ls")
+    assert session_name in output
     j.servers.tmux.server.kill_server()
 
 
@@ -54,8 +47,8 @@ def test02_tmux_kill_session():
     info("check that tmux session deleted successfully.")
     sessions_list = j.servers.tmux.server.list_sessions()
     assert session_name not in sessions_list
-    output, error = os_command("tmux ls")
-    assert session_name not in output.decode()
+    _, output, error = j.sal.process.execute("tmux ls")
+    assert session_name not in output
 
 
 def test03_tmux_kill_server():
@@ -75,12 +68,12 @@ def test03_tmux_kill_server():
 
     info("check  that tmux server  and two sessions killed successfully .")
     sessions_list = j.servers.tmux.server.list_sessions()
-    assert [session for session in sessions_list if session.name == session_name1] is False
-    assert [session for session in sessions_list if session.name == session_name2] is False
+    assert [session for session in sessions_list if session.name == session_name1] == []
+    assert [session for session in sessions_list if session.name == session_name2] == []
 
-    output, error = os_command("tmux ls")
-    assert session_name1 not in output.decode()
-    assert session_name1 not in output.decode()
+    _, output, error = j.sal.process.execute("tmux ls")
+    assert session_name1 not in output
+    assert session_name1 not in output
 
 
 def test04_tmux_excute():
@@ -95,12 +88,15 @@ def test04_tmux_excute():
     info("Run server or process in created tmux session using execute.")
     j.servers.tmux.execute("python -m SimpleHTTPServer", window=window_name)
     time.sleep(5)
-    output, error = os_command("ps -aux | grep -v grep | grep '{}'".format("python -m SimpleHTTPServer"))
-    assert output.decode()
-
+    _, output, error = j.sal.process.execute(
+        "ps -aux | grep -v 'grep' | grep '{}'".format("python -m SimpleHTTPServer"), die=False
+    )
+    assert output
     info("Kill created session.")
     j.servers.tmux.window_kill(window_name)
 
     info("Check that server has been killed successfully.")
-    output, error = os_command("ps -aux | grep -v grep | grep '{}'".format("python -m SimpleHTTPServer"))
-    assert output.decode() is False
+    _, output, error = j.sal.process.execute(
+        "ps -aux | grep -v grep | grep '{}'".format("python -m SimpleHTTPServer"), die=False
+    )
+    assert output == ""

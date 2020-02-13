@@ -19,12 +19,6 @@ def rand_string():
     return j.data.idgenerator.generateXCharID(10)
 
 
-def os_command(command):
-    process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-    output, error = process.communicate()
-    return output, error
-
-
 def before():
     global sshkeyclient_name, sshkey_dir, sshkey_client, ssh_pubkey, ssh_privkey
     sshkeyclient_name = "ssh_client_{}".format(rand_string())
@@ -148,8 +142,8 @@ def test005_load_sshkey_in_sshagent():
     info("Load sshkey in sshagent")
     sshkey_client.load()
     info("Check if the ssh key has been loaded")
-    output, error = os_command("ssh-add -l")
-    assert "{}/{}".format(sshkey_dir, sshkeyclient_name) in output.decode()
+    _, output, error = j.sal.process.execute("ssh-add -l")
+    assert "{}/{}".format(sshkey_dir, sshkeyclient_name) in output
 
 
 def test006_unload_sshkey_from_sshagent():
@@ -166,8 +160,8 @@ def test006_unload_sshkey_from_sshagent():
     sshkey_client.unload()
     info("Check that sshkey has been unloaded")
     assert sshkey_client.is_loaded() is False
-    output, error = os_command("ssh-add -l")
-    assert sshkeyclient_name not in output.decode()
+    _, output, error = j.sal.process.execute("ssh-add -l")
+    assert sshkeyclient_name not in output
 
 
 def test007_sshkey_is_loaded():

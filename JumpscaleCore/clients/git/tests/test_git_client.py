@@ -29,12 +29,6 @@ def rand_string():
     return j.data.idgenerator.generateXCharID(10)
 
 
-def os_command(command):
-    process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-    output, error = process.communicate()
-    return output, error
-
-
 def before_all():
 
     info("Create remote repo, in github account")
@@ -48,15 +42,15 @@ def before_all():
     info("Add README.md file in the git repo")
     with open("/{}/README.md".format(GIT_REPO), "a") as out:
         out.write("README.md" + "\n")
-    os_command("cd {} && git add README.md".format(GIT_REPO))
+    j.sal.process.execute("cd {} && git add README.md".format(GIT_REPO))
 
-    os_command('git config --global user.email "{}"'.format(user_email))
-    os_command('git config --global user.name "{}"'.format(user_name))
+    j.sal.process.execute('git config --global user.email "{}"'.format(user_email))
+    j.sal.process.execute('git config --global user.name "{}"'.format(user_name))
 
-    os_command('cd {} && git commit -m "first commit"'.format(GIT_REPO))
+    j.sal.process.execute('cd {} && git commit -m "first commit"'.format(GIT_REPO))
 
     info("Push new changes to the remote git repo")
-    os_command(
+    j.sal.process.execute(
         "cd {} && git push -u 'https://{}:{}@github.com/{}/{}.git' master".format(
             GIT_REPO, user_name, user_passwd, user_name, REPO_NAME
         )
@@ -67,14 +61,16 @@ def before_all():
     GIT_CLIENT = j.clients.git.get(GIT_REPO)
 
     info("Grep the Commit_ID")
-    output, error = os_command("cd {} && git rev-parse HEAD".format(GIT_REPO))
+    _, output, error = j.sal.process.execute("cd {} && git rev-parse HEAD".format(GIT_REPO))
     global C_ID
-    C_ID = output.decode().rstrip()
+    C_ID = output.rstrip()
 
 
 def after():
     info("Revoke to {} C_ID".format(C_ID))
-    os_command("cd {} && git reset --hard {} && git checkout master".format(GIT_REPO, C_ID))
+    _, output, error = j.sal.process.execute(
+        "cd {} && git reset --hard {} && git checkout master".format(GIT_REPO, C_ID)
+    )
 
 
 def after_all():
@@ -82,10 +78,10 @@ def after_all():
     repo = github_client.repo_get(REPO_NAME)
     github_client.repo_delete(repo)
 
-    os_command("rm -rf /tmp/{}".format(REPO_NAME))
+    j.sal.process.execute("rm -rf /tmp/{}".format(REPO_NAME))
 
     info("Remove git repo directory")
-    os_command("rm -rf {}".format(REPO_DIR))
+    j.sal.process.execute("rm -rf {}".format(REPO_DIR))
 
     info("Remove github client")
     github_client.delete()
@@ -111,8 +107,8 @@ def get_current_branch_name():
     Method to get current branch name.
     :return: Branch_name
     """
-    output, error = os_command("cd {} && git branch | grep \\* | cut -d ' ' -f2".format(GIT_REPO))
-    return output.decode().rstrip()
+    _, output, error = j.sal.process.execute("cd {} && git branch | grep \\* | cut -d ' ' -f2".format(GIT_REPO))
+    return output.rstrip()
 
 
 def get_current_commit_id():
@@ -120,8 +116,8 @@ def get_current_commit_id():
     Method to get current Commit_ID
     :return: Commit_ID
     """
-    output, error = os_command("cd {} && git rev-parse HEAD".format(GIT_REPO))
-    return output.decode().rstrip()
+    _, output, error = j.sal.process.execute("cd {} && git rev-parse HEAD".format(GIT_REPO))
+    return output.rstrip()
 
 
 def test001_add_files():
@@ -140,8 +136,8 @@ def test001_add_files():
     GIT_CLIENT.addFiles(files=[FILE_1])
 
     info("Make sure that this file is added correctly")
-    output, error = os_command("cd {} && git ls-files".format(GIT_REPO))
-    assert "{}".format(FILE_1) in output.decode()
+    _, output, error = j.sal.process.execute("cd {} && git ls-files".format(GIT_REPO))
+    assert "{}".format(FILE_1) in output
 
     info("Try to add non existing file, should raise an error")
     # with assertRaises(Exception) as error:
@@ -165,15 +161,15 @@ def test002_add_remove_files():
     info("Create another two files FILE_3, FILE_4, add those two files, then remove them")
     FILE_3, FILE_4 = create_two_files()
     GIT_CLIENT.addFiles(files=[FILE_3, FILE_4])
-    os_command("cd {} && rm {} {}".format(GIT_REPO, FILE_3, FILE_4))
+    j.sal.process.execute("cd {} && rm {} {}".format(GIT_REPO, FILE_3, FILE_4))
 
     info("Use addRemoveFiles method, to add FILE_1, FILE_2 and remove FILE_3, FILE_4")
     GIT_CLIENT.addRemoveFiles()
 
     info("Make sure that FILE_1, FILE_2 are added, and FILE_3, FILE_4 are removed")
-    output, error = os_command("cd {} && git ls-files".format(GIT_REPO))
-    assert FILE_1 and FILE_2 in output.decode()
-    assert FILE_3 and FILE_4 not in output.decode()
+    _, output, error = j.sal.process.execute("cd {} && git ls-files".format(GIT_REPO))
+    assert FILE_1 and FILE_2 in output
+    assert FILE_3 and FILE_4 not in output
 
 
 def test003_check_files_waiting_for_commit():
@@ -215,7 +211,7 @@ def test004_checkout():
     """
     info("Create a new branch and checkout to this new created branch")
     BRANCH_NAME = rand_string()
-    os_command("cd {} && git checkout -b {}".format(GIT_REPO, BRANCH_NAME))
+    j.sal.process.execute("cd {} && git checkout -b {}".format(GIT_REPO, BRANCH_NAME))
     assert BRANCH_NAME == get_current_branch_name()
 
     info("Checkout to master branch")
@@ -269,15 +265,15 @@ def test005_commit():
     commit = GIT_CLIENT.commit(addremove=False)
     commit_1 = commit.hexsha
     assert commit_1
-    output, error = os_command("cd {} && git ls-files".format(GIT_REPO))
-    assert FILE_2 not in output.decode()
+    _, output, error = j.sal.process.execute("cd {} && git ls-files".format(GIT_REPO))
+    assert FILE_2 not in output
 
     info("Use commit with addremove=True, and check the output and make sure that the two files are added")
     commit = GIT_CLIENT.commit(message="test commit", addremove=True)
     commit_2 = commit.hexsha
     assert commit_1 != commit_2
-    output, error = os_command("cd {} && git ls-files".format(GIT_REPO))
-    assert FILE_2 and FILE_2 in output.decode()
+    _, output, error = j.sal.process.execute("cd {} && git ls-files".format(GIT_REPO))
+    assert FILE_2 and FILE_2 in output
 
 
 def test006_describe_and_get_branch_or_tag():
@@ -298,7 +294,7 @@ def test006_describe_and_get_branch_or_tag():
     assert "('branch', '{}')".format(current_branch) == str(GIT_CLIENT.describe())
 
     info("Create new tag")
-    os_command("cd {} && git tag 1.0".format(GIT_REPO))
+    j.sal.process.execute("cd {} && git tag 1.0".format(GIT_REPO))
 
     info("Use getBranchOrTag, and describe method to get the tag name")
     assert ("tag", "1.0") == GIT_CLIENT.getBranchOrTag()
@@ -444,14 +440,14 @@ def test012_pull():
     """
 
     info("Clone the remote directory in /tmp/")
-    os_command("cd /tmp/ && git clone https://github.com/{}/{}.git".format(user_name, REPO_NAME))
+    j.sal.process.execute("cd /tmp/ && git clone https://github.com/{}/{}.git".format(user_name, REPO_NAME))
 
     info("Create a file in the new directory and commit, then push")
     FILE = RANDOM_NAME
-    os_command("cd /tmp/{} && touch {}".format(REPO_NAME, FILE))
+    j.sal.process.execute("cd /tmp/{} && touch {}".format(REPO_NAME, FILE))
 
-    os_command('cd /tmp/{} && git add {} && git commit -m "third file"'.format(REPO_NAME, FILE))
-    os_command(
+    j.sal.process.execute('cd /tmp/{} && git add {} && git commit -m "third file"'.format(REPO_NAME, FILE))
+    j.sal.process.execute(
         "cd /tmp/{} && git push -u 'https://{}:{}@github.com/{}/{}.git' master".format(
             REPO_NAME, user_name, user_passwd, user_name, REPO_NAME
         )
@@ -508,8 +504,8 @@ def test014_remove_files():
 
     info("Use removeFiles, and check if those files are deleted")
     GIT_CLIENT.removeFiles([FILE_2])
-    output, error = os_command("cd {} && git ls-files".format(GIT_REPO))
-    assert "{}".format(FILE_2) not in output.decode()
+    _, output, error = j.sal.process.execute("cd {} && git ls-files".format(GIT_REPO))
+    assert "{}".format(FILE_2) not in output
 
     info("Try to use removeFiles to check non existing file")
     # with assertRaises(Exception) as error:
@@ -570,7 +566,7 @@ def test017_switch_branch():
     """
     info("Create new branch")
     branch_1 = rand_string()
-    os_command("cd {} && git checkout -b {}".format(GIT_REPO, branch_1))
+    j.sal.process.execute("cd {} && git checkout -b {}".format(GIT_REPO, branch_1))
 
     info("Use switchBranch with (non existing branch name, create=True)")
     branch_2 = rand_string()

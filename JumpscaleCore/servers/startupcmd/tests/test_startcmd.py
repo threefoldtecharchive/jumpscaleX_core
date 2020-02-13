@@ -13,13 +13,6 @@ def info(message):
     LOGGER.info(message)
 
 
-def os_command(command):
-    info("Execute : {} ".format(command))
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    output, error = process.communicate()
-    return output, error
-
-
 def rand_string(size=10):
     return str(uuid.uuid4()).replace("-", "")[1:10]
 
@@ -47,7 +40,7 @@ def test_01_startupcmd_executor(executor):
     info("Start startupcmd server")
     if executor == "foreground":
         tmux_session_name = rand_string()
-        output, error = os_command(
+        _, output, error = j.sal.process.execute(
             'tmux new -d -s {} \'kosmos -p "j.servers.startupcmd.get(\\"{}\\").start()"\''.format(
                 tmux_session_name, startupcmd_server.name
             )
@@ -57,33 +50,33 @@ def test_01_startupcmd_executor(executor):
 
     info("Check that process running successfully in right executor.")
     time.sleep(5)
-    output, error = os_command(
+    _, output, error = j.sal.process.execute(
         " ps -aux | grep -v grep | grep \"startupcmd_{} -m {}\" | awk '{{print $2}}'".format(
             startupcmd_server.name, "SimpleHTTPServer"
         )
     )
-    assert output.decode() is not None
-    server_PID = output.decode()
+    assert output is not None
+    server_PID = output
     if executor == "tmux":
-        output, error = os_command("tmux list-windows")
-        assert startupcmd_server.name in output.decode()
+        _, output, error = j.sal.process.execute("tmux list-windows")
+        assert startupcmd_server.name in output
 
     info("Check that server connection  works successfully.")
-    output, error = os_command("netstat -nltp | grep '{}' ".format(server_PID))
-    assert output.decode() is not None
+    _, output, error = j.sal.process.execute("netstat -nltp | grep '{}' ".format(server_PID))
+    assert output is not None
 
     info(" Stop server , check it stoped successfully.")
     startupcmd_server.stop()
     time.sleep(5)
     if executor == "tmux":
-        output, error = os_command("tmux list-windows")
-        assert startupcmd_server.name not in output.decode()
-    output, error = os_command(
+        _, output, error = j.sal.process.execute("tmux list-windows")
+        assert startupcmd_server.name not in output
+    _, output, error = j.sal.process.execute(
         " ps -aux | grep -v grep | grep \"startupcmd_{} -m {}\" | awk '{{print $2}}'".format(
             startupcmd_server.name, "SimpleHTTPServer"
         )
     )
-    assert output.decode() == ""
+    assert output == ""
     startupcmd_server.delete()
 
 
@@ -115,13 +108,15 @@ def test_02_startupcmd_executor_corex():
 
     info("Start startupcmd , check it works successfully in corex executor ")
     startupcmd_server.start()
-    output, error = os_command(" ps -aux | grep -v grep | grep {} | awk '{{print $2}}'".format("http.server"))
-    assert output.decode() is not None
+    _, output, error = j.sal.process.execute(
+        " ps -aux | grep -v grep | grep {} | awk '{{print $2}}'".format("http.server")
+    )
+    assert output is not None
 
     info(" * Check that server connection  works successfully.")
-    server_PID = output.decode()
-    output, error = os_command("netstat -nltp | grep '{}' ".format(server_PID))
-    assert output.decode() is not None
+    server_PID = output
+    _, output, error = j.sal.process.execute("netstat -nltp | grep '{}' ".format(server_PID))
+    assert output is not None
 
 
 @parameterized.expand(["JUMPSCALE", "PYTHON", "BASH"])
@@ -150,13 +145,14 @@ def test_03_startupcmd_interpreter(interpreter):
 
     info("Start startupcmd , check it works successfully .")
     startupcmd_server.start()
-    output, error = os_command("ls /root")
-    assert file_name in output.decode()
+    _, output, error = j.sal.process.execute("ls /root")
+    assert file_name in output
 
     startupcmd_server.stop()
     startupcmd_server.delete()
 
 
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/101")
 def test_04_startupcmd_jumpscale_gevent_interpreter():
     """
     - ​Get startupcmd server instance.
@@ -181,15 +177,12 @@ def test_04_startupcmd_jumpscale_gevent_interpreter():
     info("Start startupcmd ,should start rack server successfully.")
     startupcmd_server.start()
     time.sleep(10)
-    output, error = os_command("netstat -nltp | grep {}".format(port))
-    import ipdb
-
-    ipdb.set_trace()
-    assert output.decode() is not None
+    _, output, error = j.sal.process.execute("netstat -nltp | grep {}".format(port))
+    assert output is not None
 
     info("Stop startupcmd, should stop rack server successfully.")
     startupcmd_server.stop()
     time.sleep(10)
-    output, error = os_command("netstat -nltp | grep {}".format(port))
-    assert output.decode() == ""
+    _, output, error = j.sal.process.execute("netstat -nltp | grep {}".format(port))
+    assert output == ""
     startupcmd_server.delete()

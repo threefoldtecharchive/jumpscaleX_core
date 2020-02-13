@@ -1,5 +1,4 @@
 from Jumpscale import j
-from base_test import BaseTest
 import random
 import uuid, subprocess
 import unittest
@@ -19,13 +18,6 @@ def info(message):
     LOGGER.info(message)
 
 
-def os_command(command):
-    info("Execute : {} ".format(command))
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    output, error = process.communicate()
-    return output, error
-
-
 def rand_string(size=10):
     return str(uuid.uuid4()).replace("-", "")[1:10]
 
@@ -42,13 +34,13 @@ def after():
 def check_threebot_main_running_servers():
     info(" *  Make sure that server started successfully by check zdb ,lapis, sonic,and openresty work.  ")
     info("*** zdb server ***")
-    zdb_output, error = os_command(" ps -aux | grep -v grep | grep startupcmd_zdb")
-    assert zdb_output.decode() != ""
+    _, zdb_output, error = j.sal.process.execute(" ps -aux | grep -v grep | grep startupcmd_zdb")
+    assert zdb_output != ""
     info(" * Check that  zdb server connection  works successfully and right port.")
     assert j.sal.nettools.tcpPortConnectionTest("localhost", 9900) is True
 
     info("*** sonic  server ***")
-    sonic_output, error = os_command(" ps -aux | grep -v grep | grep startupcmd_sonic ")
+    _, sonic_output, error = j.sal.process.execute(" ps -aux | grep -v grep | grep startupcmd_sonic ")
     assert sonic_output.decode() != ""
     info(" * Check that  sonic server connection  works successfully.")
     assert j.sal.nettools.tcpPortConnectionTest("localhost", 1491) is True
@@ -57,14 +49,14 @@ def check_threebot_main_running_servers():
     assert j.sal.nettools.tcpPortConnectionTest("localhost", 8901) is True
 
     info("*** lapis server ***")
-    lapis_output, error = os_command(" ps -aux | grep -v grep | grep lapis ")
-    assert lapis_output.decode() != ""
+    _, lapis_output, error = j.sal.process.execute(" ps -aux | grep -v grep | grep lapis ")
+    assert lapis_output != ""
     info("*** openresty ***")
-    openresty_output, error = os_command(" ps -aux | grep -v grep | grep /sandbox/bin/openresty ")
-    assert openresty_output.decode() != ""
+    _, openresty_output, error = j.sal.process.execute(" ps -aux | grep -v grep | grep /sandbox/bin/openresty ")
+    assert openresty_output != ""
 
 
-@unittest.skip("https://github.com/threefoldtech/jumpscaleX_threebot/issues/351")
+@skip("https://github.com/threefoldtech/jumpscaleX_threebot/issues/351")
 def test_01_start():
     """
     - Install  threebot server.
@@ -85,7 +77,7 @@ def test_01_start():
             assert 1 == 2, "There is an error with data {}".format(e)
 
 
-@unittest.skip("https://github.com/threefoldtech/jumpscaleX_threebot/issues/351")
+@skip("https://github.com/threefoldtech/jumpscaleX_threebot/issues/351")
 def Test_02_start_stop_options():
     """
     - Start server.

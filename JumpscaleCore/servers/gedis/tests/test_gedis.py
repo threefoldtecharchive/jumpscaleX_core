@@ -32,13 +32,6 @@ def rand_string(size=10):
     return str(uuid.uuid4()).replace("-", "")[1:10]
 
 
-def os_command(command):
-    info("Execute : {} ".format(command))
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    output, error = process.communicate()
-    return output, error
-
-
 def before():
     info("​Get gedis server instance.")
     global instance_name
@@ -58,9 +51,9 @@ def before():
 
 def after():
     gedis_server.stop()
-    output, error = os_command("netstat -nltp | grep '{}' ".format(port))
+    _, output, error = j.sal.process.execute("netstat -nltp | grep '{}' ".format(port))
     gedis_server.delete()
-    if output.decode():
+    if output:
         raise AssertionError("Gedis port should be killed")
 
 
