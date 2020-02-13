@@ -3,6 +3,7 @@ from Jumpscale import j
 from .RedisConfig import RedisConfig
 
 TESTTOOLS = j.baseclasses.testtools
+skip = j.baseclasses.testtools._skip
 
 
 class RedisConfigFactory(j.baseclasses.object_config_collection_testtools, TESTTOOLS):
@@ -21,6 +22,7 @@ class RedisConfigFactory(j.baseclasses.object_config_collection_testtools, TESTT
         cl = self.get(name=name)
         return cl.redis
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/532")
     def test(self):
         """
         kosmos 'j.clients.redis_config.test()'
