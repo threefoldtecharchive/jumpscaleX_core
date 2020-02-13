@@ -32,14 +32,12 @@ apt install -y openssh-server locales curl git rsync unzip lsb python3
 brew install curl python3 git rsync
 ```
 
-> To install docker on macOS see this [documentation](https://docs.docker.com/v17.12/docker-for-mac/install/#download-docker-for-mac)
-
 #### Required Python Packages
 
 Make sure the pip3 package is installed
 ```bash
 apt install python3-pip
-pip3 install click
+pip3 install click requests
 ```
 
 #### ssh-agent
@@ -78,25 +76,31 @@ chmod +x /tmp/jsx;
 
 #### Advanced Installation
 
-it is easy to develop on the installer, will install from existing code on your system
+will install from existing code on your system
 
 ```bash
 # create directory, make sure your user has full access to this director (can be a manual step)
-mkdir -p /sandbox/code/github/threefoldtech
-cd /sandbox/code/github/threefoldtech;
-# if you have a permission denied add sudo at the beginning of the command
-# then do a sudo chown -R $USER:$USER /sandbox
+mkdir -p ~/sandbox/code/github/threefoldtech
+cd ~/sandbox/code/github/threefoldtech;
 git clone git@github.com:threefoldtech/jumpscaleX_core.git; cd jumpscaleX_core;
 git pull
 
 # link the installer from tmp to the source directory, makes it easy for the rest of this tutorial
 rm -f /tmp/jsx.py
 rm -f /tmp/InstallTools.py;
-ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx;
-ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py /tmp/InstallTools.py
+ln -s ~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx;
+ln -s ~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py /tmp/InstallTools.py
 ```
 
 ## After Installation
+
+### On OSX
+
+- on newer OSX machines zsh has been installed, to go back to bash do
+    - ```chsh -s /bin/bash```
+    - this will restore the bash shell and load the required env arguments to let kosmos work
+- [how to get miscrosoft code to run from command line](https://stackoverflow.com/questions/29971053/how-to-open-visual-studio-code-from-the-command-line-on-osx)
+
 
 ### How to use Jumpscale X
 
@@ -141,3 +145,6 @@ chmod +x /tmp/jsx;
 [more info about the JSX tool](jsx.md)
 
 [init the jumpscale code, can be required after pulling new code](generation.md)
+
+## When you want to collaborate
+

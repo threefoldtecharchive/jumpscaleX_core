@@ -18,6 +18,21 @@ def load_wiki(wiki_name=None, wiki_path=None, reset=False):
     threegit.save()
 
 
+def reload_wiki(wiki_name=None, reset=False):
+    """reloads a wiki from name only, suitable to be used with myjobs
+
+    :param wiki_name: wiki name
+    :type wiki_name: str
+    :param reset: process from scratch if set, defaults to False
+    :type reset: bool, optional
+    """
+    if not wiki_name:
+        return
+    if not j.tools.threegit.exists(name=wiki_name):
+        return
+    j.tools.threegit.get(name=wiki_name).process(reset=reset)
+
+
 class ThreeGit(j.baseclasses.object_config):
     """
     To get wikis load faster by only loading git changes
@@ -33,6 +48,8 @@ class ThreeGit(j.baseclasses.object_config):
         relative_base_path = "" (S)
         dest_path = "" (S)
         revision = "" (S)
+        uncommited_files = (LS)
+        uncommited_files_revision = (S)
         """
 
     def _init(self, **kwargs):

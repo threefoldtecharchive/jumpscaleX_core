@@ -17,7 +17,7 @@
 # name: is the name of the wiki / docsite
 # path_source: source of the files of docsite / wiki
 # path_dest: the out put destination for the processed files
-test_wiki = j.tools.threegit.get(name="test_wiki", path_source="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/docs/wikis/examples/docs/", path_dest="/test/test2")
+test_wiki = j.tools.threegit.get(name="test_wiki", local_path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/wiki_examples/wiki", path_dest="/test/test2")
 ```
 
 ```python

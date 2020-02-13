@@ -4,11 +4,11 @@ Jumpscale X has a rich typeset if used properly can protect you with strongly ty
 The typesystem will automatically convert to the required type without you having to think about it.
 
 
-- [currencies][currencies.md]
-- [date_time][date_time.md]
-- [dict][dict.md]
-- [list][list.md]
-- [numeric][numeric.md]
+- [currencies](currencies.md)
+- [date_time](date_time.md)
+- [dict](dict.md)
+- [list](list.md)
+- [numeric](numeric.md)
 
 
 ## Quick Overview
@@ -26,9 +26,9 @@ The typesystem will automatically convert to the required type without you havin
 | ipaddressrange |iprange| can be set any IP Adress with range | '192.168.1.1/24' |
 | Date   | D | date | 20/11/2018 . see [date supported formats](date_time.md)|
 | Date Time   | T | date with time | 01/01/2019 9pm:10. see [date time supported formats](date_time.md)|
-| Numeric| N, numeric | can store any numeric data including currencies [for details](numeric.md) | 1, 1.12, 10 USD, 90%, 10.5 EUR| 
-| guid| guid | can store any guid   | 5b316587-7162-4bf1-99e6-fe53d9577cd0 | 
-| dict| dict | can store any dict type [for details](dict.md)   | {"key":"value"} | 
+| Numeric| N, numeric | can store any numeric data including currencies [for details](numeric.md) | 1, 1.12, 10 USD, 90%, 10.5 EUR|
+| guid| guid | can store any guid   | 5b316587-7162-4bf1-99e6-fe53d9577cd0 |
+| dict| dict | can store any dict type [for details](dict.md)   | {"key":"value"} |
 | List  | l | stored as list directly   | [1,2,3] |
 | yaml| yaml | can store any yaml    | "example:     test1" |
 | multiline| multiline | string but with multiple lines   | "example \\n example2 \\n example3" |

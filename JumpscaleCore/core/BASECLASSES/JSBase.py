@@ -416,7 +416,7 @@ class JSBase:
         data=None,
         context=None,
         _levelup=0,
-        stdout=True,
+        stdout=False,
         tb=None,
         data_show=True,
         exception=None,  # is jumpscale/python exception

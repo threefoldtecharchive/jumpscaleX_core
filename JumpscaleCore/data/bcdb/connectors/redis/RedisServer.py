@@ -262,10 +262,8 @@ class RedisServer(j.baseclasses.object):
             assert obj.id
         except Exception as e:
             response.error("cannot set, key:'%s' could not save obj" % key)
-        if new:
-            response.encode(obj.id)
-        else:
-            response.encode("OK")
+
+        response.encode(obj.id)
         return
 
     def _parse_key(self, key):
