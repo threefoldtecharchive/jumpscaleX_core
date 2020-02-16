@@ -8,6 +8,8 @@ import importlib
 
 import uuid
 
+skip = j.baseclasses.testtools._skip
+
 
 class PeeweeFactory(j.baseclasses.object_config_collection_testtools):
     """
@@ -48,9 +50,7 @@ class PeeweeFactory(j.baseclasses.object_config_collection_testtools):
         self.ForeignKeyField = ForeignKeyField
         self.IntegrityError = IntegrityError
 
-    def test_model_create(self, psqlclient):
-        pass
-
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/536")
     def test(self):
         """
         kosmos 'j.clients.peewee.test()'
