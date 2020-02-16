@@ -44,6 +44,7 @@ class TestTools:
             def wrapper(*args, **kwargs):
                 raise Skip(msg)
 
+            wrapper.__name__ = func.__name__
             wrapper.__test_skip__ = True
             return wrapper
 
@@ -161,7 +162,6 @@ class TestTools:
             else:
                 for method in dir(module):
                     if not method.startswith("_") and _VALID_TEST_NAME.match(method):
-
                         self._execute_test(method, module)
 
             self._after_all(module)
@@ -352,7 +352,6 @@ class TestTools:
         """
         if not results:
             results = self._results
-        length = 70
 
         for result in results["testcases"]:
             msg = result["msg"].split(": ")
@@ -362,7 +361,7 @@ class TestTools:
             error = ": ".join(error[1:])
             print(error)
 
-        print("-" * length)
+        print("-" * 70)  # line To print the summary
         all_tests = sum(results["summary"].values())
         print(f"Ran {all_tests} tests in {results['time_taken']}\n\n")
         result_log = j.core.tools.log(
