@@ -297,7 +297,7 @@ class TestTools:
         str_msg = j.core.tools.log2str(log_msg)
         log_error = j.core.tools.log("", exception=error, stdout=False)
         str_error = j.core.tools.log2str(log_error)
-        result = {"msg": str_msg, "error": str_error}
+        result = {"msg": str_msg, "error": str_error, "status": "fail"}
         self._results["testcases"].append(result)
         print("fail\n")
 
@@ -313,7 +313,7 @@ class TestTools:
         str_msg = j.core.tools.log2str(log_msg)
         log_error = j.core.tools.log("", exception=error, stdout=False)
         str_error = j.core.tools.log2str(log_error)
-        result = {"msg": str_msg, "error": str_error}
+        result = {"msg": str_msg, "error": str_error, "status": "error"}
         self._results["testcases"].append(result)
         print("error\n")
 
@@ -329,7 +329,7 @@ class TestTools:
         str_msg = j.core.tools.log2str(log_msg)
         log_skip = j.core.tools.log("\n{BLUE}%s" % skip_msg, stdout=False)
         str_skip = j.core.tools.log2str(log_skip)
-        result = {"msg": str_msg, "error": str_skip}
+        result = {"msg": str_msg, "error": str_skip, "status": "skip"}
         self._results["testcases"].append(result)
         print("skip\n")
 
@@ -344,7 +344,7 @@ class TestTools:
         str_msg = j.core.tools.log2str(log_msg)
         log_error = j.core.tools.log("", exception=error, stdout=False)
         str_error = j.core.tools.log2str(log_error)
-        result = {"msg": str_msg, "error": str_error}
+        result = {"msg": str_msg, "error": str_error, "status": "error"}
         self._results["testcases"].append(result)
 
     def _report(self, results=None):
@@ -353,6 +353,7 @@ class TestTools:
         if not results:
             results = self._results
 
+        results["testcases"] = sorted(results["testcases"], key=lambda x: x["status"])
         for result in results["testcases"]:
             msg = result["msg"].split(": ")
             msg = ": ".join(msg[1:])
