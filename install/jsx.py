@@ -478,7 +478,9 @@ def wiki_load(name=None, url=None, reset=False, foreground=False):
             ("info_foundation", "https://github.com/threefoldfoundation/info_foundation/tree/development/docs")
         )
         wikis.append(("info_grid", "https://github.com/threefoldfoundation/info_grid/tree/development/docs"))
-        wikis.append(("freeflowevents", "https://github.com/freeflownation/info_freeflowevents/tree/development/docs"))
+        wikis.append(
+            ("info_freeflowevents", "https://github.com/freeflownation/info_freeflowevents/tree/development/docs")
+        )
     else:
         wikis.append((name, url))
 
