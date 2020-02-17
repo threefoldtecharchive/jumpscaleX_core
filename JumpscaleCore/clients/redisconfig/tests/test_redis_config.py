@@ -30,8 +30,7 @@ def after_all():
 
 
 def info(message):
-    logging.basicConfig(format="%(message)s", level=logging.INFO)
-    logging.info(message)
+    j.tools.logger._log_info(message)
 
 
 def rand_num(start=100, stop=1000):
