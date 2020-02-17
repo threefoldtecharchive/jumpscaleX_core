@@ -7,12 +7,10 @@ from loguru import logger
 import subprocess
 
 skip = j.baseclasses.testtools._skip
-LOGGER = logger
-LOGGER.add("SAL_PROCESS_{time}.log")
 
 
 def info(message):
-    LOGGER.info(message)
+    j.tools.logger._log_info(message)
 
 
 def rand_string(size=10):
@@ -204,7 +202,7 @@ def test06_getDefunctProcesses():
 
 def test07_getPidsByFilter():
     """TC407
-    Test case to test get processes pids by specific filter. 
+    Test case to test get processes pids by specific filter.
 
     **Test scenario**
     #. Get all processes PIDs which using python[PIDs_1].
@@ -226,7 +224,7 @@ def test07_getPidsByFilter():
 
 def test08_getProcessObject():
     """ TC408
-    Test case to test getProcessObject. 
+    Test case to test getProcessObject.
 
     **Test scenario**
     #. Start process [P] with python.
@@ -272,7 +270,7 @@ def test08_getProcessObject():
 
 def test09_getProcessPid_and_getProcessPidsFromUser():
     """ TC 409
-    Test case to test getProcessPid. 
+    Test case to test getProcessPid.
 
     **Test scenario**
     #. Start process [P] with python get its user and pid.
@@ -304,7 +302,7 @@ def test09_getProcessPid_and_getProcessPidsFromUser():
 
 def test10_isPidAlive():
     """TC410
-    Test case to test isPidAlive. 
+    Test case to test isPidAlive.
 
     **Test scenario**
     #. Start process [P] with python get its user and pid.
