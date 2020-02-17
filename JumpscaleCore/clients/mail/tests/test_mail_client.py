@@ -4,6 +4,7 @@ import imaplib
 import logging
 from Jumpscale import j
 
+j.builders.runtimes.python3.pip_package_install("nose-testconfig")
 
 mail_client = ""
 try:
