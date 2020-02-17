@@ -1,5 +1,4 @@
 import os
-import sys
 import imaplib
 import logging
 from Jumpscale import j
