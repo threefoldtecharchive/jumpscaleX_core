@@ -1,11 +1,17 @@
 from time import sleep
 from Jumpscale import j
 from parameterized import parameterized
-import logging
 
 
 startup = None
 redis_client = None
+
+skip = j.baseclasses.testtools._skip
+
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/538")
+def before_all():
+    pass
 
 
 def after():
