@@ -156,7 +156,9 @@ class TestTools:
         # We should keep track of every test (execution time)
         start_time = time.time()
         for module in self._modules:
-            self._before_all(module)
+            skip = self._before_all(module)
+            if skip:
+                continue
             if test_name:
                 self._execute_test(test_name, module)
             else:
@@ -231,9 +233,16 @@ class TestTools:
             before_all = getattr(module, "before_all")
             try:
                 before_all()
+            except Skip as sk:
+                print(f"{module_location} ...")
+                skip_msg = f"SkipTest: {sk.args[0]}\n"
+                self._add_skip(module_location, skip_msg)
+                return True
             except BaseException as error:
                 self._add_helper_error(module_location, error)
                 print("error\n")
+
+        return False
 
     def _after_all(self, module):
         """Get and execute after_all in a module if it is exist.
@@ -353,7 +362,7 @@ class TestTools:
         if not results:
             results = self._results
 
-        results["testcases"] = sorted(results["testcases"], key=lambda x: x["status"])
+        results["testcases"] = sorted(results["testcases"], key=lambda x: x["status"], reverse=True)
         for result in results["testcases"]:
             msg = result["msg"].split(": ")
             msg = ": ".join(msg[1:])
