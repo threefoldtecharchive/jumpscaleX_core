@@ -1,13 +1,16 @@
+import os
+import sys
 import imaplib
 import logging
 from Jumpscale import j
 
-j.builders.runtimes.python3.pip_package_install("nose-testconfig")
-from testconfig import config
 
 mail_client = ""
-username = config["mail"]["username"]
-password = config["mail"]["password"]
+try:
+    username = os.environ['MAIL_USERNAME']
+    password = os.environ['MAIL_PASSWORD']
+except KeyError:
+    raise Exception('You need to set email username and password as an environmental variables')
 
 
 def info(message):
