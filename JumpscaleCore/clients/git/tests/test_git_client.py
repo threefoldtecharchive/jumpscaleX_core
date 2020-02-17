@@ -2,6 +2,8 @@ import os
 import logging
 import unittest
 from Jumpscale import j
+
+j.builders.runtimes.python3.pip_package_install("nose-testconfig")
 from testconfig import config
 from subprocess import Popen, PIPE
 

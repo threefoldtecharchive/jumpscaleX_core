@@ -2,6 +2,7 @@ from Jumpscale import j
 from .MulticastClient import MulticastClient
 
 JSConfigBase = j.baseclasses.object_config_collection
+skip = j.baseclasses.testtools._skip
 
 
 class MulticastFactory(JSConfigBase):
@@ -9,6 +10,7 @@ class MulticastFactory(JSConfigBase):
 
     _CHILDCLASS = MulticastClient
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/535")
     def test_listen(self):
         """
         js_shell 'j.clients.multicast.test_listen()'
@@ -20,6 +22,7 @@ class MulticastFactory(JSConfigBase):
         print("listen")
         cl.listen()
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/535")
     def test_send(self):
         """
         js_shell 'j.clients.multicast.test_send()'

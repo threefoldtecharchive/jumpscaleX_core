@@ -2,13 +2,14 @@ from Jumpscale import j
 import os
 
 
-def main(self):
+def test():
     """
     to run:
 
     kosmos 'j.clients.sqlitedb.test()'
 
     """
+    self = j.clients.sqlitedb
 
     cl = self.client_get(bcdbname="test_sqlitedb")
     cl.flush()

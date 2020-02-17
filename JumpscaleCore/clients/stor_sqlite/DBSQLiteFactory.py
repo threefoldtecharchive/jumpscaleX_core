@@ -20,4 +20,4 @@ class DBSQLiteFactory(j.baseclasses.object, j.baseclasses.testtools):
 
         """
 
-        self._test_run(name="base")
+        self._tests_run(name="base")
