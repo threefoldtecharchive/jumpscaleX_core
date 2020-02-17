@@ -67,7 +67,6 @@ def before():
     global flag
     for article_id, content in data.items():
         flag = client.push(COLLECTION, BUCKET, article_id, content)
-    time.sleep(60)
 
 
 def after():
