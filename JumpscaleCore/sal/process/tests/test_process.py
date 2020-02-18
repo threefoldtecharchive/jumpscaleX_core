@@ -190,7 +190,7 @@ def test06_getDefunctProcesses():
     #. [z1] and [z2] should be same.
     """
     info("Get zombie processes list [z1] by ps -aux")
-    _, output, error = j.sal.process.execute("ps aux | grep -w Z | awk '{{ print $2 }}'  ")
+    _, output, error = j.sal.process.execute("ps aux | grep -w Z |grep -v grep| awk '{{ print $2 }}'  ", die=True)
     z1 = output.splitlines()
     z1 = list(map(int, z1))
     info("Get zombie processes list [z2] by getDefunctProcesses ")
@@ -284,11 +284,12 @@ def test09_getProcessPid_and_getProcessPidsFromUser():
     _, output, error = j.sal.process.execute("ps ax | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'")
     pids = output.split()
     pids = list(map(int, pids))
-    assert len(pids) == 2
+    import ipdb
 
-    _, output, error = j.sal.process.execute(
-        "ps -aux | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'| tail -n+2"
-    )
+    ipdb.set_trace()
+    assert len(pids) == 1
+
+    _, output, error = j.sal.process.execute("ps -aux | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'")
     user = output.strip()
 
     info("Use getProcessPid to get process pid [PID], Check that it returns right PID.")
@@ -296,8 +297,7 @@ def test09_getProcessPid_and_getProcessPidsFromUser():
 
     info("Use getProcessPidsFromUser to get process pid [PID], Check that it returs right PID.")
     assert set(pids).issubset(set(j.sal.process.getProcessPidsFromUser(user))) is True
-
-    _, output, error = j.sal.process.execute("kill -9 {} {}".format(pids[0], pids[1]))
+    j.sal.process.execute("kill -9 {}".format(pids[0]))
 
 
 def test10_isPidAlive():
