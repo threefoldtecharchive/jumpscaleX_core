@@ -1,16 +1,13 @@
 from Jumpscale import j
 import random, requests, uuid, time, subprocess
 from parameterized import parameterized
-from loguru import logger
 
-LOGGER = logger
-LOGGER.add("startupcmd_tests_{time}.log")
 
 skip = j.baseclasses.testtools._skip
 
 
 def info(message):
-    LOGGER.info(message)
+    j.tools.logger._log_info(message)
 
 
 def rand_string(size=10):

@@ -2,8 +2,6 @@ import gevent
 from Jumpscale import j
 
 
-
-
 def test_http_proxy():
     """
     kosmos -p 'j.servers.openresty.test(name="http_proxy")'

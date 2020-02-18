@@ -1,6 +1,5 @@
 import subprocess, uuid, random
 from Jumpscale import j
-from loguru import logger
 
 
 skip = j.baseclasses.testtools._skip
@@ -25,7 +24,7 @@ port = ""
 
 
 def info(message):
-    logger.info(message)
+    j.tools.logger._log_info(message)
 
 
 def rand_string(size=10):
