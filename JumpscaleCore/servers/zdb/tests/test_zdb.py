@@ -1,16 +1,13 @@
 from Jumpscale import j
 import random, requests, uuid, subprocess
-from loguru import logger
 
-LOGGER = logger
-LOGGER.add("zdb_tests_{time}.log")
 
 skip = j.baseclasses.testtools._skip
 zdb = j.servers.zdb.get()
 
 
 def info(message):
-    LOGGER.info(message)
+    j.tools.logger._log_info(message)
 
 
 def rand_string(size=10):
