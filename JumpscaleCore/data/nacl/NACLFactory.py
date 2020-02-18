@@ -284,7 +284,7 @@ class NACLFactory(j.baseclasses.object, TESTTOOLS):
                 j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default"),
             )
             j.sal.fs.remove(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup"))
-
+        self._tests_run(name=name)
         self._log_info("TEST OK")
         print("TEST OK")
 
@@ -320,5 +320,3 @@ class NACLFactory(j.baseclasses.object, TESTTOOLS):
             assert data2 == b
         j.tools.timer.stop(i)
 
-    def test_NACL(self, name=""):
-        self._tests_run(name=name)

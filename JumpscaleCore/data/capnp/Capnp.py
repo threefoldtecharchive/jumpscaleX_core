@@ -9,6 +9,10 @@ from .ModelBaseData import ModelBaseData
 from .ModelBase import ModelBase
 
 
+TESTTOOLS = j.baseclasses.testtools
+skip = j.baseclasses.testtools._skip
+
+
 class Tools(j.baseclasses.object):
     def listInDictCreation(self, listInDict, name, manipulateDef=None):
         """
@@ -34,7 +38,7 @@ class Tools(j.baseclasses.object):
         return listInDict
 
 
-class Capnp(j.baseclasses.object):
+class Capnp(j.baseclasses.object, TESTTOOLS):
     """
     """
 
@@ -231,6 +235,7 @@ class Capnp(j.baseclasses.object):
 
         return obj
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/482")
     def test(self):
         """
         kosmos 'j.data.capnp.test()'
@@ -285,11 +290,14 @@ class Capnp(j.baseclasses.object):
         self._log_debug("population in %.2fs" % (end_populate - start))
         self._log_debug("find in %.2fs" % (end_find - end_populate))
 
+        self._tests_run(name=name)
+
         # tests need to be non-interactive.  use a different function name
         # (e.g. noninteractive_test or just _test())
         # from IPython import embed
         # embed(colors='Linux')
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/482")
     def testWithRedis(self):
         capnpschema = """
         @0x93c1ac9f09464fc9;
