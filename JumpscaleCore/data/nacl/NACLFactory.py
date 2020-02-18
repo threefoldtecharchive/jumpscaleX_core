@@ -181,7 +181,7 @@ class NACLFactory(j.baseclasses.object, TESTTOOLS):
 
         print("OK")
 
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/482")
+   # @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/482")
     def test(self):
         """
         kosmos 'j.data.nacl.test()'
