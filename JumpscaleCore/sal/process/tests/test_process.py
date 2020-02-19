@@ -3,7 +3,6 @@ from Jumpscale import j
 import random, unittest, time
 from parameterized import parameterized
 from uuid import uuid4
-from loguru import logger
 import subprocess
 
 skip = j.baseclasses.testtools._skip
@@ -282,11 +281,13 @@ def test09_getProcessPid_and_getProcessPidsFromUser():
     _, output, error = j.sal.process.execute("tmux  new -d -s {} '{}'  ".format(rand_string(), P))
     time.sleep(2)
     _, output, error = j.sal.process.execute("ps ax | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'")
+
     pids = output.split()
     pids = list(map(int, pids))
-    assert len(pids) == 1
+    # 1 or 2 in case a child process has been created
+    assert len(pids) in [1, 2]
 
-    _, output, error = j.sal.process.execute("ps -aux | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'")
+    _, output, error = j.sal.process.execute("ps -o user= -p {}".format(pids[0]))
     user = output.strip()
 
     info("Use getProcessPid to get process pid [PID], Check that it returns right PID.")
