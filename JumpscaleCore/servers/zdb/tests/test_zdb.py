@@ -1,8 +1,14 @@
 from Jumpscale import j
 import random, requests, uuid, subprocess
 
-
 skip = j.baseclasses.testtools._skip
+
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/552")
+def before_all():
+    pass
+
+
 zdb = j.servers.zdb.get()
 
 
