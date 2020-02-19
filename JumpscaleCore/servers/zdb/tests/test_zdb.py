@@ -10,6 +10,7 @@ def before_all():
 
 
 zdb = j.servers.zdb.get()
+zdb = None
 
 
 def info(message):
@@ -21,16 +22,16 @@ def rand_string(size=10):
 
 
 def before():
-    info("​Install zdb server.")
-    j.servers.zdb.install()
+    global zdb
+    zdb = j.servers.zdb.test_instance_start()
 
-    info("Start zdb server")
-    zdb.start()
+
+def after():
+    j.servers.zdb.test_instance_stop()
 
 
 def test_01_client_admin_get_and_client_get_and_destroy():
     """
-    - ​Install zdb server.
     - Start zdb server .
     - Create namespace using client_admin_get.
     - Get zdb client and make sure it works correctly .
@@ -44,7 +45,7 @@ def test_01_client_admin_get_and_client_get_and_destroy():
     assert result.nsname == namespace
 
     info("Get zdb client and make sure it works correctly ")
-    zdb_client = zdb.client_get(nsname=namespace)
+    zdb_client = zdb.client_get(name=namespace, nsname=namespace)
     data = rand_string()
     id = zdb_client.set(data)
     assert id == 0
@@ -54,8 +55,7 @@ def test_01_client_admin_get_and_client_get_and_destroy():
     zdb.destroy()
 
     info("Check that server stopped and database removed successfully.")
-    _, output, error = j.sal.process.execute(" ps -aux | grep -v grep | grep startupcmd_zdb ")
-    assert output == ""
+    assert not j.sal.process.psfind("zdb")
 
-    _, output, error = j.sal.process.execute(" ls {DIR_BASE}/var/zdb")
+    _, output, error = j.sal.process.execute("ls {DIR_BASE}/var/zdb", replace=True)
     assert zdb.name not in output
