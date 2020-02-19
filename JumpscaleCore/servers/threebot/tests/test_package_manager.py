@@ -2,10 +2,7 @@ from uuid import uuid4
 
 from Jumpscale import j
 from parameterized import parameterized
-from loguru import logger
 
-LOGGER = logger
-LOGGER.add("PACKAGE_MANAGER_{time}.log")
 
 PACKAGE_NAME = "test_package"
 path = "/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/test_package"
@@ -20,7 +17,7 @@ def random_string():
 
 
 def info(message):
-    LOGGER.info(message)
+    j.tools.logger._log_info(message)
 
 
 def get_package(package_name):
