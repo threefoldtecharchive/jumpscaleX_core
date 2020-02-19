@@ -210,8 +210,6 @@ class DocSite(j.baseclasses.object):
         if not j.sal.fs.exists(path=path):
             raise j.exceptions.NotFound("Cannot find source path in load:'%s'" % path)
 
-        j.sal.fs.remove(self.error_file_path)
-
         def callbackForMatchDir(path, arg):
             base = j.sal.fs.getBaseName(path).lower()
             if base.startswith("."):
@@ -251,6 +249,8 @@ class DocSite(j.baseclasses.object):
                 self.file_add(path)
 
         if reset:
+            j.sal.fs.remove(self.error_file_path)
+
             j.sal.fswalker.walkFunctional(
                 self.path,
                 callbackFunctionFile=callbackFunctionFile,
