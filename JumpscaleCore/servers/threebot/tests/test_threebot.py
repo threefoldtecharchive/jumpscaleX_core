@@ -18,11 +18,6 @@ def rand_string(size=10):
     return str(uuid.uuid4()).replace("-", "")[1:10]
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_threebot/issues/351")
-def before_all():
-    pass
-
-
 def before():
     info("install threebot server.")
     j.servers.threebot.install()
