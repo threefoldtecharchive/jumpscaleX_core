@@ -5,8 +5,8 @@ from pprint import pprint
 from Jumpscale import j
 
 from .ZDBAdminClientBase import ZDBAdminClientBase
-from .clients_impl import ZDBClientDirectMode, ZDBClientSeqMode, ZDBClientUserMode
-from .clients_impl import ZDBClientDirectModeAdmin, ZDBClientSeqModeAdmin, ZDBClientUserModeAdmin
+from .clients_impl import ZDBClientSeqMode, ZDBClientUserMode
+from .clients_impl import ZDBClientSeqModeAdmin, ZDBClientUserModeAdmin
 
 JSBASE = j.baseclasses.object
 
