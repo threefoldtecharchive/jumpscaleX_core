@@ -35,6 +35,18 @@ def cli(ctx, redis_host, redis_port, redis_secret, appname):
 
 @cli.command()
 @click.pass_obj
+def list_apps(ctx_obj):
+    """
+    list all app names
+    """
+    apps = ctx_obj.client.get_app_names()
+    print(f"Total of {len(apps)}) apps:")
+    for app in apps:
+        print(app)
+
+
+@cli.command()
+@click.pass_obj
 def tail(ctx_obj):
     """
     tail logs from session
