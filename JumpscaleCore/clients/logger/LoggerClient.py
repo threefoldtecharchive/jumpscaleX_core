@@ -406,3 +406,13 @@ class LoggerClient(j.baseclasses.object_config):
 
         for item in logs:
             print(j.core.tools.log2str(item))
+
+    def get_app_names(self):
+        app_names = set()
+        keys = self.db.keys("logs:*")
+        for key in keys:
+            try:
+                app_names.add(key.decode().split(":")[1])
+            except IndexError:
+                continue
+        return app_names
