@@ -7,9 +7,6 @@ from parameterized import parameterized
 MAIN_ACTORS = ["package_manager", "sonic", "gdrive", "myjobs", "identity", "chatbot"]
 
 
-skip = j.baseclasses.testtools._skip
-
-
 def info(message):
     j.tools.logger._log_info(message)
 
