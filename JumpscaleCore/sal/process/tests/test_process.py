@@ -284,9 +284,6 @@ def test09_getProcessPid_and_getProcessPidsFromUser():
     _, output, error = j.sal.process.execute("ps ax | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'")
     pids = output.split()
     pids = list(map(int, pids))
-    import ipdb
-
-    ipdb.set_trace()
     assert len(pids) == 1
 
     _, output, error = j.sal.process.execute("ps -aux | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'")
