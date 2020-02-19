@@ -11,10 +11,10 @@ from .clients_impl import ZDBClientDirectModeAdmin, ZDBClientSeqModeAdmin, ZDBCl
 JSBASE = j.baseclasses.object
 
 
-class ZDBClientFactory(j.baseclasses.object_config_collection_testtools, j.baseclasses.testtools):
+class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
     """
 
-    different modes: seq,user,direct
+    different modes: seq,user
 
     """
 
@@ -28,7 +28,7 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools, j.basec
     secret_ = "" (S)
     nsname = "test" (S)
     admin = false (B)
-    mode = "seq,user,direct" (E)
+    mode = "seq,user" (E)
 
     """
 
@@ -47,11 +47,6 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools, j.basec
                 return ZDBClientUserModeAdmin
             else:
                 return ZDBClientUserMode
-        elif jsxobject.mode == "direct":
-            if jsxobject.admin:
-                return ZDBClientDirectModeAdmin
-            else:
-                return ZDBClientDirectMode
         else:
             raise j.exceptions.Base("childclass cannot be defined")
 
