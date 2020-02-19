@@ -11,7 +11,7 @@ class BCDBFS(JSBASE):
     BCDB file system is a file system where everything is stored in bcdb
     """
 
-    __jslocation__ = "j.sal.bcdbfs"
+    # check https://github.com/threefoldtech/jumpscaleX_core/issues/550
 
     def _init(self, bcdb_name="bcdbfs"):
         sql = j.clients.sqlitedb.client_get(bcdbname="bcdbfs")
