@@ -1,20 +1,18 @@
+import logging
 from time import sleep
+from unittest import TestCase
+
 from Jumpscale import j
 from parameterized import parameterized
-
+from redis import AuthenticationError, ResponseError
 
 startup = None
 redis_client = None
-
-skip = j.baseclasses.testtools._skip
-
-
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/538")
-def before_all():
-    pass
+redis_port = None
 
 
 def after():
+    global redis_port
     if startup:
         startup.stop()
         startup.delete()
@@ -22,11 +20,11 @@ def after():
         redis_client.delete()
 
     j.clients.redis._cache_clear()
-    j.sal.process.killProcessByName("redis-server")
-
-
-def after_all():
-    j.clients.redis.core_get(reset=True)
+    if redis_port:
+        j.sal.process.killProcessByPort(redis_port)
+        redis_port = None
+    else:
+        j.sal.process.killProcessByName("redis-server 127.0.0.1")
 
 
 def info(message):
@@ -85,10 +83,12 @@ def test001_get_redisclient_using_port_unixsocket(type):
     #. Try to ping the server, should succeed.
     """
     info(f"Start redis server on {type}.")
+    global redis_port
     if type == "port":
         port = rand_num(10000, 11000)
         start_redis_server(port=port)
         wait_for_server(port=port)
+        redis_port = port
     else:
         start_redis_server()
         wait_for_server()
@@ -122,16 +122,16 @@ def test002_set_password(password):
     name = rand_string()
     if password:
         redis_client = j.clients.redis_config.get(
-            name=name, unixsocket="/tmp/redis.sock", port=0, addr=None, password_="test"
+            name=name, unixsocket="/tmp/redis.sock", port=0, addr=None, secret_="test"
         )
         cl = redis_client.redis
         assert cl.ping()
     else:
         redis_client = j.clients.redis_config.get(name=name, unixsocket="/tmp/redis.sock", port=0, addr=None)
-        try:
+        t = TestCase()
+        with t.assertRaises((ResponseError, AuthenticationError)) as e:
             cl = redis_client.redis
-        except Exception as e:
-            assert "Authentication required" in e.exception.args[0]
+        assert "Authentication required" in e.exception.args[0]
 
 
 @parameterized.expand([(True,), (False,)])
@@ -148,9 +148,11 @@ def test003_set_patch(patch):
     #. Try to get the value of this key, should return 0.
     """
     info("Start redis server on a random port.")
+    global redis_port
     port = rand_num(10000, 11000)
     start_redis_server(port=port)
     wait_for_server(port=port)
+    redis_port = port
 
     info(f"Get redis client with set_patch={patch}.")
     name = rand_string()
@@ -177,4 +179,4 @@ def test003_set_patch(patch):
 
     info("Try to get the value of this key, should return 0")
     result = cl.get(name=key)
-    assert result is False
+    assert result is None
