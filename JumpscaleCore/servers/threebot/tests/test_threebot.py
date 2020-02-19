@@ -6,20 +6,21 @@ from parameterized import parameterized
 
 MAIN_ACTORS = ["package_manager", "sonic", "gdrive", "myjobs", "identity", "chatbot"]
 
-from loguru import logger
-
-LOGGER = logger
-LOGGER.add("startupcmd_tests_{time}.log")
 
 skip = j.baseclasses.testtools._skip
 
 
 def info(message):
-    LOGGER.info(message)
+    j.tools.logger._log_info(message)
 
 
 def rand_string(size=10):
     return str(uuid.uuid4()).replace("-", "")[1:10]
+
+
+@skip("https://github.com/threefoldtech/jumpscaleX_threebot/issues/351")
+def before_all():
+    pass
 
 
 def before():
@@ -56,7 +57,6 @@ def check_threebot_main_running_servers():
     assert openresty_output != ""
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_threebot/issues/351")
 def test_01_start():
     """
     - Install  threebot server.
@@ -77,7 +77,6 @@ def test_01_start():
             assert 1 == 2, "There is an error with data {}".format(e)
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_threebot/issues/351")
 def Test_02_start_stop_options():
     """
     - Start server.

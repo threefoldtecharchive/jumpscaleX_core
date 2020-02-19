@@ -31,6 +31,11 @@ def rand_string(size=10):
     return str(uuid.uuid4()).replace("-", "")[1:10]
 
 
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
+def before_all():
+    pass
+
+
 def before():
     info("​Get gedis server instance.")
     global instance_name
@@ -56,7 +61,6 @@ def after():
         raise AssertionError("Gedis port should be killed")
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
 def test01_actor_add():
     """
     - ​Get gedis server instance.
@@ -67,7 +71,6 @@ def test01_actor_add():
     assert namespace in gedis_server.actors_list(namespace)
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
 def test02_gedis_client():
     """
      - ​Get gedis server instance.
@@ -101,7 +104,6 @@ def test02_gedis_client():
     #     cl.reload(namespace="WRONG_NAMESPACE")
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
 def test03_gedis_add_actors():
     """
     - ​Get gedis server instance.
