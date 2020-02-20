@@ -5,8 +5,6 @@ import unittest
 from parameterized import parameterized
 
 MAIN_ACTORS = ["explorer_proxy", "system"]
-
-
 skip = j.baseclasses.testtools._skip
 
 

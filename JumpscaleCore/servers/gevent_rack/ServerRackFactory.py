@@ -27,7 +27,7 @@ JSBASE = j.baseclasses.object
 skip = j.baseclasses.testtools._skip
 
 
-class ServerRackFactory(JSBASE):
+class ServerRackFactory(JSBASE, j.baseclasses.testtools):
 
     __jslocation__ = "j.servers.rack"
 
@@ -138,6 +138,7 @@ class ServerRackFactory(JSBASE):
                 s.stop()
             s.start()
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/553")
     def test(self, start=True, gedis=True, webdav=False, bottle=True, websockets=False):
         """
         kosmos 'j.servers.rack.test()'

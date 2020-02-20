@@ -2,6 +2,10 @@ import gevent
 from Jumpscale import j
 
 
+skip = j.baseclasses.testtools._skip
+
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
 def test_http_proxy():
     """
     kosmos -p 'j.servers.openresty.test(name="http_proxy")'
