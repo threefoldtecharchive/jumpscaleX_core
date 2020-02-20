@@ -333,6 +333,10 @@ class DocSite(j.baseclasses.object):
                 errormsg3 = "```\n%s\n```\n" % errormsg2
                 j.sal.fs.writeFile(self.error_file_path, errormsg3, append=True)
                 self._log_error(errormsg2)
+                public_message = f"error in {self.name}"
+                j.tools.alerthandler.alert_raise(
+                    errormsg3, public_message, level=40, cat="wiki", alert_type="event_system"
+                )
                 doc.errors.append(errormsg)
         else:
             self._log_error("DEBUG NOW raise error")
