@@ -35,9 +35,6 @@ def before_all():
 
 
 def before():
-    import ipdb
-
-    ipdb.set_trace()
     info("​Get gedis server instance.")
     global instance_name
     instance_name = rand_string()
