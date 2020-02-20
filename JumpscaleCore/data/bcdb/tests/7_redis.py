@@ -7,8 +7,10 @@ import time
 """
 try redis commands to get to BCDB
 """
+skip = j.baseclasses.testtools._skip
 
 
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_redis():
 
     """

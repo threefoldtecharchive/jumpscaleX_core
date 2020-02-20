@@ -1,10 +1,9 @@
-import logging
+import time
 from Jumpscale import j
 
 
 def info(message):
-    logging.basicConfig(format="%(message)s", level=logging.INFO)
-    logging.info(message)
+    j.tools.logger._log_info(message)
 
 
 def rand_string():
@@ -13,6 +12,9 @@ def rand_string():
 
 def rand_num(start=100, stop=1000):
     return j.data.idgenerator.generateRandomInt(start, stop)
+
+
+skip = j.baseclasses.testtools._skip
 
 
 client = ""
@@ -26,12 +28,13 @@ RAND_STRING_2 = ""
 RAND_STRING_3 = ""
 
 
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/250")
 def before_all():
     info("install sonic builder")
     j.builders.apps.sonic.install()
 
     info("Start Sonic server")
-    j.servers.sonic.get().start()
+    j.servers.sonic.default.start()
 
     info("create a Sonic client")
     global client
@@ -40,7 +43,6 @@ def before_all():
 
 def before():
     RAND_NUM = rand_num()
-    RAND_STRING = rand_string()
     global sub_word
     sub_word = "comman"
     global RAND_STRING_1, RAND_STRING_2, RAND_STRING_3
@@ -72,7 +74,7 @@ def after():
 
 
 def after_all():
-    j.servers.sonic.main.stop()
+    j.servers.sonic.default.stop()
 
 
 def test001_push_collection_bucket():

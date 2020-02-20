@@ -85,5 +85,6 @@ def test002_list_of_ssh_keys_in_sshagent():
 
     info("Check if the ssh key is loaded using keys_list method")
     assert PATH in j.clients.sshagent.keys_list()
-    output, error = j.sal.process.execute("ssh-add -l")
-    assert PATH in output.decode()
+    output = j.sal.process.execute("ssh-add -l")
+    assert PATH in str(output)
+

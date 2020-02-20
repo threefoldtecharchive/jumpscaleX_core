@@ -21,7 +21,10 @@
 from Jumpscale import j
 from unittest import TestCase
 
+skip = j.baseclasses.testtools._skip
 
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_vfs():
     """
     to run:

@@ -1,18 +1,22 @@
-import os
 import logging
-import unittest
+import os
 from Jumpscale import j
 
 j.builders.runtimes.python3.pip_package_install("nose-testconfig")
-from testconfig import config
+
 from subprocess import Popen, PIPE
 
 skip = j.baseclasses.testtools._skip
 
-user_name = config["git"]["name"]
-user_email = config["git"]["email"]
-user_passwd = config["git"]["passwd"]
-git_token = config["git"]["token"]
+
+try:
+    user_name = os.environ['GIT_NAME']
+    user_email = os.environ['GIT_EMAIL']
+    user_passwd = os.environ['GIT_PASSWORD']
+    git_token = os.environ['GIT_TOKEN']
+except KeyError:
+    raise Exception('You need to set git username, email, password, and token as an environmental variables')
+
 REPO_DIR = "/tmp/test_tft"
 RANDOM_NAME = j.data.idgenerator.generateXCharID(10)
 REPO_NAME = j.data.idgenerator.generateXCharID(10)
@@ -342,14 +346,10 @@ def test008_git_config():
     Test get config value to certain git config field.
     **Test scenario**
     #. Use getconfig to get the value of certain git config field.
-    #. Redo step 1 again, but with non valid value.
     """
     info("Use getconfig to get the value of certain git config field")
     GIT_CLIENT.setConfig("user.name", user_name, local=False)
     assert user_name == GIT_CLIENT.getConfig("user.name")
-
-    info("Redo step 1 again, but with non valid value")
-    assert GIT_CLIENT.getConfig(RANDOM_NAME) is False
 
 
 def test009_get_modified_files():

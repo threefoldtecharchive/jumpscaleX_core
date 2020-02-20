@@ -7,8 +7,11 @@ from io import BytesIO
 from nacl.signing import VerifyKey
 from nacl.public import PrivateKey, PublicKey, SealedBox
 
+TESTTOOLS = j.baseclasses.testtools
+skip = j.baseclasses.testtools._skip
 
-class ThreebotToolsFactory(j.baseclasses.factory_testtools):
+
+class ThreebotToolsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
     __jslocation__ = "j.tools.threebot"
     _CHILDCLASSES = [ThreebotMeCollection]
 
@@ -330,13 +333,14 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         data_list = [True, 1, [1, 2, "a"], jsxobject, "astring", ddict]
         return data_list
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/549")
     def test_register_nacl_clients_get(self):
         """
         kosmos 'j.clients.threebot.test_register()'
         :return:
         """
 
-        j.servers.threebot.start()
+        j.servers.threebot.start(background=True)
 
         self._add_phonebook()
 
@@ -361,6 +365,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
             git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/tfgrid/phonebook"
         )
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/549")
     def test_register_nacl_threebots(self):
 
         self._add_phonebook()

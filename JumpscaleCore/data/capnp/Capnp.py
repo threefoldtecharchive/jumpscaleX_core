@@ -9,6 +9,10 @@ from .ModelBaseData import ModelBaseData
 from .ModelBase import ModelBase
 
 
+TESTTOOLS = j.baseclasses.testtools
+skip = j.baseclasses.testtools._skip
+
+
 class Tools(j.baseclasses.object):
     def listInDictCreation(self, listInDict, name, manipulateDef=None):
         """
@@ -34,7 +38,7 @@ class Tools(j.baseclasses.object):
         return listInDict
 
 
-class Capnp(j.baseclasses.object):
+class Capnp(j.baseclasses.object, TESTTOOLS):
     """
     """
 
@@ -264,6 +268,7 @@ class Capnp(j.baseclasses.object):
         assert obj.state == "new"
         print("TEST OK")
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/482")
     def testWithRedis(self):
         capnpschema = """
         @0x93c1ac9f09464fc9;
