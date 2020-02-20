@@ -4114,6 +4114,7 @@ class BaseInstaller:
                 "bottle==0.12.17",  # why this version?
                 "beaker",
                 "Mnemonic",
+                "xmltodict",
             ],
             # level 1: in the middle
             1: [
