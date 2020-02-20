@@ -5,18 +5,16 @@ from Jumpscale import j
 skip = j.baseclasses.testtools._skip
 
 
-ACTORS_PATH = j.core.tools.text_replace(
-    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/servers/gedis/pytests/test_package/actors"
-)
+ACTORS_PATH = j.core.tools.text_replace("{DIR_BASE}")
 ACTOR_FILE_1 = "simple"
 ACTOR_FILE_2 = "actor"
+package = j.tools.threebot_packages.get("zerobot.base")
 
 START_SCRIPT = """
 server=j.servers.gedis.get(name="{name}")
-server.actor_add(path={actor_path}/{actor_file}.py, namespace="{ns}")
+server.actor_add(name="{actor_file}", path="{actor_path}", package="{package}")
 server.start()
 """
-
 gedis_server = ""
 namespace = ""
 instance_name = ""
@@ -31,12 +29,15 @@ def rand_string(size=10):
     return str(uuid.uuid4()).replace("-", "")[1:10]
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/558")
 def before_all():
-    pass
+    j.servers.threebot.start(background=True)
 
 
 def before():
+    import ipdb
+
+    ipdb.set_trace()
     info("​Get gedis server instance.")
     global instance_name
     instance_name = rand_string()
