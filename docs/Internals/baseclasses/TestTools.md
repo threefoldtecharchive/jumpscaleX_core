@@ -111,7 +111,7 @@ testrunner._run_from_path(path="path/to/tests", name="test_name")
 
 #### 1- One object
 
-This object should inhrite from `JSBASE` (`j.baseclasses.object`)
+This object should inherit from `JSBASE` (`j.baseclasses.object`)
 
 ```python
 from Jumpscale import j
@@ -141,7 +141,7 @@ testrunner._run_from_object(j)
 
 ### 3- From JSX factory
 
-If there is more than one test for a factory, tests can be written under `tests` directory beside the factory, then the factory should inherite from test runner `j.baseclasses.testtools`, and define test method which will contain the runner method.
+If there is more than one test for a factory, tests can be written under `tests` directory beside the factory, then the factory should inherit from test runner `j.baseclasses.testtools`, and define test method which will contain the runner method.
 
 ```python
 class Myclass(j.baseclasses.object, j.baseclasses.testtools):
@@ -150,7 +150,7 @@ class Myclass(j.baseclasses.object, j.baseclasses.testtools):
         self._tests_run(name=name)
 ```
 
-**Note:** `name` can be used for run only one of these test files under tests directory and it can be file name or part of the file name.
+**Note:** `name` can be used for running only one of these test files under tests directory and it can be file name or part of the file name.
 
 ## Report
 
