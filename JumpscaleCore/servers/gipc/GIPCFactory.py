@@ -4,6 +4,8 @@ from .GIPCProcess import GIPCProcess
 # import inspect
 import gipc
 
+skip = j.baseclasses.testtools._skip
+
 
 class GIPCFactory(j.baseclasses.object_config_collection, j.baseclasses.testtools):
     """
@@ -46,6 +48,7 @@ class GIPCFactory(j.baseclasses.object_config_collection, j.baseclasses.testtool
         p.start()
         return p
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/559")
     def test(self, reset=False):
         """
         kosmos -p 'j.servers.gipc.test()'

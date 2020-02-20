@@ -4,12 +4,6 @@ import random, requests, uuid, subprocess
 skip = j.baseclasses.testtools._skip
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/552")
-def before_all():
-    pass
-
-
-zdb = j.servers.zdb.get()
 zdb = None
 
 
@@ -30,6 +24,7 @@ def after():
     j.servers.zdb.test_instance_stop()
 
 
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/557")
 def test_01_client_admin_get_and_client_get_and_destroy():
     """
     - Start zdb server .
