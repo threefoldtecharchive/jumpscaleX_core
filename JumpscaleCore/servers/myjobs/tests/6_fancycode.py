@@ -15,6 +15,7 @@ def test_fancycode():
     # TODO: implement this?
 
 
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/493")
 def test():
     # NO ARGEMENTS NEEDED
 
