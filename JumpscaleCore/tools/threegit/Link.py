@@ -364,7 +364,9 @@ class Link(j.baseclasses.object):
         # else:
         #     lsource = self.link_source
 
-        self.extension = j.sal.fs.getFileExtension(self.link_source)
+        path = urlparse(self.link_source).path
+        if path:
+            self.extension = j.sal.fs.getFileExtension(path)
 
         if "http" in self.link_source or "https" in self.link_source:
             self.link_source_original = self.link_source

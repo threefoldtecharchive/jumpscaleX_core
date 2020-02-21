@@ -1,6 +1,9 @@
 from Jumpscale import j
 
+skip = j.baseclasses.testtools._skip
 
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_sqlitestor_base():
     """
     to run:

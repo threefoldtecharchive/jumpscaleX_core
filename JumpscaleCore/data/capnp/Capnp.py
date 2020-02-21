@@ -9,6 +9,10 @@ from .ModelBaseData import ModelBaseData
 from .ModelBase import ModelBase
 
 
+TESTTOOLS = j.baseclasses.testtools
+skip = j.baseclasses.testtools._skip
+
+
 class Tools(j.baseclasses.object):
     def listInDictCreation(self, listInDict, name, manipulateDef=None):
         """
@@ -34,7 +38,7 @@ class Tools(j.baseclasses.object):
         return listInDict
 
 
-class Capnp(j.baseclasses.object):
+class Capnp(j.baseclasses.object, TESTTOOLS):
     """
     """
 
@@ -239,9 +243,7 @@ class Capnp(j.baseclasses.object):
 
         capnpschema = """
         @0x9fc1ac9f09464fc9;
-
         struct Issue {
-
           state @0 :State;
           enum State {
             new @0;
@@ -249,47 +251,24 @@ class Capnp(j.baseclasses.object):
             error @2;
             disabled @3;
           }
-
           #name of actor e.g. node.ssh (role is the first part of it)
           name @1 :Text;
           descr @2 :Text;
-
         }
         """
 
         # dummy test, not used later
         obj = self.getObj(capnpschema, name="Issue")
+        assert obj.state == "new"
         obj.state = "ok"
 
         # now we just get the capnp schema for this object
         schema = self.getSchemaFromText(capnpschema, name="Issue")
+        obj = schema.new_message()
+        assert obj.state == "new"
+        print("TEST OK")
 
-        # mydb = j.data.kvs.getRedisStore(name="mymemdb")
-        mydb = None  # is memory
-
-        collection = self.getModelCollection(schema, category="test", modelBaseClass=None, db=mydb)
-        start = time.time()
-        self._log_debug("start populate 100.000 records")
-        collection.logger.disabled = True
-        for i in range(100000):
-            obj = collection.new()
-            obj.dbobj.name = "test%s" % i
-            obj.save()
-
-        self._log_debug("population done")
-        end_populate = time.time()
-        collection.logger.disabled = False
-
-        self._log_debug(collection.find(name="test839"))
-        end_find = time.time()
-        self._log_debug("population in %.2fs" % (end_populate - start))
-        self._log_debug("find in %.2fs" % (end_find - end_populate))
-
-        # tests need to be non-interactive.  use a different function name
-        # (e.g. noninteractive_test or just _test())
-        # from IPython import embed
-        # embed(colors='Linux')
-
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/482")
     def testWithRedis(self):
         capnpschema = """
         @0x93c1ac9f09464fc9;

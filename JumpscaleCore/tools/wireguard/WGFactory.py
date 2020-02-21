@@ -57,11 +57,21 @@ class WGFactory(j.baseclasses.object_config_collection_testtools):
 
         return (wg_private_base64.decode(), wg_private_encrypted_hex.decode(), wg_public_base64.decode())
 
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/496")
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/551")
     def test(self):
         """
         kosmos -p 'j.tools.wireguard.test()'
         :return:
+        **Test Scenario**
+            #. Install wireguard on the server
+            #. Configure wireguard on the server
+            #. Install wireguard on the local host
+            #. Configure wireguard on the local host and add peers
+        **Prerequisite**
+            #. Create a machine on digital Ocean and add the public key of the container that you are using.
+            #. Create SSH client with name (do) and the ip address of the previously created machine on digital ocean
+        **Note**
+            #. This test must be run manually to create the digital ocean client first
         """
         # setup server on a digital ocean client
         print("Configuring server")
@@ -70,25 +80,26 @@ class WGFactory(j.baseclasses.object_config_collection_testtools):
         wgs.interface_name = "wg-test"
         wgs.network_private = "10.5.0.1/24"
         wgs.network_public = wgs.executor.sshclient.addr
+        print("Install server")
+        wgs.install()
         wgs.save()
 
         # configure local client
         print("Configuring local client")
-        wg = self.get(name="local", sshclient_name="myhost")
+        wg = self.get(name="local", sshclient_name="")
         wg.network_private = "10.5.0.2/24"
         wg.port = 7778
         wg.interface_name = "wg-test"
+        print("Install client")
+        wg.install()
         wg.peer_add(wgs)
         wg.save()
 
         print("Adding client to server")
         wgs.peer_add(wg)
-        wgs.save()
 
-        print("Install server")
-        wgs.install()
+        print("Configure server")
         wgs.configure()
 
-        print("Install client")
-        wg.install()
+        print("Configure local client")
         wg.configure()

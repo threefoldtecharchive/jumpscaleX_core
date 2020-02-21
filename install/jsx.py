@@ -473,10 +473,14 @@ def wiki_load(name=None, url=None, reset=False, foreground=False):
                 "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/zerobot/wiki_examples/wiki",
             )
         )
-        wikis.append(("tokens", "https://github.com/threefoldfoundation/info_tokens/tree/development/docs"))
-        wikis.append(("foundation", "https://github.com/threefoldfoundation/info_foundation/tree/development/docs"))
-        wikis.append(("grid", "https://github.com/threefoldfoundation/info_grid/tree/development/docs"))
-        wikis.append(("freeflowevents", "https://github.com/freeflownation/info_freeflowevents/tree/development/docs"))
+        wikis.append(("info_tokens", "https://github.com/threefoldfoundation/info_tokens/tree/development/docs"))
+        wikis.append(
+            ("info_foundation", "https://github.com/threefoldfoundation/info_foundation/tree/development/docs")
+        )
+        wikis.append(("info_grid", "https://github.com/threefoldfoundation/info_grid/tree/development/docs"))
+        wikis.append(
+            ("info_freeflowevents", "https://github.com/freeflownation/info_freeflowevents/tree/development/docs")
+        )
     else:
         wikis.append((name, url))
 

@@ -3,16 +3,13 @@ from Jumpscale import j
 import random, unittest, time
 from parameterized import parameterized
 from uuid import uuid4
-from loguru import logger
 import subprocess
 
 skip = j.baseclasses.testtools._skip
-LOGGER = logger
-LOGGER.add("SAL_PROCESS_{time}.log")
 
 
 def info(message):
-    LOGGER.info(message)
+    j.tools.logger._log_info(message)
 
 
 def rand_string(size=10):
@@ -192,7 +189,7 @@ def test06_getDefunctProcesses():
     #. [z1] and [z2] should be same.
     """
     info("Get zombie processes list [z1] by ps -aux")
-    _, output, error = j.sal.process.execute("ps aux | grep -w Z | awk '{{ print $2 }}'  ")
+    _, output, error = j.sal.process.execute("ps aux | grep -w Z |grep -v grep| awk '{{ print $2 }}'  ", die=True)
     z1 = output.splitlines()
     z1 = list(map(int, z1))
     info("Get zombie processes list [z2] by getDefunctProcesses ")
@@ -204,7 +201,7 @@ def test06_getDefunctProcesses():
 
 def test07_getPidsByFilter():
     """TC407
-    Test case to test get processes pids by specific filter. 
+    Test case to test get processes pids by specific filter.
 
     **Test scenario**
     #. Get all processes PIDs which using python[PIDs_1].
@@ -226,7 +223,7 @@ def test07_getPidsByFilter():
 
 def test08_getProcessObject():
     """ TC408
-    Test case to test getProcessObject. 
+    Test case to test getProcessObject.
 
     **Test scenario**
     #. Start process [P] with python.
@@ -272,7 +269,7 @@ def test08_getProcessObject():
 
 def test09_getProcessPid_and_getProcessPidsFromUser():
     """ TC 409
-    Test case to test getProcessPid. 
+    Test case to test getProcessPid.
 
     **Test scenario**
     #. Start process [P] with python get its user and pid.
@@ -284,13 +281,13 @@ def test09_getProcessPid_and_getProcessPidsFromUser():
     _, output, error = j.sal.process.execute("tmux  new -d -s {} '{}'  ".format(rand_string(), P))
     time.sleep(2)
     _, output, error = j.sal.process.execute("ps ax | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'")
+
     pids = output.split()
     pids = list(map(int, pids))
-    assert len(pids) == 2
+    # 1 or 2 in case a child process has been created
+    assert len(pids) in [1, 2]
 
-    _, output, error = j.sal.process.execute(
-        "ps -aux | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'| tail -n+2"
-    )
+    _, output, error = j.sal.process.execute("ps -o user= -p {}".format(pids[0]))
     user = output.strip()
 
     info("Use getProcessPid to get process pid [PID], Check that it returns right PID.")
@@ -298,13 +295,12 @@ def test09_getProcessPid_and_getProcessPidsFromUser():
 
     info("Use getProcessPidsFromUser to get process pid [PID], Check that it returs right PID.")
     assert set(pids).issubset(set(j.sal.process.getProcessPidsFromUser(user))) is True
-
-    _, output, error = j.sal.process.execute("kill -9 {} {}".format(pids[0], pids[1]))
+    j.sal.process.execute("kill -9 {}".format(pids[0]))
 
 
 def test10_isPidAlive():
     """TC410
-    Test case to test isPidAlive. 
+    Test case to test isPidAlive.
 
     **Test scenario**
     #. Start process [P] with python get its user and pid.

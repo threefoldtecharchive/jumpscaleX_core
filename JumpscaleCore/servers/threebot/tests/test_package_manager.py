@@ -2,15 +2,13 @@ from uuid import uuid4
 
 from Jumpscale import j
 from parameterized import parameterized
-from loguru import logger
 
-LOGGER = logger
-LOGGER.add("PACKAGE_MANAGER_{time}.log")
 
+j.servers.threebot.start(background=True)
 PACKAGE_NAME = "test_package"
 path = "/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/test_package"
 result_path = j.sal.fs.joinPaths(path, "result")
-gedis_client = j.clients.gedis.get("pm", port=8901, package_name="zerobot.packagemanager")
+gedis_client = j.clients.gedis.get(str(uuid4())[:10], port=8901, package_name="zerobot.packagemanager")
 package_manager = gedis_client.actors.package_manager
 skip = j.baseclasses.testtools._skip
 
@@ -20,7 +18,7 @@ def random_string():
 
 
 def info(message):
-    LOGGER.info(message)
+    j.tools.logger._log_info(message)
 
 
 def get_package(package_name):
@@ -71,6 +69,7 @@ def test_001_package_add(method):
     assert "starting packag" in content
 
 
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/561")
 def test_002_package_list_delete():
     """
     Test case for listing and deleting packages
@@ -91,8 +90,8 @@ def test_002_package_list_delete():
     assert package is not None
 
     info("Delete test package.")
-    package_manager.package_delete(package.name)
-    content = j.sal.fs.readFile(result_path)
+    package_manager.package_delete(PACKAGE_NAME)
+    content = j.sal.fs.readFile()
     assert "uninstalling package" in content
 
     # TODO: check that there is no model in bcdb for this package
@@ -137,48 +136,4 @@ def test_003_package_enable_disable():
     package = get_package(PACKAGE_NAME)
     assert package is not None
     assert package.status == "INSTALLED"
-
-
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/510")
-def test_004_package_start_stop():
-    """
-    Test case for starting and stopping packages.
-
-    **Test scenario**
-    #. Add test package.
-    #. Stop this package.
-    #. Check that this package has been stopped.
-    #. Start this package.
-    #. Check that this package has been started.
-    """
-    info("Add test package.")
-    package_manager.package_add(path=path)
-    gedis_client.reload()
-
-    package = get_package(PACKAGE_NAME)
-    assert package is not None
-    assert package.status == "INSTALLED"
-
-    info("Stop this package.")
-    package_manager.package_stop(package.name)
-
-    info("Check that this package has been stopped.")
-    package = get_package(PACKAGE_NAME)
-    assert package is not None
-    assert package.status == "HALTED"
-
-    content = j.sal.fs.readFile(result_path)
-    assert "stopping package" in content
-    j.sal.fs.remove(result_path)
-
-    info("Start this package.")
-    package_manager.package_start(package.name)
-
-    info("Check that this package has been started.")
-    package = get_package(PACKAGE_NAME)
-    assert package is not None
-    assert package.status == "INSTALLED"
-
-    content = j.sal.fs.readFile(result_path)
-    assert "starting package" in content
 

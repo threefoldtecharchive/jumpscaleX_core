@@ -23,8 +23,10 @@ from Jumpscale import j
 """
 aim is to see if the subschema's are loaded properly in the metadata db
 """
+skip = j.baseclasses.testtools._skip
 
 
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_subschemas():
     """
     to run:

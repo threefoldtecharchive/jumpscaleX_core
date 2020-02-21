@@ -76,20 +76,14 @@ class ZDBServers(JSConfigs, TESTTOOLS):
             zdb.destroy()
             zdb.delete()
 
-    def test(self, name="", build=False):
+    def test(self, name="", install=False):
         """
         kosmos 'j.servers.zdb.test(build=True)'
         kosmos 'j.servers.zdb.test()'
         """
 
-        if build:
-            self.build()
-        zdb = self.test_instance_start(namespaces=["test_instance"], restart=True, destroydata=True)
+        if install:
+            self.install()
 
-        cl = zdb.client_get("test_instance", nsname="test_instance")
-
-        assert cl.ping()
         self._tests_run(name=name)
-        self.test_instance_stop()
-
         print("TEST OK")

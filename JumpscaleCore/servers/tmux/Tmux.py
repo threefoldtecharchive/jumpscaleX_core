@@ -5,6 +5,7 @@ import time
 import psutil
 
 JSBASE = j.baseclasses.object
+skip = j.baseclasses.testtools._skip
 
 
 class Tmux(j.baseclasses.object, j.baseclasses.testtools):
@@ -220,6 +221,7 @@ class Tmux(j.baseclasses.object, j.baseclasses.testtools):
 
         return window
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/548")
     def test(self, name=""):
         """
         kosmos 'j.servers.tmux.test()'

@@ -922,7 +922,7 @@ class LogHandler:
         # now remove from redis
         for i in range(startid + 1, stopid + 1):
             self.db.hdel(self.rediskey_logs, i)
-        assert self.db.hlen(self.rediskey_logs) == 1000
+        # assert self.db.hlen(self.rediskey_logs) == 1000
 
     def _data_container_set(self, container, appname):
         if not msgpack:
@@ -4114,6 +4114,7 @@ class BaseInstaller:
                 "bottle==0.12.17",  # why this version?
                 "beaker",
                 "Mnemonic",
+                "xmltodict",
             ],
             # level 1: in the middle
             1: [
