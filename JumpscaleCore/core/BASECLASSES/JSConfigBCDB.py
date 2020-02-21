@@ -27,6 +27,9 @@ class JSConfigBCDB(JSConfigBCDBBase):
         if name and self._data.name != name:
             self._data.name = name
 
+        if "autosave" in kwargs:
+            self._data._autosave = j.data.types.bool.clean(kwargs["autosave"])
+
     def _init_post(self, **kwargs):
 
         if not isinstance(self._model, j.clients.bcdbmodel._class) and self._data not in self._model.instances:
@@ -81,6 +84,8 @@ class JSConfigBCDB(JSConfigBCDBBase):
         load from bcdb
         :return:
         """
+        if not self._model:
+            return self
         jsxobjects = self._model.find(name=self.name)
         if len(jsxobjects) == 0:
             raise j.exceptions.JSBUG("cannot find obj:%s for reload" % self.name)
@@ -88,7 +93,8 @@ class JSConfigBCDB(JSConfigBCDBBase):
         return self
 
     def _delete(self):
-        assert self._model
+        if not self._model:
+            return
         self._model.delete(self._data)
         if self._parent:
             if self._data.name in self._parent._children:
@@ -101,7 +107,9 @@ class JSConfigBCDB(JSConfigBCDBBase):
         self.save_()
 
     def save_(self):
-        assert self._model
+        if not self._model:
+            return
+        raise RuntimeError("remove")
         mother_id = self._mother_id_get()
         if mother_id:
             # means there is a mother

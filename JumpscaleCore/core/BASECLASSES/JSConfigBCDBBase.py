@@ -32,6 +32,8 @@ class JSConfigBCDBBase(JSBase, Attr):
 
     @property
     def _model(self):
+        if self._model == False:
+            return
         if self._model_ is None:
             # self._log_debug("Get model for %s"%self.__class__._location)
 
