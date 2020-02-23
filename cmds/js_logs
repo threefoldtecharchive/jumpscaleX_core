@@ -95,5 +95,50 @@ def find(
     ctx_obj.client._print(logs)
 
 
+@cli.command()
+@click.option("--file_path", default=None, help="filter by logsfilepath logs come from , defaults to None")
+@click.option("--level", default=None, help="filter by log level , defaults to None")
+@click.option("--data", default=None, help="filter by log data , defaults to None")
+@click.option("--cat", default="", help="filter by category, defaults to empty string")
+@click.option("--message", default="", help="filter by string")
+@click.option("--processid", default=None, help="filter by process id, defaults to None")
+@click.option("--time_from", default=None, help="filter by time within a span from specific time, defaults to None")
+@click.option("--time_to", default=None, help="filter by time within a span until specific time , defaults to None")
+@click.option("--id_from", default=None, help="filter by logs id from , defaults to None")
+@click.pass_obj
+def find_fs(
+    ctx_obj,
+    file_path=None,
+    level=None,
+    data=None,
+    context=None,
+    cat="",
+    message="",
+    processid=None,
+    time_from=None,
+    time_to=None,
+    id_from=None,
+):
+    """
+    filter by appname, filepath, category, message, pid and/or time ..
+    this method will include the logs in filesystem
+    """
+    logs = ctx_obj.client.find(
+        appname=ctx_obj.appname,
+        file_path=file_path,
+        level=level,
+        data=data,
+        cat=cat,
+        context=context,
+        message=message,
+        processid=processid,
+        time_from=time_from,
+        time_to=time_to,
+        id_from=id_from,
+        include_fslogs=True,
+    )
+    ctx_obj.client._print(logs)
+
+
 if __name__ == "__main__":
     cli()

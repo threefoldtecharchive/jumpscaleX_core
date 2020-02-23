@@ -69,18 +69,21 @@ client = j.clients.logger.get("js_logs")
 example: `js_logs --redis-host 172.17.0.2 --redis-port 6379 --appname threebotserver tail`
 
 ```bash
-3BOTDEVEL:3bot:test: js_logs
+3BOTDEVEL:3bot:threebotserver: js_logs
 Usage: js_logs [OPTIONS] COMMAND [ARGS]...
 
 Options:
-  -a, --appname TEXT    application name
+  -a, --appname TEXT    application name, default: init
   --redis-secret TEXT   redis secret (empty by default)
   --redis-port INTEGER  redis port (defaults to 6379)
   --redis-host TEXT     redis host (defaults to localhost)
   --help                Show this message and exit.
 
 Commands:
-  tail  tail logs from session
+  count    tail logs from session
+  find     filter by appname, filepath, category,...
+  find_fs  filter by appname, filepath, category,...
+  tail     tail logs from session
 ```
 
 Examples:
@@ -104,7 +107,27 @@ Examples:
           --id_from TEXT    filter by logs id from , defaults to None
         ```
 
+- `js_logs -a threebotserver find_fs --message "index"`: This will search all logs for message with message connection error
+and will include the logs from file system which are stored as msgpacks in `/sandbox/var/logs/<APP-NAME>`.
+    - other filters for find_fs:
+
+         ```bash
+          --file_path TEXT  filter by logsfilepath logs come from , defaults to None
+          --level TEXT      filter by log level , defaults to None
+          --data TEXT       filter by log data , defaults to None
+          --cat TEXT        filter by category, defaults to empty string
+          --message TEXT    filter by string
+          --processid TEXT  filter by process id, defaults to None
+          --time_from TEXT  filter by time within a span from specific time, defaults
+                            to None
+          --time_to TEXT    filter by time within a span until specific time ,
+                            defaults to None
+          --id_from TEXT    filter by logs id from , defaults to None
+        ```
+
+
 - `js_logs -a threebotserver count all=True`: will show logs count, if all=True will also count logs in filesystem
+
 
 ## For References:
 
