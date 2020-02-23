@@ -10,7 +10,8 @@ from .connectors.redis.RedisServer import RedisServer
 
 TESTTOOLS = j.baseclasses.testtools
 
-class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
+
+class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
     __jslocation__ = "j.data.bcdb"
 
@@ -22,8 +23,6 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
         self._config_data_path = j.core.tools.text_replace("{DIR_CFG}/bcdb_config")
 
         self._code_generation_dir_ = None
-
-        j.clients.redis.core_get()  # just to make sure the redis got started
 
         self._BCDBModelClass = BCDBModel  # j.data.bcdb._BCDBModelClasses
         self._BCDBModelBase = BCDBModelBase

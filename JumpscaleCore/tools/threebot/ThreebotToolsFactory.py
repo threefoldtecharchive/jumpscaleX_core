@@ -7,11 +7,10 @@ from io import BytesIO
 from nacl.signing import VerifyKey
 from nacl.public import PrivateKey, PublicKey, SealedBox
 
-TESTTOOLS = j.baseclasses.testtools
 skip = j.baseclasses.testtools._skip
 
 
-class ThreebotToolsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
+class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testtools):
     __jslocation__ = "j.tools.threebot"
     _CHILDCLASSES = [ThreebotMeCollection]
 

@@ -13,12 +13,16 @@ class JSConfigBCDB(JSConfigBCDBBase):
             self._data = jsxobject
         else:
             jsxobjects = []
-            if name:
+
+            if name and not self._bcdb_ == False and not self._model_ == False:
                 jsxobjects = self._model.find(name=name)
             if len(jsxobjects) > 0:
                 self._data = jsxobjects[0]
             else:
-                self._data = self._model.new()  # create an empty object
+                if hasattr(self, "_schema_"):
+                    self._data = self._schema_.new()  # create an empty object
+                else:
+                    self._data = self._model.new()  # create an empty object
 
         if datadict:
             assert isinstance(datadict, dict) or isinstance(datadict, j.baseclasses.dict)

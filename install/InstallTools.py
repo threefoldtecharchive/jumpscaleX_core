@@ -191,64 +191,29 @@ except:
 
 class RedisTools:
     @staticmethod
-    def client_core_get(
-        addr="localhost", port=6379, unix_socket_path="{DIR_BASE}/var/redis.sock", die=True, fake_ok=True
-    ):
+    def client_core_get(addr="localhost", port=6379, unix_socket_path="{DIR_BASE}/var/redis.sock", die=True):
         """
 
         :param addr:
         :param port:
         :param unix_socket_path:
-        :param die: if cannot find fake or real die
-        :param fake_ok: can return a fake redis connection which will go to memory only
         :return:
         """
+        import redis
 
+        unix_socket_path = Tools.text_replace(unix_socket_path)
         RedisTools.unix_socket_path = unix_socket_path
-
+        cl = Redis(unix_socket_path=unix_socket_path, db=0)
+        # cl = Redis(host=addr, port=port, db=0)
         try:
-            import redis
-        except ImportError:
-            if fake_ok:
-                try:
-                    import fakeredis
-
-                    res = fakeredis.FakeStrictRedis()
-                    res.fake = True
-                    return res
-                except ImportError:
-                    # dit not find fakeredis so can only return None
-                    if die:
-                        raise Tools.exceptions.Base(
-                            "cannot connect to fakeredis, could not import the library, please install fakeredis"
-                        )
-                    return None
-            else:
-                if die:
-                    raise Tools.exceptions.Base("redis python lib not installed, do pip3 install redis")
-                return None
-
-        try:
-            unix_socket_path = Tools.text_replace(unix_socket_path)
-            cl = Redis(unix_socket_path=unix_socket_path, db=0)
-            cl.fake = False
-            assert cl.ping()
+            r = cl.ping()
         except Exception as e:
-            cl = None
-            if addr == "" and die:
-                raise e
-        else:
-            return cl
+            if isinstance(e, redis.exceptions.ConnectionError):
+                if not die:
+                    return
+            raise
 
-        try:
-            cl = Redis(host=addr, port=port, db=0)
-            cl.fake = False
-            assert cl.ping()
-        except Exception as e:
-            if die:
-                raise e
-            cl = None
-
+        assert r
         return cl
 
     @staticmethod
@@ -256,7 +221,7 @@ class RedisTools:
         return serializer(data)
 
     @staticmethod
-    def core_get(reset=False, tcp=True):
+    def _core_get(reset=False, tcp=False):
         """
 
         kosmos 'j.clients.redis.core_get(reset=False)'
@@ -266,7 +231,7 @@ class RedisTools:
         if that does not work then will return None
 
 
-        :param tcp, if True then will also start tcp port on localhost on 6379
+        :param tcp, if True then will also start redis tcp port on localhost on 6379
 
 
         :param reset: stop redis, defaults to False
@@ -279,15 +244,13 @@ class RedisTools:
         if reset:
             RedisTools.core_stop()
 
-        MyEnv.init()
-
-        if MyEnv.db and MyEnv.db.ping() and MyEnv.db.fake is False:
-            return MyEnv.db
+        # if MyEnv.db and MyEnv.db.ping():
+        #     return MyEnv.db
 
         if not RedisTools.core_running(tcp=tcp):
             RedisTools._core_start(tcp=tcp)
 
-        MyEnv.db = RedisTools.client_core_get()
+        MyEnv._db = RedisTools.client_core_get()
 
         try:
             from Jumpscale import j
@@ -328,12 +291,12 @@ class RedisTools:
         :rtype: bool
         """
         if unixsocket:
-            r = RedisTools.client_core_get(fake_ok=False, die=False)
+            r = RedisTools.client_core_get(die=False)
             if r:
                 return True
 
         if tcp and Tools.tcp_port_connection_test("localhost", 6379):
-            r = RedisTools.client_core_get(ipaddr="localhost", port=6379, fake_ok=False, die=False)
+            r = RedisTools.client_core_get(ipaddr="localhost", port=6379, die=False)
             if r:
                 return True
 
@@ -362,9 +325,6 @@ class RedisTools:
         """
 
         if reset is False:
-            if RedisTools.core_running(tcp=tcp):
-                return RedisTools.core_get()
-
             if MyEnv.platform_is_osx:
                 if not Tools.cmd_installed("redis-server"):
                     # prefab.system.package.install('redis')
@@ -3350,10 +3310,17 @@ class MyEnv_:
             "ERROR": LOGFORMATBASE.replace("{COLOR}", "{RED}"),
             "CRITICAL": "{RED}{TIME} {filename:<20} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}",
         }
+        self._db = None
 
-        self.db = RedisTools.client_core_get(die=False)
+    @property
+    def db(self):
+        if not self._db:
+            self._db = RedisTools._core_get()
+        return self._db
 
     def init(self, reset=False, configdir=None):
+        if self.__init:
+            return
 
         args = Tools.cmd_args_get()
 
@@ -3413,11 +3380,13 @@ class MyEnv_:
 
         sys.excepthook = self.excepthook
 
+        self.loghandler_redis = LogHandler(db=self.db)
+
         self.__init = True
 
-    def _init(self, **kwargs):
-        if not self.__init:
-            raise RuntimeError("init on MyEnv did not happen yet")
+    # def _init(self, **kwargs):
+    #     if not self.__init:
+    #         raise RuntimeError("init on MyEnv did not happen yet")
 
     def platform(self):
         """
@@ -3885,7 +3854,6 @@ class MyEnv_:
 
 
 MyEnv = MyEnv_()
-MyEnv.loghandler_redis = LogHandler(db=MyEnv.db)
 
 
 class BaseInstaller:
@@ -4063,7 +4031,6 @@ class BaseInstaller:
                 "cryptography>=2.2.0",
                 "dnslib",
                 "ed25519>=1.4",
-                "fakeredis",
                 "future>=0.15.0",
                 "geopy",
                 "geocoder",
@@ -4247,15 +4214,11 @@ class OSXInstaller:
     def base():
         MyEnv._init()
         OSXInstaller.brew_install()
-        if (
-            not Tools.cmd_installed("curl")
-            or not Tools.cmd_installed("unzip")
-            or not Tools.cmd_installed("rsync")
-            or not Tools.cmd_installed("graphviz")
-        ):
+        if not Tools.cmd_installed("curl") or not Tools.cmd_installed("unzip") or not Tools.cmd_installed("rsync"):
             script = """
-            brew install curl unzip rsync graphviz tmux
+            brew install curl unzip rsync tmux
             """
+            # graphviz #TODO: need to be put elsewhere but not in baseinstaller
             Tools.execute(script, replace=True)
         BaseInstaller.pips_install(["click"])  # TODO: *1
 
@@ -6616,3 +6579,6 @@ class WireGuardServer:
             print(cmd)
             Tools.execute(cmd)
         return self.config_local["ADDRESS"]
+
+
+MyEnv.init()

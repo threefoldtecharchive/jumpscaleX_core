@@ -66,7 +66,6 @@ class Core:
     def db_reset(self, j):
         if hasattr(j.data, "cache"):
             j.data.cache._cache = {}
-        self.db = j.clients.redis.core_get(fromcache=False)
 
     @property
     def dir_jumpscale(self):

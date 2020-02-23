@@ -32,9 +32,9 @@ class JSConfigBCDBBase(JSBase, Attr):
 
     @property
     def _model(self):
-        if self._model == False:
-            return
-        if self._model_ is None:
+
+        if self._model_ in [None, False]:
+
             # self._log_debug("Get model for %s"%self.__class__._location)
 
             if isinstance(self, j.baseclasses.object_config):
@@ -56,36 +56,41 @@ class JSConfigBCDBBase(JSBase, Attr):
                 assert block
                 if first:
                     # means this is the first block need to add it
-                    has_mother = self._mother_id_get()
                     schema = j.data.schema.get_from_text(block, newest=True)
-                    if "name" not in schema.props:
-                        raise j.exceptions.Input("name not found in schema", data=schema.text)
-                    if not schema.props["name"].index:
-                        raise j.exceptions.Input("name need to be a field and index (**)", data=schema)
-                    if has_mother:
-                        if "mother_id" not in schema.props:
-                            raise j.exceptions.Input(
-                                "mother_id need to be a field (int) and indexed, didn't exist", data=schema.text
-                            )
-                        if not schema.props["mother_id"].index:
-                            raise j.exceptions.Input(
-                                "mother_id need to be a field (int) and index (**)", data=schema.text
-                            )
+                    if self._model_ != False:
+                        has_mother = self._mother_id_get()
+                        if "name" not in schema.props:
+                            raise j.exceptions.Input("name not found in schema", data=schema.text)
+                        if not schema.props["name"].index:
+                            raise j.exceptions.Input("name need to be a field and index (**)", data=schema)
+                        if has_mother:
+                            if "mother_id" not in schema.props:
+                                raise j.exceptions.Input(
+                                    "mother_id need to be a field (int) and indexed, didn't exist", data=schema.text
+                                )
+                            if not schema.props["mother_id"].index:
+                                raise j.exceptions.Input(
+                                    "mother_id need to be a field (int) and index (**)", data=schema.text
+                                )
                     first = False
                 else:
                     j.data.schema.get_from_text(block, newest=True)
             if first:
                 raise j.exceptions.Input("didn't find schema's")
 
-            if j.data.bcdb._master:
-                self._model_ = self._bcdb.model_get(schema=schema)
+            if self._model_ is False:
+                self._bcdb_ = False
+                self._schema_ = schema
             else:
-                # make remote connection (to the threebotserver)
-                # print("CONNECT TO THREEBOTSERVER FOR MODEL")
-                self._model_ = j.clients.bcdbmodel.get(name=self._bcdb.name, schema=schema)
-                self._bcdb_ = self._model.bcdb
+                if j.data.bcdb._master:
+                    self._model_ = self._bcdb.model_get(schema=schema)
+                else:
+                    # make remote connection (to the threebotserver)
+                    # print("CONNECT TO THREEBOTSERVER FOR MODEL")
+                    self._model_ = j.clients.bcdbmodel.get(name=self._bcdb.name, schema=schema)
+                    self._bcdb_ = self._model.bcdb
 
-        return self._model_
+            return self._model_
 
     def __init_class_post(self):
 

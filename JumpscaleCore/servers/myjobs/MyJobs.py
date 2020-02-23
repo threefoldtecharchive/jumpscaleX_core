@@ -12,7 +12,7 @@ class MyJob(j.baseclasses.object_config):
     def _init(self, method=None, args_replace=None, return_queues_reset=None, **kwargs):
         if self.return_queues:
             for qname in self.return_queues:
-                q = j.clients.redis.queue_get(redisclient=j.clients.redis.core_get(), key="myjobs:%s" % qname)
+                q = j.clients.redis.queue_get(redisclient=j.core.db, key="myjobs:%s" % qname)
                 if return_queues_reset:
                     q.reset()
         if method:

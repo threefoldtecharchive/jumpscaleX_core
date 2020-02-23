@@ -26,10 +26,6 @@ class NACLFactory(j.baseclasses.object, TESTTOOLS):
     def _init(self, **kwargs):
         self._default = None
 
-        # check there is core redis
-        if isinstance(j.core.db, fakeredis.FakeStrictRedis):
-            j.clients.redis.core_get()
-
     def configure(self, name="default", privkey_words=None, generate=True, interactive=False, reset=False):
         """
         secret is used to encrypt/decrypt the private key when stored on local filesystem

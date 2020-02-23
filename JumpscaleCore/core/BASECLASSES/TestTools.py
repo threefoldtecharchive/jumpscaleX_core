@@ -32,7 +32,7 @@ class TestTools:
         "time_taken": 0,
     }
 
-    def __init__(self, xml_report=False, xml_path="test.xml", xml_testsuite_name="Jsx_Runner"):
+    def _init_factory(self, xml_report=False, xml_path="test.xml", xml_testsuite_name="Jsx_Runner"):
         self._xml_report = xml_report
         self._xml_path = xml_path
         self._xml_testsuite_name = xml_testsuite_name

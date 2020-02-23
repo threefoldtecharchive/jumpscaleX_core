@@ -6,7 +6,7 @@ skip = j.baseclasses.testtools._skip
 
 
 class SyncerFactory(j.baseclasses.object_config_collection_testtools):
-    ## check https://github.com/threefoldtech/jumpscaleX_core/issues/541
+    __jslocation__ = "j.tools.syncer"
 
     _CHILDCLASS = Syncer
 

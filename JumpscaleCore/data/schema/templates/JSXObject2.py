@@ -43,7 +43,7 @@ class JSXObject2(j.data.schema._JSXObjectClassSub):
 
     @{{prop.name}}.setter
     def {{prop.name}}(self,val):
-        if self._model is not None and self._model.readonly:
+        if self._model.readonly:
             raise j.exceptions.Input("object readonly, cannot set.\n%s"%self)
         #CLEAN THE OBJ
         {% if prop.has_jsxobject %}
