@@ -90,7 +90,7 @@ class JSConfigBCDBBase(JSBase, Attr):
                     self._model_ = j.clients.bcdbmodel.get(name=self._bcdb.name, schema=schema)
                     self._bcdb_ = self._model.bcdb
 
-            return self._model_
+        return self._model_
 
     def __init_class_post(self):
 

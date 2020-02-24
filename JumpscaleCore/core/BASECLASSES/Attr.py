@@ -18,7 +18,8 @@ class Attr:
                 return child
 
             if isinstance(self, j.baseclasses.object_config):
-                if name in self._model.schema.propertynames:
+                schema = self._schema_
+                if name in schema.propertynames:
                     return self._data.__getattribute__(name)
 
             if isinstance(self, j.baseclasses.object_config_base):
@@ -45,7 +46,7 @@ class Attr:
         except AttributeError as e:
             # whereami = self._key
             msg = "could not find attribute:%s (error was:%s)" % (name, e)
-            raise j.exceptions.NotFound(msg)
+            raise AttributeError(msg)
 
         return r
 
@@ -60,7 +61,7 @@ class Attr:
             if name == "data":
                 raise j.exceptions.Base("protected property:%s" % name)
 
-            if "_data" in self.__dict__ and name in self._model.schema.propertynames:
+            if "_data" in self.__dict__ and name in self._schema_.propertynames:
                 # self._log_debug("SET:%s:%s" % (name, value))
                 self._data.__setattr__(name, value)
                 return

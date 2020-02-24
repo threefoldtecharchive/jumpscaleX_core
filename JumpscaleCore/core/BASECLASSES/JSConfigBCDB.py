@@ -19,10 +19,20 @@ class JSConfigBCDB(JSConfigBCDBBase):
             if len(jsxobjects) > 0:
                 self._data = jsxobjects[0]
             else:
-                if hasattr(self, "_schema_"):
+                self._model  # make sure model has been resolved
+                if self._model == None:
+                    self._model
+                if self._model == False:
+                    # and hasattr(self, "_schema_")
                     self._data = self._schema_.new()  # create an empty object
                 else:
                     self._data = self._model.new()  # create an empty object
+                    self._schema_ = self._model.schema
+
+        if kwargs:
+            if not datadict:
+                datadict = {}
+            datadict.update(kwargs)
 
         if datadict:
             assert isinstance(datadict, dict) or isinstance(datadict, j.baseclasses.dict)
@@ -36,7 +46,11 @@ class JSConfigBCDB(JSConfigBCDBBase):
 
     def _init_post(self, **kwargs):
 
-        if not isinstance(self._model, j.clients.bcdbmodel._class) and self._data not in self._model.instances:
+        if (
+            not isinstance(self._model, j.clients.bcdbmodel._class)
+            and self._model
+            and self._data not in self._model.instances
+        ):
             self._model.instances.append(self._data)  # link from model to where its used
             # to check we are not creating multiple instances
             # assert id(j.data.bcdb.children.system.models[self._model.schema.url]) == id(self._model)
@@ -151,7 +165,7 @@ class JSConfigBCDB(JSConfigBCDBBase):
 
         :return: list of the names
         """
-        return self._filter(filter=filter, llist=self._model.schema.propertynames)
+        return self._filter(filter=filter, llist=self._schema_.propertynames)
 
     def __str__(self):
         return str(self._data)

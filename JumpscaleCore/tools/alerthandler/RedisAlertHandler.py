@@ -121,12 +121,13 @@ class AlertHandler(j.baseclasses.object):
 
     def handle_error(self, logdict):
         j.application.inlogger = True
-        # self._handle_error(logdict)
-        try:
-            self._handle_error(logdict)
-        except Exception as e:
-            print("**ERROR IN ERROR HANDLER**")
-            print(str(e))
+        self._handle_error(logdict)
+        # prob better to always die
+        # try:
+        #     self._handle_error(logdict)
+        # except Exception as e:
+        #     print("**ERROR IN ERROR HANDLER**")
+        #     print(str(e))
         j.application.inlogger = False
 
     def alert_raise(self, message, message_pub, cat="", level=20, alert_type="event_operator"):
