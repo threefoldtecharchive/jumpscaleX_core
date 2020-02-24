@@ -4,7 +4,6 @@ import traceback
 import types
 from importlib import import_module, sys
 
-import xmltodict
 from Jumpscale import j
 
 _VALID_TEST_NAME = re.compile("(?:^|[\b_\./-])[Tt]est")
@@ -12,11 +11,7 @@ _FAIL_LENGTH = 6
 _ERROR_LENGTH = 7
 
 
-_full_results = {
-    "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
-    "testcases": [],
-    "time_taken": 0,
-}
+_full_results = {"summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0}, "testcases": [], "time_taken": 0}
 
 
 class Skip(Exception):
@@ -26,11 +21,7 @@ class Skip(Exception):
 class TestTools:
     __show_tests_report = True
     _modules = []
-    _results = {
-        "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
-        "testcases": [],
-        "time_taken": 0,
-    }
+    _results = {"summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0}, "testcases": [], "time_taken": 0}
 
     def _init_factory(self, xml_report=False, xml_path="test.xml", xml_testsuite_name="Jsx_Runner"):
         self._xml_report = xml_report
@@ -532,6 +523,8 @@ class TestTools:
 
         :param results: jsx runner result to be converted from dict to xml.
         """
+        import xmltodict
+
         if results is None:
             results = self._results
 

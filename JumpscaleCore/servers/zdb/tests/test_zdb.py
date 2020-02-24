@@ -24,7 +24,6 @@ def after():
     j.servers.zdb.test_instance_stop()
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/557")
 def test_01_client_admin_get_and_client_get_and_destroy():
     """
     - Start zdb server .
@@ -50,7 +49,7 @@ def test_01_client_admin_get_and_client_get_and_destroy():
     zdb.destroy()
 
     info("Check that server stopped and database removed successfully.")
-    assert not j.sal.process.psfind("zdb")
+    assert not j.sal.process.psfind("startupcmd_zdb")
 
     _, output, error = j.sal.process.execute("ls {DIR_BASE}/var/zdb", replace=True)
     assert zdb.name not in output
