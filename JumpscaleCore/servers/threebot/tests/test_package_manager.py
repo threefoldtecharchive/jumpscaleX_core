@@ -136,4 +136,3 @@ def test_003_package_enable_disable():
     package = get_package(PACKAGE_NAME)
     assert package is not None
     assert package.status == "INSTALLED"
-
