@@ -39,8 +39,8 @@ class JSBase:
         if "parent" in kwargs:
             kwargs.pop("parent")
         self._init_pre(**kwargs)
-        self._init_actor(**kwargs)
         self._init_jsconfig(**kwargs)
+        self._init_actor(**kwargs)
         self.__init_class()
         self._obj_cache_reset()
         self._init(**kwargs)

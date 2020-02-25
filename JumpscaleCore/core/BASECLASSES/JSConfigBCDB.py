@@ -22,15 +22,13 @@ class JSConfigBCDB(JSConfigBCDBBase):
                 raise j.exceptions.JSBUG("threre should never be more than 1 record with same name:%s" % name)
             elif len(jsxobjects) == 1:
                 self._data = jsxobjects[0]
-                self._schema_ = self._model.schema
             else:
                 self._model  # make sure model has been resolved
                 if self._model == False:
                     # and hasattr(self, "_schema_")
-                    self._data = self._schema_.new()  # create an empty object
+                    self._data = self._schema.new()  # create an empty object
                 else:
                     self._data = self._model.new()  # create an empty object
-                    self._schema_ = self._model.schema
 
         if kwargs:
             if not datadict:

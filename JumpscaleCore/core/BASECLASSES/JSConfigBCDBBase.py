@@ -12,6 +12,7 @@ class JSConfigBCDBBase(JSBase, Attr):
     def _init_pre(self, **kwargs):
         self._model_ = None
         self._bcdb_ = None
+        self._schema_ = None
 
         # self._model._kosmosinstance = self
 
@@ -29,6 +30,12 @@ class JSConfigBCDBBase(JSBase, Attr):
         if not self._bcdb_:
             self._bcdb_ = self._bcdb_selector()
         return self._bcdb_
+
+    @property
+    def _schema(self):
+        if not self._schema_:
+            self._schema_ = self._model.schema
+        return self._schema_
 
     @property
     def _model(self):
