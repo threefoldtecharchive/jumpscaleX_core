@@ -21,7 +21,7 @@ class RedisFactory(j.baseclasses.factory_testtools):
         self._unix_socket_core = j.core.tools.text_replace("{DIR_BASE}/var/redis.sock")
         self._core = None
         self.core_stop = RedisTools.core_stop
-        self.core_get = RedisTools.core_get
+        self.core_get = RedisTools._core_get
         self.core_running = RedisTools.core_running
 
     @property

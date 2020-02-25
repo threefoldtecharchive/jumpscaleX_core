@@ -18,6 +18,10 @@ class Attr:
                 return child
 
             if isinstance(self, j.baseclasses.object_config):
+                try:
+                    schema = self._schema_
+                except:
+                    self._schema_ = self._model.schema
                 schema = self._schema_
                 if name in schema.propertynames:
                     return self._data.__getattribute__(name)

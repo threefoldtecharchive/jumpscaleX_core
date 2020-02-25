@@ -16,12 +16,15 @@ class JSConfigBCDB(JSConfigBCDBBase):
 
             if name and not self._bcdb_ == False and not self._model_ == False:
                 jsxobjects = self._model.find(name=name)
-            if len(jsxobjects) > 0:
+
+            self._model
+            if len(jsxobjects) > 1:
+                raise j.exceptions.JSBUG("threre should never be more than 1 record with same name:%s" % name)
+            elif len(jsxobjects) == 1:
                 self._data = jsxobjects[0]
+                self._schema_ = self._model.schema
             else:
                 self._model  # make sure model has been resolved
-                if self._model == None:
-                    self._model
                 if self._model == False:
                     # and hasattr(self, "_schema_")
                     self._data = self._schema_.new()  # create an empty object
