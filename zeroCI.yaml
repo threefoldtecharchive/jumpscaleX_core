@@ -3,7 +3,7 @@ prequisties:
 
 install:
   - apt-get update
-  - pip3 install click pytest nose nose-progressive nose-testconfig nose-exclude loguru parameterized requests checksumdir 
+  - pip3 install click pytest loguru parameterized requests checksumdir xmltodict 
   - eval `ssh-agent -s`; ssh-add
   - cd /sandbox/code/github/threefoldtech/
   - declare strs=('libs' 'libs_extra' 'builders' 'threebot') && for s in ${strs[@]}; do 
@@ -15,9 +15,11 @@ install:
   - source /sandbox/env.sh; kosmos "j.builders.runtimes.lua.install_autossl()"
 
 script:
-  - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v JumpscaleCore/ --nologcapture --with-noseexclude
-    --exclude-dir=JumpscaleCore/servers/ --exclude-dir=JumpscaleCore/clients/tests/manual --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
-    --tc-file=/sandbox/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/clients/tests/config.ini --tc=git.name:$git_name 
-    --tc=git.email:$git_mail --tc=git.passwd:$git_passwd --tc=git.token:$git_token --tc=mail.username:$mail_username --tc=mail.password:$mail_passwd
-  - source /sandbox/env.sh; cd /sandbox/code/github/threefoldtech/jumpscaleX_core; nosetests-3.4 -v test_loader.py:CoreTests 
-    --nologcapture --with-xunit --xunit-file=/test.xml --xunit-testsuite-name=jumpscaleX_core
+  - source /sandbox/env.sh; kosmos -p 'testrunner = j.baseclasses.testtools(xml_report=True, xml_path="/test.xml", xml_testsuite_name="sal_tests"); testrunner._run_tests_from_object(obj=j.sal)'
+  - source /sandbox/env.sh; kosmos -p 'testrunner = j.baseclasses.testtools(xml_report=True, xml_path="/test.xml", xml_testsuite_name="data_tests"); testrunner._run_tests_from_object(obj=j.data)' 
+  - source /sandbox/env.sh; kosmos -p 'testrunner = j.baseclasses.testtools(xml_report=True, xml_path="/test.xml", xml_testsuite_name="tools_tests"); testrunner._run_tests_from_object(obj=j.tools)'
+  - source /sandbox/env.sh; kosmos -p 'testrunner = j.baseclasses.testtools(xml_report=True, xml_path="/test.xml", xml_testsuite_name="client_tests"); testrunner._run_tests_from_object(obj=j.clients)'
+  - source /sandbox/env.sh; kosmos -p 'testrunner = j.baseclasses.testtools(xml_report=True, xml_path="/test.xml", xml_testsuite_name="servers_tests"); testrunner._run_tests_from_object(obj=j.servers)'
+  - source /sandbox/env.sh; kosmos -p 'testrunner = j.baseclasses.testtools(xml_report=True, xml_path="/test.xml", xml_testsuite_name="core_tests"); testrunner._run_tests_from_object(obj=j.core)'
+
+
