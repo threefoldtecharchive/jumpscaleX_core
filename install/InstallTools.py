@@ -5039,9 +5039,9 @@ class DockerContainer:
                 MOUNTS = """
                 -v {DIR_CODE}:/sandbox/code \
                 -v {DIR_BASE}/var/containers/shared:/sandbox/myhost \
+                -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
+                -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
                 """
-                # -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
-                # -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
 
             args["MOUNTS"] = Tools.text_replace(MOUNTS.strip(), args=args)
             args["CMD"] = self.config.startupcmd
