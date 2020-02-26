@@ -6,6 +6,7 @@ import netaddr
 import re
 import os
 from Jumpscale import j
+import psutil
 
 JSBASE = j.baseclasses.object
 
@@ -1045,6 +1046,10 @@ class NetTools(JSBASE):
         """
         n = self.netobject_get(device)
         return (str(netaddr.IPAddress(n.first + skip_begin)), str(netaddr.IPAddress(n.last - skip_end)))
+
+    def getRunningPorts(self):
+        data = [(x.laddr.port, psutil.Process(x.pid).name()) for x in psutil.net_connections()]
+        return data
 
 
 # XXX TODO: make dynamic-js-based.  doesn't seem to be used anywhere?
