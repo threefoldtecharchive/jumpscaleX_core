@@ -82,3 +82,11 @@ jsx threebotbuilder
  ```
  
  this will result in threefoldtech/base & threefoldtech/3bot on your system, you can use other names but if this name then will be used by the container installer as base which will win a lot of time.
+
+ ## Exposing container ports on the host
+
+ In the container configuration file (usually `~/sandbox/var/containers/3bot/docker_config.toml`),use the `PORTS` property, for example:
+
+```toml
+PORTS = '{"80": "80", "443":"443"}'
+```

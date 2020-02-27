@@ -181,6 +181,7 @@ class NACLFactory(j.baseclasses.object, TESTTOOLS):
 
         print("OK")
 
+   # @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/482")
     def test(self):
         """
         kosmos 'j.data.nacl.test()'
@@ -283,6 +284,7 @@ class NACLFactory(j.baseclasses.object, TESTTOOLS):
                 j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default"),
             )
             j.sal.fs.remove(j.core.tools.text_replace("{DIR_BASE}/cfg/keys/default_backup"))
+
         self._log_info("TEST OK")
         print("TEST OK")
 
