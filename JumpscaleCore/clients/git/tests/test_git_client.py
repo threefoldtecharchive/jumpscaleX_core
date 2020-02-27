@@ -35,6 +35,7 @@ def rand_string():
     return j.data.idgenerator.generateXCharID(10)
 
 
+@skip("https://github.com/threefoldtech/zeroCI/issues/30, This test can be run manually")
 def before_all():
 
     info("Create remote repo, in github account")

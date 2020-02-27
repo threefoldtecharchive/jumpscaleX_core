@@ -12,6 +12,8 @@ try:
 except KeyError:
     raise Exception("You need to set email username and password as an environmental variables")
 
+skip = j.baseclasses.testtools._skip
+
 
 def info(message):
     logging.basicConfig(format="%(message)s", level=logging.INFO)
@@ -33,6 +35,11 @@ def before():
     mail_client = j.clients.email.new(
         RAND_STRING, smtp_server="smtp.gmail.com", smtp_port=587, Email_from=username, password=password
     )
+
+
+@skip("https://github.com/threefoldtech/zeroCI/issues/30, This test can be run manually")
+def before_all():
+    pass
 
 
 def tearDown():
