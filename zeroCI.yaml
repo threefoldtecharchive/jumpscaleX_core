@@ -17,11 +17,12 @@ install:
   - source /sandbox/env.sh; kosmos "j.builders.runtimes.lua.install_autossl()"
 
 script:
-  - source /sandbox/env.sh; kosmos -p 'testrunner = j.baseclasses.testtools(xml_report=True, xml_path="/test.xml", xml_testsuite_name="sal_tests"); testrunner._run_tests_from_object(obj=j.sal)'
-  - source /sandbox/env.sh; kosmos -p 'testrunner = j.baseclasses.testtools(xml_report=True, xml_path="/test.xml", xml_testsuite_name="data_tests"); testrunner._run_tests_from_object(obj=j.data)' 
-  - source /sandbox/env.sh; kosmos -p 'testrunner = j.baseclasses.testtools(xml_report=True, xml_path="/test.xml", xml_testsuite_name="tools_tests"); testrunner._run_tests_from_object(obj=j.tools)'
-  - source /sandbox/env.sh; kosmos -p 'testrunner = j.baseclasses.testtools(xml_report=True, xml_path="/test.xml", xml_testsuite_name="client_tests"); testrunner._run_tests_from_object(obj=j.clients)'
-  - source /sandbox/env.sh; kosmos -p 'testrunner = j.baseclasses.testtools(xml_report=True, xml_path="/test.xml", xml_testsuite_name="servers_tests"); testrunner._run_tests_from_object(obj=j.servers)'
-  - source /sandbox/env.sh; kosmos -p 'testrunner = j.baseclasses.testtools(xml_report=True, xml_path="/test.xml", xml_testsuite_name="core_tests"); testrunner._run_tests_from_object(obj=j.core)'
+
+  - source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "sal_tests" -o "j.sal";yes | bcdb delete --all
+  - source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "data_tests" -o "j.data";yes | bcdb delete --all
+  - source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "tools_tests" -o "j.tools";yes | bcdb delete --all
+  - source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "clients_tests" -o "j.clients";yes | bcdb delete --all
+  - source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "servers_tests" -o "j.servers";yes | bcdb delete --all
+  - source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "core_tests" -o "j.core";yes | bcdb delete --all
 
 
