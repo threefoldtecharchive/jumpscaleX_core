@@ -3,7 +3,7 @@ prequisties:
 
 install:
   - apt-get update
-  - pip3 install click pytest loguru parameterized requests checksumdir xmltodict imbox logbook
+  - pip3 install click pytest loguru parameterized requests checksumdir xmltodict imbox logbook nltk imapclient
   - eval `ssh-agent -s`; ssh-add
   - cd /sandbox/code/github/threefoldtech/
   - rm -rf /sandbox/code/github/threefoldtech/jumpscaleX_core

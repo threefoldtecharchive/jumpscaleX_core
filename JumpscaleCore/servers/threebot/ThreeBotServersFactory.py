@@ -183,6 +183,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
         ]
         return self.start(background=background, packages=packages, reload=reload, with_shell=with_shell)
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/560")
     def test(self, name=None, restart=False):
         """
 
