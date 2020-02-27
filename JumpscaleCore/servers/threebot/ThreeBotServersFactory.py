@@ -6,6 +6,8 @@ TESTTOOLS = j.baseclasses.testtools
 
 # from .OpenPublish import OpenPublish
 
+skip = j.baseclasses.testtools._skip
+
 
 class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, TESTTOOLS):
     """
@@ -206,6 +208,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
 
         self._tests_run(name=name)
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/574")
     def test_explorer(self):
         """
 
