@@ -9,14 +9,6 @@ from subprocess import Popen, PIPE
 skip = j.baseclasses.testtools._skip
 
 
-try:
-    user_name = os.environ["GIT_NAME"]
-    user_email = os.environ["GIT_EMAIL"]
-    user_passwd = os.environ["GIT_PASSWORD"]
-    git_token = os.environ["GIT_TOKEN"]
-except KeyError:
-    raise Exception("You need to set git username, email, password, and token as an environmental variables")
-
 REPO_DIR = "/tmp/test_tft"
 RANDOM_NAME = j.data.idgenerator.generateXCharID(10)
 REPO_NAME = j.data.idgenerator.generateXCharID(10)
@@ -24,6 +16,9 @@ GIT_REPO = "{}/code/test/tfttesting/{}".format(REPO_DIR, REPO_NAME)
 GIT_CLIENT = ""
 github_client = ""
 C_ID = ""
+user_name = ""
+user_email = ""
+user_passwd = ""
 
 
 def info(message):
@@ -37,6 +32,14 @@ def rand_string():
 
 @skip("https://github.com/threefoldtech/zeroCI/issues/30, This test can be run manually")
 def before_all():
+    try:
+        global user_name, user_email, user_passwd
+        user_name = os.environ["GIT_NAME"]
+        user_email = os.environ["GIT_EMAIL"]
+        user_passwd = os.environ["GIT_PASSWORD"]
+        git_token = os.environ["GIT_TOKEN"]
+    except KeyError:
+        raise Exception("You need to set git username, email, password, and token as an environmental variables")
 
     info("Create remote repo, in github account")
     global github_client

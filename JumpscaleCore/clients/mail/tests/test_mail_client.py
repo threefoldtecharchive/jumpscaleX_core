@@ -6,11 +6,8 @@ from Jumpscale import j
 j.builders.runtimes.python3.pip_package_install("nose-testconfig")
 
 mail_client = ""
-try:
-    username = os.environ["MAIL_USERNAME"]
-    password = os.environ["MAIL_PASSWORD"]
-except KeyError:
-    raise Exception("You need to set email username and password as an environmental variables")
+username = ""
+password = ""
 
 skip = j.baseclasses.testtools._skip
 
@@ -39,7 +36,13 @@ def before():
 
 @skip("https://github.com/threefoldtech/zeroCI/issues/30, This test can be run manually")
 def before_all():
-    pass
+    try:
+        global username
+        username = os.environ["MAIL_USERNAME"]
+        global password
+        password = os.environ["MAIL_PASSWORD"]
+    except KeyError:
+        raise Exception("You need to set email username and password as an environmental variables")
 
 
 def tearDown():
