@@ -3,7 +3,11 @@ from Jumpscale import j
 import random, unittest, time
 from parameterized import parameterized
 from uuid import uuid4
-from loguru import logger
+try:
+    from loguru import logger
+except ImportError:
+    j.builders.runtimes.python3.pip_package_install("loguru", reset=True)
+    from loguru import logger
 import subprocess
 
 skip = j.baseclasses.testtools._skip
@@ -170,6 +174,8 @@ def test05_getByPort(result_type):
         " ps -aux | grep -v -e grep -e tmux | grep {} | awk '{{print $2}}'".format(P)
     )
     assert output != ""
+    if len(output.splitlines()) > 1:
+        output = output.splitlines()[0]
     PID = int(output)
     if result_type == "process":
         info("Use getProcessByPort to get P, should succeed.")
@@ -194,6 +200,14 @@ def test06_getDefunctProcesses():
     info("Get zombie processes list [z1] by ps -aux")
     _, output, error = j.sal.process.execute("ps aux | grep -w Z | awk '{{ print $2 }}'  ")
     z1 = output.splitlines()
+    # calling j.sal.process execute will execute using "bash -c CMD" which will result in two process:
+    # 1- Parent: "Bash -c CMD"
+    # 2- Child: CMD
+    # these two will be the last two in the pid list although they are not defunct. So, it should start after two PIDs.
+    if len(z1) > 2:
+        z1 = z1[:-2]
+    else:
+        z1 = []
     z1 = list(map(int, z1))
     info("Get zombie processes list [z2] by getDefunctProcesses ")
     z2 = j.sal.process.getDefunctProcesses()
@@ -280,8 +294,11 @@ def test09_getProcessPid_and_getProcessPidsFromUser():
     #. Use getProcessPidsFromUser to get process pid [PID], Check that it returs right PID.
     """
     info("Start process [p1] with python.")
-    P = "python -m SimpleHTTPServer {}".format(random.randint(1000, 2000))
-    _, output, error = j.sal.process.execute("tmux  new -d -s {} '{}'  ".format(rand_string(), P))
+    P1 = "python -m SimpleHTTPServer {}".format(random.randint(1000, 2000))
+    P2 = "python -m SimpleHTTPServer {}".format(random.randint(2000, 3000))
+    _, output, error = j.sal.process.execute("tmux  new -d -s {} '{}'  ".format(rand_string(), P1))
+    time.sleep(2)
+    _, output, error = j.sal.process.execute("tmux  new -d -s {} '{}'  ".format(rand_string(), P2))
     time.sleep(2)
     _, output, error = j.sal.process.execute("ps ax | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'")
     pids = output.split()
@@ -294,7 +311,8 @@ def test09_getProcessPid_and_getProcessPidsFromUser():
     user = output.strip()
 
     info("Use getProcessPid to get process pid [PID], Check that it returns right PID.")
-    assert pids == j.sal.process.getProcessPid(P)
+    assert pids[0] == j.sal.process.getProcessPid(P1)[0]
+    assert pids[1] == j.sal.process.getProcessPid(P2)[0]
 
     info("Use getProcessPidsFromUser to get process pid [PID], Check that it returs right PID.")
     assert set(pids).issubset(set(j.sal.process.getProcessPidsFromUser(user))) is True
@@ -320,7 +338,9 @@ def test10_isPidAlive():
         " ps -aux | grep -v -e grep -e tmux | grep SimpleHTTPServer | awk '{{print $2}}'"
     )
     assert output != ""
-    PID = int(output)
+    pids = output.split("\n")[:-1]
+    #PID = int(output)
+    PID = int(pids[0])
 
     info("Use isPidAlive, should return True.")
     assert j.sal.process.isPidAlive(PID) is True
