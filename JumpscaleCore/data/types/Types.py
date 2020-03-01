@@ -145,6 +145,9 @@ class Types(j.baseclasses.object, j.baseclasses.testtools):
 
         """
 
+        if isinstance(ttype, TypeBaseClass):
+            return ttype
+
         ttype = ttype.lower().strip()
 
         if ttype != "list" and ttype.startswith("l"):

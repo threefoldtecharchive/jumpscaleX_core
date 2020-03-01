@@ -172,6 +172,7 @@ class JSConfigBCDB(JSConfigBCDBBase):
         return str(self._data)
 
     def __repr__(self):
-        out = "{BLUE}# JSXOBJ:{RESET}\n"
+        # out = "{BLUE}# JSXOBJ:{RESET}\n"
+        out = "{RESET}\n"
         ansi_out = j.core.tools.text_replace(out, die_if_args_left=False).rstrip()
         return ansi_out + "\n" + self._data.__repr__()
