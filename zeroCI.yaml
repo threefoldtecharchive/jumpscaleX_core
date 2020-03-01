@@ -18,11 +18,9 @@ install:
 
 script:
 
-  - source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "sal_tests" -o "j.sal";yes | bcdb delete --all
-  - source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "data_tests" -o "j.data";yes | bcdb delete --all
-  - source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "tools_tests" -o "j.tools";yes | bcdb delete --all
-  - source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "clients_tests" -o "j.clients";yes | bcdb delete --all
-  - source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "servers_tests" -o "j.servers";yes | bcdb delete --all
-  - source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "core_tests" -o "j.core";yes | bcdb delete --all
-
-
+  - source /sandbox/env.sh && python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "sal_tests" -o "j.sal" && yes | bcdb delete --all
+  - source /sandbox/env.sh && python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "data_tests" -o "j.data" && yes | bcdb delete --all
+  - source /sandbox/env.sh && python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "tools_tests" -o "j.tools" && yes | bcdb delete --all
+  - source /sandbox/env.sh && python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "clients_tests" -o "j.clients" && yes | bcdb delete --all
+  - source /sandbox/env.sh && python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "servers_tests" -o "j.servers" && yes | bcdb delete --all
+  - source /sandbox/env.sh && python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/cmds/js_testrun --with-xml  --xml-path /test.xml --xml-testsuite-name "core_tests" -o "j.core" && yes | bcdb delete --all
