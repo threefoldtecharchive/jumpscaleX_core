@@ -892,6 +892,9 @@ class LogHandler:
         if not appname:
             appname = self.appname
         rediskey_logs = "logs:%s:data" % appname
+
+        if not self.db:
+            return
         try:
             res = self.db.hget(rediskey_logs, identifier)
         except:
@@ -3339,7 +3342,9 @@ class MyEnv_:
             "REVERSE": "",
         }
 
-        LOGFORMATBASE = "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"  # DO NOT CHANGE COLOR
+        LOGFORMATBASE = (
+            "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"
+        )  # DO NOT CHANGE COLOR
 
         self.LOGFORMAT = {
             "DEBUG": LOGFORMATBASE.replace("{COLOR}", "{CYAN}"),
@@ -4614,7 +4619,7 @@ class DockerFactory:
             cdir = Tools.text_replace("{DIR_BASE}/var/containers")
             Tools.dir_ensure(cdir)
             for name_found in os.listdir(cdir):
-                if not os.path.isdir(cdir):
+                if not os.path.isdir(os.path.join(cdir, name_found)):
                     # https://github.com/threefoldtech/jumpscaleX_core/issues/297
                     # in case .DS_Store is created when opened in finder
                     continue

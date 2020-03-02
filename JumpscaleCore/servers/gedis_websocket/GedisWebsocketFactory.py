@@ -5,6 +5,8 @@ from .GedisWebsocketServer import GedisWebsocketServer
 
 JSConfigClient = j.baseclasses.object_config_collection
 
+skip = j.baseclasses.testtools._skip
+
 
 class GedisWebsocketFactory(JSConfigClient):
     __jslocation__ = "j.servers.gedis_websocket"
@@ -19,6 +21,7 @@ class GedisWebsocketFactory(JSConfigClient):
             self._default = self.get("default")
         return self._default
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/575")
     def test(self):
         """
         kosmos 'j.servers.gedis_websocket.test()'

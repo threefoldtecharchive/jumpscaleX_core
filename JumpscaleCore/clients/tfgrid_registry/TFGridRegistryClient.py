@@ -14,6 +14,9 @@ class Format(Enum):
     THREEBOTPACKAGE = 6
 
 
+skip = j.baseclasses.testtools._skip
+
+
 class TFGridRegistryClient(j.baseclasses.object, TESTTOOLS):
     """
 
@@ -333,6 +336,7 @@ class TFGridRegistryClient(j.baseclasses.object, TESTTOOLS):
         signed_data = self.me.nacl.sign(dataobj._data)
         return verifykey, signed_data
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/571")
     def test(self, name=""):
         """
         kosmos 'j.clients.tfgrid_registry.test()'

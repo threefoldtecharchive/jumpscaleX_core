@@ -29,6 +29,7 @@ def get_package(package_name):
     return None
 
 
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/560")
 def before_all():
     j.servers.threebot.start(background=True)
 
@@ -136,4 +137,3 @@ def test_003_package_enable_disable():
     package = get_package(PACKAGE_NAME)
     assert package is not None
     assert package.status == "INSTALLED"
-

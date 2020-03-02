@@ -27,6 +27,7 @@ from Jumpscale import j
 from Jumpscale.data.schema.tests.schema import Schema
 import unittest
 
+
 def log(msg):
     j.core.tools.log(msg, level=20)
 
@@ -34,10 +35,12 @@ def log(msg):
 def random_string():
     return "s" + str(uuid4()).replace("-", "")[:10]
 
+
 def almost_equal(value_1, value_2, delta):
     return abs(value_1 - value_2) < delta
 
-T = unittest.TestCase() 
+
+T = unittest.TestCase()
 schema = Schema
 
 
@@ -58,7 +61,7 @@ def test001_validate_string_type():
     init_str_1 = "test string 1" (S)
     init_str_2 = 'test string 2' (S)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with string type, should succeed.")
@@ -67,6 +70,7 @@ def test001_validate_string_type():
     assert schema_obj.name == name
     assert schema_obj.init_str_1 == "test string 1"
     assert schema_obj.init_str_2 == "test string 2"
+
 
 def test_002_validate_integer_type():
     """
@@ -85,21 +89,22 @@ def test_002_validate_integer_type():
     number = (I)
     init_int = 123 (I)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with type which cannot convert to integer should fail.")
     with T.assertRaises(Exception):
-        schema_obj.number = random_string() 
+        schema_obj.number = random_string()
 
     with T.assertRaises(Exception):
         schema_obj.number = [random.randint(1, 1000), random.randint(1, 1000)]
-        
+
     log("Try to set parameter[P1] with integer type, should succeed.")
     rand_num = random.randint(1, 1000)
     schema_obj.number = rand_num
     assert schema_obj.number == rand_num
     assert schema_obj.init_int == 123
+
 
 def test_003_validate_float_type():
     """
@@ -118,7 +123,7 @@ def test_003_validate_float_type():
     number = (F)
     init_float = 84.32 (F)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non float type, should fail.")
@@ -136,6 +141,7 @@ def test_003_validate_float_type():
     schema_obj.number = rand_num
     assert schema_obj.number == rand_num
     assert schema_obj.init_float == 84.32
+
 
 def test_004_validate_boolean_type():
     """
@@ -159,12 +165,12 @@ def test_004_validate_boolean_type():
     init_bool_5 = True (B)
     init_bool_6 = 'n' (B)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with False or non True value, should be False.")
     schema_obj.check = False
-    assert  schema_obj.check == False
+    assert schema_obj.check == False
 
     schema_obj.check = random.randint(10, 20)
     assert schema_obj.check is False
@@ -176,10 +182,10 @@ def test_004_validate_boolean_type():
     assert schema_obj.check is False
 
     schema_obj.check = [True, False]
-    assert schema_obj.check ==  False
+    assert schema_obj.check == False
 
     schema_obj.check = {"number": True}
-    assert schema_obj.check ==  False
+    assert schema_obj.check == False
     assert schema_obj.init_bool_6 == False
 
     log("Try to set parameter[P1] with True value, should be True.")
@@ -206,6 +212,7 @@ def test_004_validate_boolean_type():
     assert schema_obj.init_bool_4 == True
     assert schema_obj.init_bool_5 == True
 
+
 def test_005_validate_mobile_type():
     """
     SCM-005
@@ -225,7 +232,7 @@ def test_005_validate_mobile_type():
     init_tel_2 = '+45687941' (tel)
     init_tel_3 = 468716420 (tel)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non mobile type, should fail.")
@@ -239,10 +246,7 @@ def test_005_validate_mobile_type():
         schema_obj.mobile = random.uniform(10, 20)
 
     with T.assertRaises(Exception):
-        schema_obj.mobile = [
-            "{}".format(random.randint(100000, 1000000)),
-            "{}".format(random.randint(100000, 1000000)),
-        ]
+        schema_obj.mobile = ["{}".format(random.randint(100000, 1000000)), "{}".format(random.randint(100000, 1000000))]
     with T.assertRaises(Exception):
         schema_obj.mobile = {"number": "{}".format(random.randint(100000, 1000000))}
 
@@ -260,6 +264,7 @@ def test_005_validate_mobile_type():
     assert schema_obj.init_tel_1 == "4644564464"
     assert schema_obj.init_tel_2 == "+45687941"
     assert schema_obj.init_tel_3 == "468716420"
+
 
 def test_006_validate_email_type():
     """
@@ -279,7 +284,7 @@ def test_006_validate_email_type():
     init_email_1 = "test.example@domain.com" (email)
     init_email_2 = test.example@domain.com (email)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non email type, should fail.")
@@ -306,9 +311,10 @@ def test_006_validate_email_type():
 
     log("Try to set parameter[P1] with email type, should succeed.")
     schema_obj.email = "test.example@domain.com"
-    assert schema_obj.email == "test.example@domain.com" 
+    assert schema_obj.email == "test.example@domain.com"
     assert schema_obj.init_email_1 == "test.example@domain.com"
     assert schema_obj.init_email_2 == "test.example@domain.com"
+
 
 def test_007_validate_ipport_type():
     """
@@ -327,7 +333,7 @@ def test_007_validate_ipport_type():
     port = (ipport)
     init_port = 12315 (ipport)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non ipport type, should fail.")
@@ -348,6 +354,7 @@ def test_007_validate_ipport_type():
     assert schema_obj.port == port
     assert schema_obj.init_port == 12315
 
+
 def test_008_validate_ipaddr_type():
     """
     SCM-008
@@ -365,7 +372,7 @@ def test_008_validate_ipaddr_type():
     ip = (ipaddr)
     init_ip_1 = '127.0.0.1' (ipaddr)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non ipaddr type, should fail.")
@@ -393,6 +400,7 @@ def test_008_validate_ipaddr_type():
     assert schema_obj.ip == ip
     assert schema_obj.init_ip_1 == "127.0.0.1"
 
+
 def test_009_validate_iprange_type():
     """
     SCM-009
@@ -410,13 +418,13 @@ def test_009_validate_iprange_type():
     iprange = (iprange)
     init_iprange = '127.0.0.1/16' (iprange)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non iprange type, should fail.")
     with T.assertRaises(Exception):
         schema_obj.iprange = random.uniform(1, 100)
- 
+
     with T.assertRaises(Exception):
         schema_obj.iprange = random_string()
 
@@ -441,12 +449,13 @@ def test_009_validate_iprange_type():
 
     iprange = "10.20.1.0"
     schema_obj.iprange = iprange
-    assert schema_obj.iprange ==  iprange
+    assert schema_obj.iprange == iprange
 
     iprange = "10.15.{}.1/24".format(random.randint(0, 255))
     schema_obj.iprange = iprange
     assert schema_obj.iprange == iprange
     assert schema_obj.init_iprange == "127.0.0.1/16"
+
 
 def test_010_validate_date_type():
     """
@@ -467,7 +476,7 @@ def test_010_validate_date_type():
     init_date_time = 01/01/2019 9pm:10 (t)
     init_date = 05/03/1994 (d)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non date type, should fail.")
@@ -520,7 +529,7 @@ def test_010_validate_date_type():
 
     date = datetime(year, month, day).timestamp()
     schema_obj.date = "{}/{:02}/{:02}".format(year, month, day)
-    assert schema_obj.date ==  int(date)
+    assert schema_obj.date == int(date)
 
     date_time = datetime(datetime.now().year, month, day).timestamp()
     schema_obj.date_time = "{:02}/{:02}".format(month, day)
@@ -558,6 +567,7 @@ def test_010_validate_date_type():
     schema_obj.date_time = "{:02}/{:02}/{}".format(day, month, year)
     assert schema_obj.date_time == int(date_time)
 
+
 def test_011_validate_percent_type():
     """
     SCM-011
@@ -579,7 +589,7 @@ def test_011_validate_percent_type():
     init_percent_4 = 1% (percent)
     init_percent_5 = 0.54% (percent)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non percent type, should fail.")
@@ -601,7 +611,7 @@ def test_011_validate_percent_type():
     log("Try to set parameter[P1] with percent type, should succeed.")
     percent = random.randint(0, 1)
     schema_obj.percent = percent
-    assert schema_obj.percent == percent 
+    assert schema_obj.percent == percent
 
     percent = random.uniform(0, 1)
     schema_obj.percent = percent
@@ -619,16 +629,17 @@ def test_011_validate_percent_type():
     value = random.uniform(0, 1)
     percent = "{}".format(value)
     schema_obj.percent = percent
-    assert schema_obj.percent  == value
+    assert schema_obj.percent == value
 
     percent = "{}%".format(value)
     schema_obj.percent = percent
     assert schema_obj.percent == value / 100
     assert schema_obj.init_percent_1 == 0
     assert schema_obj.init_percent_2 == 1
-    assert schema_obj.init_percent_3 ==  0.95
+    assert schema_obj.init_percent_3 == 0.95
     assert schema_obj.init_percent_4 == 0.01
-    assert schema_obj.init_percent_5 ==  0.0054
+    assert schema_obj.init_percent_5 == 0.0054
+
 
 def test_012_validate_url_type():
     """
@@ -647,7 +658,7 @@ def test_012_validate_url_type():
     site = (u)
     init_url = 'test.example.com/home' (u)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non url type, should fail.")
@@ -662,7 +673,7 @@ def test_012_validate_url_type():
 
     with T.assertRaises(Exception):
         schema_obj.site = "example@com"
-        
+
     with T.assertRaises(Exception):
         schema_obj.site = "test/example.com"
 
@@ -677,7 +688,8 @@ def test_012_validate_url_type():
 
     schema_obj.site = "test.example.com/home"
     assert schema_obj.site == "test.example.com/home"
-    assert schema_obj.init_url ==  "test.example.com/home"
+    assert schema_obj.init_url == "test.example.com/home"
+
 
 def test_013_validate_numeric_type():
     """
@@ -699,7 +711,7 @@ def test_013_validate_numeric_type():
     init_numeric_2 = 10 (N)
     init_numeric_3 = 10.54 (N)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non numeric type, should fail.")
@@ -728,6 +740,7 @@ def test_013_validate_numeric_type():
     assert schema_obj.init_numeric_2_usd == 10
     assert schema_obj.init_numeric_3_usd == 10.54
 
+
 def test_014_validate_currency_conversion():
     """
     SCM-014
@@ -743,7 +756,7 @@ def test_014_validate_currency_conversion():
     @url = test.schema
     currency = (N)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Put one of currencies and convert it to the other currencies and Check result is same as calculated")
@@ -753,7 +766,11 @@ def test_014_validate_currency_conversion():
         currency = "{} {}".format(value, curr1)
         schema_obj.currency = currency
         for curr2 in currencies:
-            assert almost_equal(schema_obj.currency_cur(curr2),  value * currencies[curr2] / currencies[curr1], 0.0001) is True
+            assert (
+                almost_equal(schema_obj.currency_cur(curr2), value * currencies[curr2] / currencies[curr1], 0.0001)
+                is True
+            )
+
 
 def test_015_validate_guid_type():
     """
@@ -773,7 +790,7 @@ def test_015_validate_guid_type():
     init_guid_1 = bebe8b34-b12e-4fda-b00c-99979452b7bd (guid)
     init_guid_2 = 84b022bd-2b00-4b62-8539-4ec07887bbe4 (guid)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non guid type, should fail.")
@@ -803,6 +820,7 @@ def test_015_validate_guid_type():
     assert schema_obj.init_guid_1 == "bebe8b34-b12e-4fda-b00c-99979452b7bd"
     assert schema_obj.init_guid_2 == "84b022bd-2b00-4b62-8539-4ec07887bbe4"
 
+
 def test_016_validate_dict_type():
     """
     SCM-016
@@ -820,7 +838,7 @@ def test_016_validate_dict_type():
     info = (dict)
     init_dict = {"number": 468} (dict)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non dict type, should fail.")
@@ -841,6 +859,7 @@ def test_016_validate_dict_type():
     assert schema_obj.info == {"number": value}
     assert schema_obj.init_dict == {"number": 468}
 
+
 def test_017_validate_hash_type():
     """
     SCM-017
@@ -858,7 +877,7 @@ def test_017_validate_hash_type():
     data = (h)
     init_hash = 46:682 (h)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non hash type, should fail.")
@@ -876,13 +895,14 @@ def test_017_validate_hash_type():
     log("Try to set parameter[P1] with hash type, should succeed.")
     data = (random.randint(1, 1000), random.randint(1000, 1000000))
     schema_obj.data = data
-    assert schema_obj.data ==  data
+    assert schema_obj.data == data
 
     data = [random.randint(1, 100), random.randint(1, 100)]
     schema_obj.data = data
     assert schema_obj.data[0] == data[0]
     assert schema_obj.data[1] == data[1]
     assert schema_obj.init_hash == (46, 682)
+
 
 def test_018_validate_multiline_type():
     """
@@ -902,7 +922,7 @@ def test_018_validate_multiline_type():
     init_mline = "example \\n example2 \\n example3" (multiline)
 
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non multiline type, should fail.")
@@ -917,13 +937,14 @@ def test_018_validate_multiline_type():
 
     with T.assertRaises(Exception):
         schema_obj.lines = [random.randint(1, 100), random.randint(1, 100)]
-        
+
     with T.assertRaises(Exception):
         schema_obj.lines = {"number": random.randint(1, 100)}
     log("Try to set parameter[P1] with multiline type, should succeed.")
     schema_obj.lines = "example \n example2 \n example3"
-    assert schema_obj.lines == "example \n example2 \n example3" 
+    assert schema_obj.lines == "example \n example2 \n example3"
     assert schema_obj.init_mline == "example \\n example2 \\n example3"
+
 
 def test_019_validate_yaml_type():
     """
@@ -941,7 +962,7 @@ def test_019_validate_yaml_type():
     data = (yaml)
     init_yaml = {'example':'test1'} (yaml)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non yaml type, should fail.")
@@ -957,8 +978,9 @@ def test_019_validate_yaml_type():
 example:
 - test"""
     schema_obj.data = y
-    assert schema_obj.data == {'example': ['test']}
+    assert schema_obj.data == {"example": ["test"]}
     assert schema_obj.init_yaml == {"example": "test1"}
+
 
 def test_020_validate_enum_type():
     """
@@ -976,7 +998,7 @@ def test_020_validate_enum_type():
     @url = test.schema
     colors = 'red, green, blue, black' (E)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non enum type, should fail.")
@@ -1004,6 +1026,7 @@ def test_020_validate_enum_type():
     schema_obj.colors = index
     assert schema_obj.colors == colors[index]
 
+
 def test_021_validate_binary_type():
     """
     SCM-021
@@ -1021,7 +1044,7 @@ def test_021_validate_binary_type():
     binary = (bin)
     init_bin = 'this is binary' (bin)
     """
-    schema_nw= schema(scm)
+    schema_nw = schema(scm)
     schema_obj = schema_nw.new()
 
     log("Try to set parameter[P1] with non binary type, should fail.")

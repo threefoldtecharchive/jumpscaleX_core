@@ -87,4 +87,3 @@ def test002_list_of_ssh_keys_in_sshagent():
     assert PATH in j.clients.sshagent.keys_list()
     output = j.sal.process.execute("ssh-add -l")
     assert PATH in str(output)
-
