@@ -2307,9 +2307,10 @@ class Tools:
             envars[k] = v
         return envars
 
-    def execute_jumpscale(self, cmd):
-        cmd = ".  /sandbox/env.sh;cd /tmp; kosmos -p '%s'" % cmd
-        return self.execute(cmd)
+    @staticmethod
+    def execute_jumpscale(cmd):
+        cmd2 = ".  /sandbox/env.sh;cd /tmp; kosmos -p '%s'" % cmd
+        return Tools.execute(cmd2)
 
     @staticmethod
     def execute(
