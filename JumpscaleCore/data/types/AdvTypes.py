@@ -431,8 +431,6 @@ class Numeric(TypeBaseObjFactory):
                 roundnr = 0
             elif val > 10:
                 roundnr = 1
-            else:
-                roundnr = 2
 
         if roundnr == 0:
             val = int(val)

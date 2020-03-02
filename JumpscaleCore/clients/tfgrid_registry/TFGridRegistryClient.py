@@ -342,4 +342,4 @@ class TFGridRegistryClient(j.baseclasses.object, TESTTOOLS):
         kosmos 'j.clients.tfgrid_registry.test()'
 
         """
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)

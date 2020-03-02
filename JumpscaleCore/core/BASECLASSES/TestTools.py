@@ -45,7 +45,7 @@ class TestTools:
 
         return dec
 
-    def _tests_run(self, name=""):
+    def _tests_run(self, name="", die=False):
         """This method for jumpscale factories, it is used to run tests in "tests" directory beside jumpscale factory.
         This method should not be used outside jumpscale factories.
 
@@ -72,7 +72,10 @@ class TestTools:
         if name:
             path = find_file(name, path)
         self._discover_from_path(path)
-        return self._execute_report_tests()
+        r = self._execute_report_tests()
+        if r > 0 and die:
+            raise j.exceptions.Base("could not run test:%s" % self)
+        return r
 
     def _run_from_path(self, path="", name=""):
         """Run tests from absolute or relative path.

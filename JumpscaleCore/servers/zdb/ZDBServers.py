@@ -85,5 +85,5 @@ class ZDBServers(JSConfigs, TESTTOOLS):
         if install:
             self.install()
 
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)
         print("TEST OK")

@@ -848,7 +848,7 @@ class SystemProcess(JSBASE, j.baseclasses.testtools):
         return env
 
     def test(self, name=""):
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)
 
     # DO NOT REENABLE, if you need it, call the j.sal.process.executeASyncIO
 

@@ -342,4 +342,4 @@ class SchemaFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         if want run specific test ( write the name of test ) e.g. j.data.schema.test(name="base")
         """
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)

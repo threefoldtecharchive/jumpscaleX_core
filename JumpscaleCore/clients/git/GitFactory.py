@@ -727,4 +727,4 @@ class GitFactory(j.baseclasses.object, j.baseclasses.testtools):
             self.pushGitRepos(pushmessage, name=name, update=True, provider=provider, account=account)
 
     def test(self, name=""):
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)

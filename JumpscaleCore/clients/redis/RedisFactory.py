@@ -239,4 +239,4 @@ class RedisFactory(j.baseclasses.factory_testtools):
         kosmos 'j.clients.redis.test()'
 
         """
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)

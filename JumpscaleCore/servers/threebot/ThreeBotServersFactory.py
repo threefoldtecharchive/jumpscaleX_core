@@ -203,7 +203,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
         #
         # gedis_client.reload()
 
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)
 
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/574")
     def test_explorer(self):

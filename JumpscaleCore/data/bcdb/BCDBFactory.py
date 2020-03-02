@@ -874,7 +874,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         tests = ["base", "meta_test", "async", "models", "acls", "sqlitestor", "unique_data", "subschemas", "sqlite"]
         errors = 0
         for name in tests:
-            errors += self._tests_run(name=name)
+            errors += self._tests_run(name=name, die=False)
 
         if errors > 0:
             raise j.exceptions.Base("error in test for bcdb:%s" % errors)
@@ -887,5 +887,5 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         """
 
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)
         return "OK"

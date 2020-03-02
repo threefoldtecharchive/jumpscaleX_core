@@ -417,7 +417,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
 
         self.me
 
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)
 
         self._log_info("All TESTS DONE")
         return "OK"

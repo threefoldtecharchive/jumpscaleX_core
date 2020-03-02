@@ -46,4 +46,4 @@ class SonicFactory(JSConfigs, j.baseclasses.testtools):
         print("TEST OK")
 
     def test_sonic(self, name=""):
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)

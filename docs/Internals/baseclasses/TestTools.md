@@ -147,7 +147,7 @@ If there is more than one test for a factory, tests can be written under `tests`
 class Myclass(j.baseclasses.object, j.baseclasses.testtools):
 
     def test(self, name):
-        self._tests_run(name=name)
+        self._tests_run(name=name,die=True)
 ```
 
 **Note:** `name` can be used for running only one of these test files under tests directory and it can be file name or part of the file name.

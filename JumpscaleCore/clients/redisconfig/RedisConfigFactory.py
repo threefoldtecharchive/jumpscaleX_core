@@ -43,4 +43,4 @@ class RedisConfigFactory(j.baseclasses.object_config_collection_testtools, j.bas
         assert cl4.ping()
 
     def test_redisconfig(self, name=""):
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)
