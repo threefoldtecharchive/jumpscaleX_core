@@ -698,6 +698,7 @@ class JSBase:
         if not isinstance(child, j.baseclasses.object_config) or child.name == name:
             return child
         else:
+            child.name = name
             child.save()  # save it in case autosave was False, to update the name in the database too
             del self._children[name]
             self._children[child.name] = child
