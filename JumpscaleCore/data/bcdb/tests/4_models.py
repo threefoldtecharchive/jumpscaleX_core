@@ -3,7 +3,6 @@ from Jumpscale import j
 skip = j.baseclasses.testtools._skip
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_models():
     """
     to run:
@@ -13,7 +12,6 @@ def test_models():
     work with toml files and see if models get generated properly
 
     """
-
     mpath = j.data.bcdb._dirpath + "/tests/models"
     assert j.sal.fs.exists(mpath)
 
@@ -21,7 +19,7 @@ def test_models():
     for item in j.sal.fs.listFilesInDir(mpath, filter="*.py"):
         j.sal.fs.remove(item)
 
-    bcdb, _ = j.data.bcdb._load_test_model()
+    bcdb, _ = j.data.bcdb._test_model_get()
 
     assert bcdb.name in j.data.bcdb.instances
 

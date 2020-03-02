@@ -27,7 +27,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
             j.servers.threebot.default.stop()
             j.data.bcdb._master_set()
 
-        j.data.bcdb.threebot_zdb_sonic_start()
+        j.data.bcdb.start_servers_threebot_zdb_sonic()
         j.data.bcdb.export()
 
         if stop:

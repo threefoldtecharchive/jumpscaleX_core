@@ -182,9 +182,9 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         assert j.sal.process.checkProcessRunning("zdb") is False
         assert j.sal.process.checkProcessRunning("sonic") is False
 
-    def threebot_zdb_sonic_start(self, reset=False):
+    def start_servers_threebot_zdb_sonic(self, test=False, reset=False):
         """
-        kosmos 'j.data.bcdb.threebot_zdb_sonic_start()'
+        kosmos 'j.data.bcdb.start_servers_threebot_zdb_sonic()'
 
         starts all required services for the BCDB to work for threebot
         :return: (sonic, zdb) server instance
@@ -218,11 +218,32 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         return (s, z)
 
-    def get_test(self, reset=False):
-        bcdb = j.data.bcdb.get(name="testbcdb")
-        bcdb2 = j.data.bcdb._instances["testbcdb"]
-        assert bcdb2.storclient is None
-        return bcdb
+    def start_servers_test_zdb_sonic(self, reset=False):
+
+        admin_secret = "123456"
+        namespaces_secret = "1234"
+
+        cl = j.servers.zdb.test_instance_start(
+            namespaces=None, admin_secret=admin_secret, namespaces_secret=namespaces_secret, restart=False
+        )
+        # the test_instance will test the zdb instance (ping & data dir exists)
+        # name of the zdb server is test_instance
+
+        if j.core.myenv.platform_is_linux:
+            if j.sal.nettools.tcpPortConnectionTest("localhost", 1492) is False:
+                s = j.servers.sonic.get(name="testserver", port=1492, adminsecret_=admin_secret)
+                s.start()
+            s = j.servers.sonic.get(name="testserver")
+            assert s.adminsecret_ == admin_secret
+        else:
+            s = None
+
+        z = j.servers.zdb.get(name="testserver")
+        assert z.adminsecret_ == admin_secret
+
+        self._core_zdb = z
+
+        return (s, z)
 
     @property
     def _BCDBModelClass(self):
@@ -358,7 +379,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         j.data.bcdb._master_set()
         j.tools.executor.local
 
-        self.threebot_zdb_sonic_start()
+        self.start_servers_threebot_zdb_sonic()
 
         ## import all schemas
         if path:
@@ -491,7 +512,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             raise j.exceptions.Input("ttype can only be zdb or sqlite")
         assert name
         if ttype == "zdb":
-            zdb = self._core_zdb  # has been started in threebot_zdb_sonic_start
+            zdb = self._core_zdb  # has been started in start_servers_threebot_zdb_sonic
             assert namespace
             adminsecret_ = j.data.hash.md5_string(j.core.myenv.adminsecret)
             self._log_debug("get zdb admin client")
@@ -695,12 +716,44 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         self.redis_server._init2(bcdb=self, port=port, secret=secret, addr=addr)
         return self.redis_server
 
-    def _load_test_model(self, type="zdb", schema=None, datagen=False):
+    def _test_bcdb_get(self, type="sqlite"):
+        """
+        ONLY USE THIS BCDB GET FOR THE TESTS
+        """
+        if not j.sal.nettools.tcpPortConnectionTest("localhost", 9901):
+            # get the test servers in tmux
+            self.start_servers_test_zdb_sonic()
+
+        if type == "rdb":
+            j.core.db
+            storclient = j.clients.rdb.client_get(bcdbname="test_rdb")
+            bcdb = self.get(name="test_rdb", storclient=storclient, reset=True)
+        elif type == "sqlite":
+            storclient = j.clients.sqlitedb.client_get(bcdbname="test_sqlite")
+            bcdb = self.get(name="test_sqlite", storclient=storclient, reset=True)
+        elif type == "zdb":
+            storclient = j.clients.zdb.testserver
+            storclient.flush()
+            assert storclient.nsinfo["public"] == "no"
+            assert storclient.ping()
+            bcdb = self.get(name="test_zdb", storclient=storclient, reset=True)
+        else:
+            raise j.exceptions.Base("only rdb,zdb,sqlite for stor")
+
+        assert bcdb.storclient == storclient
+
+        bcdb.reset()  # empty
+
+        assert bcdb.storclient.count == 1
+
+        return bcdb
+
+    def _test_model_get(self, type="zdb", schema=None, datagen=False):
         """
 
-        kosmos 'j.data.bcdb._load_test_model(type="zdb",datagen=True)'
-        kosmos 'j.data.bcdb._load_test_model(type="sqlite",datagen=True)'
-        kosmos 'j.data.bcdb._load_test_model(type="rdb",datagen=True)'
+        kosmos 'j.data.bcdb._test_model_get(type="zdb",datagen=True)'
+        kosmos 'j.data.bcdb._test_model_get(type="sqlite",datagen=True)'
+        kosmos 'j.data.bcdb._test_model_get(type="rdb",datagen=True)'
 
         :param reset:
         :param type:
@@ -712,7 +765,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             schema = """
             @url = despiegk.test
             0:  llist2 = "" (LS)
-            1:  name*** = ""
+            1:  name** = ""
             2:  email** = ""
             3:  nr** = 0
             4:  date_start** = 0 (D)
@@ -729,43 +782,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         type = type.lower()
 
-        def startZDB():
-            zdb = j.servers.zdb.test_instance_start()
-            storclient_admin = zdb.client_admin_get()
-            assert storclient_admin.ping()
-            secret = "1234"
-            storclient = storclient_admin.namespace_new(name="test_zdb", secret=secret)
-            return storclient
-
-        if not j.sal.nettools.tcpPortConnectionTest("localhost", 1491):
-            j.servers.sonic.get(name="default").start()
-
-        if type == "rdb":
-            j.core.db
-            storclient = j.clients.rdb.client_get(bcdbname="test")
-            bcdb = self.get(name="test", storclient=storclient, reset=True)
-        elif type == "sqlite":
-            storclient = j.clients.sqlitedb.client_get(bcdbname="test")
-            bcdb = self.get(name="test", storclient=storclient, reset=True)
-        elif type == "zdb":
-            storclient = startZDB()
-            storclient.flush()
-            assert storclient.nsinfo["public"] == "no"
-            assert storclient.ping()
-            bcdb = self.get(name="test", storclient=storclient, reset=True)
-        else:
-            raise j.exceptions.Base("only rdb,zdb,sqlite for stor")
-
-        assert bcdb.storclient == storclient
-
-        assert bcdb.name == "test"
-
-        bcdb.reset()  # empty
-
-        assert bcdb.storclient.count == 1
-
-        assert bcdb.name == "test"
-
+        bcdb = self._test_bcdb_get(type=type)
         model = bcdb.model_get(schema=schema)
 
         # lets check the sql index is empty
@@ -809,6 +826,19 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
     __repr__ = __str__
 
+    def test_core(self):
+        """
+        will test the core tests which should run everywhere
+        the tests with sonic will not run on osx
+
+        kosmos 'j.data.bcdb.test_core()'
+
+        """
+
+        tests = ["base", "meta_test", "async", "models", "acls", "sqlitestor", "redisbase"]
+        for name in tests:
+            self._tests_run(name=name)
+
     def test(self, name=""):
         """
         following will run all tests
@@ -816,34 +846,6 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         kosmos 'j.data.bcdb.test()'
 
         """
-        print(name)
-        # CLEAN STATE
 
-        redis = j.servers.startupcmd.get("redis_6380")
-        redis.stop()
-        redis.wait_stopped()
-        j.servers.zdb.test_instance_stop()
-        j.servers.sonic.default.stop()
-
-        try:
-            self._tests_run(name=name)
-        except:
-            # clean after errors
-            # CLEAN STATE
-            redis = j.servers.startupcmd.get("redis_6380")
-            redis.stop()
-            redis.wait_stopped()
-            j.servers.zdb.test_instance_stop()
-            j.servers.sonic.default.stop()
-
-            raise
-        else:
-            # CLEAN STATE
-            redis = j.servers.startupcmd.get("redis_6380")
-            redis.stop()
-            redis.wait_stopped()
-            j.servers.zdb.test_instance_stop()
-            j.servers.sonic.default.stop()
-
-        self._log_info("All TESTS DONE")
+        self._tests_run(name=name)
         return "OK"

@@ -124,14 +124,15 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
             self.install()
             self.default.start(background=False, packages=packages, with_shell=with_shell)
 
-    def local_start_3bot(self, background=False, reload=False):
-        """starts 3bot with webplatform package.
-        kosmos -p 'j.servers.threebot.local_start_3bot()'
-        """
-        if not background:
-            self._threebot_starting()
-        packages = [f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform"]
-        return self.start(background=background, packages=packages, reload=reload)
+    # I GUESS ITS NOT USED ANY MORE, WE NEED CLEANUP THERE !!!
+    # def local_start_3bot(self, background=False, reload=False):
+    #     """starts 3bot with webplatform package.
+    #     kosmos -p 'j.servers.threebot.local_start_3bot()'
+    #     """
+    #     if not background:
+    #         self._threebot_starting()
+    #     packages = [f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform"]
+    #     return self.start(background=background, packages=packages, reload=reload)
 
     def reset(self, debug=True):
         """

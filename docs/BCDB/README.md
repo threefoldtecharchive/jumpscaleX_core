@@ -178,7 +178,7 @@ for each model, we export the schema, and all the objects.
 To import the data back, start the zdb server, then simply call the `import_` function. This will first reset bcdb, then import all the data. Before reseting the data, it will confirm with the user. To disable this, send `interactive=False`.
 
 ```python
-j.data.bcdb.threebot_zdb_sonic_start()
+j.data.bcdb.start_servers_threebot_zdb_sonic()
 bcdb.import_("/tmp/bcdbinstnace/")
 ```
 

@@ -20,26 +20,22 @@ class ZDBServer(j.baseclasses.object_config):
     @property
     def datadir(self):
         if not self._datadir:
-            self._datadir = "%s/zdb/%s" % (j.core.myenv.config["DIR_VAR"], self.name)
+            self._datadir = "%s/zdb-data/%s" % (j.core.myenv.config["DIR_VAR"], self.name)
 
         return self._datadir
 
     def isrunning(self):
-        idir = "%s/index/" % (self.datadir)
-        ddir = "%s/data/" % (self.datadir)
+        idir = "%s/zdb-index/" % (self.datadir)
+        ddir = "%s/zdb-data/" % (self.datadir)
         if not j.sal.fs.exists(idir):
             return False
         if not j.sal.fs.exists(ddir):
             return False
         if not j.sal.nettools.tcpPortConnectionTest(self.addr, self.port):
             return False
-        try:
-            cl = self.client_admin_get()
-            return cl.ping()
-        except Exception as e:
-            raise e
 
-            j.shell()
+        cl = self.client_admin_get()
+        return cl.ping()
 
     def start(self):
         """
@@ -90,13 +86,16 @@ class ZDBServer(j.baseclasses.object_config):
         cl = j.clients.zdb.client_admin_get(
             name=f"{self.name}_admin", addr=self.addr, port=self.port, secret=self.adminsecret_, mode=self.mode
         )
+        assert cl.ping()
         return cl
 
-    def client_get(self, name, nsname="default", secret="1234"):
+    def client_get(self, name=None, nsname="default", secret="1234"):
         """
         get client to zdb
 
         """
+        if not name:
+            name = f"{self.name}"
         cl = j.clients.zdb.client_get(
             name=name, namespace=nsname, addr=self.addr, port=self.port, secret=secret, mode=self.mode
         )

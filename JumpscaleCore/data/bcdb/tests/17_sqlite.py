@@ -53,7 +53,7 @@ def test_sqlite():
 
     """
 
-    db, m = j.data.bcdb._load_test_model(type="sqlite", schema=SCHEMA)
+    db, m = j.data.bcdb._test_model_get(type="sqlite", schema=SCHEMA)
     bcdb = m.bcdb
 
     ###EXAMPLE HOW WE CAN USE TRIGGERS ON MODELS TO BUILD E.G. A CUSTOM INDEX

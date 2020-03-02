@@ -22,15 +22,13 @@ class ZDBServers(JSConfigs, TESTTOOLS):
             self._default = self.get(name="default")
         return self._default
 
-    def install(self, reset=True):
+    def install(self, reset=False):
         """
         kosmos 'j.servers.zdb.install()'
         """
         j.builders.db.zdb.install(reset=reset)
 
-    def test_instance_start(
-        self, destroydata=False, namespaces=None, admin_secret="123456", namespaces_secret="1234", restart=False
-    ):
+    def test_instance_start(self, namespaces=["test"], admin_secret="123456", namespaces_secret="1234", restart=False):
         """
 
         kosmos 'j.servers.zdb.test_instance_start()'
@@ -45,27 +43,29 @@ class ZDBServers(JSConfigs, TESTTOOLS):
         """
         if not namespaces:
             namespaces = []
-        zdb = self.get(name="test_instance", port=9901, autosave=True)
+        j.servers.zdb.install()
+        zdb = self.get(name="testserver", port=9901, autosave=True, adminsecret_=admin_secret)
 
-        if destroydata:
+        if restart:
             zdb.destroy()
             j.clients.redis._cache_clear()  # make sure all redis connections gone
 
         zdb.start()
-        # zdb.save()  #no longer needed happens auto
 
         cla = zdb.client_admin_get()
 
         for ns in namespaces:
-            if not cla.namespace_exists(ns):
-                cla.namespace_new(ns, secret=namespaces_secret)
-            else:
-                if destroydata:
-                    cla.namespace_delete(ns)
-                    cla.namespace_new(ns, secret=namespaces_secret)
+            if cla.namespace_exists(ns):
+                cla.namespace_delete(ns)
+            cla.namespace_new(ns, secret=namespaces_secret)
+            cl = zdb.client_get(nsname=ns, secret=namespaces_secret)
 
-        if destroydata:
-            j.clients.redis._cache_clear()  # make sure all redis connections gone
+        j.clients.redis._cache_clear()  # make sure all redis connections gone
+
+        # check zdb server is running & data dir does exist
+        j.clients.zdb.testserver_admin.ping()  # some extra tests, lets leave for now
+        j.clients.zdb.testserver.ping()
+        assert zdb.isrunning() == True
 
         return zdb
 

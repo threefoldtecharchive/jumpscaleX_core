@@ -128,7 +128,6 @@ class JSConfigBCDB(JSConfigBCDBBase):
     def save_(self):
         if not self._model:
             return
-        raise RuntimeError("remove")
         mother_id = self._mother_id_get()
         if mother_id:
             # means there is a mother

@@ -121,14 +121,14 @@ class ThreeBotServer(j.baseclasses.object_config):
     def zdb(self):
         if not self._zdb:
             self._log_info("start zdb")
-            self._sonic, self._zdb = j.data.bcdb.threebot_zdb_sonic_start()
+            self._sonic, self._zdb = j.data.bcdb.start_servers_threebot_zdb_sonic()
         return self._zdb
 
     @property
     def sonic(self):
         if not self._sonic:
             self._log_info("start sonic")
-            self._sonic, self._zdb = j.data.bcdb.threebot_zdb_sonic_start()
+            self._sonic, self._zdb = j.data.bcdb.start_servers_threebot_zdb_sonic()
         return self._sonic
 
     def _proxy_create(self, name, port_source, port_dest, scheme_source="https", scheme_dest="http", ptype="http"):
@@ -257,7 +257,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             # at this point all packages are known but all in config mode, not installed yet
             # all internal services started but not the gevent rack yet, and should be like this
 
-            # if someone passed along packages  (lazy loading will work for actor, package management in process)
             for path in packages:
                 # j.debug()
                 j.threebot.packages.zerobot.packagemanager.actors.package_manager.package_add(

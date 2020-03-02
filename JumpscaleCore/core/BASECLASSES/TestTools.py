@@ -45,7 +45,7 @@ class TestTools:
 
         return dec
 
-    def _tests_run(self, name=""):
+    def _tests_run(self, name="", exclude=[]):
         """This method for jumpscale factories, it is used to run tests in "tests" directory beside jumpscale factory.
         This method should not be used outside jumpscale factories.
 
@@ -71,7 +71,6 @@ class TestTools:
         path = j.sal.fs.joinPaths(self._dirpath, "tests")
         if name:
             path = find_file(name, path)
-
         self._discover_from_path(path)
         return self._execute_report_tests()
 
@@ -178,9 +177,11 @@ class TestTools:
                 self._import_file_module(path, parent_path)
         else:
             sys.path.insert(0, path)
-            files_pathes = j.sal.fs.listPyScriptsInDir(path=path, recursive=True)
+            files_pathes = j.sal.fs.listPyScriptsInDir(path=path, recursive=False)
             for file_path in files_pathes:
-                self._import_file_module(file_path, path)
+                file_path_base = j.sal.fs.getBaseName(file_path)
+                if not file_path_base.startswith("_"):
+                    self._import_file_module(file_path, path)
 
     def _import_file_module(self, file_path, path):
         """Import module (file) if module contains a test.

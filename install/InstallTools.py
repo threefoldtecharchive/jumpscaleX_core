@@ -4096,6 +4096,7 @@ class BaseInstaller:
                 "beaker",
                 "Mnemonic",
                 "xmltodict",
+                "sonic-client",
             ],
             # level 1: in the middle
             1: [
@@ -4430,10 +4431,8 @@ class JumpscaleInstaller:
         Tools.execute(script, die_if_args_left=True)
 
         if threebot:
-            Tools.shell()
-            self.sshexec(
-                ".  /sandbox/env.sh; kosmos -p 'j.servers.threebot.start(); j.servers.threebot.default.stop()'"
-            )
+            Tools.execute_jumpscale("j.servers.threebot.start()")
+            Tools.execute_jumpscale("j.servers.threebot.stop()")
 
     def remove_old_parts(self):
         tofind = ["DigitalMe", "Jumpscale", "ZeroRobot"]
@@ -5089,7 +5088,7 @@ class DockerContainer:
             self.dexec("apt-get install mc git -y")
             self.dexec("apt-get install python3 -y")
             self.dexec("apt-get install wget tmux -y")
-            self.dexec("apt-get install curl rsync unzip redis-server -y")
+            self.dexec("apt-get install curl rsync unzip redis-server htop -y")
             self.dexec("apt-get install python3-distutils python3-psutil python3-pip python3-click -y")
             self.dexec("locale-gen --purge en_US.UTF-8")
             self.dexec("apt-get install software-properties-common -y")

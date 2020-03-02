@@ -10,13 +10,12 @@ try redis commands to get to BCDB
 skip = j.baseclasses.testtools._skip
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_redis():
 
     """
     to run:
 
-    kosmos 'j.data.bcdb.test(name="redis")'
+    kosmos 'j.data.bcdb.test(name="redisbase")'
 
     """
 
@@ -47,7 +46,7 @@ def test_redis():
                 llist3 = "1,2,3" (LF)
                 llist4 = "1,2,3" (L)
                 """
-        db, model = j.data.bcdb._load_test_model(type=type, schema=schema, datagen=False)
+        db, model = j.data.bcdb._test_model_get(type=type, schema=schema, datagen=False)
         j.data.bcdb._cmd = j.servers.startupcmd.get(name="redis_6380", cmd_start=cmd, ports=[6380], executor="tmux")
         j.data.bcdb._cmd.start()
         j.sal.nettools.waitConnectionTest("127.0.0.1", port=6380, timeout=15)

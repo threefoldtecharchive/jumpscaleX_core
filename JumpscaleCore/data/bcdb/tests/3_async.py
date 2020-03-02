@@ -1,29 +1,8 @@
-# Copyright (C) July 2018:  TF TECH NV in Belgium see https://www.threefold.tech/
-# In case TF TECH NV ceases to exist (e.g. because of bankruptcy)
-#   then Incubaid NV also in Belgium will get the Copyright & Authorship for all changes made since July 2018
-#   and the license will automatically become Apache v2 for all code related to Jumpscale & DigitalMe
-# This file is part of jumpscale at <https://github.com/threefoldtech>.
-# jumpscale is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# jumpscale is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License v3 for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with jumpscale or jumpscale derived works.  If not, see <http://www.gnu.org/licenses/>.
-# LICENSE END
-
-
 from Jumpscale import j
 
 skip = j.baseclasses.testtools._skip
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_async():
     """
     to run:
@@ -33,11 +12,7 @@ def test_async():
     this is a test where we use the queuing mechanism for processing data changes
 
     """
-
-    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.core.myenv.adminsecret))
-    sonic.start()
-
-    _, model = j.data.bcdb._load_test_model()
+    _, model = j.data.bcdb._test_model_get()
 
     def get_obj(i):
         model_obj = model.new()
@@ -68,10 +43,6 @@ def test_async():
     assert model_obj2._ddict_hr == model_obj._ddict_hr
 
     assert model.bcdb.queue.empty()
-
-    # CLEAN STATE
-    j.servers.zdb.test_instance_stop()
-    j.servers.sonic.default.stop()
 
     j.data.bcdb._log_info("TEST ASYNC DONE")
 

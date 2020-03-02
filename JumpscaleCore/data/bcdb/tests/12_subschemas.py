@@ -88,7 +88,7 @@ def test_subschemas():
         """
 
     # bcdb = j.data.bcdb.get("test")
-    bcdb, model = j.data.bcdb._load_test_model(type="sqlite")
+    bcdb, model = j.data.bcdb._test_model_get(type="sqlite")
     bcdb.reset()
     m = bcdb.model_get(schema=schema)
 
