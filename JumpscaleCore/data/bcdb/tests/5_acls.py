@@ -218,7 +218,4 @@ def test_acls():
     test2("RDB")
     test2("SQLITE")
 
-    # CLEAN STATE
-    j.servers.sonic.default.stop()
-
     j.data.bcdb._log_info("ACL TESTS ALL DONE")

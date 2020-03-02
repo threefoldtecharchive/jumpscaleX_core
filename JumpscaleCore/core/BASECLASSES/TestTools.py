@@ -45,7 +45,7 @@ class TestTools:
 
         return dec
 
-    def _tests_run(self, name="", exclude=[]):
+    def _tests_run(self, name=""):
         """This method for jumpscale factories, it is used to run tests in "tests" directory beside jumpscale factory.
         This method should not be used outside jumpscale factories.
 
@@ -61,7 +61,7 @@ class TestTools:
             files = j.sal.fs.listPyScriptsInDir(path)
             for file in files:
                 _, basename, _, _ = j.sal.fs.pathParse(file)
-                if name in basename:
+                if name == basename:
                     return file
             else:
                 raise ValueError(f"Didn't find file with name {name}")

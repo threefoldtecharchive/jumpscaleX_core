@@ -32,11 +32,8 @@ def test_webdav():
 
     """
 
-    # md5 = "cbf134f55d0c7149ef188cf8a52db0eb"
-    # sid = "7"
-    redis = j.servers.startupcmd.get("redis_6380")
-    redis.stop()
-    redis.wait_stopped()
+    j.data.bcdb._test_redisserver_get()
+
     test_cmd = """
     from Jumpscale import j
     bcdb = j.data.bcdb.get("test", reset=True)

@@ -112,7 +112,4 @@ def test_models():
     # Auto migration!
     assert res[0]._schema._md5 == res[1]._schema._md5
 
-    # CLEAN STATE
-    j.servers.zdb.test_instance_stop()
-    j.servers.sonic.default.stop()
     return "OK"

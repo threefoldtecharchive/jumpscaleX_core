@@ -83,6 +83,14 @@ class BCDB(j.baseclasses.object):
     def start(self):
         self._init_props_()
         self._init_system_objects()
+        self.sqlite_index_client
+        # dbpath = self.sqlite_index_client.database.split("file:", 1)[1].split("?", 1)[0]
+        # if not j.sal.fs.exists(dbpath):
+        #     self.sqlite_index_client_stop()
+        #     j.debug()
+        #     self.sqlite_index_client
+        #
+        #     j.shell()
         self.dataprocessor_start()
 
     def stop(self):
@@ -475,6 +483,8 @@ class BCDB(j.baseclasses.object):
         remove all data but the bcdb instance remains
         :return:
         """
+        if self.readonly:
+            raise j.exceptions.RuntimeError("cannot reset a db when readonly")
         self.stop()  # will stop sqlite client and the dataprocessor
 
         assert self.storclient

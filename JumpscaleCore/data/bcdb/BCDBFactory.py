@@ -67,6 +67,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
                 raise j.exceptions.Base("threebotserver is starting but did not succeed within 60+15 sec")
 
             if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
+                print("** AM WORKING AS SLAVE, BCDB WILL BE READONLY **")
                 self.__master = False
             else:
                 self.__master = True
@@ -716,6 +717,42 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         self.redis_server._init2(bcdb=self, port=port, secret=secret, addr=addr)
         return self.redis_server
 
+    def _test_redisserver_get(self, type="sqlite"):
+
+        redis = j.servers.startupcmd.get("bcdb_redis_test")
+        redis.stop()
+        redis.wait_stopped()
+
+        bcdb = self._test_bcdb_get(type)
+
+        cmd = (
+            """
+                . {DIR_BASE}/env.sh;
+                kosmos 'j.data.bcdb.get("%s").redis_server_start(port=6381)'
+                """
+            % bcdb.name
+        )
+
+        schema = """
+                @url = despiegk.test2
+                llist2 = "" (LS)
+                name** = ""
+                email** = ""
+                nr** =  0
+                date_start** =  0 (D)
+                description = ""
+                cost_estimate = 0.0 #this is a comment
+                llist = []
+                llist3 = "1,2,3" (LF)
+                llist4 = "1,2,3" (L)
+                """
+        db, model = self._test_model_get(type=type, schema=schema, datagen=False)
+        self._redisserver_startupcmd = j.servers.startupcmd.get(
+            name="bcdb_redis_test", cmd_start=cmd, ports=[6381], executor="tmux"
+        )
+        self._redisserver_startupcmd.start()
+        j.sal.nettools.waitConnectionTest("127.0.0.1", port=6381, timeout=15)
+
     def _test_bcdb_get(self, type="sqlite"):
         """
         ONLY USE THIS BCDB GET FOR THE TESTS
@@ -723,7 +760,6 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         if not j.sal.nettools.tcpPortConnectionTest("localhost", 9901):
             # get the test servers in tmux
             self.start_servers_test_zdb_sonic()
-
         if type == "rdb":
             j.core.db
             storclient = j.clients.rdb.client_get(bcdbname="test_rdb")
@@ -834,10 +870,14 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         kosmos 'j.data.bcdb.test_core()'
 
         """
-
-        tests = ["base", "meta_test", "async", "models", "acls", "sqlitestor", "redisbase"]
+        # "redisbase"
+        tests = ["base", "meta_test", "async", "models", "acls", "sqlitestor", "unique_data", "subschemas", "sqlite"]
+        errors = 0
         for name in tests:
-            self._tests_run(name=name)
+            errors += self._tests_run(name=name)
+
+        if errors > 0:
+            raise j.exceptions.Base("error in test for bcdb:%s" % errors)
 
     def test(self, name=""):
         """

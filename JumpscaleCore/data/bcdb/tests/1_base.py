@@ -22,7 +22,6 @@ def test_base():
 
         def load(schema_url):
 
-            # don't forget the record 0 is always a systems record
             db, model = j.data.bcdb._test_model_get(type=name, schema=schema)
 
             for i in range(10):

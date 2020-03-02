@@ -7,7 +7,6 @@ from unittest import TestCase
 skip = j.baseclasses.testtools._skip
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_unique_data():
     """
     to run:

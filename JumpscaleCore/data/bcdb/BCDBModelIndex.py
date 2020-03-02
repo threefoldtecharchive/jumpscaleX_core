@@ -48,6 +48,10 @@ class BCDBModelIndex(j.baseclasses.object):
         if reset:
             self.destroy()
 
+    @property
+    def _path_sqlite(self):
+        return self.db.database.split("file:", 1)[1].split("?", 1)[0]
+
     def destroy(self, nid=1):
         """
         if nid is None will remove all namespaces indexes
