@@ -268,7 +268,7 @@ class Capnp(j.baseclasses.object, TESTTOOLS):
         assert obj.state == "new"
         print("TEST OK")
 
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/482")
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/578")
     def testWithRedis(self):
         capnpschema = """
         @0x93c1ac9f09464fc9;

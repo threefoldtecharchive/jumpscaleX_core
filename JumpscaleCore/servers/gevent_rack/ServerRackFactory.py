@@ -138,7 +138,6 @@ class ServerRackFactory(JSBASE, j.baseclasses.testtools):
                 s.stop()
             s.start()
 
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/553")
     def test(self, start=True, gedis=True, webdav=False, bottle=True, websockets=False):
         """
         kosmos 'j.servers.rack.test()'
