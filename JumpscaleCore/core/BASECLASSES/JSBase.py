@@ -620,6 +620,8 @@ class JSBase:
                         raise j.exceptions.JSBUG("cannot happen, there needs to be a name")
                     else:
                         obj._parent.save()
+                        if obj._parent._id == None:
+                            raise RuntimeError("obj._parent._id cannot be None when saved")
                         assert obj._parent._id > 0
                         return obj._parent._id
                 else:
@@ -700,7 +702,7 @@ class JSBase:
             del self._children[name]
             self._children[child.name] = child
 
-        return False
+        return self._children[child.name]
 
     def _dataprops_names_get(self, filter=None):
         """
