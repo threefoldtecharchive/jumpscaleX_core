@@ -223,14 +223,18 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         admin_secret = "123456"
         namespaces_secret = "1234"
+        namespaces = ["test"]
 
         cl = j.servers.zdb.test_instance_start(
-            namespaces=None, admin_secret=admin_secret, namespaces_secret=namespaces_secret, restart=False
+            namespaces=namespaces, admin_secret=admin_secret, namespaces_secret=namespaces_secret, restart=reset
         )
         # the test_instance will test the zdb instance (ping & data dir exists)
         # name of the zdb server is test_instance
 
         if j.core.myenv.platform_is_linux:
+            if reset:
+                # todo:stop sonic
+                raise RuntimeError("stop sonic")
             if j.sal.nettools.tcpPortConnectionTest("localhost", 1492) is False:
                 s = j.servers.sonic.get(name="testserver", port=1492, adminsecret_=admin_secret)
                 s.start()
@@ -753,13 +757,15 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         self._redisserver_startupcmd.start()
         j.sal.nettools.waitConnectionTest("127.0.0.1", port=6381, timeout=15)
 
-    def _test_bcdb_get(self, type="sqlite"):
+    def _test_bcdb_get(self, type="sqlite", reset=False):
         """
         ONLY USE THIS BCDB GET FOR THE TESTS
         """
-        if not j.sal.nettools.tcpPortConnectionTest("localhost", 9901):
+        if not j.clients.zdb.exists("testserver"):
+            reset = True
+        if reset or not j.sal.nettools.tcpPortConnectionTest("localhost", 9901):
             # get the test servers in tmux
-            self.start_servers_test_zdb_sonic()
+            self.start_servers_test_zdb_sonic(reset=reset)
         if type == "rdb":
             j.core.db
             storclient = j.clients.rdb.client_get(bcdbname="test_rdb")
