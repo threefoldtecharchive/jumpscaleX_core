@@ -9,6 +9,11 @@ try:
 except:
     msgpack = None
 
+try:
+    import redis
+except:
+    redis = None
+
 DEFAULT_BRANCH = "development"
 GITREPOS = {}
 
@@ -2302,6 +2307,10 @@ class Tools:
             envars[k] = v
         return envars
 
+    def execute_jumpscale(self, cmd):
+        cmd = ".  /sandbox/env.sh;cd /tmp; kosmos -p '%s'" % cmd
+        return self.execute(cmd)
+
     @staticmethod
     def execute(
         command,
@@ -3359,8 +3368,8 @@ class MyEnv_:
             self.log_includes = [i for i in self.config.get("LOGGER_INCLUDE", []) if i.strip().strip("''") != ""]
             self.log_excludes = [i for i in self.config.get("LOGGER_EXCLUDE", []) if i.strip().strip("''") != ""]
             self.log_level = self.config.get("LOGGER_LEVEL", 10)
-            self.log_console = self.config.get("LOGGER_CONSOLE", False)
-            self.log_redis = self.config.get("LOGGER_REDIS", True)
+            # self.log_console = self.config.get("LOGGER_CONSOLE", False)
+            # self.log_redis = self.config.get("LOGGER_REDIS", True)
             self.debug = self.config.get("DEBUG", False)
             self.debugger = self.config.get("DEBUGGER", "pudb")
             self.interactive = self.config.get("INTERACTIVE", True)
@@ -3380,7 +3389,11 @@ class MyEnv_:
 
         sys.excepthook = self.excepthook
 
-        self.loghandler_redis = LogHandler(db=self.db)
+        if redis:
+            self.loghandler_redis = LogHandler(db=self.db)
+        else:
+            print("- redis loghandler cannot be loaded")
+            self.loghandler_redis = None
 
         self.__init = True
 
@@ -3477,17 +3490,17 @@ class MyEnv_:
             config["LOGGER_LEVEL"] = 15  # means std out & plus gets logged
         if config["LOGGER_LEVEL"] > 50:
             config["LOGGER_LEVEL"] = 50
-        if "LOGGER_CONSOLE" not in config:
-            config["LOGGER_CONSOLE"] = True
-        if "LOGGER_REDIS" not in config:
-            config["LOGGER_REDIS"] = False
+        # if "LOGGER_CONSOLE" not in config:
+        #     config["LOGGER_CONSOLE"] = True
+        # if "LOGGER_REDIS" not in config:
+        #     config["LOGGER_REDIS"] = False
         if "LOGGER_PANEL_NRLINES" not in config:
-            config["LOGGER_PANEL_NRLINES"] = 15
+            config["LOGGER_PANEL_NRLINES"] = 0
 
         if self.readonly:
             config["DIR_TEMP"] = "/tmp/jumpscale_installer"
-            config["LOGGER_REDIS"] = False
-            config["LOGGER_CONSOLE"] = True
+            # config["LOGGER_REDIS"] = False
+            # config["LOGGER_CONSOLE"] = True
 
         if not "DIR_TEMP" in config:
             config["DIR_TEMP"] = "/tmp/jumpscale"
@@ -4205,14 +4218,14 @@ class BaseInstaller:
 class OSXInstaller:
     @staticmethod
     def do_all():
-        MyEnv._init()
+        MyEnv.init()
         Tools.log("installing OSX version")
         OSXInstaller.base()
         BaseInstaller.pips_install()
 
     @staticmethod
     def base():
-        MyEnv._init()
+        MyEnv.init()
         OSXInstaller.brew_install()
         if not Tools.cmd_installed("curl") or not Tools.cmd_installed("unzip") or not Tools.cmd_installed("rsync"):
             script = """
@@ -4230,7 +4243,7 @@ class OSXInstaller:
 
     @staticmethod
     def brew_uninstall():
-        MyEnv._init()
+        MyEnv.init()
         cmd = 'ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/uninstall)"'
         Tools.execute(cmd, interactive=True)
         toremove = """
@@ -4247,7 +4260,7 @@ class OSXInstaller:
 class UbuntuInstaller:
     @staticmethod
     def do_all(prebuilt=False):
-        MyEnv._init()
+        MyEnv.init()
         Tools.log("installing Ubuntu version")
 
         UbuntuInstaller.ensure_version()
@@ -4261,7 +4274,7 @@ class UbuntuInstaller:
 
     @staticmethod
     def ensure_version():
-        MyEnv._init()
+        MyEnv.init()
         if not os.path.exists("/etc/lsb-release"):
             raise Tools.exceptions.Base("Your operating system is not supported")
 
@@ -4269,7 +4282,7 @@ class UbuntuInstaller:
 
     @staticmethod
     def base():
-        MyEnv._init()
+        MyEnv.init()
 
         if MyEnv.state_get("base"):
             return
@@ -4385,7 +4398,7 @@ class UbuntuInstaller:
 
 
 class JumpscaleInstaller:
-    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False, branch=None):
+    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False, branch=None, threebot=False):
 
         MyEnv.check_platform()
         # will check if there's already a key loaded (forwarded) will continue installation with it
@@ -4414,6 +4427,12 @@ class JumpscaleInstaller:
         kosmos 'j.core.tools.pprint("JumpscaleX init step for nacl (encryption) OK.")'
         """
         Tools.execute(script, die_if_args_left=True)
+
+        if threebot:
+            Tools.shell()
+            self.sshexec(
+                ".  /sandbox/env.sh; kosmos -p 'j.servers.threebot.start(); j.servers.threebot.default.stop()'"
+            )
 
     def remove_old_parts(self):
         tofind = ["DigitalMe", "Jumpscale", "ZeroRobot"]
@@ -4564,7 +4583,7 @@ class DockerFactory:
                 # nothing to do we are in docker already
                 return
 
-            MyEnv._init()
+            MyEnv.init()
 
             if MyEnv.platform() == "linux" and not Tools.cmd_installed("docker"):
                 UbuntuInstaller.docker_install()
@@ -5011,8 +5030,8 @@ class DockerContainer:
             "LOGGER_INCLUDE",
             "LOGGER_EXCLUDE",
             "LOGGER_LEVEL",
-            "LOGGER_CONSOLE",
-            "LOGGER_REDIS",
+            # "LOGGER_CONSOLE",
+            # "LOGGER_REDIS",
             "SECRET",
         ]:
             if i in MyEnv.config:
@@ -5343,19 +5362,13 @@ class DockerContainer:
         cmd = "docker push %s" % image
         Tools.execute(cmd)
 
-    def install_threebotserver(self):
-        """
-        Starts then stops the threebotserver to make sure all needed packages are installed
-        """
-        self.sshexec(". /sandbox/env.sh; kosmos -p 'j.servers.threebot.start(); j.servers.threebot.default.stop()'")
-
     def install_tcprouter(self):
         """
         Install tcprouter builder to be part of the image
         """
         self.sshexec(". /sandbox/env.sh; kosmos 'j.builders.network.tcprouter.install()'")
 
-    def jumpscale_install(
+    def install_jumpscale(
         self, secret=None, privatekey=None, redo=False, threebot=True, pull=False, branch=None, prebuilt=False
     ):
 

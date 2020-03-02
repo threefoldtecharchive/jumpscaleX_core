@@ -7,7 +7,6 @@ import base64
 import hashlib
 from io import BytesIO
 from nacl.public import PrivateKey, SealedBox
-import fakeredis
 import binascii
 from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
