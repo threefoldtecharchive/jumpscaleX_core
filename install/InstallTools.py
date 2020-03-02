@@ -2321,7 +2321,7 @@ class Tools:
         showout=True,
         useShell=True,
         cwd=None,
-        timeout=1800,
+        timeout=3600,
         die=True,
         async_=False,
         args=None,
