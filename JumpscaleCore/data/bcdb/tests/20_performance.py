@@ -88,9 +88,6 @@ def test_performance():
     text*** = (S)
     """
     bcdb, model = j.data.bcdb._test_model_get(schema=schema)
-    j.servers.sonic.default.stop()
-    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.servers.threebot.default.adminsecret_))
-    sonic.start()
 
     print("\nWrite objects of 64 Bytes of string (sonic)")
     calculate_write_time(model)
