@@ -446,7 +446,6 @@ class AlertHandler(j.baseclasses.object):
         for alert in alerts:
             self.print(alert, exclude=exclude, show_tb=False)
 
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/483")
     def test(self, delete=True):
         """
         kosmos 'j.tools.alerthandler.test()'
