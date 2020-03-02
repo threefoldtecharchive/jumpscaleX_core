@@ -319,8 +319,9 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.data.bcdb._master_set(False)
             sys.exit()
         else:
-            if not self.startup_cmd.is_running():
-                self.startup_cmd.start()
+            cmd = self.get_startup_cmd(packages=packages)
+            if not cmd.is_running():
+                cmd.start()
                 time.sleep(1)
 
         # wait on lapis to start so we make sure everything is loaded by then.
@@ -428,8 +429,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.client = None
         j.data.bcdb._master_set(False)
 
-    @property
-    def startup_cmd(self):
+    def get_startup_cmd(self, packages=None):
         if self.web:
             web = "True"
         else:
@@ -439,9 +439,9 @@ class ThreeBotServer(j.baseclasses.object_config):
         monkey.patch_all(subprocess=False)
         from Jumpscale import j
         server = j.servers.threebot.get("{name}", executor='{executor}')
-        server.start(background=False)
+        server.start(background=False, packages={packages})
         """.format(
-            name=self.name, executor=self.executor, web=web
+            name=self.name, executor=self.executor, web=web, packages=packages
         )
         cmd_start = j.core.tools.text_strip(cmd_start)
         startup = j.servers.startupcmd.get(name="threebot_{}".format(self.name), cmd_start=cmd_start)
@@ -452,3 +452,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         if self.web:
             startup.ports += [80, 443, 4444, 4445]
         return startup
+
+    @property
+    def startup_cmd(self):
+        return self.get_startup_cmd()

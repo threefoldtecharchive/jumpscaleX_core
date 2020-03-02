@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_nacl():
     """
     to run:
 
@@ -24,32 +24,32 @@ def main(self):
     schema = j.data.schema.get_from_text(S)
     jsxobject = schema.new()
 
-    self._nacl = client_nacl
+    j.tools.threebot._nacl = client_nacl
 
     ddict = j.baseclasses.dict()
     ddict["a"] = 2
     data = [True, 1, [1, 2, "a"], jsxobject, "astring", ddict]
 
-    serialized = self._serialize(data)
-    unserialized = self._unserialize(serialized)
+    serialized = j.tools.threebot._serialize(data)
+    unserialized = j.tools.threebot._unserialize(serialized)
     # test that the serialization works
 
     assert data == unserialized
 
-    print("****client key:%s" % self._nacl.public_key_hex)
+    print("****client key:%s" % j.tools.threebot._nacl.public_key_hex)
 
     # it should encrypt for server_nacl.public_key_hex and sign with client_nacl
-    data_send_over_wire = self._serialize_sign_encrypt(data, pubkey_hex=server_nacl.public_key_hex)
+    data_send_over_wire = j.tools.threebot._serialize_sign_encrypt(data, pubkey_hex=server_nacl.public_key_hex)
 
     # client send the above to server
 
     # now we are server
-    self._nacl = server_nacl
-    print("****server key:%s" % self._nacl.public_key_hex)
+    j.tools.threebot._nacl = server_nacl
+    print("****server key:%s" % j.tools.threebot._nacl.public_key_hex)
     # server just returns the info
 
     # it should decrypt with server_nacl.public_key_hex and verify sign against client_nacl
-    data_readable_on_server = self._deserialize_check_decrypt(
+    data_readable_on_server = j.tools.threebot._deserialize_check_decrypt(
         data_send_over_wire, verifykey_hex=client_nacl.verify_key_hex
     )
     # data has now been verified with pubkey of client
@@ -58,12 +58,12 @@ def main(self):
 
     # lets now return the data to the client
 
-    data_send_over_wire_return = self._serialize_sign_encrypt(data, pubkey_hex=client_nacl.public_key_hex)
+    data_send_over_wire_return = j.tools.threebot._serialize_sign_encrypt(data, pubkey_hex=client_nacl.public_key_hex)
 
     # now we are client
-    self._nacl = client_nacl
+    j.tools.threebot._nacl = client_nacl
     # now on client we check
-    data_readable_on_client = self._deserialize_check_decrypt(
+    data_readable_on_client = j.tools.threebot._deserialize_check_decrypt(
         data_send_over_wire_return, verifykey_hex=server_nacl.verify_key_hex
     )
 
@@ -71,8 +71,8 @@ def main(self):
     assert data_readable_on_client == data
 
     # back to normal
-    self._nacl = server_nacl
+    j.tools.threebot._nacl = server_nacl
     j.tools.threebot.me.default.tid = server_tid
 
-    self._log_info("TEST NACL DONE")
+    j.tools.threebot._log_info("TEST NACL DONE")
     return "OK"

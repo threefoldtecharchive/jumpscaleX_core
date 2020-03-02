@@ -6,6 +6,7 @@ import urllib
 import requests
 from urllib.request import urlopen
 from importlib import util
+import time
 
 
 DEFAULT_BRANCH = "development"
@@ -797,10 +798,25 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
     def test():
         docker_name = "{docker_name}"
         nr_containers = int("{count}")
-        cl = j.clients.threebot.client_get("3bot.3bot")
-        cl2 = j.clients.threebot.client_get("3bot2.3bot")
-        # TODO: can now do more stuff here
-        # adding packages, get them to talk to each other, ...
+
+        print("RUNNING TESTS FROM {docker_name}")
+
+        clients = list()
+
+        clients.append(j.clients.threebot.explorer)
+        clients += [j.clients.threebot.client_get("3bot{0}.3bot".format(i + 1)) for i in range(1, nr_containers - 1)]
+        for client in clients:
+            print("connected to ", client.name, "on", client.host)
+            print("---identity---", client.name, "\n", client.actors_all.identity.threebot_name())
+
+        j.clients.threebot.explorer.reload()
+        j.clients.threebot.explorer.actors_all.package_manager.package_start(
+            "tfgrid.directory"
+        )  # TODO: Fix. we shouldn't have to load here
+        nodes = j.clients.threebot.explorer.actors_all.nodes.list()
+
+        print("EXPLORER NODES:")
+        print(nodes)
 
     explorer_addr = None
     for i in range(count):
@@ -810,25 +826,29 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
             name1 = name
         docker = docker_jumpscale_get(name=name1, delete=delete)
         if i == 0:
-            # the master 3bot
+            # the explorer 3bot
             explorer_addr = docker.config.ipaddr
-
-        if not docker.config.done_get("start_cmd"):
-            if web:
-                docker.sshexec(
-                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.start(background=True)';jsx wiki-load"
-                )
-            else:
-                start_cmd = "j.servers.threebot.start(background=True)"
-                docker.jsxexec(start_cmd)
-        docker.config.done_set("start_cmd")
-        if not docker.config.done_get("config"):
+            docker.sshexec("apt-get install influxdb")
+            docker.jsxexec("sc = j.servers.startupcmd.get('influxd', cmd_start='influxd'); sc.start()")
+            time.sleep(2)
+            docker.jsxexec("j.clients.influxdb.get('default', database='capacity').create_database('capacity')")
+            start_cmd = "j.servers.threebot.local_start_explorer(background=True)"
+            docker.jsxexec(start_cmd)
             docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
-        docker.config.done_set("config")
-
-    if count > 1:
-        # on last docker do the test
-        docker.jsxexec(test, docker_name=docker.name, count=count)
+            docker.sshexec(
+                "source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_threebot/scripts/explorer.py stress-explorer --count 10"
+            )
+        else:
+            start_cmd = "j.servers.threebot.start(background=True)"
+            if web:
+                start_cmd = "source /sandbox/env.sh; kosmos -p '{0}' ;jsx wiki-load".format(start_cmd)
+                docker.sshexec(start_cmd)
+            else:
+                docker.jsxexec(start_cmd)
+            docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
+        if i == count - 1:
+            # on last docker do the test
+            docker.jsxexec(test, docker_name=docker.name, count=count)
 
 
 @click.command(name="modules-install")

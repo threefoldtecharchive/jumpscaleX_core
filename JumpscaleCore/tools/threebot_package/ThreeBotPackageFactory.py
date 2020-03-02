@@ -3,6 +3,8 @@ from Jumpscale import j
 from .ThreeBotPackage import ThreeBotPackage
 from .ThreeBotPackageClient import ThreeBotPackageClient
 
+skip = j.baseclasses.testtools._skip
+
 
 class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
     """
@@ -149,6 +151,7 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
             self.delete()
         wg = self.add_from_git()
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/573")
     def test(self):
         """
 

@@ -269,4 +269,3 @@ class Tmux(j.baseclasses.object, j.baseclasses.testtools):
 
         self._log_info("tests ok for tmux")
         self._tests_run(name=name)
-

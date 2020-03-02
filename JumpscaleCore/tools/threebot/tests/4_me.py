@@ -1,7 +1,10 @@
 from Jumpscale import j
 
+skip = j.baseclasses.testtools._skip
 
-def main(self):
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/549")
+def test_me():
     """
     to run:
 

@@ -226,10 +226,7 @@ def test_005_validate_mobile_type():
         schema_obj.mobile = random.uniform(10, 20)
 
     with T.assertRaises(Exception):
-        schema_obj.mobile = [
-            "{}".format(random.randint(100000, 1000000)),
-            "{}".format(random.randint(100000, 1000000)),
-        ]
+        schema_obj.mobile = ["{}".format(random.randint(100000, 1000000)), "{}".format(random.randint(100000, 1000000))]
     with T.assertRaises(Exception):
         schema_obj.mobile = {"number": "{}".format(random.randint(100000, 1000000))}
 

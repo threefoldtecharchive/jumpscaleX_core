@@ -3,6 +3,8 @@ from .Link import Linker
 
 from .ThreeGit import ThreeGit
 
+skip = j.baseclasses.testtools._skip
+
 
 class ThreeGitFactory(j.baseclasses.object_config_collection):
     """
@@ -114,6 +116,7 @@ class ThreeGitFactory(j.baseclasses.object_config_collection):
 
         return instance
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/573")
     def test(self):
         """
         kosmos 'j.tools.threegit.test()'
