@@ -389,6 +389,9 @@ class LoggerClient(j.baseclasses.object_config):
         for item in items:
             print(j.core.tools.log2str(item))
 
+    def _get_with_ansi_colors(self, items):
+        return [j.core.tools.log2str(item) for item in items]
+
     def print(
         self,
         id_from=None,
