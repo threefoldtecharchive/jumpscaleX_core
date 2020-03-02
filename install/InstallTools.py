@@ -3312,9 +3312,7 @@ class MyEnv_:
             "REVERSE": "",
         }
 
-        LOGFORMATBASE = (
-            "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"
-        )  # DO NOT CHANGE COLOR
+        LOGFORMATBASE = "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"  # DO NOT CHANGE COLOR
 
         self.LOGFORMAT = {
             "DEBUG": LOGFORMATBASE.replace("{COLOR}", "{CYAN}"),
@@ -4437,6 +4435,7 @@ class JumpscaleInstaller:
 
         if threebot:
             Tools.execute_jumpscale("j.servers.threebot.start()")
+            j.shell()
             Tools.execute_jumpscale("j.servers.threebot.stop()")
 
     def remove_old_parts(self):
