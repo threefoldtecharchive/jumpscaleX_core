@@ -231,7 +231,7 @@ class Handler(JSBASE):
         # will hold classes of type GedisCmds,key is the self.gedis_server._actorkey_get(
         self.cmds_meta = self.gedis_server.cmds_meta
 
-    def handle_gedis(self, socket, address):
+    def handle_gedis(self, socket, address=None):
 
         # BUG: if we start a server with kosmos --debug it should get in the debugger but it does not if errors trigger, maybe something in redis?
         # w=self.t
@@ -242,15 +242,11 @@ class Handler(JSBASE):
 
         try:
             self._handle_gedis_session(gedis_socket, address, user_session=user_session)
-        except ConnectionError as e:
-            self._log_info("connection closed: %s" % str(e), context="%s:%s" % address)
         except Exception as e:
-            self._log_error("unexpected error: %s" % str(e), context="%s:%s" % address, exception=e)
-        finally:
             gedis_socket.on_disconnect()
-            # self._log_error("connection closed: %s" % str(e), context="%s:%s" % address, exception=e)
+            # self._log_error("connection closed: %s" % str(e), context="%s" % address, exception=e)
 
-    def _handle_gedis_session(self, gedis_socket, address, user_session=None):
+    def _handle_gedis_session(self, gedis_socket, address=None, user_session=None):
         """
         deal with 1 specific session
         :param socket:
@@ -259,16 +255,27 @@ class Handler(JSBASE):
         :param response:
         :return:
         """
-        self._log_info("new incoming connection", context="%s:%s" % address)
+        # self._log_info("new incoming connection", context="%s:%s" % address)
 
         while True:
-            request = gedis_socket.read()
-            self._log_info(f"command {request.command}", context="%s:%s" % address)
+            try:
+                request = gedis_socket.read()
+            except ConnectionError as err:
+                # self._log_info("connection read error: %s" % str(err), context="%s:%s" % address)
+                # close the connection
+                return
+
             logdict, result = self._handle_request(request, address, user_session=user_session)
+
             if logdict:
                 gedis_socket.writer.error(logdict)
-            else:
+            try:
                 gedis_socket.writer.write(result)
+
+            except ConnectionError as err:
+                # self._log_info("connection error: %s" % str(err), context="%s:%s" % address)
+                # close the connection
+                return
 
     def _authorized(self, cmd_obj, user_session):
         """
@@ -296,7 +303,7 @@ class Handler(JSBASE):
 
         return False, "Command not found"
 
-    def _handle_request(self, request, address, user_session):
+    def _handle_request(self, request, address=None, user_session=None):
         """
         deal with 1 specific request
         :param request:
@@ -420,10 +427,14 @@ class Handler(JSBASE):
             logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
             return (logdict, None)
 
-        if isinstance(result, list):
-            result = [_result_encode(cmd, request.response_type, r) for r in result]
-        else:
-            result = _result_encode(cmd, request.response_type, result)
+        try:
+            if isinstance(result, list):
+                result = [_result_encode(cmd, request.response_type, r) for r in result]
+            else:
+                result = _result_encode(cmd, request.response_type, result)
+        except Exception as e:
+            logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+            return (logdict, None)
 
         return (logdict, result)
 
@@ -516,7 +527,6 @@ class Handler(JSBASE):
             raise j.exceptions.Base("user_session should not be in arguments of method")
 
         params = {}
-
         for key in command.schema_in.propertynames:
             params[key] = getattr(args, key)
 
@@ -571,11 +581,11 @@ def _result_encode(cmd, response_type, item):
         elif response_type == "capnp" or response_type == "auto":
             return item._data
         else:
-            return item._json
+            return j.data.serializers.json.dumps(item._ddict)
     else:
         if isinstance(item, j.data.schema._JSXObjectClass):
             if response_type == "json":
-                return item._json
+                return j.data.serializers.json.dumps(item._ddict)
             if response_type == "msgpack":
                 return item._msgpack
             else:

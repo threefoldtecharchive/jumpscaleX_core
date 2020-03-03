@@ -12,6 +12,8 @@ from .GedisChatBot import GedisChatBotFactory
 from .GedisCmds import GedisCmds
 from .handlers import Handler
 
+from .secret_handshake import SHSServer
+
 JSBaseConfig = j.baseclasses.object_config
 from Jumpscale.tools.threebot_package.ThreeBotPackage import ThreeBotPackage
 
@@ -93,11 +95,14 @@ class GedisServer(JSBaseConfig):
         for sig in [signal.SIGINT, signal.SIGTERM]:
             self._sig_handler.append(gevent.signal(sig, self.stop))
 
-        self.handler = Handler(self)  # registers the current gedis server on the handler
+        self.c = Handler(self)  # registers the current gedis server on the handler
 
     @property
     def gevent_server(self):
-        return StreamServer((self.host, self.port), spawn=Pool(), handle=self.handler.handle_gedis)
+        server = SHSServer(self.host, self.port, j.data.nacl.default.signing_key)
+        server.on_connect(self.c.handle_gedis)
+        return server.server()
+        # return StreamServer((self.host, self.port), spawn=Pool(), handle=self.handler.handle_gedis)
 
     def actor_add(self, name, path, package):
         """

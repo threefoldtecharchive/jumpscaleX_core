@@ -140,6 +140,7 @@ class NACL(j.baseclasses.object):
         """
         if words:
             seed = j.data.encryption.mnemonic.to_entropy(words)
+            seed = bytes(seed)
             key = SigningKey(seed)
         else:
             key = SigningKey.generate()
