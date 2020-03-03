@@ -15,13 +15,13 @@ def test_redis():
     """
     to run:
 
-    kosmos 'j.data.bcdb.test(name="redisbase")'
+    kosmos 'j.data.bcdb.test(name="redisserver")'
 
     """
 
     def do(type="zdb"):
         # CLEAN STATE
-        j.data.bcdb._test_redisserver_get()
+        db, model = j.data.bcdb._test_redisserver_get()
 
         def get_obj(i):
             schema_obj = model.new()
@@ -33,7 +33,7 @@ def test_redis():
 
         redis_cl = j.clients.redis.get(addr="localhost", port=6381)
 
-        key = f"test:data:despiegk.test2"
+        key = f"test_sqlite:data:despiegk.test2"
 
         for i in range(1, 11):
             print(i)
@@ -45,7 +45,7 @@ def test_redis():
 
         for i in range(1, 11):
             print(redis_cl.hget(key, i))
-        key = f"test:data:despiegk.test2"
+        key = f"test_sqlite:data:despiegk.test2"
         redis_cl.hdel(key, 1)
         assert redis_cl.hlen(key) == 9
         db.destroy()

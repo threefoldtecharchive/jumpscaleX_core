@@ -756,6 +756,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         )
         self._redisserver_startupcmd.start()
         j.sal.nettools.waitConnectionTest("127.0.0.1", port=6381, timeout=15)
+        return db, model
 
     def _test_bcdb_get(self, type="sqlite", reset=False):
         """
