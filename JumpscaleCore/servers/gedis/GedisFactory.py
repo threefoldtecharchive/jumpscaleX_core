@@ -7,6 +7,9 @@ from .GedisCmds import GedisCmds
 from .GedisChatBot import GedisChatBotFactory
 
 
+skip = j.baseclasses.testtools._skip
+
+
 class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtools):
     __jslocation__ = "j.servers.gedis"
     _CHILDCLASS = GedisServer
@@ -54,5 +57,6 @@ class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtoo
 
         self._tests_run(name=name)
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/582")
     def test_gedis(self, name=""):
         self._tests_run(name=name)
