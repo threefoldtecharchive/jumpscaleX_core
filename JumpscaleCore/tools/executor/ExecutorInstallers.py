@@ -87,6 +87,24 @@ class ExecutorInstallers(j.baseclasses.object):
             interactive=True,
         )
 
+        script = """
+        apt-get update
+        apt-get install -y mc wget python3 git tmux
+        set +ex
+        apt-get install python3-distutils -y
+        set -ex
+        apt-get install python3-psutil -y
+        apt-get install -y curl rsync unzip
+        locale-gen --purge en_US.UTF-8
+        apt-get install python3-pip -y
+        apt-get install -y redis-server
+        apt-get install locales -y
+        pip3 install click
+        rm -rf /sandbox/code
+
+        """
+        self.executor.execute(script)
+
     def jumpscale_test(self):
         self.executor.execute_jumpscale("j.tools.executor.local.test()")
 
@@ -122,6 +140,7 @@ class ExecutorInstallers(j.baseclasses.object):
 
     @executor_method()
     def jumpscale_getcode(self, reset=True, syncfromlocal=True, monitor=False):
+        self.base()
         if syncfromlocal:
             self.executor.upload(
                 "{DIR_CODE}/github/threefoldtech/jumpscaleX_core/install",
@@ -155,7 +174,7 @@ class ExecutorInstallers(j.baseclasses.object):
             self.executor.sshclient.syncer.sync(monitor=monitor)
 
     @executor_method()
-    def jumpscale(self, reset=True, syncfromlocal=True):
+    def jumpscale(self, reset=False, syncfromlocal=True):
         self.jumpscale_getcode(reset=reset, syncfromlocal=syncfromlocal)
         self.executor.execute("/tmp/jsx install -s", interactive=True)
 

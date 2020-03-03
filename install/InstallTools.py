@@ -4100,6 +4100,7 @@ class BaseInstaller:
                 "Mnemonic",
                 "xmltodict",
                 "sonic-client",
+                "watchdog_gevent",
             ],
             # level 1: in the middle
             1: [
