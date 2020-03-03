@@ -173,10 +173,11 @@ class GedisClient(JSConfigBase):
             self._log_info("redisclient: %s:%s " % (addr, port))
             self._redis_ = j.clients.redis.get(addr=addr, port=port, secret=secret, ping=True, fromcache=False)
 
-            # authenticate us
-            seed = j.data.idgenerator.generateGUID()  # any seed works, the more random the more secure
-            signature = self._nacl.sign_hex(seed)  # this is just std signing on nacl and hexifly it
-            self._redis_.execute_command("auth", self._threebot_me.tid, seed, signature)
+            # authenticate
+            if self._threebot_me.tid > 0:
+                signature = j.data.nacl.payload_sign(self._threebot_me.tid, nacl=self._nacl)
+                resp = self._redis_.execute_command("auth", self._threebot_me.tid, signature)
+                # TODO the server should also be authenticated so we are sure who we are talking to
 
         return self._redis_
 

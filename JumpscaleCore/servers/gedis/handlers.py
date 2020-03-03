@@ -7,7 +7,7 @@ import binascii
 
 JSBASE = j.baseclasses.object
 
-from .UserSession import UserSession, UserSessionAdmin
+from .UserSession import UserSession
 
 
 def _command_split(cmd, author3botname="zerobot", packagename="base"):
@@ -227,6 +227,7 @@ class Handler(JSBASE):
     def __init__(self, gedis_server):
         JSBASE.__init__(self)
         self.gedis_server = gedis_server
+        self._threebot_me = j.tools.threebot.me.default
         self.cmds = {}  # caching of commands
         # will hold classes of type GedisCmds,key is the self.gedis_server._actorkey_get(
         self.cmds_meta = self.gedis_server.cmds_meta
@@ -238,7 +239,7 @@ class Handler(JSBASE):
         # raise j.exceptions.Base("d")
         gedis_socket = GedisSocket(socket)
 
-        user_session = UserSessionAdmin()
+        user_session = UserSession()
 
         try:
             self._handle_gedis_session(gedis_socket, address, user_session=user_session)
@@ -249,33 +250,17 @@ class Handler(JSBASE):
     def _handle_gedis_session(self, gedis_socket, address, user_session=None):
         """
         deal with 1 specific session
-        :param socket:
-        :param address:
-        :param parser:
-        :param response:
-        :return:
         """
         self._log_info("new incoming connection", context="%s:%s" % address)
 
         while True:
-            try:
-                request = gedis_socket.read()
-            except ConnectionError as err:
-                self._log_info("connection read error: %s" % str(err), context="%s:%s" % address)
-                # close the connection
-                return
-
+            request = gedis_socket.read()
             logdict, result = self._handle_request(request, address, user_session=user_session)
 
             if logdict:
                 gedis_socket.writer.error(logdict)
-            try:
+            else:
                 gedis_socket.writer.write(result)
-
-            except ConnectionError as err:
-                self._log_info("connection error: %s" % str(err), context="%s:%s" % address)
-                # close the connection
-                return
 
     def _authorized(self, cmd_obj, user_session):
         """
@@ -285,23 +270,23 @@ class Handler(JSBASE):
         * threebot_id should be in the session otherwise it can only access the public methods only
         :return: (True, None) if authorized else (False, reason)
         """
+        return True, None
+        # if user_session.admin:
+        #     return True, None
+        # elif cmd_obj.rights.public:
+        #     return True, None
+        # elif not user_session.threebot_id:
+        #     return False, "No user is authenticated on this session and the command isn't public"
+        # else:
+        #     j.shell()
+        #     w
+        #     # TODO: needs to be reimplemented (despiegk)
+        #     # user = j.data.bcdb.system.user.find(threebot_id=user_session.threebot_id)
+        #     # if not user:
+        #     #     return False, f"Couldn't find user with threebot_id {threebot_id}"
+        #     # return actor_obj.acl.rights_check(userids=[user[0].id], rights=[cmd_name]), None
 
-        if user_session.admin:
-            return True, None
-        elif cmd_obj.rights.public:
-            return True, None
-        elif not user_session.threebot_id:
-            return False, "No user is authenticated on this session and the command isn't public"
-        else:
-            j.shell()
-            w
-            # TODO: needs to be reimplemented (despiegk)
-            # user = j.data.bcdb.system.user.find(threebot_id=user_session.threebot_id)
-            # if not user:
-            #     return False, f"Couldn't find user with threebot_id {threebot_id}"
-            # return actor_obj.acl.rights_check(userids=[user[0].id], rights=[cmd_name]), None
-
-        return False, "Command not found"
+        # return False, "Command not found"
 
     def _handle_request(self, request, address, user_session):
         """
@@ -316,52 +301,29 @@ class Handler(JSBASE):
         elif request.command.command == "ping":
             return None, "PONG"
         elif request.command.command.startswith("config_"):
+            value = request.arguments[0].decode()
             if request.command.command == "config_content_type":
-                user_session.content_type.value = request.arguments[0].decode()
+                user_session.content_type.value = value
             elif request.command.command == "config_response_type":
-                user_session.response_type.value = request.arguments[0].decode()
+                user_session.response_type.value = value
             elif request.command.command == "config_format":
-                user_session.content_type.value = request.arguments[0].decode()
-                user_session.response_type.value = request.arguments[0].decode()
+                user_session.content_type.value = value
+                user_session.response_type.value = value
             return None, "OK"
 
         elif request.command.command == "auth":
-            return None, "OK"
-            # TODO: this has not been done properly !!! check Kristof
-            tid, seed, signature = request.arguments
-            tid = int(tid)
-
-            current_threebot_id = int(j.tools.threebot.me.default.tid)
-            # If working on same machine no need to get a client to authenticate
-            # otherwise, we'll have infinite loop
-            if current_threebot_id != tid:
-                try:
-                    tclient = j.clients.threebot.client_get(threebot=tid)
-                except Exception as e:
-                    logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
-                    return (logdict, None)
-                try:
-                    verification = tclient.verify_from_threebot(seed, signature)
-                except Exception as e:
-                    logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
-                    return (logdict, None)
-
-                # if we get here we know that the user has been authenticated properly
-                user_session.threebot_id = tclient.tid
-                user_session.threebot_name = tclient.name
-            else:
-                # can't reuse verification methods in 3 bot client, otherwise we gonna go into infinite loop
-                # so we verify directly using nacl
-                try:
-                    VerifyKey(binascii.unhexlify(j.tools.threebot.me.default.nacl.verify_key_hex)).verify(
-                        seed, binascii.unhexlify(signature)
-                    )
-                except Exception as e:
-                    logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
-                    return (logdict, None)
+            try:
+                tid, tname = self.authenticate(request)
                 user_session.threebot_id = tid
-                user_session.threebot_name = j.tools.threebot.me.default.name
-            return None, "OK"
+                user_session.threebot_name = tname
+                self._log_info(f"session authenticated: tid:{tid} name:{tname}")
+
+                # TODO: server should also authenticate to the client
+                # signature = j.data.nacl.payload_sign(self._threebot_me.tid, nacl=self._threebot_me.nacl)
+                return None, "OK"
+            except Exception as e:
+                logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
+                return (logdict, None)
 
         self._log_debug(
             "command received %s %s %s" % (request.command.author3bot, request.command.actor, request.command.command),
@@ -389,12 +351,7 @@ class Handler(JSBASE):
         params_list = []
         params_dict = {}
         if cmd.schema_in:
-
-            if user_session.content_type == "json":
-                request._content_type = "json"
-            elif user_session.content_type == "msgpack":
-                request._content_type = "msgpack"
-
+            request._content_type = user_session.content_type
             try:
                 params_dict = self._read_input_args_schema(request, cmd)
             except Exception as e:
@@ -408,11 +365,7 @@ class Handler(JSBASE):
 
         # makes sure we understand which schema to use to return result from method
         if cmd.schema_out:
-            if user_session.content_type == "json":
-                request._response_type = "json"
-            elif user_session.content_type == "msgpack":
-                request._response_type = "msgpack"
-
+            request._response_type = user_session.content_type
             params_dict["schema_out"] = cmd.schema_out
 
         # now execute the method() of the cmd
@@ -433,6 +386,43 @@ class Handler(JSBASE):
             result = _result_encode(cmd, request.response_type, result)
 
         return (logdict, result)
+
+    def authenticate(self, request):
+        """
+        authenticate the client sending the request
+
+        the handshake flow is very simple
+        1. client opens a connection
+        2. client sign it's threebot id and execute the command 'auth'
+           with the threebot_id and the signature as argument
+        3. server receives the threebot_id, fetch the public key associated with the threebot id
+           from the phonebook and verify the signature
+        4. if signature is verified, answer 'OK' to the client else raise an exception
+        5. save threebot id and name in user_session and pass user_session to the method called
+
+        # TODO
+        In the future the server must also authenticate to the client
+        so both parties can be sure who they are talking to
+        """
+        tid, signature = request.arguments
+        tid = int(tid)
+
+        payload = j.data.nacl.payload_build(tid)
+        # If working on same machine no need to get a client to authenticate
+        # otherwise, we'll have infinite loop
+        if self._threebot_me.tid != tid:
+            tclient = j.clients.threebot.client_get(threebot=tid)
+            verification = tclient.verify_from_threebot(payload, signature)
+
+            # if we get here we know that the user has been authenticated properly
+            return tclient.tid, tclient.name
+        else:
+            # can't reuse verification methods in 3 bot client, otherwise we gonna go into infinite loop
+            # so we verify directly using nacl
+            if not self._threebot_me.nacl.verify(data=payload, signature=binascii.unhexlify(signature)):
+                raise j.exceptions.Permission("failed to verify signature during handshake")
+
+            return self._threebot_me.tid, self._threebot_me.tname
 
     def _read_input_args_schema(self, request, command):
         """

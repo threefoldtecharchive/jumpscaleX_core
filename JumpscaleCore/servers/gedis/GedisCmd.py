@@ -56,10 +56,6 @@ class GedisCmd(JSBASE):
 
     @property
     def args_client(self):
-        """
-
-
-        """
         arguments = [a.strip() for a in self.cmdobj.args]
 
         if self.schema_in is None:

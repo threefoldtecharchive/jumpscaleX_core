@@ -39,6 +39,7 @@ class ThreebotExplorer(j.baseclasses.object):
         r = self.actors.phonebook.get(tid=tid, name=name, die=die)
         if not die and not r.signature:
             return None
+
         if r and r.name != "":
             # this checks that the data we got is valid
             rc = j.data.nacl.payload_verify(
@@ -131,25 +132,9 @@ class ThreebotExplorer(j.baseclasses.object):
             "pubkey": pubkey,
         }
 
-        def sign(nacl, *args):
-            buffer = BytesIO()
-            for item in args:
-                if isinstance(item, str):
-                    item = item.encode()
-                elif isinstance(item, int):
-                    item = str(item).encode()
-                elif isinstance(item, bytes):
-                    pass
-                else:
-                    raise RuntimeError()
-                buffer.write(item)
-            payload = buffer.getvalue()
-            signature = nacl.sign(payload)
-            return binascii.hexlify(signature).decode()
-
         # we sign the different records to come up with the right 'sender_signature_hex'
-        sender_signature_hex = sign(
-            nacl, data["tid"], data["name"], data["email"], data["ipaddr"], data["description"], data["pubkey"]
+        sender_signature_hex = j.data.nacl.payload_sign(
+            data["tid"], data["name"], data["email"], data["ipaddr"], data["description"], data["pubkey"], nacl=nacl
         )
         data["sender_signature_hex"] = sender_signature_hex
         data2 = j.data.serializers.json.dumps(data)
