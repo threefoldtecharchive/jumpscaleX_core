@@ -54,7 +54,6 @@ def client_handler(name, cmd):
 
     response.headers["Content-Type"] = f"application/{content_type}"
     try:
-
         result = command(**data["args"])
     except Exception as ex:
         err = "".join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__))

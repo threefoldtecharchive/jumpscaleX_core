@@ -23,6 +23,15 @@ def actor_method(func):
                     if S == "in":
                         schema_in = j.data.schema.get_from_text(schema_text, url=url)
                     else:
+                        # This is a workaround to support schema notation in actor like
+                        # ```out
+                        # !my.schema
+                        # ```
+                        # which is not supposed to be a valid schema definition but for
+                        # actor themself we want to be able to return JSX object directly
+                        if schema_text[0].strip() == "!":
+                            schema_text = f"out = (O) {schema_text}"
+
                         schema_out = j.data.schema.get_from_text(schema_text, url=url)
                     S = None
                 elif S:
