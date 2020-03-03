@@ -25,6 +25,7 @@ SCHEMA_ALERT = """
 12: events = (LO) !jumpscale.alerthandler.alert.event
 13: tracebacks = (LO) !jumpscale.alerthandler.alert.traceback
 14: logs = (LO) !jumpscale.alerthandler.alert.log   #should only keep e.g. last 5 instances per threebot
+15: appname = "" (S)
 
 @url = jumpscale.alerthandler.alert.support.trace
 0 : support_severity = "info,minor,normal,high,critical" (E)        #set by operator
@@ -131,7 +132,7 @@ class AlertHandler(j.baseclasses.object):
     def alert_raise(self, message, message_pub, cat="", level=20, alert_type="event_operator"):
         logdict = {}
         logdict["message"] = message
-        logdict["message_pub"] = message_pub
+        logdict["public"] = message_pub
         logdict["cat"] = cat
         logdict["level"] = level
         logdict["alert_type"] = alert_type
@@ -175,6 +176,7 @@ class AlertHandler(j.baseclasses.object):
         alert.message_pub = logdict["public"]
         alert.cat = logdict["cat"]
         alert.count += 1
+        alert.appname = j.application.appname
 
         if not alert.time_first:
             alert.time_first = j.data.time.epoch
@@ -444,7 +446,6 @@ class AlertHandler(j.baseclasses.object):
         for alert in alerts:
             self.print(alert, exclude=exclude, show_tb=False)
 
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/483")
     def test(self, delete=True):
         """
         kosmos 'j.tools.alerthandler.test()'

@@ -12,6 +12,9 @@ from .MyWorker import MyWorkers
 TESTTOOLS = j.baseclasses.testtools
 
 
+skip = j.baseclasses.testtools._skip
+
+
 class MyJobsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
     __jslocation__ = "j.servers.myjobs"
     _CHILDCLASSES = [MyWorkers, MyJobs]
@@ -650,6 +653,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         self._cmd.start()
         j.sal.nettools.waitConnectionTest("127.0.0.1", port=6380, timeout=15)
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/493")
     def test(self, name="", **kwargs):
         """
         it's run all tests

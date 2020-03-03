@@ -1,8 +1,6 @@
 from Jumpscale import j
 
 
-
-
 def test_websocket_proxy():
     """
     kosmos -p 'j.servers.openresty.test(name="websocket_proxy")'

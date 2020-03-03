@@ -892,6 +892,9 @@ class LogHandler:
         if not appname:
             appname = self.appname
         rediskey_logs = "logs:%s:data" % appname
+
+        if not self.db:
+            return
         try:
             res = self.db.hget(rediskey_logs, identifier)
         except:
@@ -4114,6 +4117,7 @@ class BaseInstaller:
                 "bottle==0.12.17",  # why this version?
                 "beaker",
                 "Mnemonic",
+                "xmltodict",
             ],
             # level 1: in the middle
             1: [
@@ -4613,7 +4617,7 @@ class DockerFactory:
             cdir = Tools.text_replace("{DIR_BASE}/var/containers")
             Tools.dir_ensure(cdir)
             for name_found in os.listdir(cdir):
-                if not os.path.isdir(os.path.join(cdir,name_found)):
+                if not os.path.isdir(os.path.join(cdir, name_found)):
                     # https://github.com/threefoldtech/jumpscaleX_core/issues/297
                     # in case .DS_Store is created when opened in finder
                     continue
@@ -5075,9 +5079,9 @@ class DockerContainer:
                 MOUNTS = """
                 -v {DIR_CODE}:/sandbox/code \
                 -v {DIR_BASE}/var/containers/shared:/sandbox/myhost \
+                -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
+                -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
                 """
-                # -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
-                # -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
 
             args["MOUNTS"] = Tools.text_replace(MOUNTS.strip(), args=args)
             args["CMD"] = self.config.startupcmd

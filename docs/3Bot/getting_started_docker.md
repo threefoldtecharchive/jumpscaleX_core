@@ -45,7 +45,7 @@ cd /tmp
 #if you want to delete your container while installing your threebot
 ./jsx threebot-test -w -d
 #if you want to install multiple threebots talking to each other (count=3)
-./jsx threebot-test -w -d -c 3
+./jsx threebot-test -w -d -c 2
 ```
 
 ### Work with the 3bots
