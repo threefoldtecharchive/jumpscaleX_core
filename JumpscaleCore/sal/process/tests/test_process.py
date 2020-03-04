@@ -1,13 +1,13 @@
 import os
 from Jumpscale import j
 import random, unittest, time
-from parameterized import parameterized
-from uuid import uuid4
 try:
-    from loguru import logger
+    from parameterized import parameterized
 except ImportError:
-    j.builders.runtimes.python3.pip_package_install("loguru", reset=True)
-    from loguru import logger
+    j.builders.runtimes.python3.pip_package_install("parameterized", reset=True)
+    from parameterized import parameterized
+from uuid import uuid4
+
 import subprocess
 
 skip = j.baseclasses.testtools._skip
@@ -293,10 +293,7 @@ def test09_getProcessPid_and_getProcessPidsFromUser():
     """
     info("Start process [p1] with python.")
     P1 = "python -m SimpleHTTPServer {}".format(random.randint(1000, 2000))
-    P2 = "python -m SimpleHTTPServer {}".format(random.randint(2000, 3000))
     _, output, error = j.sal.process.execute("tmux  new -d -s {} '{}'  ".format(rand_string(), P1))
-    time.sleep(2)
-    _, output, error = j.sal.process.execute("tmux  new -d -s {} '{}'  ".format(rand_string(), P2))
     time.sleep(2)
     _, output, error = j.sal.process.execute("ps ax | grep -v grep | grep SimpleHTTPServer | awk '{print $1}'")
 
@@ -309,8 +306,7 @@ def test09_getProcessPid_and_getProcessPidsFromUser():
     user = output.strip()
 
     info("Use getProcessPid to get process pid [PID], Check that it returns right PID.")
-    assert pids[0] == j.sal.process.getProcessPid(P1)[0]
-    assert pids[1] == j.sal.process.getProcessPid(P2)[0]
+    assert j.sal.process.getProcessPid(P1)[0] in pids
 
     info("Use getProcessPidsFromUser to get process pid [PID], Check that it returs right PID.")
     assert set(pids).issubset(set(j.sal.process.getProcessPidsFromUser(user))) is True
