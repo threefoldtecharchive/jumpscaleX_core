@@ -14,6 +14,10 @@ class UserSessionBase(j.baseclasses.object):
     def is_authenticated(self):
         return self.threebot_id != 0
 
+    def admin_check(self):
+        if not self.admin:
+            raise j.exceptions.Permission("only admin user can access this method")
+
 
 class UserSessionAdmin(UserSessionBase):
     def _init(self):

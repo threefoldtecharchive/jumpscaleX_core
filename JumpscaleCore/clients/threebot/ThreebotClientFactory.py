@@ -48,7 +48,6 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
 
     def client_get(self, threebot=None):
         """
-
         cl=j.clients.threebot.client_get(threebot="kristof.ibiza")
         cl=j.clients.threebot.client_get(threebot=10)
 
@@ -58,25 +57,22 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         :param name:
         :return:
         """
-        # path to get a threebot client needs to be as fast as possible
+        # # path to get a threebot client needs to be as fast as possible
         if isinstance(threebot, int):
-            assert threebot > 0
-            if threebot in self._id2client_cache:
-                return self._id2client_cache[threebot]
-            res = self.find(tid=threebot)
             tid = threebot
             tname = None
+
+            # leaving naive caching here for now, but this kind of construct usually blow back in our
+            # face, so check here if something explode.
+            if threebot in self._id2client_cache:
+                return self._id2client_cache[threebot]
+
         elif isinstance(threebot, str):
-            res = [self.get(name=threebot)]
             tid = None
             tname = threebot
         else:
             raise j.exceptions.Input("threebot needs to be int or str")
 
-        if len(res) > 1:
-            j.shell()
-            raise j.exceptions.JSBUG("should never be more than 1")
-        # reload, make sure newly added packages exist
         j.tools.threebot.explorer.reload()
         r = j.tools.threebot.explorer.threebot_record_get(tid=tid, name=tname)
         assert r.id > 0

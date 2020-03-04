@@ -37,11 +37,10 @@ def actor_method(func):
         self = args[0]
         if not len(args) == 1:
             raise j.exceptions.Input("actor methods only accept keyword arguments")
-        self._log_debug(str(func))
+
         name = func.__name__
-        self._log_debug(name)
-        if "user_session" not in kwargs:
-            # means not called through the gedis server
+
+        if ("from_gedis_http" in kwargs) or ("user_session" not in kwargs):
             assert "schema_out" not in kwargs
 
             prefix = "actors.%s.%s.%s" % (self.package.name, self._classname, name)
@@ -57,9 +56,12 @@ def actor_method(func):
                     data = schema_in.new()
 
                 for pname in schema_in.propertynames:
-                    kwargs[pname] = eval("data.%s" % pname)
+                    kwargs[pname] = getattr(data, pname)
 
-            kwargs["user_session"] = j.application.admin_session
+            if "user_session" not in kwargs:
+                kwargs["user_session"] = j.application.admin_session
+            if "from_gedis_http" in kwargs:
+                del kwargs["from_gedis_http"]
             kwargs["schema_out"] = schema_out
 
         res = func(self, **kwargs)

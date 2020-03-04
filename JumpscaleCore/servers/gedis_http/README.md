@@ -3,12 +3,12 @@
 exposing gedis as http endpoint using bottle server, so you can call some command on actor as the following using normal http `POST` requests
 
 ```bash
-    POST /web/gedis/http/ACTOR_NAME/ACTOR_CMD
+    POST /<threebot_name>/<package_name>/actors/<name>/<cmd>
     json body:
     {
-        args: {}
-        content_type:..
-        content_response:..
+        args: {},
+        content_type: 'json',
+        content_response: 'json'
     }
 ```
 
@@ -16,7 +16,7 @@ exposing gedis as http endpoint using bottle server, so you can call some comman
 
 ```bash
 
-~> curl -XPOST https://172.17.0.2/web/gedis/http/blog/get_tags -H "Content-Type: application/json" --insecure
+~> curl -XPOST https://172.17.0.2/zerobot/blog/actors/blog/get_tags -H "Content-Type: application/json" --insecure
 
 ["python", "lame", "markdown", "java"]
 
@@ -26,7 +26,7 @@ exposing gedis as http endpoint using bottle server, so you can call some comman
 
 ```bash
 
-~> curl -i -XPOST https://172.17.0.2/web/gedis/http/blog/get_metadata --data '{"args":{"blog":"xmon"}}' -H "Content-Type: application/json" --insecure
+~> curl -i -XPOST https://172.17.0.2/zerobot/blog/actors/blog/get_metadata --data '{"args":{"blog":"xmon"}}' -H "Content-Type: application/json" --insecure
 
 HTTP/1.1 200 OK
 Content-Type: application/json
