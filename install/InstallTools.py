@@ -301,7 +301,7 @@ class RedisTools:
                 return True
 
         if tcp and Tools.tcp_port_connection_test("localhost", 6379):
-            r = RedisTools.client_core_get(ipaddr="localhost", port=6379, die=False)
+            r = RedisTools.client_core_get(addr="localhost", port=6379, die=False)
             if r:
                 return True
 
