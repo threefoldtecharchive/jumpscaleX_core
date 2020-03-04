@@ -1,5 +1,9 @@
 from Jumpscale import j
-from parameterized import parameterized
+try:
+    from parameterized import parameterized
+except ImportError:
+    j.builders.runtimes.python3.pip_package_install("parameterized", reset=True)
+    from parameterized import parameterized
 import logging
 
 skip = j.baseclasses.testtools._skip
