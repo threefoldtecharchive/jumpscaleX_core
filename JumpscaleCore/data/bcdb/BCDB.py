@@ -247,14 +247,21 @@ class BCDB(j.baseclasses.object):
                     else:
                         j.sal.fs.writeFile(dpath_file, C)
 
-    def import_(self, path, interactive=True):
+    def import_(self, path, interactive=True, data=True, encryption=False):
         """Import models and objects from path.
+
+        if data not True then will use yaml or toml files
+
 
         :param path: path to import data from
         :type path: str
         :param interactive: interactively ask user, defaults to True
         :type interactive: bool, optional
         """
+
+        assert encryption == False
+        assert data
+
         if not j.sal.fs.exists(path):
             raise j.exceptions.Base("path does not exist")
 
@@ -269,81 +276,88 @@ class BCDB(j.baseclasses.object):
 
         data = {}
         models = {}
-        schemas = {}
+        # schemas = {}
         paths = j.sal.fs.listDirsInDir(path, False, dirNameOnly=False)
 
-        for url_path in paths:
-            # load all schemas first to make sure all models schemas are loaded when refrenced by parent schemas
-            print(f"processing schema {url_path}")
-            schema_text = j.sal.fs.readFile("%s/_schema.toml" % url_path)
-            url = j.sal.fs.getBaseName(url_path)
-            schema = j.data.schema.get_from_text(schema_text, url=url)
-            schemas[url] = schema
+        # BECAUSE WE ALREADY HAVE THE FULL METADATA THERE IS NO NEED TO LOAD SCHEMAS
+        # for url_path in paths:
+        #     # load all schemas first to make sure all models schemas are loaded when refrenced by parent schemas
+        #     print(f"processing schema {url_path}")
+        #     schema_text = j.sal.fs.readFile("%s/_schema.toml" % url_path)
+        #     url = j.sal.fs.getBaseName(url_path)
+        #     schema = j.data.schema.get_from_text(schema_text, url=url)
+        #     schemas[url] = schema
 
         for url_path in paths:
             print(f"processing {url_path}")
             url = j.sal.fs.getBaseName(url_path)
-            model = self.model_get(schema=schemas[url])
+            # check that model does not exist yet
+            assert url not in self.models
+            model = self.model_get(url=url)
             models[url] = model
-            if model._index_:
-                model._index_.destroy()
-            for item in j.sal.fs.listFilesInDir(url_path, False):
-                print(f"item {item}")
-                if item.endswith("_schema.toml"):
-                    continue
-                if item.endswith("schema_hist.toml"):
-                    continue
-                print(f"processing item: {item}")
+            # means index is really empty
+            assert not model._index_
+            assert model.find() == []
 
-                # check for files extensions, it file is encrypted will end with .encr
-                item_ext = j.sal.fs.getFileExtension(item.rstrip(".encr"))
-                is_encrypted = j.sal.fs.getFileExtension(item) == "encr"
+            for item in j.sal.fs.listFilesInDir(url_path, False, filter="*.data"):
+                # print(f"item {item}")
+                # if item.endswith("_schema.toml"):
+                #     continue
+                # if item.endswith("schema_hist.toml"):
+                #     continue
+                # print(f"processing item: {item}")
+                #
+                # # check for files extensions, it file is encrypted will end with .encr
+                # item_ext = j.sal.fs.getFileExtension(item.rstrip(".encr"))
+                # is_encrypted = j.sal.fs.getFileExtension(item) == "encr"
+                #
+                # if item_ext == "data":
+                #     self._log("encr:%s" % item)
+                #     data2 = j.sal.fs.readFile(item, binary=True)
+                #     if is_encrypted:
+                #         data2 = j.data.nacl.default.decryptSymmetric(data2)
+                data2 = j.sal.fs.readFile(item, binary=True)
+                obj = j.data.serializers.jsxdata.loads(data2)
+                # print(f"data decrypted {data}")
+                data[int(obj.id)] = (url, obj._ddict)
 
-                if item_ext == "data":
-                    self._log("encr:%s" % item)
-                    data2 = j.sal.fs.readFile(item, binary=True)
-                    if is_encrypted:
-                        data2 = j.data.nacl.default.decryptSymmetric(data2)
-                    obj = j.data.serializers.jsxdata.loads(data2)
-                    # print(f"data decrypted {data}")
-                    data[obj.id] = (url, obj._ddict)
-
-                elif item_ext in ["toml", "yaml"]:
-
-                    if item_ext == "toml":
-                        self._log("toml:%s" % item)
-                        if is_encrypted:
-                            self._log("decrypting toml:%s" % item)
-                            data_encr = j.sal.fs.readFile(item, binary=True)
-                            data_encr = j.data.nacl.default.decryptSymmetric(data_encr)
-                            datadict = j.data.serializers.toml.loads(data_encr)
-                        else:
-                            datadict = j.data.serializers.toml.load(item)
-
-                    elif item_ext == "yaml":
-                        self._log("yaml:%s" % item)
-                        if is_encrypted:
-                            self._log("decrypting yaml:%s" % item)
-                            data_encr = j.sal.fs.readFile(item, binary=True)
-                            data_encr = j.data.nacl.default.decryptSymmetric(data_encr)
-                            datadict = j.data.serializers.yaml.loads(data_encr)
-                        else:
-                            datadict = j.data.serializers.yaml.load(item)
-
-                    data[datadict["id"]] = (url, datadict)
-                else:
-                    self._log("skip:%s" % item)
-                    continue
+                # elif item_ext in ["toml", "yaml"]:
+                #
+                #     if item_ext == "toml":
+                #         self._log("toml:%s" % item)
+                #         if is_encrypted:
+                #             self._log("decrypting toml:%s" % item)
+                #             data_encr = j.sal.fs.readFile(item, binary=True)
+                #             data_encr = j.data.nacl.default.decryptSymmetric(data_encr)
+                #             datadict = j.data.serializers.toml.loads(data_encr)
+                #         else:
+                #             datadict = j.data.serializers.toml.load(item)
+                #
+                #     elif item_ext == "yaml":
+                #         self._log("yaml:%s" % item)
+                #         if is_encrypted:
+                #             self._log("decrypting yaml:%s" % item)
+                #             data_encr = j.sal.fs.readFile(item, binary=True)
+                #             data_encr = j.data.nacl.default.decryptSymmetric(data_encr)
+                #             datadict = j.data.serializers.yaml.loads(data_encr)
+                #         else:
+                #             datadict = j.data.serializers.yaml.load(item)
+                #
+                #     data[datadict["id"]] = (url, datadict)
+                # else:
+                #     self._log("skip:%s" % item)
+                #     continue
 
         max_id = max(list(data.keys()) or [0])
 
         next_id = 1
         if isinstance(self.storclient, ZDBClientBase):
             next_id = self.storclient.next_id
+            assert next_id == 1
 
         to_remove = []
 
-        # have to import it in the exact same order
+        # have to import it in the exact same order (0 is always name INIT)
         for i in range(1, max_id + 1):
             # print(f"i: {i}")
             if i not in data:

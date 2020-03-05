@@ -10,7 +10,8 @@ from .connectors.redis.RedisServer import RedisServer
 
 TESTTOOLS = j.baseclasses.testtools
 
-class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
+
+class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
     __jslocation__ = "j.data.bcdb"
 
@@ -345,38 +346,60 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
         scm_path = path or j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")
         j.sal.fs.copyFile(schema_path, scm_path)
 
-    def import_(self, name=None, path=None):
+    def import_(self, name=None, path=None, data=True, encryption=False, interactive=False):
         """
         import back
 
         kosmos 'j.data.bcdb.import_(name="system")'
+        kosmos 'j.data.bcdb.import_()'
+
+        remark:
+        if you need to copy data from remote example ssh rsync
+        rm -rf /sandbox/var/bcdb_exports
+        rsync -rav -e ssh --delete root@explorer.testnet.grid.tf:/sandbox/var/bcdb_exports_03_05/ /sandbox/var/bcdb_exports/
+
 
         :param name:
         :param path:
         :return:
         """
 
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
+            raise j.exceptions.Base("Cannot import threebot is running")
+
         j.data.bcdb._master_set()
         j.tools.executor.local
 
-        self.threebot_zdb_sonic_start()
+        if not name:
+            # we can remove all
+            if interactive:
+                if not j.core.tools.ask_yes_no(
+                    "Importing will reset your all your BCDB. Are you sure you want to continue?"
+                ):
+                    return
+            self.destroy_all()
 
-        ## import all schemas
-        if path:
-            schemas_path = f"{path}/schema_meta.msgpack"
-        else:
-            schemas_path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")
-        j.data.schema.meta.load(path=schemas_path)
+        self.threebot_zdb_sonic_start()
 
         if not path:
             path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/")
+
+        ## import all schemas
+        j.data.schema.meta.load(path=f"{path}/schema_meta.msgpack")
+
         if not name:
             names = j.sal.fs.listDirsInDir(path, False, True)
-            for name in names:
-                self.import_(name, path=path)
-            return
+        else:
+            names = [name]
+
+        for name in names:
+            self._import_bcdb_name(name=name, path=path, interactive=interactive, data=data, encryption=encryption)
+
+    def _import_bcdb_name(self, name=None, path=None, data=True, encryption=False, interactive=True):
+
         path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
         assert j.sal.fs.exists(path)
+
         if name == "system":
             self.system.import_(path=path, interactive=False)
         else:
@@ -390,7 +413,8 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
                 return
             bcdb = self.get_for_threebot(name, namespace=config.get("namespace"), ttype=config["type"])
             path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
-            bcdb.import_(path=path, interactive=False)
+
+            bcdb.import_(path=path, interactive=False, data=data, encryption=encryption)
 
     def destroy_all(self):
         """
@@ -400,7 +424,7 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
         :return:
         """
         if not self._master:
-            raise j.exceptions.Base("cannot destory BCDB when not master")
+            raise j.exceptions.Base("cannot destroy BCDB when not master")
 
         self._load()
         names = [name for name in self._config.keys()]
