@@ -237,10 +237,6 @@ class BCDB(j.baseclasses.object):
                     else:
                         j.sal.fs.writeFile("%s/%s.data" % (dpath, obj.id), data)
                 if yaml:
-                    # try:
-                    #     C = j.data.serializers.toml.dumps(obj._ddict)
-                    #     ext = "toml"
-                    # except:
                     C = j.data.serializers.yaml.dumps(obj._ddict)
                     ext = "yaml"
                     if hasattr(obj, "name") and "/" not in obj.name:

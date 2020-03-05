@@ -74,7 +74,7 @@ class ExecutorSSH(ExecutorBase):
         )
         j.sal.process.executeWithoutPipe(cmd)
 
-    def _execute_cmd(self, cmd, interactive=False, showout=True, die=True, timeout=1000):
+    def _execute_cmd(self, cmd, interactive=True, showout=True, die=True, timeout=3600):
         res = self.sshclient.execute(cmd=cmd, interactive=interactive, showout=showout, die=die, timeout=timeout)
         return res
 
