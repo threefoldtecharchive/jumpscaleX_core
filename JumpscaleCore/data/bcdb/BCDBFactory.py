@@ -364,6 +364,9 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         :return:
         """
 
+        # make sure we load the known packages
+        j.tools.threebot_packages.load()
+
         if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
             raise j.exceptions.Base("Cannot import threebot is running")
 
@@ -397,6 +400,10 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
     def _import_bcdb_name(self, name=None, path=None, data=True, encryption=False, interactive=True):
 
+        if not j.tools.threebot_packages.exists(name):
+            raise j.exceptions.Input("cannot find package:%s" % name)
+        package = j.tools.threebot_packages.get(name)
+
         path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
         assert j.sal.fs.exists(path)
 
@@ -412,8 +419,31 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
                 self._log_warning(f"only zdb, sqlite redis are supported your type is: {config['type']}")
                 return
             bcdb = self.get_for_threebot(name, namespace=config.get("namespace"), ttype=config["type"])
-            path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
+            # lets check package config of the bcdb is the same
 
+            if bcdb.storclient.type == "ZDB":
+                bcdb_config = package.bcdbs[0]
+                assert bcdb_config.type == "ZDB"
+                assert bcdb_config.namespace == bcdb.storclient.nsname
+                assert bcdb_config.namespace == config["namespace"]
+                if hasattr(bcdb_config, "port"):
+                    bcdb_config.port == bcdb.storclient.port
+                assert package.bcdb.storclient.addr == bcdb.storclient.addr
+                assert package.bcdb.storclient.port == bcdb.storclient.port
+                assert package.bcdb.storclient.secret_ == bcdb.storclient.secret_
+                assert package.bcdb.storclient.nsname == bcdb.storclient.nsname
+            elif bcdb.storclient.type == "RDB":
+                raise RuntimeError("implement checks for RDB")
+                j.shell()
+            elif bcdb.storclient.type == "SDB":
+                raise RuntimeError("implement checks for RDB")
+                j.shell()
+            else:
+                raise RuntimeError("BUG")
+
+            assert package.bcdb.storclient.name == bcdb.storclient.name
+
+            path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
             bcdb.import_(path=path, interactive=False, data=data, encryption=encryption)
 
     def destroy_all(self):
