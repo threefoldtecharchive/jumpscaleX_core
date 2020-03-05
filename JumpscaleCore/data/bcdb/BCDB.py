@@ -363,7 +363,7 @@ class BCDB(j.baseclasses.object):
             if i not in data:
                 if i < next_id:
                     continue
-                print(f"{i} doesn't exist in data.. ")
+                # print(f"{i} doesn't exist in data.. ")
                 self.storclient.set("")
                 to_remove.append(i)
             else:

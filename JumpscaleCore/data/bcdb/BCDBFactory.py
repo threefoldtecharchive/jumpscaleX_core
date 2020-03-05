@@ -389,6 +389,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         ## import all schemas
         j.data.schema.meta.load(path=f"{path}/schema_meta.msgpack")
+        j.data.schema.meta.save()
 
         if not name:
             names = j.sal.fs.listDirsInDir(path, False, True)

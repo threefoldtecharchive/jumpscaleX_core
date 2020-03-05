@@ -51,7 +51,7 @@ class SchemaMeta(j.baseclasses.object):
         else:
             self._log_debug("save, empty schema")
             self._data = {"url": {}, "md5": {}}
-            self.save()
+        self.save()
 
     @property
     def schema_dicts(self):
