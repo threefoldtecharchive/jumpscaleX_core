@@ -346,7 +346,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         scm_path = path or j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")
         j.sal.fs.copyFile(schema_path, scm_path)
 
-    def import_(self, path=None, data=True, encryption=False, interactive=False, reset=False):
+    def import_(self, path=None, data=True, encryption=False, interactive=False, reset=True):
         """
         import back
 

@@ -355,6 +355,10 @@ class BCDB(j.baseclasses.object):
                 # print(f"data decrypted {data}")
                 data[int(obj.id)] = (url, obj._ddict)
 
+                # make sure we don't find wrong data in the export (with wrong schema)
+                assert obj._schema.url == model.schema.url
+                assert obj._schema.url in self.models
+
                 # elif item_ext in ["toml", "yaml"]:
                 #
                 #     if item_ext == "toml":
