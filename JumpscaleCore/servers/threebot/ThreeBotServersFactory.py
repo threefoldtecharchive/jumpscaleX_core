@@ -119,11 +119,6 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
                     j.shell()
                 assert "." in client.package_name
 
-            # NO LONGER NEEDED BECAUSE PART OF DEFAULT>START
-            # gediscl = j.clients.gedis.get("pkggedis", package_name="zerobot.packagemanager")
-            # for package_path in packages:
-            #     gediscl.actors.package_manager.package_add(path=package_path)
-
             client.reload()
             return client
 
@@ -131,14 +126,15 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
             self.install()
             self.default.start(background=False, packages=packages, with_shell=with_shell)
 
-    def local_start_3bot(self, background=False, reload=False):
-        """starts 3bot with webplatform package.
-        kosmos -p 'j.servers.threebot.local_start_3bot()'
-        """
-        if not background:
-            self._threebot_starting()
-        packages = [f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform"]
-        return self.start(background=background, packages=packages, reload=reload)
+    # I GUESS ITS NOT USED ANY MORE, WE NEED CLEANUP THERE !!!
+    # def local_start_3bot(self, background=False, reload=False):
+    #     """starts 3bot with webplatform package.
+    #     kosmos -p 'j.servers.threebot.local_start_3bot()'
+    #     """
+    #     if not background:
+    #         self._threebot_starting()
+    #     packages = [f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform"]
+    #     return self.start(background=background, packages=packages, reload=reload)
 
     def reset(self, debug=True):
         """
@@ -207,7 +203,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
         #
         # gedis_client.reload()
 
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)
 
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/574")
     def test_explorer(self):
@@ -223,7 +219,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
     def _docker_jumpscale_get(self, name="3bot", delete=True):
         docker = j.core.dockerfactory.container_get(name=name, delete=delete)
         docker.install()
-        docker.jumpscale_install()
+        docker.install_jumpscale()
         # now we can access it over 172.0.0.2
         return docker
 

@@ -3,7 +3,6 @@ from Jumpscale import j
 skip = j.baseclasses.testtools._skip
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_meta():
     """
     to run:
@@ -12,7 +11,7 @@ def test_meta():
 
     """
 
-    bcdb, _ = j.data.bcdb._load_test_model()
+    bcdb, _ = j.data.bcdb._test_model_get()
 
     assert len(bcdb.get_all()) == 0
 
@@ -102,10 +101,6 @@ def test_meta():
 
     assert a6.id == a3.id
     assert a6.i == a3.i
-
-    # CLEAN STATE
-    j.servers.zdb.test_instance_stop()
-    j.servers.sonic.default.stop()
 
     j.data.bcdb._log_info("TEST META DONE")
 

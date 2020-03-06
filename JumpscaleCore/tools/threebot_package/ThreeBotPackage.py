@@ -162,7 +162,9 @@ class ThreeBotPackage(ThreeBotPackageBase):
             if len(self.bcdbs) == 1:
                 config = self.bcdbs[0]
                 if not config.name:
-                    config.name = self.name
+                    raise j.exceptions.Input(
+                        f"could not find name for bcdb in config of package, {self.name}, found {config.name}"
+                    )
                 self._bcdb_ = j.data.bcdb.get_for_threebot(
                     name=config.name, namespace=config.namespace, ttype=config.type
                 )

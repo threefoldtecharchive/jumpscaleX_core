@@ -40,6 +40,7 @@ def test005_numeric():
     assert n.bytes2str(n.str2bytes("1%")) == "1%"
     assert n.bytes2str(n.str2bytes("150%")) == "150%"
     assert n.bytes2str(n.str2bytes("-150%")) == "-150%"
+
     assert n.bytes2str(n.str2bytes("0.001")) == "0.001"
     assert n.bytes2str(n.str2bytes("0.001 eur")) == "0.001 EUR"
     assert n.bytes2str(n.str2bytes("-0.1 eur")) == "-0.1 EUR"

@@ -20,8 +20,9 @@ class RedisFactory(j.baseclasses.factory_testtools):
         self._cache_clear()
         self._unix_socket_core = j.core.tools.text_replace("{DIR_BASE}/var/redis.sock")
         self._core = None
-
-        #
+        self.core_stop = RedisTools.core_stop
+        self.core_get = RedisTools._core_get
+        self.core_running = RedisTools.core_running
 
     @property
     def core(self):
@@ -173,53 +174,64 @@ class RedisFactory(j.baseclasses.factory_testtools):
             self._redisq[key2] = redisclient.queue_get(key)
         return self._redisq[key2]
 
-    def core_get(self, reset=False, tcp=True, fromcache=True):
-        """
+    #
+    # def core_get(self, reset=False, tcp=True, fromcache=True):
+    #     """
+    #
+    #     kosmos 'j.clients.redis.core_get(reset=False)'
+    #     j.clients.redis.core_get(fromcache=False)
+    #
+    #     will try to create redis connection to {DIR_TEMP}/redis.sock or {DIR_BASE}/var/redis.sock  if sandbox
+    #     if that doesn't work then will look for std redis port
+    #     if that does not work then will return None
+    #
+    #
+    #     :param tcp, if True then will also start tcp port on localhost on 6379
+    #
+    #
+    #     :param reset: stop redis, defaults to False
+    #     :type reset: bool, optional
+    #     :raises RuntimeError: redis couldn't be started
+    #     :return: redis instance
+    #     :rtype: Redis
+    #     """
+    #     if fromcache:
+    #         j.core.myenv.db = RedisTools.core_get(reset=reset, tcp=tcp)
+    #     else:
+    #         # means we need to get a client, no need to check if core was already started
+    #         j.core.myenv.db = RedisTools.client_core_get(fake_ok=False)
+    #     return j.core.myenv.db
+    #
+    # def core_stop(self):
+    #     """
+    #     kill core redis
+    #
+    #     :raises RuntimeError: redis wouldn't be stopped
+    #     :return: True if redis is not running
+    #     :rtype: bool
+    #     """
+    #     return RedisTools.core_stop()
+    #
+    # def core_stop(self):
+    #     """
+    #     kill core redis
+    #
+    #     :raises RuntimeError: redis wouldn't be stopped
+    #     :return: True if redis is not running
+    #     :rtype: bool
+    #     """
+    #     return RedisTools.core_stop()
 
-        kosmos 'j.clients.redis.core_get(reset=False)'
-        j.clients.redis.core_get(fromcache=False)
-
-        will try to create redis connection to {DIR_TEMP}/redis.sock or {DIR_BASE}/var/redis.sock  if sandbox
-        if that doesn't work then will look for std redis port
-        if that does not work then will return None
-
-
-        :param tcp, if True then will also start tcp port on localhost on 6379
-
-
-        :param reset: stop redis, defaults to False
-        :type reset: bool, optional
-        :raises RuntimeError: redis couldn't be started
-        :return: redis instance
-        :rtype: Redis
-        """
-        if fromcache:
-            j.core.myenv.db = RedisTools.core_get(reset=reset, tcp=tcp)
-        else:
-            # means we need to get a client, no need to check if core was already started
-            j.core.myenv.db = RedisTools.client_core_get(fake_ok=False)
-        return j.core.myenv.db
-
-    def core_stop(self):
-        """
-        kill core redis
-
-        :raises RuntimeError: redis wouldn't be stopped
-        :return: True if redis is not running
-        :rtype: bool
-        """
-        return RedisTools.core_stop()
-
-    def core_running(self, unixsocket=True, tcp=True):
-
-        """
-        Get status of redis whether it is currently running or not
-
-        :raises e: did not answer
-        :return: True if redis is running, False if redis is not running
-        :rtype: bool
-        """
-        return RedisTools.core_running(unixsocket=unixsocket, tcp=tcp)
+    # def core_running(self, unixsocket=True, tcp=True):
+    #
+    #     """
+    #     Get status of redis whether it is currently running or not
+    #
+    #     :raises e: did not answer
+    #     :return: True if redis is running, False if redis is not running
+    #     :rtype: bool
+    #     """
+    #     return RedisTools.core_running(unixsocket=unixsocket, tcp=tcp)
 
     def test(self, name=""):
         """
@@ -227,4 +239,4 @@ class RedisFactory(j.baseclasses.factory_testtools):
         kosmos 'j.clients.redis.test()'
 
         """
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)

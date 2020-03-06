@@ -3,7 +3,6 @@ from Jumpscale import j
 skip = j.baseclasses.testtools._skip
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_base():
     """
     to run:
@@ -23,8 +22,7 @@ def test_base():
 
         def load(schema_url):
 
-            # don't forget the record 0 is always a systems record
-            db, model = j.data.bcdb._load_test_model(type=name, schema=schema)
+            db, model = j.data.bcdb._test_model_get(type=name, schema=schema)
 
             for i in range(10):
                 model_obj = model.new()
@@ -150,7 +148,7 @@ def test_base():
         # assert db_model.index.sql._id_exists(1)
         # assert db_model.index.sql._id_exists(10) is False  #NEEDS TO BE DEBUGGED & IMPROVED
 
-        assert db_model.bcdb.name == "test"
+        assert db_model.bcdb.name.startswith("test")
 
         print("TEST DONE: %s" % name)
 
@@ -193,10 +191,6 @@ def test_base():
 
     test("ZDB", schema_sqlite)
     test("SQLITE", schema_sqlite)
-
-    # CLEAN STATE
-    j.servers.zdb.test_instance_stop()
-    j.servers.sonic.default.stop()
 
     # self._log_info("TEST BASE DONE")
     print("OK")

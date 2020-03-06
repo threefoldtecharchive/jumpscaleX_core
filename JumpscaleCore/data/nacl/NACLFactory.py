@@ -7,7 +7,6 @@ import base64
 import hashlib
 from io import BytesIO
 from nacl.public import PrivateKey, SealedBox
-import fakeredis
 import binascii
 from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
@@ -25,10 +24,6 @@ class NACLFactory(j.baseclasses.object, TESTTOOLS):
 
     def _init(self, **kwargs):
         self._default = None
-
-        # check there is core redis
-        if isinstance(j.core.db, fakeredis.FakeStrictRedis):
-            j.clients.redis.core_get()
 
     def configure(self, name="default", privkey_words=None, generate=True, interactive=False, reset=False):
         """

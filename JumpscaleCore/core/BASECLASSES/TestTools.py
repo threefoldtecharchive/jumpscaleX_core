@@ -23,7 +23,7 @@ class TestTools:
     _modules = []
     _results = {"summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0}, "testcases": [], "time_taken": 0}
 
-    def __init__(self, xml_report=False, xml_path="test.xml", xml_testsuite_name="Jsx_Runner"):
+    def _init_factory(self, xml_report=False, xml_path="test.xml", xml_testsuite_name="Jsx_Runner"):
         self._xml_report = xml_report
         self._xml_path = xml_path
         self._xml_testsuite_name = xml_testsuite_name
@@ -45,7 +45,7 @@ class TestTools:
 
         return dec
 
-    def _tests_run(self, name=""):
+    def _tests_run(self, name="", die=False):
         """This method for jumpscale factories, it is used to run tests in "tests" directory beside jumpscale factory.
         This method should not be used outside jumpscale factories.
 
@@ -61,7 +61,7 @@ class TestTools:
             files = j.sal.fs.listPyScriptsInDir(path)
             for file in files:
                 _, basename, _, _ = j.sal.fs.pathParse(file)
-                if name in basename:
+                if name == basename:
                     return file
             else:
                 raise ValueError(f"Didn't find file with name {name}")
@@ -71,9 +71,11 @@ class TestTools:
         path = j.sal.fs.joinPaths(self._dirpath, "tests")
         if name:
             path = find_file(name, path)
-
         self._discover_from_path(path)
-        return self._execute_report_tests()
+        r = self._execute_report_tests()
+        if r > 0 and die:
+            raise j.exceptions.Base("could not run test:%s" % self)
+        return r
 
     def _run_from_path(self, path="", name=""):
         """Run tests from absolute or relative path.
@@ -178,9 +180,11 @@ class TestTools:
                 self._import_file_module(path, parent_path)
         else:
             sys.path.insert(0, path)
-            files_pathes = j.sal.fs.listPyScriptsInDir(path=path, recursive=True)
+            files_pathes = j.sal.fs.listPyScriptsInDir(path=path, recursive=False)
             for file_path in files_pathes:
-                self._import_file_module(file_path, path)
+                file_path_base = j.sal.fs.getBaseName(file_path)
+                if not file_path_base.startswith("_"):
+                    self._import_file_module(file_path, path)
 
     def _import_file_module(self, file_path, path):
         """Import module (file) if module contains a test.

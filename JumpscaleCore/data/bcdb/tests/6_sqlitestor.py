@@ -3,18 +3,17 @@ from Jumpscale import j
 skip = j.baseclasses.testtools._skip
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_sqlitestor_base():
     """
     to run:
 
-    kosmos 'j.data.bcdb.test(name="sqlitestor_base")'
+    kosmos 'j.data.bcdb.test(name="sqlitestor")'
 
     use a bcdb which is using sqlite
 
     """
 
-    bcdb, _ = j.data.bcdb._load_test_model(type="sqlite")
+    bcdb, _ = j.data.bcdb._test_model_get(type="sqlite")
 
     mpath = j.data.bcdb._dirpath + "/tests/models"
     assert j.sal.fs.exists(mpath)

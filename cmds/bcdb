@@ -71,7 +71,7 @@ def rebuild(name=None):
     :return:
     """
 
-    j.data.bcdb.threebot_zdb_sonic_start()
+    j.data.bcdb.start_servers_threebot_zdb_sonic()
 
     if not name:
         for bcdb in j.data.bcdb.instances.values():

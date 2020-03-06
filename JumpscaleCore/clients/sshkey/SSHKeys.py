@@ -86,4 +86,4 @@ class SSHKeys(j.baseclasses.object_config_collection_testtools):
         print("TEST FOR SSHKEYS OK")
 
     def test_sshkey(self, name=""):
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)

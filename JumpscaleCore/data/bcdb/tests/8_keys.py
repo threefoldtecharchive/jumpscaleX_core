@@ -3,7 +3,6 @@ from Jumpscale import j
 skip = j.baseclasses.testtools._skip
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_keys():
     """
     to run:
@@ -23,7 +22,7 @@ def test_keys():
 
     """
 
-    db, m = j.data.bcdb._load_test_model(type="sqlite", schema=SCHEMA)
+    db, m = j.data.bcdb._test_model_get(type="sqlite", schema=SCHEMA)
     bcdb = m.bcdb
 
     o = m.new()

@@ -55,8 +55,8 @@ class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtoo
         self._threebot_client_default = cl
         self._threebot_client_default_packagemanager = cl_pm
 
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)
 
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/582")
     def test_gedis(self, name=""):
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)

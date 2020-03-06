@@ -7,11 +7,10 @@ from io import BytesIO
 from nacl.signing import VerifyKey
 from nacl.public import PrivateKey, PublicKey, SealedBox
 
-TESTTOOLS = j.baseclasses.testtools
 skip = j.baseclasses.testtools._skip
 
 
-class ThreebotToolsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
+class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testtools):
     __jslocation__ = "j.tools.threebot"
     _CHILDCLASSES = [ThreebotMeCollection]
 
@@ -28,7 +27,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             j.servers.threebot.default.stop()
             j.data.bcdb._master_set()
 
-        j.data.bcdb.threebot_zdb_sonic_start()
+        j.data.bcdb.start_servers_threebot_zdb_sonic()
         j.data.bcdb.export()
 
         if stop:
@@ -418,7 +417,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         self.me
 
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)
 
         self._log_info("All TESTS DONE")
         return "OK"
