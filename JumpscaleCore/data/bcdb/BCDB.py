@@ -185,6 +185,8 @@ class BCDB(j.baseclasses.object):
         if self.storclient.type != "SDB":
             self.get_all()
 
+        assert encrypt == False  # not supported yet encryption
+
         # export schema
         schema_path = j.core.tools.text_replace("{DIR_CFG}/schema_meta.msgpack")
         scm_path = path or j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")

@@ -399,6 +399,22 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         for name in names:
             self._import_bcdb_name(name=name, path=path, interactive=interactive, data=data, encryption=encryption)
 
+    def verify(self, names=[]):
+
+        self.threebot_zdb_sonic_start()
+
+        if not j.tools.threebot_packages.exists(name):
+            raise j.exceptions.Input("cannot find package:%s" % name)
+        package = j.tools.threebot_packages.get(name)
+
+        j.tools.threebot_packages.load()
+
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
+            raise j.exceptions.Base("Cannot import threebot is running")
+
+        j.data.bcdb._master_set()
+        j.tools.executor.local
+
     def _import_bcdb_name(self, name=None, path=None, data=True, encryption=False, interactive=True):
 
         if not j.tools.threebot_packages.exists(name):
