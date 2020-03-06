@@ -313,45 +313,48 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             bcdb = self.get(name=name)
             bcdb.stop()
 
-    def export(self, name=None, path=None, yaml=True, data=True, encrypt=False, reset=True):
+    def export(self, name=None, bcdbname=None, path=None, yaml=True, data=True, encrypt=False):
         """Export all models and objects
 
-        kosmos 'j.data.bcdb.export(name="system",encrypt=False)'
-        kosmos 'j.data.bcdb.export(encrypt=True,yaml=False,reset=False)'
-        kosmos 'j.data.bcdb.export(encrypt=False)'
+        kosmos 'j.data.bcdb.export(name="system")'
+        kosmos 'j.data.bcdb.export()'
 
         :param path: path to export to
         :type path: str
 
-        :param reset: reset the export path before exporting, defaults to True
-        :type reset: bool, optional
+        :param name: is the name of the backup, if not chosen will be like '06_Mar_2020_05_00_00'
+
         """
         if not name:
-            v = list(self.instances.values())
-            for bcdb in v:
-                if bcdb.storclient.type != "SDB":
-                    bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
-        elif name == "system":
-            if path:
-                path = "%s/%s" % (path, name)
+            name = j.data.time.getLocalTimeHRForFilesystem()
+
+        if not path:
+            path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
+
+        if not name and j.sal.fs.exists(path):
+            j.sal.fs.remove(path)
+
+        if not bcdbname:
+            for bcdb in list(self.instances.values()):
+                self.export(name=name, bcdbname=bcdb.name, path=path, yaml=yaml, data=data, encrypt=encrypt)
+            return
+        elif bcdbname == "system":
             bcdb = self.system
-            bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
+            path2 = "%s/system" % (path)
         else:
-            if path:
-                path = "%s/%s" % (path, name)
-            bcdb = self.get(name=name)
-            bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
+            path2 = "%s/%s" % (path, bcdbname)
+            bcdb = self.get(name=bcdbname)
+
+        bcdb._export(path=path2, yaml=yaml, data=data, encrypt=encrypt)
 
         schema_path = j.core.tools.text_replace("{DIR_CFG}/schema_meta.msgpack")
-        scm_path = path or j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")
-        j.sal.fs.copyFile(schema_path, scm_path)
+        j.sal.fs.copyFile(schema_path, "%s/schema_meta.msgpack" % path)
 
     def import_(self, path=None, data=True, encryption=False, interactive=False, reset=True):
         """
         import back
 
         kosmos 'j.data.bcdb.import_()'
-        kosmos 'j.data.bcdb.import_(reset=True)'
 
         if path not specified will look at path you are in, if schema_meta.msgpack found will use that path
 
@@ -363,7 +366,6 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         :param name:
         :param path:
-        :param reset: if True will remove the full BCDB (DANGEROUS)
         :return:
         """
 
@@ -394,6 +396,10 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         ## import all schemas
         j.data.schema.meta.load(path=f"{path}/schema_meta.msgpack")
         j.data.schema.meta.save()
+
+        # make sure we have our schema's back in /sandbox/cfg/bcdb
+        for schema in j.data.schema.schemas_all.values():
+            j.data.schema.meta.schema_backup(schema)
 
         paths = j.sal.fs.listDirsInDir(path, recursive=False, dirNameOnly=False)
         for path in paths:
@@ -428,7 +434,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         assert j.sal.fs.exists(path)
 
         if j.sal.fs.getBaseName(path) == "system":
-            self.system.import_(path=path, interactive=False, data=data, encryption=encryption)
+            self.system._import_(path=path, interactive=False, data=data, encryption=encryption)
         else:
             path_bcdbconfig = f"{path}/bcdbconfig.yaml"
             assert j.sal.fs.exists(path_bcdbconfig)
@@ -446,7 +452,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             bcdb = self.get_for_threebot(name, namespace=config.get("namespace"), ttype=config["type"])
             # lets check package config of the bcdb is the same
 
-            bcdb.import_(path=path, interactive=False, data=data, encryption=encryption)
+            bcdb._import_(path=path, interactive=False, data=data, encryption=encryption)
 
     def destroy_all(self):
         """

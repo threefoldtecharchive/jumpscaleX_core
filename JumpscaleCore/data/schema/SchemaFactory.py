@@ -53,10 +53,10 @@ class SchemaFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
     @property
     def schemas_all(self):
-        for url in self.meta.schemas_urls:
+        for url in self.meta.schema_urls:
             if url not in self.schemas_loaded:
                 self.get(url=url)
-        return self.schemas_loadeds
+        return self.schemas_loaded
 
     def exists(self, md5=None, url=None):
         if md5:
