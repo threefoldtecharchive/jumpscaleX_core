@@ -31,7 +31,7 @@ def test_async():
 
     """
 
-    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.core.myenv.adminsecret))
+    sonic = j.servers.sonic.get(adminsecret_=j.core.myenv.adminsecret)
     sonic.start()
 
     _, model = j.data.bcdb._load_test_model()

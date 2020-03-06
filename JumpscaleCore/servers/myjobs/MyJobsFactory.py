@@ -633,7 +633,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         storclient = j.clients.rdb.client_get(bcdbname="myjobs")
         myjobs_bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
         bcdb = j.data.bcdb.system
-        adminsecret_ = j.data.hash.md5_string(j.core.myenv.adminsecret)
+        adminsecret_ = j.core.myenv.adminsecret
         redis_server = j.data.bcdb.redis_server_get(port=6380, secret=adminsecret_)
         # just to make sure we don't have it open to external
 

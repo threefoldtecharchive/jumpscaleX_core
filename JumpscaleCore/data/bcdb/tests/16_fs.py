@@ -28,7 +28,7 @@ def test_fs():
     kosmos 'j.data.bcdb.test(name="fs")'
 
     """
-    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.core.myenv.adminsecret))
+    sonic = j.servers.sonic.get(adminsecret_=j.core.myenv.adminsecret)
     sonic.start()
 
     tags = ["color:blue", "color:white", "font:arial", "font:tahoma", "style:italian"]

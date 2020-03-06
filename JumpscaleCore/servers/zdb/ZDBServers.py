@@ -29,13 +29,13 @@ class ZDBServers(JSConfigs, TESTTOOLS):
         j.builders.db.zdb.install(reset=reset)
 
     def test_instance_start(
-        self, destroydata=False, namespaces=None, admin_secret="123456", namespaces_secret="1234", restart=False
+        self, destroydata=False, namespaces=None, admin_secret=None, namespaces_secret="1234", restart=False
     ):
         """
 
         kosmos 'j.servers.zdb.test_instance_start()'
 
-        start a test instance with self.adminsecret 123456
+        start a test instance with j.core.myenv.adminsecret
         will use port 9901
         and name = test_instance
 

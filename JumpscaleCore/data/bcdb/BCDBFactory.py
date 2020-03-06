@@ -141,7 +141,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         if not self._loaded:
 
-            self._log_info("LOAD CONFIG BCDB")
+            self._log_debug("LOAD CONFIG BCDB")
 
             # will make sure the toml schema's are loaded
             j.data.schema.add_from_path("%s/models_system" % self._dirpath)
@@ -193,7 +193,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         """
         self.system
         # because will be visible on filesystem
-        adminsecret_ = j.data.hash.md5_string(j.core.myenv.adminsecret)
+        adminsecret_ = j.core.myenv.adminsecret
 
         if reset:
             zdb = j.servers.zdb.get(name="threebot")
@@ -346,12 +346,14 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         scm_path = path or j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")
         j.sal.fs.copyFile(schema_path, scm_path)
 
-    def import_(self, name=None, path=None, data=True, encryption=False, interactive=False):
+    def import_(self, path=None, data=True, encryption=False, interactive=False, reset=False):
         """
         import back
 
-        kosmos 'j.data.bcdb.import_(name="system")'
         kosmos 'j.data.bcdb.import_()'
+        kosmos 'j.data.bcdb.import_(reset=True)'
+
+        if path not specified will look at path you are in, if schema_meta.msgpack found will use that path
 
         remark:
         if you need to copy data from remote example ssh rsync
@@ -361,19 +363,22 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         :param name:
         :param path:
+        :param reset: if True will remove the full BCDB (DANGEROUS)
         :return:
         """
-
-        # make sure we load the known packages
-        j.tools.threebot_packages.load()
 
         if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
             raise j.exceptions.Base("Cannot import threebot is running")
 
         j.data.bcdb._master_set()
-        j.tools.executor.local
 
-        if not name:
+        if not path:
+            if j.sal.fs.exists(f"{j.sal.fs.getcwd()}/schema_meta.msgpack"):
+                path = f"{j.sal.fs.getcwd()}"
+            else:
+                path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/")
+
+        if reset:
             # we can remove all
             if interactive:
                 if not j.core.tools.ask_yes_no(
@@ -384,30 +389,24 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         self.threebot_zdb_sonic_start()
 
-        if not path:
-            path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/")
+        self._log_info(f"will import BCDB's from path: {path}")
 
         ## import all schemas
         j.data.schema.meta.load(path=f"{path}/schema_meta.msgpack")
         j.data.schema.meta.save()
 
-        if not name:
-            names = j.sal.fs.listDirsInDir(path, False, True)
-        else:
-            names = [name]
+        paths = j.sal.fs.listDirsInDir(path, recursive=False, dirNameOnly=False)
+        for path in paths:
+            self._import_bcdb(path=path, data=data, encryption=encryption)
 
-        for name in names:
-            self._import_bcdb_name(name=name, path=path, interactive=interactive, data=data, encryption=encryption)
+        self.verify()
 
     def verify(self, names=[]):
+        """
+        kosmos 'j.data.bcdb.verify()'
+        """
 
         self.threebot_zdb_sonic_start()
-
-        if not j.tools.threebot_packages.exists(name):
-            raise j.exceptions.Input("cannot find package:%s" % name)
-        package = j.tools.threebot_packages.get(name)
-
-        j.tools.threebot_packages.load()
 
         if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
             raise j.exceptions.Base("Cannot import threebot is running")
@@ -415,21 +414,30 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         j.data.bcdb._master_set()
         j.tools.executor.local
 
-    def _import_bcdb_name(self, name=None, path=None, data=True, encryption=False, interactive=True):
+        for bcdb in j.data.bcdb.instances.values():
+            if names:
+                if bcdb.name not in names:
+                    continue
 
-        if not j.tools.threebot_packages.exists(name):
-            raise j.exceptions.Input("cannot find package:%s" % name)
-        package = j.tools.threebot_packages.get(name)
+            bcdb.verify()
 
-        path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
+        self._log_info(f"VERIFY COMPLETED AND OK FOR ALL BCDB.")
+
+    def _import_bcdb(self, path=None, data=True, encryption=False):
+
         assert j.sal.fs.exists(path)
 
-        if name == "system":
-            self.system.import_(path=path, interactive=False)
+        if j.sal.fs.getBaseName(path) == "system":
+            self.system.import_(path=path, interactive=False, data=data, encryption=encryption)
         else:
-            path_bcdbconfig = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s/bcdbconfig.yaml" % name)
+            path_bcdbconfig = f"{path}/bcdbconfig.yaml"
             assert j.sal.fs.exists(path_bcdbconfig)
             config = j.data.serializers.yaml.load(path_bcdbconfig)
+
+            if not "name" in config:
+                raise j.exceptions.Input(f"name needs to be in {path_bcdbconfig}, is the name of the bcdb")
+
+            name = config["name"]
 
             if config["type"] not in ["zdb", "sqlite", "redis"]:
                 # these types usually myjobs instance
@@ -438,29 +446,6 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             bcdb = self.get_for_threebot(name, namespace=config.get("namespace"), ttype=config["type"])
             # lets check package config of the bcdb is the same
 
-            if bcdb.storclient.type == "ZDB":
-                bcdb_config = package.bcdbs[0]
-                assert bcdb_config.type == "ZDB"
-                assert bcdb_config.namespace == bcdb.storclient.nsname
-                assert bcdb_config.namespace == config["namespace"]
-                if hasattr(bcdb_config, "port"):
-                    bcdb_config.port == bcdb.storclient.port
-                assert package.bcdb.storclient.addr == bcdb.storclient.addr
-                assert package.bcdb.storclient.port == bcdb.storclient.port
-                assert package.bcdb.storclient.secret_ == bcdb.storclient.secret_
-                assert package.bcdb.storclient.nsname == bcdb.storclient.nsname
-            elif bcdb.storclient.type == "RDB":
-                raise RuntimeError("implement checks for RDB")
-                j.shell()
-            elif bcdb.storclient.type == "SDB":
-                raise RuntimeError("implement checks for RDB")
-                j.shell()
-            else:
-                raise RuntimeError("BUG")
-
-            assert package.bcdb.storclient.name == bcdb.storclient.name
-
-            path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
             bcdb.import_(path=path, interactive=False, data=data, encryption=encryption)
 
     def destroy_all(self):
@@ -509,6 +494,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             j.core.db.delete(key)
 
         j.sal.fs.remove(j.core.tools.text_replace("{DIR_CFG}/schema_meta.msgpack"))
+        j.sal.fs.remove(j.core.tools.text_replace("{DIR_CFG}/bcdb"))
 
         self._loaded = False
         self._load()
@@ -553,7 +539,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         :param instance:
         :return:
         """
-        self._log_info(f"get bcdb: name:{name} namespace:{namespace} type:{ttype}")
+        self._log_debug(f"get bcdb: name:{name} namespace:{namespace} type:{ttype}")
 
         if j.data.bcdb.exists(name=name):
             bcdb = self.get(name=name)
@@ -565,7 +551,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         if ttype == "zdb":
             zdb = self._core_zdb  # has been started in threebot_zdb_sonic_start
             assert namespace
-            adminsecret_ = j.data.hash.md5_string(j.core.myenv.adminsecret)
+            adminsecret_ = j.core.myenv.adminsecret
             self._log_debug("get zdb admin client")
             zdb_admin = zdb.client_admin_get()
             if not zdb_admin.namespace_exists(namespace):
@@ -762,7 +748,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         raise RuntimeError("not implemented")
         # bcdb_instance.meta._migrate_meta(schema)
 
-    def redis_server_get(self, port=6380, secret="123456", addr="127.0.0.1"):
+    def redis_server_get(self, port=6380, secret=None, addr="127.0.0.1"):
         self.redis_server = RedisServer(bcdb=self, port=port, secret=secret, addr=addr)
         self.redis_server._init2(bcdb=self, port=port, secret=secret, addr=addr)
         return self.redis_server

@@ -1283,7 +1283,7 @@ class Tools:
             logdict = copy.copy(logdict)
             logdict["message"] = Tools.text_replace(logdict["message"])
             Tools.log2stdout(logdict, data_show=data_show)
-        elif level > 24:
+        elif level > 14:
             Tools.log2stdout(logdict, data_show=False, enduser=True)
 
         iserror = tb or exception
@@ -3706,7 +3706,7 @@ class MyEnv_:
     def adminsecret(self):
         if not self.config["SECRET"]:
             self.secret_set()
-        return self.config["SECRET"]
+        return self.config["SECRET"][0:32]
 
     def secret_set(self, secret=None):
         if self.interactive:
@@ -4613,7 +4613,7 @@ class DockerFactory:
             cdir = Tools.text_replace("{DIR_BASE}/var/containers")
             Tools.dir_ensure(cdir)
             for name_found in os.listdir(cdir):
-                if not os.path.isdir(os.path.join(cdir,name_found)):
+                if not os.path.isdir(os.path.join(cdir, name_found)):
                     # https://github.com/threefoldtech/jumpscaleX_core/issues/297
                     # in case .DS_Store is created when opened in finder
                     continue

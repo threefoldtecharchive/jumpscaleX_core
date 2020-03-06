@@ -1232,7 +1232,7 @@ class SystemFS(JSBASE, TESTTOOLS):
 
         if j.core.platformtype.myplatform.platform_is_windows:
             cmd = "junction -d %s 2>&1 > null" % (filename)
-            self._log_info(cmd)
+            self._log_debug(cmd)
             os.system(cmd)
         os.unlink(filename)
 

@@ -53,7 +53,7 @@ class BCDB(j.baseclasses.object):
         self.readonly = readonly
 
         if self.readonly:
-            self._log_info("sqlite file is in readonly mode for: '%s'" % self.name)
+            self._log_debug("sqlite file is in readonly mode for: '%s'" % self.name)
             self._sqlite_index_dbpath = "file:%s/sqlite_index.db?mode=ro" % self._data_dir
         else:
             self._sqlite_index_dbpath = "file:%s/sqlite_index.db" % self._data_dir
@@ -68,13 +68,13 @@ class BCDB(j.baseclasses.object):
 
         # dataprocessor_stop
         atexit.register(self.stop)
-        self._log_info("BCDB INIT DONE:%s" % self.name)
+        self._log_debug("BCDB INIT DONE:%s" % self.name)
 
     @property
     def models(self):
         for url in self._urls:
             if url not in self._models:
-                self.model_get(url=url, die=False)
+                self.model_get(url=url, die=True, cache=False)
         return self._models
 
     def _is_writable_check(self):
@@ -102,7 +102,7 @@ class BCDB(j.baseclasses.object):
             self.storclient.sqlitedb = None
         self._init_props_()
         # self._shutdown_ = True
-        self._log_info(" * STOP BCDB: %s" % self.name)
+        self._log_debug(" * STOP BCDB: %s" % self.name)
 
     def _init_props_(self):
 
@@ -170,6 +170,38 @@ class BCDB(j.baseclasses.object):
         #     self.index_rebuild()
 
         return
+
+    def verify(self):
+        self._log_info(f"{self.name}: Verify BCDB")
+        check = {}
+        # remember all objects found in iteration
+        for obj in self.iterate():
+            check[obj.id] = 0
+        # lets now use the index
+        for model in self.models.values():
+            indexpath = model.index.db.database
+            indexpath = indexpath.replace("file:", "")
+            self._log_info(f"{self.name}: Verify {model.schema.url} in index: {indexpath}")
+            if not j.sal.fs.exists(indexpath):
+                raise j.exceptions.Base(f"cannot find index: {indexpath} in bcdb:{self.name}")
+            for obj in model.find():
+                if obj.id not in check:
+                    raise j.exceptions.Base(
+                        f"could not find {obj.id} in zdb while it existed in index for bcdb:{self.name}"
+                    )
+                check[obj.id] += 1
+        for key, item in check.items():
+            if item == 0:
+                obj = self.obj_get(key)
+                model = obj._model
+                indexpath = model.index.db.database.replace("file:", "")
+                raise j.exceptions.Base(
+                    f"corruption in db, could not find id:{key} in index,  while it existed in zdb, in bcdb:{self.name}, model was {model.schema.url}"
+                )
+            if item > 1:
+                raise j.exceptions.Base(f"corruption in db, found too many id:{key},  in bcdb:{self.name}")
+
+        self._log_info(f"VERIFY COMPLETED AND OK for BCDB {self.name}")
 
     def export(self, path=None, encrypt=False, reset=True, data=True, yaml=True):
         """Export all models and objects
@@ -265,15 +297,14 @@ class BCDB(j.baseclasses.object):
         assert data
 
         if not j.sal.fs.exists(path):
-            raise j.exceptions.Base("path does not exist")
+            raise j.exceptions.Base(f"path:{path} does not exist")
 
         if interactive:
             if not j.core.tools.ask_yes_no("Importing will reset your BCDB. Are you sure you want to continue?"):
                 return
 
         self.reset()
-
-        self._log_info("Load bcdb:%s from %s" % (self.name, path))
+        self._log_info(f"{self.name}:IMPORT BCDB from {path}")
         assert j.sal.fs.exists(path)
 
         data = {}
@@ -291,10 +322,11 @@ class BCDB(j.baseclasses.object):
         #     schemas[url] = schema
 
         for url_path in paths:
-            print(f"processing {url_path}")
             url = j.sal.fs.getBaseName(url_path)
+            self._log_info(f"{self.name}:IMPORT BCDB URL {url}")
             # check that model does not exist yet
-            assert url not in self.models
+            if url in self.models:
+                raise j.exceptions.Input(f"should not find {url} in models of bcdb:{self.name}, because we did a reset")
             model = self.model_get(url=url)
             models[url] = model
             # means index is really empty
@@ -357,6 +389,8 @@ class BCDB(j.baseclasses.object):
             next_id = self.storclient.next_id
             assert next_id == 1
 
+        self._log_info(f"{self.name}: storclient:{self.storclient.name}")
+
         to_remove = []
 
         # have to import it in the exact same order (0 is always name INIT)
@@ -372,16 +406,18 @@ class BCDB(j.baseclasses.object):
                 url, obj_data = data[i]
                 model = models[url]
 
-                print(f"setting obj {obj_data} using {model.schema.url}, id should be {i}")
+                # self._log_debug(f"setting obj {obj_data} using {model.schema.url}, id should be {i}")
 
                 del obj_data["id"]
                 obj = model.new(data=obj_data)
                 obj.save()
                 assert obj.id == i
 
-        print("Cleaning up empty objects")
+        self._log_info(f"{self.name}:Cleaning up empty objects.")
         for i in to_remove:
             self.storclient.delete(i)
+
+        self.verify()
 
     @property
     def sqlite_index_client(self):
@@ -418,7 +454,7 @@ class BCDB(j.baseclasses.object):
 
     def _data_process(self):
         # needs gevent loop to process incoming data
-        # self._log_info("DATAPROCESSOR STARTS")
+        # self._log_debug("DATAPROCESSOR STARTS")
         while True:
             method, args, kwargs, event, returnid = self.queue.get()
             if args == ["STOP"]:
@@ -448,7 +484,7 @@ class BCDB(j.baseclasses.object):
         """
 
         if self.dataprocessor_greenlet is None:
-            self._log_info("** START DATA PROCESSOR FOR :%s" % self.name)
+            self._log_debug("** START DATA PROCESSOR FOR :%s" % self.name)
             self.queue = gevent.queue.Queue()
             self.dataprocessor_greenlet = gevent.spawn(self._data_process)
             self.dataprocessor_state = "RUNNING"
@@ -469,7 +505,7 @@ class BCDB(j.baseclasses.object):
 
         self.dataprocessor_greenlet = None
 
-        self._log_info("DATAPROCESSOR & SQLITE STOPPED OK")
+        self._log_debug("DATAPROCESSOR & SQLITE STOPPED OK")
 
         return True
 
@@ -477,6 +513,10 @@ class BCDB(j.baseclasses.object):
         self.stop()  # will stop sqlite client and the dataprocessor
         assert self.storclient
         # self._redis_reset()
+
+        for model in self.models.values():
+            model.index.destroy()
+
         if self.storclient.type != "SDB":
             j.sal.fs.remove(self._data_dir)
         else:
@@ -499,6 +539,12 @@ class BCDB(j.baseclasses.object):
             self.storclient.close()
         else:
             self.storclient.flush()  # not needed for sqlite because closed and dir will be deleted
+
+        # need to remove data from sonic
+        self.index_reset()
+
+        path_urls = j.core.tools.text_replace("{DIR_CFG}/bcdb/urls_%s.yaml" % self.name)
+        j.sal.fs.remove(path_urls)
 
         # self._redis_reset()
         j.sal.fs.remove(self._data_dir)
@@ -589,7 +635,7 @@ class BCDB(j.baseclasses.object):
             model = self.model_get(schema=jsxobj._schema)
             model.set(jsxobj, store=False, index=True)
 
-    def model_get(self, schema=None, md5=None, url=None, reset=False, triggers=True, die=True):
+    def model_get(self, schema=None, md5=None, url=None, reset=False, triggers=True, die=True, cache=True):
         """
         will return the latest model found based on url, md5 or schema
         :param url:
@@ -601,7 +647,7 @@ class BCDB(j.baseclasses.object):
 
         schema = self.schema_get(schema=schema, md5=md5, url=url)
 
-        if schema.url in self.models:
+        if cache and schema.url in self.models:
             if schema._md5 != self.models[schema.url].schema._md5:
                 # this means we found model in mem but schema changed in mean time
                 # need to use the new one now
@@ -612,7 +658,7 @@ class BCDB(j.baseclasses.object):
             return self._models[schema.url]
 
         # model not known yet need to create
-        self._log_info("load model:%s" % schema.url)
+        self._log_debug("load model:%s" % schema.url)
 
         self._url_set(schema.url)
 
