@@ -663,8 +663,8 @@ class BCDB(j.baseclasses.object):
 
         schema = self.schema_get(schema=schema, md5=md5, url=url)
 
-        if cache and schema.url in self.models:
-            if schema._md5 != self.models[schema.url].schema._md5:
+        if cache and schema.url in self._models:
+            if schema._md5 != self._models[schema.url].schema._md5:
                 # this means we found model in mem but schema changed in mean time
                 # need to use the new one now
                 self._models[schema.url].schema = schema

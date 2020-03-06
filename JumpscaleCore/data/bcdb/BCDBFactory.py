@@ -239,6 +239,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
                 s = j.servers.sonic.get(name="testserver", port=1492, adminsecret_=admin_secret)
                 s.start()
             s = j.servers.sonic.get(name="testserver")
+            s.start()
             assert s.adminsecret_ == admin_secret
         else:
             s = None
