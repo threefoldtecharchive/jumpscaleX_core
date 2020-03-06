@@ -242,7 +242,8 @@ class BCDB(j.baseclasses.object):
 
             # lets keep history of the schema's in the export
             source_schema_hist_path = j.core.tools.text_replace("{DIR_CFG}/bcdb/%s.toml" % url2)
-            j.sal.fs.copyFile(source_schema_hist_path, "%s/schema_hist.toml" % dpath)
+            if j.sal.fs.exists(source_schema_hist_path):
+                j.sal.fs.copyFile(source_schema_hist_path, "%s/schema_hist.toml" % dpath)
 
             for obj in list(m.iterate()):
                 # print("  writing object: ", obj)
