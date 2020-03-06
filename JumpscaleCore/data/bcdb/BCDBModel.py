@@ -126,7 +126,7 @@ class BCDBModel(BCDBModelBase):
         # make sure model has the latest schema
         if self.schema._md5 != schema._md5:
             self.schema = schema
-            self._log_info("schema change")
+            self._log_debug("schema change")
             self._triggers_call(obj, "schema_change", None)
 
     def stop(self):
@@ -606,8 +606,6 @@ class BCDBModel(BCDBModelBase):
         r = cursor.fetchone()
         res = []
         while r:
-            # the id NEEDS to exist on the model  (THIS IS A SHORTCUT FIX, BUT FIRST WANT TO SEE IF I CAN FIX IT)
-            # if self.exists(r[0]):
             res.append(r[0])
             r = cursor.fetchone()
 

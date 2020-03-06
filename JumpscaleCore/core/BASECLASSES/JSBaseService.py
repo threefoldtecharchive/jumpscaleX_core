@@ -212,13 +212,13 @@ class JSBaseService(j.baseclasses.object):
             #             self._stateobj_get(mkey) #make sure the action object exists
 
     def _main(self):
-        self._log_info("%s:mainloop started" % self)
+        self._log_debug("%s:mainloop started" % self)
         # make sure communication is only 1 way
         # TODO: put metadata
         while True:
             func, args, kwargs, event, action_id = self.action_queue.get()
             a = self.actions[action_id]
-            self._log_info("action execute:\n%s" % a)
+            self._log_debug("action execute:\n%s" % a)
             a.time_start = j.data.time.epoch
             res = func(self, *args, **kwargs)
             # print("main res:%s" % res)

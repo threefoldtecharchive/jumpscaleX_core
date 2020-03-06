@@ -1251,7 +1251,7 @@ class Tools:
             logdict = copy.copy(logdict)
             logdict["message"] = Tools.text_replace(logdict["message"])
             Tools.log2stdout(logdict, data_show=data_show)
-        elif level > 24:
+        elif level > 14:
             Tools.log2stdout(logdict, data_show=False, enduser=True)
 
         iserror = tb or exception
@@ -3692,7 +3692,7 @@ class MyEnv_:
     def adminsecret(self):
         if not self.config["SECRET"]:
             self.secret_set()
-        return self.config["SECRET"]
+        return self.config["SECRET"][0:32]
 
     def secret_set(self, secret=None):
         if self.interactive:

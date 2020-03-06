@@ -10,7 +10,7 @@ class SonicServer(JSConfigClient):
            name** = "default" (S)
            host = "127.0.0.1" (S)
            port = 1491 (I)
-           adminsecret_ = "123456" (S)
+           adminsecret_ = "" (S)
            timeout = 300
            """
 
@@ -18,6 +18,9 @@ class SonicServer(JSConfigClient):
         self.config_path = j.sal.fs.joinPaths(j.dirs.CFGDIR, "sonic_config_%s.cfg" % self.name)
         if self.host == "localhost":
             self.host = "127.0.0.1"
+        if self.adminsecret_ == "":
+            self.adminsecret_ = j.core.myenv.adminsecret
+        assert len(self.adminsecret_) > 5
 
         # NOT SURE NEXT IS CORRECT
         # if self.host == "127.0.0.1" and j.core.myenv.platform_is_osx:

@@ -12,7 +12,8 @@ def test_async():
     this is a test where we use the queuing mechanism for processing data changes
 
     """
-    _, model = j.data.bcdb._test_model_get()
+
+    _, model = j.data.bcdb._load_test_model()
 
     def get_obj(i):
         model_obj = model.new()

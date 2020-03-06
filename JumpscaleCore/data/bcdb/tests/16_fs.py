@@ -86,6 +86,3 @@ def test_fs():
     )
     s.start()
     print("Dav server running on port 4444")
-
-    sonic.stop()
-    s.stop()

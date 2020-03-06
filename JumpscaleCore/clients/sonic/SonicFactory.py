@@ -20,7 +20,7 @@ class SonicFactory(JSConfigs, j.baseclasses.testtools):
         j.clients.sonic.get_client_bcdb()
         :return:
         """
-        adminsecret_ = j.data.hash.md5_string(j.core.myenv.adminsecret)
+        adminsecret_ = j.core.myenv.adminsecret
         return self.get("bcdb", host="127.0.0.1", port=1491, password=adminsecret_)  # default passwd also not ok
 
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/570")

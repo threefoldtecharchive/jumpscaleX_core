@@ -30,7 +30,6 @@ def test_sonic():
     kosmos 'j.data.bcdb.test(name="sonic")'
 
     """
-
     data = [
         {"name": "test1", "content": "lorem epsum"},
         {"name": "test2", "content": "foo bar"},

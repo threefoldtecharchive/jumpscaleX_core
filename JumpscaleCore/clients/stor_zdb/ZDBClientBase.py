@@ -5,10 +5,11 @@ import struct
 
 class ZDBClientBase(j.baseclasses.object_config):
     def _init(self, jsxobject=None, **kwargs):
-        # if "admin" in kwargs:
-        #     admin = kwargs["admin"]
-        # else:
-        #     admin = self.admin
+
+        if not self.secret_:
+            self.secret_ = j.core.myenv.adminsecret
+
+        assert len(self.secret_) > 5
 
         if self.admin:
             self.nsname = "default"

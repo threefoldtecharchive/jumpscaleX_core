@@ -30,12 +30,14 @@ JSBASE = j.baseclasses.object
 
 
 class RedisServer(j.baseclasses.object):
-    def _init2(self, bcdb=None, addr="127.0.0.1", port=6380, secret="123456"):
+    def _init2(self, bcdb=None, addr="127.0.0.1", port=6380, secret=""):
         self.bcdb = bcdb
         self._sig_handler = []
         #
         self.host = addr
         self.port = port  # 1 port higher than the std port
+        if secret == "":
+            secret = j.core.myenv.adminsecret
         self.secret = secret
         self.ssl = False
         # j.clients.redis.core_check()  #need to make sure we have a core redis
