@@ -9,6 +9,11 @@ classes who use JSXObject for data storage but provide nice interface to enduser
 class JSConfigBCDB(JSConfigBCDBBase):
     def _init_jsconfig(self, jsxobject=None, datadict=None, name=None, **kwargs):
 
+        assert jsxobject
+
+        if not jsxobject.name:
+            raise j.exceptions.Input("Please specify name and cannot be empty")
+
         if jsxobject:
             self._data = jsxobject
         else:
@@ -17,11 +22,11 @@ class JSConfigBCDB(JSConfigBCDBBase):
             if name and not self._bcdb_ == False and not self._model_ == False:
                 jsxobjects = self._model.find(name=name)
 
-            self._model
             if len(jsxobjects) > 1:
-                raise j.exceptions.JSBUG("threre should never be more than 1 record with same name:%s" % name)
+                raise j.exceptions.JSBUG("there should never be more than 1 record with same name:%s" % name)
             elif len(jsxobjects) == 1:
                 self._data = jsxobjects[0]
+                # self._model
             else:
                 self._model  # make sure model has been resolved
                 if self._model == False:
@@ -42,10 +47,17 @@ class JSConfigBCDB(JSConfigBCDBBase):
         if name and self._data.name != name:
             self._data.name = name
 
+        assert self._data.name
+
+        if self._model and self._data.id == None:
+            # means there is a model and id not set yet, we need to save
+            self._data.save()
+        assert self.id
+
         if "autosave" in kwargs:
             self._data._autosave = j.data.types.bool.clean(kwargs["autosave"])
 
-    def _init_post(self, **kwargs):
+    def _init_jsconfig_post(self, **kwargs):
 
         if (
             not isinstance(self._model, j.clients.bcdbmodel._class)

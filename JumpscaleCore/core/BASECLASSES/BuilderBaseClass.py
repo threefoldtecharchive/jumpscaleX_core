@@ -130,64 +130,58 @@ class builder_method:
             if j.application.appname != builder._classname and j.application.state != "RUNNING":
                 j.application.start(builder._classname)
 
-            try:
-                kwargs = self.get_all_as_keyword_arguments(func, args, kwargs)
-                kwargs_without_reset = {key: value for key, value in kwargs.items() if key not in ["reset", "self"]}
-                done_key = name + "_" + j.data.hash.md5_string(str(kwargs_without_reset))
-                reset = kwargs.get("reset", False)
-                state_reset = kwargs.get("state_reset", False)
+            kwargs = self.get_all_as_keyword_arguments(func, args, kwargs)
+            kwargs_without_reset = {key: value for key, value in kwargs.items() if key not in ["reset", "self"]}
+            done_key = name + "_" + j.data.hash.md5_string(str(kwargs_without_reset))
+            reset = kwargs.get("reset", False)
+            state_reset = kwargs.get("state_reset", False)
 
-                reset = reset or state_reset
+            reset = reset or state_reset
 
-                # if reset:
-                #     builder.state_reset()  # lets not reset the full module
+            # if reset:
+            #     builder.state_reset()  # lets not reset the full module
 
-                if self.already_done(func, builder, done_key, reset):
-                    builder._log_info(
-                        "no need to do: %s:%s, was already done" % (builder._classname, kwargs_without_reset)
-                    )
-                    return builder.ALREADY_DONE_VALUE
+            if self.already_done(func, builder, done_key, reset):
+                builder._log_info("no need to do: %s:%s, was already done" % (builder._classname, kwargs_without_reset))
+                return builder.ALREADY_DONE_VALUE
 
-                # Make sure to call _init before any method
-                if name is not "_init":
-                    builder._init()
+            # Make sure to call _init before any method
+            if name is not "_init":
+                builder._init()
 
-                if name == "build":
-                    if builder._done_check(done_key):
-                        builder.stop()
-                    builder.profile_builder_select()
+            if name == "build":
+                if builder._done_check(done_key):
+                    builder.stop()
+                builder.profile_builder_select()
 
-                if name == "install":
-                    if builder._done_check(done_key):
-                        builder.stop()
-                    builder.profile_builder_select()
-                    builder.build()
+            if name == "install":
+                if builder._done_check(done_key):
+                    builder.stop()
+                builder.profile_builder_select()
+                builder.build()
 
-                if name == "sandbox":
-                    builder.profile_builder_select()
-                    builder.install()
-                    kwargs["zhub_client"] = self.get_default_zhub_client(kwargs)
+            if name == "sandbox":
+                builder.profile_builder_select()
+                builder.install()
+                kwargs["zhub_client"] = self.get_default_zhub_client(kwargs)
 
-                if name in ["stop", "running", "_init"]:
-                    builder.profile_sandbox_select()
-                    self.done_check = False
+            if name in ["stop", "running", "_init"]:
+                builder.profile_sandbox_select()
+                self.done_check = False
 
-                if self.log:
-                    builder._log_debug("action:%s() start" % name)
+            if self.log:
+                builder._log_debug("action:%s() start" % name)
 
-                kwargs["self"] = builder
-                res = self.apply_method(func, kwargs)
+            kwargs["self"] = builder
+            res = self.apply_method(func, kwargs)
 
-                if name == "sandbox" and kwargs.get("flist_create", False):
-                    res = builder._flist_create(kwargs["zhub_client"], kwargs.get("merge_base_flist"))
+            if name == "sandbox" and kwargs.get("flist_create", False):
+                res = builder._flist_create(kwargs["zhub_client"], kwargs.get("merge_base_flist"))
 
-                builder._done_set(done_key)
+            builder._done_set(done_key)
 
-                if self.log:
-                    builder._log_debug("action:%s() done -> %s" % (name, res))
-            except Exception:
-                res = None
-                print("There is an error happened during building")
+            if self.log:
+                builder._log_debug("action:%s() done -> %s" % (name, res))
 
             return res
 
