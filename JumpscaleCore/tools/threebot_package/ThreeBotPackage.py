@@ -87,6 +87,8 @@ class ThreeBotPackage(ThreeBotPackageBase):
             self._wikis = j.baseclasses.dict()
 
         wiki_path = j.sal.fs.joinPaths(self.path, "wiki")
+        if not j.sal.fs.exists(wiki_path):
+            return
         j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=wiki_path, reset=reset)
         self._wikis[self.name] = wiki_path
 
@@ -127,7 +129,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
         if not path.startswith("/"):
             path = j.sal.fs.joinPaths(self.path, path)
         if not j.sal.fs.exists(path):
-            raise j.exceptions.Input("could not find:%s" % path)
+            return
 
         # remove the actors
         if path:
