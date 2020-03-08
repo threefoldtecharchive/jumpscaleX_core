@@ -30,6 +30,7 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         """
         j.core.myenv.config["EXPLORER_ADDR"] = value
         j.core.myenv.config_save()
+        self._explorer = None
 
     @property
     def explorer(self):
