@@ -102,7 +102,9 @@ class ThreeGitFactory(j.baseclasses.object_config_collection):
         repo_local_path = self.find_git_path(path)
         # replace branch with current one
         current_branch = j.clients.git.getCurrentBranch(repo_local_path)
-        url = Linker.replace_branch(url, current_branch, host=repo_args[0])
+        if current_branch:
+            # replace only if there's a current branch
+            url = Linker.replace_branch(url, current_branch, host=repo_args[0])
 
         # now get an instance
         path = j.clients.git.getContentPathFromURLorPath(url, pull=pull)
