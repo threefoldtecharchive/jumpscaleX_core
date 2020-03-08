@@ -1,7 +1,6 @@
 from Jumpscale import j
 
 
-
 def test_basic():
     """
     kosmos -p 'j.servers.openresty.test(name="basic")'

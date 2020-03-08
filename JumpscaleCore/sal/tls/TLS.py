@@ -186,4 +186,3 @@ class TLS(JSBASE):
             "key": {"algo": key_algo, "size": key_size},
             "names": subjects,
         }
-

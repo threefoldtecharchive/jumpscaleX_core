@@ -10,7 +10,8 @@ from .connectors.redis.RedisServer import RedisServer
 
 TESTTOOLS = j.baseclasses.testtools
 
-class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
+
+class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
     __jslocation__ = "j.data.bcdb"
 

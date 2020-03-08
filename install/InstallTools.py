@@ -4117,6 +4117,7 @@ class BaseInstaller:
                 "bottle==0.12.17",  # why this version?
                 "beaker",
                 "Mnemonic",
+                "xmltodict",
             ],
             # level 1: in the middle
             1: [
@@ -5078,9 +5079,9 @@ class DockerContainer:
                 MOUNTS = """
                 -v {DIR_CODE}:/sandbox/code \
                 -v {DIR_BASE}/var/containers/shared:/sandbox/myhost \
+                -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
+                -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
                 """
-                # -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
-                # -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
 
             args["MOUNTS"] = Tools.text_replace(MOUNTS.strip(), args=args)
             args["CMD"] = self.config.startupcmd

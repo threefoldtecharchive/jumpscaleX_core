@@ -4,27 +4,21 @@ import uuid, subprocess
 import unittest
 from parameterized import parameterized
 
-MAIN_ACTORS = ["package_manager", "sonic", "gdrive", "myjobs", "identity", "chatbot"]
-
-from loguru import logger
-
-LOGGER = logger
-LOGGER.add("startupcmd_tests_{time}.log")
-
+MAIN_ACTORS = ["explorer_proxy", "system"]
 skip = j.baseclasses.testtools._skip
 
 
 def info(message):
-    LOGGER.info(message)
+    j.tools.logger._log_info(message)
 
 
 def rand_string(size=10):
     return str(uuid.uuid4()).replace("-", "")[1:10]
 
 
-def before():
-    info("install threebot server.")
-    j.servers.threebot.install()
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/560")
+def before_all():
+    pass
 
 
 def after():
@@ -41,7 +35,7 @@ def check_threebot_main_running_servers():
 
     info("*** sonic  server ***")
     _, sonic_output, error = j.sal.process.execute(" ps -aux | grep -v grep | grep startupcmd_sonic ")
-    assert sonic_output.decode() != ""
+    assert sonic_output != ""
     info(" * Check that  sonic server connection  works successfully.")
     assert j.sal.nettools.tcpPortConnectionTest("localhost", 1491) is True
 
@@ -56,14 +50,14 @@ def check_threebot_main_running_servers():
     assert openresty_output != ""
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_threebot/issues/351")
-def test_01_start():
+def Test_01_start():
     """
     - Install  threebot server.
     - Get gedis client from it.
     - Check it works correctly.
     """
     info("Get gedis client from it .")
+
     gedis_client = j.servers.threebot.start(background=True)
 
     info(" Check that main servers running successfully.  ")
@@ -77,7 +71,7 @@ def test_01_start():
             assert 1 == 2, "There is an error with data {}".format(e)
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_threebot/issues/351")
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/560")
 def Test_02_start_stop_options():
     """
     - Start server.

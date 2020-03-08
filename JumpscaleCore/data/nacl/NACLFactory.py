@@ -181,7 +181,6 @@ class NACLFactory(j.baseclasses.object, TESTTOOLS):
 
         print("OK")
 
-   # @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/482")
     def test(self):
         """
         kosmos 'j.data.nacl.test()'
@@ -319,6 +318,3 @@ class NACLFactory(j.baseclasses.object, TESTTOOLS):
             b = cl.decrypt(a)
             assert data2 == b
         j.tools.timer.stop(i)
-
-    def test_NACL(self, name=""):
-        self._tests_run(name=name)

@@ -1,13 +1,15 @@
+import os
 import imaplib
 import logging
 from Jumpscale import j
 
 j.builders.runtimes.python3.pip_package_install("nose-testconfig")
-from testconfig import config
 
 mail_client = ""
-username = config["mail"]["username"]
-password = config["mail"]["password"]
+username = ""
+password = ""
+
+skip = j.baseclasses.testtools._skip
 
 
 def info(message):
@@ -28,8 +30,19 @@ def before():
     RAND_STRING = rand_string()
     global mail_client
     mail_client = j.clients.email.new(
-        RAND_STRING, smtp_server="smtp.gmail.com", smtp_port=587, Email_from=username, password=password,
+        RAND_STRING, smtp_server="smtp.gmail.com", smtp_port=587, Email_from=username, password=password
     )
+
+
+@skip("https://github.com/threefoldtech/zeroCI/issues/30, This test can be run manually")
+def before_all():
+    try:
+        global username
+        username = os.environ["MAIL_USERNAME"]
+        global password
+        password = os.environ["MAIL_PASSWORD"]
+    except KeyError:
+        raise Exception("You need to set email username and password as an environmental variables")
 
 
 def tearDown():

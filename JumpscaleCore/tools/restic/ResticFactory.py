@@ -68,17 +68,19 @@ class ResticFactory(j.baseclasses.object_config_collection_testtools):
         b = self._default_job_get()
         b.mount()
 
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/497")
     def test(self):
         """
         kosmos 'j.tools.restic.test()'
         :return:
         """
-
+        if not j.sal.fs.exists("{DIR_BIN}/restic"):
+            j.builders.storage.restic.install(reset=True)
         j.tools.restic.delete(name="test_restic")
         job = j.tools.restic.get(name="test_restic")
         job.secret_ = "1234"
         job.dest.backupdir = "/tmp/backuptest"
+        j.sal.fs.remove("/tmp/backuptest/*")
+        j.sal.fs.remove("/tmp/backuptest")
 
         # # backup to local dir
         s = job.sources.new()
