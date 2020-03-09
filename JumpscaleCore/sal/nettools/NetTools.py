@@ -111,10 +111,10 @@ class NetTools(JSBASE):
         try:
             code = urllib.request.urlopen(url, timeout=timeout).getcode()
         except Exception:
-            j.errorhandler.raiseOperationalCritical("Url %s is unreachable" % url)
+            raise j.exceptions.Input("Url %s is unreachable" % url)
 
         if code != 200:
-            j.errorhandler.raiseOperationalCritical("Url %s is unreachable" % url)
+            raise j.exceptions.Input("Url %s is unreachable" % url)
         return True
 
     def checkListenPort(self, port):

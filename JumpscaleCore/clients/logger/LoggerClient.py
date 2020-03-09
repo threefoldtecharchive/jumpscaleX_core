@@ -268,7 +268,7 @@ class LoggerClient(j.baseclasses.object_config):
         args, lastid = self.walk_reverse(do, args=args, appname=appname, lastid=lastid, maxitems=maxitems)
         return args["res"], lastid
 
-    def list(self, appname, id_from=None, id_to=None, time_from=None, time_to=None, include_fslogs=False):
+    def list(self, appname, id_from=None, id_to=None, count=10000, time_from=None, time_to=None, include_fslogs=False):
         if not id_from:
             id_from = 0
 
@@ -278,11 +278,22 @@ class LoggerClient(j.baseclasses.object_config):
             args["counter"] += 1
             args["objs"].append(logdict)
 
-        self.walk_reverse(do, appname=appname, lastid=id_from, args=args, time_from=time_from, time_to=time_to)
+        self.walk_reverse(
+            do, appname=appname, lastid=id_from, maxitems=count, args=args, time_from=time_from, time_to=time_to
+        )
+
         if include_fslogs:
             logging_dir = j.sal.fs.joinPaths(self._log_dir, appname)
             if j.sal.fs.exists(logging_dir):
-                self.walk(do, appname=appname, id_from=id_from, args=args, time_from=time_from, time_to=time_to)
+                self.walk(
+                    do,
+                    appname=appname,
+                    id_from=id_from,
+                    args=args,
+                    maxitems=count,
+                    time_from=time_from,
+                    time_to=time_to,
+                )
 
         return args["objs"], args["counter"]
 
@@ -377,6 +388,9 @@ class LoggerClient(j.baseclasses.object_config):
     def _print(self, items):
         for item in items:
             print(j.core.tools.log2str(item))
+
+    def _get_with_ansi_colors(self, items):
+        return [j.core.tools.log2str(item) for item in items]
 
     def print(
         self,
