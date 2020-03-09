@@ -252,6 +252,10 @@ class ThreeBotPackage(ThreeBotPackageBase):
             fullpath = j.sal.fs.joinPaths(self.path, f"{app_type}/")
             website_location.path_location = fullpath
 
+            # TODO: for now all packages are forced to https
+            # if later we can customize to each package
+            website_location.force_https = True
+
             locations.configure()
             website.configure()
 
