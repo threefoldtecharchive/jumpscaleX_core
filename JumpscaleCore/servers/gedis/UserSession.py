@@ -1,8 +1,12 @@
 from Jumpscale import j
+from nacl.utils import random
+
+NONCE_SIZE = 32
 
 
 class UserSessionBase(j.baseclasses.object):
     def _init(self):
+        self.nonce = random(NONCE_SIZE)
         self._admin = None
         self.threebot_id = None
         self.threebot_name = None

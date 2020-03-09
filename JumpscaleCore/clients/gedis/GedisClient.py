@@ -3,6 +3,7 @@ import os
 import redis
 from Jumpscale import j
 from redis.connection import ConnectionError
+from nacl.utils import random
 
 JSConfigBase = j.baseclasses.factory_data
 
@@ -175,8 +176,9 @@ class GedisClient(JSConfigBase):
 
             # authenticate
             if self._threebot_me.tid > 0:
-                signature = j.data.nacl.payload_sign(self._threebot_me.tid, nacl=self._nacl)
-                resp = self._redis_.execute_command("auth", self._threebot_me.tid, signature)
+                nonce = self._redis_.execute_command("auth_init")
+                signature = j.data.nacl.payload_sign(self._threebot_me.tid, nonce, nacl=self._nacl)
+                resp = self._redis_.execute_command("auth_sign", self._threebot_me.tid, signature)
                 # TODO the server should also be authenticated so we are sure who we are talking to
 
         return self._redis_

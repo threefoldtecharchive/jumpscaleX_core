@@ -129,7 +129,7 @@ class Request:
     @property
     def headers(self):
         """
-        :return: return the headers of the request or an emtpy dict
+        :return: return the headers of the request or an empty dict
         :rtype: dict
         """
         if len(self._request) > 2:
@@ -239,19 +239,19 @@ class Handler(JSBASE):
         # raise j.exceptions.Base("d")
         gedis_socket = GedisSocket(socket)
 
-        user_session = UserSession()
-
         try:
-            self._handle_gedis_session(gedis_socket, address, user_session=user_session)
+            self._handle_gedis_session(gedis_socket, address)
         except Exception as e:
             gedis_socket.on_disconnect()
             self._log_error("connection closed: %s" % str(e), context="%s:%s" % address, exception=e)
 
-    def _handle_gedis_session(self, gedis_socket, address, user_session=None):
+    def _handle_gedis_session(self, gedis_socket, address):
         """
         deal with 1 specific session
         """
         self._log_info("new incoming connection", context="%s:%s" % address)
+
+        user_session = UserSession()
 
         while True:
             request = gedis_socket.read()
@@ -311,13 +311,15 @@ class Handler(JSBASE):
                 user_session.response_type.value = value
             return None, "OK"
 
-        elif request.command.command == "auth":
+        elif request.command.command == "auth_init":
+            # send the nonce to be signed to the client
+            return None, user_session.nonce
+        elif request.command.command == "auth_sign":
             try:
-                tid, tname = self.authenticate(request)
+                tid, tname = self.authenticate(request, user_session.nonce)
                 user_session.threebot_id = tid
                 user_session.threebot_name = tname
                 self._log_info(f"session authenticated: tid:{tid} name:{tname}")
-
                 # TODO: server should also authenticate to the client
                 # signature = j.data.nacl.payload_sign(self._threebot_me.tid, nacl=self._threebot_me.nacl)
                 return None, "OK"
@@ -387,15 +389,16 @@ class Handler(JSBASE):
 
         return (logdict, result)
 
-    def authenticate(self, request):
+    def authenticate(self, request, nonce):
         """
         authenticate the client sending the request
 
         the handshake flow is very simple
         1. client opens a connection
-        2. client sign it's threebot id and execute the command 'auth'
-           with the threebot_id and the signature as argument
-        3. server receives the threebot_id, fetch the public key associated with the threebot id
+        2. client call the `auth_init` command
+        3. server answer `auth_init` command with a nonce
+        3. client sign the nonce+threebot_id and send signature in `auth_sign` command
+        3. server receives the nonce and threebot_id, fetch the public key associated with the threebot id
            from the phonebook and verify the signature
         4. if signature is verified, answer 'OK' to the client else raise an exception
         5. save threebot id and name in user_session and pass user_session to the method called
@@ -407,7 +410,7 @@ class Handler(JSBASE):
         tid, signature = request.arguments
         tid = int(tid)
 
-        payload = j.data.nacl.payload_build(tid)
+        payload = j.data.nacl.payload_build(tid, nonce)
         # If working on same machine no need to get a client to authenticate
         # otherwise, we'll have infinite loop
         if self._threebot_me.tid != tid:
