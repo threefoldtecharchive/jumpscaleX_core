@@ -33,6 +33,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
         index = "index.html"
         use_jumpscale_weblibs = false (B)
         is_auth = false (B)
+        force_https = false (B)
 
         @url = jumpscale.openresty.location_proxy
         name = "" (S)
@@ -43,17 +44,20 @@ class LocationsConfiguration(j.baseclasses.object_config):
         type = "http,websocket" (E)
         scheme = "http,https,ws,wss" (E)
         is_auth = false (B)
+        force_https = false (B)
 
         @url = jumpscale.openresty.location_lapis
         name = ""
         path_url = ""
         path_location = ""
         is_auth = false (B)
+        force_https = false (B)
 
         @url = jumpscale.openresty.location_custom
         name = ""
         config = ""
         is_auth = false (B)
+        force_https = false (B)
 
         """
 
