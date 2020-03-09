@@ -364,7 +364,7 @@ class BCDBModel(BCDBModelBase):
                 if obj.id == 0:
                     # need to skip the first one
                     obj.id = self.storclient.set(data)
-
+                assert obj.id
                 new = True
                 # self._log_debug("NEW:\n%s" % obj)
             else:
@@ -385,7 +385,6 @@ class BCDBModel(BCDBModelBase):
                 self.index.set(obj)
             except j.clients.peewee.IntegrityError as e:
                 # this deals with checking on e.g. uniqueness
-                # j.shell()
                 raise j.exceptions.Input("Could not insert object, unique constraint failed:%s" % e, data=obj)
 
                 obj.id = None
