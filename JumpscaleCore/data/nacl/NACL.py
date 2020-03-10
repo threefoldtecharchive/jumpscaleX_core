@@ -1,21 +1,18 @@
-from Jumpscale import j
-from nacl.public import PrivateKey, SealedBox, Box
-from nacl.signing import SigningKey, VerifyKey
-from nacl.encoding import RawEncoder
-import nacl.signing
-import nacl.secret
-import nacl.utils
-import nacl.hash
-import nacl.encoding
+import binascii
 import hashlib
-
-import binascii
-
-
-# from .AgentWithKeyname import AgentWithName
-import binascii
-from nacl.exceptions import BadSignatureError
 import sys
+
+import nacl.encoding
+import nacl.hash
+import nacl.secret
+import nacl.signing
+import nacl.utils
+from nacl.encoding import RawEncoder
+from nacl.exceptions import BadSignatureError
+from nacl.public import Box, PrivateKey, SealedBox
+from nacl.signing import SigningKey, VerifyKey
+
+from Jumpscale import j
 
 JSBASE = j.baseclasses.object
 print = j.tools.console.echo

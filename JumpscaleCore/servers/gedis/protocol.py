@@ -1,125 +1,98 @@
+from collections import namedtuple
 from io import BytesIO
 
-from Jumpscale import j
-from redis.connection import Encoder, PythonParser, SocketBuffer
-from redis.exceptions import ConnectionError
+
+class CommandError(Exception):
+    pass
 
 
-class RedisCommandParser(PythonParser):
-    """
-    Parse the command send from the client
-    """
+class Disconnect(Exception):
+    pass
 
-    def __init__(self, socket, socket_read_size=8192):
-        super(RedisCommandParser, self).__init__(socket_read_size=socket_read_size)
 
-        self._sock = socket
+Error = namedtuple("Error", ("message",))
 
-        # @TODO -- new redis exoects timeout param
-        # remove this if condition when everyone updates to new redis package
+
+class ProtocolHandler(object):
+    def __init__(self):
+        self.handlers = {
+            b"+": self.handle_simple_string,
+            b"-": self.handle_error,
+            b":": self.handle_integer,
+            b"$": self.handle_string,
+            b"*": self.handle_array,
+            b"%": self.handle_dict,
+        }
+
+    def handle_request(self, stream):
+        first_byte = stream.read(1)
+        if not first_byte:
+            raise Disconnect()
+
         try:
-            self._buffer = SocketBuffer(self._sock, self.socket_read_size)
-        except TypeError:  # init needs extra parameter in new redis
-            self._buffer = SocketBuffer(self._sock, self.socket_read_size, socket_timeout=60)
+            # Delegate to the appropriate handler based on the first byte.
+            return self.handlers[first_byte](stream)
+        except KeyError:
+            raise CommandError("bad request")
 
-        self.encoder = Encoder(encoding="utf-8", encoding_errors="strict", decode_responses=False)
+    def handle_simple_string(self, stream):
+        return stream.readline().rstrip(b"\r\n")
 
-    def read_request(self):
-        # rename the function to map more with server side
-        return self.read_response()
+    def handle_error(self, stream):
+        return Error(stream.readline().rstrip(b"\r\n"))
 
-    def request_to_dict(self, request):
-        # request.pop(0) #first one is command it self
-        key = None
-        res = {}
-        for item in request:
-            item = item.decode()
-            if key is None:
-                key = item
-                continue
-            else:
-                key = key.lower()
-                res[key] = item
-                key = None
-        return res
+    def handle_integer(self, stream):
+        return int(stream.readline().rstrip(b"\r\n"))
 
+    def handle_string(self, stream):
+        # First read the length ($<length>\r\n).
+        length = int(stream.readline().rstrip(b"\r\n"))
+        if length == -1:
+            return None  # Special-case for NULLs.
+        length += 2  # Include the trailing \r\n in count.
+        return stream.read(length)[:-2]
 
-class RedisResponseWriter(object):
-    """Writes data back to client as dictated by the Redis Protocol."""
+    def handle_array(self, stream):
+        num_elements = int(stream.readline().rstrip(b"\r\n"))
+        return [self.handle_request(stream) for _ in range(num_elements)]
 
-    def __init__(self, socket):
-        self.socket = socket
-        self.buffer = BytesIO()
+    def handle_dict(self, stream):
+        num_items = int(stream.readline().rstrip(b"\r\n"))
+        elements = [self.handle_request(stream) for _ in range(num_items * 2)]
+        return dict(zip(elements[::2], elements[1::2]))
 
-    def encode(self, value):
-        """Respond with data."""
-        if value is None:
-            self._write_buffer("$-1\r\n")
-        elif isinstance(value, int):
-            self._write_buffer(":%d\r\n" % value)
-        elif isinstance(value, bool):
-            self._write_buffer(":%d\r\n" % (1 if value else 0))
-        elif isinstance(value, str):
-            if "\n" in value:
-                self._bulk(value)
-            else:
-                self._write_buffer("+%s\r\n" % value)
-        elif isinstance(value, bytes):
-            self._bulkbytes(value)
-        elif isinstance(value, list):
-            if value and value[0] == "*REDIS*":
-                value = value[1:]
-            self._array(value)
-        elif hasattr(value, "__repr__"):
-            self._bulk(value.__repr__())
+    def write_response(self, stream, data):
+        buf = BytesIO()
+        self._write(buf, data)
+        buf.seek(0)
+        stream.write(buf.getvalue())
+
+    def _write(self, buf, data):
+        if isinstance(data, str):
+            data = data.encode("utf-8")
+
+        if isinstance(data, bytes):
+            buf.write(b"$%d\r\n%s\r\n" % (len(data), data))
+        elif isinstance(data, int):
+            buf.write(b":%d\r\n" % data)
+        elif isinstance(data, Error):
+            buf.write(b"-%s\r\n" % Error.message)
+        elif isinstance(data, (list, tuple)):
+            buf.write(b"*%d\r\n" % len(data))
+            for item in data:
+                self._write(buf, item)
+        elif isinstance(data, dict):
+            buf.write("%%%d\r\n" % len(data))
+            for key in data:
+                self._write(buf, key)
+                self._write(buf, data[key])
+        elif data is None:
+            buf.write(b"$-1\r\n")
         else:
-            value = j.data.serializers.json.dumps(value, encoding="utf-8")
-            self.encode(value)
+            raise CommandError("unrecognized type: %s" % type(data))
 
-        self._send()
-
-    def status(self, msg="OK"):
-        """Send a status."""
-        self._write_buffer("+%s\r\n" % msg)
-        self._send()
-
-    def error(self, msg):
-        """Send an error."""
-        self._write_buffer("-ERR %s\r\n" % msg)
-        self._send()
-
-    def _bulk(self, value):
-        """Send part of a multiline reply."""
-        data = ["$", str(len(value)), "\r\n", value, "\r\n"]
-        self._write_buffer("".join(data))
-
-    def _array(self, value):
-        """send an array."""
-        self._write_buffer("*%d\r\n" % len(value))
-        for item in value:
-            self.encode(item)
-
-    def _bulkbytes(self, value):
-        data = [b"$", str(len(value)).encode(), b"\r\n", value, b"\r\n"]
-        self._write_buffer(b"".join(data))
-
-    def _write_buffer(self, data):
+    def _write_buffer(self, buf, data):
         if isinstance(data, str):
             data = data.encode()
+        buf.write(data)
 
-        self.buffer.write(data)
-
-    def _send(self):
-        self.socket.sendall(self.buffer.getvalue())
-        self.buffer = BytesIO()  # seems faster then truncating
-
-
-class WebsocketResponseWriter:
-    def __init__(self, socket):
-        self.socket = socket
-
-    def encode(self, data):
-        self.socket.send(j.data.serializers.json.dumps(data, encoding="utf-8"))
-
-    def error(self, msg):
-        self.socket.send(msg)

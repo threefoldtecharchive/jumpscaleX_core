@@ -13,10 +13,6 @@ class ThreebotExplorer(j.baseclasses.object):
         return j.clients.threebot.explorer
 
     @property
-    def _redis(self):
-        return j.clients.threebot._explorer_redis
-
-    @property
     def actors(self):
         return self._client.actors_get("tfgrid.phonebook")
 
@@ -76,10 +72,7 @@ class ThreebotExplorer(j.baseclasses.object):
         :return: a TFT wallet address
         """
         self._log_info("register step0: create your wallet under the name of your main threebot: %s" % name)
-        data_return_json = self._redis.execute_command(
-            "tfgrid.phonebook.phonebook.wallet_create", j.data.serializers.json.dumps({"name": name})
-        )
-        data_return = j.data.serializers.json.loads(data_return_json)
+        resp = self.actors.phonebook.wallet_create(name=name)
         return data_return["wallet_addr"]
 
     def threebot_register(self, name=None, ipaddr=None, email="", description="", wallet_name=None, nacl=None):
@@ -106,58 +99,29 @@ class ThreebotExplorer(j.baseclasses.object):
         if not wallet_name:
             wallet_name = name
 
-        data_return_json = self._redis.execute_command(
-            "tfgrid.phonebook.phonebook.name_register",
-            j.data.serializers.json.dumps({"name": name, "wallet_name": wallet_name, "pubkey": pubkey, "email": email}),
-        )
+        resp = self.actors.phonebook.name_register(name=name, wallet_name=wallet_name, pubkey=pubkey, email=email)
+        tid = resp.id
 
-        data_return = j.data.serializers.json.loads(data_return_json)
-
-        tid = data_return["id"]
-
-        self._log_info("register: {id}:{name} {email} {ipaddr}".format(**data_return))
+        self._log_info(f"register: {resp.id}:{resp.name} {resp.email} {resp.ipaddr}")
 
         # we choose to implement it low level using redis interface
         assert name
         assert tid
         assert isinstance(tid, int)
 
-        data = {
-            "tid": tid,
-            "name": name,
-            "email": email,
-            "ipaddr": ipaddr,
-            "description": description,
-            "pubkey": pubkey,
-        }
-
-        def sign(nacl, *args):
-            buffer = BytesIO()
-            for item in args:
-                if isinstance(item, str):
-                    item = item.encode()
-                elif isinstance(item, int):
-                    item = str(item).encode()
-                elif isinstance(item, bytes):
-                    pass
-                else:
-                    raise RuntimeError()
-                buffer.write(item)
-            payload = buffer.getvalue()
-            signature = nacl.sign(payload)
-            return binascii.hexlify(signature).decode()
-
-        # we sign the different records to come up with the right 'sender_signature_hex'
-        sender_signature_hex = sign(
-            nacl, data["tid"], data["name"], data["email"], data["ipaddr"], data["description"], data["pubkey"]
+        sender_signature_hex = j.data.nacl.payload_sign(tid, name, email, ipaddr, description, pubkey, nacl=nacl)
+        resp = self.actors.phonebook.record_register(
+            tid=tid,
+            name=name,
+            email=email,
+            ipaddr=ipaddr,
+            description=description,
+            pubkey=pubkey,
+            sender_signature_hex=sender_signature_hex,
         )
-        data["sender_signature_hex"] = sender_signature_hex
-        data2 = j.data.serializers.json.dumps(data)
-        data_return_json = self._redis.execute_command("tfgrid.phonebook.phonebook.record_register", data2)
-        data_return = j.data.serializers.json.loads(data_return_json)
 
-        record0 = self.threebot_record_get(tid=data_return["id"])
-        record1 = self.threebot_record_get(name=data_return["name"])
+        record0 = self.threebot_record_get(tid=resp.id)
+        record1 = self.threebot_record_get(name=resp.name)
 
         assert record0 == record1
 

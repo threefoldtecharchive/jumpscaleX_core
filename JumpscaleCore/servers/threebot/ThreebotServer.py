@@ -1,13 +1,12 @@
+import os
+import sys
+import time
+
+import gevent
+from gevent import event
+
 from Jumpscale import j
 from Jumpscale.core.KosmosShell import LogPane
-
-import os
-import gevent
-import time
-from gevent import event
-import sys
-
-# from .OpenPublish import OpenPublish
 
 JSConfigs = j.baseclasses.object_config_collection
 
@@ -28,24 +27,6 @@ class Packages:
     pass
 
 
-# class PackageInstall(j.baseclasses.object):
-#     def _init(self, name=None, path=None):
-#         self.path = path
-#         self.name = name
-#         self._zdb = None
-#         self._sonic = None
-#
-#     def install(self):
-#         server = j.servers.threebot.default
-#         package = j.tools.threebot_packages.get(self.name, path=self.path, threebot_server_name=server.name)
-#         package.prepare()
-#         package.save()
-#         name = self.name
-#         package.start()
-#         j.threebot.packages.__dict__[self.name] = package
-#         return "OK"
-
-
 class ThreeBotServer(j.baseclasses.object_config):
     """
     Threebot server
@@ -57,6 +38,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         executor = tmux,corex (E)
         adminsecret_ = ""  (S)
         state = "init,installed" (E)
+        threebot_local_profile = "default" (S)
         """
 
     def _init(self, **kwargs):
@@ -71,6 +53,10 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.ssl = False
         self.client = None
         j.servers.threebot.current = self
+
+        # ensure default is set for previous version
+        if not self.threebot_local_profile:
+            self.threebot_local_profile = "default"
 
         # if "adminsecret" in kwargs:
         #     secret = kwargs["adminsecret"]
@@ -104,7 +90,9 @@ class ThreeBotServer(j.baseclasses.object_config):
     def gedis_server(self):
         if not self._gedis_server:
             adminsecret_ = j.data.hash.md5_string(self.adminsecret_)
-            self._gedis_server = j.servers.gedis.get(name="threebot", port=8901, secret_=adminsecret_)
+            self._gedis_server = j.servers.gedis.get(
+                name="threebot", port=8901, secret_=adminsecret_, threebot_local_profile=self.threebot_local_profile
+            )
         return self._gedis_server
 
     @property
@@ -209,11 +197,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             # now we are ready to start the jobs
             self.myjobs_start()
 
-            # think no longer needed
-            # # make sure client for myjobs properly configured
-            # bcdb_myjobs = j.data.bcdb.get_for_threebot("myjobs", ttype="redis")
-            # bcdb_myjobs.reset()
-
             j.threebot.servers = Servers()
             j.threebot.servers.zdb = self.zdb
             j.threebot.servers.sonic = self.sonic
@@ -258,7 +241,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             # all internal services started but not the gevent rack yet, and should be like this
 
             for path in packages:
-                # j.debug()
                 j.threebot.packages.zerobot.packagemanager.actors.package_manager.package_add(
                     path=path, install=False, reload=False
                 )
@@ -306,8 +288,8 @@ class ThreeBotServer(j.baseclasses.object_config):
             p = j.threebot.packages
             LogPane.Show = False
 
-            # if with_shell:
-            #     j.shell()  # for now removed otherwise debug does not work
+            if with_shell:
+                j.shell()  # for now removed otherwise debug does not work
 
             forever = event.Event()
             try:
@@ -335,11 +317,16 @@ class ThreeBotServer(j.baseclasses.object_config):
         # it happens that the server starts listening but not ready yet will try again
         retries = 60
         last_error = None
+
+        identity = j.tools.threebot.me.get(self.threebot_local_profile, needexist=False)
+        nacl = identity.nacl
+
         for _ in range(retries):
             try:
-                self.client = j.clients.gedis.get(name="threebot", port=8901)
-                self.client.reload()
-                assert self.client.ping()
+                client = j.clients.gedis.get(name="threebot", port=8901, server_pk_hex=nacl.verify_key_hex)
+                client.reload()
+                assert client.ping()
+                self.client = client
                 return self.client
             except Exception as e:
                 time.sleep(1)

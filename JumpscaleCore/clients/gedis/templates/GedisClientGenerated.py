@@ -7,7 +7,7 @@ class GedisClientGenerated():
     def __init__(self,client):
         # JSBASE.__init__(self)
         self._client = client
-        self._redis = client._redis
+        self._client = client._client
 
     {# generate the actions #}
     {% for name,cmd in obj.cmds.items() %}
@@ -32,7 +32,7 @@ class GedisClientGenerated():
         id2 = id if not callable(id) else None #if id specified will put in id2 otherwise will be None
         data = j.data.serializers.msgpack.dumps([id2, args._data])
         try:
-            res = self._redis.execute_command(cmd_name,data)
+            res = self._client.execute_command(cmd_name,data)
         except Exception as e:
             self.handle_error(e,1,cmd_name=cmd_name)
 
@@ -42,14 +42,14 @@ class GedisClientGenerated():
 
         {% if args|length == 0 %}
         try:
-            res =  self._redis.execute_command(cmd_name)
+            res =  self._client.execute_command(cmd_name)
         except Exception as e:
             self.handle_error(e,2,cmd_name=cmd_name)
 
         {% else %}
         # send multi args with no prior knowledge of schema
         try:
-            res = self._redis.execute_command(cmd_name, {{ cmd.args_client.lstrip(',')}})
+            res = self._client.execute_command(cmd_name, {{ cmd.args_client.lstrip(',')}})
         except Exception as e:
             self.handle_error(e,3)
         {% endif %} #args bigger than []
@@ -73,4 +73,4 @@ class GedisClientGenerated():
 
 
     def handle_error(self, e, source=None,cmd_name=None):
-        return j.clients.gedis._handle_error(e,source=source,cmd_name=cmd_name,redis=self._redis)
+        return j.clients.gedis._handle_error(e,source=source,cmd_name=cmd_name,redis=self._client)

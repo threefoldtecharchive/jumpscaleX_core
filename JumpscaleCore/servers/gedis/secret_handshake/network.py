@@ -20,7 +20,9 @@
 
 
 from gevent.server import StreamServer
-import socket
+
+from gevent import socket
+
 
 from .boxstream import get_stream_pair
 from .crypto import SHSClientCrypto, SHSServerCrypto
@@ -35,12 +37,45 @@ class SHSDuplexStream(object):
         self.write_stream = None
         self.read_stream = None
         self.is_connected = False
+        self._buf = b""
 
     def write(self, data):
         self.write_stream.write(data)
 
-    def read(self):
-        return self.read_stream.read()
+    def read(self, size=-1):
+        if size == -1:
+            if self._buf:
+                data = self._buf
+                self._buf = b""
+                return data
+            else:
+                return self.read_stream.read()
+
+        count = len(self._buf)
+        while count < size:
+            msg = self.read_stream.read()
+            if not msg:
+                return None
+            count = count + len(msg)
+            self._buf += msg
+
+        data = self._buf[:size]
+        self._buf = self._buf[size:]
+        return data
+
+    def readline(self):
+        if self._buf:
+            data = self._buf[:]
+            self._buf = b""
+        else:
+            data = self.read()
+
+        i = data.index(b"\r\n")
+        while i == -1:
+            data += self.read()
+            i = data.index(b"\r\n")
+        self._buf = data[i + 2 :]
+        return data[: i + 2]
 
     def close(self):
         self.write_stream.close()
@@ -71,22 +106,25 @@ class SHSServer(SHSEndpoint):
         self.port = port
         self.crypto = SHSServerCrypto(server_kp, application_key=application_key)
         self.connections = []
+        self._server = StreamServer((self.host, self.port), self.handle_connection)  # creates a new server
 
     def _handshake(self, reader, writer):
-        data = reader.readexactly(64)
+        data = reader.read(64)
         if not self.crypto.verify_challenge(data):
             raise SHSClientException("Client challenge is not valid")
 
         writer.write(self.crypto.generate_challenge())
+        writer.flush()
 
-        data = reader.readexactly(112)
+        data = reader.read(112)
         if not self.crypto.verify_client_auth(data):
             raise SHSClientException("Client auth is not valid")
 
         writer.write(self.crypto.generate_accept())
+        writer.flush()
 
     def handle_connection(self, socket, addr):
-        rw = ReadWriter(socket)
+        rw = socket.makefile("rwb")
 
         self.crypto.clean()
         self._handshake(rw, rw)
@@ -97,15 +135,13 @@ class SHSServer(SHSEndpoint):
         self.connections.append(conn)
 
         if self._on_connect:
-            self._on_connect(conn)
-
-    def server(self):
-        server = StreamServer((self.host, self.port), self.handle_connection)  # creates a new server
-        return server
+            self._on_connect(conn, addr, self.crypto.remote_pub_key)
 
     def listen(self):
-        server = StreamServer((self.host, self.port), self.handle_connection)  # creates a new server
-        server.serve_forever()
+        self._server.serve_forever()
+
+    def server(self):
+        return self._server
 
     def disconnect(self):
         for connection in self.connections:
@@ -123,12 +159,6 @@ class SHSServerConnection(SHSDuplexStream):
         reader, writer = get_stream_pair(reader, writer, **keys)
         return cls(reader, writer)
 
-    def recv(self, size):
-        return self.read_stream.read()
-
-    def sendall(self, data):
-        self.write_stream.write(data)
-
 
 class SHSClient(SHSDuplexStream, SHSEndpoint):
     def __init__(self, host, port, client_kp, server_pub_key, ephemeral_key=None, application_key=None):
@@ -139,24 +169,28 @@ class SHSClient(SHSDuplexStream, SHSEndpoint):
         self.crypto = SHSClientCrypto(
             client_kp, server_pub_key, ephemeral_key=ephemeral_key, application_key=application_key
         )
+        self._sock = None
 
     def _handshake(self, reader, writer):
         writer.write(self.crypto.generate_challenge())
+        writer.flush()
 
-        data = reader.readexactly(64)
+        data = reader.read(64)
         if not self.crypto.verify_server_challenge(data):
             raise SHSClientException("Server challenge is not valid")
 
         writer.write(self.crypto.generate_client_auth())
+        writer.flush()
 
-        data = reader.readexactly(80)
+        data = reader.read(80)
         if not self.crypto.verify_server_accept(data):
             raise SHSClientException("Server accept is not valid")
 
     def open(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._sock = s
         s.connect((self.host, self.port))
-        rw = ReadWriter(s)
+        rw = s.makefile("rwb")
         self._handshake(rw, rw)
 
         keys = self.crypto.get_box_keys()
@@ -170,23 +204,4 @@ class SHSClient(SHSDuplexStream, SHSEndpoint):
 
     def disconnect(self):
         self.close()
-
-
-class ReadWriter:
-    def __init__(self, socket):
-        self._socket = socket
-
-    def recv(self, size):
-        return self._socket.recv()
-
-    def sendall(self, data):
-        return self._socket.sendall(data)
-
-    def closed(self):
-        return self._socket.closed
-
-    def readexactly(self, size):
-        return self._socket.recv(size)
-
-    def write(self, data):
-        return self._socket.sendall(data)
+        self._sock = None

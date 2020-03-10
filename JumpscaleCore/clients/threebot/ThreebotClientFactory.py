@@ -7,44 +7,18 @@ JSConfigBase = j.baseclasses.object_config_collection
 skip = j.baseclasses.testtools._skip
 
 
+_threefold_explorer_public_keys = {
+    "explorer.testnet.grid.tf": "3b3bc56fdf273f444af1cf298b13c4c856afd69acf5fbb3057ff6fc8479049a4",
+    "explorer.grid.tf": "fc5aec54936cbde0caf3e0c00012a4821dc5a35f3584ed61360725bdae8a4327",
+}
+
+
 class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.clients.threebot"
     _CHILDCLASS = ThreebotClient
 
     def _init(self, **kwargs):
-        # self._explorer = None
         self._id2client_cache = {}
-
-    # @property
-    # def explorer_addr(self):
-    #     if "EXPLORER_ADDR" not in j.core.myenv.config:
-    #         return "localhost"
-    #     else:
-    #         return j.core.myenv.config["EXPLORER_ADDR"] + ""
-    #
-    # def explorer_addr_set(self, value):
-    #     """
-    #
-    #     :param value:
-    #     :return:
-    #     """
-    #     j.core.myenv.config["EXPLORER_ADDR"] = value
-    #     j.core.myenv.config_save()
-    #     self._explorer = None
-    #
-    # @property
-    # def explorer(self):
-    #     if not self._explorer:
-    #         self._explorer = j.baseclasses.object_config_collection_testtools.get(
-    #             self, name="explorer", host=self.explorer_addr
-    #         )
-    #     return self._explorer
-    #
-    # @property
-    # def _explorer_redis(self):
-    #     cl = j.clients.redis.get(self.explorer_addr, port=8901)
-    #     cl.execute_command("config_format", "json")
-    #     return cl
 
     def client_get(self, threebot=None):
         """
@@ -58,25 +32,31 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         :param name:
         :return:
         """
-        explorer = j.clients.explorer.default
-
-        record = None
+        # path to get a threebot client needs to be as fast as possible
         if isinstance(threebot, int):
-            record = explorer.users.get(threebot)
+            if threebot <= 0:
+                raise j.exceptions.Input("threebot ID must be a positive integer")
+
+            if threebot in self._id2client_cache:
+                return self._id2client_cache[threebot]
+            tid = threebot
+            tname = None
         elif isinstance(threebot, str):
-            users = explorer.users.list(name=threebot)
-            if users:
-                record = users[0]
+            tid = None
+            tname = threebot
         else:
             raise j.exceptions.Input("threebot needs to be int or str")
 
-        if not record:
-            j.exceptions.NotFound(f"threebot {threebot} not found")
+        r = j.tools.threebot.explorer.threebot_record_get(tid=tid, name=tname)
+        if r.id <= 0:
+            raise j.exceptions.Input("threebot ID must be a positive integer")
 
-        assert record.id > 0
-        return j.baseclasses.object_config_collection_testtools.get(
-            self, name=record.name, tid=record.id, host=record.ipaddr, pubkey=record.pubkey
+        client = j.baseclasses.object_config_collection_testtools.get(
+            self, name=r.name, tid=r.id, host=r.ipaddr, pubkey=r.pubkey
         )
+
+        self._id2client_cache[client.tid] = client
+        return self._id2client_cache[client.tid]
 
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/487")
     def test(self):

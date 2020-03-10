@@ -1,8 +1,13 @@
-# import imp
+import binascii
 import os
+from io import BytesIO
+
 import redis
-from Jumpscale import j
 from redis.connection import ConnectionError
+
+from Jumpscale import j
+from Jumpscale.servers.gedis.protocol import ProtocolHandler, Error, Disconnect
+from Jumpscale.servers.gedis.secret_handshake import SHSClient
 
 JSConfigBase = j.baseclasses.factory_data
 
@@ -23,17 +28,18 @@ class GedisClient(JSConfigBase):
     port = 8901 (ipport)
     package_name = "zerobot.base" (S)  #is the full package name e.g. threebot.blog
     threebot_local_profile = "default"
-    password_ = ""
+    server_pk_hex = (S)
     """
 
     def _init(self, **kwargs):
-        # j.clients.gedis.latest = self
         self._actorsmeta = {}
         if not self.package_name:
             self.package_name = "zerobot.base"
             self.save()
+
         assert self.package_name
         assert "." in self.package_name
+
         self.schemas = None
         self._actors = None
         if "package_name" in kwargs and kwargs["package_name"] and self.package_name != kwargs["package_name"]:
@@ -41,10 +47,12 @@ class GedisClient(JSConfigBase):
                 "gedis client with name:%s was configured for other packagename:%s"
                 % (self.name, kwargs["package_name"])
             )
+
         self._code_generated_dir = j.sal.fs.joinPaths(j.dirs.VARDIR, "codegen", "gedis", self.name, "client")
         j.sal.fs.createDir(self._code_generated_dir)
         j.sal.fs.touch(j.sal.fs.joinPaths(self._code_generated_dir, "__init__.py"))
-        self._redis_ = None
+
+        self._client_ = None
         self._threebot_me_ = None
         self._reset()
 
@@ -55,33 +63,12 @@ class GedisClient(JSConfigBase):
             self._reset()
 
     def _reset(self):
-        self._redis_ = None  # connection to server
-        # self._models = None
+        self._client_ = None  # connection to server
         self._actors = None
 
     def ping(self):
-        test = self._redis.execute_command("ping")
-        if test:
-            return True
-        return False
-
-    # def auth(self, bot_id):
-    #     j.shell()
-    #     nacl_cl = j.data.nacl.get()
-    #     nacl_cl._load_privatekey()
-    #     signing_key = nacl.signing.SigningKey(nacl_cl.privkey.encode())
-    #     epoch = str(j.data.time.epoch)
-    #     signed_message = signing_key.sign(epoch.encode())
-    #     cmd = "auth {} {} {}".format(bot_id, epoch, signed_message)
-    #     res = self._redis.execute_command(cmd)
-    #     return res
-
-    def _redis_cmd_execute(self, *args):
-        try:
-            res = self._redis.execute_command(*args)
-        except redis.ResponseError as e:
-            raise j.clients.gedis._handle_error(e, redis=self._redis)
-        return res
+        test = self._client.execute_command("ping")
+        return test == b"PONG"
 
     def reload(self):
         self._log_info("reload")
@@ -92,19 +79,22 @@ class GedisClient(JSConfigBase):
         self._actors = GedisClientActors()
         self.schemas = GedisClientSchemas()
 
-        # this will make sure we know the core schema's as used on server
-        # if system schema's not known, we get them from the server
-        if not j.data.schema.exists("jumpscale_bcdb_acl_user_2"):
-            r = self._redis_cmd_execute("jsx_schemas_get")
-            r2 = j.data.serializers.msgpack.loads(r)
-            for key, data in r2.items():
-                schema_text, schema_url = data
-                if not j.data.schema.exists(md5=key):
-                    j.data.schema.get_from_text(schema_text)
+        try:
+            # this will make sure we know the core schemas as used on server
+            # if system schemas not known, we get them from the server
+            if not j.data.schema.exists("jumpscale_bcdb_acl_user_2"):
+                r = self._client.execute_command("jsx_schemas_get")
+                r2 = j.data.serializers.msgpack.loads(r)
+                for key, data in r2.items():
+                    schema_text, schema_url = data
+                    if not j.data.schema.exists(md5=key):
+                        j.data.schema.get_from_text(schema_text)
 
-        cmds_meta = self._redis_cmd_execute("api_meta_get", self.package_name)
+            cmds_meta = self._client.execute_command("api_meta_get", self.package_name)
+        except Exception as err:
+            raise j.clients.gedis._handle_error(err, redis=self._client)
+
         cmds_meta = j.data.serializers.msgpack.loads(cmds_meta)
-
         if cmds_meta["cmds"] == {}:
             return
         for key, data in cmds_meta["cmds"].items():
@@ -156,29 +146,20 @@ class GedisClient(JSConfigBase):
         return self._actors
 
     @property
-    def _redis(self):
-        """
-        this gets you a redis instance, when executing commands you have to send the name of the function without
-        the postfix _cmd as is, do not capitalize it
-        if it is testtest_cmd, then you should call it by testtest
+    def _client(self):
+        if self._client_ is None:
+            identity = j.tools.threebot.me.get(self.threebot_local_profile, needexist=False)
+            nacl = identity.nacl
 
-        :return: redis instance
-        """
-        if self._redis_ is None:
-            assert self.host != "0.0.0.0"
-            addr = self.host
-            port = self.port
-            secret = self.password_
+            server_pk = binascii.unhexlify(self.server_pk_hex)
+            self._client_ = Client(kp=nacl.signing_key, server_pk=server_pk, host=self.host, port=self.port)
 
-            self._log_info("redisclient: %s:%s " % (addr, port))
-            self._redis_ = j.clients.redis.get(addr=addr, port=port, secret=secret, ping=True, fromcache=False)
+            authenticated = self._client_.execute_command("auth", identity.tid, nacl.verify_key_hex)
+            if not authenticated:
+                raise j.exceptions.Permission(f"authentication with gedis server {self.host}:{self.port} refused")
 
-            # authenticate us
-            seed = j.data.idgenerator.generateGUID()  # any seed works, the more random the more secure
-            signature = self._nacl.sign_hex(seed)  # this is just std signing on nacl and hexifly it
-            self._redis_.execute_command("auth", self._threebot_me.tid, seed, signature)
+        return self._client_
 
-        return self._redis_
 
     @property
     def _threebot_me(self):
@@ -186,16 +167,31 @@ class GedisClient(JSConfigBase):
             self._threebot_me_ = j.tools.threebot.me.get(self.threebot_local_profile, needexist=False)
         return self._threebot_me_
 
-    @property
-    def _nacl(self):
-        return self._threebot_me.nacl
 
-    def _methods_gedis(self, prefix=""):
-        if prefix.startswith("_"):
-            return JSConfigBase._methods_gedis(self, prefix=prefix)
-        res = [str(i) for i in self.actors._methods_gedis()]
-        for i in ["ping"]:
-            if i not in res:
-                res.append(i)
+class Client(object):
+    """
+    Implementation of the gedis client
+    it uses SHS for handshake and implement RESP protocol on top
+    """
 
-        return res
+    def __init__(self, kp, server_pk, host="127.0.0.1", port=8901):
+        """        
+        :param kp: key pair of the client
+        :type kp: nacl.singing.SingingKey
+        :param server_pk: serer public key hex encoded
+        :type server_pk: string
+        :param host: server address, defaults to "127.0.0.1"
+        :type host: str, optional
+        :param port: server port, defaults to 8901
+        :type port: int, optional
+        """
+        self._protocol = ProtocolHandler()
+        self._stream = SHSClient(host, port, kp, server_pub_key=server_pk)
+        self._stream.open()
+
+    def execute_command(self, *args):
+        self._protocol.write_response(self._stream, args)
+        resp = self._protocol.handle_request(self._stream)
+        if isinstance(resp, Error):
+            raise CommandError(resp.message)
+        return resp
