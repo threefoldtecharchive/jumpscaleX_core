@@ -1487,7 +1487,7 @@ class Tools:
         # else:
         #     args[0] = shutil.which(args[0])
 
-        returncode = os.spawnlp(os.P_WAIT, *args)
+        returncode = os.spawnlp(os.P_WAIT, args[0], *args)
         cmd = " ".join(args)
         if returncode == 127:
             raise Tools.exceptions.Base("{}: command not found\n".format(cmd))

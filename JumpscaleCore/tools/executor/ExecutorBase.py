@@ -176,7 +176,7 @@ class ExecutorBase(j.baseclasses.object_config):
         env=None,
         sudo=False,
         replace=True,
-        interactive=True,
+        interactive=False,
         python=None,
         jumpscale=None,
         debug=False,
