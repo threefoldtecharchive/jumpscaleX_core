@@ -563,7 +563,7 @@ class BCDB(j.baseclasses.object):
 
         # since delete the data directory above, we have to re-init the storclient
         # so it can do its things (e.g. create sqlitedb, init redis, ...) and re-connect properly
-        self.storclient._redis = None
+        self.storclient._connect()
 
         if not self.storclient.get(0):
             r = self.storclient.set(b"INIT")
