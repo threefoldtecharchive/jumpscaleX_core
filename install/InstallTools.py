@@ -1487,7 +1487,7 @@ class Tools:
         # else:
         #     args[0] = shutil.which(args[0])
 
-        returncode = os.spawnlp(os.P_WAIT, args[0], *args)
+        returncode = os.spawnlp(os.P_WAIT, *args)
         cmd = " ".join(args)
         if returncode == 127:
             raise Tools.exceptions.Base("{}: command not found\n".format(cmd))
@@ -3318,7 +3318,9 @@ class MyEnv_:
             "REVERSE": "",
         }
 
-        LOGFORMATBASE = "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"  # DO NOT CHANGE COLOR
+        LOGFORMATBASE = (
+            "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"
+        )  # DO NOT CHANGE COLOR
 
         self.LOGFORMAT = {
             "DEBUG": LOGFORMATBASE.replace("{COLOR}", "{CYAN}"),
