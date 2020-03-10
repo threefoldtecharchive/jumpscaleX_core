@@ -1,13 +1,18 @@
-from Jumpscale import j
-from redis.exceptions import ConnectionError
-import nacl
-from .protocol import RedisCommandParser, RedisResponseWriter
-from nacl.signing import VerifyKey
 import binascii
+from io import BytesIO
+
+import nacl
+from nacl.signing import VerifyKey
+from nacl.encoding import HexEncoder
+from redis.exceptions import ConnectionError
+
+from Jumpscale import j
+
+# from .protocol import RedisCommandParser, RedisResponseWriter
+from .protocol import ProtocolHandler, Error, Disconnect
+from .UserSession import UserSession, UserSessionAdmin
 
 JSBASE = j.baseclasses.object
-
-from .UserSession import UserSession, UserSessionAdmin
 
 
 def _command_split(cmd, author3botname="zerobot", packagename="base"):
@@ -162,67 +167,6 @@ class Request:
         return self.headers.get("response_type", "auto").casefold()
 
 
-class ResponseWriter:
-    """
-    ResponseWriter is an object that expose methods
-    to write data back to the client
-    """
-
-    def __init__(self, socket):
-        self._socket = socket
-        self._writer = RedisResponseWriter(socket)
-
-    def write(self, value):
-        self._writer.encode(value)
-
-    def error(self, value):
-        if isinstance(value, dict):
-            value = j.data.serializers.json.dumps(value)
-        self._writer.error(value)
-
-
-class GedisSocket:
-    """
-    GedisSocket encapsulate the raw tcp socket
-    when you want to read the next request on the socket,
-    call the `read` method, it will return a Request object
-    when you want to write back to the client
-    call get_writer to get ReponseWriter
-    """
-
-    def __init__(self, socket):
-        self._socket = socket
-        self._parser = RedisCommandParser(socket)
-        self._writer = ResponseWriter(self._socket)
-
-    def read(self):
-        """
-        call this method when you want to process the next request
-
-        :return: return a Request
-        :rtype: tuple
-        """
-        raw_request = self._parser.read_request()
-        if not raw_request:
-            raise j.exceptions.Value("malformatted request")
-        return Request(raw_request)
-
-    @property
-    def writer(self):
-        return self._writer
-
-    def on_disconnect(self):
-        """
-        make sur to always call this method before closing the socket
-        """
-        if self._parser:
-            self._parser.on_disconnect()
-
-    @property
-    def closed(self):
-        return self._socket.closed
-
-
 class Handler(JSBASE):
     def __init__(self, gedis_server):
         JSBASE.__init__(self)
@@ -230,78 +174,32 @@ class Handler(JSBASE):
         self.cmds = {}  # caching of commands
         # will hold classes of type GedisCmds,key is the self.gedis_server._actorkey_get(
         self.cmds_meta = self.gedis_server.cmds_meta
+        self._protocol = ProtocolHandler()
 
-    def handle_gedis(self, socket, address=None):
+    def handle_gedis(self, stream, address=None, client_pub_key=None):
+        self._log_info("Connection received: %s:%s" % address)
 
-        # BUG: if we start a server with kosmos --debug it should get in the debugger but it does not if errors trigger, maybe something in redis?
-        # w=self.t
-        # raise j.exceptions.Base("d")
-        gedis_socket = GedisSocket(socket)
+        user_session = UserSession()
+        user_session.public_key = client_pub_key
 
-        user_session = UserSessionAdmin()
-
-        try:
-            self._handle_gedis_session(gedis_socket, address, user_session=user_session)
-        except Exception as e:
-            gedis_socket.on_disconnect()
-            # self._log_error("connection closed: %s" % str(e), context="%s" % address, exception=e)
-
-    def _handle_gedis_session(self, gedis_socket, address=None, user_session=None):
-        """
-        deal with 1 specific session
-        :param socket:
-        :param address:
-        :param parser:
-        :param response:
-        :return:
-        """
-        # self._log_info("new incoming connection", context="%s:%s" % address)
-
+        # Process client requests until client disconnects.
         while True:
             try:
-                request = gedis_socket.read()
-            except ConnectionError as err:
-                # self._log_info("connection read error: %s" % str(err), context="%s:%s" % address)
-                # close the connection
-                return
+                data = self._protocol.handle_request(stream)
+            except Disconnect:
+                self._log_info("Client went away: %s:%s" % address)
+                break
 
-            logdict, result = self._handle_request(request, address, user_session=user_session)
+            try:
+                request = Request(data)
+                logdict, resp = self._handle_request(request, address, user_session=user_session)
+            except Exception as err:
+                resp = Error(exc.args[0])
 
             if logdict:
-                gedis_socket.writer.error(logdict)
-            try:
-                gedis_socket.writer.write(result)
+                resp = Error(logdict)
 
-            except ConnectionError as err:
-                # self._log_info("connection error: %s" % str(err), context="%s:%s" % address)
-                # close the connection
-                return
-
-    def _authorized(self, cmd_obj, user_session):
-        """
-        checks if the current session is authorized to access the requested command
-        Notes:
-        * system actor is always public, it will be used to retrieve the client metadata even before authentication
-        * threebot_id should be in the session otherwise it can only access the public methods only
-        :return: (True, None) if authorized else (False, reason)
-        """
-
-        if user_session.admin:
-            return True, None
-        elif cmd_obj.rights.public:
-            return True, None
-        elif not user_session.threebot_id:
-            return False, "No user is authenticated on this session and the command isn't public"
-        else:
-            j.shell()
-            w
-            # TODO: needs to be reimplemented (despiegk)
-            # user = j.data.bcdb.system.user.find(threebot_id=user_session.threebot_id)
-            # if not user:
-            #     return False, f"Couldn't find user with threebot_id {threebot_id}"
-            # return actor_obj.acl.rights_check(userids=[user[0].id], rights=[cmd_name]), None
-
-        return False, "Command not found"
+            self._protocol.write_response(stream, resp)
 
     def _handle_request(self, request, address=None, user_session=None):
         """
@@ -324,44 +222,15 @@ class Handler(JSBASE):
                 user_session.content_type.value = request.arguments[0].decode()
                 user_session.response_type.value = request.arguments[0].decode()
             return None, "OK"
-
         elif request.command.command == "auth":
-            return None, "OK"
-            # TODO: this has not been done properly !!! check Kristof
-            tid, seed, signature = request.arguments
-            tid = int(tid)
+            tid, pubkey = request.arguments
+            if user_session.public_key.encode(HexEncoder) != pubkey:
+                self._log_error("sessions %s failed to authenticate for threebot id %d" % (address, tid))
+                return None, False
 
-            current_threebot_id = int(j.tools.threebot.me.default.tid)
-            # If working on same machine no need to get a client to authenticate
-            # otherwise, we'll have infinite loop
-            if current_threebot_id != tid:
-                try:
-                    tclient = j.clients.threebot.client_get(threebot=tid)
-                except Exception as e:
-                    logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
-                    return (logdict, None)
-                try:
-                    verification = tclient.verify_from_threebot(seed, signature)
-                except Exception as e:
-                    logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
-                    return (logdict, None)
-
-                # if we get here we know that the user has been authenticated properly
-                user_session.threebot_id = tclient.tid
-                user_session.threebot_name = tclient.name
-            else:
-                # can't reuse verification methods in 3 bot client, otherwise we gonna go into infinite loop
-                # so we verify directly using nacl
-                try:
-                    VerifyKey(binascii.unhexlify(j.tools.threebot.me.default.nacl.verify_key_hex)).verify(
-                        seed, binascii.unhexlify(signature)
-                    )
-                except Exception as e:
-                    logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
-                    return (logdict, None)
-                user_session.threebot_id = tid
-                user_session.threebot_name = j.tools.threebot.me.default.name
-            return None, "OK"
+            user_session.threebot_id = tid
+            self._log_info("session %s authenticated for threebot id %d" % (address, tid))
+            return None, True
 
         self._log_debug(
             "command received %s %s %s" % (request.command.author3bot, request.command.actor, request.command.command),
@@ -375,16 +244,6 @@ class Handler(JSBASE):
         except Exception as e:
             logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
             return (logdict, None)
-
-        is_authorized, reason = self._authorized(cmd_obj=cmd, user_session=user_session)
-        if not is_authorized:
-            not_authorized_err = {
-                "message": f"not authorized {reason}",
-                "actor_name": request.command.actor,
-                "cmd_name": request.command.command,
-                "threebot_id": user_session.threebot_id,
-            }
-            return (j.data.serializers.json.dumps(not_authorized_err), None)
 
         params_list = []
         params_dict = {}
@@ -593,28 +452,3 @@ def _result_encode(cmd, response_type, item):
             else:
                 return item._data
         return item
-
-
-# def dm_verify(dm_id, epoch, signed_message):
-#     """
-#     retrieve the verify key of the threebot identified by bot_id
-#     from tfchain
-#
-#     :param dm_id: threebot identification, can be one of the name or the unique integer
-#                     of a threebot
-#     :type dm_id: string
-#     :param epoch: the epoch param that is signed
-#     :type epoch: str
-#     :param signed_message: the epoch param signed by the private key
-#     :type signed_message: str
-#     :return: True if the verification succeeded
-#     :rtype: bool
-#     :raises: PermissionError in case of wrong message
-#     """
-#     tfchain = j.clients.tfchain.new("3bot", network_type="TEST")
-#     record = tfchain.threebot.record_get(dm_id)
-#     verify_key = nacl.signing.VerifyKey(str(record.public_key.hash), encoder=nacl.encoding.HexEncoder)
-#     if verify_key.verify(signed_message) != epoch:
-#         raise j.exceptions.Permission("You couldn't authenticate your 3bot: {}".format(dm_id))
-#
-#     return True

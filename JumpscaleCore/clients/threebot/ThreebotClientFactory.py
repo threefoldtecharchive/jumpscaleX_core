@@ -7,12 +7,19 @@ JSConfigBase = j.baseclasses.object_config_collection
 skip = j.baseclasses.testtools._skip
 
 
+_threefold_explorer_public_keys = {
+    "explorer.testnet.grid.tf": "3b3bc56fdf273f444af1cf298b13c4c856afd69acf5fbb3057ff6fc8479049a4",
+    "explorer.grid.tf": "fc5aec54936cbde0caf3e0c00012a4821dc5a35f3584ed61360725bdae8a4327",
+}
+
+
 class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.clients.threebot"
     _CHILDCLASS = ThreebotClient
 
     def _init(self, **kwargs):
         self._explorer = None
+        self._explorer_testnet = None
         self._id2client_cache = {}
 
     @property
@@ -22,28 +29,31 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         else:
             return j.core.myenv.config["EXPLORER_ADDR"] + ""
 
-    def explorer_addr_set(self, value):
-        """
+    def explorer_public_key(self):
+        if "EXPLORER_PUBKEY" not in j.core.myenv.config:
+            return None
+        else:
+            return j.core.myenv.config["EXPLORER_PUBKEY"] + ""
 
-        :param value:
-        :return:
-        """
-        j.core.myenv.config["EXPLORER_ADDR"] = value
+    def explorer_addr_set(self, addr, pubkey):
+        j.core.myenv.config["EXPLORER_ADDR"] = addr
+        j.core.myenv.config["EXPLORER_PUBKEY"] = pubkey
         j.core.myenv.config_save()
+        self._explorer = None
 
     @property
     def explorer(self):
         if not self._explorer:
+            pubkey = _threefold_explorer_public_keys.get(self.explorer_addr, j.core.myenv.config.get("EXPLORER_PUBKEY"))
+            if not pubkey:
+                raise j.exceptions.RuntimeError(
+                    "explorer public key not known. please use `j.clients.threebot.explorer_addr_set` to configure it"
+                )
+
             self._explorer = j.baseclasses.object_config_collection_testtools.get(
-                self, name="explorer", host=self.explorer_addr
+                self, name="explorer", host=self.explorer_addr, pubkey=pubkey,
             )
         return self._explorer
-
-    @property
-    def _explorer_redis(self):
-        cl = j.clients.redis.get(self.explorer_addr, port=8901)
-        cl.execute_command("config_format", "json")
-        return cl
 
     def client_get(self, threebot=None):
         """
@@ -59,31 +69,29 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         """
         # path to get a threebot client needs to be as fast as possible
         if isinstance(threebot, int):
-            assert threebot > 0
+            if threebot <= 0:
+                raise j.exceptions.Input("threebot ID must be a positive integer")
+
             if threebot in self._id2client_cache:
                 return self._id2client_cache[threebot]
-            res = self.find(tid=threebot)
             tid = threebot
             tname = None
         elif isinstance(threebot, str):
-            res = [self.get(name=threebot)]
             tid = None
             tname = threebot
         else:
             raise j.exceptions.Input("threebot needs to be int or str")
 
-        if len(res) > 1:
-            j.shell()
-            raise j.exceptions.JSBUG("should never be more than 1")
-        # reload, make sure newly added packages exist
-        j.tools.threebot.explorer.reload()
         r = j.tools.threebot.explorer.threebot_record_get(tid=tid, name=tname)
-        assert r.id > 0
-        r2 = j.baseclasses.object_config_collection_testtools.get(
+        if r.id <= 0:
+            raise j.exceptions.Input("threebot ID must be a positive integer")
+
+        client = j.baseclasses.object_config_collection_testtools.get(
             self, name=r.name, tid=r.id, host=r.ipaddr, pubkey=r.pubkey
         )
-        self._id2client_cache[r2.tid] = r2
-        return self._id2client_cache[r2.tid]
+
+        self._id2client_cache[client.tid] = client
+        return self._id2client_cache[client.tid]
 
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/487")
     def test(self):

@@ -43,8 +43,8 @@ class GedisClientFactory(j.baseclasses.object_config_collection_testtools):
             logdict = j.core.myenv.exception_handle(e, die=False, stdout=False)
         assert redis
 
-        addr = redis.connection_pool.connection_kwargs["host"]
-        port = redis.connection_pool.connection_kwargs["port"]
+        addr = redis._stream.host
+        port = redis._stream.port
         msg = "GEDIS SERVER %s:%s" % (addr, port)
         if cmd_name:
             msg += " SOURCE METHOD: %s" % cmd_name

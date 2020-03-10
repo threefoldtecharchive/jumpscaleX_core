@@ -33,7 +33,7 @@ class UnboxStream(object):
         self.closed = False
 
     def read(self):
-        data = self.reader.readexactly(HEADER_LENGTH)
+        data = self.reader.read(HEADER_LENGTH)
         if not data:
             self.closed = True
             return None
@@ -49,7 +49,7 @@ class UnboxStream(object):
         length = struct.unpack(">H", header[:2])[0]
         mac = header[2:]
 
-        data = self.reader.readexactly(length)
+        data = self.reader.read(length)
 
         body = box.decrypt(mac + data, inc_nonce(self.nonce))
 
@@ -81,6 +81,7 @@ class BoxStream(object):
 
             self.nonce = inc_nonce(inc_nonce(self.nonce))
             self.writer.write(body[16:])
+        self.writer.flush()
 
     def close(self):
         self.writer.write(self.box.encrypt(b"\x00" * 18, self.nonce)[24:])

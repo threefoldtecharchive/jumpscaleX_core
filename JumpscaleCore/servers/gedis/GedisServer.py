@@ -58,10 +58,16 @@ class GedisServer(JSBaseConfig):
         port = 9900 (ipport)
         secret_ = "" (S)
         # actors_data = (LS)
+        threebot_local_profile = "default" (S)
         """
 
     def _init(self, **kwargs):
+        # ensure default is set for previous version
+        if not self.threebot_local_profile:
+            self.threebot_local_profile = "default"
+
         self._sig_handler = []
+        self._shs_server = None
 
         self.cmds_meta = {}  # is the metadata of the actor
         self.schema_urls = []  # used at python client side
@@ -73,13 +79,7 @@ class GedisServer(JSBaseConfig):
 
         self.chatbot = GedisChatBotFactory()
 
-        # self.namespaces = ["system", "default"]
-        self._threebot_server = None
-
         j.data.schema.get_from_text(SCHEMA, newest=True)
-
-        # hook to allow external servers to find this gedis
-        # self.server_gedis = self
 
         # create dirs for generated codes and make sure is empty
         for cat in ["server", "client"]:
@@ -95,14 +95,16 @@ class GedisServer(JSBaseConfig):
         for sig in [signal.SIGINT, signal.SIGTERM]:
             self._sig_handler.append(gevent.signal(sig, self.stop))
 
-        self.c = Handler(self)  # registers the current gedis server on the handler
+        self.handler = Handler(self)  # registers the current gedis server on the handler
 
     @property
     def gevent_server(self):
-        server = SHSServer(self.host, self.port, j.data.nacl.default.signing_key)
-        server.on_connect(self.c.handle_gedis)
-        return server.server()
-        # return StreamServer((self.host, self.port), spawn=Pool(), handle=self.handler.handle_gedis)
+        identity = j.tools.threebot.me.get(self.threebot_local_profile, needexist=False)
+        nacl = identity.nacl
+
+        self._shs_server = SHSServer(self.host, self.port, nacl.signing_key)
+        self._shs_server.on_connect(self.handler.handle_gedis)
+        return self._shs_server.server()
 
     def actor_add(self, name, path, package):
         """
