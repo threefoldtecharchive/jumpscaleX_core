@@ -1207,7 +1207,7 @@ class Tools:
                     msg = "{RED}EXCEPTION: \n" + Tools.text_indent(msg_e, 4).rstrip() + "{RESET}"
                 else:
                     msg = "EXCEPTION: \n" + Tools.text_indent(msg_e, 4).rstrip()
-            if cat is "":
+            if cat is None or cat == "":
                 cat = "exception"
 
             if hasattr(exception, "exception"):
