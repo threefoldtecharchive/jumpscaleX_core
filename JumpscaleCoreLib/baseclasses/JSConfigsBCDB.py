@@ -33,7 +33,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
     def _check_children(self):
         if not self._cache_use:
-            assert self._children == j.baseclasses.dict()
+            assert self.__children == j.baseclasses.dict()
 
     def _check(self, jsconfig):
         if jsconfig._id is None:
@@ -94,9 +94,9 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         jsconfig_klass = self._childclass_selector(jsxobject=jsxobject)
         jsconfig = jsconfig_klass(parent=self, jsxobject=jsxobject, **kwargs_to_class)
-        self._children[name] = jsconfig
+        self.__children[name] = jsconfig
 
-        return self._children[name]
+        return self.__children[name]
 
     def get(self, name="default", id=None, needexist=False, reload=False, autosave=True, **kwargs):
         """
@@ -112,7 +112,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         if not name:
             raise j.exceptions.Input("name needs to be specified on a config mgmt obj")
 
-        # will reload if needed (not in self._children)
+        # will reload if needed (not in self.__children)
         jsconfig = self._get(name=name, id=id, die=needexist, reload=reload)
 
         if not jsconfig:
@@ -199,7 +199,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         self._log_debug("reset all data")
         # delete the all children of the factory
-        for item in self._children_names_get():
+        for item in self.__children_names_get():
             self.delete(item)
 
         for id in self._model.find_ids():
@@ -208,7 +208,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         assert self._model.index.sql_index_count() == 0
         if not self._mother_id_get():
             self._model.index.destroy()
-        self._children = j.baseclasses.dict()
+        self.__children = j.baseclasses.dict()
 
     def _children_names_get(self, filter=None):
         condition = False
@@ -238,7 +238,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         res = []
         ids_done = []
-        for key, item in list(self._children.items()):
+        for key, item in list(self.__children.items()):
             match = True
             for key, val in kwargs.items():
                 if item._hasattr(key):
@@ -289,7 +289,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         return self._model.find(**kwargs)
 
     def save(self):
-        for item in self._children_get():
+        for item in self.__children_get():
             if item._hasattr("save"):
                 item.save()
 
@@ -335,7 +335,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         """
         # TODO implement filter properly
         x = []
-        for _, item in self._children.items():
+        for _, item in self.__children.items():
             x.append(item)
         x = self._filter(filter=filter, llist=x, nameonly=False)
         # be smarter in how we use the index

@@ -61,7 +61,9 @@ class Profile(j.baseclasses.object):
 
         # to let bash evaluate the profile source, we source the profile
         # then get the current environment variables using printenv
-        _, current_env, _ = self.executor.execute("source %s && printenv" % self.profile_path, showout=False)
+        _, current_env, _ = self.executor.execute(
+            "source %s && printenv" % self.profile_path, interactive=False, showout=False
+        )
 
         # get a set of profile variables and current environment variables
         content = self.executor.file_read(self.profile_path)

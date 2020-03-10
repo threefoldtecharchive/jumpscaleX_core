@@ -1,12 +1,7 @@
-from Jumpscale import j
-
-from .Attr import Attr
-from .JSBase import JSBase
-
-from .TestTools import TestTools
+from JumpscaleCoreLib.baseclasses.JSBase import JSBase
 
 
-class JSFactory(JSBase, Attr):
+class JSFactory(JSBase):
     def _init_factory(self, **kwargs):
 
         # these are classes which will be created automatically when the factory class starts
@@ -21,10 +16,10 @@ class JSFactory(JSBase, Attr):
                 obj.name = name
                 assert name
                 assert obj._parent
-                self._children[name] = obj
+                self.__children[name] = obj
 
     def _children_names_get(self, filter=None):
-        r = [str(i) for i in self._children.keys()]
+        r = [str(i) for i in self.__children.keys()]
         return self._filter(filter=filter, llist=r)
 
     def _childclass_selector(self, **kwargs):
@@ -36,7 +31,7 @@ class JSFactory(JSBase, Attr):
         :return:
         """
         JSBase._obj_cache_reset(self)
-        for factory in self._children.values():
+        for factory in self.__children.values():
             factory._obj_cache_reset()
 
     def reset(self):
@@ -49,7 +44,7 @@ class JSFactory(JSBase, Attr):
         self.delete()
 
     def save(self):
-        for item in self._children_get():
+        for item in self.__children_get():
             if isinstance(item, j.baseclasses.object):
                 if item._hasattr("save"):
                     item.save()
@@ -72,8 +67,8 @@ class JSFactory(JSBase, Attr):
             else:
                 raise j.exceptions.Value(f"cannot get child with name:{name} on {self._key}")
         if reload:
-            self._children[name].load()
-        return self._children[name]
+            self.__children[name].load()
+        return self.__children[name]
 
     def find(self, **kwargs):
         """
@@ -81,7 +76,7 @@ class JSFactory(JSBase, Attr):
         :return: list of the children objects found
         """
         res = []
-        for key, item in self._children.items():
+        for key, item in self.__children.items():
             match = True
             if isinstance(item, j.baseclasses.object_config):
                 for key, val in kwargs.items():
@@ -107,8 +102,8 @@ class JSFactory(JSBase, Attr):
     #     """
     #     raise j.exceptions.NotImplemented()
     #     # r = 0
-    #     # if name in self._children:
-    #     #     child = self._children[name]
+    #     # if name in self.__children:
+    #     #     child = self.__children[name]
     #     #     if self._hasattr(child, "count"):
     #     #         r += child.count(name=name)
 
@@ -126,12 +121,12 @@ class JSFactory(JSBase, Attr):
             if child:
                 child.delete()
         else:
-            self._children_delete()
+            self.__children_delete()
 
-        if self._parent:
+        if self.__parent:
             # if we exist in the parent remove us from their children
-            if self._classname in self._parent._children:
-                self._parent._children.pop(self._classname)
+            if self._classname in self.__parent._children:
+                self.__parent._children.pop(self._classname)
 
     def exists(self, name="main"):
         """

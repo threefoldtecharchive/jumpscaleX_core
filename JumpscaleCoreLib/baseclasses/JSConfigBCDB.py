@@ -9,11 +9,13 @@ classes who use JSXObject for data storage but provide nice interface to enduser
 class JSConfigBCDB(JSConfigBCDBBase):
     def _init_jsconfig(self, jsxobject=None, datadict=None, name=None, **kwargs):
 
-        if name in kwargs:
-            name = kwargs.pop("name")
-
-        if not name:
-            name = "default"
+        if name:
+            if jsxobject and not jsxobject.name:
+                jsxobject.name = name
+        elif jsxobject != None and jsxobject.name:
+            pass
+        else:
+            raise j.exceptions.Input("Please specify name and cannot be empty, or jsxobject")
 
         if jsxobject:
             self._data = jsxobject
@@ -53,7 +55,7 @@ class JSConfigBCDB(JSConfigBCDBBase):
         if self._model and self._data.id == None:
             # means there is a model and id not set yet, we need to save
             self._data.save()
-            assert self.id
+        assert self.id
 
         if "autosave" in kwargs:
             self._data._autosave = j.data.types.bool.clean(kwargs["autosave"])
@@ -128,12 +130,12 @@ class JSConfigBCDB(JSConfigBCDBBase):
         if not self._model:
             return
         self._model.delete(self._data)
-        if self._parent:
-            if self._data.name in self._parent._children:
-                if not isinstance(self._parent, j.baseclasses.factory):
+        if self.__parent:
+            if self._data.name in self.__parent._children:
+                if not isinstance(self.__parent, j.baseclasses.factory):
                     # if factory then cannot delete from the mother because its the only object
-                    del self._parent._children[self._data.name]
-        self._children_delete()
+                    del self.__parent._children[self._data.name]
+        self.__children_delete()
 
     def save(self):
         self.save_()
@@ -165,7 +167,7 @@ class JSConfigBCDB(JSConfigBCDBBase):
         data_out = j.sal.fs.readFile(path)
         if data_in != data_out:
             self._log_debug(
-                "'%s' instance '%s' has been edited (changed)" % (self._parent.__jslocation__, self._data.name)
+                "'%s' instance '%s' has been edited (changed)" % (self.__parent.__jslocation__, self._data.name)
             )
             data2 = j.data.serializers.toml.loads(data_out)
             self._data.data_update(data2)

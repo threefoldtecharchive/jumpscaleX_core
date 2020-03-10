@@ -1,21 +1,16 @@
 from Jumpscale import j
 import os
-
-# import copy
-# import sys
 import inspect
 import types
-from .JSDict import JSDict
-
-# DO NOT LOG IN THIS CLASS
+import array
 
 
 class JSBase:
-
     __init_class_done = False
-    _protected = False
-    _dirpath_ = ""
-    # _objcat_name = ""
+    # properties known to this base object
+    __properties = {}
+    __children = {}
+    # _dirpath_ = ""
     _cache_expiration = 3600
     _test_runs = {}
     _test_runs_error = {}
@@ -23,43 +18,48 @@ class JSBase:
     _location = ""
     _logger_min_level = 10
     _logger_enabled = True
-    _class_children = []
 
-    def __init__(self, parent=None, **kwargs):
+    def __init__(self, name=None, id=None, parent=None, **kwargs):
         """
         :param parent: parent is object calling us
         :param topclass: if True means no-one inherits from us
         """
 
+        self.__id = id
+        self.__name = name
+
         # if set, cannot fill in properties which are not set before _init_jsconfig_post()
-        self._protected = False
+        self.__protected = False
         # the parent of this object
-        self._parent = parent
+        self.__parent = parent
         if "parent" in kwargs:
             kwargs.pop("parent")
         # the children of this object
-        self._children = JSDict()
+        self.__children = None
         # the properties known to this object, others will be protected
-        # resolved by _inspect(), are made lazy loading, if you want to use use self._properties
-        self._properties_ = None
-        # the methods known to this object
-        self._methods_ = None
-
-        # meant to be used by developers of the base classes, is the initial setting of properties
-        self._init_pre(**kwargs)
-
-        # init custom done for jsconfig & jsconfigs objects (for config mgmt)
-        self._init_jsconfig(**kwargs)
-
-        # only relevant for actors in 3bot actors, used to initialize the actor
-        self._init_actor(**kwargs)
+        # # resolved by _inspect(), are made lazy loading, if you want to use use self._properties
+        # self._properties_ = None
+        # # the methods known to this object
+        # self._methods_ = None
 
         # find the class related properties
         # will afterwards call self.__init_class_post()
         self.__init_class()
 
-        # resets the caches
-        self._obj_cache_reset()
+        # validate that the types are well done
+        for key, ttype in self.__class__.__properties.items():
+
+        # is to know how properties got changed: 0 is init, 1 is read and not native, 2 is changed, 3 is None
+        self.__property_state = array.array("B", [0 for i in range(len(self.__class__.__properties))])
+
+        # meant to be used by developers of the base classes, is the initial setting of properties
+        self._init_pre(**kwargs)
+
+        # # init custom done for jsconfig & jsconfigs objects (for config mgmt)
+        # self._init_jsconfig(**kwargs)
+        #
+        # # only relevant for actors in 3bot actors, used to initialize the actor
+        # self._init_actor(**kwargs)
 
         # the main init function for an object
         # this is the main one to be used by JSX end developer, and the only method to be filled in
@@ -79,7 +79,7 @@ class JSBase:
         self._init_attr()
 
     def _children_reset(self):
-        self._children = JSDict()
+        self.__children = None
 
     @property
     def _properties(self):
@@ -103,7 +103,7 @@ class JSBase:
             return True
         if key in self._methods:
             return True
-        if key in self._children:
+        if key in self.__children:
             return True
         return False
 
@@ -115,7 +115,6 @@ class JSBase:
 
             if not self.__class__._classname:
                 self.__class__._classname = j.core.text.strip_to_ascii_dense(str(self.__class__)).split(".")[-1].lower()
-                # name = str(self.__class__).split(".")[-1].split("'", 1)[0].lower()  # wonder if there is no better way
 
             if "__jslocation__" in self.__dict__:
                 self.__class__._location = self.__jslocation__
@@ -125,7 +124,7 @@ class JSBase:
                 self.__class__._location = self.__jslocation__
             else:
                 # self.__class__._location = None
-                # parent = self._parent
+                # parent = self.__parent
                 # while parent is not None:
                 #     if "__jslocation__" in parent.__dict__:
                 #         self.__class__._location = parent.__jslocation__
@@ -238,19 +237,6 @@ class JSBase:
         :return:
         """
         pass
-
-    def _obj_cache_reset(self):
-        """
-        this empties the runtime state of an obj and the logger and the testruns
-        :return:
-        """
-
-        self.__class__._test_runs = {}
-        self._cache_ = None
-        self._objid_ = None
-
-        for _, obj in self._children.items():
-            obj._obj_cache_reset()
 
     def _obj_reset(self):
         """
@@ -413,7 +399,7 @@ class JSBase:
         self.__class__._logger_min_level = minlevel
 
         if parents:
-            parent = self._parent
+            parent = self.__parent
             while parent is not None:
                 parent._logger_set(minlevel=minlevel)
                 parent = parent._parent
@@ -633,8 +619,8 @@ class JSBase:
         return res
 
     def _parent_name_get(self):
-        if self._parent:
-            return self.__name_get(self._parent)
+        if self.__parent:
+            return self.__name_get(self.__parent)
         return ""
 
     def _mother_id_get(self):
@@ -663,11 +649,11 @@ class JSBase:
         return None
 
     def _children_names_get(self, filter=None):
-        return self._filter(filter=filter, llist=self._children_get(filter=filter))
+        return self._filter(filter=filter, llist=self.__children_get(filter=filter))
 
     def _children_get(self, filter=None):
         """
-        if nothing then is self._children
+        if nothing then is self.__children
 
         :param filter: is '' then will show all, if None will ignore _
                 when * at end it will be considered a prefix
@@ -678,7 +664,7 @@ class JSBase:
         :return:
         """
         if self._hasattr("_children"):
-            children = self._children.values()
+            children = self.__children.values()
             return self._filter(filter=filter, llist=children, nameonly=False)
         else:
             return []
@@ -689,7 +675,7 @@ class JSBase:
         :param filter:
         :return:
         """
-        for child in self._children_get(filter=filter):
+        for child in self.__children_get(filter=filter):
             if child._hasattr("delete"):
                 # delete only related children
                 # passing names to delete instead of clearing all the factory data
@@ -705,7 +691,7 @@ class JSBase:
         :param id:
         :return:
         """
-        for item in self._children_get():
+        for item in self.__children_get():
             if name:
                 assert isinstance(name, str)
                 if self.__name_get(item) == name:
@@ -719,23 +705,24 @@ class JSBase:
         return None
 
     def _validate_child(self, name):
-        """Check if name is in self._children. If it exists, validate that the name on the object equals to the key in self._children.
-        If not, it updates the key in the self._children dict and deletes the old key <name> and returns False,
+        """Check if name is in self.__children. If it exists, validate that the name on the object equals to the key in self.__children.
+        If not, it updates the key in the self.__children dict and deletes the old key <name> and returns False,
         otherwise returns the object.
         """
-        if name not in self._children:
+
+        if name not in self.__children:
             return False
 
-        child = self._children[name]
+        child = self.__children[name]
         if not isinstance(child, j.baseclasses.object_config) or child.name == name:
             return child
         else:
             child.name = name
             child.save()  # save it in case autosave was False, to update the name in the database too
-            del self._children[name]
-            self._children[child.name] = child
+            del self.__children[name]
+            self.__children[child.name] = child
 
-        return self._children[child.name]
+        return self.__children[child.name]
 
     def _dataprops_names_get(self, filter=None):
         """
@@ -770,9 +757,9 @@ class JSBase:
                 everything else is a full match
 
         """
-        others = self._children_names_get(filter=filter)
+        others = self.__children_names_get(filter=filter)
         if self._hasattr("_parent"):
-            pname = self._parent_name_get()  # why do we need the parent name?
+            pname = self.__parent_name_get()  # why do we need the parent name?
             if pname and pname not in others:
                 others.append(pname)
         res = [i for i in self._filter(filter=filter, llist=self._properties) if i not in others]
@@ -783,7 +770,7 @@ class JSBase:
 
     def _props_all_names(self):
         l = (
-            self._children_names_get()
+            self.__children_names_get()
             + self._properties_names_get()
             + self._dataprops_names_get()
             + self._methods_names_get()
@@ -799,7 +786,7 @@ class JSBase:
 
     def _children_recursive_get(self):
         res = []
-        for child in self._children.values():
+        for child in self.__children.values():
             res.append(child)
             res += child._children_recursive_get()
         return res
@@ -846,7 +833,7 @@ class JSBase:
             out += "\n"
             return out
 
-        out = add("children", "GREEN", self._children_names_get(), out)
+        out = add("children", "GREEN", self.__children_names_get(), out)
         out = add("properties", "YELLOW", self._properties_names_get(), out)
         out = add("data", "BLUE", self._dataprops_names_get(), out)
 
