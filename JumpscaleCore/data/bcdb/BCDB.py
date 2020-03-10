@@ -74,7 +74,7 @@ class BCDB(j.baseclasses.object):
     def models(self):
         for url in self._urls:
             if url not in self._models:
-                self.model_get(url=url, die=True, cache=False)
+                self.model_get(url=url, die=True)
         return self._models
 
     def _is_writable_check(self):
@@ -645,7 +645,7 @@ class BCDB(j.baseclasses.object):
             model = self.model_get(schema=jsxobj._schema)
             model.set(jsxobj, store=False, index=True)
 
-    def model_get(self, schema=None, md5=None, url=None, reset=False, triggers=True, die=True, cache=True):
+    def model_get(self, schema=None, md5=None, url=None, reset=False, triggers=True, die=True):
         """
         will return the latest model found based on url, md5 or schema
         :param url:
@@ -657,8 +657,8 @@ class BCDB(j.baseclasses.object):
 
         schema = self.schema_get(schema=schema, md5=md5, url=url)
 
-        if cache and schema.url in self.models:
-            if schema._md5 != self.models[schema.url].schema._md5:
+        if schema.url in self._models:
+            if schema._md5 != self._models[schema.url].schema._md5:
                 # this means we found model in mem but schema changed in mean time
                 # need to use the new one now
                 self._models[schema.url].schema = schema
