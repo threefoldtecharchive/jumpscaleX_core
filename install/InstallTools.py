@@ -803,6 +803,12 @@ class JSExceptions:
 from string import Formatter
 
 
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]
+
+
 class OurTextFormatter(Formatter):
     def check_unused_args(self, used_args, args, kwargs):
         return used_args, args, kwargs
@@ -920,9 +926,14 @@ class LogHandler:
             path = "%s/%s/%s.msgpack" % (log_dir, self.appname, stopid)
             Tools.file_write(path, msgpack.dumps(r))
         # now remove from redis
-        for i in range(startid + 1, stopid + 1):
-            self.db.hdel(self.rediskey_logs, i)
-        # assert self.db.hlen(self.rediskey_logs) == 1000
+
+        keystodelete = []
+        for key in self.db.hkeys(self.rediskey_logs):
+            if int(key) < stopid + 1:
+                keystodelete.append(key)
+
+        for chunk in chunks(keystodelete, 100):
+            self.db.hdel(self.rediskey_logs, *chunk)
 
     def _data_container_set(self, container, appname):
         if not msgpack:
