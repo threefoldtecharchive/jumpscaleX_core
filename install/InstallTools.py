@@ -3376,6 +3376,8 @@ class MyEnv_:
                 else:
                     configdir = self._cfgdir_get()
 
+        # Set codedir
+        Tools.dir_ensure("{}/code".format(self._basedir_get()))
         self.config_file_path = os.path.join(configdir, "jumpscale_config.toml")
         # if DockerFactory.indocker():
         #     # this is important it means if we push a container we keep the state file
@@ -3411,8 +3413,7 @@ class MyEnv_:
             self.sshagent = SSHAgent()
 
         sys.excepthook = self.excepthook
-
-        if redis:
+        if redis and Tools.exists("{}/bin".format(self.config["DIR_BASE"])):  # To check that Js is on host
             self.loghandler_redis = LogHandler(db=self.db)
         else:
             print("- redis loghandler cannot be loaded")
