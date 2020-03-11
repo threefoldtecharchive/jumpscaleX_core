@@ -145,9 +145,6 @@ class Types(j.baseclasses.object, j.baseclasses.testtools):
 
         """
 
-        if isinstance(ttype, TypeBaseClass):
-            return ttype
-
         ttype = ttype.lower().strip()
 
         if ttype != "list" and ttype.startswith("l"):
@@ -193,7 +190,7 @@ class Types(j.baseclasses.object, j.baseclasses.testtools):
 
         if want run specific test ( write the name of test ) e.g. j.data.schema.test(name="base")
         """
-        self._tests_run(name=name, die=True)
+        self._test_run(name=name)
 
     def fix(self, val, default):
         """

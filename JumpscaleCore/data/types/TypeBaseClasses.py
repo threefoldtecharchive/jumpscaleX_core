@@ -80,50 +80,14 @@ class TypeBaseObjClassNumeric(TypeBaseObjClass):
     def value(self):
         raise j.exceptions.NotImplemented()
 
-    # def __eq__(self, other):
-    #     n = self._typebase.clean(other)
-    #     return self.value == n.value
-
-    def __gt__(self, other):
-        n = self._typebase.clean(other)
-        return self.value > n.value
-
-    def __ge__(self, other):
-        n = self._typebase.clean(other)
-        return self.value >= n.value
-
-    def __lt__(self, other):
-        n = self._typebase.clean(other)
-        return self.value < n.value
-
-    def __le__(self, other):
-        n = self._typebase.clean(other)
-        return self.value <= n.value
-
-    # def __add__(self, other):
-    #     n = self._typebase.clean(other)
-    #     r = self.value + n.value
-    #     return self._typebase.clean(r)
-    #
-    # def __sub__(self, other):
-    #     n = self._typebase.clean(other)
-    #     r = self.value - n.value
-    #     return self._typebase.clean(r)
-    #
-    # def __mul__(self, other):
-    #     n = self._typebase.clean(other)
-    #     r = self.value * n.value
-    #     return self._typebase.clean(r)
-    #
-    # def __div__(self, other):
-    #     n = self._typebase.clean(other)
-    #     r = self.value / n.value
-    #     return self._typebase.clean(r)
-
     def __hash__(self):
         return hash(self.value)
 
     def __eq__(self, other):
+        # other = self._other_convert(other)
+        # if other is None:
+        #     j.shell()
+        #     raise j.exceptions.Value("cannot compare with None")
         other = self._typebase.clean(other)
         return float(other) == float(self)
 
