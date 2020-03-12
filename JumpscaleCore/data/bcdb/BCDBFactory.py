@@ -348,6 +348,8 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         bcdb._export(path=path2, yaml=yaml, data=data, encrypt=encrypt)
 
         schema_path = j.core.tools.text_replace("{DIR_CFG}/schema_meta.msgpack")
+        # Validate that the schema has saved before exporting
+        j.data.schema.meta.save()
         j.sal.fs.copyFile(schema_path, "%s/schema_meta.msgpack" % path)
 
     def import_(self, path=None, data=True, encryption=False, interactive=False, reset=True):
@@ -412,7 +414,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         kosmos 'j.data.bcdb.verify()'
         """
 
-        self.threebot_zdb_sonic_start()
+        self.start_servers_threebot_zdb_sonic()
 
         if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
             raise j.exceptions.Base("Cannot import threebot is running")
