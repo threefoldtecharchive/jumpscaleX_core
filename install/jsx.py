@@ -428,7 +428,7 @@ def basebuilder_(dest=None, push=False, delete=True):
     IT = load_install_tools(branch=DEFAULT_BRANCH)
     _configure()
 
-    image = "phusion/baseimage:master"
+    image = "threefoldtech/phusion:19.10"
     docker = e.DF.container_get(name="base", delete=delete, image=image)
     docker.install(update=True, stop=delete)
     docker.save(image=dest, clean_runtime=True)
@@ -564,10 +564,8 @@ def threebotbuilder(push=False, base=False, cont=False, production=False):
 
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False)
-
     docker.install_jumpscale(branch=DEFAULT_BRANCH, redo=delete, pull=False, threebot=True)
     docker.install_tcprouter()
-    docker.install_threebotserver()
 
     docker.save(clean_runtime=True, image=dest + "dev")
     if push:
