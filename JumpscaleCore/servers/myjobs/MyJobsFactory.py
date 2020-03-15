@@ -9,15 +9,17 @@ from .MyWorkerProcess import MyWorkerProcess
 from .MyJobs import MyJobs
 from .MyWorker import MyWorkers
 
+TESTTOOLS = j.baseclasses.testtools
 
-class MyJobsFactory(j.baseclasses.factory_testtools):
+
+class MyJobsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
     __jslocation__ = "j.servers.myjobs"
     _CHILDCLASSES = [MyWorkers, MyJobs]
 
     def _init(self, **kwargs):
         self.BCDB_CONNECTOR_PORT = 6380
         self.queue_jobs_start = j.clients.redis.queue_get(redisclient=j.core.db, key="queue:jobs:start")
-
+        self.queue_debug_jobs_start = j.clients.redis.queue_get(redisclient=j.core.db, key="queue:debug_jobs:start")
         self._workers_gipc = {}
         self._workers_gipc_nr_min = 1
         self._workers_gipc_nr_max = 10
@@ -261,7 +263,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         timeout_error = 600
         timeout_busy = 1200
         while True:
-            self._log_debug("check workers")
+            # self._log_debug("check workers")
             for w in self.workers.find(reload=True):
                 if w.state == "HALTED":
                     w.stop(hard=True)
@@ -440,7 +442,12 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         job.category = category
         job.die = die
         self.scheduled_ids.append(job.id)
-        self.queue_jobs_start.put(job.id)
+
+        if job.debug:
+            self.queue_debug_jobs_start.put(job.id)
+            self.worker_inprocess_start(nr=1, debug=True)
+        else:
+            self.queue_jobs_start.put(job.id)
 
         # never timeout
         if timeout == 0:
@@ -451,7 +458,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
                 return job.wait(die=die, timeout=timeout)
             return self.wait_queues(queue_names=return_queues, size=len([job.id]), die=die, timeout=timeout)
 
-        assert job._data._autosave is True
         return job
 
     def stop(self, graceful=True, reset=True, timeout=60, hard=True):
@@ -500,6 +506,8 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
 
     def reset_data(self):
         self.wait_queues_delete()
+        bcdb = self._bcdb_selector()
+        # bcdb.destroy()  # no need to walk over the records
         self.model_action.reset()
         self.jobs.reset()
         self.workers.reset()
@@ -622,10 +630,10 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         # make sure client for myjobs properly configured
 
         j.core.db.redisconfig_name = "core"
-        storclient = j.clients.rdb.client_get(redisclient=j.core.db)
+        storclient = j.clients.rdb.client_get(bcdbname="myjobs")
         myjobs_bcdb = j.data.bcdb.get("myjobs", storclient=storclient)
         bcdb = j.data.bcdb.system
-        adminsecret_ = j.data.hash.md5_string(j.core.myenv.adminsecret)
+        adminsecret_ = j.core.myenv.adminsecret
         redis_server = j.data.bcdb.redis_server_get(port=6380, secret=adminsecret_)
         # just to make sure we don't have it open to external
 
@@ -650,7 +658,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools):
         """
 
         try:
-            self._test_run(name=name, **kwargs)
+            self._tests_run(name=name, **kwargs)
         except:
             self._test_teardown()
             raise

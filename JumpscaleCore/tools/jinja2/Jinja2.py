@@ -2,6 +2,8 @@ from Jumpscale import j
 import os
 from jinja2 import Template, StrictUndefined
 
+skip = j.baseclasses.testtools._skip
+
 
 class Jinja2(j.baseclasses.object):
     """
@@ -277,6 +279,7 @@ class Jinja2(j.baseclasses.object):
 
         self.test_performance()
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/488")
     def test_performance(self):
         """
         kosmos 'j.tools.jinja2.test_performance()'

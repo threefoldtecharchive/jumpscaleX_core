@@ -5,12 +5,13 @@ import struct
 
 class ZDBClientBase(j.baseclasses.object_config):
     def _init(self, jsxobject=None, **kwargs):
-        if "admin" in kwargs:
-            admin = kwargs["admin"]
-        else:
-            admin = self.admin
 
-        if admin:
+        if not self.secret_:
+            self.secret_ = j.core.myenv.adminsecret
+
+        assert len(self.secret_) > 5
+
+        if self.admin:
             self.nsname = "default"
 
         self.type = "ZDB"
@@ -21,23 +22,6 @@ class ZDBClientBase(j.baseclasses.object_config):
 
         self._logger_enable()
 
-        if admin:
-
-            if self.secret_:
-                # authentication should only happen in zdbadmin client
-                self._log_debug("AUTH in namespace %s" % (self.nsname))
-                self.redis.execute_command("AUTH", self.secret_)
-
-        else:
-
-            if self.nsname in ["default", "system"]:
-                raise j.exceptions.Base("a non admin namespace cannot be default or system")
-
-            # DO NOT AUTOMATICALLY CREATE THE NAMESPACE !!!!!
-            # only go inside namespace if not in admin mode
-            self._select_namespace()
-
-        assert self.ping()
         if j.data.bcdb._master:
             self._model.trigger_add(self._update_trigger)
 
@@ -48,22 +32,17 @@ class ZDBClientBase(j.baseclasses.object_config):
     @property
     def redis(self):
         if not self._redis:
-            self._redis = _patch_redis_client(
-                j.clients.redis.get(ipaddr=self.addr, port=self.port, fromcache=False, ping=False)
+            pool = redis.ConnectionPool(
+                host=self.addr,
+                port=self.port,
+                password=self.secret_,
+                connection_class=ZDBConnection,
+                namespace=self.nsname,
+                namespace_password=self.secret_,
+                admin=self.admin,
             )
-            self._select_namespace(self.nsname)
+            self._redis = _patch_redis_client(redis.Redis(connection_pool=pool))
         return self._redis
-
-    def _select_namespace(self, nsname=None):
-        if not nsname is None:
-            self.nsname = nsname
-
-        if self.secret_ is "":
-            self._log_debug("select namespace:%s with NO secret" % (self.nsname))
-            self.redis.execute_command("SELECT", self.nsname)
-        else:
-            self._log_debug("select namespace:%s with a secret" % (self.nsname))
-            self.redis.execute_command("SELECT", self.nsname, self.secret_)
 
     def _key_encode(self, key):
         return key
@@ -95,7 +74,6 @@ class ZDBClientBase(j.baseclasses.object_config):
         :return:
         """
         if not self.nsname in ["default", "system"]:
-            self._select_namespace()
             self.redis.execute_command("FLUSH")
 
     def stop(self):
@@ -233,3 +211,41 @@ def _parse_nsinfo(raw):
 
         info[key] = str(val).strip()
     return info
+
+
+class ZDBConnection(redis.Connection):
+    """
+    ZDBConnection implement the custom selection of namespace 
+    on 0-DB
+    """
+
+    def __init__(self, namespace=None, namespace_password=None, admin=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.namespace = namespace or "default"
+        self.namespace_password = namespace_password
+        self.admin = admin
+
+    def on_connect(self):
+        """
+        when a new connection is created, switch to the proper namespace
+        """
+        self._parser.on_connect(self)
+
+        # if a password is specified, authenticate
+        if self.admin and self.password:
+            # avoid checking health here -- PING will fail if we try
+            # to check the health prior to the AUTH
+            self.send_command("AUTH", self.password, check_health=False)
+            if redis.connection.nativestr(self.read_response()) != "OK":
+                raise redis.connection.AuthenticationError("Invalid Password")
+
+        # if a namespace is specified and it's not default, switch to it
+        if self.namespace and not self.admin:
+            args = [self.namespace]
+            if self.namespace_password:
+                args.append(self.namespace_password)
+
+            self.send_command("SELECT", *args)
+            if redis.connection.nativestr(self.read_response()) != "OK":
+                raise redis.connection.ConnectionError(f"Failed to select namespace {self.namespace}")
+

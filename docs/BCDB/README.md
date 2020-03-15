@@ -153,33 +153,3 @@ assert len(result) == 1
 ```
 
 ### Export/Import
-
-BCDB exposes an export/import functionality.
-
-When exporting, the data is by default encrypted using your key.
-
-```python
-bcdb.export("/tmp/bcdbinstnace/)
-```
-
-```bash
-tree /tmp/bcdbinstnace/node.1/
-├── 23.data
-├── 24.data
-├── 25.data
-├── 26.data
-├── 27.data
-├── 28.data
-├── 29.data
-├── 30.data
-└── _schema.toml
-```
-for each model, we export the schema, and all the objects. If you send `encryption=False`, each object will be exported as a toml file.
-
-To import the data back, simply call the `import_` function. This will first reset bcdb, then import all the data. Before reseting the data, it will confirm with the user. To disable this, send `interactive=False`.
-
-```python
-bcdb.import_("/tmp/bcdbinstnace/")
-```
-
-The import loads all the models first and updates the metadata, then starts importing the objects. If you're using zdb as your backend, the success of the export depends on having the same flow before the import, due you to the autoincrement of the internal id of zdb on any key update.

@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_lists():
     """
     to run:
 
@@ -12,6 +12,16 @@ def main(self):
     test readonly behaviour
 
     """
+
+    schema0 = """
+    @url = jumpscale.schema.rubbish
+    name = ""
+    comment = ""
+    nr = 0
+    """
+
+    s = j.data.schema.get_from_text(schema0)
+    assert s._md5 == j.data.schema._md5(schema0)
 
     schema0 = """
         @url = jumpscale.schema.test4.cmd
@@ -128,6 +138,6 @@ def main(self):
     except Exception as e:
         assert str(e).find("object readonly, cannot set") != -1
 
-    self._log_info("TEST DONE LIST")
+    j.data.schema._log_info("TEST DONE LIST")
 
     return "OK"

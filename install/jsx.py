@@ -29,6 +29,13 @@ def load_install_tools(branch=None, reset=False):
         if not os.path.exists(path) or reset:  # or path.find("/code/") == -1:
             url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py" % branch
 
+            # fallback to default branch if installation is being done for another branch that doesn't exist in core
+            if branch != DEFAULT_BRANCH and requests.get(url).status_code == 404:
+                url = (
+                    "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py"
+                    % DEFAULT_BRANCH
+                )
+
             with urlopen(url) as resp:
                 if resp.status != 200:
                     raise RuntimeError("fail to download InstallTools.py")
@@ -215,9 +222,6 @@ def container_install(
         else:
             image = "threefoldtech/3botdev"
 
-    if not branch:
-        branch = IT.DEFAULT_BRANCH
-
     portmap = None
     if ports:
         portmap = dict()
@@ -287,9 +291,6 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
         force = True
     else:
         force = False
-
-    if not branch:
-        branch = IT.DEFAULT_BRANCH
 
     installer = IT.JumpscaleInstaller()
     assert prebuilt is False  # not supported yet
@@ -451,7 +452,6 @@ def wiki_load(name=None, url=None, reset=False, foreground=False):
 
     import redis
 
-    monkey.patch_all(subprocess=False)
     from Jumpscale import j
 
     try:
@@ -470,13 +470,17 @@ def wiki_load(name=None, url=None, reset=False, foreground=False):
         wikis.append(
             (
                 "testwikis",
-                "https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/docs/wikis/examples/docs",
+                "https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/zerobot/wiki_examples/wiki",
             )
         )
-        wikis.append(("tokens", "https://github.com/threefoldfoundation/info_tokens/tree/development/docs"))
-        wikis.append(("foundation", "https://github.com/threefoldfoundation/info_foundation/tree/development/docs"))
-        wikis.append(("grid", "https://github.com/threefoldfoundation/info_grid/tree/development/docs"))
-        wikis.append(("freeflowevents", "https://github.com/freeflownation/info_freeflowevents/tree/development/docs"))
+        wikis.append(("info_tokens", "https://github.com/threefoldfoundation/info_tokens/tree/development/docs"))
+        wikis.append(
+            ("info_foundation", "https://github.com/threefoldfoundation/info_foundation/tree/development/docs")
+        )
+        wikis.append(("info_grid", "https://github.com/threefoldfoundation/info_grid/tree/development/docs"))
+        wikis.append(
+            ("info_freeflowevents", "https://github.com/freeflownation/info_freeflowevents/tree/development/docs")
+        )
     else:
         wikis.append((name, url))
 
@@ -518,14 +522,11 @@ def threebot_flist(username=None, secret=None, app_id=None):
     resp.raise_for_status()
     jwt = resp.content.decode("utf8")
 
-    params = {"image": "threefoldtech/3bot"}
+    params = {"image": "threefoldtech/3bot:corex"}
     url = "https://hub.grid.tf/api/flist/me/docker"
     headers = {"Authorization": "Bearer %s" % jwt}
     requests.post(url, headers=headers, data=params)
-    print("uploaded 3bot flist , wait for 3bot-production flist")
-    params = {"image": "threefoldtech/3bot-production"}
-    requests.post(url, headers=headers, data=params)
-    print("uploaded 3bot-production flist ")
+    print("uploaded 3bot flist")
 
 
 @click.command(name="wiki-reload")
@@ -537,10 +538,12 @@ def wiki_reload(name, reset=False):
     ex: jsx wiki-reload -n foundation
     """
     j = jumpscale_get()
-    if not j.tools.threegit.exists(name=name):
+    from Jumpscale.tools.threegit.ThreeGit import reload_wiki
+
+    try:
+        reload_wiki(name, reset=reset)
+    except j.exceptions.NotFound:
         print("Need to load the wiki first using wiki-load command")
-        return
-    j.tools.threegit.get(name=name).process(reset=reset)
 
 
 @click.command(name="threebotbuilder")
@@ -706,17 +709,54 @@ def container_shell(name="3bot"):
 
 
 @click.command()
-@click.option("-n", "--name", default="3bot", help="name of container")
-def wireguard(name=None):
+@click.option("-n", "--names", help="comma separated container names")
+def wireguard(names=None):
     """
     jsx wireguard
     enable wireguard, can be on host or server
     :return:
     """
-    docker = container_get(name=name)
-    wg = docker.wireguard
-    wg.server_start()
-    wg.connect()
+
+    containers = names.split(",") if names else IT.DockerFactory.containers_names()
+    usedLastIPBytes = []
+    new_containers = []
+    # Get the containers with udp ports for wireguard
+    containers_udp_ports_wireguard = IT.DockerFactory.container_running_with_udp_ports_wireguard()
+    containers_ip_addresses = IT.DockerFactory.containers_running_ip_address()
+
+    # Write interface configuration
+    if len(containers) == 0:
+        raise RuntimeError("There is no  docker containers running to install wireguard on.")
+
+    temp_docker = container_get(name=containers[0]).wireguard
+    temp_docker.write_interface_configuration()
+    # Get wireguard preconfigured containers, so we can maintain same old IP & configs
+
+    for name in containers:
+        docker = container_get(name=name)
+        wg = docker.wireguard
+        configured, ip = wg.isConfigured()
+        if configured:
+            last_byte = ip.split(".")[-1]
+            usedLastIPBytes.append(int(last_byte))
+            wg.server_start(last_byte)
+            # Write peer configurations
+            port = int(containers_udp_ports_wireguard.get(name))
+            ip_address = containers_ip_addresses.get(name)
+            wg.write_peer_configuration(wireguard_port_udb=port, last_byte=last_byte, container_ip=ip_address)
+        else:
+            new_containers.append(name)
+    freeRange = sorted(set(range(2, 255)) - set(usedLastIPBytes))
+    for i, name in enumerate(new_containers):
+        docker = container_get(name=name)
+        wg = docker.wireguard
+        wg.server_start(freeRange[i])
+        # Write peer configurations
+        port = int(containers_udp_ports_wireguard.get(name))
+        ip_address = containers_ip_addresses.get(name)
+        wg.write_peer_configuration(wireguard_port_udb=port, last_byte=freeRange[i], container_ip=ip_address)
+    # Connect the host wireguard and make it running
+    temp_docker.connect_wireguard()
 
 
 @click.command()
@@ -761,10 +801,12 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         """
         j.clients.threebot.explorer_addr_set("{explorer_addr}")
         docker_name = "{docker_name}"
-        j.tools.threebot.init_my_threebot(name="{docker_name}.3bot", interactive=False)
+        j.tools.threebot.init_my_threebot(
+            name="{docker_name}.3bot", email="{docker_name}@threefold.io", interactive=False
+        )
         j.clients.threebot.explorer.reload()  # make sure we have the actors loaded
         # lets low level talk to the phonebook actor
-        print(j.clients.threebot.explorer.actors_all.phonebook.get(name="{docker_name}.3bot"))
+        # print(j.clients.threebot.explorer.actors_all.phonebook.get(name="{docker_name}.3bot"))
         cl = j.clients.threebot.client_get("{docker_name}.3bot")
 
         r1 = j.tools.threebot.explorer.threebot_record_get(name="{docker_name}.3bot")
@@ -790,19 +832,14 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         if i == 0:
             # the master 3bot
             explorer_addr = docker.config.ipaddr
-            if IT.MyEnv.platform() != "linux":
-                if docker.config.done_get("wireguard") is False:
-                    # only need to use wireguard if on osx or windows (windows not implemented)
-                    # only do it on the first container
-                    docker.wireguard.server_start()
-                    docker.wireguard.connect()
-                    docker.config.done_set("wireguard")
 
         if not docker.config.done_get("start_cmd"):
             if web:
-                docker.sshexec("source /sandbox/env.sh; kosmos -p 'j.servers.threebot.start()';jsx wiki-load")
+                docker.sshexec(
+                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.start(background=True)';jsx wiki-load"
+                )
             else:
-                start_cmd = "j.servers.threebot.start()"
+                start_cmd = "j.servers.threebot.start(background=True)"
                 docker.jsxexec(start_cmd)
         docker.config.done_set("start_cmd")
         if not docker.config.done_get("config"):
@@ -857,7 +894,6 @@ def package_new(name, dest=None):
     dirs = ["wiki", "models", "actors", "chatflows"]
     package_toml_path = j.sal.fs.joinPaths(dest, f"{name}/package.toml")
     package_py_path = j.sal.fs.joinPaths(dest, f"{name}/package.py")
-    factory_py_path = j.sal.fs.joinPaths(dest, f"{name}/{capitalized_name}Factory.py")
 
     for d in dirs:
         j.sal.fs.createDir(j.sal.fs.joinPaths(dest, name, d))
@@ -884,39 +920,12 @@ from Jumpscale import j
 
 
 class Package(j.baseclasses.threebot_package):
-    def start(self):
-        server = self.openresty
-        server.install(reset=False)
-        server.configure()
-
-        # for port in (443, 80):
-        #     website = server.get_from_port(port)
-
-        #     locations = website.locations.get()
-
-        #     website_location = locations.locations_spa.new()
-        #     website_location.name = "{name}"
-        #     website_location.path_url = "/{name}"
-
-
-        #     locations.configure()
-        #     website.configure()
+    pass
 
     """
 
     with open(package_py_path, "w") as f:
         f.write(package_py_content)
-
-    factory_py_content = f"""
-from Jumpscale import j
-
-
-class {capitalized_name}Factory(j.baseclasses.threebot_factory):
-    __jslocation__ = "j.threebot_factories.package.{name}"
-
-    """
-    with open(factory_py_path, "w") as f:
-        f.write(factory_py_content)
 
     actor_py_path = j.sal.fs.joinPaths(dest, name, "actors", f"{name}.py")
     actor_py_content = f"""

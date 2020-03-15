@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_keys():
     """
     to run:
     kosmos 'j.data.bcdb.test(name="keys")'
@@ -20,7 +20,7 @@ def main(self):
 
     """
 
-    db, m = self._load_test_model(type="sqlite", schema=SCHEMA)
+    db, m = j.data.bcdb._load_test_model(type="sqlite", schema=SCHEMA)
     bcdb = m.bcdb
 
     o = m.new()
@@ -112,8 +112,8 @@ def main(self):
     assert len(m3.find(addr="test", email="ename", ipaddr="192.168.1.1")) == 1
     assert len(m3.find(addr="test", email="ename", ipaddr="192.168.1.2")) == 0
 
-    # storclient2 = j.clients.sqlitedb.client_get(namespace="test2_sdb_keys")
-    storclient2 = j.clients.rdb.client_get(namespace="test2_sdb_keys")
+    # storclient2 = j.clients.sqlitedb.client_get(bcdbname="test2_sdb_keys")
+    storclient2 = j.clients.rdb.client_get(bcdbname="test")
     storclient2.flush()
     j.data.bcdb.get(name="test2", storclient=storclient2, reset=True)
     bcdb2 = j.data.bcdb.get("test2")
@@ -142,5 +142,5 @@ def main(self):
     bcdb.reset()
     bcdb2.reset()
 
-    self._log_info("TEST DONE")
+    j.data.bcdb._log_info("TEST DONE")
     return "OK"

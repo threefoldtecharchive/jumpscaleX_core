@@ -117,9 +117,12 @@ class SSHClientBase(j.baseclasses.object_config):
             self._syncer = j.tools.syncer.get(name=self.name, sshclient_names=[self.name])
         return self._syncer
 
-    def portforward_to_local(self, remoteport, localport):
+    def portforward_to_local(self, remoteport=6379, localport=6380):
         """
         forward remote port on ssh host to the local one, so we can connect over localhost to the remote one
+
+        e.g. expose your remote redis (in container) to your machine you're using this env from
+
         :param remoteport: the port to forward to local
         :param localport: the local tcp port to be used (will terminate on remote)
         :return:
@@ -182,7 +185,7 @@ class SSHClientBase(j.baseclasses.object_config):
         :param localport:
         :return:
         """
-        print("kill portforward %s" % localport)
+        self._log_warning("kill portforward localport: %s" % localport)
         j.sal.process.killProcessByPort(localport)
 
     def upload(
@@ -236,7 +239,7 @@ class SSHClientBase(j.baseclasses.object_config):
             dest,
             keepsymlinks=keepsymlinks,
             deletefirst=False,
-            overwriteFiles=True,
+            overwriteFiles=rsyncdelete,
             ignoredir=ignoredir,
             ignorefiles=ignorefiles,
             rsync=True,

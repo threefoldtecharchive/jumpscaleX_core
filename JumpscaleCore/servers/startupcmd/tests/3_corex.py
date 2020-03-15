@@ -20,8 +20,10 @@
 
 from Jumpscale import j
 
+startupcmd = j.servers.startupcmd
 
-def main(self):
+
+def test_corex():
     """
     to run:
 
@@ -31,20 +33,20 @@ def main(self):
     j.servers.corex.default.start()
     corex = j.servers.corex.default.client
 
-    self.http_corex.executor = "corex"
-    self.http_corex.corex_client_name = corex.name
-    self.http_corex.timeout = 5
-    self.http_corex.interpreter = "direct"
-    self.http_corex.cmd_start = "python3 -m http.server"  # starts on port 8000
-    self.http_corex.executor = "corex"
-    self.http_corex.ports = 8000
-    self.http_corex.corex_client_name = corex.name
+    startupcmd.http_corex.executor = "corex"
+    startupcmd.http_corex.corex_client_name = corex.name
+    startupcmd.http_corex.timeout = 5
+    startupcmd.http_corex.interpreter = "direct"
+    startupcmd.http_corex.cmd_start = "python3 -m http.server"  # starts on port 8000
+    startupcmd.http_corex.executor = "corex"
+    startupcmd.http_corex.ports = 8000
+    startupcmd.http_corex.corex_client_name = corex.name
 
-    self.http_corex.start()
-    assert self.http_corex.is_running() is True
-    assert self.http_corex.pid
+    startupcmd.http_corex.start()
+    assert startupcmd.http_corex.is_running() is True
+    assert startupcmd.http_corex.pid
 
-    self.http_corex.stop()
-    assert self.http_corex.is_running() is False
+    startupcmd.http_corex.stop()
+    assert startupcmd.http_corex.is_running() is False
 
     return "OK"

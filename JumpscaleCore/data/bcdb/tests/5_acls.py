@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_acls():
     """
     to run:
 
@@ -28,7 +28,7 @@ def main(self):
 
             # don't forget the record 0 is always a systems record
 
-            db, model = self._load_test_model(type=name, schema=schema)
+            db, model = j.data.bcdb._load_test_model(type=name, schema=schema)
 
             return db, model
 
@@ -39,7 +39,7 @@ def main(self):
             """
         bcdb, m = load(schema)
 
-        self._log_info("POPULATE DATA")
+        j.data.bcdb._log_info("POPULATE DATA")
 
         for i in range(10):
             u = bcdb.user.new()
@@ -64,15 +64,14 @@ def main(self):
         assert len(bcdb.circle.find()) == 10
         assert bcdb.circle.index.sql_index_count() == 10
 
-        self._log_info("ALL DATA INSERTED (DONE)")
+        j.data.bcdb._log_info("ALL DATA INSERTED (DONE)")
 
-        self._log_info("walk over all data")
+        j.data.bcdb._log_info("walk over all data")
         l = bcdb.get_all()
 
-        self._log_info("walked over all data (DONE)")
+        j.data.bcdb._log_info("walked over all data (DONE)")
 
         assert len(l) == 20
-        assert bcdb.acl.autosave is False
 
         a = m.new()
         a.name = "aname"
@@ -84,7 +83,7 @@ def main(self):
         # means we have indeed the index for acl == 1
         assert len(bcdb.acl.find()) == 1
 
-        self._log_debug("MODIFY RIGHTS")
+        j.data.bcdb._log_debug("MODIFY RIGHTS")
         a.acl.rights_delete(userids=[1], rights=["w"])
         a.save()
 
@@ -119,7 +118,7 @@ def main(self):
 
         a.save()
 
-        self._log_info("TEST ACL DONE: %s" % name)
+        j.data.bcdb._log_info("TEST ACL DONE: %s" % name)
 
     def test2(name):
         if name == "RDB":
@@ -138,7 +137,7 @@ def main(self):
 
             # don't forget the record 0 is always a systems record
 
-            db, model = self._load_test_model(type=name, schema=schema)
+            db, model = j.data.bcdb._load_test_model(type=name, schema=schema)
 
             return db, model
 
@@ -149,7 +148,7 @@ def main(self):
             """
         bcdb, m = load(schema)
 
-        self._log_info("POPULATE DATA")
+        j.data.bcdb._log_info("POPULATE DATA")
         user_ids = []
         for i in range(10):
             u = bcdb.user.new()
@@ -220,4 +219,4 @@ def main(self):
     # CLEAN STATE
     j.servers.sonic.default.stop()
 
-    self._log_info("ACL TESTS ALL DONE")
+    j.data.bcdb._log_info("ACL TESTS ALL DONE")

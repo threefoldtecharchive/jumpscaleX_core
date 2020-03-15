@@ -5,8 +5,8 @@ from pprint import pprint
 from Jumpscale import j
 
 from .ZDBAdminClientBase import ZDBAdminClientBase
-from .clients_impl import ZDBClientDirectMode, ZDBClientSeqMode, ZDBClientUserMode
-from .clients_impl import ZDBClientDirectModeAdmin, ZDBClientSeqModeAdmin, ZDBClientUserModeAdmin
+from .clients_impl import ZDBClientSeqMode, ZDBClientUserMode
+from .clients_impl import ZDBClientSeqModeAdmin, ZDBClientUserModeAdmin
 
 JSBASE = j.baseclasses.object
 
@@ -14,7 +14,7 @@ JSBASE = j.baseclasses.object
 class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
     """
 
-    different modes: seq,user,direct
+    different modes: seq,user
 
     """
 
@@ -28,7 +28,7 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
     secret_ = "" (S)
     nsname = "test" (S)
     admin = false (B)
-    mode = "seq,user,direct" (E)
+    mode = "seq,user" (E)
 
     """
 
@@ -47,19 +47,11 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
                 return ZDBClientUserModeAdmin
             else:
                 return ZDBClientUserMode
-        elif jsxobject.mode == "direct":
-            if jsxobject.admin:
-                return ZDBClientDirectModeAdmin
-            else:
-                return ZDBClientDirectMode
         else:
             raise j.exceptions.Base("childclass cannot be defined")
 
-    def client_admin_get(self, name="admin", addr="localhost", port=9901, secret="123456", mode="seq"):
-        if self.exists(name=name):
-            cl = self.get(name=name)
-        else:
-            cl = self.get(name=name, nsname=name, addr=addr, port=port, secret_=secret, mode=mode, admin=True)
+    def client_admin_get(self, name="admin", addr="localhost", port=9900, secret=None, mode="seq"):
+        cl = self.get(name=name, addr=addr, port=port, secret_=secret, mode=mode, admin=True)
         # we should make sure AUTH has been launched as zdb client admin comes from config
         # and if we instanciated a new zdb server the AUTH command will not be executed
         cl.auth()
@@ -89,6 +81,6 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
         zdb = j.servers.zdb.test_instance_start()
         cl = zdb.client_admin_get()
         assert cl.ping()
-        self._test_run(name=name)
+        self._tests_run(name=name)
 
         j.servers.zdb.test_instance_stop()

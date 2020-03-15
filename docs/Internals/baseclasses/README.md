@@ -18,7 +18,7 @@
 - [See More](#see-more)
 
 ## Intro
-BaseClasses are the parent of everything like config manager, clients, builders, servers,packages .. etc.<br/>.
+BaseClasses are the parent of everything like config manager, clients, builders, servers,packages .. etc.<br/>
 
 Also they contain a lot of functions to help in logging, caching, auto completion in shell, config manager instance managment.
 

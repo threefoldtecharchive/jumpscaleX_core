@@ -5,7 +5,7 @@ import re
 JSBASE = j.baseclasses.object
 
 
-class BCDBFS(j.baseclasses.object):
+class BCDBFS(JSBASE):
     """
     A sal for BCDB File System
     BCDB file system is a file system where everything is stored in bcdb
@@ -14,7 +14,7 @@ class BCDBFS(j.baseclasses.object):
     __jslocation__ = "j.sal.bcdbfs"
 
     def _init(self, bcdb_name="bcdbfs"):
-        sql = j.clients.sqlitedb.client_get(namespace="bcdbfs")
+        sql = j.clients.sqlitedb.client_get(bcdbname="bcdbfs")
         self._bcdb = j.data.bcdb.get(bcdb_name, storclient=sql)
 
         j.data.schema.add_from_path("%s/models_threebot" % j.data.bcdb._dirpath)
@@ -342,106 +342,3 @@ class BCDBFS(j.baseclasses.object):
         return [
             obj.name[len(location) + 1 : -3] for obj in self._file_model.search(text) if obj.name.startswith(location)
         ]
-
-    def test(self):
-        # add test for / fikes and folders
-        cl = j.clients.sonic.get_client_bcdb()
-        test_case = TestCase()
-        cl.flush("bcdbfs")
-        j.sal.bcdbfs.dir_create("/yolo/")
-        assert j.sal.bcdbfs.dir_exists("/yolo")
-        assert j.sal.bcdbfs.dir_exists("/yolo/")
-        j.sal.bcdbfs.dir_remove("/yolo/")
-        assert j.sal.bcdbfs.dir_exists("/yolo") is False
-        assert j.sal.bcdbfs.dir_exists("/yolo/") is False
-        with test_case.assertRaises(Exception) as cm:
-            j.sal.bcdbfs.file_create_empty("/yolofile/")
-        ex = cm.exception
-        assert "filename path :%s should not end with a /" % "/yolofile/" in str(ex.args[0])
-        j.sal.bcdbfs.file_create_empty("/yolofile")
-
-        assert j.sal.bcdbfs.file_exists("/yolofile")
-        with test_case.assertRaises(Exception) as cm:
-            j.sal.bcdbfs.file_exists("/yolofile/")
-        ex = cm.exception
-        assert "filename path :%s should not end with a /" % "/yolofile/" in str(ex.args[0])
-
-        with test_case.assertRaises(Exception) as cm:
-            j.sal.bcdbfs.file_delete("/yolofile/")
-        ex = cm.exception
-        assert "filename path :%s should not end with a /" % "/yolofile/" in str(ex.args[0])
-
-        j.sal.bcdbfs.file_delete("/yolofile")
-        assert j.sal.bcdbfs.file_exists("/yolofile") is False
-
-        j.sal.fs.createDir("/tmp/test_bcdbfs")
-        j.sal.fs.writeFile("/tmp/test_bcdbfs/yolofile", "yolo content")
-        with test_case.assertRaises(Exception) as cm:
-            j.sal.bcdbfs.file_copy_from_local("/tmp/test_bcdbfs/yolofile", "/test/yolofile/")
-        ex = cm.exception
-        assert "filename path :%s should not end with a /" % "/test/yolofile/" in str(ex.args[0])
-        j.sal.bcdbfs.file_copy_from_local("/tmp/test_bcdbfs/yolofile", "/test/yolofile")
-        j.sal.fs.remove("/tmp/test_bcdbfs")
-        assert j.sal.bcdbfs.file_read("/test/yolofile") == b"yolo content"
-        j.sal.bcdbfs.file_delete("/test/yolofile")
-
-        assert j.sal.bcdbfs.file_exists("/tmp/test_bcdbfs/yolofile") is False
-
-        j.sal.bcdbfs.dir_create("/test")
-        for i in range(5):
-            j.sal.bcdbfs.dir_create("/test/dir_{}".format(i))
-            j.sal.bcdbfs.file_create_empty("/test/test_{}".format(i))
-            for k in range(5):
-                j.sal.bcdbfs.file_create_empty(("/test/dir_{}/test_{}".format(i, k)))
-
-        assert j.sal.bcdbfs.file_exists("/test/test_1")
-        assert j.sal.bcdbfs.dir_exists("/test/dir_1")
-        assert j.sal.bcdbfs.file_exists("/test/dir_1/test_4")
-
-        assert j.sal.bcdbfs.is_dir("/test/dir_1")
-        assert j.sal.bcdbfs.is_file("/test/dir_1/test_4")
-
-        assert j.sal.bcdbfs.list_files("/test/dir_1") == [
-            "/test/dir_1/test_0",
-            "/test/dir_1/test_1",
-            "/test/dir_1/test_2",
-            "/test/dir_1/test_3",
-            "/test/dir_1/test_4",
-        ]
-        assert j.sal.bcdbfs.list_dirs("/test") == [
-            "/test/dir_0",
-            "/test/dir_1",
-            "/test/dir_2",
-            "/test/dir_3",
-            "/test/dir_4",
-        ]
-        assert j.sal.bcdbfs.list_files_and_dirs("/test") == [
-            "/test/dir_0",
-            "/test/dir_1",
-            "/test/dir_2",
-            "/test/dir_3",
-            "/test/dir_4",
-            "/test/test_0",
-            "/test/test_1",
-            "/test/test_2",
-            "/test/test_3",
-            "/test/test_4",
-        ]
-
-        j.sal.bcdbfs.file_copy_form_bcdbfs("/test/test_0", "/test/test_copied")
-        j.sal.fs.createEmptyFile("/tmp/test_bcdbfs")
-
-        j.sal.bcdbfs.file_copy_from_local("/tmp/test_bcdbfs", "/test/test_from_local")
-
-        assert j.sal.bcdbfs.file_exists("/test/test_from_local")
-
-        j.sal.bcdbfs.file_delete("/test/test_from_local")
-        assert j.sal.bcdbfs.file_exists("/test/test_from_local") is False
-
-        j.sal.fs.writeFile("/tmp/test_bcdbfs", "\ntest content\n\n\n")
-        j.sal.bcdbfs.file_copy_from_local("/tmp/test_bcdbfs", "/test/test_with_content")
-        assert j.sal.bcdbfs.file_read("/test/test_with_content") == b"\ntest content\n\n\n"
-
-        j.sal.bcdbfs.dir_remove("/test")
-
-        print("TESTS PASSED")

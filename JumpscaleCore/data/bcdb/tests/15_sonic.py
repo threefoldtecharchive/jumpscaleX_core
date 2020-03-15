@@ -21,7 +21,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_sonic():
     """
     to run:
 
@@ -29,7 +29,7 @@ def main(self):
 
     """
     j.servers.sonic.default.stop()
-    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.core.myenv.adminsecret))
+    sonic = j.servers.sonic.get(adminsecret_=j.core.myenv.adminsecret)
     sonic.start()
 
     data = [
@@ -67,5 +67,5 @@ def main(self):
     assert len(model.search("love")) == 0
 
     sonic.stop()
-    self._log_info("TEST SONIC DONE")
+    j.data.bcdb._log_info("TEST SONIC DONE")
     return "OK"

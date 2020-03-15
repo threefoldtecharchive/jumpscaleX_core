@@ -623,9 +623,10 @@ class SystemFS(JSBASE, TESTTOOLS):
             # found priority in path
             priority = j.data.regex.findOne(regexToFindPriority, dirOrFilename).replace("_", "")
             # remove priority from path
-            name = j.data.regex.replace(
-                regexToFindPriority, regexFindsubsetToReplace=regexToFindPriority, replaceWith="", text=name
-            )
+            if priority:
+                name = j.data.regex.replace(
+                    regexToFindPriority, regexFindsubsetToReplace=regexToFindPriority, replaceWith="", text=name
+                )
         else:
             priority = 0
         # for consistency reason path should always end with a /
@@ -1231,7 +1232,7 @@ class SystemFS(JSBASE, TESTTOOLS):
 
         if j.core.platformtype.myplatform.platform_is_windows:
             cmd = "junction -d %s 2>&1 > null" % (filename)
-            self._log_info(cmd)
+            self._log_debug(cmd)
             os.system(cmd)
         os.unlink(filename)
 
@@ -1777,6 +1778,6 @@ class SystemFS(JSBASE, TESTTOOLS):
         kosmos 'j.sal.fs.test()'
 
         """
-        self._test_run(name=name)
+        self._tests_run(name=name)
 
         print("TEST OK ALL PASSED")

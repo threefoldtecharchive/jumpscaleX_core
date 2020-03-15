@@ -5,11 +5,11 @@ from Jumpscale.sal.hostfile.HostFile import HostFile
 TEST_HOSTSFILE = "/tmp/hosts"
 
 
-def test_main(self=None):
+def test_main():
     """
     to run:
 
-    kosmos 'j.sal.hostfile._test(name="hostfile")'
+    kosmos 'j.sal.hostfile.test(name="hostfile")'
 
     """
     try:

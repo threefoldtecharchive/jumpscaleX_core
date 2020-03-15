@@ -2,8 +2,10 @@ from Jumpscale import j
 
 from .RedisConfig import RedisConfig
 
+TESTTOOLS = j.baseclasses.testtools
 
-class RedisConfigFactory(j.baseclasses.object_config_collection_testtools):
+
+class RedisConfigFactory(j.baseclasses.object_config_collection_testtools, TESTTOOLS):
     __jslocation__ = "j.clients.redis_config"
     _CHILDCLASS = RedisConfig
 
@@ -38,3 +40,6 @@ class RedisConfigFactory(j.baseclasses.object_config_collection_testtools):
 
         cl4 = self.get_client(name="test_config3")
         assert cl4.ping()
+
+    def test_redisconfig(self, name=""):
+        self._tests_run(name=name)

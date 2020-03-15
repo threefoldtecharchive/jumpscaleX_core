@@ -24,10 +24,6 @@ class GedisClient(JSConfigBase):
     package_name = "zerobot.base" (S)  #is the full package name e.g. threebot.blog
     threebot_local_profile = "default"
     password_ = ""
-    # ssl = False (B)
-    # ssl_keyfile = "" (S)
-    # ssl_certfile = "" (S)
-    # ssl_ca_certs = "" (S)
     """
 
     def _init(self, **kwargs):
@@ -51,13 +47,12 @@ class GedisClient(JSConfigBase):
         self._redis_ = None
         self._threebot_me_ = None
         self._reset()
-        self.reload()
 
-    #     self._model.trigger_add(self._update_trigger)
-    #
-    # def _update_trigger(self, obj, action, **kwargs):
-    #     if action in ["save", "change"]:
-    #         self._reset()
+        self._model.trigger_add(self._update_trigger)
+
+    def _update_trigger(self, obj, action, **kwargs):
+        if action in ["save", "change"]:
+            self._reset()
 
     def _reset(self):
         self._redis_ = None  # connection to server
@@ -176,7 +171,7 @@ class GedisClient(JSConfigBase):
             secret = self.password_
 
             self._log_info("redisclient: %s:%s " % (addr, port))
-            self._redis_ = j.clients.redis.get(ipaddr=addr, port=port, password=secret, ping=True, fromcache=False)
+            self._redis_ = j.clients.redis.get(addr=addr, port=port, secret=secret, ping=True, fromcache=False)
 
             # authenticate us
             seed = j.data.idgenerator.generateGUID()  # any seed works, the more random the more secure

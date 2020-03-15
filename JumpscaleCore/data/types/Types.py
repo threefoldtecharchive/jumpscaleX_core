@@ -48,7 +48,8 @@ class Types(j.baseclasses.object, j.baseclasses.testtools):
         ]
 
         self._TypeBaseObjClass = TypeBaseObjClass
-        self._TypeBaseClassUnserialized = TypeBaseClassUnserialized
+        self._TypeBaseClassSerialized = TypeBaseClassSerialized
+        self._TypeBaseObjFactory = TypeBaseObjFactory
 
         self._type_check_list = []
         self._aliases = {}
@@ -189,7 +190,7 @@ class Types(j.baseclasses.object, j.baseclasses.testtools):
 
         if want run specific test ( write the name of test ) e.g. j.data.schema.test(name="base")
         """
-        self._test_run(name=name)
+        self._tests_run(name=name)
 
     def fix(self, val, default):
         """

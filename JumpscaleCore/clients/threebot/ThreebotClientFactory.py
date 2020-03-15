@@ -4,6 +4,7 @@ from .ThreebotClient import ThreebotClient
 from io import BytesIO
 
 JSConfigBase = j.baseclasses.object_config_collection
+skip = j.baseclasses.testtools._skip
 
 
 class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
@@ -29,6 +30,7 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         """
         j.core.myenv.config["EXPLORER_ADDR"] = value
         j.core.myenv.config_save()
+        self._explorer = None
 
     @property
     def explorer(self):
@@ -84,6 +86,7 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         self._id2client_cache[r2.tid] = r2
         return self._id2client_cache[r2.tid]
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/487")
     def test(self):
         """
         kosmos 'j.clients.threebot.test()'

@@ -4,8 +4,10 @@ import os
 import re
 import sys
 
+TESTTOOLS = j.baseclasses.testtools
 
-class GitFactory(j.baseclasses.object):
+
+class GitFactory(j.baseclasses.object, TESTTOOLS):
 
     __jslocation__ = "j.clients.git"
 
@@ -725,3 +727,6 @@ class GitFactory(j.baseclasses.object):
 
         if pushmessage != "":
             self.pushGitRepos(pushmessage, name=name, update=True, provider=provider, account=account)
+
+    def test(self, name=""):
+        self._tests_run(name=name)

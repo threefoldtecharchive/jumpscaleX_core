@@ -2,9 +2,10 @@ from Jumpscale import j
 from .ZDBServer import ZDBServer
 
 JSConfigs = j.baseclasses.object_config_collection_testtools
+TESTTOOLS = j.baseclasses.testtools
 
 
-class ZDBServers(JSConfigs):
+class ZDBServers(JSConfigs, TESTTOOLS):
     """
     Open Publish factory
     """
@@ -28,13 +29,13 @@ class ZDBServers(JSConfigs):
         j.builders.db.zdb.install(reset=reset)
 
     def test_instance_start(
-        self, destroydata=False, namespaces=None, admin_secret="123456", namespaces_secret="1234", restart=False
+        self, destroydata=False, namespaces=None, admin_secret=None, namespaces_secret="1234", restart=False
     ):
         """
 
         kosmos 'j.servers.zdb.test_instance_start()'
 
-        start a test instance with self.adminsecret 123456
+        start a test instance with j.core.myenv.adminsecret
         will use port 9901
         and name = test_instance
 
@@ -75,20 +76,14 @@ class ZDBServers(JSConfigs):
             zdb.destroy()
             zdb.delete()
 
-    def test(self, build=False):
+    def test(self, name="", install=False):
         """
         kosmos 'j.servers.zdb.test(build=True)'
         kosmos 'j.servers.zdb.test()'
         """
 
-        if build:
-            self.build()
-        zdb = self.test_instance_start(namespaces=["test_instance"], restart=True, destroydata=True)
+        if install:
+            self.install()
 
-        cl = zdb.client_get("test_instance")
-
-        assert cl.ping()
-
-        self.test_instance_stop()
-
+        self._tests_run(name=name)
         print("TEST OK")

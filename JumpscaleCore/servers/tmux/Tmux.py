@@ -7,7 +7,7 @@ import psutil
 JSBASE = j.baseclasses.object
 
 
-class Tmux(j.baseclasses.object):
+class Tmux(j.baseclasses.object, j.baseclasses.testtools):
     __jslocation__ = "j.servers.tmux"
 
     def _init(self, **kwargs):
@@ -220,7 +220,7 @@ class Tmux(j.baseclasses.object):
 
         return window
 
-    def test(self):
+    def test(self, name=""):
         """
         kosmos 'j.servers.tmux.test()'
 
@@ -266,3 +266,5 @@ class Tmux(j.baseclasses.object):
         p = self.pane_get("test2", "test2", reset=True)
 
         self._log_info("tests ok for tmux")
+        self._tests_run(name=name)
+

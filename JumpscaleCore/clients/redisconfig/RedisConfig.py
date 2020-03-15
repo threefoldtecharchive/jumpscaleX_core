@@ -8,7 +8,7 @@ class RedisConfig(j.baseclasses.object_config):
     name** = "" (S)
     addr = "127.0.0.1" (ipaddr)
     port = 6379 (ipport)
-    password_ = "" (S)
+    secret_ = "" (S)
     ardb_patch = false (B)
     unixsocket = "" (S)
     set_patch = false (B)
@@ -80,15 +80,15 @@ class RedisConfig(j.baseclasses.object_config):
                 addr = None
                 port = None
 
-            if self.password_:
-                password = self.password_
+            if self.secret_:
+                password = self.secret_
             else:
                 password = None
 
             if self.ssl:
                 raise j.exceptions.Base("not supported")
                 self._redis = j.clients.redis.get(
-                    ipaddr=addr,
+                    addr=addr,
                     port=port,
                     password=password,
                     unixsocket=unixsocket,
@@ -103,9 +103,9 @@ class RedisConfig(j.baseclasses.object_config):
             else:
 
                 self._redis = j.clients.redis.get(
-                    ipaddr=addr,
+                    addr=addr,
                     port=port,
-                    password=password,
+                    secret=password,
                     unixsocket=unixsocket,
                     ardb_patch=self.ardb_patch,
                     set_patch=self.set_patch,

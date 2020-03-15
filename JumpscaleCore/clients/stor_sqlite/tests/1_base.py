@@ -2,15 +2,16 @@ from Jumpscale import j
 import os
 
 
-def main(self):
+def test():
     """
     to run:
-    
+
     kosmos 'j.clients.sqlitedb.test()'
 
     """
+    self = j.clients.sqlitedb
 
-    cl = self.client_get(namespace="test_sqlitedb")
+    cl = self.client_get(bcdbname="test_sqlitedb")
     cl.flush()
     assert cl.count == 0
     assert len(cl.list()) == 0
@@ -69,12 +70,12 @@ def main(self):
                 j.shell()
             assert expected == actual
 
-    dumpdata(self)  # is in default namespace
+    dumpdata(self)  # is in default bcdbname
 
     self._log_debug("count:%s" % cl.count)
 
-    nsname = "newnamespace"
-    ns = self.client_get(nsname)
+    bcdbname = "newbcdbname"
+    ns = self.client_get(bcdbname)
     ns.flush()
     assert ns.nsinfo["entries"] == 0
 

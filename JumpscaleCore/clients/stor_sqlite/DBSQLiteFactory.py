@@ -7,12 +7,12 @@ from .DBSQLite import DBSQLite
 class DBSQLiteFactory(j.baseclasses.object, j.baseclasses.testtools):
     __jslocation__ = "j.clients.sqlitedb"
 
-    def client_get(self, namespace, fromcache=True, readonly=False):
+    def client_get(self, bcdbname, fromcache=True, readonly=False):
         """
-        :param nsname: namespace name
+        :param bcdbname: bcdbname name
         :return:
         """
-        return DBSQLite(nsname=namespace, readonly=readonly)
+        return DBSQLite(bcdbname=bcdbname, readonly=readonly)
 
     def test(self):
         """
@@ -20,4 +20,4 @@ class DBSQLiteFactory(j.baseclasses.object, j.baseclasses.testtools):
 
         """
 
-        self._test_run(name="base")
+        self._tests_run(name="base")

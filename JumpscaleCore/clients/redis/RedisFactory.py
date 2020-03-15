@@ -44,9 +44,9 @@ class RedisFactory(j.baseclasses.factory_testtools):
 
     def get(
         self,
-        ipaddr="localhost",
+        addr="localhost",
         port=6379,
-        password="",
+        secret="",
         fromcache=True,
         unixsocket=None,
         ardb_patch=False,
@@ -59,18 +59,17 @@ class RedisFactory(j.baseclasses.factory_testtools):
         timeout=10,
         ping=True,
         die=True,
-        **args,
     ):
         """
 
         get an instance of redis client, store it in cache so we could easily retrieve it later
 
-        :param ipaddr: used to form the key when no unixsocket, defaults to "localhost"
-        :type ipaddr: str, optional
+        :param addr: used to form the key when no unixsocket, defaults to "localhost"
+        :type addr: str, optional
         :param port: used to form the key when no unixsocket, defaults to 6379
         :type port: int, optional
-        :param password: defaults to ""
-        :type password: str, optional
+        :param secret: defaults to ""
+        :type secret: str, optional
         :param fromcache: if False, will create a new one instead of checking cache, defaults to True
         :type fromcache: bool, optional
         :param unixsocket: path of unixsocket to be used while creating Redis, defaults to socket of the core redis
@@ -93,34 +92,32 @@ class RedisFactory(j.baseclasses.factory_testtools):
 
         """
 
-        if ipaddr and port:
-            key = "%s_%s" % (ipaddr, port)
+        if addr and port:
+            key = "%s_%s" % (addr, port)
         else:
             unixsocket = j.core.db.connection_pool.connection_kwargs["path"]
             key = unixsocket
 
         if key not in self._redis or not fromcache:
-            if ipaddr and port:
-                self._log_debug("REDIS:%s:%s" % (ipaddr, port))
+            if addr and port:
+                self._log_debug("REDIS:%s:%s" % (addr, port))
                 cl = Redis(
-                    ipaddr,
+                    addr,
                     port,
-                    password=password,
+                    password=secret,
                     ssl=ssl,
                     ssl_certfile=ssl_certfile,
                     ssl_keyfile=ssl_keyfile,
                     unix_socket_path=unixsocket,
                     ssl_cert_reqs=ssl_cert_reqs,
                     ssl_ca_certs=ssl_ca_certs,
-                    # socket_timeout=timeout,
-                    **args,
                 )
             else:
                 self._log_debug("REDIS:%s" % unixsocket)
                 cl = Redis(
                     unix_socket_path=unixsocket,
                     # socket_timeout=timeout,
-                    password=password,
+                    secret=secret,
                     **args,
                 )
         else:
@@ -140,7 +137,7 @@ class RedisFactory(j.baseclasses.factory_testtools):
                     if die is False:
                         return None
                     else:
-                        raise j.exceptions.Base("Redis on %s:%s did not answer: %s" % (ipaddr, port, str(e)))
+                        raise j.exceptions.Base("Redis on %s:%s did not answer: %s" % (addr, port, str(e)))
                 else:
                     raise e
 
@@ -163,15 +160,15 @@ class RedisFactory(j.baseclasses.factory_testtools):
             redisclient = j.core.db
 
         if "host" not in redisclient.connection_pool.connection_kwargs:
-            ipaddr = redisclient.connection_pool.connection_kwargs["path"]
+            addr = redisclient.connection_pool.connection_kwargs["path"]
             port = 0
         else:
-            ipaddr = redisclient.connection_pool.connection_kwargs["host"]
+            addr = redisclient.connection_pool.connection_kwargs["host"]
             port = redisclient.connection_pool.connection_kwargs["port"]
 
         # if not fromcache:
-        #     return RedisQueue(self.get(ipaddr, port, fromcache=False), name, namespace=namespace)
-        key2 = "%s_%s_%s" % (ipaddr, port, key)
+        #     return RedisQueue(self.get(addr, port, fromcache=False), name, namespace=namespace)
+        key2 = "%s_%s_%s" % (addr, port, key)
         if fromcache is False or key2 not in self._redisq:
             self._redisq[key2] = redisclient.queue_get(key)
         return self._redisq[key2]
@@ -230,4 +227,4 @@ class RedisFactory(j.baseclasses.factory_testtools):
         kosmos 'j.clients.redis.test()'
 
         """
-        self._test_run(name=name)
+        self._tests_run(name=name)

@@ -21,7 +21,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_async():
     """
     to run:
 
@@ -31,10 +31,10 @@ def main(self):
 
     """
 
-    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.core.myenv.adminsecret))
+    sonic = j.servers.sonic.get(adminsecret_=j.core.myenv.adminsecret)
     sonic.start()
 
-    _, model = self._load_test_model()
+    _, model = j.data.bcdb._load_test_model()
 
     def get_obj(i):
         model_obj = model.new()
@@ -70,6 +70,6 @@ def main(self):
     j.servers.zdb.test_instance_stop()
     j.servers.sonic.default.stop()
 
-    self._log_info("TEST ASYNC DONE")
+    j.data.bcdb._log_info("TEST ASYNC DONE")
 
     return "OK"

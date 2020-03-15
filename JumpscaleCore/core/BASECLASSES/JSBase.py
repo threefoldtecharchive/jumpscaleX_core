@@ -7,6 +7,8 @@ import inspect
 import types
 from .JSDict import JSDict
 
+# DO NOT LOG IN THIS CLASS
+
 
 class JSBase:
 
@@ -45,6 +47,7 @@ class JSBase:
         self._init_factory(**kwargs)
         self._init_post(**kwargs)
         self._init_post_attr()
+        self._properties_ = None
 
     def _children_reset(self):
         self._children = JSDict()
@@ -107,8 +110,6 @@ class JSBase:
 
             self.__class__.__init_class_done = True
 
-            self._log_debug("***CLASS INIT 1: %s" % self.__class__._classname)
-
             # lets make sure the initial loglevel gets set
             self._logger_set(children=False, parents=False)
 
@@ -124,7 +125,6 @@ class JSBase:
 
         :return: (properties,methods)
         """
-        # self._log("INSPECT:%s" % self.__class__)
         properties = []
         methods = []
         for name, obj in inspect.getmembers(self.__class__):
@@ -259,7 +259,7 @@ class JSBase:
             if id2 == "":
                 for item in ["instance", "_instance", "_id", "id", "name", "_name"]:
                     if item in self.__dict__ and self.__dict__[item]:
-                        self._log_debug("found extra for obj_id")
+                        # self._log_debug("found extra for obj_id")
                         id2 = str(self.__dict__[item])
                         break
             if id2 != "":
@@ -416,7 +416,7 @@ class JSBase:
         data=None,
         context=None,
         _levelup=0,
-        stdout=True,
+        stdout=False,
         tb=None,
         data_show=True,
         exception=None,  # is jumpscale/python exception
@@ -447,6 +447,8 @@ class JSBase:
 
         if j.application.debug or (self._logger_enabled and self._logger_min_level - 1 < level):
             # now we will log
+            if j.application.inlogger:
+                return
 
             frame_ = inspect.currentframe().f_back
             if _levelup > 0:
@@ -563,7 +565,9 @@ class JSBase:
                 if filter.startswith("_") and not filter.startswith("__") and name.startswith("__"):
                     # remove __ if we only ask for _
                     continue
-                if filter.endswith("*"):
+                if filter == "*":
+                    pass  # need to process
+                elif filter.endswith("*"):
                     filter2 = filter[:-1]
                     if not name.startswith(filter2):
                         continue
@@ -734,7 +738,7 @@ class JSBase:
         others = self._children_names_get(filter=filter)
         if self._hasattr("_parent"):
             pname = self._parent_name_get()  # why do we need the parent name?
-            if pname not in others:
+            if pname and pname not in others:
                 others.append(pname)
         res = [i for i in self._filter(filter=filter, llist=self._properties) if i not in others]
         return res
@@ -777,27 +781,32 @@ class JSBase:
 
         def add(name, color, items, out):
             # self._log_debug(items)
+            add_dots_in_the_end = False
+            showable_items_length = 20
             if len(items) > 0:
                 out += "{%s}### %s:\n" % (color, name)
-                if len(items) < 20:
-                    for item in items:
-                        self._log_debug(item)
-                        item = item.rstrip()
-                        if name in ["data", "properties"]:
-                            try:
-                                v = j.core._data_serializer_safe(getattr(self, item)).rstrip()
-                                if "\n" in v:
-                                    # v = j.core.tools.text_indent(content=v, nspaces=4)
-                                    v = "\n".join(v.split("\n")[:1])
-                                    out += " - %-20s : {GRAY}%s{%s}\n" % (item, v, color)
-                                else:
-                                    out += " - %-20s : {GRAY}%s{%s}\n" % (item, v, color)
+                if len(items) > showable_items_length:
+                    add_dots_in_the_end = True
+                for i, item in enumerate(items):
+                    if i > showable_items_length:
+                        break
+                    self._log_debug(item)
+                    item = item.rstrip()
+                    if name in ["data", "properties"]:
+                        try:
+                            v = j.core._data_serializer_safe(getattr(self, item)).rstrip()
+                            if "\n" in v:
+                                # v = j.core.tools.text_indent(content=v, nspaces=4)
+                                v = "\n".join(v.split("\n")[:1])
+                                out += " - %-20s : {GRAY}%s{%s}\n" % (item, v, color)
+                            else:
+                                out += " - %-20s : {GRAY}%s{%s}\n" % (item, v, color)
 
-                            except Exception as e:
-                                out += " - %-20s : {GRAY}ERROR ATTRIBUTE{%s}\n" % (item, color)
-                        else:
-                            out += " - %s\n" % item
-                else:
+                        except Exception as e:
+                            out += " - %-20s : {GRAY}ERROR ATTRIBUTE{%s}\n" % (item, color)
+                    else:
+                        out += " - %s\n" % item
+                if add_dots_in_the_end:
                     out += " - ...\n"
             out += "\n"
             return out

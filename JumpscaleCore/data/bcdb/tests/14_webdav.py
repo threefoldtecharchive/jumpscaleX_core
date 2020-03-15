@@ -22,7 +22,7 @@ from Jumpscale import j
 import requests
 
 
-def main(self):
+def test_webdav():
     """
     to run:
     kosmos 'j.data.bcdb.test(name="webdav")'
@@ -96,4 +96,4 @@ def main(self):
     web_dav.wait_stopped()
     # TODO: mount webdav over fuse and do some tests
 
-    self._log_info("test ok")
+    j.data.bcdb._log_info("test ok")

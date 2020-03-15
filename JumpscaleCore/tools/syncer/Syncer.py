@@ -34,8 +34,8 @@ class Syncer(j.baseclasses.object_config):
         sshclient_names = [] (LS)
         paths = [] (LS)
         ignoredir = [] (LS)
-        ignore_delete = true  (B)
-        rsyncdelete = false (B)
+        #ignore_delete = true  (B)
+        rsyncdelete = true (B)
         """
 
     def sshclients_add(self, sshclients=None):
@@ -93,6 +93,7 @@ class Syncer(j.baseclasses.object_config):
                 "jumpscaleX_libs",
                 "jumpscaleX_libs_extra",
                 "jumpscaleX_threebot",
+                "jumpscaleX_weblibs",
             ]:
                 self.paths.append(
                     "{DIR_CODE}/github/threefoldtech/%s:/sandbox/code/github/threefoldtech/%s" % (item, item)

@@ -2,6 +2,8 @@ from Jumpscale import j
 from enum import Enum  # for enum34, or the stdlib version
 from pprint import pprint
 
+TESTTOOLS = j.baseclasses.testtools
+
 
 class Format(Enum):
     WEBSITE = 1
@@ -12,8 +14,10 @@ class Format(Enum):
     THREEBOTPACKAGE = 6
 
 
-class TFGridRegistryClient(j.baseclasses.object):
-    """A class is used as a client to be able to handle registry actors.
+class TFGridRegistryClient(j.baseclasses.object, TESTTOOLS):
+    """
+
+    A class is used as a client to be able to handle registry actors.
 
     Attributes
     ----------
@@ -30,15 +34,21 @@ class TFGridRegistryClient(j.baseclasses.object):
         self.me = j.tools.threebot.me.get(
             name="test", tid=3, email="test.test@gmail", tname="testUser", pubkey="asdf3dsfasdlfkjasd88893n"
         )
-        self.gedis_client = j.servers.threebot.local_start_default(web=True)
-        self.gedis_client.actors.package_manager.package_add(
-            path=j.core.tools.text_replace(
-                "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry")
+        cl = j.clients.gedis.get("registry_client", port=8901, package_name="zerobot.packagemanager")
+        cl.reload()
+        cl.actors.package_manager.package_add(
+            path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry"
         )
-        self.gedis_client.reload()
-        self.registry_client = self.gedis_client.actors.registry
+        registry_client = j.clients.gedis.get("registry", port=8901, package_name="tfgrid.registry")
+        registry_client.reload()
+
+        self.registry_client = registry_client.actors.registry
         self.nacl = self.me.nacl
-        self.bcdb = j.data.bcdb.get("threebot_registery")
+        self.bcdb = j.data.bcdb.get("threebot_registry")
+        self.schema_entry_data = j.data.schema.get_from_text(self.registry_client.get_meta_entry_data().decode())
+        self.schema_encrypted_data = j.data.schema.get_from_text(
+            self.registry_client.get_meta_encrypted_data().decode()
+        )
 
     def register(
         self,
@@ -58,6 +68,8 @@ class TFGridRegistryClient(j.baseclasses.object):
     ):
         """client comes from j.clients.threebot.client_get(threebot="kristof.ibiza").
 
+        client comes from j.clients.threebot.client_get(threebot="kristof.ibiza")
+
         register in easy way an object with our without schema
 
         Args:
@@ -75,6 +87,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         """
         scm = j.data.schema.get_from_text(schema)
         self.registry_client.schema_register(scm.url, schema)
+
         if is_encrypted_data:
             authors.append(self.me.tid)
             dataobj = self.__add_registry_schema_encrypted_data(
@@ -213,7 +226,6 @@ class TFGridRegistryClient(j.baseclasses.object):
 
     def __add_registry_schema_data(
         self,
-        url="threebot.registry.entry.data.1",
         authors=None,
         new_scm=None,
         model=None,
@@ -229,7 +241,6 @@ class TFGridRegistryClient(j.baseclasses.object):
         """Add data to the registry.
 
         Args:
-            url (string): The url of the schema.
             authors (list): People who contributed in writing the data.
             new_scm (string): Used by BCDB to create the schema for the desired data format by the authors.
             model (object of schema): Actual data stored in BCDB schema.
@@ -239,8 +250,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         Returns:
 
         """
-        scm1 = j.data.schema.get_from_url(url=url)
-        dataobj = self.bcdb.model_get(url=scm1.url).new()
+        dataobj = self.bcdb.model_get(url=self.schema_entry_data.url).new()
         dataobj.authors = authors
         dataobj.schema_url = new_scm
         dataobj.registered_info = model._data
@@ -257,7 +267,6 @@ class TFGridRegistryClient(j.baseclasses.object):
 
     def __add_registry_schema_encrypted_data(
         self,
-        url="threebot.registry.entry.data.1",
         authors=None,
         readers=None,
         new_scm=None,
@@ -287,8 +296,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         Returns:
 
         """
-        scm1 = j.data.schema.get_from_url(url=url)
-        dataobj = self.bcdb.model_get(url=scm1.url).new()
+        dataobj = self.bcdb.model_get(url=self.schema_entry_data.url).new()
         dataobj.authors = authors
         dataobj.readers = readers
         dataobj.schema_url = new_scm.url
@@ -300,7 +308,7 @@ class TFGridRegistryClient(j.baseclasses.object):
         dataobj.location_longitude = location_longitude
         dataobj.location_latitude = location_latitude
         dataobj.description = description
-        encrypted_data_model = j.data.schema.get_from_url(url="threebot.registry.entry.data_encrypted.1").new()
+        encrypted_data_model = j.data.schema.get_from_url(url=self.schema_encrypted_data.url).new()
         encrypted_data_model.tid = threebotclient.tid
         # TODO validate if it will be default or not
         encrypted_data_model.data_ = model._data
@@ -317,8 +325,17 @@ class TFGridRegistryClient(j.baseclasses.object):
         Returns:
 
         """
+
+    def __sign_data(self, dataobj):
         pubkey = self.me.nacl.public_key.encode()
         signingkey = self.me.nacl.signing_key.encode()
         verifykey = self.me.nacl.verify_key.encode()
         signed_data = self.me.nacl.sign(dataobj._data)
         return verifykey, signed_data
+
+    def test(self, name=""):
+        """
+        kosmos 'j.clients.tfgrid_registry.test()'
+
+        """
+        self._tests_run(name=name)

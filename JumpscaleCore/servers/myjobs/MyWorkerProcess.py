@@ -47,9 +47,14 @@ class MyWorkerProcess(j.baseclasses.object):
 
         self.redisclient = j.core.db
 
-        self.queue_jobs_start = j.clients.redis.queue_get(
-            redisclient=self.redisclient, key="queue:jobs:start", fromcache=False
-        )
+        if not self.debug:
+            self.queue_jobs_start = j.clients.redis.queue_get(
+                redisclient=self.redisclient, key="queue:jobs:start", fromcache=False
+            )
+        else:
+            self.queue_jobs_start = j.clients.redis.queue_get(
+                redisclient=self.redisclient, key="queue:debug_jobs:start", fromcache=False
+            )
 
         j.errorhandler.handlers.append(self.error_handler)
 

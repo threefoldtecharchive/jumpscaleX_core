@@ -21,7 +21,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_sqlite():
     """
     to run:
 
@@ -29,7 +29,7 @@ def main(self):
 
     TO SEE THE SQLITE DB USE SOMETHING LIKE 'db browser for sqlite'
     OPEN DATABASE IN {DIR_BASE}/var/bcdb/test/sqlite_index.db
-    
+
     """
 
     SCHEMA = """
@@ -39,18 +39,18 @@ def main(self):
     nr** = (I)
     abool** = true (B)
     cat** = "red,blue,green" (E)
-    cat2** = "slow,fast" (E)  
+    cat2** = "slow,fast" (E)
     subs = (LO) !bcdb.tests.sqlite.sub
-    
+
     @url = bcdb.tests.sqlite.sub
     a = (I)
     b = (I)
-    c = (I)                          
-    
-    
+    c = (I)
+
+
     """
 
-    db, m = self._load_test_model(type="sqlite", schema=SCHEMA)
+    db, m = j.data.bcdb._load_test_model(type="sqlite", schema=SCHEMA)
     bcdb = m.bcdb
 
     ###EXAMPLE HOW WE CAN USE TRIGGERS ON MODELS TO BUILD E.G. A CUSTOM INDEX
@@ -89,13 +89,11 @@ def main(self):
         m.trigger_add(post_save)
 
     o = m.new()
-    assert o._autosave is False
 
     count = 10
 
     for i in range(count):
         o = m.new()
-        assert o._autosave is False
         o.name = "name%s" % i
         o.ipaddr = "10.10.10.%s" % i
         o.nr = i

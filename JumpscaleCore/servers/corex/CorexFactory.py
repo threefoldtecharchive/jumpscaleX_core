@@ -38,9 +38,9 @@ class CorexFactory(JSConfigs):
         self.install(reset=reset)
         self.default.start()
         assert j.servers.startupcmd.corex_default.is_running()
-        assert j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=1491)
+        assert j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=1500)
 
-        cl = j.clients.corex.get(name="test", addr="localhost", port=1491)
+        j.clients.corex.get(name="test", addr="localhost", port=1500)
 
         self.default.stop()
-        assert j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=1491) is False
+        assert j.sal.nettools.tcpPortConnectionTest(ipaddr="localhost", port=1500) is False

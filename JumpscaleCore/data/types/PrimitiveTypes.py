@@ -33,7 +33,7 @@ class String(TypeBaseClass):
         """Check whether provided value is a string"""
         return isinstance(value, str)
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         will do a strip
         """
@@ -74,7 +74,7 @@ class StringMultiLine(String):
         """Check whether provided value is a string and has \n inside"""
         return isinstance(value, str) and ("\\n" in value or "\n" in value)
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         will do a strip on multiline
         """
@@ -160,7 +160,7 @@ class Bytes(TypeBaseClass):
         """Check whether provided value is a array of bytes"""
         return isinstance(value, bytes)
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         supports b64encoded strings, std strings which can be encoded and binary strings
         """
@@ -215,7 +215,7 @@ class Boolean(TypeBaseClass):
     def toJSON(self, v):
         return self.clean(v)
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         if string and true, yes, y, 1 then True
         if int and 1 then True
@@ -292,7 +292,7 @@ class Integer(TypeBaseClass):
     def toJSON(self, v):
         return self.clean(v)
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         used to change the value to a predefined standard for this type
         """
@@ -358,7 +358,7 @@ class Float(TypeBaseClass):
         s = self.clean(s)
         return j.core.text.getFloat(s)
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         """
         if value is None:
@@ -407,7 +407,7 @@ class Percent(Float):
             default = 0.0
         self._default = default
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         used to change the value to a predefined standard for this type
         """
@@ -425,6 +425,8 @@ class Percent(Float):
         else:
             raise j.exceptions.Value("could not convert input to percent, input was:%s" % value)
 
+        if value > 1 and value < 101:
+            value = value / 100
         assert value < 1.00001
         return value
 
@@ -454,7 +456,7 @@ class CapnpBin(Bytes):
             default = b""
         self._default = default
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         """
         return value

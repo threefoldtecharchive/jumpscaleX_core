@@ -1,7 +1,12 @@
 from Jumpscale import j
 
+myjobs = j.servers.myjobs
 
-def main(self):
+skip = j.baseclasses.testtools._skip
+
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/493")s
+def test_fancycode():
     """
     kosmos -p 'j.servers.myjobs.test("fancycode")'
     """
@@ -40,13 +45,13 @@ def main(self):
 
     # we're using the local defined arguments to send to the testa method
     # its a nice trick not having to repeat everything
-    job1 = self.schedule(testa, args_replace=locals())
+    job1 = myjobs.schedule(testa, args_replace=locals())
 
     # one worker at least will be started
-    self.worker_tmux_start(nr=1)
+    myjobs.worker_tmux_start(nr=1)
     job1.wait()
 
-    self.stop(reset=True)
+    myjobs.stop(reset=True)
 
     print("TEST OK FOR fancy functions")
 

@@ -31,7 +31,8 @@ from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.shortcuts import print_formatted_text
 from ptpython.filters import ShowDocstring, PythonInputFilter
 from ptpython.prompt_style import PromptStyle
-from ptpython.repl import _lex_python_result
+
+# from ptpython.repl import _lex_python_result
 from pygments.lexers import PythonLexer
 
 
@@ -224,6 +225,7 @@ def patched_handle_exception(self, e):
 
 class LogPane:
     Buffer = Buffer(name="logging")
+    limit = 20
     Show = True
 
 
@@ -282,9 +284,17 @@ def setup_docstring_containers(repl):
 
 
 def add_logs_to_pane(msg):
-    LogPane.Buffer.insert_text(data=msg, fire_event=False)
-    LogPane.Buffer.newline()
-    LogPane.Buffer.auto_down(count=LogPane.Buffer.document.line_count)
+    # TODO: better to have a circular buffer behavior
+    line_count = LogPane.Buffer.document.line_count
+    buffer = LogPane.Buffer
+
+    if line_count >= LogPane.limit:
+        buffer.reset()
+        line_count = 1
+
+    buffer.insert_text(data=msg, fire_event=False)
+    buffer.newline()
+    buffer.auto_down(count=line_count)
 
 
 def setup_logging_containers(repl):

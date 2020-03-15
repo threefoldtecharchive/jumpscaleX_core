@@ -10,7 +10,7 @@ from Jumpscale.data.bcdb.BCDBModelIndex import BCDBModelIndex
 class {{BASENAME}}(BCDBModelIndex):
 
     def _sql_index_init(self,**kwargs):
-        self._log_info("init index:%s"%self.model.schema.url)
+        self._log_debug("init index:%s"%self.model.schema.url)
 
         p = j.clients.peewee
 
@@ -75,7 +75,9 @@ class {{BASENAME}}(BCDBModelIndex):
 
     def _sql_index_delete(self,obj):
         # if not self.sql.select().where(self.sql.id == obj.id).count()==0:
-        self.sql.delete().where(self.sql.id == id).execute()
+        self.sql.delete().where(self.sql.id == obj.id).execute()
+        if hasattr(obj,"name"):
+            self.sql.delete().where(self.sql.name == obj.name).execute()
 
     def _sql_index_delete_by_id(self,obj_id):
         self.sql.delete().where(self.sql.id == obj_id).execute()

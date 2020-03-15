@@ -9,13 +9,16 @@ class ZDBServer(j.baseclasses.object_config):
            name** = "default" (S)
            addr = "127.0.0.1" (S)
            port = 9900 (I)
-           adminsecret_ = "123456" (S)
+           adminsecret_ = "" (S)
            executor = "tmux"
            mode = "seq"
            """
 
     def _init(self, **kwargs):
         self._datadir = ""
+        if self.adminsecret_ == "":
+            self.adminsecret_ = j.core.myenv.adminsecret
+        assert len(self.adminsecret_) > 5
 
     @property
     def datadir(self):
@@ -92,12 +95,11 @@ class ZDBServer(j.baseclasses.object_config):
         )
         return cl
 
-    def client_get(self, nsname="default", secret="1234"):
+    def client_get(self, name, nsname="default", secret="1234"):
         """
         get client to zdb
 
         """
-        name = f"{self.name}_{nsname}"
         cl = j.clients.zdb.client_get(
             name=name, namespace=nsname, addr=self.addr, port=self.port, secret=secret, mode=self.mode
         )

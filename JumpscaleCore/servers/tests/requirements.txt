@@ -1,5 +1,0 @@
-nose
-parameterized
-imbox
-imapclient
-loguru

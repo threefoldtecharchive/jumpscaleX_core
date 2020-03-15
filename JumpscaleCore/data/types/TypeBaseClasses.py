@@ -2,6 +2,9 @@ from Jumpscale import j
 
 
 class TypeBaseObjClass:
+    """
+    is a custom type object (so not the factory/class who instancianted this obj)
+    """
 
     BASETYPE = "OBJ"
     __slots__ = ["_typebase", "_value"]
@@ -9,11 +12,20 @@ class TypeBaseObjClass:
     def __init__(self, typebase, value=None):
 
         self._typebase = typebase  # is the factory for this object
-
+        self.__changed = False
         if value is None:
             self._data = 0
         else:
             self._data = self._data_from_init_val(value)
+
+    @property
+    def _changed(self):
+        return self.__changed
+
+    @_changed.setter
+    def _changed(self, value):
+        assert value == False  # only supported mode
+        self.__changed = False
 
     def _data_from_init_val(self, value):
         """
@@ -46,7 +58,10 @@ class TypeBaseObjClass:
 
     @value.setter
     def value(self, val):
-        self._data = self._typebase.toData(val)
+        d = self._typebase.toData(val)
+        if self._data != d:
+            self._data = d
+            self.__changed = True
 
     def __str__(self):
         if self._data:
@@ -198,7 +213,7 @@ class TypeBaseClass:  #!!TYPEBASECLASS!!
             raise j.exceptions.Value("self._default cannot be None")
         return self.clean(self._default)
 
-    def clean(self, value):
+    def clean(self, value, parent=None):
         """
         """
         raise j.exceptions.Value("not implemented")
@@ -262,11 +277,11 @@ class TypeBaseObjFactory(TypeBaseClass):
         return v.toData()
         # raise j.exceptions.NotImplemented()
 
-    def clean(self, v):
+    def clean(self, v, parent=None):
         raise j.exceptions.NotImplemented()
 
 
-class TypeBaseClassUnserialized(TypeBaseClass):
+class TypeBaseClassSerialized(TypeBaseClass):
     """
     needed to make sure that in the schema this one gets to the unserialized dict
     """

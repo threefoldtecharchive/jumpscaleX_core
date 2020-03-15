@@ -128,7 +128,7 @@ class SSHClient(SSHClientBase):
             cmd += "chgrp %s %s &&" % (group, path)
         cmd = cmd.strip().strip("&")
         if cmd:
-            self.execute(cmd, showout=False, cmd_process=False, interactive=False)
+            self.execute(cmd, showout=False, interactive=False)
 
         # flags = ssh2.sftp.LIBSSH2_FXF_CREAT
         # if append:
@@ -160,9 +160,9 @@ class SSHClient(SSHClientBase):
         try:
             res = self._client.scp_send(local_file, remote_file, recurse=False)
         except Exception as e:
-            # should check if the dir is not there
-            j.shell()
             self.execute("mkdir -p %s" % destination)
+            res = self._client.scp_send(local_file, remote_file, recurse=False)
+
         if res:
             gevent.joinall(res)
         self._log_info("Copied local file %s to remote destination %s for %s" % (local_file, remote_file, self))

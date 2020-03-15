@@ -1,10 +1,13 @@
 from .ThreebotServer import ThreeBotServer
 from Jumpscale import j
+import time
+
+TESTTOOLS = j.baseclasses.testtools
 
 # from .OpenPublish import OpenPublish
 
 
-class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
+class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, TESTTOOLS):
     """
     Factory for 3bots
     """
@@ -16,6 +19,45 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         self._default = None
         self.current = None
         self.client = None
+        if j.application.appname != "threebotserver" and j.application.state != "RUNNING":
+            j.application.start("threebotserver")
+
+    def _threebot_starting(self, starting=True):
+        print("MARK THREEBOT IS STARTING")
+
+        j.threebot.active = True
+        if j.core.db and starting:
+            j.core.db.set("threebot.starting", ex=120, value="1")
+        j.data.bcdb._master_set()
+        j.servers.myjobs
+        j.tools.executor.local
+
+    def threebotserver_check(self):
+        if j.core.db and j.core.db.get("threebot.starting"):
+            self.threebotserver_require()
+            return True
+        res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380, timeout=0.1)
+        return res
+
+    def threebotserver_require(self, timeout=120):
+        """
+        see if we can find a local threebotserver, wait till timeout
+
+        j.servers.threebot.threebotserver_require()
+
+        :param timeout:
+        :return:
+        """
+        timeout2 = j.data.time.epoch + timeout
+        while j.data.time.epoch < timeout2:
+            res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380, timeout=0.1)
+            if res and j.core.db.get("threebot.starting") is None:
+                j.data.bcdb._master_set(False)
+                return
+            timedone = timeout2 - j.data.time.epoch
+            print(" - wait threebotserver to start: %s" % timedone)
+            time.sleep(0.5)
+        raise j.exceptions.Base("please start threebotserver, could not reach in '%s' seconds." % timeout)
 
     @property
     def default(self):
@@ -40,110 +82,139 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def local_start_zerobot_default(self, packages_add=False):
+    def start(self, background=False, packages=None, reload=False, with_shell=True):
         """
+        kosmos -p 'j.servers.threebot.start(background=True)'
+        kosmos -p 'j.servers.threebot.start(background=False,with_shell=False)'
+        kosmos -p 'j.servers.threebot.start(background=False,with_shell=True)'
 
-        kosmos -p 'j.servers.threebot.local_start_zerobot_default(packages_add=True)'
+        if background:
+            will check if there is already one running, will create client to localhost & return
+            gedis client to system actor
 
-        tbot_client = j.servers.threebot.local_start_zerobot_default()
+        :param: packages, is a list of packages_paths
+            the packages need to reside in this repo otherwise they will not be found,
+            centralized registration will be added but is not there yet
 
-        will check if there is already one running, will create client to localhost & return
-        gedis client
-        :param timeout: you can increase the timeout to make sure you server runs on slow machines
         :return:
         """
-        if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
-            self.install()
-            self.default.stop()
+        if not background:
+            self._threebot_starting()
 
-        client = self.default.start(background=True)
+        packages = packages or []
 
-        if packages_add:
-            client.actors.package_manager.package_add(
-                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/tfgrid/phonebook"
-            )
+        if background:
+            if reload:
+                self.default.stop()
+
+            if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) is False:
+                self.install()
+                client = self.default.start(background=True, packages=packages)
+                assert "." in client.package_name
+            else:
+                client = j.clients.gedis.get(name="threebot", port=8901)
+                if not "." in client.package_name:
+                    j.shell()
+                assert "." in client.package_name
+
+            # NO LONGER NEEDED BECAUSE PART OF DEFAULT>START
+            # gediscl = j.clients.gedis.get("pkggedis", package_name="zerobot.packagemanager")
+            # for package_path in packages:
+            #     gediscl.actors.package_manager.package_add(path=package_path)
 
             client.reload()
+            return client
 
-        return client
-
-    def local_start_default(self, packages_add=False, ssl=None):
-        """
-
-        kosmos -p 'j.servers.threebot.local_start_default()'
-
-        tbot_client = j.servers.threebot.local_start_default()
-
-        will check if there is already one running, will create client to localhost & return
-        gedis client
-        :param timeout: you can increase the timeout to make sure you server runs on slow machines
-        :return:
-        """
-        if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) == False:
+        else:
             self.install()
-            self.default.stop()
+            self.default.start(background=False, packages=packages, with_shell=with_shell)
 
-        client = self.default.start(background=True)
+    def local_start_3bot(self, background=False, reload=False):
+        """starts 3bot with webplatform package.
+        kosmos -p 'j.servers.threebot.local_start_3bot()'
+        """
+        if not background:
+            self._threebot_starting()
+        packages = [f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform"]
+        return self.start(background=background, packages=packages, reload=reload)
 
-        client.actors.package_manager.package_add(
-            path=j.core.tools.text_replace(
-                "{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform/"
-            )
-        )
-        if packages_add:
-            client.actors.package_manager.package_add(
-                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/tfgrid/phonebook"
-            )
-
-        client.reload()
-
-        return client
-
-    def test(self):
+    def reset(self, debug=True):
         """
 
-        kosmos 'j.servers.threebot.test()'
+        resets your full 3bot with all data, CAREFUL
+
+        kosmos -p 'j.servers.threebot.reset()'
+
+        """
+        j.data.bcdb._master_set()
+        C = """
+        rm -rf {DIR_BASE}/cfg/bcdb_config
+        rm -rf {DIR_BASE}/cfg/bcdb
+        rm -rf {DIR_BASE}/cfg/schema_meta.msgpack
+        rm -rf {DIR_BASE}/cfg/sonic_config_threebot.cfg
+        rm -rf {DIR_BASE}/var
+        """
+        if debug:
+            j.core.myenv.config["LOGGER_LEVEL"] = 10
+            j.core.myenv.config_save()
+        j.clients.rdb.reset()
+        j.servers.tmux.server.kill_server()
+        C = j.core.tools.text_replace(C)
+        j.sal.process.execute(C)
+
+    def local_start_explorer(self, background=False, reload=False, with_shell=True):
+        """
+
+        starts 3bot with phonebook, directory, workloads packages.
+
+        kosmos -p 'j.servers.threebot.local_start_explorer(with_shell=True)'
+        kosmos -p 'j.servers.threebot.local_start_explorer(with_shell=False)'
+        kosmos -p 'j.servers.threebot.local_start_explorer(with_shell=False,background=True)'
+
+        """
+        if not background:
+            self._threebot_starting()
+        packages = [
+            f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/phonebook",
+            f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/directory",
+            f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/workloads",
+        ]
+        return self.start(background=background, packages=packages, reload=reload, with_shell=with_shell)
+
+    def test(self, name=None, restart=False):
+        """
+
+        kosmos -p 'j.servers.threebot.test()'
         :return:
         """
 
-        # gedis_client = j.servers.threebot.local_start_default(web=True)
-        gedis_client = j.servers.threebot.local_start_zerobot_default(packages_add=True)
+        packages = ["threebot.blog"]
 
-        cl = j.clients.gedis.get(name="threebot", port=8901, namespace="default")
+        cl = j.servers.threebot.start(background=True, packages=packages)
 
+        # if fileserver:
+        #     gedis_client.actors.package_manager.package_add(
+        #         git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threebot/fileserver"
+        #     )
+        #
+        # if wiki:
+        #     gedis_client.actors.package_manager.package_add(
+        #         git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/threebot/wiki"
+        #     )
+        #
+        # gedis_client.reload()
+
+        self._tests_run(name=name)
+
+    def test_explorer(self):
+        """
+
+        kosmos -p 'j.servers.threebot.test_explorer()'
+        :return:
+        """
+
+        j.servers.threebot.local_start_explorer(background=True)
         j.shell()
-
-        gedis_client.actors.package_manager.package_add(
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/phonebook"
-        )
-
-        j.shell()
-
-        # self.client.actors.package_manager.package_add(
-        #     "tfgrid_directory",
-        #     git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/tfgrid_directory",
-        # )
-
-        # self.client.actors.package_manager.package_add(
-        #     "tfgrid_workloads",
-        #     git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threefold/tfgrid_workloads",
-        # )
-
-        if fileserver:
-            gedis_client.actors.package_manager.package_add(
-                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threebot/fileserver"
-            )
-
-        if wiki:
-            gedis_client.actors.package_manager.package_add(
-                git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/threebot/wiki"
-            )
-
-        gedis_client.reload()
-
-        if not name == "onlystart":
-
-            self._test_run(name=name)
 
     def _docker_jumpscale_get(self, name="3bot", delete=True):
         docker = j.core.dockerfactory.container_get(name=name, delete=delete)
@@ -173,9 +244,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools):
         assert j.sal.nettools.waitConnectionTest(docker.config.ipaddr, 22, timeout=30)
 
         self._log_info("start the threebot server")
-        docker.sshexec(
-            "source /sandbox/env.sh;kosmos 'j.servers.threebot.local_start_default(web=True,packages_add=True)'"
-        )
+        docker.sshexec("source /sandbox/env.sh;kosmos 'j.servers.threebot.start(packages_add=True)'")
         j.shell()
 
     def docker_environment_multi(self):

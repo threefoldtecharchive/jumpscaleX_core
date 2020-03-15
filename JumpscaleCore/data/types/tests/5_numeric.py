@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test005_numeric():
     """
     to run:
 
@@ -83,6 +83,6 @@ def main(self):
     res = n.clean("10k") * 2
     assert res.value == 20000
 
-    self._log_info("TEST NUMERIC DONE")
+    j.data.types._log_info("TEST NUMERIC DONE")
 
     return "OK"

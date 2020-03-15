@@ -3,10 +3,14 @@ import sys
 from Jumpscale import j
 from .Schema import Schema
 from .SchemaMeta import SchemaMeta
-from .JSXObject import JSXObject
+from .JSXObjectSub import JSXObjectSub
+from .JSXObjectRoot import JSXObjectRoot
+from .JSXObjectBase import JSXObjectBase
+
+TESTTOOLS = j.baseclasses.testtools
 
 
-class SchemaFactory(j.baseclasses.factory_testtools):
+class SchemaFactory(j.baseclasses.factory_testtools, TESTTOOLS):
     __jslocation__ = "j.data.schema"
 
     def _init(self, **kwargs):
@@ -14,7 +18,9 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         self.__code_generation_dir = None
         self.meta = SchemaMeta()
         self._reset_state()
-        self._JSXObjectClass = JSXObject
+        self._JSXObjectClassRoot = JSXObjectRoot
+        self._JSXObjectClassSub = JSXObjectSub
+        self._JSXObjectClass = JSXObjectBase
         self.models_in_use = False  # if this is set then will not allow certain actions to happen here
 
     @property
@@ -47,10 +53,10 @@ class SchemaFactory(j.baseclasses.factory_testtools):
 
     @property
     def schemas_all(self):
-        for url in self.meta.schemas_urls:
+        for url in self.meta.schema_urls:
             if url not in self.schemas_loaded:
                 self.get(url=url)
-        return self.schemas_loadeds
+        return self.schemas_loaded
 
     def exists(self, md5=None, url=None):
         if md5:
@@ -92,7 +98,9 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         assert isinstance(md5, str)
         if not md5 in self.schemas_md5:
             data = self.meta.schema_get(md5=md5)
-            self.get_from_text(data["text"])
+            s = self.get_from_text(data["text"], newest=False)  # important we don't fetch the newest
+            if md5 not in self.schemas_md5:
+                self.schemas_md5[md5] = s
         return self.schemas_md5[md5]
 
     def _urlclean(self, url):
@@ -106,7 +114,6 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         :param url: url is e.g. jumpscale.bcdb.user.1
         :return: will return the most recent schema, there can be more than 1 schema with same url (changed over time)
         """
-        # print(f"getting {url}")
         # shortcut for performance
         if url in self.schemas_loaded:
             return self.schemas_loaded[url]
@@ -140,9 +147,12 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         blocks = self._schema_blocks_get(schema_text)
         return len(blocks) > 1
 
-    def get_from_text(self, schema_text, url=None):
+    def get_from_text(self, schema_text, url=None, newest=True, save=True):
         """
         will return the first schema specified if more than 1
+
+        @param newest when set will replace the metadata even if it exists & the caching
+        @param save , means will be remembered in metadata config
 
         Returns:
             Schema
@@ -154,48 +164,76 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         for i, block in enumerate(blocks):
             if i == 0:
                 # first one can take url
-                res.append(self._get_from_text_single(block, url=url))
+                res.append(self._get_from_text_single(block, url=url, newest=newest, save=save))
             else:
                 # 2nd one needs to have url specified
-                res.append(self._get_from_text_single(block))
+                res.append(self._get_from_text_single(block, newest=newest, save=save))
+
+            ## keep track of all inner schemas (root, and sub schema meta)
+            for block in blocks:
+                url_line = block.splitlines()[0]
+                schema_url = url
+                if "@url" in url_line:
+                    schema_url = url_line.split("=")[1].strip()
+                if not self.exists(url=schema_url):
+                    rewritten = self._schema_text_rewrite(schema_url, block)
+                    md5 = self._md5(rewritten, blocktest=False)
+                    s = Schema(text=rewritten, url=schema_url, md5=md5)
+                    j.data.schema.meta.schema_set(s)
 
         if len(res) > 0:
             return res[0]
 
-    def _schema_text_rewrite(self, url, schema_text):
+    def _schema_text_rewrite(self, url=None, schema_text=None):
         """
         will add url to schema_text if not there yet
         :param url:
         :param schema_text:
         :return:
         """
+        assert schema_text
         schema_text = j.core.tools.text_strip(schema_text)
         found_nrs = False
         nr = 0
         out = ""
+
+        def remove_comment(line):
+            if "#" not in line:
+                return line
+            line1, line2 = line.split("#", 1)
+            return line1.strip()
+
         for line in schema_text.split("\n"):
-            if url and line.startswith("@url"):
-                continue
+            line = line.strip()
+            line = line.replace("::", ":")  # there was some but at one point of time
+            if line.startswith("@url"):
+                if url:
+                    continue
+                else:
+                    url = line.split("=", 1)[1].strip()
+                    continue
             if line.startswith("@"):
                 out += "%s\n" % line
             elif line.strip() == "":
-                out += "\n"
+                continue
             elif line.strip().startswith("#"):
-                out += "%s\n" % line
-            elif ":" in line:
+                continue
+            elif ":" in line[0:3]:
                 found_nrs = True
-                out += "%s\n" % line
+                out += "%s\n" % remove_comment(line)
             else:
                 if found_nrs:
                     raise j.exceptions.Input("cannot mix nr's and no nrs in schema", data=[url, schema_text])
-                out += "%-2s: %s\n" % (nr, line)
+                assert ":" not in line[0:3]
+                out += "%-2s: %s\n" % (nr, remove_comment(line))
                 nr += 1
         schema_text = out
-        if url:
-            schema_text = "@url = %s\n%s\n" % (url, schema_text.strip())
+        assert url
+        assert len(url) > 5
+        schema_text = "@url = %s\n%s\n" % (url, schema_text.strip())
         return schema_text
 
-    def _get_from_text_single(self, schema_text, url=None):
+    def _get_from_text_single(self, schema_text, url=None, newest=False, save=True):
         """
         can only be 1 schema
 
@@ -205,7 +243,7 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         assert isinstance(schema_text, str)
 
         schema_text = self._schema_text_rewrite(url, schema_text)
-        md5 = self._md5(schema_text)
+        md5 = self._md5(schema_text, rewrite=False)
 
         if md5 in self.schemas_md5:
             s = self.schemas_md5[md5]
@@ -215,15 +253,25 @@ class SchemaFactory(j.baseclasses.factory_testtools):
 
         s = Schema(text=schema_text, url=url, md5=md5)
 
+        if save:
+            j.data.schema.meta.schema_set(s, newest=newest)
+            if newest or s.url not in j.data.schema.schemas_loaded:
+                j.data.schema.schemas_loaded[s.url] = s
+            if newest or s._md5 not in j.data.schema.schemas_md5:
+                j.data.schema.schemas_md5[s._md5] = s
         return s
 
-    def _md5(self, text):
+    def _md5(self, text, blocktest=True, rewrite=True):
         """
         convert text to md5 in reproduceable way
         """
-        assert len(self._schema_blocks_get(text)) == 1  # need to be removed later TODO:
+        if blocktest:
+            r = self._schema_blocks_get(text)
+            assert len(r) == 1
+            text = r[0]
+        if rewrite:
+            text = self._schema_text_rewrite(schema_text=text)
         original_text = text.replace(" ", "").replace("\n", "").strip()
-        # print("*****\n%s\n***********\n"%(ascii_text))
         return j.data.hash.md5_string(original_text)
 
     def _schema_blocks_get(self, schema_text):
@@ -232,7 +280,6 @@ class SchemaFactory(j.baseclasses.factory_testtools):
         :param schema_text:
         :return:
         """
-
         block = ""
         blocks = []
         txt = j.core.text.strip(schema_text)
@@ -295,4 +342,4 @@ class SchemaFactory(j.baseclasses.factory_testtools):
 
         if want run specific test ( write the name of test ) e.g. j.data.schema.test(name="base")
         """
-        self._test_run(name=name)
+        self._tests_run(name=name)

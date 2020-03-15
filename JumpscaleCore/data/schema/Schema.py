@@ -7,7 +7,8 @@ from Jumpscale import j
 class Schema(j.baseclasses.object):
     def _init(self, text=None, url=None, md5=None):
         self._systemprops = {}
-        self._obj_class = None
+        self._obj_class_root = None
+        self._obj_class_sub = None
         self._capnp = None
         self._index_list = None
 
@@ -27,10 +28,6 @@ class Schema(j.baseclasses.object):
             raise j.exceptions.Input("url needs to be specified", data=text)
 
         self.key = j.core.text.strip_to_ascii_dense(self.url).replace(".", "_")
-
-        j.data.schema.meta.schema_set(self)
-        j.data.schema.schemas_loaded[self.url] = self
-        j.data.schema.schemas_md5[self._md5] = self
 
     @property
     def properties(self):
@@ -195,11 +192,12 @@ class Schema(j.baseclasses.object):
         if name.startswith("&"):
             name = name[1:]
             p.unique = True
+            p.index = True
             # everything which is unique also needs to be indexed
             p.index_key = True
 
         if name in ["id"]:
-            self._error_raise("do not use 'id' in your schema, is reserved for system.", data=text)
+            self._error_raise("do not use 'id' in your schema, is reserved for system\n%s" % line)
         elif name in ["name"]:
             p.unique = True
             # everything which is unique also needs to be indexed
@@ -207,7 +205,7 @@ class Schema(j.baseclasses.object):
 
         if "(" in line:
             line_proptype = line.split("(")[1].split(")")[0].strip().lower()  # in between the ()
-            self._log_debug("line:%s; lineproptype:'%s'" % (line_original, line_proptype))
+            # self._log_debug("line:%s; lineproptype:'%s'" % (line_original, line_proptype))
             line_wo_proptype = line.split("(")[0].strip()  # before the (
 
             if pointer_type:
@@ -263,27 +261,41 @@ class Schema(j.baseclasses.object):
             j.shell()
         return _capnp_schema_text
 
-    @property
-    def objclass(self):
-        if self._obj_class is None:
+    def objclass(self, root=True):
+        if root:
+            if self._obj_class_root:
+                return self._obj_class_root
+        else:
+            if self._obj_class_sub:
+                return self._obj_class_sub
 
-            if self._md5 in [None, ""]:
-                raise j.exceptions.Base("md5 cannot be None")
+        if self._md5 in [None, ""]:
+            raise j.exceptions.Base("md5 cannot be None")
 
-            tpath = "%s/templates/JSXObject2.py" % self._dirpath
+        tpath = "%s/templates/JSXObject2.py" % self._dirpath
 
-            # lets do some tests to see if it will render well, jinja doesn't show errors propertly
-            for prop in self.properties:
-                self._log_debug("prop for obj gen: %s:%s" % (prop, prop.js_typelocation))
-                prop.capnp_schema
-                prop.default_as_python_code
-                prop.js_typelocation
+        # lets do some tests to see if it will render well, jinja doesn't show errors propertly
+        for prop in self.properties:
+            # self._log_debug("prop for obj gen: %s:%s" % (prop, prop.js_typelocation))
+            prop.capnp_schema
+            prop.default_as_python_code
+            prop.js_typelocation
 
-            self._obj_class = j.tools.jinja2.code_python_render(
-                name="schema_%s" % self.key, obj_key="JSXObject2", path=tpath, obj=self, objForHash=self._md5
-            )
+        cl = j.tools.jinja2.code_python_render(
+            name="schema_%s_%s" % (self.key, root),
+            obj_key="JSXObject2",
+            path=tpath,
+            obj=self,
+            objForHash=self._md5 + "%s" % root,
+            root=root,
+        )
 
-        return self._obj_class
+        if root:
+            self._obj_class_root = cl
+        else:
+            self._obj_class_sub = cl
+
+        return cl
 
     def index_needed(self):
         """
@@ -307,7 +319,7 @@ class Schema(j.baseclasses.object):
             #     index_key = True
         return (index_key, index_sql, index_text)
 
-    def new(self, capnpdata=None, serializeddata=None, datadict=None, bcdb=None):
+    def new(self, capnpdata=None, serializeddata=None, datadict=None, model=None, parent=None):
         """
         new schema_object using data and capnpbin
 
@@ -320,29 +332,24 @@ class Schema(j.baseclasses.object):
         """
 
         # self._log_debug("LOADS:%s:%s" % (versionnr, obj_id))
+        if parent:
+            root = False
+        else:
+            root = True
 
         if serializeddata:
             assert isinstance(serializeddata, bytes)
-            obj = j.data.serializers.jsxdata.loads(serializeddata, bcdb=bcdb)
+            # schema does not have to be passed because the serialized data should have right md5 inside
+            obj = j.data.serializers.jsxdata.loads(serializeddata, model=model, parent=parent)
         else:
 
-            if bcdb:
-                model = bcdb.model_get(url=self.url)
-                # here the model retrieved will be linked to a schema with the same url
-                # but can be a different md5
+            if root:
+                obj = self.objclass(root)(schema=self, capnpdata=capnpdata, datadict=datadict, model=model)
             else:
-                model = None
+                assert model == None
+                obj = self.objclass(root)(schema=self, capnpdata=capnpdata, datadict=datadict, parent=parent)
 
-            if capnpdata and isinstance(capnpdata, bytes):
-                obj = self.objclass(schema=self, capnpdata=capnpdata, model=model)
-            elif datadict and datadict != {}:
-                obj = self.objclass(schema=self, datadict=datadict, model=model)
-            elif capnpdata is None and serializeddata is None and datadict is None:
-                obj = self.objclass(schema=self, model=model)
-            else:
-                raise j.exceptions.Base("wrong arguments to new on schema")
-
-            if bcdb:
+            if model:
                 model._triggers_call(obj=obj, action="new")
 
         return obj
@@ -365,6 +372,7 @@ class Schema(j.baseclasses.object):
         list of the properties which are used for indexing in sql db (sqlite)
         :return:
         """
+        # IS TOO SLOW AND WE CREATE MANY TIMES THESE OBJEXTS
         res = []
         for prop in self.properties:
             if prop.index:

@@ -10,13 +10,16 @@ class TCPRouterFactory(JSConfigs):
     _CHILDCLASS = TCPRouterClient
 
     def test(self):
+        """
+        kosmos 'j.clients.tcp_router.test()'
+        """
 
         # get a client instance (TO CHECK: secret is already assigned to backend)
         cl = self.get(
             "test_instance",
             local_ip="0.0.0.0",
             local_port=18000,
-            remote_ip="127.0.0.1",
+            remote_url="127.0.0.1",
             remote_port=6379,
             secret="test",
         )

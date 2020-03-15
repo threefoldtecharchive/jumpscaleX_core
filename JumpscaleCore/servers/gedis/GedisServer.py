@@ -54,10 +54,7 @@ class GedisServer(JSBaseConfig):
         name** = "main" (S)
         host = "0.0.0.0" (ipaddress)
         port = 9900 (ipport)
-        ssl = False (B)
         secret_ = "" (S)
-        ssl_keyfile = "" (S)
-        ssl_certfile = "" (S)
         # actors_data = (LS)
         """
 
@@ -77,7 +74,7 @@ class GedisServer(JSBaseConfig):
         # self.namespaces = ["system", "default"]
         self._threebot_server = None
 
-        j.data.schema.get_from_text(SCHEMA)
+        j.data.schema.get_from_text(SCHEMA, newest=True)
 
         # hook to allow external servers to find this gedis
         # self.server_gedis = self
@@ -100,41 +97,7 @@ class GedisServer(JSBaseConfig):
 
     @property
     def gevent_server(self):
-        if self.ssl:
-            if not self.ssl_keyfile and not self.ssl_certfile:
-                ssl_keyfile = j.core.tools.text_replace("{DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.key")
-                ssl_certfile = j.core.tools.text_replace("{DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.crt")
-
-                if j.sal.fs.exists(ssl_keyfile):
-                    self.ssl_keyfile = ssl_keyfile
-                if j.sal.fs.exists(ssl_certfile):
-                    self.ssl_certfile = ssl_certfile
-
-            if not self.ssl_keyfile and not self.ssl_certfile:
-                self.ssl_keyfile, self.ssl_certfile = self.sslkeys_generate()
-
-            else:
-                if not j.sal.fs.exists(self.ssl_keyfile):
-                    raise RuntimeError("SSL: Error keyfile not found")
-
-                if not j.sal.fs.exists(self.ssl_certfile):
-                    raise RuntimeError("SSL: Error certfile not found")
-
-            self._log_info("Gedis SSL: using keyfile {0} and certfile {1}".format(self.ssl_keyfile, self.ssl_certfile))
-
-            # Server always supports SSL
-            # client can use to talk to it in SSL or not
-            gedis_server = StreamServer(
-                (self.host, self.port),
-                spawn=Pool(),
-                handle=self.handler.handle_gedis,
-                keyfile=self.ssl_keyfile,
-                certfile=self.ssl_certfile,
-            )
-        else:
-            gedis_server = StreamServer((self.host, self.port), spawn=Pool(), handle=self.handler.handle_gedis)
-
-        return gedis_server
+        return StreamServer((self.host, self.port), spawn=Pool(), handle=self.handler.handle_gedis)
 
     def actor_add(self, name, path, package):
         """
@@ -153,6 +116,15 @@ class GedisServer(JSBaseConfig):
         self._log_debug("actor_add:%s:%s", package.name, path)
         key = "%s.%s" % (package.name, name)
         self.cmds_meta[key] = GedisCmds(path=path, name=name, package=package)
+
+    def actors_remove(self, name, package):
+        assert name
+        assert isinstance(package, ThreeBotPackage)
+
+        key = "%s.%s" % (package.name, name)
+        if key in self.cmds_meta:
+            del self.cmds_meta[key]
+            self._log_debug("actor_removed:%s:%s", package.name)
 
     ####################################################################
 
@@ -232,35 +204,10 @@ class GedisServer(JSBaseConfig):
         :rtype: GedisClient
         """
 
-        data = {"host": self.host, "port": self.port, "secret_": self.secret_, "ssl": self.ssl, "namespace": namespace}
+        data = {"host": self.host, "port": self.port, "secret_": self.secret_, "namespace": namespace}
         return j.clients.gedis.get(name=self.name, configureonly=True, **data)
 
     #######################PROCESSING OF CMDS ##############
-
-    # def sslkeys_generate(self):
-    #     if not self.ssl:
-    #         raise j.exceptions.Base("sslkeys_generate: gedis server is not configure to use ssl")
-    #
-    #     path = os.path.dirname(self.code_generated_dir)
-    #     key = j.sal.fs.joinPaths(path, "ca.key")
-    #     cert = j.sal.fs.joinPaths(path, "ca.crt")
-    #
-    #     if os.path.exists(key) and os.path.exists(cert):
-    #         return key, cert
-    #
-    #     j.sal.process.execute(
-    #         'openssl req -newkey rsa:2048 -nodes -keyout ca.key -x509 -days 365 -out ca.crt -subj "/C=GB/ST=London/L=London/O=Global Security/OU=IT Department/CN=localhost"'.format(
-    #             key, cert
-    #         ),
-    #         showout=False,
-    #     )
-    #
-    #     # res = j.sal.ssl.ca_cert_generate(path)
-    #     # if res:
-    #     #     self._log_info("generated sslkeys for gedis in %s" % path)
-    #     # else:
-    #     #     self._log_info("using existing key and cerificate for gedis @ %s" % path)
-    #     return key, cert
 
     # def load_actors(self):
     #     for item in self.actors_data:

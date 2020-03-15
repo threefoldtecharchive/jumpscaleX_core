@@ -7,14 +7,12 @@ from Jumpscale import j
 ###
 
 
-def main(self):
+def test_export():
     """
     to run:
     kosmos 'j.data.bcdb.test(name="export")'
 
     """
-    return
-
     zdb = j.servers.zdb.test_instance_start()
 
     namespaces = ["testexport_zdb", "testexport_sqlite"]
@@ -46,7 +44,7 @@ def main(self):
 
             if not zdb_admin.namespace_exists(namespace):
                 zdb_admin.namespace_new(namespace, secret=adminsecret_, maxsize=0, die=True)
-            storclient = zdb.client_get(namespace, adminsecret_)
+            storclient = zdb.client_get(namespace, nsname=namespace, secret=adminsecret_)
             bcdb = j.data.bcdb.get(name=namespace, storclient=storclient)
         else:
             bcdb = j.data.bcdb.get(name=namespace)
@@ -78,14 +76,14 @@ def main(self):
             farm_model = bcdb.model_get(schema)
             node_model = bcdb.model_get(schema2)
 
-            bcdb.export(f"/tmp/bcdb_export/{namespace}", encrypt=encrypt)
+            bcdb.export(path=f"/tmp/bcdb_export/{namespace}", encrypt=encrypt)
 
             assert len(farm_model.find()) == 10
             assert len(node_model.find()) == 8
 
             bcdb.reset()
             assert bcdb.storclient.count == 1
-            bcdb.import_(f"/tmp/bcdb_export/{namespace}", interactive=False)
+            bcdb.import_(path=f"/tmp/bcdb_export/{namespace}", interactive=False)
 
             assert len(farm_model.find()) == 10
             assert len(node_model.find()) == 8
@@ -98,5 +96,5 @@ def main(self):
         bcdb.destroy()
 
     j.servers.zdb.test_instance_stop()
-    self._log_info("TEST DONE")
+    j.data.bcdb._log_info("TEST DONE")
     return "OK"

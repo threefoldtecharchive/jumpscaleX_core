@@ -2,6 +2,12 @@ from __future__ import unicode_literals
 import getpass
 import pickle
 import re
+import copy
+
+try:
+    import msgpack
+except:
+    msgpack = None
 
 DEFAULT_BRANCH = "master"
 GITREPOS = {}
@@ -97,6 +103,11 @@ from pathlib import Path
 from subprocess import Popen, check_output
 import inspect
 import json
+
+try:
+    import ujson as ujson
+except BaseException:
+    import json as ujson
 
 try:
     import traceback
@@ -218,6 +229,7 @@ class RedisTools:
                 return None
 
         try:
+            unix_socket_path = Tools.text_replace(unix_socket_path)
             cl = Redis(unix_socket_path=unix_socket_path, db=0)
             cl.fake = False
             assert cl.ping()
@@ -238,6 +250,10 @@ class RedisTools:
             cl = None
 
         return cl
+
+    @staticmethod
+    def serialize(data):
+        return serializer(data)
 
     @staticmethod
     def core_get(reset=False, tcp=True):
@@ -787,9 +803,151 @@ class JSExceptions:
 from string import Formatter
 
 
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]
+
+
 class OurTextFormatter(Formatter):
     def check_unused_args(self, used_args, args, kwargs):
         return used_args, args, kwargs
+
+
+class LogHandler:
+    def __init__(self, db, appname=None):
+        self.db = db
+        if appname:
+            self.appname = appname
+        else:
+            self.appname = "init"
+
+        self.last_logid = 0
+
+    def _process_logdict(self, logdict):
+        if "processid" not in logdict or not logdict["processid"] or logdict["processid"] == "unknown":
+            logdict["processid"] = os.getpid()
+
+        if "epoch" not in logdict or not logdict["epoch"] or logdict["epoch"] == 0:
+            logdict["epoch"] = int(time.time())
+
+        return logdict
+
+    @property
+    def rediskey_logs(self):
+        return "logs:%s:data" % (self.appname)
+
+    @property
+    def rediskey_logs_incr(self):
+        return "logs:%s:incr" % (self.appname)
+
+    def handle_log(self, logdict):
+        """handle error
+
+        :param logdict: logging dict (see jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md for keys)
+        :type logdict: dict
+        """
+
+        if "traceback" in logdict:
+            logdict.pop("traceback")
+
+        rediskey_logs = self.rediskey_logs
+        rediskey_logs_incr = self.rediskey_logs_incr
+
+        if not self.db:
+            return
+
+        latest_id = self.db.incr(rediskey_logs_incr)
+
+        self.last_logid = latest_id
+        logdict["id"] = latest_id
+
+        logdict = self._process_logdict(logdict)
+
+        data = self._dumps(logdict)
+
+        self.db.hset(rediskey_logs, latest_id, data)
+
+        if latest_id / 1000 >= 2 and latest_id % 1000 == 0:
+            # means we need to check and maybe do some cleanup, like this we only check this every 1000 items
+            # only one log handler can have this, because id's are unique because of redis
+            self._data_container_dump(latest_id)
+
+    def _dumps(self, data):
+        if isinstance(data, str):
+            return data
+        try:
+            data = json.dumps(data, ensure_ascii=False, sort_keys=False, indent=True)
+            return data
+        except Exception as e:
+            pass
+        try:
+            data = str(data)
+        except Exception as e:
+            data = "CANNOT SERIALIZE DATA"
+        return data
+
+    def _redis_get(self, identifier, appname=None, die=True):
+        """
+        returns json (is the format in redis)
+        :param identifier:
+        :param appname:
+        :param die:
+        :return:
+        """
+        if not appname:
+            appname = self.appname
+        rediskey_logs = "logs:%s:data" % appname
+        try:
+            res = self.db.hget(rediskey_logs, identifier)
+        except:
+            raise RuntimeError("could not find log with identifier:%s" % identifier)
+
+        if not res:
+            if die:
+                raise RuntimeError("could not find log with identifier:%s" % identifier)
+            return
+        return res
+
+    def _data_container_dump(self, latest_id):
+        startid = latest_id - 2000
+        stopid = latest_id - 1000
+        # TODO, need to verify, for the next 2000 logs items we will not have them all
+        if msgpack:
+            r = []
+            # for redis which is 1 indexed
+            for i in range(startid + 1, stopid + 1):
+                d = self._redis_get(i)
+                r.append(d)
+            assert len(r) == 1000
+            log_dir = Tools.text_replace("{DIR_VAR}/logs")
+            path = "%s/%s" % (log_dir, self.appname)
+            Tools.dir_ensure(path)
+            path = "%s/%s/%s.msgpack" % (log_dir, self.appname, stopid)
+            Tools.file_write(path, msgpack.dumps(r))
+        # now remove from redis
+
+        keystodelete = []
+        for key in self.db.hkeys(self.rediskey_logs):
+            if int(key) < stopid + 1:
+                keystodelete.append(key)
+
+        for chunk in chunks(keystodelete, 100):
+            self.db.hdel(self.rediskey_logs, *chunk)
+
+    def _data_container_set(self, container, appname):
+        if not msgpack:
+            return
+        assert isinstance(container, list)
+        assert len(container) == 1000
+        j.shell()
+        logdir = "%s/%s" % (self._log_dir, appname)
+        if not j.sal.fs.exists(logdir):
+            return []
+        else:
+            data = msgpack.dumps(container)
+            j.shell()
+            w
 
 
 class Tools:
@@ -993,7 +1151,7 @@ class Tools:
         data_show=True,
         exception=None,
         replace=True,
-        stdout=True,
+        stdout=False,
         source=None,
         frame_=None,
     ):
@@ -1008,8 +1166,8 @@ class Tools:
             - CRITICAL 	50
             - ERROR 	40
             - WARNING 	30
+            - ENDUSER 	25
             - INFO 	    20
-            - STDOUT 	15
             - DEBUG 	10
 
 
@@ -1022,6 +1180,8 @@ class Tools:
         :return:
         """
         logdict = {}
+        if MyEnv.debug or level > 39:  # error+ is shown
+            stdout = True
 
         if isinstance(msg, Exception):
             raise Tools.exceptions.JSBUG("msg cannot be an exception raise by means of exception=... in constructor")
@@ -1102,11 +1262,11 @@ class Tools:
         if not isinstance(msg, str):
             msg = str(msg)
 
-        logdict["message"] = Tools.text_replace(msg)
+        logdict["message"] = msg  # Tools.text_replace(msg)
 
         logdict["linenr"] = linenr
         logdict["filepath"] = fname
-        logdict["processid"] = MyEnv.appname
+        logdict["processid"] = "unknown"  # TODO: get pid
         if source:
             logdict["source"] = source
 
@@ -1130,9 +1290,12 @@ class Tools:
                 data = Tools._data_serializer_safe(data)
 
         logdict["data"] = data
-
         if stdout:
+            logdict = copy.copy(logdict)
+            logdict["message"] = Tools.text_replace(logdict["message"])
             Tools.log2stdout(logdict, data_show=data_show)
+        elif level > 14:
+            Tools.log2stdout(logdict, data_show=False, enduser=True)
 
         iserror = tb or exception
         return Tools.process_logdict_for_handlers(logdict, iserror)
@@ -1146,19 +1309,19 @@ class Tools:
         :return:
         """
 
-        # assert isinstance(logdict, dict)
+        assert isinstance(logdict, dict)
 
         if iserror:
             for handler in MyEnv.errorhandlers:
                 handler(logdict)
 
-        for handler in MyEnv.loghandlers:
-            try:
-                handler(logdict)
-            except Exception as e:
-                MyEnv.exception_handle(e)
+        else:
 
-        # assert isinstance(logdict, dict)
+            for handler in MyEnv.loghandlers:
+                try:
+                    handler(logdict)
+                except Exception as e:
+                    MyEnv.exception_handle(e)
 
         return logdict
 
@@ -1180,11 +1343,13 @@ class Tools:
 
         methodname = ""
         for line in code3.split("\n"):
+            line = line.strip()
             if line.startswith("def "):
                 methodname = line.split("(", 1)[0].strip().replace("def ", "")
+                break
 
         if methodname == "":
-            raise j.exceptions.Base("defname cannot be empty")
+            raise Exception("defname cannot be empty")
 
         return methodname, code3
 
@@ -1418,6 +1583,17 @@ class Tools:
             p.write_text(content)
         else:
             p.write_bytes(content)
+
+    @staticmethod
+    def file_append(path, content):
+        dirname = os.path.dirname(path)
+        try:
+            os.makedirs(dirname, exist_ok=True)
+        except FileExistsError:
+            pass
+        my_path = Path(path)
+        with my_path.open("a") as f:
+            f.write(content)
 
     @staticmethod
     def file_text_read(path):
@@ -1897,17 +2073,29 @@ class Tools:
         return res
 
     @staticmethod
-    def log2stdout(logdict, data_show=True):
+    def log2stdout(logdict, data_show=False, enduser=False):
         def show():
             # always show in debugmode and critical
-            if MyEnv.debug or logdict["level"] >= 50:
+            if MyEnv.debug or (logdict and logdict["level"] >= 50):
                 return True
             if not MyEnv.log_console:
                 return False
-            return logdict["level"] >= MyEnv.log_loglevel
+            return logdict and (logdict["level"] >= MyEnv.log_level)
 
-        if not show():
+        if not show() and not data_show:
             return
+
+        if enduser:
+            if "public" in logdict and logdict["public"]:
+                msg = logdict["public"]
+            else:
+                msg = logdict["message"]
+            if logdict["level"] > 29:
+                print(Tools.text_replace("{RED} * %s{RESET}\n" % msg))
+            else:
+                print(Tools.text_replace("{YELLOW} * %s{RESET}\n" % msg))
+            return
+
         text = Tools.log2str(logdict, data_show=True, replace=True)
         p = print
         if MyEnv.config.get("LOGGER_PANEL_NRLINES"):
@@ -1920,7 +2108,7 @@ class Tools:
             p(text)
 
     @staticmethod
-    def traceback_format(tb):
+    def traceback_format(tb, replace=True):
         """format traceback
 
         :param tb: traceback
@@ -1966,7 +2154,7 @@ class Tools:
         """
 
         if "epoch" in logdict:
-            timetuple = time.localtime(logdict)
+            timetuple = time.localtime(logdict["epoch"])
         else:
             timetuple = time.localtime(time.time())
         logdict["TIME"] = time.strftime(MyEnv.FORMAT_TIME, timetuple)
@@ -2880,7 +3068,7 @@ class Tools:
             raise Tools.exceptions.JSBUG("branch should be a string or list, now %s" % branch)
 
         Tools.log("get code:%s:%s (%s)" % (url, path, branch))
-        if MyEnv.config["SSH_AGENT"]:
+        if MyEnv.config["SSH_AGENT"] and MyEnv.interactive:
             url = "git@github.com:%s/%s.git"
         else:
             url = "https://github.com/%s/%s.git"
@@ -3128,8 +3316,8 @@ class MyEnv_:
         self.state = None
         self.__init = False
         self.debug = False
-        self.log_console = True
-        self.log_loglevel = 15
+        self.log_console = False
+        self.log_level = 15
 
         self.sshagent = None
         self.interactive = False
@@ -3214,9 +3402,9 @@ class MyEnv_:
 
             self.log_includes = [i for i in self.config.get("LOGGER_INCLUDE", []) if i.strip().strip("''") != ""]
             self.log_excludes = [i for i in self.config.get("LOGGER_EXCLUDE", []) if i.strip().strip("''") != ""]
-            self.log_loglevel = self.config.get("LOGGER_LEVEL", 50)
-            self.log_console = self.config.get("LOGGER_CONSOLE", True)
-            self.log_redis = self.config.get("LOGGER_REDIS", False)
+            self.log_level = self.config.get("LOGGER_LEVEL", 10)
+            self.log_console = self.config.get("LOGGER_CONSOLE", False)
+            self.log_redis = self.config.get("LOGGER_REDIS", True)
             self.debug = self.config.get("DEBUG", False)
             self.debugger = self.config.get("DEBUGGER", "pudb")
             self.interactive = self.config.get("INTERACTIVE", True)
@@ -3278,14 +3466,15 @@ class MyEnv_:
     def _basedir_get(self):
         if self.readonly:
             return "/tmp/jumpscale"
-        isroot = None
-        rc, out, err = Tools.execute("whoami", showout=False, die=False)
-        if rc == 0:
-            if out.strip() == "root":
-                isroot = 1
-        if Tools.exists("/sandbox") or isroot == 1:
-            Tools.dir_ensure("/sandbox")
-            return "/sandbox"
+        if "darwin" not in self.platform():
+            isroot = None
+            rc, out, err = Tools.execute("whoami", showout=False, die=False)
+            if rc == 0:
+                if out.strip() == "root":
+                    isroot = 1
+            if Tools.exists("/sandbox") or isroot == 1:
+                Tools.dir_ensure("/sandbox")
+                return "/sandbox"
         p = "%s/sandbox" % self._homedir_get()
         if not Tools.exists(p):
             Tools.dir_ensure(p)
@@ -3357,6 +3546,11 @@ class MyEnv_:
         if not "DIR_APPS" in config:
             config["DIR_APPS"] = "%s/apps" % config["DIR_BASE"]
 
+        if not "EXPLORER_ADDR" in config:
+            config["EXPLORER_ADDR"] = "explorer.testnet.grid.tf"
+        if not "THREEBOT_DOMAIN" in config:
+            config["THREEBOT_DOMAIN"] = "3bot.testnet.grid.tf"
+
         return config
 
     def configure(
@@ -3414,7 +3608,7 @@ class MyEnv_:
         if readonly is None and "readonly" in args:
             readonly = True
 
-        if sshagent_use is None or ("no_sshagent" in args and sshagent_use is False):
+        if sshagent_use is None or ("no-sshagent" in args and sshagent_use is False):
             sshagent_use = False
         else:
             sshagent_use = True
@@ -3478,8 +3672,7 @@ class MyEnv_:
         if readonly:
             self.config["READONLY"] = readonly
 
-        if sshagent_use:
-            self.config["SSH_AGENT"] = sshagent_use
+        self.config["SSH_AGENT"] = sshagent_use
         if sshkey:
             self.config["SSH_KEY_DEFAULT"] = sshkey
         if debug_configure:
@@ -3524,7 +3717,7 @@ class MyEnv_:
     def adminsecret(self):
         if not self.config["SECRET"]:
             self.secret_set()
-        return self.config["SECRET"]
+        return self.config["SECRET"][0:32]
 
     def secret_set(self, secret=None):
         if self.interactive:
@@ -3703,6 +3896,7 @@ class MyEnv_:
 
 
 MyEnv = MyEnv_()
+MyEnv.loghandler_redis = LogHandler(db=MyEnv.db)
 
 
 class BaseInstaller:
@@ -3862,8 +4056,8 @@ class BaseInstaller:
         pips = {
             # level 0: most basic needed
             0: [
-                "cmake",
                 "scikit-build",
+                "cmake",
                 "blosc>=1.5.1",
                 "Brotli>=0.6.0",
                 "captcha",
@@ -3930,7 +4124,6 @@ class BaseInstaller:
                 "wsgidav",
                 "bottle==0.12.17",  # why this version?
                 "beaker",
-                "monkey.patch_thread",
                 "Mnemonic",
             ],
             # level 1: in the middle
@@ -4064,9 +4257,14 @@ class OSXInstaller:
     def base():
         MyEnv._init()
         OSXInstaller.brew_install()
-        if not Tools.cmd_installed("curl") or not Tools.cmd_installed("unzip") or not Tools.cmd_installed("rsync"):
+        if (
+            not Tools.cmd_installed("curl")
+            or not Tools.cmd_installed("unzip")
+            or not Tools.cmd_installed("rsync")
+            or not Tools.cmd_installed("graphviz")
+        ):
             script = """
-            brew install curl unzip rsync
+            brew install curl unzip rsync graphviz tmux
             """
             Tools.execute(script, replace=True)
         BaseInstaller.pips_install(["click"])  # TODO: *1
@@ -4208,7 +4406,11 @@ class UbuntuInstaller:
             "net-tools",
             "libgeoip-dev",
             "libcapnp-dev",
-        ]  # "graphviz"
+            "graphviz",
+            "libssl-dev",
+            "cmake",
+            "fuse",
+        ]
 
     @staticmethod
     def apts_install():
@@ -4319,22 +4521,23 @@ class JumpscaleInstaller:
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
             if branch:
-                BRANCH = branch
+                C = f"""git ls-remote --heads {GITURL} {branch}"""
+                _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True)
+                if out:
+                    BRANCH = branch
+
             try:
                 dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
             except Exception as e:
-                j.shell()
-                raise
+
                 activate_http = Tools.ask_yes_no(
                     "\n### SSH cloning Failed, your key isn't on github or you're missing permission, Do you want to clone via http?\n"
                 )
                 if activate_http:
                     MyEnv.interactive = False
-                    r = Tools.code_git_rewrite_url(url=URL, ssh=False)
+                    r = Tools.code_git_rewrite_url(url=GITURL, ssh=False)
                     # TODO: *1
-                    Tools.shell()
-                    w
-                    Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, dest=DEST)
+                    Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull)
                 else:
                     raise Tools.exceptions.Base("\n### Please authenticate your key and try again\n")
 
@@ -4421,6 +4624,10 @@ class DockerFactory:
             cdir = Tools.text_replace("{DIR_BASE}/var/containers")
             Tools.dir_ensure(cdir)
             for name_found in os.listdir(cdir):
+                if not os.path.isdir(os.path.join(cdir, name_found)):
+                    # https://github.com/threefoldtech/jumpscaleX_core/issues/297
+                    # in case .DS_Store is created when opened in finder
+                    continue
                 # to make sure there is no recursive behaviour if called from a docker container
                 if name_found != name and name_found.strip().lower() not in ["shared"]:
                     DockerContainer(name_found)
@@ -4461,8 +4668,11 @@ class DockerFactory:
 
     @staticmethod
     def list():
+        res = []
         for d in DockerFactory.containers():
             print(" - %-10s : %-15s : %-25s (sshport:%s)" % (d.name, d.config.ipaddr, d.config.image, d.config.sshport))
+            res.append(d.name)
+        return res
 
     @staticmethod
     def container_name_exists(name):
@@ -4511,6 +4721,61 @@ class DockerFactory:
         for image_id in names:
             if image_id:
                 Tools.execute("docker rmi -f %s" % image_id)
+
+    @staticmethod
+    def get_container_port_binding(container_name="3obt", port="9001/udp"):
+        ports_bindings = Tools.execute(
+            "docker inspect {container_name} --format={data}".format(
+                container_name=container_name, data="'{{json .HostConfig.PortBindings}}'"
+            ),
+            showout=False,
+            replace=False,
+        )
+        # Get and serialize the binding ports data
+        all_ports_data = json.loads(ports_bindings[1])
+        port_binding_data = all_ports_data.get(port, None)
+        if not port_binding_data:
+            raise Tools.exceptions.Input(
+                f"Error happened during parsing the binding ports data from container {conitainer_name} and port {port}"
+            )
+
+        host_port = port_binding_data[-1].get("HostPort")
+        return host_port
+
+    @staticmethod
+    def container_running_with_udp_ports_wireguard():
+        containers_ports = dict()
+        containers_names = DockerFactory.containers_names()
+        for name in containers_names:
+            port_binding = DockerFactory.get_container_port_binding(container_name=name, port="9001/udp")
+            containers_ports[name] = port_binding
+        return containers_ports
+
+    @staticmethod
+    def get_container_ip_address(container_name="3bot"):
+        container_ip = Tools.execute(
+            "docker inspect {container_name} --format={data}".format(
+                container_name=container_name, data="'{{json .NetworkSettings.Networks.bridge.IPAddress}}'"
+            ),
+            showout=False,
+            replace=False,
+        )[1].split("\n")
+        if not container_ip:
+            raise Tools.exceptions.Input(
+                f"Error happened during parsing the container {conitainer_name} ip address data "
+            )
+        # Get the data in the required format
+        formatted_container_ip = container_ip[0].strip("\"'")
+        return formatted_container_ip
+
+    @staticmethod
+    def containers_running_ip_address():
+        containers_ip_addresses = dict()
+        containers_names = DockerFactory.containers_names()
+        for name in containers_names:
+            container_ip = DockerFactory.get_container_ip_address(container_name=name)
+            containers_ip_addresses[name] = container_ip
+        return containers_ip_addresses
 
 
 class DockerConfig:
@@ -4859,6 +5124,9 @@ class DockerContainer:
             self.dexec("apt-get install locales -y")
             self.dexec("touch /root/.BASEINSTALL_OK")
 
+        if image2 == "threefoldtech/base":
+            self.dexec("pip3 install requests>=2.13.0")
+
         if update or new:
             print(" - Configure / Start SSH server")
             self.dexec("rm -rf /sandbox/cfg/keys")
@@ -4926,7 +5194,7 @@ class DockerContainer:
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
         cmd2 = "ssh -oStrictHostKeyChecking=no -t root@localhost -A -p %s '%s'" % (self.config.sshport, cmd)
-        Tools.execute(
+        return Tools.execute(
             cmd2, interactive=True, showout=False, replace=False, asfile=asfile, timeout=3600 * 2, retry=retry
         )
 
@@ -4946,7 +5214,7 @@ class DockerContainer:
         cmd = f"scp -P {sshport} /tmp/{name}.py root@localhost:/tmp/{name}.py"
         Tools.execute(cmd, showout=False, replace=False)
         cmd = f"source /sandbox/env.sh;kosmos -p /tmp/{name}.py"
-        self.sshexec(cmd, asfile=True)
+        return self.sshexec(cmd, asfile=True)
 
     def kosmos(self):
         self.jsxexec("j.shell()")
@@ -5656,11 +5924,8 @@ class ExecutorSSH:
         """
         args will be substitued to .format(...) string function https://docs.python.org/3/library/string.html#formatspec
         MyEnv.config will also be given to the format function
-
         content example:
-
         "{name!s:>10} {val} {n:<10.2f}"  #floating point rounded to 2 decimals
-
         performance is +100k per sec
         """
         return Tools.text_replace(content=content, args=args, executor=self)
@@ -5880,15 +6145,12 @@ class ExecutorSSH:
         """
         C = """
         set +ex
-
         if [ -e /sandbox ]; then
             export PBASE=/sandbox
         else
             export PBASE=~/sandbox
         fi
-
         ls $PBASE  > /dev/null 2>&1 && echo 'ISSANDBOX = 1' || echo 'ISSANDBOX = 0'
-
         ls "$PBASE/bin/python3"  > /dev/null 2>&1 && echo 'ISSANDBOX_BIN = 1' || echo 'ISSANDBOX_BIN = 0'
         echo UNAME = \""$(uname -mnprs)"\"
         echo "HOME = $HOME"
@@ -5898,15 +6160,12 @@ class ExecutorSSH:
         else
             echo OS_TYPE = "ubuntu"
         fi
-
         echo "CFG_JUMPSCALE = --TEXT--"
         cat $PBASE/cfg/jumpscale_config.msgpack 2>/dev/null || echo ""
         echo --TEXT--
-
         echo "BASHPROFILE = --TEXT--"
         cat $HOME/.profile_js 2>/dev/null || echo ""
         echo --TEXT--
-
         echo "ENV = --TEXT--"
         export
         echo --TEXT--
@@ -6034,7 +6293,6 @@ class ExecutorSSH:
         retry=4,
     ):
         """
-
         :param source:
         :param dest:
         :param recursive:
@@ -6073,7 +6331,6 @@ class ExecutorSSH:
 
     def download(self, source, dest=None, ignoredir=None, ignorefiles=None, recursive=True):
         """
-
         :param source:
         :param dest:
         :param recursive:
@@ -6087,7 +6344,10 @@ class ExecutorSSH:
             dest = self._replace(dest)
         source = self._replace(source)
 
-        destdir = os.path.dirname(source)
+        sourcedir = os.path.dirname(source)
+        Tools.dir_ensure(sourcedir)
+
+        destdir = os.path.dirname(dest)
         Tools.dir_ensure(destdir)
 
         cmd = "scp -P %s root@%s:%s %s" % (self.port, self.addr, source, dest)
@@ -6143,10 +6403,18 @@ class WireGuardServer:
         self.port = port
         self.port_wireguard = 9001
         self.myid = 1
-        self.serverid = 200
+        self.serverid = 1
 
         self._config_local = None
         self.executor = ExecutorSSH(addr, port)
+
+        # from Jumpscale import j
+
+        # sshcl = j.clients.ssh.get("wireguardhost", addr=addr, port=port)
+        # self.executor = sshcl.executor
+
+        # j.shell()
+        # self.executor = ExecutorSSH(addr, port)
 
     def install(self):
         ubuntu_install = """
@@ -6227,7 +6495,30 @@ class WireGuardServer:
 
         return "%s.%s" % (first, second)
 
-    def server_start(self):
+    def isConfigured(self):
+        """
+        Check wireguard
+        :return:
+        """
+        file = "/etc/wireguard/wg0.conf"
+        if not self.executor.exists(file):
+            return False, None
+
+        text = self.executor.file_read(file)
+        import configparser
+        import io
+
+        buf = io.StringIO(text)
+        config = configparser.ConfigParser()
+        config.read_file(buf)
+        try:
+            ip = config["Interface"]["Address"]
+            ip = ip.split("/")[0]
+            return True, ip
+        except:
+            return False, None
+
+    def server_start(self, ip_last_byte="2"):
         self.install()
         config = self.config["server"]
         if "WIREGUARD_SERVER_PUBKEY" not in config:
@@ -6235,6 +6526,7 @@ class WireGuardServer:
             config["WIREGUARD_SERVER_PUBKEY"] = pubkey
             config["WIREGUARD_SERVER_PRIVKEY"] = privkey
             config["SUBNET"] = self._subnet_calc(self.serverid)
+            config["IP_ADDRESS"] = f'10.{config["SUBNET"]}.{ip_last_byte}/24'
 
         self.config_server_mine["WIREGUARD_CLIENT_PUBKEY"] = self.config_local["WIREGUARD_CLIENT_PUBKEY"]
         self.config_server_mine["SUBNET"] = self._subnet_calc(self.myid)
@@ -6243,7 +6535,7 @@ class WireGuardServer:
 
         C = """
         [Interface]
-        Address = 10.{SUBNET}.1/24
+        Address = {IP_ADDRESS}
         SaveConfig = true
         PrivateKey = {WIREGUARD_SERVER_PRIVKEY}
         ListenPort = {WIREGUARD_PORT}
@@ -6269,40 +6561,68 @@ class WireGuardServer:
         cmd = "wg-quick up %s" % path
         self.executor.execute(cmd)
 
-    def connect(self):
+    def write_peer_configuration(self, wireguard_port_udb=9001, last_byte="0", container_ip="172.17.0.2"):
+        # Override the default wireguard port with the right one
+        self.config_server["WIREGUARD_PORT"] = wireguard_port_udb
+        self.config_server["LAST_BYTE"] = last_byte
+        self.config_server["CONTAINER_IP"] = container_ip
+        # Creating the peer for Linux, it shall not contain the docker interface as it already happened on Linux
+        if MyEnv.platform() == "linux":
+            C = """
 
+            [Peer]
+            PublicKey = {WIREGUARD_SERVER_PUBKEY}
+            Endpoint = {WIREGUARD_ADDR}:{WIREGUARD_PORT}
+            AllowedIPs = 10.{SUBNET}.{LAST_BYTE}/32
+            PersistentKeepalive = 25
+            """
+
+        else:
+            # Creating the peer for Mac, Shall add the docker interface as it is not there on Mac.
+            C = """
+
+            [Peer]
+            PublicKey = {WIREGUARD_SERVER_PUBKEY}
+            Endpoint = {WIREGUARD_ADDR}:{WIREGUARD_PORT}
+            AllowedIPs = 10.{SUBNET}.{LAST_BYTE}/32
+            AllowedIPs = {CONTAINER_IP}/32
+            PersistentKeepalive = 25
+            """
+
+        C = Tools.text_replace(C, args=self.config_server)
+
+        path = "{DIR_BASE}/cfg/wireguard/%s/wg0.conf" % self.serverid
+        path = Tools.text_replace(path)
+        Tools.dir_ensure(os.path.dirname(path))
+        Tools.file_append(path, C)
+        # print("WIREGUARD CONFIFURATION:\n\n%s" % config)
+        # print("WIREGUARD CONFIG PATH:%s" % path)
+
+    def write_interface_configuration(self):
         C = """
         [Interface]
-        Address = 10.{SUBNET}.2/24
+        Address = 10.{SUBNET}.1/24
         PrivateKey = {WIREGUARD_CLIENT_PRIVKEY}
         """
         self.config_local["SUBNET"] = self._subnet_calc(self.myid)
         C = Tools.text_replace(C, args=self.config_local)
-        C2 = """
+        self.config_local["ADDRESS"] = f"10.{self.config_local['SUBNET']}.1/24"
 
-        [Peer]
-        PublicKey = {WIREGUARD_SERVER_PUBKEY}
-        Endpoint = {WIREGUARD_ADDR}:{WIREGUARD_PORT}
-        AllowedIPs = 10.{SUBNET}.0/24
-        AllowedIPs = 172.17.0.0/16
-        PersistentKeepalive = 25
-        """
-        C2 = Tools.text_replace(C2, args=self.config_server)
-        C += C2
-        path = "{DIR_BASE}/cfg/wireguard/%s/wg0.conf" % self.serverid
-        path = Tools.text_replace(path)
-        Tools.dir_ensure(os.path.dirname(path))
-        Tools.file_write(path, C)
-        # print("WIREGUARD CONFIFURATION:\n\n%s" % config)
-        # print("WIREGUARD CONFIG PATH:%s" % path)
+        self.path = "{DIR_BASE}/cfg/wireguard/%s/wg0.conf" % self.serverid
+        self.path = Tools.text_replace(self.path)
+        Tools.dir_ensure(os.path.dirname(self.path))
+        Tools.file_write(self.path, C)
+
+    def connect_wireguard(self):
+        path = self.path
         if MyEnv.platform() == "linux":
             rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
-            cmd = "/usr/local/bin/bash /usr/local/bin/wg-quick up %s" % path
+            cmd = "wg-quick up %s" % path
             Tools.execute(cmd)
-            Tools.shell()
         else:
-            cmd = "/usr/local/bin/bash /usr/local/bin/wg-quick down %s" % path
+            cmd = "wg-quick down %s" % path
             Tools.execute(cmd, die=False)
-            cmd = "/usr/local/bin/bash /usr/local/bin/wg-quick up %s" % path
+            cmd = "wg-quick up %s" % path
             print(cmd)
             Tools.execute(cmd)
+        return self.config_local["ADDRESS"]

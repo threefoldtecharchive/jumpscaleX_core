@@ -30,12 +30,14 @@ JSBASE = j.baseclasses.object
 
 
 class RedisServer(j.baseclasses.object):
-    def _init2(self, bcdb=None, addr="127.0.0.1", port=6380, secret="123456"):
+    def _init2(self, bcdb=None, addr="127.0.0.1", port=6380, secret=""):
         self.bcdb = bcdb
         self._sig_handler = []
         #
         self.host = addr
         self.port = port  # 1 port higher than the std port
+        if secret == "":
+            secret = j.core.myenv.adminsecret
         self.secret = secret
         self.ssl = False
         # j.clients.redis.core_check()  #need to make sure we have a core redis
@@ -169,7 +171,7 @@ class RedisServer(j.baseclasses.object):
 
         assert isinstance(schema, str)
 
-        schema = j.data.schema.get_from_text(schema)
+        schema = j.data.schema.get_from_text(schema, newest=True)
         url = schema.url
 
         if not j.data.bcdb.exists(bcdbname):
@@ -262,10 +264,8 @@ class RedisServer(j.baseclasses.object):
             assert obj.id
         except Exception as e:
             response.error("cannot set, key:'%s' could not save obj" % key)
-        if new:
-            response.encode(obj.id)
-        else:
-            response.encode("OK")
+
+        response.encode(obj.id)
         return
 
     def _parse_key(self, key):
@@ -324,7 +324,7 @@ class RedisServer(j.baseclasses.object):
                 res.append("%s:schemas" % name)
                 res.append("%s:data" % name)
             else:
-                for model in bcdb.models:
+                for model in bcdb.models.values():
                     res.append("{}:schemas:{}".format(name, model.schema.url))
                     res.append("{}:data:{}".format(name, model.schema.url))
 

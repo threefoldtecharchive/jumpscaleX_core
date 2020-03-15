@@ -18,10 +18,12 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
         1:  giturl = "" (S)  #if empty then local
         2:  branch = "" (S)
         3:  path = ""
-        4:  status = "init,config,installed,disabled,error" (E)
+        4:  status = "init,config,toinstall,installed,tostart,disabled,error" (E)
         5:  source = (O) !jumpscale.threebot.package.source.1
         6:  actor = (O) !jumpscale.threebot.package.actor.1
         7:  bcdbs = (LO) !jumpscale.threebot.package.bcdb.1
+        8:  description = (S)
+        9:  install_kwargs = (dict)
 
 
         @url = jumpscale.threebot.package.source.1
@@ -46,11 +48,10 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
         allow custom implementation of which child class to use
         :return:
         """
-        if j.threebot.active:
+        if j.threebot.active or j.data.bcdb._master:
             return ThreeBotPackage
         else:
             j.servers.threebot.threebotserver_require()
-
             return ThreeBotPackageClient
 
     def add_from_git(self, giturl=None, branch=None):

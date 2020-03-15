@@ -1,11 +1,11 @@
 from Jumpscale import j
 
 
-def main(self):
+def test_set():
     """
     to run:
 
-    kosmos 'j.data.schema.test(name="set")' --debug
+    kosmos 'j.data.schema.test(name="set")'
     """
 
     schema = """

@@ -32,7 +32,7 @@ class Attr:
                     return self.__getattribute__(name)  # else see if we can from the factory find the child object
 
                 if isinstance(self, j.baseclasses.object_config_collection):
-                    rc, r = self._get(name=name, die=False)
+                    r = self._get(name=name, die=False)
                     if not r:
                         raise j.exceptions.NotFound(
                             "try to get attribute: '%s', instance did not exist, was also not a method or property, was on '%s'"
@@ -61,7 +61,6 @@ class Attr:
                 raise j.exceptions.Base("protected property:%s" % name)
 
             if "_data" in self.__dict__ and name in self._model.schema.propertynames:
-                # if value != self._data.__getattribute__(name):
                 # self._log_debug("SET:%s:%s" % (name, value))
                 self._data.__setattr__(name, value)
                 return
