@@ -7,7 +7,7 @@ Threebot server is designed to be your own digital self, you can host content, s
 kosmos 'j.servers.threebot.get("3bot_name").start(ssl=False)'
 ```
 this will start the basic threebot server which will have:
-- [gedis server](https://github.com/threefoldtech/jumpscaleX_core/blob/development/docs/Gedis/README.md) with base actors loaded
+- [gedis server](https://github.com/threefoldtech/jumpscaleX_core/blob/master/docs/Gedis/README.md) with base actors loaded
 - [zdb server](https://github.com/threefoldtech/0-db/blob/development/README.md)
 - [sonic server](https://github.com/valeriansaliou/sonic/blob/master/README.md) (used for full text indexing)
 

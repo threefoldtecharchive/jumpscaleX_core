@@ -59,7 +59,7 @@ def test_001_package_add(method):
     if method == "path":
         package = {"path": path}
     else:
-        giturl = "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development_testrunner/ThreeBotPackages/examples/test_package"
+        giturl = "https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/examples/test_package"
         package = {"git_url": giturl}
 
     package_manager.package_add(**package)
@@ -181,4 +181,3 @@ def test_004_package_start_stop():
 
     content = j.sal.fs.readFile(result_path)
     assert "starting package" in content
-

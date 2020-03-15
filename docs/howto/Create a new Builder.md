@@ -135,5 +135,3 @@ To make the flist autostarts once the container created we can add `startup.toml
 be as easy as writing a new file inside the `sandbox_dir` so after flisting we will have it in the root of the flist.
 
 
-**The full implementation for this builder can be found 
-[here](https://github.com/threefoldtech/jumpscaleX/blob/development_builders/Jumpscale/builder/blockchain/BuilderEthereum.py)**

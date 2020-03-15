@@ -34,7 +34,7 @@ def after():
 
 def jumpscale_installation(install_type, options=" "):
     info("copy installation script to /tmp")
-    command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx"
+    command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
     os_command(command)
 
     info("Change installer script [/tmp/jsx] to be executed ")
@@ -44,7 +44,7 @@ def jumpscale_installation(install_type, options=" "):
     command = "/tmp/jsx configure -s --secret mysecret"
     os_command(command)
 
-    info("Run script with {} with branch development".format(install_type))
+    info("Run script with {} with branch master".format(install_type))
     command = "/tmp/jsx {} -s {}".format(install_type, options)
     output, error = os_command(command)
     return output, error

@@ -1,6 +1,7 @@
 import platform
 import subprocess
-import uuid, random
+import uuid
+import random
 from loguru import logger
 
 CONTAINER_NAME = ""
@@ -18,7 +19,7 @@ def os_command(command):
 
 def jumpscale_installation(install_type, options=" "):
     info("copy installation script to /tmp")
-    command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx"
+    command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
     os_command(command)
 
     info("Change installer script [/tmp/jsx] to be executed ")
@@ -28,7 +29,7 @@ def jumpscale_installation(install_type, options=" "):
     command = "/tmp/jsx configure -s --secret mysecret"
     os_command(command)
 
-    info("Run script with {} with branch development".format(install_type))
+    info("Run script with {} with branch master".format(install_type))
     command = "/tmp/jsx {} -s {}".format(install_type, options)
     output, error = os_command(command)
     return output, error
@@ -164,7 +165,7 @@ def Test03_verify_jsx_working_inside_docker():
     command = "cat /sandbox/code/github/threefoldtech/jumpscaleX_core/.git/HEAD"
     output, _ = docker_command(command)
     branch = output.decode().replace("\n", "").split("/")[-1]
-    assert branch == "development"
+    assert branch == "master"
 
     info("check  that ssh-key loaded in docker successfully")
     command = "cat /root/.ssh/authorized_keys"
@@ -470,7 +471,7 @@ def test16_verify_develop():
         raise AssertionError("".format(error.decode()))
     assert "installed successfully" in output.decode()
 
-    info("Check that container installed sucessfully with right development image.")
+    info("Check that container installed sucessfully with right master image.")
     command = 'docker ps -a -f status=running  | grep %s | awk "{print \$2}"' % CONTAINER_NAME
     output, error = os_command(command)
     container_image = output.decode()
@@ -502,7 +503,7 @@ def test18_verify_threebot():
     **Verify that threebot-test option  works successfully **
     """
     info(" Run threebot option .")
-    command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx"
+    command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
     os_command(command)
 
     info("Change installer script [/tmp/jsx] to be executed ")
@@ -515,7 +516,7 @@ def test18_verify_threebot():
     command = "/tmp/jsx threebot-test"
     output, error = os_command(command)
 
-    info("Check that container installed sucessfully with right development image.")
+    info("Check that container installed sucessfully with right master image.")
     CONTAINER_NAME = "3bot"
     command = "docker ps -a -f status=running  | grep {}".format(CONTAINER_NAME)
     output, error = os_command(command)
@@ -535,7 +536,7 @@ def test19_verify_basebuilder():
 
     **Verify that basebuilder option  works successfully **
     """
-    command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx"
+    command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
     os_command(command)
 
     info("Change installer script [/tmp/jsx] to be executed ")
@@ -576,8 +577,8 @@ def test20_verify_pull():
     command = "cd /sandbox/code/github/threefoldtech/jumpscaleX_core && git log -2"
     output, error = os_command(command)
     commits = output.decode().splitlines()
-    latest_commit = commits[0][commits[0].find("commit") + 7 :]
-    old_commit = commits[1][commits[1].find("commit") + 7 :]
+    latest_commit = commits[0][commits[0].find("commit") + 7:]
+    old_commit = commits[1][commits[1].find("commit") + 7:]
     command = "cd /sandbox/code/github/threefoldtech/jumpscaleX_core && git checkout {}".format(old_commit)
     output, error = os_command(command)
 

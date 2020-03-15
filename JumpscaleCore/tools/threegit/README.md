@@ -8,7 +8,7 @@
 
 - It depends on refernces from git commits and saves it in `.3gitconfig.toml` at the root of the repo so in the next time of loading it knows the last reference where files have been processed
 
-- This could be done through git log tool, that way we know the new files since last scan. check [here](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/clients/git/GitClient.py#L219)
+- This could be done through git log tool, that way we know the new files since last scan. check [here](https://github.com/threefoldtech/jumpscaleX_core/blob/master/JumpscaleCore/clients/git/GitClient.py#L219)
 
 ## usage examples
 
