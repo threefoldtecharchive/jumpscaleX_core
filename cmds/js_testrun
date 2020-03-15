@@ -16,7 +16,8 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--object", type=str, dest="obj", help="JSX object that contains tests.")
     parser.add_argument("-p", "--path", type=str, dest="path", default=".", help="Path that contains tests.")
     options = parser.parse_args()
-    test_runner = j.baseclasses.testtools(
+    test_runner = j.baseclasses.testtools()
+    test_runner._init_factory(
         xml_report=options.xml_report, xml_path=options.xml_path, xml_testsuite_name=options.xml_testsuite_name
     )
 
