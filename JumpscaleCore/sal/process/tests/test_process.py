@@ -1,6 +1,7 @@
 import os
 from Jumpscale import j
 import random, unittest, time
+
 try:
     from parameterized import parameterized
 except ImportError:
@@ -332,7 +333,7 @@ def test10_isPidAlive():
     )
     assert output != ""
     pids = output.split("\n")[:-1]
-    #PID = int(output)
+    # PID = int(output)
     PID = int(pids[0])
 
     info("Use isPidAlive, should return True.")

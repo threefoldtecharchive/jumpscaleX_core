@@ -271,12 +271,8 @@ def container_get(name="3bot", delete=False, jumpscale=False):
     is_flag=True,
     help="reinstall, basically means will try to re-do everything without removing the data",
 )
-@click.option(
-    "--clean", is_flag=True, help="cleanup all data not needed",
-)
-@click.option(
-    "--threebot", is_flag=True, help="install required components for threebot",
-)
+@click.option("--clean", is_flag=True, help="cleanup all data not needed")
+@click.option("--threebot", is_flag=True, help="install required components for threebot")
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
 def install(
     branch=None, reinstall=False, pull=False, no_interactive=False, prebuilt=False, clean=False, threebot=False
