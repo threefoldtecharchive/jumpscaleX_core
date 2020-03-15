@@ -19,7 +19,9 @@ def os_command(command):
 
 def jumpscale_installation(install_type, options=" "):
     info("copy installation script to /tmp")
-    command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
+    command = (
+        "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
+    )
     os_command(command)
 
     info("Change installer script [/tmp/jsx] to be executed ")
@@ -503,7 +505,9 @@ def test18_verify_threebot():
     **Verify that threebot-test option  works successfully **
     """
     info(" Run threebot option .")
-    command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
+    command = (
+        "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
+    )
     os_command(command)
 
     info("Change installer script [/tmp/jsx] to be executed ")
@@ -536,7 +540,9 @@ def test19_verify_basebuilder():
 
     **Verify that basebuilder option  works successfully **
     """
-    command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
+    command = (
+        "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
+    )
     os_command(command)
 
     info("Change installer script [/tmp/jsx] to be executed ")
@@ -577,8 +583,8 @@ def test20_verify_pull():
     command = "cd /sandbox/code/github/threefoldtech/jumpscaleX_core && git log -2"
     output, error = os_command(command)
     commits = output.decode().splitlines()
-    latest_commit = commits[0][commits[0].find("commit") + 7:]
-    old_commit = commits[1][commits[1].find("commit") + 7:]
+    latest_commit = commits[0][commits[0].find("commit") + 7 :]
+    old_commit = commits[1][commits[1].find("commit") + 7 :]
     command = "cd /sandbox/code/github/threefoldtech/jumpscaleX_core && git checkout {}".format(old_commit)
     output, error = os_command(command)
 

@@ -12,11 +12,7 @@ _FAIL_LENGTH = 6
 _ERROR_LENGTH = 7
 
 
-_full_results = {
-    "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
-    "testcases": [],
-    "time_taken": 0,
-}
+_full_results = {"summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0}, "testcases": [], "time_taken": 0}
 
 
 class Skip(Exception):
@@ -25,11 +21,7 @@ class Skip(Exception):
 
 class TestTools:
     _modules = []
-    _results = {
-        "summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0},
-        "testcases": [],
-        "time_taken": 0,
-    }
+    _results = {"summary": {"passes": 0, "failures": 0, "errors": 0, "skips": 0}, "testcases": [], "time_taken": 0}
 
     __show_tests_report = True
 

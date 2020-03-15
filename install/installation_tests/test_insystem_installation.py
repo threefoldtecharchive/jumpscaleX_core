@@ -34,7 +34,9 @@ def after():
 
 def jumpscale_installation(install_type, options=" "):
     info("copy installation script to /tmp")
-    command = "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
+    command = (
+        "curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx"
+    )
     os_command(command)
 
     info("Change installer script [/tmp/jsx] to be executed ")

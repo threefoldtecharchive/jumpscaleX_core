@@ -28,7 +28,7 @@ def before():
     RAND_STRING = rand_string()
     global mail_client
     mail_client = j.clients.email.new(
-        RAND_STRING, smtp_server="smtp.gmail.com", smtp_port=587, Email_from=username, password=password,
+        RAND_STRING, smtp_server="smtp.gmail.com", smtp_port=587, Email_from=username, password=password
     )
 
 

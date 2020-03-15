@@ -33,16 +33,18 @@ temp_path = os.path.join("/tmp", temp_dir)
 
 
 def before_all():
-    j.builders.runtimes.python3.pip_package_install("checksumdir") 
+    j.builders.runtimes.python3.pip_package_install("checksumdir")
     j.sal.fs.createDir(temp_path)
 
 
 def after_all():
     j.sal.fs.remove(temp_path)
 
+
 class Testadd:
     def add(self, a, b):
         return a + b
+
 
 def create_tree(symlinks=True):
     """Create a tree with many sub directories and files.
@@ -87,8 +89,9 @@ def create_tree(symlinks=True):
 
 
 def md5sum(file_or_dir):
-    j.builders.runtimes.python3.pip_package_install("checksumdir") 
+    j.builders.runtimes.python3.pip_package_install("checksumdir")
     from checksumdir import dirhash
+
     if not os.path.exists(file_or_dir):
         return False
     if os.path.isfile(file_or_dir):
@@ -941,7 +944,7 @@ def test019_list_files_in_dir_exclude_with_sensitivity(filter_case, file_case):
 
     files = j.sal.fs.listFilesInDir(base_dir, case_sensitivity=filter_case, exclude=[file_name])
     if filter_case in ["sensitive", "os"] and file_case == "insensitive":
-        assert file_path in  files  
+        assert file_path in files
     else:
         assert file_path not in files
 
@@ -961,9 +964,7 @@ def test_020_list_files_in_dir_symlinks(list_links, follow_links):
     info("Create a tree with many sub directories and files.")
     base_dir = create_tree()
 
-    info(
-        f"List the parent directory of this tree with listSymlinks={list_links} and followSymlinks={follow_links}."
-    )
+    info(f"List the parent directory of this tree with listSymlinks={list_links} and followSymlinks={follow_links}.")
     files = j.sal.fs.listFilesInDir(base_dir, recursive=True, listSymlinks=list_links, followSymlinks=follow_links)
     files_list = list_files_dirs_in_dir(
         base_dir,
@@ -974,6 +975,7 @@ def test_020_list_files_in_dir_symlinks(list_links, follow_links):
         translate=not list_links or follow_links,
     )
     assert sorted(files) == sorted(files_list)
+
 
 def test_021_list_py_scrpits():
     """TC347
@@ -989,12 +991,10 @@ def test_021_list_py_scrpits():
     info("Create a tree with many sub directories and different files (must contain python files).")
     base_dir = create_tree(symlinks=False)
 
-    info(
-        "List the parent directory of this tree with recursive=False, should return its children python scripts."
-    )
+    info("List the parent directory of this tree with recursive=False, should return its children python scripts.")
     py_files_list = j.sal.fs.listPyScriptsInDir(base_dir, recursive=False)
     py_file = [os.path.join(base_dir, x) for x in os.listdir(base_dir) if ".py" in x]
-    assert py_files_list ==  py_file
+    assert py_files_list == py_file
 
     info(
         "List the parent directory of this tree with recursive=True, should return all python scripts under this tree."
@@ -1002,12 +1002,10 @@ def test_021_list_py_scrpits():
     py_files_list = j.sal.fs.listPyScriptsInDir(base_dir, recursive=True)
     py_files = [
         x
-        for x in list_files_dirs_in_dir(
-            base_dir, files_list=True, dirs_list=False, followlinks=False, show_links=False
-        )
+        for x in list_files_dirs_in_dir(base_dir, files_list=True, dirs_list=False, followlinks=False, show_links=False)
         if ".py" in x
     ]
-    assert sorted(py_files_list) ==  sorted(py_files)
+    assert sorted(py_files_list) == sorted(py_files)
 
     info("Create a python file with special word (W) in its name.")
     word = random_string()
@@ -1044,7 +1042,7 @@ def test_022_file_permissions():
 
     info("Check the this file's permissions, should be changed.")
     stat = os.stat(file_path).st_mode & 0o777
-    assert stat ==  permissions
+    assert stat == permissions
 
     info("Create a user (U)")
     user_name = random_string()
@@ -1059,7 +1057,7 @@ def test_022_file_permissions():
     group_id = stat.st_gid
     user = getpwuid(user_id).pw_name
     group = getpwuid(group_id).pw_name
-    assert user ==  user_name
+    assert user == user_name
     assert user == group
 
     info("Change this file's group.")
@@ -1073,12 +1071,13 @@ def test_022_file_permissions():
     group_id = stat.st_gid
     user = getpwuid(user_id).pw_name
     group = getpwuid(group_id).pw_name
-    assert user ==  user_name
-    assert group_name ==  group
+    assert user == user_name
+    assert group_name == group
 
     info("Delete these users has been added")
     os.system("userdel {}".format(group_name))
     os.system("userdel {}".format(user_name))
+
 
 def test023_file_linking():
     """TC349
@@ -1119,7 +1118,7 @@ def test023_file_linking():
     j.sal.fs.remove(file_path)
 
     info("Check that (S) is a link with check_valid, should be a broken link.")
-    assert j.sal.fs.isLink(sym_path, check_valid=False) is True 
+    assert j.sal.fs.isLink(sym_path, check_valid=False) is True
     assert os.path.islink(sym_path) is True
     assert j.sal.fs.isLink(sym_path, check_valid=True) is False
     assert os.path.islink(sym_path) is False
@@ -1134,7 +1133,7 @@ def test023_file_linking():
     try:
         j.sal.fs.symlink(file_path, dir_path, overwriteTarget=False)
         raise "error should be raised here"
-    except Exception as e :
+    except Exception as e:
         info("error raised {}".format(e))
 
     info("Create a symlink and use target=D1 with overwrite=True, should success.")
@@ -1145,7 +1144,7 @@ def test023_file_linking():
 
     info("Remove the link and check that it is removed.")
     j.sal.fs.unlink(dir_path)
-    assert  os.path.exists(dir_path) is False
+    assert os.path.exists(dir_path) is False
 
     info("Create a symlink (S) to this file.")
     j.sal.fs.symlink(file_path, sym_path)
@@ -1157,11 +1156,10 @@ def test023_file_linking():
     assert j.sal.fs.isLinkAndBroken(sym_path, remove_if_broken=False) is True
     assert os.path.islink(sym_path) is True
 
-    info(
-        "Check that (S) is a broken link with remove_if_broken=True, should return False and remove the file."
-    )
+    info("Check that (S) is a broken link with remove_if_broken=True, should return False and remove the file.")
     assert j.sal.fs.isLinkAndBroken(sym_path, remove_if_broken=True) is True
     assert os.path.islink(sym_path) is False
+
 
 def test024_link_all_files_and_dirs_in_dir():
     """TC350
@@ -1204,7 +1202,7 @@ def test024_link_all_files_and_dirs_in_dir():
         for x in os.listdir(dest_path)
         if os.path.islink(os.path.join(dest_path, x)) and os.path.islink(os.path.join(dest_path, x))
     ]
-    assert len(dest_list) ==  3
+    assert len(dest_list) == 3
 
     info("Create symlinks for all files under (D1) and target (D2) with includeDirs=True.")
     j.sal.fs.symlinkFilesInDir(dir_path, dest_path, includeDirs=True)
@@ -1226,9 +1224,7 @@ def test024_link_all_files_and_dirs_in_dir():
         j.sal.fs.symlinkFilesInDir(dir_path, dest_path, includeDirs=True, delete=False)
         raise "error should be raised"
     except Exception as e:
-        info(
-        "error raised as {}".format(e)
-        )
+        info("error raised as {}".format(e))
     info(
         "Try again to Create symlinks for all files and directories under (D1) and target (D2) with delete=True, should success."
     )
@@ -1239,7 +1235,7 @@ def test024_link_all_files_and_dirs_in_dir():
 
     info("Check that the files created are executable.")
     exec_list = [x for x in os.listdir(dir_path) if os.access(os.path.join(dir_path, x), os.X_OK)]
-    assert  len(exec_list) ==  6
+    assert len(exec_list) == 6
 
     info("Remove all symlinks under (D2).")
     j.sal.fs.removeLinks(dest_path)
@@ -1247,6 +1243,7 @@ def test024_link_all_files_and_dirs_in_dir():
     info("Check that symlinks are removed.")
     dest_list = os.listdir(dest_path)
     assert dest_list == []
+
 
 def test025_get_information():
     """TC351
@@ -1268,12 +1265,10 @@ def test025_get_information():
     info("Create a tree with many sub directories and files.")
     base_dir = create_tree()
 
-    info(
-        "Get base name of a directory (full path) and check that the return value eqauls to the directory's name."
-    )
+    info("Get base name of a directory (full path) and check that the return value eqauls to the directory's name.")
     base_name = j.sal.fs.getBaseName(base_dir)
     dir_name = base_dir.split(os.sep)[-1]
-    assert  base_name ==  dir_name
+    assert base_name == dir_name
 
     info(
         "Get base name of a file (full path) with removeExtension and check the file's name without extension, should be the same."
@@ -1286,18 +1281,16 @@ def test025_get_information():
     file_name, file_ext = file_name_ext.split(".")
     file_path = os.path.join(base_dir, file_name_ext)
     base_name = j.sal.fs.getBaseName(file_path, removeExtension=True)
-    assert file_name ==  base_name
+    assert file_name == base_name
 
     base_name = j.sal.fs.getBaseName(file_path, removeExtension=False)
     assert file_name_ext == base_name
 
     info("Get directory name of a file and check that it is returning parent directory(full path).")
     dir_path = j.sal.fs.getDirName(file_path)
-    assert os.path.normpath(dir_path) ==  base_dir
+    assert os.path.normpath(dir_path) == base_dir
 
-    info(
-        "Get directory name of a file with lastOnly=True and check that it is returning parent directory only."
-    )
+    info("Get directory name of a file with lastOnly=True and check that it is returning parent directory only.")
     dir_name_2 = j.sal.fs.getDirName(file_path, lastOnly=True)
     assert dir_name == dir_name_2
 
@@ -1307,7 +1300,7 @@ def test025_get_information():
 
     info("Get file extension of a file and check the returning value is the file's extension.")
     ext = j.sal.fs.getFileExtension(file_path)
-    assert ext ==  file_ext
+    assert ext == file_ext
 
     info("Get parent directory of a file and check this directory parent, should be the same.")
     dir_path = j.sal.fs.getParent(file_path)
@@ -1329,6 +1322,7 @@ def test025_get_information():
     dir_path = j.sal.fs.getParentWithDirname(temp_path, dir_name, die=False)
     assert dir_path is None
 
+
 def test026_get_path_of_running_function():
     """TC352
     Test case for getting path of a running function.
@@ -1343,6 +1337,7 @@ def test026_get_path_of_running_function():
     info("Check that the path has been returned, should be the current file path.")
     path = __file__
     assert func_path == path
+
 
 def test027_get_tmp_directory_or_file():
     """TC353
@@ -1359,14 +1354,14 @@ def test027_get_tmp_directory_or_file():
     """
     info("Get temporary directory with create=False, should return a random path.")
     dir_path = j.sal.fs.getTmpDirPath(create=False)
-    assert "/tmp" in  dir_path
+    assert "/tmp" in dir_path
 
     info("Check that the random path is not exists.")
     assert os.path.exists(dir_path) is False
 
     info("Get temporary directory with create=True, should return a random path.")
     dir_path = j.sal.fs.getTmpDirPath(create=True)
-    assert  "/tmp" in dir_path
+    assert "/tmp" in dir_path
 
     info("Check that the random path is exists.")
     assert os.path.exists(dir_path) is True
@@ -1377,7 +1372,7 @@ def test027_get_tmp_directory_or_file():
     info("Get temporary directory with random name, should return a path.")
     name = random_string()
     dir_path_1 = j.sal.fs.getTmpDirPath(name=name, create=True)
-    assert name in  dir_path_1
+    assert name in dir_path_1
 
     info("Check that this directory is created.")
     assert os.path.exists(dir_path_1) is True
@@ -1391,6 +1386,7 @@ def test027_get_tmp_directory_or_file():
 
     info("Delete the file has been created")
     j.sal.fs.remove(file_path)
+
 
 @parameterized.expand([(True,), (False,)])
 def test028_compress(followlinks):
@@ -1420,6 +1416,7 @@ def test028_compress(followlinks):
         assert before_md5sum != after_md5sum
     else:
         assert before_md5sum == after_md5sum
+
 
 def test029_path_parse():
     """TC355
@@ -1469,7 +1466,7 @@ def test029_path_parse():
     j.sal.fs.createEmptyFile(file_path)
     path_parse = j.sal.fs.pathParse(file_path)
     excepted_parse = (dir_path, file_name, extension, 0)
-    assert path_parse ==  excepted_parse
+    assert path_parse == excepted_parse
 
     info(
         "Get path parsing for a file with numeric character(N) at the beginning, should return (parent directory, file name, file extension, N)."
@@ -1482,7 +1479,7 @@ def test029_path_parse():
     j.sal.fs.createEmptyFile(file_path)
     path_parse = j.sal.fs.pathParse(file_path)
     excepted_parse = (dir_path, file_name, extension, str(num))
-    assert path_parse ==  excepted_parse
+    assert path_parse == excepted_parse
 
     info(
         'Get path parsing for a file with baseDir=parent directory, should return ("/", file name, file extension, 0).'
@@ -1493,6 +1490,7 @@ def test029_path_parse():
 
     info("Delete the directoy has been created.")
     j.sal.fs.remove(dir_path)
+
 
 def test030_change_files_name():
     """TC356
@@ -1515,9 +1513,7 @@ def test030_change_files_name():
     info("Change these files names by replacing (W1) with another word (W2) with recursive=False.")
     log_files = [
         os.path.splitext(x)[0]
-        for x in list_files_dirs_in_dir(
-            base_dir, files_list=True, dirs_list=False, followlinks=False, show_links=False
-        )
+        for x in list_files_dirs_in_dir(base_dir, files_list=True, dirs_list=False, followlinks=False, show_links=False)
         if ".log" in x
     ]
     child_log = [os.path.splitext(os.path.join(base_dir, x))[0] for x in os.listdir(base_dir) if ".log" in x]
@@ -1526,12 +1522,10 @@ def test030_change_files_name():
     info("Check that children files are only changed.")
     changed_files = [
         os.path.splitext(x)[0]
-        for x in list_files_dirs_in_dir(
-            base_dir, files_list=True, dirs_list=False, followlinks=False, show_links=False
-        )
+        for x in list_files_dirs_in_dir(base_dir, files_list=True, dirs_list=False, followlinks=False, show_links=False)
         if ".java" in x
     ]
-    assert changed_files ==  child_log
+    assert changed_files == child_log
 
     info("Change these files names again by replacing (W1) with another word (W2) with recursive=True.")
     j.sal.fs.changeFileNames(toReplace=".log", replaceWith=".java", pathToSearchIn=base_dir, recursive=True)
@@ -1539,12 +1533,10 @@ def test030_change_files_name():
     info("Check that files names are changed.")
     java_files = [
         os.path.splitext(x)[0]
-        for x in list_files_dirs_in_dir(
-            base_dir, files_list=True, dirs_list=False, followlinks=False, show_links=False
-        )
+        for x in list_files_dirs_in_dir(base_dir, files_list=True, dirs_list=False, followlinks=False, show_links=False)
         if ".java" in x
     ]
-    assert sorted(log_files) ==  sorted(java_files)
+    assert sorted(log_files) == sorted(java_files)
 
     info("Get a .txt file name (N)")
     file_name_ext = [x for x in os.listdir(base_dir) if ".txt" in x][0]
@@ -1559,12 +1551,10 @@ def test030_change_files_name():
     info("Check that only this file is changed.")
     changed_files = [
         x
-        for x in list_files_dirs_in_dir(
-            base_dir, files_list=True, dirs_list=False, followlinks=False, show_links=False
-        )
+        for x in list_files_dirs_in_dir(base_dir, files_list=True, dirs_list=False, followlinks=False, show_links=False)
         if ".js" in x
     ]
-    assert len(changed_files) ==  1
+    assert len(changed_files) == 1
     assert os.path.exists(file_path) is False
 
     info("Create a new .py file")
@@ -1581,13 +1571,12 @@ def test030_change_files_name():
 
     changed_files = [
         x
-        for x in list_files_dirs_in_dir(
-            base_dir, files_list=True, dirs_list=False, followlinks=False, show_links=False
-        )
+        for x in list_files_dirs_in_dir(base_dir, files_list=True, dirs_list=False, followlinks=False, show_links=False)
         if ".html" in x
     ]
     assert len(changed_files) == 1
     assert os.path.exists(file_path) is False
+
 
 def test031_current_dir():
     """TC357
@@ -1615,6 +1604,7 @@ def test031_current_dir():
     info("Check that (CWD) is the second path.")
     assert cur_path_2 == path_2
 
+
 def test032_write_read_check_size_binary_file():
     """TC358
     Test case for writting, reading and checking binary file.
@@ -1640,12 +1630,13 @@ def test032_write_read_check_size_binary_file():
     with open(file_path, "rb") as f:
         expected_content = f.read()
     result_content = j.sal.fs.readFile(file_path, binary=True)
-    assert result_content ==  expected_content
+    assert result_content == expected_content
 
     info("Get file size and check it.")
     file_size = j.sal.fs.fileSize(file_path)
     size = os.stat(file_path).st_size
     assert file_size == size
+
 
 def test033_md5sum():
     """TC359
@@ -1688,6 +1679,7 @@ def test033_md5sum():
     info("Check that both md5sum are the same.")
     assert copied_md5sum == orignal_md5sum
 
+
 def test034_write_read_obj_to_from_file():
     """TC424
     Test case for writing/reading object to/from file.
@@ -1714,7 +1706,8 @@ def test034_write_read_obj_to_from_file():
     a = random.randint(1, 100)
     b = random.randint(1, 100)
     result = obj.add(a, b)
-    assert result ==  (a + b)
+    assert result == (a + b)
+
 
 def test035_zip_files():
     """TC425
@@ -1751,6 +1744,7 @@ def test035_zip_files():
     dest_md5sum = md5sum(dest_path)
     assert dest_md5sum == orignal_md5sum
 
+
 def test036_clean_up_string():
     """TC426
     Test case for cleaning up a string.
@@ -1764,12 +1758,13 @@ def test036_clean_up_string():
     special_character = random.choice(special_characters)
     name = random_string().replace("-", "") + special_character
     result = j.sal.fs.cleanupString(name)
-    assert  result ==  name.replace(special_character, "_")
+    assert result == name.replace(special_character, "_")
 
     info("Clean a string without special characters, should be that same.")
     name = random_string().replace("-", "")
     result = j.sal.fs.cleanupString(name)
-    assert result ==  name
+    assert result == name
+
 
 def test037_find():
     """TC427
@@ -1791,6 +1786,7 @@ def test037_find():
     info("Find in this tree what is matched with regex (R1), should return only this file.")
     result_path = j.sal.fs.find(base_dir, "[0-9][a-z][0-9]")
     assert result_path == [file_path]
+
 
 def test038_grep():
     """TC428
@@ -1822,8 +1818,9 @@ def test038_grep():
     info("Find in this file what is matched with regex (R1), should only this line.")
     cmd = f'kosmos "j.tools.logger.debug=True; j.sal.fs.grep(\\"{file_path}\\", \\"[0-9][_][0-9]\\")"'
     response = run(cmd, shell=True, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-    assert  file_path in response.stdout
-    assert line in  response.stdout
+    assert file_path in response.stdout
+    assert line in response.stdout
+
 
 def test039_is_mount_absolute():
     """TC429
@@ -1848,6 +1845,7 @@ def test039_is_mount_absolute():
     info("Check a full path is absolute, should return True.")
     path = os.path.join(temp_path, name)
     assert j.sal.fs.isAbsolute(path) is True
+
 
 def test040_ascii():
     """TC430
@@ -1874,6 +1872,7 @@ def test040_ascii():
     info("Read this file and check that its content.")
     content = j.sal.fs.readFile(file_path, binary=True)
     assert content == ascii_content
+
 
 def test041_hard_link():
     """TC431
@@ -1911,6 +1910,7 @@ def test041_hard_link():
     file_content = j.sal.fs.readFile(file_path)
     assert file_content == (content + new_content)
 
+
 @parameterized.expand(["include", "exclude"])
 def test042_compress_include_exclude_path_regex(path_option):
     """TC432
@@ -1935,13 +1935,9 @@ def test042_compress_include_exclude_path_regex(path_option):
     tar_dest = f"{random_string()}.tar.gz"
     tar_dest_path = os.path.join(temp_path, tar_dest)
     if path_option == "include":
-        j.sal.fs.targzCompress(
-            sourcepath=base_dir, destinationpath=tar_dest_path, pathRegexIncludes=["[0-9][_][0-9]"]
-        )
+        j.sal.fs.targzCompress(sourcepath=base_dir, destinationpath=tar_dest_path, pathRegexIncludes=["[0-9][_][0-9]"])
     else:
-        j.sal.fs.targzCompress(
-            sourcepath=base_dir, destinationpath=tar_dest_path, pathRegexExcludes=["[0-9][_][0-9]"]
-        )
+        j.sal.fs.targzCompress(sourcepath=base_dir, destinationpath=tar_dest_path, pathRegexExcludes=["[0-9][_][0-9]"])
 
     info("Uncompress this output file")
     untar_dest = random_string()
@@ -1956,6 +1952,7 @@ def test042_compress_include_exclude_path_regex(path_option):
     else:
         after_md5sum = md5sum(untar_dest_path)
         assert before_md5sum == after_md5sum
+
 
 @parameterized.expand(["include", "exclude"])
 def test043_compress_include_exclude_content_regex(content_option):
@@ -2005,6 +2002,7 @@ def test043_compress_include_exclude_content_regex(content_option):
         after_md5sum = md5sum(untar_dest_path)
         assert before_md5sum == after_md5sum
 
+
 @parameterized.expand([(0,), (1,)])
 def test044_compress_depth(depth):
     """TC434
@@ -2033,15 +2031,14 @@ def test044_compress_depth(depth):
 
     info("Check the result files")
     if depth:
-        files = [
-            os.path.join(base_dir, x) for x in os.listdir(base_dir) if os.path.isfile(os.path.join(base_dir, x))
-        ]
+        files = [os.path.join(base_dir, x) for x in os.listdir(base_dir) if os.path.isfile(os.path.join(base_dir, x))]
         for file in files:
             j.sal.fs.remove(file)
         before_md5sum = md5sum(base_dir)
 
     after_md5sum = md5sum(untar_dest_path)
     assert before_md5sum == after_md5sum
+
 
 def test045_compress_with_extra_files():
     """TC435
@@ -2082,6 +2079,7 @@ def test045_compress_with_extra_files():
     first_tree_md5sum_after = md5sum(untar_dest_path)
     assert first_tree_md5sum_after == first_tree_md5sum
 
+
 def test046_compress_with_dest():
     """TC436
     Test case for compressing files with specify the destination in tar.
@@ -2114,7 +2112,8 @@ def test046_compress_with_dest():
     after_md5sum = md5sum(dest_path)
     assert before_md5sum == after_md5sum
 
-def test047_remove_irrelevant_files( ):
+
+def test047_remove_irrelevant_files():
     """TC437
     Test case for removing irrelevant files in a directory.
 
@@ -2136,7 +2135,7 @@ def test047_remove_irrelevant_files( ):
     dirs_files_list = list_files_dirs_in_dir(base_dir)
 
     assert bak_path in dirs_files_list
-    assert pyc_path in  dirs_files_list
+    assert pyc_path in dirs_files_list
 
     info("Remove the irrelevant files, should only remove files with extention bak and pyc.")
     j.sal.fs.removeIrrelevantFiles(base_dir)
@@ -2144,7 +2143,8 @@ def test047_remove_irrelevant_files( ):
     assert bak_path not in dirs_files_list
     assert pyc_path not in dirs_files_list
 
-def test048_validate_files_names( ):
+
+def test048_validate_files_names():
     """TC438
     Test case for validate files names.
 

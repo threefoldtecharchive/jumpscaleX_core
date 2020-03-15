@@ -59,7 +59,9 @@ def test_001_package_add(method):
     if method == "path":
         package = {"path": path}
     else:
-        giturl = "https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/examples/test_package"
+        giturl = (
+            "https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/examples/test_package"
+        )
         package = {"git_url": giturl}
 
     package_manager.package_add(**package)
