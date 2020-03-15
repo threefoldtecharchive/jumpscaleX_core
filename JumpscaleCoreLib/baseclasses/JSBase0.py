@@ -1,0 +1,551 @@
+from Jumpscale import j
+import os
+
+# import copy
+# import sys
+import inspect
+import types
+from .JSDict import JSDict
+
+# DO NOT LOG IN THIS CLASS
+
+
+class JSLog:
+
+    ########################## LOGGING ##########################
+
+    def _logging_enable_check(self):
+        """
+
+        check if logging should be disabled for current js location
+
+        according to logger includes and excludes (configured)
+        includes have a higher priority over excludes
+
+        will not take minlevel into consideration, its only the excludes & includes
+
+        :return: True if logging is enabled
+        :rtype: bool
+        """
+        if j.core.myenv.config.get("DEBUG", False):
+            return True
+
+        def check(checkitems):
+            key = ""
+            location = ""
+            try:
+                key = self._key
+            except:
+                key = self._classname
+            if self._hasattr("_location"):
+                try:
+                    location = self._location
+                except:
+                    pass
+            for finditem in checkitems:
+                finditem = finditem.strip().lower()
+                if finditem == "*":
+                    return True
+                if finditem == "":
+                    continue
+                if "*" in finditem:
+                    if finditem[-1] == "*":
+                        # means at end
+                        if key.startswith(finditem[:-1]):
+                            return True
+                    elif finditem[0] == "*":
+                        if key.endswith(finditem[1:]):
+                            return True
+                    else:
+                        raise j.exceptions.Base("find item can only have * at start or at end")
+                else:
+                    if location in [finditem, f"j.{finditem}"]:
+                        return True
+            return False
+
+        if check(j.core.myenv.log_includes) and not check(j.core.myenv.log_excludes):
+            return True
+        return False
+
+    def _logger_set(self, minlevel=None, children=True, parents=True):
+        """
+
+        :param min_level if not set then will use the LOGGER_LEVEL from {DIR_BASE}/cfg/jumpscale_config.toml
+
+        make sure that logging above minlevel will happen, std = 100
+        if 100 means will not log anything
+
+
+        - CRITICAL 	50
+        - ERROR 	40
+        - WARNING 	30
+        - INFO 	    20
+        - STDOUT 	15
+        - DEBUG 	10
+        - NOTSET 	0
+
+
+        if parents and children: will be set on all classes of the self.location e.g. j.clients.ssh (children, ...)
+
+        if minlevel specified then it will always consider the logging to be enabled
+
+        :return:
+        """
+        if not self._logging_enable_check():
+            self.__class__._logger_enabled = False
+            return
+        if minlevel is None:
+            minlevel = int(j.core.myenv.config.get("LOGGER_LEVEL", 15))
+
+        self.__class__._logger_min_level = minlevel
+
+        if parents:
+            parent = self.__parent
+            while parent is not None:
+                parent._logger_set(minlevel=minlevel)
+                parent = parent._parent
+
+        if children:
+            for kl in self.__class__._class_children:
+                # print("%s:minlevel:%s"%(kl,minlevel))
+                kl._logger_min_level = minlevel
+
+    def _print(self, msg, cat=""):
+        self._log(msg, cat=cat, level=15)
+
+    def _log_debug(self, msg, cat="", data=None, context=None, _levelup=1, exception=None):
+        self._log(msg, cat=cat, level=10, data=data, context=context, _levelup=_levelup, exception=exception)
+
+    def _log_info(self, msg, cat="", data=None, context=None, _levelup=1, exception=None):
+        self._log(msg, cat=cat, level=20, data=data, context=context, _levelup=_levelup, exception=exception)
+
+    def _log_warning(self, msg, cat="", data=None, context=None, _levelup=1, exception=None):
+        self._log(msg, cat=cat, level=30, data=data, context=context, _levelup=_levelup, exception=exception)
+
+    def _log_error(self, msg, cat="", data=None, context=None, _levelup=1, exception=None):
+        self._log(msg, cat=cat, level=40, data=data, context=context, _levelup=_levelup, exception=exception)
+
+    def _log_critical(self, msg, cat="", data=None, context=None, _levelup=1, exception=None):
+        self._log(msg, cat=cat, level=50, data=data, context=context, _levelup=_levelup, exception=exception)
+
+    def _log(
+        self,
+        msg,
+        cat="",
+        level=10,
+        data=None,
+        context=None,
+        _levelup=0,
+        stdout=False,
+        tb=None,
+        data_show=True,
+        exception=None,  # is jumpscale/python exception
+        replace=True,  # to replace the color variables for stdout
+    ):
+        """
+
+        :param msg: what you want to log
+        :param cat: any dot notation category
+        :param context: e.g. rack aaa in datacenter, method name in class, ...
+
+        can use {RED}, {RESET}, ... see color codes
+        :param level:
+            - CRITICAL 	50
+            - ERROR 	40
+            - WARNING 	30
+            - INFO 	    20
+            - STDOUT 	15
+            - DEBUG 	10
+
+
+        :param _levelup 0, if e.g. 1 means will go 1 level more back in finding line nr where log comes from
+        :param stdout: return as logdict or send to stdout
+        :param: replace to replace the color variables for stdout
+        :param: exception is jumpscale/python exception
+
+        """
+
+        if j.application.debug or (self._logger_enabled and self._logger_min_level - 1 < level):
+            # now we will log
+            if j.application.inlogger:
+                return
+
+            frame_ = inspect.currentframe().f_back
+            if _levelup > 0:
+                levelup = 0
+                while frame_ and levelup < _levelup:
+                    frame_ = frame_.f_back
+                    levelup += 1
+
+            if not context:
+                try:
+                    context = self._key
+                except Exception as e:
+                    context = "UNKNOWN"
+                    pass  # TODO:*1 is not good
+
+            return j.core.tools.log(
+                msg=msg,
+                cat=cat,
+                level=level,
+                data=data,
+                context=context,
+                tb=tb,
+                data_show=data_show,
+                exception=exception,  # is jumpscale/python exception
+                replace=replace,  # to replace the color variables for stdout
+                stdout=stdout,  # return as logdict or send to stdout
+                frame_=frame_,
+            )
+
+    #################### DONE ##############################
+
+    def _done_key(self, name):
+        if name == "":
+            key = self._objid
+        else:
+            key = "%s:%s" % (self._objid, name)
+        return key
+
+    def _done_check(self, name="", reset=False):
+        if reset:
+            self._done_delete(name=name)
+        return j.core.myenv.state_get(self._done_key(name))
+        # return j.core.db.hexists("done", key)
+
+    def _done_set(self, name=""):
+        j.core.myenv.state_set(self._done_key(name))
+        # return j.core.db.hset("done", self._done_key(name), value)
+
+    def _done_delete(self, name=""):
+        j.core.myenv.state_delete(self._done_key(name))
+        # return j.core.db.hset("done", self._done_key(name), value)
+
+    def _done_reset(self):
+        """
+        if name =="" then will remove all from this object
+        :param name:
+        :return:
+        """
+        name = self._done_key("")
+        j.core.myenv.states_delete(name)
+        # if name == "":
+        #     for item in j.core.db.hkeys("done"):
+        #         item = item.decode()
+        #         # print("reset todo:%s" % item)
+        #         if item.find(self._objid) != -1:
+        #             j.core.db.hdel("done", item)
+        #             # print("reset did:%s" % item)
+        # else:
+        #     return j.core.db.hdel("done", "%s:%s" % (self._objid, name))
+
+    ################### mechanisms for autocompletion in kosmos
+
+    def __name_get(self, item):
+        """
+        helper mechanism to come to name
+        """
+        if isinstance(item, str) or isinstance(item, int):
+            name = str(item)
+            return name
+        elif isinstance(item, j.baseclasses.object_config):
+            return item.name
+        elif isinstance(item, j.baseclasses.object):
+            return item._name
+        else:
+            raise j.exceptions.JSBUG("don't know how to find name")
+
+    def _filter(self, filter=None, llist=None, nameonly=True, unique=True, sort=True):
+        """
+
+        :param filter: is '' then will show all, if None will ignore _
+                when * at end it will be considered a prefix
+                when * at start it will be considered a end of line filter (endswith)
+                when R as first char its considered to be a regex
+                everything else is a full match
+        :param llist:
+        :param nameonly: will not return the items of the list but names derived from the list members
+        :param unique: will make sure there are no duplicates
+        :param sort: sort but only when nameonly
+        :return:
+        """
+        llist = llist or []
+
+        res = []
+        for item in llist:
+            name = self.__name_get(item)
+            # self._log_debug("filtername:%s" % name)
+            if not name:
+                continue
+            if name.startswith("_JSBase"):
+                continue
+            if filter:
+                if not filter.startswith("_") and name.startswith("_"):
+                    continue
+                if filter.startswith("_") and not filter.startswith("__") and name.startswith("__"):
+                    # remove __ if we only ask for _
+                    continue
+                if filter == "*":
+                    pass  # need to process
+                elif filter.endswith("*"):
+                    filter2 = filter[:-1]
+                    if not name.startswith(filter2):
+                        continue
+                elif filter.startswith("*"):
+                    filter2 = filter[1:]
+                    if not name.endswith(filter2):
+                        continue
+                elif filter.startswith("R"):
+                    j.shell()
+                    filter3 = filter[1:]
+                    w
+                else:
+                    if not name == filter:
+                        continue
+            else:
+                if name.startswith("_"):
+                    continue
+
+            if nameonly:
+                item = name
+            if unique:
+                if item not in res:
+                    res.append(item)
+            else:
+                res.append(item)
+
+        if nameonly and sort:
+            res.sort()
+
+        return res
+
+    def _parent_name_get(self):
+        if self.__parent:
+            return self.__name_get(self.__parent)
+        return ""
+
+    def _mother_id_get(self):
+        """
+        this goes to all parents till it finds a parent which has a model attached
+        this is to find the parent which acts as the mother for the children.
+        when you do a search only the children of this mother will be shown
+
+        :return: The id of the mother if there is a mother
+        """
+        obj = self
+        while obj and obj._parent:
+            if isinstance(obj._parent, j.baseclasses.object_config):
+                if obj._parent._id is None:
+                    if obj._parent.name is None:
+                        raise j.exceptions.JSBUG("cannot happen, there needs to be a name")
+                    else:
+                        if obj._parent._model != False and obj._parent._id == None:
+                            obj._parent.save()
+                            assert obj._parent._id > 0
+                            return obj._parent._id
+                else:
+                    return obj._parent._id
+            obj = obj._parent
+        # means we did not find a parent which can act as mother
+        return None
+
+    def _children_names_get(self, filter=None):
+        return self._filter(filter=filter, llist=self.__children_get(filter=filter))
+
+    def _children_get(self, filter=None):
+        """
+        if nothing then is self.__children
+
+        :param filter: is '' then will show all, if None will ignore _
+                when * at end it will be considered a prefix
+                when * at start it will be considered a end of line filter (endswith)
+                when R as first char its considered to be a regex
+                everything else is a full match
+
+        :return:
+        """
+        if self._hasattr("_children"):
+            children = self.__children.values()
+            return self._filter(filter=filter, llist=children, nameonly=False)
+        else:
+            return []
+
+    def _children_delete(self, filter=None):
+        """
+        filter only applies on the first children search
+        :param filter:
+        :return:
+        """
+        for child in self.__children_get(filter=filter):
+            if child._hasattr("delete"):
+                # delete only related children
+                # passing names to delete instead of clearing all the factory data
+                for child_name in child._children_names_get():
+                    child.delete(name=child_name)
+            else:
+                child._children_delete()
+
+    def _child_get(self, name=None, id=None):
+        """
+        finds a child based on name or id
+        :param name:
+        :param id:
+        :return:
+        """
+        for item in self.__children_get():
+            if name:
+                assert isinstance(name, str)
+                if self.__name_get(item) == name:
+                    return item
+            elif id:
+                id = int(id)
+                if item.id == id:
+                    return item
+            else:
+                raise j.exceptions.Base("need to specify name or id")
+        return None
+
+    def _validate_child(self, name):
+        """Check if name is in self.__children. If it exists, validate that the name on the object equals to the key in self.__children.
+        If not, it updates the key in the self.__children dict and deletes the old key <name> and returns False,
+        otherwise returns the object.
+        """
+        if name not in self.__children:
+            return False
+
+        child = self.__children[name]
+        if not isinstance(child, j.baseclasses.object_config) or child.name == name:
+            return child
+        else:
+            child.name = name
+            child.save()  # save it in case autosave was False, to update the name in the database too
+            del self.__children[name]
+            self.__children[child.name] = child
+
+        return self.__children[child.name]
+
+    def _dataprops_names_get(self, filter=None):
+        """
+        e.g. in a JSConfig object would be the names of properties of the jsxobject = data
+        e.g. in a JSXObject would be the names of the properties of the data itself
+
+        :return: list of the names
+        """
+        return []
+
+    def _methods_names_get(self, filter=None):
+        """
+        return the names of the methods which were defined at __init__ level by the developer
+
+        :param filter: is '' then will show all, if None will ignore _
+                when * at end it will be considered a prefix
+                when * at start it will be considered a end of line filter (endswith)
+                when R as first char its considered to be a regex
+                everything else is a full match
+
+        """
+        return self._filter(filter=filter, llist=self._methods)
+
+    def _properties_names_get(self, filter=None):
+        """
+        return the names of the properties which were defined at __init__ level by the developer
+
+        :param filter: is '' then will show all, if None will ignore _
+                when * at end it will be considered a prefix
+                when * at start it will be considered a end of line filter (endswith)
+                when R as first char its considered to be a regex
+                everything else is a full match
+
+        """
+        others = self.__children_names_get(filter=filter)
+        if self._hasattr("_parent"):
+            pname = self.__parent_name_get()  # why do we need the parent name?
+            if pname and pname not in others:
+                others.append(pname)
+        res = [i for i in self._filter(filter=filter, llist=self._properties) if i not in others]
+        return res
+
+    def _properties_methods_names_get(self):
+        return self._properties + self._methods
+
+    def _props_all_names(self):
+        l = (
+            self.__children_names_get()
+            + self._properties_names_get()
+            + self._dataprops_names_get()
+            + self._methods_names_get()
+        )
+        return l
+
+    def _prop_exist(self, name):
+        """
+        :param name:
+        :return:
+        """
+        raise
+
+    def _children_recursive_get(self):
+        res = []
+        for child in self.__children.values():
+            res.append(child)
+            res += child._children_recursive_get()
+        return res
+
+    ###################
+
+    def __repr__(self):
+
+        out = "{YELLOW}## %s{BLUE} %s{RESET}\n\n" % (
+            # self._objcat_name,
+            self.__class__._location,
+            self.__class__.__name__,
+        )
+
+        def add(name, color, items, out):
+            # self._log_debug(items)
+            add_dots_in_the_end = False
+            showable_items_length = 20
+            if len(items) > 0:
+                out += "{%s}### %s:\n" % (color, name)
+                if len(items) > showable_items_length:
+                    add_dots_in_the_end = True
+                for i, item in enumerate(items):
+                    if i > showable_items_length:
+                        break
+                    self._log_debug(item)
+                    item = item.rstrip()
+                    if name in ["data", "properties"]:
+                        try:
+                            v = j.core._data_serializer_safe(getattr(self, item)).rstrip()
+                            if "\n" in v:
+                                # v = j.core.tools.text_indent(content=v, nspaces=4)
+                                v = "\n".join(v.split("\n")[:1])
+                                out += " - %-20s : {GRAY}%s{%s}\n" % (item, v, color)
+                            else:
+                                out += " - %-20s : {GRAY}%s{%s}\n" % (item, v, color)
+
+                        except Exception as e:
+                            out += " - %-20s : {GRAY}ERROR ATTRIBUTE{%s}\n" % (item, color)
+                    else:
+                        out += " - %s\n" % item
+                if add_dots_in_the_end:
+                    out += " - ...\n"
+            out += "\n"
+            return out
+
+        out = add("children", "GREEN", self.__children_names_get(), out)
+        out = add("properties", "YELLOW", self._properties_names_get(), out)
+        out = add("data", "BLUE", self._dataprops_names_get(), out)
+
+        out += "{RESET}"
+
+        out = j.core.tools.text_replace(out, die_if_args_left=False)
+        return out
+
+    def __str__(self):
+        """
+        this will give us cleaner reporting in logs, the repr needs to be big, is for user
+        __str__ is for logging, printing, ...
+        :return:
+        """
+        return "jsxobj:%s:%s" % (self.__class__._location, self.__class__.__name__)

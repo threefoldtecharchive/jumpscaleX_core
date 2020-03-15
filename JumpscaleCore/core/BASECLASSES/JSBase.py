@@ -31,23 +31,52 @@ class JSBase:
         :param topclass: if True means no-one inherits from us
         """
 
+        # if set, cannot fill in properties which are not set before _init_jsconfig_post()
         self._protected = False
+        # the parent of this object
         self._parent = parent
-        self._children = JSDict()
-        self._properties_ = None
-        self._methods_ = None
         if "parent" in kwargs:
             kwargs.pop("parent")
-        self._init_pre(**kwargs)
-        self._init_jsconfig(**kwargs)
-        self._init_actor(**kwargs)
-        self.__init_class()
-        self._obj_cache_reset()
-        self._init(**kwargs)
-        self._init_factory(**kwargs)
-        self._init_post(**kwargs)
-        self._init_post_attr()
+        # the children of this object
+        self._children = JSDict()
+        # the properties known to this object, others will be protected
+        # resolved by _inspect(), are made lazy loading, if you want to use use self._properties
         self._properties_ = None
+        # the methods known to this object
+        self._methods_ = None
+
+        # meant to be used by developers of the base classes, is the initial setting of properties
+        self._init_pre(**kwargs)
+
+        # init custom done for jsconfig & jsconfigs objects (for config mgmt)
+        self._init_jsconfig(**kwargs)
+
+        # only relevant for actors in 3bot actors, used to initialize the actor
+        self._init_actor(**kwargs)
+
+        # find the class related properties
+        # will afterwards call self.__init_class_post()
+        self.__init_class()
+
+        # resets the caches
+        self._obj_cache_reset()
+
+        # the main init function for an object
+        # this is the main one to be used by JSX end developer, and the only method to be filled in
+        self._init(**kwargs)
+
+        # only used by factory class
+        # a factory class can produce jsconfig or jsconfigs objects (are part of children)
+        self._init_factory(**kwargs)
+
+        # allow the jsconfig class to do the post initialization
+        # here we check to save an object to the database if that would be required
+        # objects will not be saved untill here, so in the _init we can manipulate the data
+        self._init_jsconfig_post(**kwargs)
+
+        # this is only used when the class inherits from Attr() class
+        # will also do an inspect to make sure we have protected the attributes, only relevant when Attr based class
+        self._init_attr()
 
     def _children_reset(self):
         self._children = JSDict()
@@ -95,16 +124,15 @@ class JSBase:
             elif "__jscorelocation__" in self.__dict__:
                 self.__class__._location = self.__jslocation__
             else:
-                self.__class__._location = None
-                parent = self._parent
-                while parent is not None:
-                    if "__jslocation__" in parent.__dict__:
-                        # if self._hasattr(parent, "__jslocation__"):
-                        self.__class__._location = parent.__jslocation__
-                        break
-                    parent = parent._parent
-                if self.__class__._location is None:
-                    self.__class__._location = self.__class__._classname
+                # self.__class__._location = None
+                # parent = self._parent
+                # while parent is not None:
+                #     if "__jslocation__" in parent.__dict__:
+                #         self.__class__._location = parent.__jslocation__
+                #         break
+                #     parent = parent._parent
+                # if self.__class__._location is None:
+                self.__class__._location = self.__class__._classname
 
             self.__init_class_post()
 
@@ -178,7 +206,7 @@ class JSBase:
 
     def _init_jsconfig(self, **kwargs):
         """
-        meant to be used by developers of the base classes
+        only used for jsconfig classes
         :return:
         """
         pass
@@ -186,6 +214,7 @@ class JSBase:
     def _init_factory(self, **kwargs):
         """
         only used by factory class
+        a factory class can produce jsconfig or jsconfigs objects (are part of children)
         :return:
         """
         pass
@@ -196,14 +225,14 @@ class JSBase:
         """
         pass
 
-    def _init_post(self, **kwargs):
+    def _init_jsconfig_post(self, **kwargs):
         """
         meant to be used by developers of the base classes
         :return:
         """
         pass
 
-    def _init_post_attr(self, **kwargs):
+    def _init_attr(self, **kwargs):
         """
         only there for the attr baseclass
         :return:
@@ -242,6 +271,10 @@ class JSBase:
 
     @property
     def _objid(self):
+        """
+        used by e.g caching mechanism of jsbase
+        it serves as unique identification of a jsbase object and takes into consideration name, id, ...
+        """
         if self._objid_ is None:
             id = self.__class__._location
             id2 = ""
@@ -619,11 +652,10 @@ class JSBase:
                     if obj._parent.name is None:
                         raise j.exceptions.JSBUG("cannot happen, there needs to be a name")
                     else:
-                        obj._parent.save()
-                        if obj._parent._id == None:
-                            raise RuntimeError("obj._parent._id cannot be None when saved")
-                        assert obj._parent._id > 0
-                        return obj._parent._id
+                        if obj._parent._model != False and obj._parent._id == None:
+                            obj._parent.save()
+                            assert obj._parent._id > 0
+                            return obj._parent._id
                 else:
                     return obj._parent._id
             obj = obj._parent

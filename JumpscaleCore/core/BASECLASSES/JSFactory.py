@@ -13,12 +13,13 @@ class JSFactory(JSBase, Attr):
         if hasattr(self.__class__, "_CHILDCLASSES"):
             for kl in self.__class__._CHILDCLASSES:
                 # childclasses are the e.g. JSConfigs classes
-
-                # if not kl._name or not isinstance(kl._name, str):
-                #     name = j.core.text.strip_to_ascii_dense(str(kl)).split(".")[-1].lower()
-                # else:
-                obj = kl(parent=self, **kwargs)
+                if "name" not in kwargs:
+                    obj = kl(parent=self, name="main", **kwargs)
+                else:
+                    obj = kl(parent=self, **kwargs)
                 name = obj._name
+                obj.name = name
+                assert name
                 assert obj._parent
                 self._children[name] = obj
 
@@ -37,9 +38,6 @@ class JSFactory(JSBase, Attr):
         JSBase._obj_cache_reset(self)
         for factory in self._children.values():
             factory._obj_cache_reset()
-
-        # if self._object_config:
-        #     self._object_config._obj_cache_reset()
 
     def reset(self):
         """
@@ -72,7 +70,7 @@ class JSFactory(JSBase, Attr):
             if hasattr(self.__class__, "_CHILDCLASS") and needexist is False:
                 self.new(name=name, autosave=autosave, **kwargs)
             else:
-                raise j.exceptions.Value("cannot get child with name:%s" % name)
+                raise j.exceptions.Value(f"cannot get child with name:{name} on {self._key}")
         if reload:
             self._children[name].load()
         return self._children[name]

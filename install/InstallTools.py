@@ -208,8 +208,8 @@ class RedisTools:
 
         unix_socket_path = Tools.text_replace(unix_socket_path)
         RedisTools.unix_socket_path = unix_socket_path
-        cl = Redis(unix_socket_path=unix_socket_path, db=0)
-        # cl = Redis(host=addr, port=port, db=0)
+        # cl = Redis(unix_socket_path=unix_socket_path, db=0)
+        cl = Redis(host=addr, port=port, db=0)
         try:
             r = cl.ping()
         except Exception as e:
@@ -375,7 +375,7 @@ class RedisTools:
         while time.time() < limit_timeout:
             if RedisTools.core_running():
                 break
-            print(1)
+            print("trying to start redis")
             time.sleep(0.1)
         else:
             raise Tools.exceptions.Base("Couldn't start redis server")
@@ -1339,6 +1339,11 @@ class Tools:
 
         if env is None or env == {}:
             env = os.environ
+
+        if MyEnv.debug:
+            showout = True
+
+        # showout = True
 
         if useShell:
             p = Popen(
@@ -2560,6 +2565,9 @@ class Tools:
     @staticmethod
     def _check_interactive():
         if not MyEnv.interactive:
+            import pudb
+
+            pu.db
             raise Tools.exceptions.Base("Cannot use console in a non interactive mode.")
 
     @staticmethod
@@ -3016,14 +3024,6 @@ class Tools:
                 rc, out, err = Tools.execute(
                     script, die=False, args=args, showout=True, interactive=False, die_if_args_left=True
                 )
-                # if err:
-                #     script = """
-                #     set -ex
-                #     cd {REPO_DIR}
-                #     git checkout {BRANCH} -f
-                #     """
-                #     rc, out, err = Tools.execute(script, die=False, args=args, showout=True, interactive=False)
-
                 if rc > 0:
                     return False
 
@@ -3047,13 +3047,16 @@ class Tools:
             raise Tools.exceptions.JSBUG("branch should be a string or list, now %s" % branch)
 
         Tools.log("get code:%s:%s (%s)" % (url, path, branch))
-        if MyEnv.config["SSH_AGENT"] and MyEnv.interactive:
+        if MyEnv.config["SSH_AGENT"]:
             url = "git@github.com:%s/%s.git"
         else:
             url = "https://github.com/%s/%s.git"
 
         repo_url = url % (account, repo)
         exists, foundgit, dontpull, ACCOUNT_DIR, REPO_DIR = Tools._code_location_get(account=account, repo=repo)
+        if exists and reset:
+            # need to remove because could be left over from previous sync operations
+            Tools.delete(REPO_DIR)
 
         args = {}
         args["ACCOUNT_DIR"] = ACCOUNT_DIR
@@ -3089,7 +3092,6 @@ class Tools:
                 Tools.execute(C, args=args, showout=True, die_if_args_left=True)
                 C = """
                 cd {ACCOUNT_DIR}
-                # git clone  --depth 1 {URL} -b {BRANCH}
                 git clone {URL} -b {BRANCH}
                 cd {NAME}
                 """
@@ -3098,6 +3100,7 @@ class Tools:
                     args=args,
                     die=True,
                     showout=True,
+                    interactive=True,
                     retry=4,
                     errormsg="Could not clone %s" % repo_url,
                     die_if_args_left=True,
@@ -3113,7 +3116,12 @@ class Tools:
                         """
                         Tools.log("get code & ignore changes: %s" % repo)
                         Tools.execute(
-                            C, args=args, retry=1, errormsg="Could not checkout %s" % repo_url, die_if_args_left=True
+                            C,
+                            args=args,
+                            retry=1,
+                            errormsg="Could not checkout %s" % repo_url,
+                            die_if_args_left=True,
+                            interactive=True,
                         )
                     else:
                         if Tools.code_changed(REPO_DIR):
@@ -3132,14 +3140,21 @@ class Tools:
                             git commit -m "{MESSAGE}"
                             """
                             Tools.log("get code & commit [git]: %s" % repo)
-                            Tools.execute(C, args=args, die_if_args_left=True)
+                            Tools.execute(C, args=args, die_if_args_left=True, interactive=True)
                     C = """
                     set -x
                     cd {REPO_DIR}
                     git pull
                     """
                     Tools.log("pull code: %s" % repo)
-                    Tools.execute(C, args=args, retry=4, errormsg="Could not pull %s" % repo_url, die_if_args_left=True)
+                    Tools.execute(
+                        C,
+                        args=args,
+                        retry=4,
+                        errormsg="Could not pull %s" % repo_url,
+                        die_if_args_left=True,
+                        interactive=True,
+                    )
 
                     if not checkoutbranch(args, branch):
                         raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
@@ -3177,7 +3192,7 @@ class Tools:
                 rm -f download.zip
                 """
                 try:
-                    Tools.execute(script, args=args, die=True, die_if_args_left=True)
+                    Tools.execute(script, args=args, die=True, die_if_args_left=True, interactive=True)
                 except Exception as e:
                     Tools.shell()
 
@@ -4052,6 +4067,7 @@ class BaseInstaller:
             0: [
                 "scikit-build",
                 "cmake",
+                "cached_property",
                 "blosc>=1.5.1",
                 "Brotli>=0.6.0",
                 "captcha",
@@ -4519,24 +4535,15 @@ class JumpscaleInstaller:
             GITURL, BRANCH, RPATH, DEST = d
             if branch:
                 C = f"""git ls-remote --heads {GITURL} {branch}"""
-                _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True)
+                _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True, interactive=True)
                 if out:
                     BRANCH = branch
 
             try:
                 dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
             except Exception as e:
-
-                activate_http = Tools.ask_yes_no(
-                    "\n### SSH cloning Failed, your key isn't on github or you're missing permission, Do you want to clone via http?\n"
-                )
-                if activate_http:
-                    MyEnv.interactive = False
-                    r = Tools.code_git_rewrite_url(url=GITURL, ssh=False)
-                    # TODO: *1
-                    Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull)
-                else:
-                    raise Tools.exceptions.Base("\n### Please authenticate your key and try again\n")
+                r = Tools.code_git_rewrite_url(url=GITURL, ssh=False)
+                Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull)
 
         if prebuilt:
             self.prebuilt_copy()
@@ -5676,7 +5683,7 @@ class SSHAgent:
         return self.__keys
 
     def _read_keys(self):
-        return_code, out, err = Tools.execute("ssh-add -L", showout=False, die=False, timeout=1)
+        return_code, out, err = Tools.execute("ssh-add -L", showout=True, die=False, timeout=2)
         if return_code:
             if return_code == 1 and out.find("The agent has no identities") != -1:
                 self.__keys = []

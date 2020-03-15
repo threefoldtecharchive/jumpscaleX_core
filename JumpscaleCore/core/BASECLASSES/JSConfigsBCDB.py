@@ -98,7 +98,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         return self._children[name]
 
-    def get(self, name="main", id=None, needexist=False, reload=False, autosave=True, **kwargs):
+    def get(self, name="default", id=None, needexist=False, reload=False, autosave=True, **kwargs):
         """
         get jsconfig instance and create if it doesn't exist
 
