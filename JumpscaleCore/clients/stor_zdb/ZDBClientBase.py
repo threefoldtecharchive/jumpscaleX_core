@@ -248,4 +248,3 @@ class ZDBConnection(redis.Connection):
             self.send_command("SELECT", *args)
             if redis.connection.nativestr(self.read_response()) != "OK":
                 raise redis.connection.ConnectionError(f"Failed to select namespace {self.namespace}")
-

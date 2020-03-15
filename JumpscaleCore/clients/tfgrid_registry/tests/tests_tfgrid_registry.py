@@ -1,4 +1,5 @@
 from Jumpscale import j
+
 try:
     from parameterized import parameterized
 except ImportError:
