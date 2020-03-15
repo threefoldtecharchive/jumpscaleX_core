@@ -184,9 +184,9 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         assert j.sal.process.checkProcessRunning("zdb") is False
         assert j.sal.process.checkProcessRunning("sonic") is False
 
-    def threebot_zdb_sonic_start(self, reset=False):
+    def start_servers_threebot_zdb_sonic(self, reset=False):
         """
-        kosmos 'j.data.bcdb.threebot_zdb_sonic_start()'
+        kosmos 'j.data.bcdb.start_servers_threebot_zdb_sonic()'
 
         starts all required services for the BCDB to work for threebot
         :return: (sonic, zdb) server instance
@@ -391,7 +391,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
                     return
             self.destroy_all()
 
-        self.threebot_zdb_sonic_start()
+        self.start_servers_threebot_zdb_sonic()
 
         self._log_info(f"will import BCDB's from path: {path}")
 
@@ -557,7 +557,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             raise j.exceptions.Input("ttype can only be zdb or sqlite")
         assert name
         if ttype == "zdb":
-            zdb = self._core_zdb  # has been started in threebot_zdb_sonic_start
+            zdb = self._core_zdb  # has been started in start_servers_threebot_zdb_sonic
             assert namespace
             adminsecret_ = j.core.myenv.adminsecret
             self._log_debug("get zdb admin client")
