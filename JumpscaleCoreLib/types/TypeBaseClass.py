@@ -2,8 +2,8 @@ from TypeBaseClassesObj import TypeBaseObjClass
 
 
 class TypeBaseClass:
-    __ALIAS = None
     __NAME = None
+    __ALIAS = None  # list if more than 1
     __DEFAULT = None
 
     def toString(self, v):

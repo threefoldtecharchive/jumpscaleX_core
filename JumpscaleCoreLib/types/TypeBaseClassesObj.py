@@ -4,8 +4,10 @@ from .TypeBaseClass import TypeBaseClass
 
 class TypeBaseObjClassFactory(TypeBaseClass):
 
-    __name = ""
-    __object_class = TypeBaseObjClass
+    __NAME = None
+    __ALIAS = None  # list if more than 1
+    __DEFAULT = None
+    __SUBOBJECT_CLASS = TypeBaseObjClass
 
     def check(self, value):
         if isinstance(value, TypeBaseObjClass):
@@ -39,19 +41,22 @@ class TypeBaseObjClassFactory(TypeBaseClass):
 
 class TypeBaseObjClass:
     """
-    is a custom type object (so not the factory/class who instancianted this obj)
-    it hsa the data inside !
+    is a custom type object (so not the factory/class who instancianated this obj)
+    it has the data inside !
     """
 
     __slots__ = ["__changed", "__data", "__serialized"]
-    __default = None
-    __serialized__ = True
+
+    __NAME = None
+    __ALIAS = None  # list if more than 1
+    __FACTORY_CLASS = TypeBaseObjClassFactory
+    __SERIALIZED__ = False
 
     def __init__(self, typebase, value=None):
         self.__changed = False
         self.__data = value
-        # to know id the serialized data is stored, or the direct usable one
-        self.__serialized = self.__class.__serialized__  # can be overruled at instance time
+        # to know if the serialized data is stored, or the direct usable one
+        self.__serialized = self.__class.__SERIALIZED__  # can be overruled at instance time
 
     @property
     def _changed(self):
@@ -75,13 +80,13 @@ class TypeBaseObjClass:
         return self.__data
 
     @property
-    def value(self):
+    def _value(self):
         if self.__serialized:
             return self._typebase.clean(self.__data)
         return self.__data
 
     @value.setter
-    def value(self, val):
+    def _value(self, val):
         d = self._typebase.toData(val)
         if self.__data != d:
             self.__data = d
@@ -94,120 +99,3 @@ class TypeBaseObjClass:
             return "%s: NOTSET" % (self._typebase.__class__.NAME)
 
     __repr__ = __str__
-
-
-class TypeBaseObjClassNumeric(TypeBaseObjClass):
-
-    BASETYPE = "OBJ"
-
-    @property
-    def value(self):
-        raise j.exceptions.NotImplemented()
-
-    # def __eq__(self, other):
-    #     n = self._typebase.clean(other)
-    #     return self.value == n.value
-
-    def __gt__(self, other):
-        n = self._typebase.clean(other)
-        return self.value > n.value
-
-    def __ge__(self, other):
-        n = self._typebase.clean(other)
-        return self.value >= n.value
-
-    def __lt__(self, other):
-        n = self._typebase.clean(other)
-        return self.value < n.value
-
-    def __le__(self, other):
-        n = self._typebase.clean(other)
-        return self.value <= n.value
-
-    # def __add__(self, other):
-    #     n = self._typebase.clean(other)
-    #     r = self.value + n.value
-    #     return self._typebase.clean(r)
-    #
-    # def __sub__(self, other):
-    #     n = self._typebase.clean(other)
-    #     r = self.value - n.value
-    #     return self._typebase.clean(r)
-    #
-    # def __mul__(self, other):
-    #     n = self._typebase.clean(other)
-    #     r = self.value * n.value
-    #     return self._typebase.clean(r)
-    #
-    # def __div__(self, other):
-    #     n = self._typebase.clean(other)
-    #     r = self.value / n.value
-    #     return self._typebase.clean(r)
-
-    def __hash__(self):
-        return hash(self.value)
-
-    def __eq__(self, other):
-        other = self._typebase.clean(other)
-        return float(other) == float(self)
-
-    def __bool__(self):
-        return self._data is not None
-
-    def _other_convert(self, other):
-        return self._typebase.clean(other)
-
-    def __add__(self, other):
-        other = self._other_convert(other)
-        return self._typebase.clean(float(other) + float(self))
-
-    def __iadd__(self, other):
-        other = self._other_convert(other)
-        self.value = float(self) + float(other)
-        return self
-
-    def __sub__(self, other):
-        other = self._other_convert(other)
-        return self._typebase.clean(float(self) - float(other))
-
-    def __mul__(self, other):
-        other = self._other_convert(other)
-        return self._typebase.clean(float(self) * float(other))
-
-    def __matmul__(self, other):
-        other = self._other_convert(other)
-        return self._typebase.clean(float(self) @ float(other))
-
-    def __truediv__(self, other):
-        other = self._other_convert(other)
-        return self._typebase.clean(float(self) / float(other))
-
-    def __floordiv__(self, other):
-        other = self._other_convert(other)
-        return self._typebase.clean(float(self) // float(other))
-
-    def __mod__(self, other):
-        raise NotImplemented()
-
-    def __divmod__(self, other):
-        raise NotImplemented()
-
-    def __pow__(self, other):
-        raise NotImplemented()
-
-    def __lshift__(self):
-        raise NotImplemented()
-
-    def __neg__(self):
-        return self._typebase.clean(float(self) * -1)
-
-    def __float__(self):
-        return float(self.value)
-
-    def __int__(self):
-        return int(self.value)
-
-    __rshift__ = __lshift__
-    __and__ = __lshift__
-    __xor__ = __lshift__
-    __or__ = __lshift__

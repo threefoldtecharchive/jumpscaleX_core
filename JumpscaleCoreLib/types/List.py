@@ -1,8 +1,7 @@
 """Definition of several collection types (list, dict, set,...)"""
 
 from Jumpscale import j
-from Jumpscale.data.types.PrimitiveTypes import TypeBaseObjFactory, TypeBaseObjClass
-
+from .TypeBaseClassesObj import *
 
 from collections.abc import MutableSequence
 
@@ -26,9 +25,9 @@ class ListObject(TypeBaseObjClass, MutableSequence):
             current = current._parent
         self._root = current
 
-    @property
-    def isjsxobject(self):
-        return self._list_factory_type.SUBTYPE.BASETYPE == "JSXOBJ"
+    # @property
+    # def isjsxobject(self):
+    #     return self._list_factory_type.SUBTYPE.BASETYPE == "JSXOBJ"
 
     @property
     def _changed(self):
@@ -200,22 +199,18 @@ class ListObject(TypeBaseObjClass, MutableSequence):
     __str__ = __repr__
 
 
-class List(TypeBaseObjFactory):
+class List(TypeBaseObjClassFactory):
 
-    CUSTOM = True
     NAME = "list,l"
 
     def __init__(self, default=None):
 
-        self.BASETYPE = "list"
-
         if isinstance(default, dict):  # means we have 2 levels to process
+            raise RuntimeError("?")
             subtype = default["subtype"]
             default = default["default"]
-        else:
-            subtype = None
 
-        if not default or subtype == "o":
+        if not default:
             self._default = []
         else:
             self._default = default

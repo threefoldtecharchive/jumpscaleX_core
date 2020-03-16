@@ -5,7 +5,10 @@ from .CollectionTypes import *
 from .PrimitiveTypes import *
 from .Enumeration import Enumeration
 from .IPAddress import *
-from .JSXObjectTypeFactory import JSXObjectTypeFactory
+from .TypeBaseClass import *
+from .TypeBaseClassesObj import *
+
+# from .JSXObjectTypeFactory import JSXObjectTypeFactory
 from .List import *
 
 import copy
@@ -38,7 +41,7 @@ class Types:
             Percent,
             Set,
             CapnpBin,
-            JSXObjectTypeFactory,
+            # JSXObjectTypeFactory,
             Url,
             Enumeration,
             IPAddress,
