@@ -563,8 +563,10 @@ class BCDB(j.baseclasses.object):
 
         # since delete the data directory above, we have to re-init the storclient
         # so it can do its things (e.g. create sqlitedb, init redis, ...) and re-connect properly
-        self.storclient._connect()
-
+        if self.storclient.type == "ZDB":
+            self.storclient._redis = None
+        else:
+            self.storclient._connect()
         if not self.storclient.get(0):
             r = self.storclient.set(b"INIT")
             # this is to not have id 0, otherwise certain tests which check on value in 0 get confused
