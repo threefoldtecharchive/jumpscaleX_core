@@ -80,6 +80,7 @@ class ZDBServers(JSConfigs, TESTTOOLS):
             zdb.destroy()
             zdb.delete()
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/608")
     def test(self, name="", install=False):
         """
         kosmos 'j.servers.zdb.test(build=True)'
