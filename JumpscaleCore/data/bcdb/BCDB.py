@@ -50,7 +50,7 @@ class BCDB(j.baseclasses.object):
         self.storclient = storclient
 
         j.sal.fs.createDir(self._data_dir)
-        self.readonly = readonly
+        self.readonly = not j.data.bcdb._master
 
         if self.readonly:
             self._log_debug("sqlite file is in readonly mode for: '%s'" % self.name)
