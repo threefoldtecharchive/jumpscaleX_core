@@ -87,6 +87,8 @@ class ThreeBotPackage(ThreeBotPackageBase):
             self._wikis = j.baseclasses.dict()
 
         wiki_path = j.sal.fs.joinPaths(self.path, "wiki")
+        if not j.sal.fs.exists(wiki_path):
+            return
         j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=wiki_path, reset=reset)
         self._wikis[self.name] = wiki_path
 
@@ -127,7 +129,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
         if not path.startswith("/"):
             path = j.sal.fs.joinPaths(self.path, path)
         if not j.sal.fs.exists(path):
-            raise j.exceptions.Input("could not find:%s" % path)
+            return
 
         # remove the actors
         if path:
@@ -162,7 +164,9 @@ class ThreeBotPackage(ThreeBotPackageBase):
             if len(self.bcdbs) == 1:
                 config = self.bcdbs[0]
                 if not config.name:
-                    config.name = self.name
+                    raise j.exceptions.Input(
+                        f"could not find name for bcdb in config of package, {self.name}, found {config.name}"
+                    )
                 self._bcdb_ = j.data.bcdb.get_for_threebot(
                     name=config.name, namespace=config.namespace, ttype=config.type
                 )
@@ -251,6 +255,10 @@ class ThreeBotPackage(ThreeBotPackageBase):
             website_location.use_jumpscale_weblibs = False
             fullpath = j.sal.fs.joinPaths(self.path, f"{app_type}/")
             website_location.path_location = fullpath
+
+            # TODO: for now all packages are forced to https
+            # if later we can customize to each package
+            website_location.force_https = True
 
             locations.configure()
             website.configure()

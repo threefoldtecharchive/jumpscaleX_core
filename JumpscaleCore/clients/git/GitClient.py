@@ -616,13 +616,13 @@ class GitClient(j.baseclasses.object):
                 out = "\n".join(linesout)
                 j.sal.fs.writeFile(ignorefilepath, out)
 
-    def describe(self):
+    def describe(self, showout=True):
         """
         this method get latest tag or branch
         """
         try:
             cmd = "cd {path}; git describe --tags".format(path=self.path)
-            return "tag", j.tools.executor.local.execute(cmd)[1]
+            return "tag", j.tools.executor.local.execute(cmd, showout=showout)[1]
         except BaseException:
             return "branch", self.repo.head.ref.name
 

@@ -6,6 +6,8 @@ from Jumpscale import j
 
 ###
 
+skip = j.baseclasses.testtools._skip
+
 
 def test_export():
     """
@@ -13,8 +15,6 @@ def test_export():
     kosmos 'j.data.bcdb.test(name="export")'
 
     """
-    zdb = j.servers.zdb.test_instance_start()
-
     namespaces = ["testexport_zdb", "testexport_sqlite"]
 
     schema_text = """
@@ -91,10 +91,5 @@ def test_export():
     export_import(encrypt=True)
     export_import(encrypt=False)
 
-    for namespace in namespaces:
-        bcdb = j.data.bcdb.get(name=namespace)
-        bcdb.destroy()
-
-    j.servers.zdb.test_instance_stop()
     j.data.bcdb._log_info("TEST DONE")
     return "OK"

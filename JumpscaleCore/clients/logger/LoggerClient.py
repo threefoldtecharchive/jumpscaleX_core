@@ -229,7 +229,13 @@ class LoggerClient(j.baseclasses.object_config):
                 args, nrdone = self.__do(method, logdict, epoch_from, epoch_to, args, nrdone)
 
         incrkey = "logs:%s:incr" % (appname)
-        lastkey = int(self.db.get(incrkey))
+
+        lastkey_redis = self.db.get(incrkey)
+        if lastkey_redis:
+            lastkey = int(lastkey_redis)
+        else:
+            lastkey = 0
+
         firstkey = lastkey - 2000
 
         for i in range(firstkey - 1, lastkey):
@@ -262,7 +268,7 @@ class LoggerClient(j.baseclasses.object_config):
         args, lastid = self.walk_reverse(do, args=args, appname=appname, lastid=lastid, maxitems=maxitems)
         return args["res"], lastid
 
-    def list(self, appname, id_from=None, id_to=None, time_from=None, time_to=None):
+    def list(self, appname, id_from=None, id_to=None, count=10000, time_from=None, time_to=None, include_fslogs=False):
         if not id_from:
             id_from = 0
 
@@ -272,7 +278,23 @@ class LoggerClient(j.baseclasses.object_config):
             args["counter"] += 1
             args["objs"].append(logdict)
 
-        self.walk_reverse(do, appname=appname, lastid=id_from, args=args, time_from=time_from, time_to=time_to)
+        self.walk_reverse(
+            do, appname=appname, lastid=id_from, maxitems=count, args=args, time_from=time_from, time_to=time_to
+        )
+
+        if include_fslogs:
+            logging_dir = j.sal.fs.joinPaths(self._log_dir, appname)
+            if j.sal.fs.exists(logging_dir):
+                self.walk(
+                    do,
+                    appname=appname,
+                    id_from=id_from,
+                    args=args,
+                    maxitems=count,
+                    time_from=time_from,
+                    time_to=time_to,
+                )
+
         return args["objs"], args["counter"]
 
     def find(
@@ -288,6 +310,7 @@ class LoggerClient(j.baseclasses.object_config):
         file_path=None,
         level=None,
         data=None,
+        include_fslogs=False,
     ):
 
         """
@@ -319,7 +342,9 @@ class LoggerClient(j.baseclasses.object_config):
 
             return True
 
-        logs, _ = self.list(appname=appname, id_from=id_from, time_from=time_from, time_to=time_to)
+        logs, _ = self.list(
+            appname=appname, id_from=id_from, time_from=time_from, time_to=time_to, include_fslogs=include_fslogs
+        )
 
         if not cat and not message and not processid and not file_path and not context and not level and not data:
             return logs
@@ -364,6 +389,9 @@ class LoggerClient(j.baseclasses.object_config):
         for item in items:
             print(j.core.tools.log2str(item))
 
+    def _get_with_ansi_colors(self, items):
+        return [j.core.tools.log2str(item) for item in items]
+
     def print(
         self,
         id_from=None,
@@ -406,3 +434,13 @@ class LoggerClient(j.baseclasses.object_config):
 
         for item in logs:
             print(j.core.tools.log2str(item))
+
+    def get_app_names(self):
+        app_names = set()
+        keys = self.db.keys("logs:*")
+        for key in keys:
+            try:
+                app_names.add(key.decode().split(":")[1])
+            except IndexError:
+                continue
+        return app_names

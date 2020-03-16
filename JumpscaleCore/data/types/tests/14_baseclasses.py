@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def test014_base_classes():
+def main(self):
     """
     to run:
 
@@ -30,6 +30,6 @@ def test014_base_classes():
     assert len(a._properties_names_get(filter="*")) == 2
     assert len(a._methods_names_get()) == 2
 
-    j.data.types._log_info("TEST DONE FOR BASECLASSES")
+    self._log_info("TEST DONE FOR BASECLASSES")
 
     return "OK"

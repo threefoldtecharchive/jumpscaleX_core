@@ -9,6 +9,11 @@ try:
 except:
     msgpack = None
 
+try:
+    import redis
+except:
+    redis = None
+
 DEFAULT_BRANCH = "development"
 GITREPOS = {}
 
@@ -191,64 +196,29 @@ except:
 
 class RedisTools:
     @staticmethod
-    def client_core_get(
-        addr="localhost", port=6379, unix_socket_path="{DIR_BASE}/var/redis.sock", die=True, fake_ok=True
-    ):
+    def client_core_get(addr="localhost", port=6379, unix_socket_path="{DIR_BASE}/var/redis.sock", die=True):
         """
 
         :param addr:
         :param port:
         :param unix_socket_path:
-        :param die: if cannot find fake or real die
-        :param fake_ok: can return a fake redis connection which will go to memory only
         :return:
         """
+        import redis
 
+        unix_socket_path = Tools.text_replace(unix_socket_path)
         RedisTools.unix_socket_path = unix_socket_path
-
+        cl = Redis(unix_socket_path=unix_socket_path, db=0)
+        # cl = Redis(host=addr, port=port, db=0)
         try:
-            import redis
-        except ImportError:
-            if fake_ok:
-                try:
-                    import fakeredis
-
-                    res = fakeredis.FakeStrictRedis()
-                    res.fake = True
-                    return res
-                except ImportError:
-                    # dit not find fakeredis so can only return None
-                    if die:
-                        raise Tools.exceptions.Base(
-                            "cannot connect to fakeredis, could not import the library, please install fakeredis"
-                        )
-                    return None
-            else:
-                if die:
-                    raise Tools.exceptions.Base("redis python lib not installed, do pip3 install redis")
-                return None
-
-        try:
-            unix_socket_path = Tools.text_replace(unix_socket_path)
-            cl = Redis(unix_socket_path=unix_socket_path, db=0)
-            cl.fake = False
-            assert cl.ping()
+            r = cl.ping()
         except Exception as e:
-            cl = None
-            if addr == "" and die:
-                raise e
-        else:
-            return cl
+            if isinstance(e, redis.exceptions.ConnectionError):
+                if not die:
+                    return
+            raise
 
-        try:
-            cl = Redis(host=addr, port=port, db=0)
-            cl.fake = False
-            assert cl.ping()
-        except Exception as e:
-            if die:
-                raise e
-            cl = None
-
+        assert r
         return cl
 
     @staticmethod
@@ -256,7 +226,7 @@ class RedisTools:
         return serializer(data)
 
     @staticmethod
-    def core_get(reset=False, tcp=True):
+    def _core_get(reset=False, tcp=False):
         """
 
         kosmos 'j.clients.redis.core_get(reset=False)'
@@ -266,7 +236,7 @@ class RedisTools:
         if that does not work then will return None
 
 
-        :param tcp, if True then will also start tcp port on localhost on 6379
+        :param tcp, if True then will also start redis tcp port on localhost on 6379
 
 
         :param reset: stop redis, defaults to False
@@ -279,15 +249,13 @@ class RedisTools:
         if reset:
             RedisTools.core_stop()
 
-        MyEnv.init()
-
-        if MyEnv.db and MyEnv.db.ping() and MyEnv.db.fake is False:
-            return MyEnv.db
+        # if MyEnv.db and MyEnv.db.ping():
+        #     return MyEnv.db
 
         if not RedisTools.core_running(tcp=tcp):
             RedisTools._core_start(tcp=tcp)
 
-        MyEnv.db = RedisTools.client_core_get()
+        MyEnv._db = RedisTools.client_core_get()
 
         try:
             from Jumpscale import j
@@ -328,12 +296,12 @@ class RedisTools:
         :rtype: bool
         """
         if unixsocket:
-            r = RedisTools.client_core_get(fake_ok=False, die=False)
+            r = RedisTools.client_core_get(die=False)
             if r:
                 return True
 
         if tcp and Tools.tcp_port_connection_test("localhost", 6379):
-            r = RedisTools.client_core_get(ipaddr="localhost", port=6379, fake_ok=False, die=False)
+            r = RedisTools.client_core_get(addr="localhost", port=6379, die=False)
             if r:
                 return True
 
@@ -362,9 +330,6 @@ class RedisTools:
         """
 
         if reset is False:
-            if RedisTools.core_running(tcp=tcp):
-                return RedisTools.core_get()
-
             if MyEnv.platform_is_osx:
                 if not Tools.cmd_installed("redis-server"):
                     # prefab.system.package.install('redis')
@@ -378,6 +343,12 @@ class RedisTools:
                 Tools.execute("redis-cli shutdown", die=False, showout=False)
             elif MyEnv.platform_is_linux:
                 Tools.execute("apt-get install redis-server -y")
+                if not Tools.cmd_installed("redis-server"):
+                    raise Tools.exceptions.Base("Cannot find redis-server even after install")
+                Tools.execute("redis-cli -s {DIR_TMP}/redis.sock shutdown", die=False, showout=False)
+                Tools.execute("redis-cli -s %s shutdown" % RedisTools.unix_socket_path, die=False, showout=False)
+                Tools.execute("redis-cli shutdown", die=False, showout=False)
+
             else:
                 raise Tools.exceptions.Base("platform not supported for start redis")
 
@@ -803,6 +774,12 @@ class JSExceptions:
 from string import Formatter
 
 
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]
+
+
 class OurTextFormatter(Formatter):
     def check_unused_args(self, used_args, args, kwargs):
         return used_args, args, kwargs
@@ -892,6 +869,9 @@ class LogHandler:
         if not appname:
             appname = self.appname
         rediskey_logs = "logs:%s:data" % appname
+
+        if not self.db:
+            return
         try:
             res = self.db.hget(rediskey_logs, identifier)
         except:
@@ -920,9 +900,14 @@ class LogHandler:
             path = "%s/%s/%s.msgpack" % (log_dir, self.appname, stopid)
             Tools.file_write(path, msgpack.dumps(r))
         # now remove from redis
-        for i in range(startid + 1, stopid + 1):
-            self.db.hdel(self.rediskey_logs, i)
-        # assert self.db.hlen(self.rediskey_logs) == 1000
+
+        keystodelete = []
+        for key in self.db.hkeys(self.rediskey_logs):
+            if int(key) < stopid + 1:
+                keystodelete.append(key)
+
+        for chunk in chunks(keystodelete, 100):
+            self.db.hdel(self.rediskey_logs, *chunk)
 
     def _data_container_set(self, container, appname):
         if not msgpack:
@@ -1233,7 +1218,7 @@ class Tools:
                     msg = "{RED}EXCEPTION: \n" + Tools.text_indent(msg_e, 4).rstrip() + "{RESET}"
                 else:
                     msg = "EXCEPTION: \n" + Tools.text_indent(msg_e, 4).rstrip()
-            if cat is "":
+            if cat is None or cat == "":
                 cat = "exception"
 
             if hasattr(exception, "exception"):
@@ -1283,7 +1268,7 @@ class Tools:
             logdict = copy.copy(logdict)
             logdict["message"] = Tools.text_replace(logdict["message"])
             Tools.log2stdout(logdict, data_show=data_show)
-        elif level > 24:
+        elif level > 14:
             Tools.log2stdout(logdict, data_show=False, enduser=True)
 
         iserror = tb or exception
@@ -2343,12 +2328,17 @@ class Tools:
         return envars
 
     @staticmethod
+    def execute_jumpscale(cmd):
+        cmd2 = ".  /sandbox/env.sh;cd /tmp; kosmos -p '%s'" % cmd
+        return Tools.execute(cmd2)
+
+    @staticmethod
     def execute(
         command,
         showout=True,
         useShell=True,
         cwd=None,
-        timeout=1800,
+        timeout=3600,
         die=True,
         async_=False,
         args=None,
@@ -3339,7 +3329,9 @@ class MyEnv_:
             "REVERSE": "",
         }
 
-        LOGFORMATBASE = "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"  # DO NOT CHANGE COLOR
+        LOGFORMATBASE = (
+            "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"
+        )  # DO NOT CHANGE COLOR
 
         self.LOGFORMAT = {
             "DEBUG": LOGFORMATBASE.replace("{COLOR}", "{CYAN}"),
@@ -3350,10 +3342,17 @@ class MyEnv_:
             "ERROR": LOGFORMATBASE.replace("{COLOR}", "{RED}"),
             "CRITICAL": "{RED}{TIME} {filename:<20} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}",
         }
+        self._db = None
 
-        self.db = RedisTools.client_core_get(die=False)
+    @property
+    def db(self):
+        if not self._db:
+            self._db = RedisTools._core_get()
+        return self._db
 
     def init(self, reset=False, configdir=None):
+        if self.__init:
+            return
 
         args = Tools.cmd_args_get()
 
@@ -3377,6 +3376,8 @@ class MyEnv_:
                 else:
                     configdir = self._cfgdir_get()
 
+        # Set codedir
+        Tools.dir_ensure("{}/code".format(self._basedir_get()))
         self.config_file_path = os.path.join(configdir, "jumpscale_config.toml")
         # if DockerFactory.indocker():
         #     # this is important it means if we push a container we keep the state file
@@ -3392,8 +3393,8 @@ class MyEnv_:
             self.log_includes = [i for i in self.config.get("LOGGER_INCLUDE", []) if i.strip().strip("''") != ""]
             self.log_excludes = [i for i in self.config.get("LOGGER_EXCLUDE", []) if i.strip().strip("''") != ""]
             self.log_level = self.config.get("LOGGER_LEVEL", 10)
-            self.log_console = self.config.get("LOGGER_CONSOLE", False)
-            self.log_redis = self.config.get("LOGGER_REDIS", True)
+            # self.log_console = self.config.get("LOGGER_CONSOLE", False)
+            # self.log_redis = self.config.get("LOGGER_REDIS", True)
             self.debug = self.config.get("DEBUG", False)
             self.debugger = self.config.get("DEBUGGER", "pudb")
             self.interactive = self.config.get("INTERACTIVE", True)
@@ -3412,12 +3413,17 @@ class MyEnv_:
             self.sshagent = SSHAgent()
 
         sys.excepthook = self.excepthook
+        if redis and Tools.exists("{}/bin".format(self.config["DIR_BASE"])):  # To check that Js is on host
+            self.loghandler_redis = LogHandler(db=self.db)
+        else:
+            print("- redis loghandler cannot be loaded")
+            self.loghandler_redis = None
 
         self.__init = True
 
-    def _init(self, **kwargs):
-        if not self.__init:
-            raise RuntimeError("init on MyEnv did not happen yet")
+    # def _init(self, **kwargs):
+    #     if not self.__init:
+    #         raise RuntimeError("init on MyEnv did not happen yet")
 
     def platform(self):
         """
@@ -3508,17 +3514,17 @@ class MyEnv_:
             config["LOGGER_LEVEL"] = 15  # means std out & plus gets logged
         if config["LOGGER_LEVEL"] > 50:
             config["LOGGER_LEVEL"] = 50
-        if "LOGGER_CONSOLE" not in config:
-            config["LOGGER_CONSOLE"] = True
-        if "LOGGER_REDIS" not in config:
-            config["LOGGER_REDIS"] = False
+        # if "LOGGER_CONSOLE" not in config:
+        #     config["LOGGER_CONSOLE"] = True
+        # if "LOGGER_REDIS" not in config:
+        #     config["LOGGER_REDIS"] = False
         if "LOGGER_PANEL_NRLINES" not in config:
-            config["LOGGER_PANEL_NRLINES"] = 15
+            config["LOGGER_PANEL_NRLINES"] = 0
 
         if self.readonly:
             config["DIR_TEMP"] = "/tmp/jumpscale_installer"
-            config["LOGGER_REDIS"] = False
-            config["LOGGER_CONSOLE"] = True
+            # config["LOGGER_REDIS"] = False
+            # config["LOGGER_CONSOLE"] = True
 
         if not "DIR_TEMP" in config:
             config["DIR_TEMP"] = "/tmp/jumpscale"
@@ -3706,7 +3712,7 @@ class MyEnv_:
     def adminsecret(self):
         if not self.config["SECRET"]:
             self.secret_set()
-        return self.config["SECRET"]
+        return self.config["SECRET"][0:32]
 
     def secret_set(self, secret=None):
         if self.interactive:
@@ -3885,7 +3891,6 @@ class MyEnv_:
 
 
 MyEnv = MyEnv_()
-MyEnv.loghandler_redis = LogHandler(db=MyEnv.db)
 
 
 class BaseInstaller:
@@ -4063,7 +4068,6 @@ class BaseInstaller:
                 "cryptography>=2.2.0",
                 "dnslib",
                 "ed25519>=1.4",
-                "fakeredis",
                 "future>=0.15.0",
                 "geopy",
                 "geocoder",
@@ -4114,6 +4118,9 @@ class BaseInstaller:
                 "bottle==0.12.17",  # why this version?
                 "beaker",
                 "Mnemonic",
+                "xmltodict",
+                "sonic-client",
+                "watchdog_gevent",
             ],
             # level 1: in the middle
             1: [
@@ -4237,24 +4244,20 @@ class BaseInstaller:
 class OSXInstaller:
     @staticmethod
     def do_all():
-        MyEnv._init()
+        MyEnv.init()
         Tools.log("installing OSX version")
         OSXInstaller.base()
         BaseInstaller.pips_install()
 
     @staticmethod
     def base():
-        MyEnv._init()
+        MyEnv.init()
         OSXInstaller.brew_install()
-        if (
-            not Tools.cmd_installed("curl")
-            or not Tools.cmd_installed("unzip")
-            or not Tools.cmd_installed("rsync")
-            or not Tools.cmd_installed("graphviz")
-        ):
+        if not Tools.cmd_installed("curl") or not Tools.cmd_installed("unzip") or not Tools.cmd_installed("rsync"):
             script = """
-            brew install curl unzip rsync graphviz tmux
+            brew install curl unzip rsync tmux
             """
+            # graphviz #TODO: need to be put elsewhere but not in baseinstaller
             Tools.execute(script, replace=True)
         BaseInstaller.pips_install(["click"])  # TODO: *1
 
@@ -4266,7 +4269,7 @@ class OSXInstaller:
 
     @staticmethod
     def brew_uninstall():
-        MyEnv._init()
+        MyEnv.init()
         cmd = 'ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/uninstall)"'
         Tools.execute(cmd, interactive=True)
         toremove = """
@@ -4283,7 +4286,7 @@ class OSXInstaller:
 class UbuntuInstaller:
     @staticmethod
     def do_all(prebuilt=False):
-        MyEnv._init()
+        MyEnv.init()
         Tools.log("installing Ubuntu version")
 
         UbuntuInstaller.ensure_version()
@@ -4297,7 +4300,7 @@ class UbuntuInstaller:
 
     @staticmethod
     def ensure_version():
-        MyEnv._init()
+        MyEnv.init()
         if not os.path.exists("/etc/lsb-release"):
             raise Tools.exceptions.Base("Your operating system is not supported")
 
@@ -4305,7 +4308,7 @@ class UbuntuInstaller:
 
     @staticmethod
     def base():
-        MyEnv._init()
+        MyEnv.init()
 
         if MyEnv.state_get("base"):
             return
@@ -4421,7 +4424,7 @@ class UbuntuInstaller:
 
 
 class JumpscaleInstaller:
-    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False, branch=None):
+    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False, branch=None, threebot=False):
 
         MyEnv.check_platform()
         # will check if there's already a key loaded (forwarded) will continue installation with it
@@ -4450,6 +4453,11 @@ class JumpscaleInstaller:
         kosmos 'j.core.tools.pprint("JumpscaleX init step for nacl (encryption) OK.")'
         """
         Tools.execute(script, die_if_args_left=True)
+
+        if threebot:
+            Tools.execute_jumpscale("j.servers.threebot.start()")
+            j.shell()
+            Tools.execute_jumpscale("j.servers.threebot.stop()")
 
     def remove_old_parts(self):
         tofind = ["DigitalMe", "Jumpscale", "ZeroRobot"]
@@ -4600,7 +4608,7 @@ class DockerFactory:
                 # nothing to do we are in docker already
                 return
 
-            MyEnv._init()
+            MyEnv.init()
 
             if MyEnv.platform() == "linux" and not Tools.cmd_installed("docker"):
                 UbuntuInstaller.docker_install()
@@ -4613,7 +4621,7 @@ class DockerFactory:
             cdir = Tools.text_replace("{DIR_BASE}/var/containers")
             Tools.dir_ensure(cdir)
             for name_found in os.listdir(cdir):
-                if not os.path.isdir(os.path.join(cdir,name_found)):
+                if not os.path.isdir(os.path.join(cdir, name_found)):
                     # https://github.com/threefoldtech/jumpscaleX_core/issues/297
                     # in case .DS_Store is created when opened in finder
                     continue
@@ -5047,8 +5055,8 @@ class DockerContainer:
             "LOGGER_INCLUDE",
             "LOGGER_EXCLUDE",
             "LOGGER_LEVEL",
-            "LOGGER_CONSOLE",
-            "LOGGER_REDIS",
+            # "LOGGER_CONSOLE",
+            # "LOGGER_REDIS",
             "SECRET",
         ]:
             if i in MyEnv.config:
@@ -5075,9 +5083,9 @@ class DockerContainer:
                 MOUNTS = """
                 -v {DIR_CODE}:/sandbox/code \
                 -v {DIR_BASE}/var/containers/shared:/sandbox/myhost \
+                -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
+                -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
                 """
-                # -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
-                # -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
 
             args["MOUNTS"] = Tools.text_replace(MOUNTS.strip(), args=args)
             args["CMD"] = self.config.startupcmd
@@ -5105,7 +5113,7 @@ class DockerContainer:
             self.dexec("apt-get install mc git -y")
             self.dexec("apt-get install python3 -y")
             self.dexec("apt-get install wget tmux -y")
-            self.dexec("apt-get install curl rsync unzip redis-server -y")
+            self.dexec("apt-get install curl rsync unzip redis-server htop -y")
             self.dexec("apt-get install python3-distutils python3-psutil python3-pip python3-click -y")
             self.dexec("locale-gen --purge en_US.UTF-8")
             self.dexec("apt-get install software-properties-common -y")
@@ -5379,19 +5387,13 @@ class DockerContainer:
         cmd = "docker push %s" % image
         Tools.execute(cmd)
 
-    def install_threebotserver(self):
-        """
-        Starts then stops the threebotserver to make sure all needed packages are installed
-        """
-        self.sshexec(". /sandbox/env.sh; kosmos -p 'j.servers.threebot.start(); j.servers.threebot.default.stop()'")
-
     def install_tcprouter(self):
         """
         Install tcprouter builder to be part of the image
         """
         self.sshexec(". /sandbox/env.sh; kosmos 'j.builders.network.tcprouter.install()'")
 
-    def jumpscale_install(
+    def install_jumpscale(
         self, secret=None, privatekey=None, redo=False, threebot=True, pull=False, branch=None, prebuilt=False
     ):
 
@@ -6615,3 +6617,6 @@ class WireGuardServer:
             print(cmd)
             Tools.execute(cmd)
         return self.config_local["ADDRESS"]
+
+
+MyEnv.init()

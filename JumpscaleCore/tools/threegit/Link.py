@@ -364,7 +364,9 @@ class Link(j.baseclasses.object):
         # else:
         #     lsource = self.link_source
 
-        self.extension = j.sal.fs.getFileExtension(self.link_source)
+        path = urlparse(self.link_source).path
+        if path:
+            self.extension = j.sal.fs.getFileExtension(path)
 
         if "http" in self.link_source or "https" in self.link_source:
             self.link_source_original = self.link_source
@@ -376,7 +378,9 @@ class Link(j.baseclasses.object):
                 self.filename = self._clean(j.sal.fs.getBaseName(link_source))
 
                 if not self.extension in ["png", "jpg", "jpeg", "mov", "mp4", "mp3", "docx"]:
-                    self.extension = "jpeg"  # to support url's like https://images.unsplash.com/photo-1533157961145-8cb586c448e1?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=4e252bcd55caa8958985866ad15ec954&auto=format&fit=crop&w=1534&q=80
+                    self.extension = (
+                        "jpeg"
+                    )  # to support url's like https://images.unsplash.com/photo-1533157961145-8cb586c448e1?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=4e252bcd55caa8958985866ad15ec954&auto=format&fit=crop&w=1534&q=80
                     self.filename = self.filename + ".jpeg"
 
                 if j.sal.fs.getFileExtension(self.filename) != self.extension:

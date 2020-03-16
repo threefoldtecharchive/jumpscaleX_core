@@ -1,5 +1,7 @@
 from Jumpscale import j
 
+skip = j.baseclasses.testtools._skip
+
 
 def test_keys():
     """
@@ -20,7 +22,7 @@ def test_keys():
 
     """
 
-    db, m = j.data.bcdb._load_test_model(type="sqlite", schema=SCHEMA)
+    db, m = j.data.bcdb._test_model_get(type="sqlite", schema=SCHEMA)
     bcdb = m.bcdb
 
     o = m.new()

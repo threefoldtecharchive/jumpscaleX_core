@@ -4,6 +4,8 @@ from uuid import uuid4
 
 from unittest import TestCase
 
+skip = j.baseclasses.testtools._skip
+
 
 def test_unique_data():
     """
@@ -33,7 +35,7 @@ def test_unique_data():
     &number = 0 (I)
     """
 
-    bcdb, model = j.data.bcdb._load_test_model(type="zdb", schema=scm)
+    bcdb, model = j.data.bcdb._test_model_get(type="zdb", schema=scm)
 
     schema_obj = model.new()
     name = "s" + str(uuid4()).replace("-", "")[:10]

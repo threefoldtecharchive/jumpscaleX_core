@@ -178,7 +178,7 @@ class NACL(j.baseclasses.object):
                 self._keys_generate(words=privkey_words)
             else:
                 if j.sal.fs.exists(self._path_seed):
-                    self._log_info("load existing key")
+                    self._log_debug("load existing key")
                     self.load()
                     assert self._signingkey
                     return

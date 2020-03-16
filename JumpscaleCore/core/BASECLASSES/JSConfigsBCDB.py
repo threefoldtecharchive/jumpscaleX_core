@@ -27,7 +27,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         jsconfig = self._create(name=name, jsxobject=jsxobject, **kwargs)
         self._check(jsconfig)
 
-        self._autosave_deal(jsconfig, autosave, True)
+        self._autosave_set(jsconfig, autosave, True)
 
         return jsconfig
 
@@ -142,14 +142,14 @@ class JSConfigsBCDB(JSConfigBCDBBase):
                         changed = True
                         setattr(jsconfig, key, val)
 
-        self._autosave_deal(jsconfig, autosave, changed)
+        self._autosave_set(jsconfig, autosave, changed)
 
         # lets do some tests (maybe in future can be removed, but for now the safe bet)
         self._check(jsconfig)
 
         return jsconfig
 
-    def _autosave_deal(self, jsconfig, autosave, changed=True):
+    def _autosave_set(self, jsconfig, autosave, changed=True):
         jsconfig._data._autosave = autosave
         if changed and jsconfig._data._autosave:
             jsconfig._data.save()

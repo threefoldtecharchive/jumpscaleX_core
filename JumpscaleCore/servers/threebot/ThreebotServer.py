@@ -109,14 +109,14 @@ class ThreeBotServer(j.baseclasses.object_config):
     def zdb(self):
         if not self._zdb:
             self._log_info("start zdb")
-            self._sonic, self._zdb = j.data.bcdb.threebot_zdb_sonic_start()
+            self._sonic, self._zdb = j.data.bcdb.start_servers_threebot_zdb_sonic()
         return self._zdb
 
     @property
     def sonic(self):
         if not self._sonic:
             self._log_info("start sonic")
-            self._sonic, self._zdb = j.data.bcdb.threebot_zdb_sonic_start()
+            self._sonic, self._zdb = j.data.bcdb.start_servers_threebot_zdb_sonic()
         return self._sonic
 
     def _proxy_create(self, name, port_source, port_dest, scheme_source="https", scheme_dest="http", ptype="http"):
@@ -240,7 +240,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             # at this point all packages are known but all in config mode, not installed yet
             # all internal services started but not the gevent rack yet, and should be like this
 
-            # if someone passed along packages  (lazy loading will work for actor, package management in process)
             for path in packages:
                 j.threebot.packages.zerobot.packagemanager.actors.package_manager.package_add(
                     path=path, install=False, reload=False
@@ -375,7 +374,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             self._log_info("FIND THE PACKAGES ON THE FILESYSTEM")
             j.tools.threebot_packages.load()
 
-            names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta"]
+            names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta", "admin"]
             for name in names:
                 name2 = f"zerobot.{name}"
                 if not j.tools.threebot_packages.exists(name=name2):

@@ -7,7 +7,6 @@ import base64
 import hashlib
 from io import BytesIO
 from nacl.public import PrivateKey, SealedBox
-import fakeredis
 import binascii
 from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
@@ -25,10 +24,6 @@ class NACLFactory(j.baseclasses.object, TESTTOOLS):
 
     def _init(self, **kwargs):
         self._default = None
-
-        # check there is core redis
-        if isinstance(j.core.db, fakeredis.FakeStrictRedis):
-            j.clients.redis.core_get()
 
     def configure(self, name="default", privkey_words=None, generate=True, interactive=False, reset=False):
         """
@@ -181,7 +176,6 @@ class NACLFactory(j.baseclasses.object, TESTTOOLS):
 
         print("OK")
 
-   # @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/482")
     def test(self):
         """
         kosmos 'j.data.nacl.test()'
@@ -319,6 +313,3 @@ class NACLFactory(j.baseclasses.object, TESTTOOLS):
             b = cl.decrypt(a)
             assert data2 == b
         j.tools.timer.stop(i)
-
-    def test_NACL(self, name=""):
-        self._tests_run(name=name)

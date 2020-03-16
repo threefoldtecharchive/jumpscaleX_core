@@ -42,7 +42,7 @@ def profileStop(pr):
     print(s.getvalue())
 
 
-# pr=profileStart()
+# pr = profileStart()
 
 from .core.InstallTools import BaseInstaller
 from .core.InstallTools import JumpscaleInstaller
@@ -66,7 +66,6 @@ class Core:
     def db_reset(self, j):
         if hasattr(j.data, "cache"):
             j.data.cache._cache = {}
-        self.db = j.clients.redis.core_get(fromcache=False)
 
     @property
     def dir_jumpscale(self):
@@ -337,3 +336,5 @@ if generated and len(j.core.application.errors_init) > 0:
 # time.sleep(1000)
 
 # j.application.log2fs_redis_register("jumpscale")
+
+# j.core.pr = j.core.profileStart()

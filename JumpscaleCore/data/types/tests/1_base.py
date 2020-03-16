@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def test001_base():
+def main(self):
     """
     to run:
 
@@ -54,6 +54,6 @@ def test001_base():
 
     # TODO: need more tests here
 
-    j.data.types._log_info("TEST DONE FOR TYPES BASE")
+    self._log_info("TEST DONE FOR TYPES BASE")
 
     return "OK"

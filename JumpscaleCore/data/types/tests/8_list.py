@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def test008_list():
+def main(self):
     """
     to run:
 
@@ -52,6 +52,6 @@ def test008_list():
     assert l == [1, 10, 3, 4, 5]
     assert len(l) == 5
 
-    j.data.types._log_info("TEST DONE LIST")
+    self._log_info("TEST DONE LIST")
 
     return "OK"

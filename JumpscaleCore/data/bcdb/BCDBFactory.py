@@ -10,7 +10,8 @@ from .connectors.redis.RedisServer import RedisServer
 
 TESTTOOLS = j.baseclasses.testtools
 
-class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
+
+class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
     __jslocation__ = "j.data.bcdb"
 
@@ -22,8 +23,6 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
         self._config_data_path = j.core.tools.text_replace("{DIR_CFG}/bcdb_config")
 
         self._code_generation_dir_ = None
-
-        j.clients.redis.core_get()  # just to make sure the redis got started
 
         self._BCDBModelClass = BCDBModel  # j.data.bcdb._BCDBModelClasses
         self._BCDBModelBase = BCDBModelBase
@@ -68,6 +67,7 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
                 raise j.exceptions.Base("threebotserver is starting but did not succeed within 60+15 sec")
 
             if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
+                print("** AM WORKING AS SLAVE, BCDB WILL BE READONLY **")
                 self.__master = False
             else:
                 self.__master = True
@@ -140,7 +140,7 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
 
         if not self._loaded:
 
-            self._log_info("LOAD CONFIG BCDB")
+            self._log_debug("LOAD CONFIG BCDB")
 
             # will make sure the toml schema's are loaded
             j.data.schema.add_from_path("%s/models_system" % self._dirpath)
@@ -183,16 +183,16 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
         assert j.sal.process.checkProcessRunning("zdb") is False
         assert j.sal.process.checkProcessRunning("sonic") is False
 
-    def threebot_zdb_sonic_start(self, reset=False):
+    def start_servers_threebot_zdb_sonic(self, test=False, reset=False):
         """
-        kosmos 'j.data.bcdb.threebot_zdb_sonic_start()'
+        kosmos 'j.data.bcdb.start_servers_threebot_zdb_sonic()'
 
         starts all required services for the BCDB to work for threebot
         :return: (sonic, zdb) server instance
         """
         self.system
         # because will be visible on filesystem
-        adminsecret_ = j.data.hash.md5_string(j.core.myenv.adminsecret)
+        adminsecret_ = j.core.myenv.adminsecret
 
         if reset:
             zdb = j.servers.zdb.get(name="threebot")
@@ -219,11 +219,36 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
 
         return (s, z)
 
-    def get_test(self, reset=False):
-        bcdb = j.data.bcdb.get(name="testbcdb")
-        bcdb2 = j.data.bcdb._instances["testbcdb"]
-        assert bcdb2.storclient is None
-        return bcdb
+    def start_servers_test_zdb_sonic(self, reset=False):
+
+        admin_secret = "123456"
+        namespaces_secret = "1234"
+        namespaces = ["test"]
+
+        cl = j.servers.zdb.test_instance_start(
+            namespaces=namespaces, admin_secret=admin_secret, namespaces_secret=namespaces_secret, restart=reset
+        )
+        # the test_instance will test the zdb instance (ping & data dir exists)
+        # name of the zdb server is test_instance
+
+        if j.core.myenv.platform_is_linux:
+            if reset:
+                # todo:stop sonic
+                raise RuntimeError("stop sonic")
+            if j.sal.nettools.tcpPortConnectionTest("localhost", 1492) is False:
+                s = j.servers.sonic.get(name="testserver", port=1492, adminsecret_=admin_secret)
+                s.start()
+            s = j.servers.sonic.get(name="testserver")
+            assert s.adminsecret_ == admin_secret
+        else:
+            s = None
+
+        z = j.servers.zdb.get(name="testserver")
+        assert z.adminsecret_ == admin_secret
+
+        self._core_zdb = z
+
+        return (s, z)
 
     @property
     def _BCDBModelClass(self):
@@ -312,85 +337,148 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
             bcdb = self.get(name=name)
             bcdb.stop()
 
-    def export(self, name=None, path=None, yaml=True, data=True, encrypt=False, reset=True):
+    def export(self, name=None, bcdbname=None, path=None, yaml=True, data=True, encrypt=False):
         """Export all models and objects
 
-        kosmos 'j.data.bcdb.export(name="system",encrypt=False)'
-        kosmos 'j.data.bcdb.export(encrypt=True,yaml=False,reset=False)'
-        kosmos 'j.data.bcdb.export(encrypt=False)'
+        kosmos 'j.data.bcdb.export(name="system")'
+        kosmos 'j.data.bcdb.export()'
 
         :param path: path to export to
         :type path: str
 
-        :param reset: reset the export path before exporting, defaults to True
-        :type reset: bool, optional
+        :param name: is the name of the backup, if not chosen will be like '06_Mar_2020_05_00_00'
+
         """
         if not name:
-            v = list(self.instances.values())
-            for bcdb in v:
-                if bcdb.storclient.type != "SDB":
-                    bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
-        elif name == "system":
-            if path:
-                path = "%s/%s" % (path, name)
+            name = j.data.time.getLocalTimeHRForFilesystem()
+
+        if not path:
+            path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
+
+        if not name and j.sal.fs.exists(path):
+            j.sal.fs.remove(path)
+
+        if not bcdbname:
+            for bcdb in list(self.instances.values()):
+                self.export(name=name, bcdbname=bcdb.name, path=path, yaml=yaml, data=data, encrypt=encrypt)
+            return
+        elif bcdbname == "system":
             bcdb = self.system
-            bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
+            path2 = "%s/system" % (path)
         else:
-            if path:
-                path = "%s/%s" % (path, name)
-            bcdb = self.get(name=name)
-            bcdb.export(path=path, yaml=yaml, data=data, encrypt=encrypt, reset=reset)
+            path2 = "%s/%s" % (path, bcdbname)
+            bcdb = self.get(name=bcdbname)
+
+        bcdb._export(path=path2, yaml=yaml, data=data, encrypt=encrypt)
 
         schema_path = j.core.tools.text_replace("{DIR_CFG}/schema_meta.msgpack")
-        scm_path = path or j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")
-        j.sal.fs.copyFile(schema_path, scm_path)
+        # Validate that the schema has saved before exporting
+        j.data.schema.meta.save()
+        j.sal.fs.copyFile(schema_path, "%s/schema_meta.msgpack" % path)
 
-    def import_(self, name=None, path=None):
+    def import_(self, path=None, data=True, encryption=False, interactive=False, reset=True):
         """
         import back
 
-        kosmos 'j.data.bcdb.import_(name="system")'
+        kosmos 'j.data.bcdb.import_()'
+
+        if path not specified will look at path you are in, if schema_meta.msgpack found will use that path
+
+        remark:
+        if you need to copy data from remote example ssh rsync
+        rm -rf /sandbox/var/bcdb_exports
+        rsync -rav -e ssh --delete root@explorer.testnet.grid.tf:/sandbox/var/bcdb_exports_03_05/ /sandbox/var/bcdb_exports/
+
 
         :param name:
         :param path:
         :return:
         """
 
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
+            raise j.exceptions.Base("Cannot import threebot is running")
+
+        j.data.bcdb._master_set()
+
+        if not path:
+            if j.sal.fs.exists(f"{j.sal.fs.getcwd()}/schema_meta.msgpack"):
+                path = f"{j.sal.fs.getcwd()}"
+            else:
+                path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/")
+
+        if reset:
+            # we can remove all
+            if interactive:
+                if not j.core.tools.ask_yes_no(
+                    "Importing will reset your all your BCDB. Are you sure you want to continue?"
+                ):
+                    return
+            self.destroy_all()
+
+        self.start_servers_threebot_zdb_sonic()
+
+        self._log_info(f"will import BCDB's from path: {path}")
+
+        ## import all schemas
+        j.data.schema.meta.load(path=f"{path}/schema_meta.msgpack")
+        j.data.schema.meta.save()
+
+        # make sure we have our schema's back in /sandbox/cfg/bcdb
+        for schema in j.data.schema.schemas_all.values():
+            j.data.schema.meta.schema_backup(schema)
+
+        paths = j.sal.fs.listDirsInDir(path, recursive=False, dirNameOnly=False)
+        for path in paths:
+            self._import_bcdb(path=path, data=data, encryption=encryption)
+
+        self.verify()
+
+    def verify(self, names=[]):
+        """
+        kosmos 'j.data.bcdb.verify()'
+        """
+
+        self.start_servers_threebot_zdb_sonic()
+
+        if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
+            raise j.exceptions.Base("Cannot import threebot is running")
+
         j.data.bcdb._master_set()
         j.tools.executor.local
 
-        self.threebot_zdb_sonic_start()
+        for bcdb in j.data.bcdb.instances.values():
+            if names:
+                if bcdb.name not in names:
+                    continue
 
-        ## import all schemas
-        if path:
-            schemas_path = f"{path}/schema_meta.msgpack"
-        else:
-            schemas_path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/schema_meta.msgpack")
-        j.data.schema.meta.load(path=schemas_path)
+            bcdb.verify()
 
-        if not path:
-            path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/")
-        if not name:
-            names = j.sal.fs.listDirsInDir(path, False, True)
-            for name in names:
-                self.import_(name, path=path)
-            return
-        path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
+        self._log_info(f"VERIFY COMPLETED AND OK FOR ALL BCDB.")
+
+    def _import_bcdb(self, path=None, data=True, encryption=False):
+
         assert j.sal.fs.exists(path)
-        if name == "system":
-            self.system.import_(path=path, interactive=False)
+
+        if j.sal.fs.getBaseName(path) == "system":
+            self.system._import_(path=path, interactive=False, data=data, encryption=encryption)
         else:
-            path_bcdbconfig = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s/bcdbconfig.yaml" % name)
+            path_bcdbconfig = f"{path}/bcdbconfig.yaml"
             assert j.sal.fs.exists(path_bcdbconfig)
             config = j.data.serializers.yaml.load(path_bcdbconfig)
+
+            if not "name" in config:
+                raise j.exceptions.Input(f"name needs to be in {path_bcdbconfig}, is the name of the bcdb")
+
+            name = config["name"]
 
             if config["type"] not in ["zdb", "sqlite", "redis"]:
                 # these types usually myjobs instance
                 self._log_warning(f"only zdb, sqlite redis are supported your type is: {config['type']}")
                 return
             bcdb = self.get_for_threebot(name, namespace=config.get("namespace"), ttype=config["type"])
-            path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
-            bcdb.import_(path=path, interactive=False)
+            # lets check package config of the bcdb is the same
+
+            bcdb._import_(path=path, interactive=False, data=data, encryption=encryption)
 
     def destroy_all(self):
         """
@@ -400,7 +488,7 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
         :return:
         """
         if not self._master:
-            raise j.exceptions.Base("cannot destory BCDB when not master")
+            raise j.exceptions.Base("cannot destroy BCDB when not master")
 
         self._load()
         names = [name for name in self._config.keys()]
@@ -438,6 +526,7 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
             j.core.db.delete(key)
 
         j.sal.fs.remove(j.core.tools.text_replace("{DIR_CFG}/schema_meta.msgpack"))
+        j.sal.fs.remove(j.core.tools.text_replace("{DIR_CFG}/bcdb"))
 
         self._loaded = False
         self._load()
@@ -482,7 +571,7 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
         :param instance:
         :return:
         """
-        self._log_info(f"get bcdb: name:{name} namespace:{namespace} type:{ttype}")
+        self._log_debug(f"get bcdb: name:{name} namespace:{namespace} type:{ttype}")
 
         if j.data.bcdb.exists(name=name):
             bcdb = self.get(name=name)
@@ -492,9 +581,9 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
             raise j.exceptions.Input("ttype can only be zdb or sqlite")
         assert name
         if ttype == "zdb":
-            zdb = self._core_zdb  # has been started in threebot_zdb_sonic_start
+            zdb = self._core_zdb  # has been started in start_servers_threebot_zdb_sonic
             assert namespace
-            adminsecret_ = j.data.hash.md5_string(j.core.myenv.adminsecret)
+            adminsecret_ = j.core.myenv.adminsecret
             self._log_debug("get zdb admin client")
             zdb_admin = zdb.client_admin_get()
             if not zdb_admin.namespace_exists(namespace):
@@ -691,17 +780,87 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
         raise RuntimeError("not implemented")
         # bcdb_instance.meta._migrate_meta(schema)
 
-    def redis_server_get(self, port=6380, secret="123456", addr="127.0.0.1"):
+    def redis_server_get(self, port=6380, secret=None, addr="127.0.0.1"):
         self.redis_server = RedisServer(bcdb=self, port=port, secret=secret, addr=addr)
         self.redis_server._init2(bcdb=self, port=port, secret=secret, addr=addr)
         return self.redis_server
 
-    def _load_test_model(self, type="zdb", schema=None, datagen=False):
+    def _test_redisserver_get(self, type="sqlite"):
+
+        redis = j.servers.startupcmd.get("bcdb_redis_test")
+        redis.stop()
+        redis.wait_stopped()
+
+        bcdb = self._test_bcdb_get(type)
+
+        cmd = (
+            """
+                . {DIR_BASE}/env.sh;
+                kosmos 'j.data.bcdb.get("%s").redis_server_start(port=6381)'
+                """
+            % bcdb.name
+        )
+
+        schema = """
+                @url = despiegk.test2
+                llist2 = "" (LS)
+                name** = ""
+                email** = ""
+                nr** =  0
+                date_start** =  0 (D)
+                description = ""
+                cost_estimate = 0.0 #this is a comment
+                llist = []
+                llist3 = "1,2,3" (LF)
+                llist4 = "1,2,3" (L)
+                """
+        db, model = self._test_model_get(type=type, schema=schema, datagen=False)
+        self._redisserver_startupcmd = j.servers.startupcmd.get(
+            name="bcdb_redis_test", cmd_start=cmd, ports=[6381], executor="tmux"
+        )
+        self._redisserver_startupcmd.start()
+        j.sal.nettools.waitConnectionTest("127.0.0.1", port=6381, timeout=15)
+        return db, model
+
+    def _test_bcdb_get(self, type="sqlite", reset=False):
+        """
+        ONLY USE THIS BCDB GET FOR THE TESTS
+        """
+        if not j.clients.zdb.exists("testserver"):
+            reset = True
+        if reset or not j.sal.nettools.tcpPortConnectionTest("localhost", 9901):
+            # get the test servers in tmux
+            self.start_servers_test_zdb_sonic(reset=reset)
+        if type == "rdb":
+            j.core.db
+            storclient = j.clients.rdb.client_get(bcdbname="test_rdb")
+            bcdb = self.get(name="test_rdb", storclient=storclient, reset=True)
+        elif type == "sqlite":
+            storclient = j.clients.sqlitedb.client_get(bcdbname="test_sqlite")
+            bcdb = self.get(name="test_sqlite", storclient=storclient, reset=True)
+        elif type == "zdb":
+            storclient = j.clients.zdb.testserver
+            storclient.flush()
+            assert storclient.nsinfo["public"] == "no"
+            assert storclient.ping()
+            bcdb = self.get(name="test_zdb", storclient=storclient, reset=True)
+        else:
+            raise j.exceptions.Base("only rdb,zdb,sqlite for stor")
+
+        assert bcdb.storclient == storclient
+
+        bcdb.reset()  # empty
+
+        assert bcdb.storclient.count == 1
+
+        return bcdb
+
+    def _test_model_get(self, type="zdb", schema=None, datagen=False):
         """
 
-        kosmos 'j.data.bcdb._load_test_model(type="zdb",datagen=True)'
-        kosmos 'j.data.bcdb._load_test_model(type="sqlite",datagen=True)'
-        kosmos 'j.data.bcdb._load_test_model(type="rdb",datagen=True)'
+        kosmos 'j.data.bcdb._test_model_get(type="zdb",datagen=True)'
+        kosmos 'j.data.bcdb._test_model_get(type="sqlite",datagen=True)'
+        kosmos 'j.data.bcdb._test_model_get(type="rdb",datagen=True)'
 
         :param reset:
         :param type:
@@ -713,7 +872,7 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
             schema = """
             @url = despiegk.test
             0:  llist2 = "" (LS)
-            1:  name*** = ""
+            1:  name** = ""
             2:  email** = ""
             3:  nr** = 0
             4:  date_start** = 0 (D)
@@ -730,43 +889,7 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
 
         type = type.lower()
 
-        def startZDB():
-            zdb = j.servers.zdb.test_instance_start()
-            storclient_admin = zdb.client_admin_get()
-            assert storclient_admin.ping()
-            secret = "1234"
-            storclient = storclient_admin.namespace_new(name="test_zdb", secret=secret)
-            return storclient
-
-        if not j.sal.nettools.tcpPortConnectionTest("localhost", 1491):
-            j.servers.sonic.get(name="default").start()
-
-        if type == "rdb":
-            j.core.db
-            storclient = j.clients.rdb.client_get(bcdbname="test")
-            bcdb = self.get(name="test", storclient=storclient, reset=True)
-        elif type == "sqlite":
-            storclient = j.clients.sqlitedb.client_get(bcdbname="test")
-            bcdb = self.get(name="test", storclient=storclient, reset=True)
-        elif type == "zdb":
-            storclient = startZDB()
-            storclient.flush()
-            assert storclient.nsinfo["public"] == "no"
-            assert storclient.ping()
-            bcdb = self.get(name="test", storclient=storclient, reset=True)
-        else:
-            raise j.exceptions.Base("only rdb,zdb,sqlite for stor")
-
-        assert bcdb.storclient == storclient
-
-        assert bcdb.name == "test"
-
-        bcdb.reset()  # empty
-
-        assert bcdb.storclient.count == 1
-
-        assert bcdb.name == "test"
-
+        bcdb = self._test_bcdb_get(type=type)
         model = bcdb.model_get(schema=schema)
 
         # lets check the sql index is empty
@@ -810,6 +933,23 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
 
     __repr__ = __str__
 
+    def test_core(self):
+        """
+        will test the core tests which should run everywhere
+        the tests with sonic will not run on osx
+
+        kosmos 'j.data.bcdb.test_core()'
+
+        """
+        # "redisbase"
+        tests = ["base", "meta_test", "async", "models", "acls", "sqlitestor", "unique_data", "subschemas", "sqlite"]
+        errors = 0
+        for name in tests:
+            errors += self._tests_run(name=name, die=False)
+
+        if errors > 0:
+            raise j.exceptions.Base("error in test for bcdb:%s" % errors)
+
     def test(self, name=""):
         """
         following will run all tests
@@ -817,34 +957,6 @@ class BCDBFactory(j.baseclasses.factory_testtools,TESTTOOLS):
         kosmos 'j.data.bcdb.test()'
 
         """
-        print(name)
-        # CLEAN STATE
 
-        redis = j.servers.startupcmd.get("redis_6380")
-        redis.stop()
-        redis.wait_stopped()
-        j.servers.zdb.test_instance_stop()
-        j.servers.sonic.default.stop()
-
-        try:
-            self._tests_run(name=name)
-        except:
-            # clean after errors
-            # CLEAN STATE
-            redis = j.servers.startupcmd.get("redis_6380")
-            redis.stop()
-            redis.wait_stopped()
-            j.servers.zdb.test_instance_stop()
-            j.servers.sonic.default.stop()
-
-            raise
-        else:
-            # CLEAN STATE
-            redis = j.servers.startupcmd.get("redis_6380")
-            redis.stop()
-            redis.wait_stopped()
-            j.servers.zdb.test_instance_stop()
-            j.servers.sonic.default.stop()
-
-        self._log_info("All TESTS DONE")
+        self._tests_run(name=name, die=True)
         return "OK"

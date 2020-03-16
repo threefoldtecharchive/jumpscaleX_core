@@ -10,7 +10,7 @@ from Jumpscale.data.bcdb.BCDBModelIndex import BCDBModelIndex
 class {{BASENAME}}(BCDBModelIndex):
 
     def _sql_index_init(self,**kwargs):
-        self._log_info("init index:%s"%self.model.schema.url)
+        self._log_debug("init index:%s"%self.model.schema.url)
 
         p = j.clients.peewee
 

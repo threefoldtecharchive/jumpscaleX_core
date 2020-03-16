@@ -89,7 +89,7 @@ class Cache(object):
         """
 
         # make sure its redis
-        self._j.clients.redis.core_get()
+        # self._j.clients.redis.core_get()
         self._j.core.db_reset()
         c = self.get("test", expiration=1)
         self._testAll(c)

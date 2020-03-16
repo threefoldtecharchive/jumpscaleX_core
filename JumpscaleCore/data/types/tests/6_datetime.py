@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def test006_datetime():
+def main(self):
     """
     to run:
 

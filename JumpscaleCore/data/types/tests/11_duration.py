@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def test011_duration():
+def main(self):
     """
     to run:
 

@@ -7,8 +7,10 @@ from io import BytesIO
 from nacl.signing import VerifyKey
 from nacl.public import PrivateKey, PublicKey, SealedBox
 
+skip = j.baseclasses.testtools._skip
 
-class ThreebotToolsFactory(j.baseclasses.factory_testtools):
+
+class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testtools):
     __jslocation__ = "j.tools.threebot"
     _CHILDCLASSES = [ThreebotMeCollection]
 
@@ -25,7 +27,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
             j.servers.threebot.default.stop()
             j.data.bcdb._master_set()
 
-        j.data.bcdb.threebot_zdb_sonic_start()
+        j.data.bcdb.start_servers_threebot_zdb_sonic()
         j.data.bcdb.export()
 
         if stop:
@@ -90,7 +92,10 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
                 if str(j.core.platformtype.myplatform).startswith("darwin"):
                     ipaddr = "localhost"
                 else:
-                    ipaddr = j.sal.nettools.getIpAddress()["ip"][0]
+                    try:
+                        (iface, ipaddr) = j.sal.nettools.getDefaultIPConfig()
+                    except:
+                        ipaddr = "localhost"
 
             if interactive:
                 if not j.tools.console.askYesNo("ok to use your local private key as basis for your threebot?", True):
@@ -330,13 +335,14 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         data_list = [True, 1, [1, 2, "a"], jsxobject, "astring", ddict]
         return data_list
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/549")
     def test_register_nacl_clients_get(self):
         """
         kosmos 'j.clients.threebot.test_register()'
         :return:
         """
 
-        j.servers.threebot.start()
+        j.servers.threebot.start(background=True)
 
         self._add_phonebook()
 
@@ -361,6 +367,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
             git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/tfgrid/phonebook"
         )
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/549")
     def test_register_nacl_threebots(self):
 
         self._add_phonebook()
@@ -413,7 +420,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
 
         self.me
 
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)
 
         self._log_info("All TESTS DONE")
         return "OK"

@@ -6,6 +6,7 @@ import urllib
 import requests
 from urllib.request import urlopen
 from importlib import util
+import time
 
 
 DEFAULT_BRANCH = "development"
@@ -181,7 +182,7 @@ def configure(
     is_flag=True,
     help="reinstall, basically means will try to re-do everything without removing the data",
 )
-@click.option("--develop", is_flag=True, help="will use the development docker image to start from.")
+# @click.option("--develop", is_flag=True, help="will use the development docker image to start from.")
 @click.option("--ports", help="Expose extra ports repeat for multiple eg. 80:80", multiple=True)
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
 def container_install(
@@ -239,7 +240,7 @@ def container_install(
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False, branch=branch)
 
-    docker.jumpscale_install(branch=branch, redo=reinstall, pull=pull, threebot=threebot)  # , prebuilt=prebuilt)
+    docker.install_jumpscale(branch=branch, redo=reinstall, pull=pull, threebot=threebot)  # , prebuilt=prebuilt)
 
 
 def container_get(name="3bot", delete=False, jumpscale=False):
@@ -248,13 +249,12 @@ def container_get(name="3bot", delete=False, jumpscale=False):
     docker = e.DF.container_get(name=name, image="threefoldtech/3bot", start=True, delete=delete)
     if jumpscale:
         # needs to stay because will make sure that the config is done properly in relation to your shared folders from the host
-        docker.jumpscale_install()
+        docker.install_jumpscale()
     return docker
 
 
 # INSTALL OF JUMPSCALE IN CONTAINER ENVIRONMENT
 @click.command()
-@click.option("--threebot", is_flag=True, help="also install the threebot system")
 # @click.option("--no-sshagent", is_flag=True, help="do you want to use an ssh-agent")
 @click.option("--prebuilt", is_flag=True, help="if set will allow a quick start using prebuilt threebot")
 @click.option(
@@ -271,8 +271,12 @@ def container_get(name="3bot", delete=False, jumpscale=False):
     is_flag=True,
     help="reinstall, basically means will try to re-do everything without removing the data",
 )
+@click.option("--clean", is_flag=True, help="cleanup all data not needed")
+@click.option("--threebot", is_flag=True, help="install required components for threebot")
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
-def install(threebot=False, branch=None, reinstall=False, pull=False, no_interactive=False, prebuilt=False):
+def install(
+    branch=None, reinstall=False, pull=False, no_interactive=False, prebuilt=False, clean=False, threebot=False
+):
     """
     install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.
     if interactive is True then will ask questions, otherwise will go for the defaults or configured arguments
@@ -284,7 +288,6 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
     IT = load_install_tools(branch=branch, reset=True)
     # IT.MyEnv.interactive = True
     _configure(no_interactive=no_interactive)
-    SANDBOX = IT.MyEnv.config["DIR_BASE"]
     if reinstall:
         # remove the state
         IT.MyEnv.state_reset()
@@ -294,15 +297,9 @@ def install(threebot=False, branch=None, reinstall=False, pull=False, no_interac
 
     installer = IT.JumpscaleInstaller()
     assert prebuilt is False  # not supported yet
-    installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt, branch=branch)
-    if threebot:
-        IT.Tools.execute(
-            "source %s/env.sh;kosmos 'j.servers.threebot.install(force=True)'" % SANDBOX, showout=True, timeout=3600 * 2
-        )
-        # IT.Tools.execute("source %s/env.sh;kosmos 'j.servers.threebot.test()'" % SANDBOX, showout=True)
-
-    # LETS NOT DO THE FOLLOWING TAKES TOO LONG
-    # IT.Tools.execute("source %s/env.sh;kosmos 'j.core.tools.system_cleanup()'" % SANDBOX, showout=True)
+    installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt, branch=branch, threebot=threebot)
+    if clean:
+        IT.BaseInstaller.clean(development=True)
     print("Jumpscale X installed successfully")
 
 
@@ -428,14 +425,13 @@ def basebuilder_(dest=None, push=False, delete=True):
     _configure()
 
     image = "phusion/baseimage:master"
-    # image = "unilynx/phusion-baseimage-1804"
     docker = e.DF.container_get(name="base", delete=delete, image=image)
     docker.install(update=True, stop=delete)
     docker.save(image=dest, clean_runtime=True)
     if push:
         docker.push()
-    # if delete:
-    #     docker.stop()
+        if delete:
+            docker.stop()
     print("- *OK* base has been built, as image & exported")
 
 
@@ -473,14 +469,10 @@ def wiki_load(name=None, url=None, reset=False, foreground=False):
                 "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/zerobot/wiki_examples/wiki",
             )
         )
-        wikis.append(("info_tokens", "https://github.com/threefoldfoundation/info_tokens/tree/development/docs"))
-        wikis.append(
-            ("info_foundation", "https://github.com/threefoldfoundation/info_foundation/tree/development/docs")
-        )
-        wikis.append(("info_grid", "https://github.com/threefoldfoundation/info_grid/tree/development/docs"))
-        wikis.append(
-            ("info_freeflowevents", "https://github.com/freeflownation/info_freeflowevents/tree/development/docs")
-        )
+        wikis.append(("tokens", "https://github.com/threefoldfoundation/info_tokens/tree/development/docs"))
+        wikis.append(("foundation", "https://github.com/threefoldfoundation/info_foundation/tree/development/docs"))
+        wikis.append(("grid", "https://github.com/threefoldfoundation/info_grid/tree/development/docs"))
+        wikis.append(("freeflowevents", "https://github.com/freeflownation/info_freeflowevents/tree/development/docs"))
     else:
         wikis.append((name, url))
 
@@ -549,7 +541,6 @@ def wiki_reload(name, reset=False):
 @click.command(name="threebotbuilder")
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 @click.option("-b", "--base", is_flag=True, help="build base image as well")
-@click.option("-t", "--production", is_flag=True, help="build production image as well")
 @click.option("-c", "--cont", is_flag=True, help="don't delete continue a previously stopped run")
 def threebotbuilder(push=False, base=False, cont=False, production=False):
     """
@@ -570,8 +561,9 @@ def threebotbuilder(push=False, base=False, cont=False, production=False):
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False)
 
-    docker.jumpscale_install(branch=DEFAULT_BRANCH, redo=delete, pull=False, threebot=True)
+    docker.install_jumpscale(branch=DEFAULT_BRANCH, redo=delete, pull=False, threebot=True)
     docker.install_tcprouter()
+    docker.install_threebotserver()
 
     docker.save(clean_runtime=True, image=dest + "dev")
     if push:
@@ -584,21 +576,6 @@ def threebotbuilder(push=False, base=False, cont=False, production=False):
         docker.push()
 
     docker.image = dest
-
-    if production:
-        docker = e.DF.container_get(name="3botprod", delete=True, image=dest)
-        docker.install()
-        installer = IT.JumpscaleInstaller()
-        installer.repos_get(pull=False)
-        docker.jumpscale_install(branch=IT.DEFAULT_BRANCH, threebot=True)
-        docker.install_threebotserver()
-
-        image = dest + "-production"
-        docker.save(image=image, clean_devel=True)
-        if push:
-            docker.push()
-
-        docker.image = image
 
     print("- *OK* threebot container has been built, as image & exported")
 
@@ -788,7 +765,7 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         if docker.config.done_get("jumpscale") is False:
             # means we have not installed jumpscale yet
             docker.install()
-            docker.jumpscale_install()
+            docker.install_jumpscale()
             # now we can access it over 172.0.0.x normally
             docker.config.done_set("jumpscale")
             docker.config.save()
@@ -817,10 +794,25 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
     def test():
         docker_name = "{docker_name}"
         nr_containers = int("{count}")
-        cl = j.clients.threebot.client_get("3bot.3bot")
-        cl2 = j.clients.threebot.client_get("3bot2.3bot")
-        # TODO: can now do more stuff here
-        # adding packages, get them to talk to each other, ...
+
+        print("RUNNING TESTS FROM {docker_name}")
+
+        clients = list()
+
+        clients.append(j.clients.threebot.explorer)
+        clients += [j.clients.threebot.client_get("3bot{0}.3bot".format(i + 1)) for i in range(1, nr_containers - 1)]
+        for client in clients:
+            print("connected to ", client.name, "on", client.host)
+            print("---identity---", client.name, "\n", client.actors_all.identity.threebot_name())
+
+        j.clients.threebot.explorer.reload()
+        j.clients.threebot.explorer.actors_all.package_manager.package_start(
+            "tfgrid.directory"
+        )  # TODO: Fix. we shouldn't have to load here
+        nodes = j.clients.threebot.explorer.actors_all.nodes.list()
+
+        print("EXPLORER NODES:")
+        print(nodes)
 
     explorer_addr = None
     for i in range(count):
@@ -830,25 +822,29 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
             name1 = name
         docker = docker_jumpscale_get(name=name1, delete=delete)
         if i == 0:
-            # the master 3bot
+            # the explorer 3bot
             explorer_addr = docker.config.ipaddr
-
-        if not docker.config.done_get("start_cmd"):
-            if web:
-                docker.sshexec(
-                    "source /sandbox/env.sh; kosmos -p 'j.servers.threebot.start(background=True)';jsx wiki-load"
-                )
-            else:
-                start_cmd = "j.servers.threebot.start(background=True)"
-                docker.jsxexec(start_cmd)
-        docker.config.done_set("start_cmd")
-        if not docker.config.done_get("config"):
+            docker.sshexec("apt-get install influxdb")
+            docker.jsxexec("sc = j.servers.startupcmd.get('influxd', cmd_start='influxd'); sc.start()")
+            time.sleep(2)
+            docker.jsxexec("j.clients.influxdb.get('default', database='capacity').create_database('capacity')")
+            start_cmd = "j.servers.threebot.local_start_explorer(background=True)"
+            docker.jsxexec(start_cmd)
             docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
-        docker.config.done_set("config")
-
-    if count > 1:
-        # on last docker do the test
-        docker.jsxexec(test, docker_name=docker.name, count=count)
+            docker.sshexec(
+                "source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_threebot/scripts/explorer.py stress-explorer --count 10"
+            )
+        else:
+            start_cmd = "j.servers.threebot.start(background=True)"
+            if web:
+                start_cmd = "source /sandbox/env.sh; kosmos -p '{0}' ;jsx wiki-load".format(start_cmd)
+                docker.sshexec(start_cmd)
+            else:
+                docker.jsxexec(start_cmd)
+            docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
+        if i == count - 1:
+            # on last docker do the test
+            docker.jsxexec(test, docker_name=docker.name, count=count)
 
 
 @click.command(name="modules-install")

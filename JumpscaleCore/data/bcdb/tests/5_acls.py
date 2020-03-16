@@ -1,5 +1,7 @@
 from Jumpscale import j
 
+skip = j.baseclasses.testtools._skip
+
 
 def test_acls():
     """
@@ -28,7 +30,7 @@ def test_acls():
 
             # don't forget the record 0 is always a systems record
 
-            db, model = j.data.bcdb._load_test_model(type=name, schema=schema)
+            db, model = j.data.bcdb._test_model_get(type=name, schema=schema)
 
             return db, model
 
@@ -137,7 +139,7 @@ def test_acls():
 
             # don't forget the record 0 is always a systems record
 
-            db, model = j.data.bcdb._load_test_model(type=name, schema=schema)
+            db, model = j.data.bcdb._test_model_get(type=name, schema=schema)
 
             return db, model
 
@@ -215,8 +217,5 @@ def test_acls():
 
     test2("RDB")
     test2("SQLITE")
-
-    # CLEAN STATE
-    j.servers.sonic.default.stop()
 
     j.data.bcdb._log_info("ACL TESTS ALL DONE")

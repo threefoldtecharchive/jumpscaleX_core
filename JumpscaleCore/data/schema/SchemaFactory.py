@@ -53,10 +53,10 @@ class SchemaFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
     @property
     def schemas_all(self):
-        for url in self.meta.schemas_urls:
+        for url in self.meta.schema_urls:
             if url not in self.schemas_loaded:
                 self.get(url=url)
-        return self.schemas_loadeds
+        return self.schemas_loaded
 
     def exists(self, md5=None, url=None):
         if md5:
@@ -169,7 +169,7 @@ class SchemaFactory(j.baseclasses.factory_testtools, TESTTOOLS):
                 # 2nd one needs to have url specified
                 res.append(self._get_from_text_single(block, newest=newest, save=save))
 
-            ## keep track of all inner schemas (root, and sub schema meta)
+            # keep track of all inner schemas (root, and sub schema meta)
             for block in blocks:
                 url_line = block.splitlines()[0]
                 schema_url = url
@@ -218,7 +218,7 @@ class SchemaFactory(j.baseclasses.factory_testtools, TESTTOOLS):
                 continue
             elif line.strip().startswith("#"):
                 continue
-            elif ":" in line[0:3]:
+            elif ":" in line[0:4]:
                 found_nrs = True
                 out += "%s\n" % remove_comment(line)
             else:
@@ -342,4 +342,4 @@ class SchemaFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         if want run specific test ( write the name of test ) e.g. j.data.schema.test(name="base")
         """
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)

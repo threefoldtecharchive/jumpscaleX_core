@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def test013_ip_range():
+def main(self):
     """
     to run:
 
@@ -20,6 +20,6 @@ def test013_ip_range():
     assert ipv6.check("2001:db00::1/24") is True
     assert ipv6.check("2001:db00::0/ffff:ff00::") is False
 
-    j.data.types._log_info("TEST DONE LIST")
+    self._log_info("TEST DONE LIST")
 
     return "OK"

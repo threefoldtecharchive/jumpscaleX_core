@@ -20,6 +20,8 @@
 
 from Jumpscale import j
 
+skip = j.baseclasses.testtools._skip
+
 
 def test_sonic():
     """
@@ -28,10 +30,6 @@ def test_sonic():
     kosmos 'j.data.bcdb.test(name="sonic")'
 
     """
-    j.servers.sonic.default.stop()
-    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.core.myenv.adminsecret))
-    sonic.start()
-
     data = [
         {"name": "test1", "content": "lorem epsum"},
         {"name": "test2", "content": "foo bar"},
@@ -43,9 +41,8 @@ def test_sonic():
     name** = (S)
     content*** = (S)
     """
-    bcdb = j.data.bcdb.get("test", reset=True)
 
-    model = bcdb.model_get(schema=schema)
+    model = j.data.bcdb._test_model_get(schema=schema)
 
     for obj in data:
         o = model.new()
@@ -66,6 +63,5 @@ def test_sonic():
 
     assert len(model.search("love")) == 0
 
-    sonic.stop()
     j.data.bcdb._log_info("TEST SONIC DONE")
     return "OK"

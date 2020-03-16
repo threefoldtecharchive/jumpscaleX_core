@@ -5,6 +5,7 @@ import time
 import psutil
 
 JSBASE = j.baseclasses.object
+skip = j.baseclasses.testtools._skip
 
 
 class Tmux(j.baseclasses.object, j.baseclasses.testtools):
@@ -266,5 +267,4 @@ class Tmux(j.baseclasses.object, j.baseclasses.testtools):
         p = self.pane_get("test2", "test2", reset=True)
 
         self._log_info("tests ok for tmux")
-        self._tests_run(name=name)
-
+        self._tests_run(name=name, die=True)
