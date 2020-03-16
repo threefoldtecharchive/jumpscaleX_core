@@ -13,7 +13,7 @@ import sys
 
 
 class BCDB(j.baseclasses.object):
-    def _init(self, name=None, storclient=None, reset=False, readonly=True):
+    def _init(self, name=None, storclient=None, reset=False, readonly=False):
         """
         :param name: name for the BCDB
         :param storclient: if storclient is None then will use sqlite db
