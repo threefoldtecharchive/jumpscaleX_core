@@ -124,7 +124,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
     def _worker_inprocess_start_from_tmux(self, nr):
         # make sure jobs schema loaded
-        self._acquire_bcdb_master_()
         _ = self.jobs
         w = self.workers.get(name="w%s" % nr)
         w.time_start = j.data.time.epoch
@@ -618,10 +617,6 @@ class MyJobsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         res = self.wait_queues(queue_names=[queue_name], size=size, timeout=timeout, die=die)
         if res:
             return res[0]
-
-    def _acquire_bcdb_master_(self):
-        j.data.bcdb._master_set(True)
-        j.clients.bcdbmodel._init()
 
     def _test_teardown(self):
         j.servers.myjobs.stop(timeout=10, reset=False, graceful=False)
