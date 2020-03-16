@@ -121,7 +121,6 @@ class Core:
         return serialized
 
 
-from .core.KosmosShell import KosmosShellConfig, ptconfig
 
 
 class Jumpscale:
@@ -150,8 +149,9 @@ class Jumpscale:
         return locals_
 
     def shell(self, loc=True, exit=False, locals_=None, globals_=None):
-
         import inspect
+        from .core.KosmosShell import KosmosShellConfig, ptconfig
+        from ptpython.repl import embed
 
         KosmosShellConfig.j = self
         curframe = inspect.currentframe()
@@ -160,7 +160,6 @@ class Jumpscale:
         if loc:
             print("\n*** file: %s" % f.filename)
             print("*** function: %s [linenr:%s]\n" % (f.function, f.lineno))
-        from ptpython.repl import embed
 
         # Tools.clear()
         history_filename = "%s/.jsx_history" % MyEnv.config["DIR_HOME"]
