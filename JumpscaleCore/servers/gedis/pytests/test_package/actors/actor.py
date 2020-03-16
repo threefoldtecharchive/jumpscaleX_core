@@ -23,7 +23,7 @@ class actor(j.baseclasses.threebot_actor):
         return "bar"
 
     @j.baseclasses.actor_method
-    def echo(self, _input, user_session=None):
+    def echo(self, _input, schema_out=None, user_session=None):
         """
         ```in
         _input = (S)
