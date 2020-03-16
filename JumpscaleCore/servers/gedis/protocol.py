@@ -95,4 +95,3 @@ class ProtocolHandler(object):
         if isinstance(data, str):
             data = data.encode()
         buf.write(data)
-

@@ -31,9 +31,7 @@ JSBASE = j.baseclasses.object
 
 from io import BytesIO
 
-from Jumpscale import j
 from redis.connection import Encoder, PythonParser, SocketBuffer
-from redis.exceptions import ConnectionError
 
 
 class RedisCommandParser(PythonParser):

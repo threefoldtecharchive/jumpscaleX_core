@@ -55,7 +55,8 @@ class SHSCryptoBase(object):
 
     def verify_challenge(self, data):
         """Verify the correctness of challenge sent from the client."""
-        assert len(data) == 64
+        if len(data) != 64:
+            raise SHSError("wrong size of client challenge")
         sent_hmac, remote_ephemeral_key = data[:32], data[32:]
 
         h = hmac.new(self.application_key, remote_ephemeral_key, digestmod="sha512")
@@ -89,7 +90,8 @@ class SHSCryptoBase(object):
 
 class SHSServerCrypto(SHSCryptoBase):
     def verify_client_auth(self, data):
-        assert len(data) == 112
+        if len(data) != 112:
+            raise SHSError("wrong size of client auth")
         a_bob = crypto_scalarmult(bytes(self.local_key.to_curve25519_private_key()), self.remote_ephemeral_key)
         box_secret = hashlib.sha256(self.application_key + self.shared_secret + a_bob).digest()
         self.hello = crypto_box_open_afternm(data, b"\x00" * 24, box_secret)
@@ -132,7 +134,9 @@ class SHSClientCrypto(SHSCryptoBase):
 
     def verify_server_challenge(self, data):
         """Verify the correctness of challenge sent from the server."""
-        assert super(SHSClientCrypto, self).verify_challenge(data)
+        if not super(SHSClientCrypto, self).verify_challenge(data):
+            raise SHSError("failed to verify server challenge")
+
         curve_pkey = self.remote_pub_key.to_curve25519_public_key()
 
         # a_bob is (a * B)

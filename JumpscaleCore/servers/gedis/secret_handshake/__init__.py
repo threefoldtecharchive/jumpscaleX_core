@@ -21,4 +21,4 @@
 
 from .network import SHSClient, SHSServer
 
-__all__ = ('SHSClient', 'SHSServer')
+__all__ = ("SHSClient", "SHSServer")

@@ -9,7 +9,7 @@ import nacl.signing
 import nacl.utils
 from nacl.encoding import RawEncoder
 from nacl.exceptions import BadSignatureError
-from nacl.public import Box, PrivateKey, SealedBox
+from nacl.public import Box, SealedBox
 from nacl.signing import SigningKey, VerifyKey
 
 from Jumpscale import j

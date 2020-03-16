@@ -1,12 +1,7 @@
 import binascii
-import os
-from io import BytesIO
-
-import redis
-from redis.connection import ConnectionError
 
 from Jumpscale import j
-from Jumpscale.servers.gedis.protocol import ProtocolHandler, Error, Disconnect
+from Jumpscale.servers.gedis.protocol import Error, ProtocolHandler
 from Jumpscale.servers.gedis.secret_handshake import SHSClient
 
 JSConfigBase = j.baseclasses.factory_data
@@ -168,7 +163,7 @@ class Client(object):
     """
 
     def __init__(self, kp, server_pk, host="127.0.0.1", port=8901):
-        """        
+        """
         :param kp: key pair of the client
         :type kp: nacl.singing.SingingKey
         :param server_pk: serer public key hex encoded
