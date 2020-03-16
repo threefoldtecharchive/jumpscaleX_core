@@ -13,7 +13,7 @@ class FileSystemMonitor:
     def __init__(self, syncer=None):
         self.syncer = syncer
         self.event_handler = MyFileSystemEventHandler(syncer=self.syncer)
-        self.observer = Observer()
+        self.observer = Observer(timeout=20)
 
     def _log_info(self, msg):
         print(" - %s" % msg)
