@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test003_dict():
     """
     to run:
 
@@ -29,6 +29,6 @@ def main(self):
 
     assert {"a": 1, "b": "b"} == e.clean(datastr)
 
-    assert j.data.types.dict.check("hello") is False
-    assert j.data.types.dict.check("\n") is False
+    assert j.data.types.dict.check("hello") is None
+    assert j.data.types.dict.check("\n") is None
     return "OK"

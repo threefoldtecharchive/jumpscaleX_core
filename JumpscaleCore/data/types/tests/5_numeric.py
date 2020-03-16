@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test005_numeric():
     """
     to run:
 
@@ -40,6 +40,7 @@ def main(self):
     assert n.bytes2str(n.str2bytes("1%")) == "1%"
     assert n.bytes2str(n.str2bytes("150%")) == "150%"
     assert n.bytes2str(n.str2bytes("-150%")) == "-150%"
+
     assert n.bytes2str(n.str2bytes("0.001")) == "0.001"
     assert n.bytes2str(n.str2bytes("0.001 eur")) == "0.001 EUR"
     assert n.bytes2str(n.str2bytes("-0.1 eur")) == "-0.1 EUR"
@@ -83,6 +84,6 @@ def main(self):
     res = n.clean("10k") * 2
     assert res.value == 20000
 
-    self._log_info("TEST NUMERIC DONE")
+    j.data.types._log_info("TEST NUMERIC DONE")
 
     return "OK"
