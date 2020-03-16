@@ -3,6 +3,7 @@ from .ZDBServer import ZDBServer
 
 JSConfigs = j.baseclasses.object_config_collection_testtools
 TESTTOOLS = j.baseclasses.testtools
+skip = j.baseclasses.testtools._skip
 
 
 class ZDBServers(JSConfigs, TESTTOOLS):
@@ -28,6 +29,7 @@ class ZDBServers(JSConfigs, TESTTOOLS):
         """
         j.builders.db.zdb.install(reset=reset)
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/608")
     def test_instance_start(
         self, destroydata=False, namespaces=None, admin_secret=None, namespaces_secret="1234", restart=False
     ):

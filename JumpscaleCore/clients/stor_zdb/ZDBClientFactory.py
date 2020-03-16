@@ -9,6 +9,7 @@ from .clients_impl import ZDBClientSeqMode, ZDBClientUserMode
 from .clients_impl import ZDBClientSeqModeAdmin, ZDBClientUserModeAdmin
 
 JSBASE = j.baseclasses.object
+skip = j.baseclasses.testtools._skip
 
 
 class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
@@ -73,6 +74,7 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
         assert self.exists(name=name)
         return cl
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/608")
     def test(self, name=""):
         """
         kosmos 'j.clients.zdb.test()'
