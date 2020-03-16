@@ -1,15 +1,8 @@
-import binascii
-from io import BytesIO
-
-import nacl
-from nacl.signing import VerifyKey
 from nacl.encoding import HexEncoder
-from redis.exceptions import ConnectionError
 
 from Jumpscale import j
 
-# from .protocol import RedisCommandParser, RedisResponseWriter
-from .protocol import ProtocolHandler, Error, Disconnect
+from .protocol import Disconnect, Error, ProtocolHandler
 from .UserSession import UserSession, UserSessionAdmin
 
 JSBASE = j.baseclasses.object
@@ -194,7 +187,7 @@ class Handler(JSBASE):
                 request = Request(data)
                 logdict, resp = self._handle_request(request, address, user_session=user_session)
             except Exception as err:
-                resp = Error(exc.args[0])
+                resp = Error(err.args[0])
 
             if logdict:
                 resp = Error(logdict)
