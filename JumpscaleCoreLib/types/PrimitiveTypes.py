@@ -2,7 +2,7 @@
 """
 from Jumpscale import j
 import base64
-from .TypeBaseClasses import *
+from .TypeBaseClass import *
 
 
 class String(TypeBaseClass):
