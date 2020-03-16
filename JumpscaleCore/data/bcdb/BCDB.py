@@ -13,7 +13,7 @@ import sys
 
 
 class BCDB(j.baseclasses.object):
-    def _init(self, name=None, storclient=None, reset=False, readonly=False):
+    def _init(self, name=None, storclient=None, reset=False, readonly=True):
         """
         :param name: name for the BCDB
         :param storclient: if storclient is None then will use sqlite db
@@ -50,7 +50,7 @@ class BCDB(j.baseclasses.object):
         self.storclient = storclient
 
         j.sal.fs.createDir(self._data_dir)
-        self.readonly = readonly
+        self.readonly = not j.data.bcdb._master
 
         if self.readonly:
             self._log_debug("sqlite file is in readonly mode for: '%s'" % self.name)

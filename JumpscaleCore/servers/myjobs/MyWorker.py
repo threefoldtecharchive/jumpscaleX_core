@@ -95,7 +95,9 @@ class MyWorker(j.baseclasses.object_config):
             self._log_info("start worker:%s" % nr)
             cmd = j.servers.startupcmd.get(name="workers_%s" % nr)
             cmd.cmd_start = (
-                f"j.application.start('workers_{nr}'); j.servers.myjobs._worker_inprocess_start_from_tmux({nr})"
+                f"j.application.start('workers_{nr}');"
+                f" j.data.bcdb._master_set(True);"
+                f" j.servers.myjobs._worker_inprocess_start_from_tmux({nr})"
             )
             # COREX has still issues so fall back on tmux
             cmd.executor = "tmux"

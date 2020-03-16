@@ -36,41 +36,50 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         self.__master = None
 
-    def threebotserver_require(self, timeout=120):
-        timeout2 = j.data.time.epoch + timeout
-        while j.data.time.epoch < timeout2:
-            res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380)
-            if res and j.core.db.get("threebot.starting") == None:
-                self._master_set(False)
-                return
-        raise j.exceptions.Base("please start threebotserver, could not reach in '%s' seconds." % timeout)
+    # FIXME: NOT USED ANYWHERE IS IT REQUIRED ?
+    # def threebotserver_require(self, timeout=120):
+    #     timeout2 = j.data.time.epoch + timeout
+    #     while j.data.time.epoch < timeout2:
+    #         res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380)
+    #         if res and j.core.db.get("threebot.starting") == None:
+    #             self._master_set(False)
+    #             return
+    #     raise j.exceptions.Base("please start threebotserver, could not reach in '%s' seconds." % timeout)
 
     @property
     def _master(self):
         if self.__master is None:
-            # see if a threebot starting
-            if not j.core.db:
-                # no choice but to say we are master
-                return True
-            if j.core.db.get("threebot.starting"):
-                print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
-                res = j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60)
-                if res:
-                    # the server did answer, lets now wait till the threebot.starting is gone
-                    timeout = j.data.time.epoch + 15
-                    while j.data.time.epoch < timeout:
-                        if j.core.db.get("threebot.starting") is None:
-                            self.__master = False
-                            return (
-                                self.__master
-                            )  # means we found a threebot who was started properly, can now start as slave
-                raise j.exceptions.Base("threebotserver is starting but did not succeed within 60+15 sec")
+            #     # see if a threebot starting
+            #     if not j.core.db:
+            #         # no choice but to say we are master
+            #         return True
+            #     if j.core.db.get("threebot.starting"):
+            #         print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
+            #         res = j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60)
+            #         if res:
+            #             # the server did answer, lets now wait till the threebot.starting is gone
+            #             timeout = j.data.time.epoch + 15
+            #             while j.data.time.epoch < timeout:
+            #                 if j.core.db.get("threebot.starting") is None:
+            #                     self.__master = False
+            #                     return (
+            #                         self.__master
+            #                     )  # means we found a threebot who was started properly, can now start as slave
+            #         raise j.exceptions.Base("threebotserver is starting but did not succeed within 60+15 sec")
+            #
+            #     if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
+            #         print("** AM WORKING AS SLAVE, BCDB WILL BE READONLY **")
+            #         self.__master = False
+            #     else:
+            #         self.__master = True
+            # return self.__master
 
+            # if the threebotserver is started it aquires master and we return slave
+            # otherwise its ok we are master
+            self.__master = True
             if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
                 print("** AM WORKING AS SLAVE, BCDB WILL BE READONLY **")
                 self.__master = False
-            else:
-                self.__master = True
         return self.__master
 
     # def _treebot_set(self, val=True): #ALREADY DONE IN THREEBOTSERVER
