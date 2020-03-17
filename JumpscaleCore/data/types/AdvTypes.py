@@ -310,9 +310,11 @@ class NumericObject(TypeBaseObjClassNumeric):
 
     def __str__(self):
         if self._data:
-            return "numeric (%s): %s" % (self.value_currency, self._string)
+            return self._string
         else:
             return "numeric: NOTSET"
+
+    __repr__ = __str__
 
 
 class Numeric(TypeBaseObjFactory):
