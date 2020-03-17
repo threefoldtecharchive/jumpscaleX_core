@@ -3400,7 +3400,11 @@ class MyEnv_:
         # Set codedir
         Tools.dir_ensure("{}/code".format(self._basedir_get()))
         self.config_file_path = os.path.join(configdir, "jumpscale_config.toml")
-        self.state_file_path = os.path.join(configdir, "jumpscale_done.toml")
+        if DockerFactory.indocker():
+            # this is important it means if we push a container we keep the state file
+            self.state_file_path = os.path.join(self._homedir_get(), ".jumpscale_done.toml")
+        else:
+            self.state_file_path = os.path.join(configdir, "jumpscale_done.toml")
 
         if Tools.exists(self.config_file_path):
             self._config_load()
@@ -4234,7 +4238,6 @@ class BaseInstaller:
         rm -rf /usr/src
         mkdir -p /var/lib/apt/lists
         find . | grep -E "(__pycache__|\.bak$|\.pyc$|\.pyo$|\.rustup|\.cargo)" | xargs rm -rf
-        find . | grep -E "(LLVM|llvm/)" | xargs rm -rf
         rm -rf  /sandbox/go
         rm -rf  /sandbox/go_proj
         sed -i -r 's/^SECRET =.*/SECRET =/' /sandbox/cfg/jumpscale_config.toml
@@ -4256,6 +4259,7 @@ class BaseInstaller:
         rm -rf /usr/lib/llvm-*.0
         rm -rf /usr/lib/llvm-*
         rm -rf /usr/lib/gcc
+        find / | grep -E "(LLVM|llvm/)" | xargs rm -rf        
         export SUDO_FORCE_REMOVE=no
         apt-mark manual wireguard-tools
         apt-mark manual sudo
@@ -4822,7 +4826,7 @@ class DockerConfig:
             if image:
                 self.image = image
             else:
-                self.image = "threefoldtech/3bot"
+                self.image = "threefoldtech/3bot2"
 
             if startupcmd:
                 self.startupcmd = startupcmd
@@ -5069,6 +5073,8 @@ class DockerContainer:
         # UPDATE THE CONFIG IN THE DOCKER CFG DIRECTORY (ALWAYS USE THE HOST AS BASIS)
         Tools.dir_ensure(self._path + "/cfg")
         Tools.dir_ensure(self._path + "/var")
+
+        ##no longer ok, intent was to copy values from host but no longer the case
         CONFIG = {}
         for i in [
             "USEGIT",
@@ -5104,7 +5110,8 @@ class DockerContainer:
                 MOUNTS = """
                 -v {DIR_CODE}:/sandbox/code \
                 -v {DIR_BASE}/var/containers/shared:/sandbox/myhost \
-                -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var
+                -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
+                -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
                 """
 
             args["MOUNTS"] = Tools.text_replace(MOUNTS.strip(), args=args)
@@ -5141,7 +5148,7 @@ class DockerContainer:
             self.dexec("apt-get install locales -y")
             self.dexec("touch /root/.BASEINSTALL_OK")
 
-        if image2 == "threefoldtech/base":
+        if image2 == "threefoldtech/base2":
             self.dexec("pip3 install requests>=2.13.0")
 
         if update or new:
@@ -5162,17 +5169,17 @@ class DockerContainer:
                 % (MyEnv.config["DIR_HOME"], self.config.sshport)
             )
 
-        print(" - Create route to main 3bot container")
-
         cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % self.name
         rc, out, err = Tools.execute(cmd, replace=False, showout=False, die=False)
         if rc == 0:
             self.config.ipaddr = out.strip()
             self.config.save()
 
-        if DockerFactory.container_name_exists("3bot") and self.name != "3bot":
-            d = DockerFactory.container_get("3bot")
-            cmd = "ip route add 10.10.0.0/16 via %s" % d.config.ipaddr
+        # if DockerFactory.container_name_exists("3bot") and self.name != "3bot":
+        #     d = DockerFactory.container_get("3bot")
+        #     # print(" - Create route to main 3bot container")
+        #     cmd = "ip route add 10.10.0.0/16 via %s" % d.config.ipaddr
+        #     # TODO: why is this no longer done?
 
         print(" - CONTAINER STARTED")
 
@@ -5369,6 +5376,8 @@ class DockerContainer:
             cmd = "docker commit -p %s %s" % (self.name, image)
             # print(" - %s" % cmd)
             Tools.execute(cmd)
+
+        save_internal()
 
         def clean(container, CLEANUPCMD):
             for line in CLEANUPCMD.split("\n"):
@@ -6245,10 +6254,10 @@ class ExecutorSSH:
 
         get_cfg("DIR_HOME", res["ENV"]["HOME"])
         get_cfg("DIR_BASE", "/sandbox")
-        get_cfg("DIR_CFG", "%s/cfg" % self.config[name])
+        get_cfg("DIR_CFG", "%s/cfg" % self.config["DIR_BASE"])
         get_cfg("DIR_TEMP", "/tmp")
-        get_cfg("DIR_VAR", "%s/var" % self.config[name])
-        get_cfg("DIR_CODE", "%s/code" % self.config[name])
+        get_cfg("DIR_VAR", "%s/var" % self.config["DIR_BASE"])
+        get_cfg("DIR_CODE", "%s/code" % self.config["DIR_BASE"])
         get_cfg("DIR_BIN", "/usr/local/bin")
 
     def execute(

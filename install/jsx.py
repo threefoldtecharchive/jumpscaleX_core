@@ -587,13 +587,12 @@ def threebotbuilder(push=False, base=False, cont=False, noclean=False):
 
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False)
+
     docker.install_jumpscale(branch=DEFAULT_BRANCH, redo=delete, pull=False, threebot=True)
     docker.install_tcprouter()
 
     docker.image = dest
-    import pudb
 
-    pu.db
     if noclean:
         docker.save(image=dest)
         docker.delete()
