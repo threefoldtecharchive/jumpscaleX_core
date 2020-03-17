@@ -196,7 +196,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
     def start_servers_test_zdb_sonic(self, reset=False):
 
         admin_secret = "123456"
-        namespaces_secret = "1234"
+        namespaces_secret = "123456"
         namespaces = ["test"]
 
         cl = j.servers.zdb.test_instance_start(
@@ -207,8 +207,8 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         if j.core.myenv.platform_is_linux:
             if reset:
-                # todo:stop sonic
-                raise RuntimeError("stop sonic")
+                sonic_server = j.servers.sonic.default
+                sonic_server.stop()
             if j.sal.nettools.tcpPortConnectionTest("localhost", 1492) is False:
                 s = j.servers.sonic.get(name="testserver", port=1492, adminsecret_=admin_secret)
                 s.start()
