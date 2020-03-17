@@ -3,7 +3,6 @@
 ## the lowest base class:
 
 - [j.baseclasses.object](jsbase.md)
-- [j.application.JSBaseDataObjClass]()          #like JSBase but add management JSXObj to the class
 
 Each class needs to inherrit of one of those, with JSX data object use the JSBaseDataObjClass otherwise JSBaseClass
 

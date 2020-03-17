@@ -1,5 +1,7 @@
 
-# j.baseclasses.object_config_collection
+# j.baseclasses.object_config_base
+
+**class: JSConfigBCDBBase**
 
 Is the base class for a collection of config objects,
 allowing you to create instances of the `_CHILDCLASS` on the fly.
