@@ -427,6 +427,11 @@ class BCDBModel(BCDBModelBase):
         elif isinstance(data, str) and j.data.types.json.check(data):
             data = j.data.serializers.json.loads(data)
 
+        if not data and kwargs != {}:
+            # because we have to update the e.g. name in kwargs
+            data = {}
+            data.update(kwargs)
+
         if data and kwargs:
             data.update(kwargs)
 

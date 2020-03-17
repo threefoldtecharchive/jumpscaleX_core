@@ -2429,15 +2429,22 @@ class Tools:
                 counter = 0
                 if MyEnv.debug or log:
                     Tools.log("execute interactive:%s" % command)
+                    if original_command:
+                        Tools.log("execute_original:%s" % original_command)
                 while rc > 0 and counter < retry:
                     rc, out, err = Tools._execute_interactive(cmd=command, die=False, original_command=original_command)
                     counter += 1
                 if die and rc > 0:
-                    raise Tools.exceptions.Base("Could not execute:%s" % command)
+                    if original_command:
+                        raise Tools.exceptions.Base("Could not execute:%s" % original_command)
+                    else:
+                        raise Tools.exceptions.Base("Could not execute:%s" % command)
                 return rc, out, err
             else:
                 if MyEnv.debug or log:
                     Tools.log("execute:%s" % command)
+                if original_command:
+                    Tools.log("execute_original:%s" % original_command)
 
                 rc = 1
                 counter = 0
@@ -2457,6 +2464,8 @@ class Tools:
                     counter += 1
 
                 if die and rc != 0:
+                    if original_command:
+                        command = original_command
                     if errormsg:
                         msg = errormsg.rstrip() + "\n\n"
                     else:
@@ -3391,10 +3400,6 @@ class MyEnv_:
         # Set codedir
         Tools.dir_ensure("{}/code".format(self._basedir_get()))
         self.config_file_path = os.path.join(configdir, "jumpscale_config.toml")
-        # if DockerFactory.indocker():
-        #     # this is important it means if we push a container we keep the state file
-        #     self.state_file_path = os.path.join(self._homedir_get(), ".jumpscale_done.toml")
-        # else:
         self.state_file_path = os.path.join(configdir, "jumpscale_done.toml")
 
         if Tools.exists(self.config_file_path):
@@ -3907,7 +3912,7 @@ MyEnv = MyEnv_()
 
 class BaseInstaller:
     @staticmethod
-    def install(configdir=None, force=False, sandboxed=False, branch=None):
+    def install(configdir=None, force=False, sandboxed=False, branch=None, pips_level=3):
 
         MyEnv.init(configdir=configdir)
 
@@ -3923,10 +3928,10 @@ class BaseInstaller:
                 UbuntuInstaller.do_all()
             else:
                 raise Tools.exceptions.Base("not ok yet")
-                UbuntuInstaller.base()
+                UbuntuInstaller.base(pips_level=pips_level)
         elif "darwin" in MyEnv.platform():
             if not sandboxed:
-                OSXInstaller.do_all()
+                OSXInstaller.do_all(pips_level=pips_level)
             else:
                 raise Tools.exceptions.Base("not ok yet")
                 OSXInstaller.base()
@@ -4062,14 +4067,9 @@ class BaseInstaller:
         pips = {
             # level 0: most basic needed
             0: [
-                "scikit-build",
-                "cmake",
                 "cached_property",
-                "blosc>=1.5.1",
-                "Brotli>=0.6.0",
                 "captcha",
                 "certifi",
-                "Cython",
                 "click>=6.6",
                 "pygments-github-lexers",
                 "colored-traceback>=0.2.2",
@@ -4085,7 +4085,6 @@ class BaseInstaller:
                 "geopy",
                 "geocoder",
                 "gevent >= 1.2.2",
-                "gipc",
                 "GitPython>=2.1.1",
                 "grequests>=0.3.0",
                 "httplib2>=0.9.2",
@@ -4134,27 +4133,33 @@ class BaseInstaller:
                 "xmltodict",
                 "sonic-client",
                 "watchdog_gevent",
+                "python-digitalocean",
+                "ujson",
+                "stellar-sdk",
+                "packet-python>=1.37",
+                "gevent-websocket",
             ],
             # level 1: in the middle
             1: [
+                "Brotli>=0.6.0",
+                "gipc",
+                # "blosc>=1.5.1",  #don't think we use it, I hope
+                "cython",
+                "scikit-build",
+                # "cmake",  #DO WE NEED THIS??? better not, takes for ever
                 "zerotier>=1.1.2",
-                "python-digitalocean",
                 "python-jose>=2.0.1",
                 "itsdangerous>=0.24",
                 "jsonschema>=2.5.1",
                 "graphene>=2.0",
-                "gevent-websocket",
                 "ovh>=0.4.7",
-                "packet-python>=1.37",
-                "uvloop>=0.8.0",
+                # "uvloop>=0.8.0",  #think is not used
                 "pycountry",
                 "pycountry_convert",
                 "cson>=0.7",
-                "ujson",
                 "Pillow>=4.1.1",
                 "bottle==0.12.17",
                 "bottle-websocket==0.2.9",
-                "stellar-sdk",
             ],
             # level 2: full install
             2: [
@@ -4182,9 +4187,10 @@ class BaseInstaller:
         return res
 
     @staticmethod
-    def pips_install(items=None):
+    def pips_install(items=None, pips_level=3):
         if not items:
-            items = BaseInstaller.pips_list(3)
+            items = BaseInstaller.pips_list(pips_level)
+            MyEnv.state_set("pip_zoos")
         for pip in items:
             if not MyEnv.state_get("pip_%s" % pip):
                 C = "pip3 install '%s'" % pip  # --user
@@ -4192,7 +4198,6 @@ class BaseInstaller:
                 MyEnv.state_set("pip_%s" % pip)
         # C = "pip3 install -e 'git+https://github.com/threefoldtech/0-hub#egg=zerohub&subdirectory=client'"
         # Tools.execute(C, die=True)
-        MyEnv.state_set("pip_zoos")
 
     @staticmethod
     def cleanup_script_get():
@@ -4229,6 +4234,9 @@ class BaseInstaller:
         rm -rf /usr/src
         mkdir -p /var/lib/apt/lists
         find . | grep -E "(__pycache__|\.bak$|\.pyc$|\.pyo$|\.rustup|\.cargo)" | xargs rm -rf
+        find . | grep -E "(LLVM|llvm/)" | xargs rm -rf
+        rm -rf  /sandbox/go
+        rm -rf  /sandbox/go_proj
         sed -i -r 's/^SECRET =.*/SECRET =/' /sandbox/cfg/jumpscale_config.toml
         rm -f /sandbox/cfg/keys/default/*
         rm -rf /var/cache/luarocks
@@ -4241,8 +4249,12 @@ class BaseInstaller:
         apt remove gcc -y
         apt remove rustc -y
         apt remove llvm -y
+        apt-get remove --auto-remove golang-go -y
         rm -rf /usr/lib/x86_64-linux-gnu/libLLVM-6.0.so.1
         rm -rf /usr/lib/llvm-6.0
+        rm -rf /usr/lib/llvm-9.0
+        rm -rf /usr/lib/llvm-*.0
+        rm -rf /usr/lib/llvm-*
         rm -rf /usr/lib/gcc
         export SUDO_FORCE_REMOVE=no
         apt-mark manual wireguard-tools
@@ -4250,17 +4262,18 @@ class BaseInstaller:
         apt-get autoremove --purge -y
         rm -rf /var/lib/apt/lists
         mkdir -p /var/lib/apt/lists
+        
         """
         return Tools.text_strip(CMD, replace=False)
 
 
 class OSXInstaller:
     @staticmethod
-    def do_all():
+    def do_all(pips_level=3):
         MyEnv.init()
         Tools.log("installing OSX version")
         OSXInstaller.base()
-        BaseInstaller.pips_install()
+        BaseInstaller.pips_install(pips_level=pips_level)
 
     @staticmethod
     def base():
@@ -4298,7 +4311,7 @@ class OSXInstaller:
 
 class UbuntuInstaller:
     @staticmethod
-    def do_all(prebuilt=False):
+    def do_all(prebuilt=False, pips_level=3):
         MyEnv.init()
         Tools.log("installing Ubuntu version")
 
@@ -4309,7 +4322,7 @@ class UbuntuInstaller:
             UbuntuInstaller.python_dev_install()
         UbuntuInstaller.apts_install()
         if not prebuilt:
-            BaseInstaller.pips_install()
+            BaseInstaller.pips_install(pips_level=pips_level)
 
     @staticmethod
     def ensure_version():
@@ -4425,16 +4438,6 @@ class UbuntuInstaller:
                 Tools.execute(command, die=True)
                 MyEnv.state_set("apt_%s" % apt)
 
-    # def pip3(self):
-    #     script="""
-    #
-    #     cd /tmp
-    #     curl -sk https://bootstrap.pypa.io/get-pip.py > /tmp/get-pip.py || die "could not download pip" || return 1
-    #     python3 /tmp/get-pip.py  >> ${LogFile} 2>&1 || die "pip install" || return 1
-    #     rm -f /tmp/get-pip.py
-    #     """
-    #     Tools.execute(script,interactive=True)
-
 
 class JumpscaleInstaller:
     def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False, branch=None, threebot=False):
@@ -4446,7 +4449,12 @@ class JumpscaleInstaller:
             if "SSH_Agent" in MyEnv.config and MyEnv.config["SSH_Agent"]:
                 MyEnv.sshagent.key_default_name  # means we will load ssh-agent and help user to load it properly
 
-        BaseInstaller.install(sandboxed=sandboxed, force=force, branch=branch)
+        if threebot:
+            pips_level = 3
+        else:
+            pips_level = 0
+
+        BaseInstaller.install(sandboxed=sandboxed, force=force, branch=branch, pips_level=pips_level)
 
         Tools.file_touch(os.path.join(MyEnv.config["DIR_BASE"], "lib/jumpscale/__init__.py"))
 
@@ -4469,6 +4477,7 @@ class JumpscaleInstaller:
 
         if threebot:
             Tools.execute_jumpscale("j.servers.threebot.start(background=True)")
+            Tools.execute_jumpscale("j.servers.threebot.reset()")
 
     def remove_old_parts(self):
         tofind = ["DigitalMe", "Jumpscale", "ZeroRobot"]
@@ -5001,6 +5010,7 @@ class DockerContainer:
 
     def start(self, mount_dirs=True, stop=False):
         if not self.container_exists_config:
+
             raise Tools.exceptions.Operations("ERROR: cannot find docker with name:%s, cannot start" % self.name)
         if self.container_exists_in_docker:
             if not self.isrunning():
@@ -5038,7 +5048,13 @@ class DockerContainer:
             # means is a new one
             new = True
             if update is None:
-                if image2 in ["threefoldtech/base", "threefoldtech/3bot", "threefoldtech/3botdev"]:
+                if image2 in [
+                    "threefoldtech/base",
+                    "threefoldtech/3bot",
+                    "threefoldtech/3botdev",
+                    "threefoldtech/3bot2",
+                    "threefoldtech/3bot2dev",
+                ]:
                     update = False
             if not update:
                 try:
@@ -5088,8 +5104,7 @@ class DockerContainer:
                 MOUNTS = """
                 -v {DIR_CODE}:/sandbox/code \
                 -v {DIR_BASE}/var/containers/shared:/sandbox/myhost \
-                -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
-                -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
+                -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var
                 """
 
             args["MOUNTS"] = Tools.text_replace(MOUNTS.strip(), args=args)
@@ -5348,15 +5363,12 @@ class DockerContainer:
             if ":" in image:
                 image = image.split(":")[0]
             cmd = "docker rmi -f %s" % image
-            Tools.execute(cmd, die=False)
+            Tools.execute(cmd, die=False, showout=False)
             cmd = "docker rmi -f %s:latest" % image
-            Tools.execute(cmd, die=False)
+            Tools.execute(cmd, die=False, showout=False)
             cmd = "docker commit -p %s %s" % (self.name, image)
-            print(" - %s" % cmd)
-
+            # print(" - %s" % cmd)
             Tools.execute(cmd)
-
-        save_internal()
 
         def clean(container, CLEANUPCMD):
             for line in CLEANUPCMD.split("\n"):
@@ -5370,10 +5382,9 @@ class DockerContainer:
 
             clean(self, BaseInstaller.cleanup_script_get())
 
-            ##LETS FOR NOW NOT DO IT YET, THERE SEEM TO BE SOME ISSUES
-            ##TODO: needs to be fixed to allow the base 3bot image to be smaller
-            # if clean_devel:
-            #     clean(self, BaseInstaller.cleanup_script_developmentenv_get())
+            if clean_devel:
+                clean(self, BaseInstaller.cleanup_script_developmentenv_get())
+
             ename = image.replace("/", "_")
             if ":" in ename:
                 ename = ename.split(":")[0]
@@ -5383,6 +5394,8 @@ class DockerContainer:
         if ":" in image:
             image = image.split(":")[0]
         self.image = image
+
+        save_internal()
 
         self.config.save()
 
@@ -5475,6 +5488,9 @@ class DockerContainer:
         args = {}
         args["port"] = self.config.sshport
         print(Tools.text_replace(k, args=args))
+
+        if threebot:
+            self.dexec("touch /root/.THREEBOTINSTALL_OK")
 
     def __repr__(self):
         return "# CONTAINER: \n %s" % Tools._data_serializer_safe(self.config.__dict__)
@@ -5657,14 +5673,14 @@ class SSHAgent:
                 """.format(
                 path=path, passphrase=passphrase, duration=duration
             )
-            rc, out, err = Tools.execute(C, showout=True, die=False)
+            rc, out, err = Tools.execute(C, showout=False, die=False)
             if rc > 0:
                 Tools.delete("/tmp/ap-cat.sh")
                 raise Tools.exceptions.Operations("Could not load sshkey with passphrase (%s)" % path)
         else:
             # load without passphrase
             cmd = "ssh-add -t %s %s " % (duration, path)
-            rc, out, err = Tools.execute(cmd, showout=True, die=False)
+            rc, out, err = Tools.execute(cmd, showout=False, die=False)
             if rc > 0:
                 raise Tools.exceptions.Operations("Could not load sshkey without passphrase (%s)" % path)
 
@@ -5681,7 +5697,7 @@ class SSHAgent:
         return self.__keys
 
     def _read_keys(self):
-        return_code, out, err = Tools.execute("ssh-add -L", showout=True, die=False, timeout=2)
+        return_code, out, err = Tools.execute("ssh-add -L", showout=False, die=False, timeout=2)
         if return_code:
             if return_code == 1 and out.find("The agent has no identities") != -1:
                 self.__keys = []

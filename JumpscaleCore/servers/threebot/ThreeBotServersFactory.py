@@ -116,11 +116,22 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
                 assert "." in client.package_name
             else:
                 client = j.clients.gedis.get(name="threebot", port=8901)
-                if not "." in client.package_name:
-                    j.shell()
+                # if not "." in client.package_name:
+                #     j.shell()
                 assert "." in client.package_name
 
             client.reload()
+
+            # need to test sonic, zdb
+            # ZDB
+            assert j.sal.nettools.tcpPortConnectionTest("localhost", port=9900)
+            # SONIC
+            assert j.sal.nettools.tcpPortConnectionTest("localhost", port=1491)
+            # HTTP
+            assert j.sal.nettools.tcpPortConnectionTest("localhost", port=80)
+            # HTTPS
+            assert j.sal.nettools.tcpPortConnectionTest("localhost", port=443)
+
             return client
 
         else:
@@ -151,7 +162,10 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
         rm -rf {DIR_BASE}/cfg/bcdb
         rm -rf {DIR_BASE}/cfg/schema_meta.msgpack
         rm -rf {DIR_BASE}/cfg/sonic_config_threebot.cfg
-        rm -rf {DIR_BASE}/var
+        rm -rf {DIR_BASE}/var/bcdb
+        rm -rf {DIR_BASE}/var/capnp
+        rm -rf {DIR_BASE}/var/codegen
+        # rm -rf {DIR_BASE}/var && echo
         """
         if debug:
             j.core.myenv.config["LOGGER_LEVEL"] = 10
