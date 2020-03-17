@@ -243,7 +243,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         if j.core.myenv.platform_is_linux:
             if reset:
                 sonic_server = j.servers.sonic.default
-                sonic_server.stop
+                sonic_server.stop()
             if j.sal.nettools.tcpPortConnectionTest("localhost", 1492) is False:
                 s = j.servers.sonic.get(name="testserver", port=1492, adminsecret_=admin_secret)
                 s.start()
