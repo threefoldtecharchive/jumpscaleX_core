@@ -421,13 +421,32 @@ def basebuilder(dest=None, push=False, cont=False):
     basebuilder_(dest=dest, push=push, delete=delete)
 
 
+def _build_phusion(push=False):
+    IT = load_install_tools(branch=DEFAULT_BRANCH)
+    path = IT.Tools.text_replace("{DIR_BASE}/code/github/threefoldtech/baseimage-docker")
+    if not os.path.exists(path):
+        IT.Tools.code_github_get(url="https://github.com/threefoldtech/baseimage-docker", branch="master")
+    cmd = """
+        set -ex
+        cd {}/image
+        docker build . -t threefoldtech/phusion:latest
+    """.format(
+        path
+    )
+    IT.Tools.execute(cmd, interactive=True)
+    if push:
+        IT.Tools.execute("docker pushe threefoldtech/phusion/latest")
+
+
 def basebuilder_(dest=None, push=False, delete=True):
+    _build_phusion(push=push)
     if not dest:
         dest = "threefoldtech/base2"
     IT = load_install_tools(branch=DEFAULT_BRANCH)
     _configure()
 
-    image = "threefoldtech/phusion:19.10"
+    # image = "threefoldtech/phusion:19.10"
+    image = "threefoldtech/phusion:latest"
     docker = e.DF.container_get(name="base2", delete=delete, image=image)
     docker.install(update=True, stop=delete)
     cmd = "apt install python3-brotli python3-blosc cython3 cmake -y"
