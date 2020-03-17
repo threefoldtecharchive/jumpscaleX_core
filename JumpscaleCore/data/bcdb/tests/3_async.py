@@ -13,7 +13,7 @@ def test_async():
 
     """
 
-    _, model = j.data.bcdb._load_test_model()
+    _, model = j.data.bcdb._test_model_get()
 
     def get_obj(i):
         model_obj = model.new()
