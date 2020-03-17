@@ -9,7 +9,7 @@ skip = j.baseclasses.testtools._skip
 
 
 class GedisWebsocketFactory(JSConfigClient):
-    __jslocation__ = "j.servers.gedis_websocket"
+    # check https://github.com/threefoldtech/jumpscaleX_core/issues/575#issuecomment-599954510
     _CHILDCLASS = GedisWebsocketServer
 
     def _init(self, **kwargs):
@@ -21,7 +21,6 @@ class GedisWebsocketFactory(JSConfigClient):
             self._default = self.get("default")
         return self._default
 
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/575")
     def test(self):
         """
         kosmos 'j.servers.gedis_websocket.test()'
