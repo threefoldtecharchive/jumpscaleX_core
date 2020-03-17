@@ -903,7 +903,8 @@ version = "1.0.0"
 
 
 [[bcdbs]]
-namespace = "mybot"
+name = "mybot_{name}"
+namespace = "mybot_{name}"
 type = "zdb"
 instance = "default"
     """
