@@ -12,6 +12,10 @@ class JSConfigBCDB(JSConfigBCDBBase):
         if name in kwargs:
             name = kwargs.pop("name")
 
+        if not name and jsxobject != None:
+            name = jsxobject.name
+            assert name
+
         if not name:
             name = "default"
 

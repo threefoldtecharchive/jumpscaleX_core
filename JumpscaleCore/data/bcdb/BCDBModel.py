@@ -422,12 +422,13 @@ class BCDBModel(BCDBModelBase):
 
     def new(self, data=None, nid=1, **kwargs):
 
-        if kwargs != {}:
-            data = kwargs
         if data and isinstance(data, dict):
             data = self._dict_process_in(data)
         elif isinstance(data, str) and j.data.types.json.check(data):
             data = j.data.serializers.json.loads(data)
+
+        if data and kwargs:
+            data.update(kwargs)
 
         if data:
             if isinstance(data, dict):

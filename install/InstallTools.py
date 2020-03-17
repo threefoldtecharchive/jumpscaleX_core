@@ -3343,9 +3343,7 @@ class MyEnv_:
             "REVERSE": "",
         }
 
-        LOGFORMATBASE = (
-            "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"
-        )  # DO NOT CHANGE COLOR
+        LOGFORMATBASE = "{COLOR}{TIME} {filename:<20}{RESET} -{linenr:4d} - {GRAY}{context:<35}{RESET}: {message}"  # DO NOT CHANGE COLOR
 
         self.LOGFORMAT = {
             "DEBUG": LOGFORMATBASE.replace("{COLOR}", "{CYAN}"),
@@ -4636,12 +4634,15 @@ class DockerFactory:
     @staticmethod
     def container_get(name, image="threefoldtech/3bot", start=False, delete=False, ports=None):
         DockerFactory.init()
+        if delete and name in DockerFactory._dockers:
+            docker = DockerFactory._dockers[name]
+            docker.delete()
+            # needed because docker object is being retained
+            docker.config.save()
+            DockerFactory._dockers.pop(name)
+
         if name in DockerFactory._dockers:
             docker = DockerFactory._dockers[name]
-            if delete:
-                docker.delete()
-                # needed because docker object is being retained
-                docker.config.save()
         else:
             docker = DockerContainer(name=name, image=image, delete=delete, ports=ports)
         if start:
