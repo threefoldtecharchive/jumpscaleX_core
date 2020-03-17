@@ -5,48 +5,15 @@ JSBASE = j.baseclasses.object
 
 from watchdog.events import FileSystemEventHandler, FileModifiedEvent, DirModifiedEvent
 
-# from watchdog.events import LoggingEventHandler
-from watchdog.observers import Observer
 from watchdog_gevent import Observer
-
+import time
 from watchdog.events import FileModifiedEvent, DirModifiedEvent
-
-# from gevent import Greenlet
-# import gevent
-#
-#
-# class FileSystemMonitor(Greenlet):
-#     def __init__(self, syncer):
-#         Greenlet.__init__(self)
-#         # JSBASE.__init__(self)
-#         self.syncer = syncer
-#         self.event_handler = MyFileSystemEventHandler(syncer=self.syncer)
-#         self.observer = Observer()
-#
-#     def _log_info(self, msg):
-#         print("* %s" % msg)
-#
-#     def _run(self):
-#
-#         for item in self.syncer._get_paths():
-#             source, dest = item
-#             self._log_info("monitor:%s" % source)
-#             self.observer.schedule(self.event_handler, source, recursive=True)
-#         self.observer.start()
-#         self._log_info("WE ARE MONITORING")
-#
-#         while True:
-#             gevent.sleep(10)
-#
-#     def __str__(self):
-#         return "FileSystemMonitor"
-
 
 class FileSystemMonitor:
     def __init__(self, syncer=None):
         self.syncer = syncer
         self.event_handler = MyFileSystemEventHandler(syncer=self.syncer)
-        self.observer = Observer()
+        self.observer = Observer(timeout=20)
 
     def _log_info(self, msg):
         print(" - %s" % msg)
@@ -62,11 +29,12 @@ class FileSystemMonitor:
 
         self._log_info("WE ARE MONITORING")
 
-        # try:
-        #     while True:
-        #         time.sleep(1)
-        # except KeyboardInterrupt:
-        #     pass
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            self.observer.stop()
+        self.observer.join()
 
     def __str__(self):
         return "FileSystemMonitor"
