@@ -300,14 +300,19 @@ class Integer(TypeBaseClass):
             return self.default_get()
         if isinstance(value, float):
             value = int(value)
-        elif isinstance(value, str):
+
+        if isinstance(value, str):
             value = j.data.types.string.clean(value).strip()
             if "," in value:
                 value = value.replace(",", "")
             if value == "":
                 value = 0
             else:
-                value = int(value)
+                try:
+                    value = int(value)
+                except ValueError:
+                    pass
+
         if not self.check(value):
             raise j.exceptions.Value("Invalid value for integer: '%s'" % value)
         return value
