@@ -4121,6 +4121,7 @@ class BaseInstaller:
                 "xmltodict",
                 "sonic-client",
                 "watchdog_gevent",
+                "base58",
             ],
             # level 1: in the middle
             1: [
