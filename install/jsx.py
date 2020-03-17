@@ -243,10 +243,10 @@ def container_install(
     docker.install_jumpscale(branch=branch, redo=reinstall, pull=pull, threebot=threebot)  # , prebuilt=prebuilt)
 
 
-def container_get(name="3bot", delete=False, jumpscale=False):
+def container_get(name="3bot", delete=False, jumpscale=False, mount=True):
     IT.MyEnv.sshagent.key_default_name
     e.DF.init()
-    docker = e.DF.container_get(name=name, image="threefoldtech/3bot2", start=True, delete=delete)
+    docker = e.DF.container_get(name=name, image="threefoldtech/3bot2", start=True, delete=delete, mount=mount)
     if jumpscale:
         # needs to stay because will make sure that the config is done properly in relation to your shared folders from the host
         docker.install_jumpscale()
@@ -709,13 +709,15 @@ def kosmos(name="3bot", target="auto"):
 @click.command(name="container-shell")
 @click.option("-n", "--name", default="3bot", help="name of container")
 @click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
-def container_shell(name="3bot", delete=False):
+@click.option("-nm", "--nomount", is_flag=True, help="if set will delete the docker container if it already exists")
+def container_shell(name="3bot", delete=False, nomount=False):
     """
     open a  shell to the container for 3bot
     :param name: name of container if not the default
     :return:
     """
-    docker = container_get(name=name, delete=delete)
+    mount = not nomount
+    docker = container_get(name=name, delete=delete, mount=mount)
     docker.sshshell()
 
 

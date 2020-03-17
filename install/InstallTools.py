@@ -4645,7 +4645,7 @@ class DockerFactory:
                     DockerContainer(name_found)
 
     @staticmethod
-    def container_get(name, image="threefoldtech/3bot", start=False, delete=False, ports=None):
+    def container_get(name, image="threefoldtech/3bot", start=False, delete=False, ports=None, mount=True):
         DockerFactory.init()
         if delete and name in DockerFactory._dockers:
             docker = DockerFactory._dockers[name]
@@ -4656,10 +4656,19 @@ class DockerFactory:
 
         if name in DockerFactory._dockers:
             docker = DockerFactory._dockers[name]
+            if mount:
+                if docker.info["Mounts"] == []:
+                    # means the current docker has not been mounted
+                    docker.stop()
+                    docker.start(mount_dirs=True)
+            else:
+                if docker.info["Mounts"] != []:
+                    docker.stop()
+                    docker.start(mount_dirs=False)
         else:
             docker = DockerContainer(name=name, image=image, delete=delete, ports=ports)
         if start:
-            docker.start()
+            docker.start(mount_dirs=mount)
         return docker
 
     @staticmethod
@@ -5183,6 +5192,15 @@ class DockerContainer:
 
         print(" - CONTAINER STARTED")
 
+    @property
+    def info(self):
+        cmd = "docker inspect %s" % self.name
+        rc, out, err = Tools.execute(cmd, replace=False, showout=False, die=False)
+        if rc != 0:
+            raise Tools.exceptions.Base("could not docker inspect:%s" % self.name)
+        data = json.loads(out)[0]
+        return data
+
     def dexec(self, cmd, interactive=False, die=True):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
@@ -5212,7 +5230,7 @@ class DockerContainer:
         uses ncdu to visualize disk usage
         :return:
         """
-        self.dexec("apt update;apt install ncdu -y;ncdu", interactive=True)
+        self.dexec("apt update;apt install ncdu -y;ncdu /", interactive=True)
 
     def sshexec(self, cmd, retry=None, asfile=True):
         if "'" in cmd:
