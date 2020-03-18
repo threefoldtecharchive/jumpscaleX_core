@@ -165,6 +165,8 @@ class Application(object):
         # self.redis_loggers = {}
 
         self._admin_session = None
+        self.DEFAULT_CONTEXT = "init"
+        self.contexts = [self.DEFAULT_CONTEXT]  # as a stack
 
     @property
     def admin_session(self):
@@ -380,6 +382,9 @@ class Application(object):
         this start will also start the redis log handler (IS THE ONLYONE WHICH SHOULD BE USED)
 
         """
+
+        self.contexts.append(self.appname)
+
         if name:
             self.appname = name
 
@@ -431,6 +436,11 @@ class Application(object):
         # TODO: this SHOULD BE WORKING AGAIN, now processes are never removed
 
         sys.exit(exitcode)
+
+    def reset_context(self):
+        if len(self.contexts) == 1:
+            return
+        self.start(self.contexts.pop())
 
     def _exithandler(self):
         self.stop()
