@@ -242,9 +242,12 @@ class Handler(JSBASE):
 
         try:
             self._handle_gedis_session(gedis_socket, address, user_session=user_session)
+        except ConnectionError as e:
+            self._log_info("connection closed: %s" % str(e), context="%s:%s" % address)
         except Exception as e:
+            self._log_error("unexpected error: %s" % str(e), context="%s:%s" % address, exception=e)
+        finally:
             gedis_socket.on_disconnect()
-            self._log_error("connection closed: %s" % str(e), context="%s:%s" % address, exception=e)
 
     def _handle_gedis_session(self, gedis_socket, address, user_session=None):
         """
@@ -258,24 +261,13 @@ class Handler(JSBASE):
         self._log_info("new incoming connection", context="%s:%s" % address)
 
         while True:
-            try:
-                request = gedis_socket.read()
-            except ConnectionError as err:
-                self._log_info("connection read error: %s" % str(err), context="%s:%s" % address)
-                # close the connection
-                return
-
+            request = gedis_socket.read()
+            self._log_info(f"command {request.command}", context="%s:%s" % address)
             logdict, result = self._handle_request(request, address, user_session=user_session)
-
             if logdict:
                 gedis_socket.writer.error(logdict)
-            try:
+            else:
                 gedis_socket.writer.write(result)
-
-            except ConnectionError as err:
-                self._log_info("connection error: %s" % str(err), context="%s:%s" % address)
-                # close the connection
-                return
 
     def _authorized(self, cmd_obj, user_session):
         """
