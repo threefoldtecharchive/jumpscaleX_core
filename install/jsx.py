@@ -722,54 +722,51 @@ def container_shell(name="3bot", delete=False, nomount=False):
 
 
 @click.command()
-@click.option("-n", "--names", help="comma separated container names")
-def wireguard(names=None):
+@click.option("-n", "--name", default="3bot", help="name of container")
+@click.option("-t", "--test", is_flag=True, help="use j.shell inside wireguard to play around, obj to look at is 'wg'")
+@click.option("-d", "--disconnect", is_flag=True, help="disconnect")
+def wireguard(name=None, test=False, disconnect=False):
     """
     jsx wireguard
     enable wireguard, can be on host or server
     :return:
     """
+    docker = container_get(name=name)
+    wg = docker.wireguard
+    if disconnect:
+        wg.disconnect()
+    elif test:
+        print(wg)
+        IT.Tools.shell()
+    else:
+        wg.reset()
+        print(wg)
+        wg.server_start()
+        wg.connect()
 
-    containers = names.split(",") if names else IT.DockerFactory.containers_names()
-    usedLastIPBytes = []
-    new_containers = []
-    # Get the containers with udp ports for wireguard
-    containers_udp_ports_wireguard = IT.DockerFactory.container_running_with_udp_ports_wireguard()
-    containers_ip_addresses = IT.DockerFactory.containers_running_ip_address()
 
-    # Write interface configuration
-    if len(containers) == 0:
-        raise RuntimeError("There is no  docker containers running to install wireguard on.")
-
-    temp_docker = container_get(name=containers[0]).wireguard
-    temp_docker.write_interface_configuration()
-    # Get wireguard preconfigured containers, so we can maintain same old IP & configs
-
-    for name in containers:
-        docker = container_get(name=name)
-        wg = docker.wireguard
-        configured, ip = wg.isConfigured()
-        if configured:
-            last_byte = ip.split(".")[-1]
-            usedLastIPBytes.append(int(last_byte))
-            wg.server_start(last_byte)
-            # Write peer configurations
-            port = int(containers_udp_ports_wireguard.get(name))
-            ip_address = containers_ip_addresses.get(name)
-            wg.write_peer_configuration(wireguard_port_udb=port, last_byte=last_byte, container_ip=ip_address)
-        else:
-            new_containers.append(name)
-    freeRange = sorted(set(range(2, 255)) - set(usedLastIPBytes))
-    for i, name in enumerate(new_containers):
-        docker = container_get(name=name)
-        wg = docker.wireguard
-        wg.server_start(freeRange[i])
-        # Write peer configurations
-        port = int(containers_udp_ports_wireguard.get(name))
-        ip_address = containers_ip_addresses.get(name)
-        wg.write_peer_configuration(wireguard_port_udb=port, last_byte=freeRange[i], container_ip=ip_address)
-    # Connect the host wireguard and make it running
-    temp_docker.connect_wireguard()
+@click.command()
+@click.option("-t", "--test", is_flag=True, help="use j.shell inside wireguard to play around, obj to look at is 'wg'")
+@click.option("-d", "--disconnect", is_flag=True, help="disconnect")
+def connect(test=False, disconnect=False):
+    """
+    only for core developers and engineers of threefold, will connect to some core
+    infrastructure for helping us to communicate
+    :return:
+    """
+    myid = IT.MyEnv.registry.myid
+    addr = IT.MyEnv.registry.addr[0]
+    wg = IT.WireGuardServer(addr=addr, myid=myid)
+    if disconnect:
+        wg.disconnect()
+    elif test:
+        print(wg)
+        IT.Tools.shell()
+    else:
+        wg.reset()
+        print(wg)
+        wg.server_start()
+        wg.connect()
 
 
 @click.command()
@@ -1007,6 +1004,7 @@ if __name__ == "__main__":
     cli.add_command(wiki_reload)
     cli.add_command(package_new, "package-new")
     cli.add_command(jumpscale_code_get, "jumpscale-code-get")
+    cli.add_command(connect)
 
     # DO NOT DO THIS IN ANY OTHER WAY !!!
     if not e._DF.indocker():

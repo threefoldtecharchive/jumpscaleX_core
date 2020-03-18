@@ -4645,7 +4645,7 @@ class DockerFactory:
                     DockerContainer(name_found)
 
     @staticmethod
-    def container_get(name, image="threefoldtech/3bot", start=False, delete=False, ports=None, mount=True):
+    def container_get(name, image="threefoldtech/3bot2", start=False, delete=False, ports=None, mount=True):
         DockerFactory.init()
         if delete and name in DockerFactory._dockers:
             docker = DockerFactory._dockers[name]
@@ -4746,34 +4746,34 @@ class DockerFactory:
             if image_id:
                 Tools.execute("docker rmi -f %s" % image_id)
 
-    @staticmethod
-    def get_container_port_binding(container_name="3obt", port="9001/udp"):
-        ports_bindings = Tools.execute(
-            "docker inspect {container_name} --format={data}".format(
-                container_name=container_name, data="'{{json .HostConfig.PortBindings}}'"
-            ),
-            showout=False,
-            replace=False,
-        )
-        # Get and serialize the binding ports data
-        all_ports_data = json.loads(ports_bindings[1])
-        port_binding_data = all_ports_data.get(port, None)
-        if not port_binding_data:
-            raise Tools.exceptions.Input(
-                f"Error happened during parsing the binding ports data from container {conitainer_name} and port {port}"
-            )
+    # @staticmethod
+    # def get_container_port_binding(container_name="3obt", port="9001/udp"):
+    #     ports_bindings = Tools.execute(
+    #         "docker inspect {container_name} --format={data}".format(
+    #             container_name=container_name, data="'{{json .HostConfig.PortBindings}}'"
+    #         ),
+    #         showout=False,
+    #         replace=False,
+    #     )
+    #     # Get and serialize the binding ports data
+    #     all_ports_data = json.loads(ports_bindings[1])
+    #     port_binding_data = all_ports_data.get(port, None)
+    #     if not port_binding_data:
+    #         raise Tools.exceptions.Input(
+    #             f"Error happened during parsing the binding ports data from container {conitainer_name} and port {port}"
+    #         )
+    #
+    #     host_port = port_binding_data[-1].get("HostPort")
+    #     return host_port
 
-        host_port = port_binding_data[-1].get("HostPort")
-        return host_port
-
-    @staticmethod
-    def container_running_with_udp_ports_wireguard():
-        containers_ports = dict()
-        containers_names = DockerFactory.containers_names()
-        for name in containers_names:
-            port_binding = DockerFactory.get_container_port_binding(container_name=name, port="9001/udp")
-            containers_ports[name] = port_binding
-        return containers_ports
+    # @staticmethod
+    # def container_running_with_udp_ports_wireguard():
+    #     containers_ports = dict()
+    #     containers_names = DockerFactory.containers_names()
+    #     for name in containers_names:
+    #         port_binding = DockerFactory.get_container_port_binding(container_name=name, port="9001/udp")
+    #         containers_ports[name] = port_binding
+    #     return containers_ports
 
     @staticmethod
     def get_container_ip_address(container_name="3bot"):
@@ -5527,7 +5527,7 @@ class DockerContainer:
     @property
     def wireguard(self):
         if not self._wireguard:
-            self._wireguard = WireGuardServer(addr="127.0.0.1", port=self.config.sshport)
+            self._wireguard = WireGuardServer(addr="127.0.0.1", port=self.config.sshport, myid=199)
         return self._wireguard
 
 
@@ -5684,7 +5684,7 @@ class SSHAgent:
             return
 
         if not Tools.exists(path):
-            raise Tools.exceptions.Base("Cannot find path:%sfor sshkey (private key)" % path)
+            raise Tools.exceptions.Base("Cannot find path:%s for sshkey (private key)" % path)
 
         Tools.log("load ssh key: %s" % path)
         os.chmod(path, 0o600)
@@ -5714,6 +5714,16 @@ class SSHAgent:
         self.reset()
 
         return name, path
+
+    def key_unload(self, name):
+        if name in self._keys:
+            path = self.key_path_get(name)
+            cmd = "ssh-add -d %s" % (path)
+            rc, out, err = Tools.execute(cmd, showout=False, die=True)
+
+    def keys_unload(self):
+        cmd = "ssh-add -D"
+        rc, out, err = Tools.execute(cmd, showout=False, die=True)
 
     @property
     def _keys(self):
@@ -5797,27 +5807,38 @@ class SSHAgent:
 
         return [i[0] for i in self._keys]
 
-    def keypub_path_get(self, keyname="", die=True):
+    def key_path_get(self, keyname=None, die=True):
         """
-        Returns Path of public key that is loaded in the agent
+        Returns Path of private key that is loaded in the agent
 
         :param keyname: name of key loaded to agent to get its path, if empty will check if there is 1 loaded, defaults to ""
         :type keyname: str, optional
         :param die:Raise error if True,else do nothing, defaults to True
         :type die: bool, optional
         :raises RuntimeError: Key not found with given keyname
-        :return: path of public key
+        :return: path of private key
         :rtype: str
         """
-        keyname = j.sal.fs.getBaseName(keyname)
-        Tools.shell()
+        if not keyname:
+            keyname = self.key_default_name
+        else:
+            keyname = os.path.basename(keyname)
         for item in self.keys_list():
-            if item.endswith(keyname):
+            item2 = os.path.basename(item)
+            if item2.lower() == keyname.lower():
                 return item
         if die:
             raise Tools.exceptions.Base(
                 "Did not find key with name:%s, check its loaded in ssh-agent with ssh-add -l" % keyname
             )
+
+    def keypub_path_get(self, keyname=None):
+        path = self.key_path_get(keyname)
+        return path + ".pub"
+
+    @property
+    def keypub(self):
+        return Tools.file_read(self.keypub_path_get()).decode()
 
     def profile_js_configure(self):
         """
@@ -6426,34 +6447,192 @@ class ExecutorSSH:
         self.save()
 
 
+class Registry:
+    def __init__(self):
+        self.addr = ["134.209.83.144"]
+        self._config = None
+        self._executor = None
+
+    @property
+    def executor(self):
+        if not self._executor:
+            self._executor = ExecutorSSH(self.addr[0], 22)
+        return self._executor
+
+    @property
+    def myname(self):
+        """
+        is the main config
+        """
+        myname = MyEnv.sshagent.key_default_name
+        c = self.config["clients"]
+        if myname not in c:
+            y = Tools.ask_yes_no("is our unique login name:%s\nif not please say no and define new name." % myname)
+            if not y:
+                myname2 = Tools.ask_string("give your unique loginname")
+                msg = "careful: your sshkeyname will be changed accordingly on your system to:%s, ok?" % myname2
+                if Tools.ask_yes_no(msg):
+                    src = MyEnv.sshagent.key_path_get()
+                    dest = "%s/%s" % (os.path.dirname(src), myname2)
+                    shutil.copyfile(src, dest)
+                    shutil.copyfile(src + ".pub", dest + ".pub")
+                    MyEnv.config["SSH_KEY_DEFAULT"] = myname2
+                    MyEnv.config_save()
+                    Tools.delete(src)
+                    Tools.delete(src + ".pub")
+                    MyEnv.sshagent.keys_unload()
+                    MyEnv.sshagent.key_load(dest)
+                    myname = myname2
+                else:
+                    raise Tools.exceptions.Input(
+                        "cannot continue need unique login name which corresponds to your sshkey"
+                    )
+            c[myname] = {}
+        c = c[myname]
+        keypub = MyEnv.sshagent.keypub
+
+        def showdetails(c):
+            print(json.dumps(c))
+
+        def askdetails(c):
+
+            organizations = ["codescalers", "freeflow", "frequencyvillage", "threefold", "incubaid", "bettertoken"]
+            organizations2 = ", ".join(organizations)
+            if "email" not in c:
+                c["email"] = Tools.ask_string("please provide your main email addr")
+            if "organizations" not in c:
+                print("valid organizations: '%s'" % organizations2)
+                c["organizations"] = Tools.ask_string("please provide your organizations (comma separated)")
+            if "remark" not in c:
+                c["remark"] = Tools.ask_string("any remark?")
+            if "telegram" not in c:
+                c["telegram"] = Tools.ask_string("please provide your main telegram handle")
+            if "mobile" not in c:
+                c["mobile"] = Tools.ask_string("please provide your mobile nr's (if more than one use ,)")
+            showdetails(c)
+            y = Tools.ask_yes_no("is above all correct !!!")
+            if not y:
+                c["email"] = Tools.ask_string("please provide your main email addr", default=c["email"])
+                print("valid organizations: '%s'" % organizations2)
+                c["organizations"] = Tools.ask_string(
+                    "please provide your organizations (comma separated)", default=c["organizations"]
+                )
+                c["remark"] = Tools.ask_string("any remark?", default=c["remark"])
+                c["telegram"] = Tools.ask_string("please provide your main telegram handle", default=c["telegram"])
+                c["mobile"] = Tools.ask_string(
+                    "please provide your mobile nr's (if more than one use ,)", default=c["mobile"]
+                )
+            self.executor.save()
+
+            o = c["organizations"]
+            o2 = []
+            for oname in o.lower().split(","):
+                oname = oname.strip().lower()
+                if oname == "":
+                    continue
+                if oname not in organizations:
+                    raise Tools.exceptions.Input(
+                        "please choose valid organizations (notok:%s): %s" % (oname, organizations2)
+                    )
+                o2.append(oname)
+            c["organizations"] = ",".join(o2)
+
+        if "keypub" not in c:
+            c["keypub"] = keypub
+            askdetails()
+            self.executor.save()
+        else:
+            if not c["keypub"].strip() == keypub.strip():
+                showdetails(c)
+                y = Tools.ask_yes_no("Are you sure your are above?")
+                raise Tools.exceptions.Input(
+                    "keypub does not correspond, your name:%s, is this a unique name, comes from your main sshkey, change if needed"
+                    % myname
+                )
+        return myname
+
+    def load(self):
+        self._config = None
+
+    @property
+    def config_mine(self):
+        return self.config["clients"][self.myname]
+
+    @property
+    def myid(self):
+        if "myid" not in self.config_mine:
+            if "lastmyid" not in self.config:
+                self.config["lastmyid"] = 1
+            else:
+                self.config["lastmyid"] += 1
+            self.config_mine["myid"] = self.config["lastmyid"]
+            self.executor.save()
+        return self.config_mine["myid"]
+
+    # @iterator
+    # def users(self):
+    #     for name, data in self.config["clients"].items():
+    #         yield data
+
+    @property
+    def config(self):
+        """
+        is the main config
+        """
+        if not self._config:
+            c = self.executor.config
+            if not "registry" in c:
+                c["registry"] = {}
+            config = self.executor.config["registry"]
+            if "clients" not in config:
+                config["clients"] = {}
+            self._config = config
+        return self._config
+
+
 class WireGuardServer:
     """
     the server is over SSH, the one running this tool is the client
     and has access to local machine
 
-    myid is unique id < 255*255
+    myid is unique id < 200
+    the server id is always >200
+
+    myid==199 means we are on local docker
+
+    this is not a full blown client/server implementation for wireguard, its made for 1 server
+    which we can access over ssh
+    and multiple clients
 
     """
 
-    def __init__(self, addr=None, port=22, myid=1):
+    def __init__(self, addr=None, port=22, myid=None):
         self._config = None
         assert addr
         self.addr = addr
         self.port = port
         self.port_wireguard = 9001
-        self.myid = 1
-        self.serverid = 1
+
+        if not myid:
+            myid = MyEnv.registry.myid
+
+        self.myid = myid
+        self.serverid = 201
+
+        assert myid != self.serverid
+        assert self.serverid > 200
 
         self._config_local = None
         self.executor = ExecutorSSH(addr, port)
 
-        # from Jumpscale import j
-
-        # sshcl = j.clients.ssh.get("wireguardhost", addr=addr, port=port)
-        # self.executor = sshcl.executor
-
-        # j.shell()
-        # self.executor = ExecutorSSH(addr, port)
+    def reset(self):
+        """
+        reset client and server
+        """
+        self.config["clients"].pop(self.myid)
+        self.executor.config.pop("wireguard")
+        # now makes sure is all empty on server
+        self.executor.save()
 
     def install(self):
         ubuntu_install = """
@@ -6501,18 +6680,19 @@ class WireGuardServer:
 
     @property
     def config_local(self):
-        if not self._config_local:
-            self._config_local = Tools.config_load("{DIR_BASE}/cfg/wireguard.toml")
-            if "WIREGUARD_CLIENT_PRIVKEY" not in self._config_local:
-                privkey, pubkey = self.generate_key_pair()
-                self._config_local["WIREGUARD_CLIENT_PUBKEY"] = pubkey
-                self._config_local["WIREGUARD_CLIENT_PRIVKEY"] = privkey
-                Tools.config_save("{DIR_BASE}/cfg/wireguard.toml", self._config_local)
-        return self._config_local
+        config_local = self.config_server_mine
+        if "WIREGUARD_CLIENT_PRIVKEY" not in config_local:
+            privkey, pubkey = self.generate_key_pair()
+            config_local["WIREGUARD_CLIENT_PUBKEY"] = pubkey
+            config_local["WIREGUARD_CLIENT_PRIVKEY"] = privkey
+            self.save()
+        return config_local
 
     def save(self):
+        """
+        everything always stored on server
+        """
         self.executor.save()
-        Tools.config_save("{DIR_BASE}/cfg/wireguard.toml", self.config_local)
 
     def generate_key_pair(self):
         print("- GENERATE WIREGUARD KEY")
@@ -6534,30 +6714,7 @@ class WireGuardServer:
 
         return "%s.%s" % (first, second)
 
-    def isConfigured(self):
-        """
-        Check wireguard
-        :return:
-        """
-        file = "/etc/wireguard/wg0.conf"
-        if not self.executor.exists(file):
-            return False, None
-
-        text = self.executor.file_read(file)
-        import configparser
-        import io
-
-        buf = io.StringIO(text)
-        config = configparser.ConfigParser()
-        config.read_file(buf)
-        try:
-            ip = config["Interface"]["Address"]
-            ip = ip.split("/")[0]
-            return True, ip
-        except:
-            return False, None
-
-    def server_start(self, ip_last_byte="2"):
+    def server_start(self):
         self.install()
         config = self.config["server"]
         if "WIREGUARD_SERVER_PUBKEY" not in config:
@@ -6565,7 +6722,7 @@ class WireGuardServer:
             config["WIREGUARD_SERVER_PUBKEY"] = pubkey
             config["WIREGUARD_SERVER_PRIVKEY"] = privkey
             config["SUBNET"] = self._subnet_calc(self.serverid)
-            config["IP_ADDRESS"] = f'10.{config["SUBNET"]}.{ip_last_byte}/24'
+            # config["IP_ADDRESS"] = f'10.{config["SUBNET"]}.{ip_last_byte}/24'
 
         self.config_server_mine["WIREGUARD_CLIENT_PUBKEY"] = self.config_local["WIREGUARD_CLIENT_PUBKEY"]
         self.config_server_mine["SUBNET"] = self._subnet_calc(self.myid)
@@ -6574,7 +6731,7 @@ class WireGuardServer:
 
         C = """
         [Interface]
-        Address = {IP_ADDRESS}
+        Address = 10.{SUBNET}.1/24
         SaveConfig = true
         PrivateKey = {WIREGUARD_SERVER_PRIVKEY}
         ListenPort = {WIREGUARD_PORT}
@@ -6600,71 +6757,75 @@ class WireGuardServer:
         cmd = "wg-quick up %s" % path
         self.executor.execute(cmd)
 
-    def write_peer_configuration(self, wireguard_port_udb=9001, last_byte="0", container_ip="172.17.0.2"):
-        # Override the default wireguard port with the right one
-        self.config_server["WIREGUARD_PORT"] = wireguard_port_udb
-        self.config_server["LAST_BYTE"] = last_byte
-        self.config_server["CONTAINER_IP"] = container_ip
-        # Creating the peer for Linux, it shall not contain the docker interface as it already happened on Linux
-        if MyEnv.platform() == "linux":
-            C = """
+    def connect(self):
 
-            [Peer]
-            PublicKey = {WIREGUARD_SERVER_PUBKEY}
-            Endpoint = {WIREGUARD_ADDR}:{WIREGUARD_PORT}
-            AllowedIPs = 10.{SUBNET}.{LAST_BYTE}/32
-            PersistentKeepalive = 25
-            """
-
-        else:
-            # Creating the peer for Mac, Shall add the docker interface as it is not there on Mac.
-            C = """
-
-            [Peer]
-            PublicKey = {WIREGUARD_SERVER_PUBKEY}
-            Endpoint = {WIREGUARD_ADDR}:{WIREGUARD_PORT}
-            AllowedIPs = 10.{SUBNET}.{LAST_BYTE}/32
-            AllowedIPs = {CONTAINER_IP}/32
-            PersistentKeepalive = 25
-            """
-
-        C = Tools.text_replace(C, args=self.config_server)
-
-        path = "{DIR_BASE}/cfg/wireguard/%s/wg0.conf" % self.serverid
-        path = Tools.text_replace(path)
-        Tools.dir_ensure(os.path.dirname(path))
-        Tools.file_append(path, C)
-        # print("WIREGUARD CONFIFURATION:\n\n%s" % config)
-        # print("WIREGUARD CONFIG PATH:%s" % path)
-
-    def write_interface_configuration(self):
         C = """
         [Interface]
-        Address = 10.{SUBNET}.1/24
+        Address = 10.{SUBNET}.2/24
         PrivateKey = {WIREGUARD_CLIENT_PRIVKEY}
         """
         self.config_local["SUBNET"] = self._subnet_calc(self.myid)
         C = Tools.text_replace(C, args=self.config_local)
-        self.config_local["ADDRESS"] = f"10.{self.config_local['SUBNET']}.1/24"
+        C2 = """
 
-        self.path = "{DIR_BASE}/cfg/wireguard/%s/wg0.conf" % self.serverid
-        self.path = Tools.text_replace(self.path)
-        Tools.dir_ensure(os.path.dirname(self.path))
-        Tools.file_write(self.path, C)
-
-    def connect_wireguard(self):
-        path = self.path
+        [Peer]
+        PublicKey = {WIREGUARD_SERVER_PUBKEY}
+        Endpoint = {WIREGUARD_ADDR}:{WIREGUARD_PORT}
+        AllowedIPs = 10.{SUBNET}.0/24
+        AllowedIPs = 172.17.0.0/16
+        PersistentKeepalive = 25
+        """
+        C2 = Tools.text_replace(C2, args=self.config_server)
+        C += C2
+        Tools.file_write(self.config_path_client, C)
+        self.disconnect()
         if MyEnv.platform() == "linux":
-            rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
-            cmd = "wg-quick up %s" % path
+            cmd = "/usr/local/bin/bash /usr/local/bin/wg-quick up %s" % self.config_path_client
             Tools.execute(cmd)
+            Tools.shell()
         else:
-            cmd = "wg-quick down %s" % path
-            Tools.execute(cmd, die=False)
-            cmd = "wg-quick up %s" % path
+            cmd = "/usr/local/bin/bash /usr/local/bin/wg-quick up %s" % self.config_path_client
             print(cmd)
             Tools.execute(cmd)
-        return self.config_local["ADDRESS"]
+
+    @property
+    def config_path_client(self):
+        path = "{DIR_BASE}/cfg/wireguard/%s/wg0.conf" % self.serverid
+        path = Tools.text_replace(path)
+        Tools.dir_ensure(os.path.dirname(path))
+        return path
+
+    def disconnect(self):
+        """
+        stop the client
+        """
+        if MyEnv.platform() == "linux":
+            rc, out, err = Tools.execute("ip link del dev wg0", showout=False, die=False)
+        else:
+            cmd = "/usr/local/bin/bash /usr/local/bin/wg-quick down %s" % self.config_path_client
+            Tools.execute(cmd, die=False, showout=True)
+
+    @property
+    def config_file_server(self):
+        path = "/etc/wireguard/wg0.conf"
+        return str(self.executor.file_read(path))
+
+    @property
+    def config_file_client(self):
+        path = "{DIR_BASE}/cfg/wireguard/%s/wg0.conf" % self.serverid
+        path = Tools.text_replace(path)
+
+        return str(Tools.file_read(path).decode())
+
+    def __repr__(self):
+        out = ""
+        out += self.config_file_server
+        out += "\n\n====================================CLIENT======================\n"
+        out += self.config_file_client
+        return out
+
+    __str__ = __repr__
 
 
 MyEnv.init()
+MyEnv.registry = Registry()
