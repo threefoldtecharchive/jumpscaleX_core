@@ -38,8 +38,10 @@ class OpenRestyServer(j.baseclasses.factory_data):
         self.path_web = j.core.tools.text_replace("{DIR_BASE}/var/web/%s" % self.name)
         self.path_cfg_dir = j.core.tools.text_replace("{DIR_BASE}/cfg/nginx/%s" % self.name)
         self.path_cfg = "%s/nginx.conf" % self.path_cfg_dir
+        self.logs_dir = j.core.tools.text_replace("{DIR_BASE}/var/logs/openresty/%s" % self.name)
         j.sal.fs.createDir(self.path_web)
         j.sal.fs.createDir(self.path_cfg_dir)
+        j.sal.fs.createDir(self.logs_dir)
         # clean old websites config
         self.cleanup()
         self.executor = "tmux"  # only tmux for now
@@ -50,7 +52,7 @@ class OpenRestyServer(j.baseclasses.factory_data):
 
     def configure(self):
         self.install()
-        configtext = j.tools.jinja2.file_render(path=f"{self._dirpath}/templates/nginx.conf", obj=self)
+        configtext = j.tools.jinja2.file_render(path=f"{self._dirpath}/templates/nginx.conf", obj=self, logs_dir=self.logs_dir, write=False)
         j.sal.fs.writeFile(self.path_cfg, configtext)
 
     def get_from_port(self, port, domain=None, ssl=None):
