@@ -25,6 +25,7 @@ class LoggerClient(j.baseclasses.object_config):
 
     def _init(self, **kwargs):
         self._redis_client = None
+        self._apps_set_key = "apps:logs"
         self._log_dir = j.core.tools.text_replace("{DIR_VAR}/logs/")
         j.sal.fs.createDir(self._log_dir)
 
@@ -436,11 +437,5 @@ class LoggerClient(j.baseclasses.object_config):
             print(j.core.tools.log2str(item))
 
     def get_app_names(self):
-        app_names = set()
-        keys = self.db.keys("logs:*")
-        for key in keys:
-            try:
-                app_names.add(key.decode().split(":")[1])
-            except IndexError:
-                continue
-        return app_names
+        apps = self.db.smembers(self._apps_set_key)
+        return [app.decode() for app in apps]
