@@ -188,7 +188,7 @@ class builder_method:
             except Exception:
                 res = None
                 print("There is an error happened during building")
-
+            j.application.reset_context()
             return res
 
         return wrapper_action
