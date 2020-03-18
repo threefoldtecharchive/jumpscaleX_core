@@ -226,7 +226,6 @@ class ThreeBotPackage(ThreeBotPackageBase):
         return self._chatflows
 
     def chatflows_load(self):
-        self._chatflows = j.baseclasses.dict()
         self.load()
         path = self._changed("chatflows", die=False)
         if path:
