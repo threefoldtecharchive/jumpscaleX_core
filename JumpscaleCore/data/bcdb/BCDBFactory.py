@@ -54,17 +54,17 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
                 return True
             if j.core.db.get("threebot.starting"):
                 print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
-                res = j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60)
+                res = j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=240)
                 if res:
                     # the server did answer, lets now wait till the threebot.starting is gone
-                    timeout = j.data.time.epoch + 15
+                    timeout = j.data.time.epoch + 60
                     while j.data.time.epoch < timeout:
                         if j.core.db.get("threebot.starting") is None:
                             self.__master = False
                             return (
                                 self.__master
                             )  # means we found a threebot who was started properly, can now start as slave
-                raise j.exceptions.Base("threebotserver is starting but did not succeed within 60+15 sec")
+                raise j.exceptions.Base("threebotserver is starting but did not succeed within 5 min")
 
             if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
                 print("** AM WORKING AS SLAVE, BCDB WILL BE READONLY **")

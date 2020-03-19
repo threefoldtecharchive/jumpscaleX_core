@@ -777,8 +777,10 @@ def connect(test=False, disconnect=False):
 )
 @click.option("-w", "--web", is_flag=True, help="if set will install the wikis")
 @click.option("-p", "--pull", is_flag=True, help="pull the docker image")
-def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
+def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
     """
+
+    jsx threebot -d
 
     :param delete:  delete the containers you want to use in this test
     :param name:    base name, if more than 1 container then will name+nr e.g. 3bot2  the first one always is 3bot
@@ -809,6 +811,9 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         will be executed in each container
         :return:
         """
+        import pudb
+
+        pu.db
         j.clients.threebot.explorer_addr_set("{explorer_addr}")
         docker_name = "{docker_name}"
         j.tools.threebot.init_my_threebot(
@@ -857,27 +862,25 @@ def threebot_test(delete=False, count=1, net="172.0.0.0/16", web=False, pull=Fal
         if i == 0:
             # the explorer 3bot
             explorer_addr = docker.config.ipaddr
-            docker.sshexec("apt-get install influxdb")
-            docker.jsxexec("sc = j.servers.startupcmd.get('influxd', cmd_start='influxd'); sc.start()")
-            time.sleep(2)
-            docker.jsxexec("j.clients.influxdb.get('default', database='capacity').create_database('capacity')")
+            # TODO: why did we do influxdb?
+            # docker.sshexec("apt-get install influxdb")
+            # docker.jsxexec("sc = j.servers.startupcmd.get('influxd', cmd_start='influxd'); sc.start()")
+            # time.sleep(2)
+            # docker.jsxexec("j.clients.influxdb.get('default', database='capacity').create_database('capacity')")
             start_cmd = "j.servers.threebot.local_start_explorer(background=True)"
             docker.jsxexec(start_cmd)
             docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
-            docker.sshexec(
-                "source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_threebot/scripts/explorer.py stress-explorer --count 10"
-            )
+            # docker.sshexec(
+            #     "source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_threebot/scripts/explorer.py stress-explorer --count 10"
+            # )
         else:
             start_cmd = "j.servers.threebot.start(background=True)"
-            if web:
-                start_cmd = "source /sandbox/env.sh; kosmos -p '{0}' ;jsx wiki-load".format(start_cmd)
-                docker.sshexec(start_cmd)
-            else:
-                docker.jsxexec(start_cmd)
+            docker.jsxexec(start_cmd)
             docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
-        if i == count - 1:
-            # on last docker do the test
-            docker.jsxexec(test, docker_name=docker.name, count=count)
+        # TODO: to check test works
+        # if i == count - 1:
+        #     # on last docker do the test
+        #     docker.jsxexec(test, docker_name=docker.name, count=count)
 
 
 @click.command(name="modules-install")
@@ -1022,6 +1025,6 @@ if __name__ == "__main__":
         cli.add_command(threebotbuilder, "threebotbuilder")
         cli.add_command(threebot_flist, "threebot-flist")
         cli.add_command(containers)
-        cli.add_command(threebot_test, "threebot-test")
+        cli.add_command(threebot, "threebot")
 
     cli()
