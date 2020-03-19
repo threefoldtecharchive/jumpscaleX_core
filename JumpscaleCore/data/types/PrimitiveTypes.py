@@ -308,7 +308,11 @@ class Integer(TypeBaseClass):
             if value == "":
                 value = 0
             else:
-                value = int(value)
+                try:
+                    value = int(value)
+                except ValueError:
+                    pass
+
         if not self.check(value):
             raise j.exceptions.Value("Invalid value for integer: '%s'" % value)
         return value
