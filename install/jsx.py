@@ -811,10 +811,7 @@ def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
         will be executed in each container
         :return:
         """
-        import pudb
-
-        pu.db
-        j.clients.threebot.explorer_addr_set("{explorer_addr}")
+        # j.clients.threebot.explorer_addr_set("{explorer_addr}")
         docker_name = "{docker_name}"
         j.tools.threebot.init_my_threebot(
             name="{docker_name}.3bot", email="{docker_name}@threefold.io", interactive=False
@@ -861,19 +858,21 @@ def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
         docker = docker_jumpscale_get(name=name1, delete=delete)
         if i == 0:
             # the explorer 3bot
-            explorer_addr = docker.config.ipaddr
+            # explorer_addr = docker.config.ipaddr
             # TODO: why did we do influxdb?
             # docker.sshexec("apt-get install influxdb")
             # docker.jsxexec("sc = j.servers.startupcmd.get('influxd', cmd_start='influxd'); sc.start()")
             # time.sleep(2)
             # docker.jsxexec("j.clients.influxdb.get('default', database='capacity').create_database('capacity')")
-            start_cmd = "j.servers.threebot.local_start_explorer(background=True)"
+            start_cmd = "j.servers.threebot.start(background=True,with_shell=True)"
             docker.jsxexec(start_cmd)
-            docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
+            # NO LONGER USED BECAUSE EXPLORER IS CENTRAL
+            # docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
             # docker.sshexec(
             #     "source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_threebot/scripts/explorer.py stress-explorer --count 10"
             # )
         else:
+            raise RuntimeError("not implemented")
             start_cmd = "j.servers.threebot.start(background=True)"
             docker.jsxexec(start_cmd)
             docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
