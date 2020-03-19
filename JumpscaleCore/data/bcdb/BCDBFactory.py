@@ -7,6 +7,7 @@ from .BCDBModelBase import BCDBModelBase
 import os
 import sys
 from .connectors.redis.RedisServer import RedisServer
+import time
 
 TESTTOOLS = j.baseclasses.testtools
 
@@ -56,6 +57,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
                 print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
                 res = j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=240)
                 if res:
+                    time.sleep(10)  # lets wait 10 more sec
                     # the server did answer, lets now wait till the threebot.starting is gone
                     timeout = j.data.time.epoch + 60
                     while j.data.time.epoch < timeout:
