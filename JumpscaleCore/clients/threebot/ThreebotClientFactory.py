@@ -58,33 +58,25 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         :param name:
         :return:
         """
-        # path to get a threebot client needs to be as fast as possible
+        explorer = j.clients.explorer.default
+
+        record = None
         if isinstance(threebot, int):
-            assert threebot > 0
-            if threebot in self._id2client_cache:
-                return self._id2client_cache[threebot]
-            res = self.find(tid=threebot)
-            tid = threebot
-            tname = None
+            record = explorer.users.get(threebot)
         elif isinstance(threebot, str):
-            res = [self.get(name=threebot)]
-            tid = None
-            tname = threebot
+            users = explorer.users.list(name=threebot)
+            if users:
+                record = users[0]
         else:
             raise j.exceptions.Input("threebot needs to be int or str")
 
-        if len(res) > 1:
-            j.shell()
-            raise j.exceptions.JSBUG("should never be more than 1")
-        # reload, make sure newly added packages exist
-        j.tools.threebot.explorer.reload()
-        r = j.tools.threebot.explorer.threebot_record_get(tid=tid, name=tname)
-        assert r.id > 0
-        r2 = j.baseclasses.object_config_collection_testtools.get(
-            self, name=r.name, tid=r.id, host=r.ipaddr, pubkey=r.pubkey
+        if not record:
+            j.exceptions.NotFound(f"threebot {threebot} not found")
+
+        assert record.id > 0
+        return j.baseclasses.object_config_collection_testtools.get(
+            self, name=record.name, tid=record.id, host=record.ipaddr, pubkey=record.pubkey
         )
-        self._id2client_cache[r2.tid] = r2
-        return self._id2client_cache[r2.tid]
 
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/487")
     def test(self):
