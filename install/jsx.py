@@ -797,12 +797,12 @@ def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
 
     def docker_jumpscale_get(name=name, delete=True):
         docker = e._DF.container_get(name=name, delete=delete)
-        if docker.config.done_get("jumpscale") is False:
+        if docker.config.done_get("threebot") is False:
             # means we have not installed jumpscale yet
             docker.install()
             docker.install_jumpscale(threebot=True)
             # now we can access it over 172.0.0.x normally
-            docker.config.done_set("jumpscale")
+            docker.config.done_set("threebot")
             docker.config.save()
         return docker
 
@@ -856,30 +856,30 @@ def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
         else:
             name1 = name
         docker = docker_jumpscale_get(name=name1, delete=delete)
-        if i == 0:
-            # the explorer 3bot
-            # explorer_addr = docker.config.ipaddr
-            # TODO: why did we do influxdb?
-            # docker.sshexec("apt-get install influxdb")
-            # docker.jsxexec("sc = j.servers.startupcmd.get('influxd', cmd_start='influxd'); sc.start()")
-            # time.sleep(2)
-            # docker.jsxexec("j.clients.influxdb.get('default', database='capacity').create_database('capacity')")
-            start_cmd = "j.servers.threebot.start(background=True,with_shell=True)"
-            docker.jsxexec(start_cmd)
-            # NO LONGER USED BECAUSE EXPLORER IS CENTRAL
-            # docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
-            # docker.sshexec(
-            #     "source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_threebot/scripts/explorer.py stress-explorer --count 10"
-            # )
-        else:
-            raise RuntimeError("not implemented")
-            start_cmd = "j.servers.threebot.start(background=True)"
-            docker.jsxexec(start_cmd)
-            docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
+        # if i == 0:
+        #     # the explorer 3bot
+        #     # explorer_addr = docker.config.ipaddr
+        #     # TODO: why did we do influxdb?
+        #     # docker.sshexec("apt-get install influxdb")
+        #     # docker.jsxexec("sc = j.servers.startupcmd.get('influxd', cmd_start='influxd'); sc.start()")
+        #     # time.sleep(2)
+        #     # docker.jsxexec("j.clients.influxdb.get('default', database='capacity').create_database('capacity')")
+        #     # NO LONGER USED BECAUSE EXPLORER IS CENTRAL
+        #     # docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
+        #     # docker.sshexec(
+        #     #     "source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_threebot/scripts/explorer.py stress-explorer --count 10"
+        #     # )
+        # else:
+        #     raise RuntimeError("not implemented")
+        #     start_cmd = "j.servers.threebot.start(background=True)"
+        #     docker.jsxexec(start_cmd)
+        #     docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
         # TODO: to check test works
         # if i == count - 1:
         #     # on last docker do the test
         #     docker.jsxexec(test, docker_name=docker.name, count=count)
+
+    docker.sshshell()
 
 
 @click.command(name="modules-install")
