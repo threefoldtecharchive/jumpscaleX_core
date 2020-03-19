@@ -426,9 +426,6 @@ class Percent(Float):
         else:
             raise j.exceptions.Value("could not convert input to percent, input was:%s" % value)
 
-        if value > 1 and value < 101:
-            value = value / 100
-        assert value < 1.00001
         return value
 
     def toHR(self, v):

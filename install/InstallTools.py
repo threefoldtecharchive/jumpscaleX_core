@@ -345,7 +345,8 @@ class RedisTools:
                 Tools.execute("apt-get install redis-server -y")
                 if not Tools.cmd_installed("redis-server"):
                     raise Tools.exceptions.Base("Cannot find redis-server even after install")
-                Tools.execute("systemctl stop redis", die=False, showout=False)
+                Tools.execute("redis-cli -s {DIR_TMP}/redis.sock shutdown", die=False, showout=False)
+                Tools.execute("redis-cli -s %s shutdown" % RedisTools.unix_socket_path, die=False, showout=False)
                 Tools.execute("redis-cli shutdown", die=False, showout=False)
 
             else:
@@ -2573,9 +2574,6 @@ class Tools:
     @staticmethod
     def _check_interactive():
         if not MyEnv.interactive:
-            import pudb
-
-            pu.db
             raise Tools.exceptions.Base("Cannot use console in a non interactive mode.")
 
     @staticmethod

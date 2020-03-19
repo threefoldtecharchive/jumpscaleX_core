@@ -146,6 +146,8 @@ class Syncer(j.baseclasses.object_config):
         print("kosmos -p")
         print("do (if your client is called master): \n    j.clients.ssh.master.syncer.sync()")
         self._monitor.start()
+        # print("monitor started, are now waiting for changes")
+        # time.sleep(3600)
 
     def handler(self, event, action="copy"):
         # self._log_info("......................new event........................")

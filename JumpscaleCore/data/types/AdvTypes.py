@@ -385,7 +385,7 @@ class Numeric(TypeBaseObjFactory):
         else:
             return val
 
-    def bytes2str(self, bindata, roundnr=8, comma=True):
+    def bytes2str(self, bindata, comma=True):
         if len(bindata) == 0:
             bindata = self.default_get()
 

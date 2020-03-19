@@ -10,10 +10,10 @@ Content-Type: application/json
 Content-Length: 376
 Date: Thu, 12 Sep 2019 16:01:13 GMT
 
-{"blog_name": "xmon", "blog_title": "xmonader weblog", "blog_description": "let there be posts", "author_name": "ahmed", "author_email": "ahmed@there.com", "author_image_filename": "", "base_url": "", "url": "", "posts_dir": j.core.tools.text_replace("{DIR_BASE}/code/gitlab/xmonader/sample-blog-jsx/posts", "github_username": "xmonader", "github_repo_url": "git@gitlab.com:xmonader/sample-blog-jsx.git")}3BOTDEVEL:3bot:~:
+{"blog_name": "xmon", "blog_title": "xmonader weblog", "blog_description": "let there be posts", "author_name": "ahmed", "author_email": "ahmed@there.com", "author_image_filename": "", "base_url": "", "url": "", "posts_dir": j.core.tools.text_replace("{DIR_BASE}/code/gitlab/xmonader/sample-blog-jsx/posts", "github_username": "xmonader", "github_repo_url": "git@gitlab.com:xmonader/sample-blog-jsx.git")}3BOTDEVEL:3bot:~: 
 
 ~> curl -XPOST localhost:8903/actors/blog/get_tags
-["python", "lame", "markdown", "java"]3BOTDEVEL:3bot:~:
+["python", "lame", "markdown", "java"]3BOTDEVEL:3bot:~: 
 
 """
 
@@ -22,7 +22,7 @@ def enable_cors(fn):
     def _enable_cors(*args, **kwargs):
         # set CORS headers
         response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, OPTIONS, DELETE"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, OPTIONS"
         response.headers[
             "Access-Control-Allow-Headers"
         ] = "Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token"
