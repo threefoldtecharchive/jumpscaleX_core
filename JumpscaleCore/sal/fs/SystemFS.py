@@ -136,13 +136,13 @@ class SystemFS(JSBASE, TESTTOOLS):
             if head and (not self.exists(head) or not self.isDir(head)):
                 self.createDir(head, unlink=False)
             if tail:
-                os.mkdir(newdir)
-                # try:
-                #     os.mkdir(newdir)
-                #     # print "mkdir:%s"%newdir
-                # except OSError as e:
-                #     if e.errno != os.errno.EEXIST:  # File exists
-                #         raise
+                # os.mkdir(newdir)
+                try:
+                    os.mkdir(newdir)
+                    # print "mkdir:%s"%newdir
+                except OSError as e:
+                    if e.errno != os.errno.EEXIST:  # File exists
+                        raise
 
             self._log_debug("Created the directory [%s]" % j.core.text.toStr(newdir))
 
