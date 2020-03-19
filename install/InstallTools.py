@@ -4479,7 +4479,6 @@ class JumpscaleInstaller:
 
         if threebot:
             Tools.execute_jumpscale("j.servers.threebot.start(background=True)")
-            Tools.execute_jumpscale("j.servers.threebot.reset()")
 
     def remove_old_parts(self):
         tofind = ["DigitalMe", "Jumpscale", "ZeroRobot"]
