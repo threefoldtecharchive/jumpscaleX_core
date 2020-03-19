@@ -4283,7 +4283,7 @@ class OSXInstaller:
         OSXInstaller.brew_install()
         if not Tools.cmd_installed("curl") or not Tools.cmd_installed("unzip") or not Tools.cmd_installed("rsync"):
             script = """
-            brew install curl unzip rsync tmux
+            brew install curl unzip rsync tmux libssh2
             """
             # graphviz #TODO: need to be put elsewhere but not in baseinstaller
             Tools.execute(script, replace=True)
