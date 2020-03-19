@@ -4140,6 +4140,7 @@ class BaseInstaller:
                 "stellar-sdk",
                 "packet-python>=1.37",
                 "gevent-websocket",
+                "base58",
             ],
             # level 1: in the middle
             1: [
