@@ -4932,7 +4932,6 @@ class DockerConfig:
         self.portrange_txt = "-p %s:80" % http
         self.portrange_txt += " -p %s:9001/udp" % udp
         self.portrange_txt += " -p %s:22" % ssh
-        self.portrange_txt += " -p 7020:443"
 
     @property
     def ports_txt(self):
