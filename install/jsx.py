@@ -904,6 +904,13 @@ def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
         #     # on last docker do the test
         #     docker.jsxexec(test, docker_name=docker.name, count=count)
 
+    try:
+        import webbrowser
+
+        webbrowser.open_new_tab("http://localhost:7020")
+    except:
+        pass
+
     _container_shell()
 
 
