@@ -528,7 +528,7 @@ class BCDB(j.baseclasses.object):
         assert self.storclient
         # self._redis_reset()
 
-        for model in self.models.values():
+        for model in self._models.values():
             model.index.destroy()
 
         if self.storclient.type != "SDB":
