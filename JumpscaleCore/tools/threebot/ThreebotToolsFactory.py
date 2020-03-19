@@ -64,6 +64,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
         :return:
         """
         j.application.interactive = interactive
+        explorer = j.clients.explorer.default
 
         nacl = j.data.nacl.get(name=myidentity)
         assert nacl.verify_key_hex
@@ -74,7 +75,11 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
             else:
                 raise j.exceptions.Input("please specify name")
 
-        r = j.tools.threebot.explorer.threebot_record_get(name=name, die=False)
+        try:
+            r = explorer.users.get(name=name)
+        except j.exceptions.NotFound:
+            r = None
+
         if not r:
             # means record did not exist yet
             if not email:
