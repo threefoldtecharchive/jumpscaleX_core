@@ -112,10 +112,8 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
             user.email = email
             user.description = description
             user.pubkey = nacl.verify_key_hex
-            resp = explorer.users.register(user)
-            tid = resp["id"]
-
-            r = explorer.users.get(name=name)
+            tid = explorer.users.register(user)
+            r = explorer.users.get(tid=tid)
 
         payload = j.data.nacl.payload_build(r.id, r.name, r.email, r.ipaddr, r.description, nacl.verify_key_hex)
         payload = j.data.hash.bin2hex(payload).decode()
