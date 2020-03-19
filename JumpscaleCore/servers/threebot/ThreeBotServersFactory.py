@@ -166,12 +166,11 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
         """
         if not background:
             self._threebot_starting()
-        # packages = [
-        #     f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/phonebook",
-        #     f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/directory",
-        #     f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/workloads",
-        # ]
-        packages = [f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/planbee"]
+        packages = [
+            f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/phonebook",
+            f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/directory",
+            f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/workloads",
+        ]
         return self.start(background=background, packages=packages, reload=reload, with_shell=with_shell)
 
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/560")
