@@ -242,14 +242,18 @@ def container_install(
 
     docker.install_jumpscale(branch=branch, redo=reinstall, pull=pull, threebot=threebot)  # , prebuilt=prebuilt)
 
+    _container_shell()
 
-def container_get(name="3bot", delete=False, jumpscale=False, mount=True):
+
+def container_get(name="3bot", delete=False, jumpscale=False, install=False, mount=True):
     IT.MyEnv.sshagent.key_default_name
     e.DF.init()
     docker = e.DF.container_get(name=name, image="threefoldtech/3bot2", start=True, delete=delete, mount=mount)
     if jumpscale:
-        # needs to stay because will make sure that the config is done properly in relation to your shared folders from the host
-        docker.install_jumpscale()
+        installer = IT.JumpscaleInstaller()
+        installer.repos_get(pull=False)
+        if install:
+            docker.install_jumpscale()
     return docker
 
 
@@ -677,7 +681,7 @@ def container_kosmos(name="3bot"):
     :param name: name of container if not the default =  3bot
     :return:
     """
-    docker = container_get(name=name)
+    docker = container_get(name=name, jumpscale=True, install=False)
     os.execv(
         shutil.which("ssh"),
         [
@@ -688,7 +692,7 @@ def container_kosmos(name="3bot"):
             "-oStrictHostKeyChecking=no",
             "-p",
             str(docker.config.sshport),
-            "source /sandbox/env.sh;kosmos -p",
+            "source /sandbox/env.sh;kosmos 'print()';clear;echo WELCOME TO YOUR INTERACTIVE KOSMOS SESSION;kosmos -p",
         ],
     )
 
@@ -716,9 +720,30 @@ def container_shell(name="3bot", delete=False, nomount=False):
     :param name: name of container if not the default
     :return:
     """
+    _container_shell(name=name, delete=delete, nomount=nomount)
+
+
+def _container_shell(name="3bot", delete=False, nomount=False):
+    """
+    open a  shell to the container for 3bot
+    :param name: name of container if not the default
+    :return:
+    """
     mount = not nomount
-    docker = container_get(name=name, delete=delete, mount=mount)
-    docker.sshshell()
+    docker = container_get(name=name, delete=delete, mount=mount, install=False, jumpscale=True)
+    msg = """
+    WELCOME TO YOUR INSTALLED LOCAL KOSMOS ENVIRONMENT (THREEBOT)
+    
+    some tips to get started
+
+    - kosmos  : to get shell into the environment    
+    - tmux a  : to see the parallel processes running (ctrl b 1 to e.g. go to panel 1)
+    - htop    : to see which processes are taking how much resource
+    - to to your local machine and use browser to go to: http://localhost:7020/ will show webinterface
+    
+    """
+    docker.sshshell("source /sandbox/env.sh;cd /sandbox/;clear;echo '%s';bash" % IT.Tools.text_replace(msg))
+    # docker.sshshell()
 
 
 @click.command()
@@ -879,7 +904,7 @@ def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
         #     # on last docker do the test
         #     docker.jsxexec(test, docker_name=docker.name, count=count)
 
-    docker.sshshell()
+    _container_shell()
 
 
 @click.command(name="modules-install")

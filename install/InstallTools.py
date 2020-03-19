@@ -4651,18 +4651,21 @@ class DockerFactory:
             docker.config.save()
             DockerFactory._dockers.pop(name)
 
+        docker = None
         if name in DockerFactory._dockers:
             docker = DockerFactory._dockers[name]
-            if mount:
-                if docker.info["Mounts"] == []:
-                    # means the current docker has not been mounted
-                    docker.stop()
-                    docker.start(mount_dirs=True)
-            else:
-                if docker.info["Mounts"] != []:
-                    docker.stop()
-                    docker.start(mount_dirs=False)
-        else:
+            if docker.container_running:
+                if mount:
+                    if docker.info["Mounts"] == []:
+                        # means the current docker has not been mounted
+                        docker.stop()
+                        docker.start(mount_dirs=True)
+                else:
+                    if docker.info["Mounts"] != []:
+                        docker.stop()
+                        docker.start(mount_dirs=False)
+                return docker
+        if not docker:
             docker = DockerContainer(name=name, image=image, delete=delete, ports=ports)
         if start:
             docker.start(mount_dirs=mount)
@@ -5209,15 +5212,16 @@ class DockerContainer:
             cmd2 = "docker exec -t %s bash -c '%s'" % (self.name, cmd)
         Tools.execute(cmd2, interactive=interactive, showout=True, replace=False, asfile=True, die=die)
 
-    def sshshell(self):
+    def sshshell(self, cmd=None):
         if not self.isrunning():
             self.start()
         sshport = str(self.config.sshport)
         home = MyEnv.config["DIR_HOME"]
         Tools.execute('ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"' % (home, sshport))
-        os.execv(
-            shutil.which("ssh"), ["ssh", "root@localhost", "-A", "-t", "-oStrictHostKeyChecking=no", "-p", sshport]
-        )
+        cmds = ["ssh", "root@localhost", "-A", "-t", "-oStrictHostKeyChecking=no", "-p", sshport]
+        if cmd:
+            cmds.append(cmd)
+        os.execv(shutil.which("ssh"), cmds)
 
     def shell(self):
         if not self.isrunning():
