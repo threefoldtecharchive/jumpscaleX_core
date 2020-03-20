@@ -3398,11 +3398,11 @@ class MyEnv_:
         # Set codedir
         Tools.dir_ensure("{}/code".format(self._basedir_get()))
         self.config_file_path = os.path.join(configdir, "jumpscale_config.toml")
-        if DockerFactory.indocker():
-            # this is important it means if we push a container we keep the state file
-            self.state_file_path = os.path.join(self._homedir_get(), ".jumpscale_done.toml")
-        else:
-            self.state_file_path = os.path.join(configdir, "jumpscale_done.toml")
+        # if DockerFactory.indocker():
+        #     # this is important it means if we push a container we keep the state file
+        #     self.state_file_path = os.path.join(self._homedir_get(), ".jumpscale_done.toml")
+        # else:
+        self.state_file_path = os.path.join(configdir, "jumpscale_done.toml")
 
         if Tools.exists(self.config_file_path):
             self._config_load()
@@ -4203,6 +4203,15 @@ class BaseInstaller:
         # Tools.execute(C, die=True)
 
     @staticmethod
+    def code_copy_script_get():
+        CMD = """
+        cd /
+        rsync -rav --exclude '__pycache__' --exclude '.git' --exclude '.idea' --exclude '*.pyc' /sandbox/code/github/threefoldtech/ /sandbox/code_org/
+         
+        """
+        return Tools.text_strip(CMD, replace=False)
+
+    @staticmethod
     def cleanup_script_get():
         # ncdu is a nice tool to find disk usage
         CMD = """
@@ -4215,26 +4224,29 @@ class BaseInstaller:
         mkdir -p /root/.cache
         rm -rf /bd_build
         rm -rf /var/log
-        rm -f /sandbox/cfg/bcdb_config
         mkdir -p /var/log
         rm -rf /var/mail
         mkdir -p /var/mail
         rm -rf /tmp
         mkdir -p /tmp
         chmod -R 0777 /tmp
-        rm -rf /var/backups
         apt-get clean -y
         apt-get autoremove --purge -y
         rm -rf /sandbox/openresty/pod
         rm -rf /sandbox/openresty/site
         rm -rf /sandbox/var
+        rm -f /sandbox/cfg/bcdb_config   
+        rm -f /sandbox/cfg/schema_meta.msgpack     
+        rm -rf /sandbox/cfg/bcdb
+        rm -rf /sandbox/cfg/keys
+        rm -rf /sandbox/cfg/nginx/default_openresty_threebot/static/weblibs
         rm -rf /sandbox/root
         rm -rf /sandbox/code
         rm -rf /sandbox/myhost
         mkdir -p /sandbox/var
         touch /tmp/cleanedup
-        rm -rf /var/lib/apt/lists
         rm -rf /usr/src
+        rm -rf /var/lib/apt/lists
         mkdir -p /var/lib/apt/lists
         find . | grep -E "(__pycache__|\.bak$|\.pyc$|\.pyo$|\.rustup|\.cargo)" | xargs rm -rf
         rm -rf  /sandbox/go
@@ -4242,6 +4254,8 @@ class BaseInstaller:
         sed -i -r 's/^SECRET =.*/SECRET =/' /sandbox/cfg/jumpscale_config.toml
         rm -f /sandbox/cfg/keys/default/*
         rm -rf /var/cache/luarocks
+
+        
         """
         return Tools.text_strip(CMD, replace=False)
 
@@ -5121,10 +5135,14 @@ class DockerContainer:
             if mount_dirs:
                 MOUNTS = """
                 -v {DIR_CODE}:/sandbox/code \
-                -v {DIR_BASE}/var/containers/shared:/sandbox/myhost \
-                -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
-                -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
+                -v {DIR_BASE}/var/containers/shared:/sandbox/myhost
                 """
+            else:
+                MOUNTS = """
+                -v {DIR_BASE}/var/containers/shared:/sandbox/myhost
+                """
+                # -v {DIR_BASE}/var/containers/{NAME}/cfg:/sandbox/cfg \
+                # -v {DIR_BASE}/var/containers/{NAME}/var:/sandbox/var \
 
             args["MOUNTS"] = Tools.text_replace(MOUNTS.strip(), args=args)
             args["CMD"] = self.config.startupcmd
@@ -5376,7 +5394,7 @@ class DockerContainer:
         Tools.execute("docker export %s -o %s" % (self.name, path))
         return path
 
-    def save(self, clean_runtime=False, clean_devel=False, image=None):
+    def save(self, clean_runtime=False, clean_devel=False, image=None, code_copy=False):
         """
 
         :param clean_runtime: remove all files not needed for a runtime environment
@@ -5409,6 +5427,8 @@ class DockerContainer:
 
         if clean_runtime or clean_devel:
             self.stop()
+            if code_copy:
+                clean(self, BaseInstaller.code_copy_script_get())
             self.start(mount_dirs=False)
 
             clean(self, BaseInstaller.cleanup_script_get())

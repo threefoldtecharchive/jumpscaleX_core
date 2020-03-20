@@ -185,6 +185,7 @@ def configure(
 # @click.option("--develop", is_flag=True, help="will use the development docker image to start from.")
 @click.option("--ports", help="Expose extra ports repeat for multiple eg. 80:80", multiple=True)
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
+@click.option("-nm", "--nomount", is_flag=True, help="will not mount the underlying code directory if set")
 def container_install(
     name="3bot",
     scratch=False,
@@ -196,6 +197,7 @@ def container_install(
     no_interactive=False,
     pull=False,
     develop=False,
+    nomount=False,
     ports=None,
 ):
     """
@@ -209,6 +211,8 @@ def container_install(
     IT = load_install_tools(branch=branch, reset=True)
     # IT.MyEnv.interactive = True
     # interactive = not no_interactive
+
+    mount = not nomount
 
     _configure(no_interactive=no_interactive)
 
@@ -230,7 +234,7 @@ def container_install(
             src, dst = port.split(":", 1)
             portmap[src] = dst
 
-    docker = e.DF.container_get(name=name, delete=delete, image=image, ports=portmap)
+    docker = e.DF.container_get(name=name, delete=delete, image=image, ports=portmap, mount=mount)
 
     docker.install()
 
@@ -601,7 +605,10 @@ def threebotbuilder(push=False, base=False, cont=False, noclean=False):
         docker.save(image=dest)
         docker.delete()
     else:
-        docker.save(clean_runtime=True, image=dest + "dev")
+        import pudb
+
+        pu.db
+        docker.save(clean_runtime=True, image=dest + "dev", code_copy=True)
         if push:
             docker.push()
 
