@@ -1569,10 +1569,11 @@ class Tools:
 
         if "'" in cmd:
             Tools.file_write("/tmp/script_exec_interactive.sh", cmd)
+            Tools._cmd_check(cmd)
             cmd = "sh -ex /tmp/script_exec_interactive.sh"
         args = cmd.split(" ")
         args[0] = shutil.which(args[0])
-        returncode = os.spawnlp(os.P_WAIT, args[0], *args[1:])
+        returncode = os.spawnlp(os.P_WAIT, args[0], *args)
         cmd = " ".join(args)
         if returncode == 127:
             raise Tools.exceptions.Base("{}: command not found\n".format(cmd))
@@ -2431,8 +2432,6 @@ class Tools:
     @staticmethod
     def execute_jumpscale(cmd, die=True):
         Tools.execute(cmd, jumpscale=True, die=die)
-        Tools.shell()
-        w
 
     @staticmethod
     def _script_process_jumpscale(script, env={}, debug=False):
@@ -4630,14 +4629,20 @@ class JumpscaleInstaller:
             Tools.execute_jumpscale("j.servers.threebot.start(background=True)")
             timestop = time.time() + 240.0
             ok = False
-            while time.time() < timestop:
+            while ok == False and time.time() < timestop:
                 if MyEnv.db.get("threebot.started") == b"1":
-                    Tools.execute("j.servers.threebot.default.stop()", die=False, jumpscale=True)
-                    time.sleep(3)
-                    Tools.execute_jumpscale("j.servers.threebot.default.stop()", die=True, jumpscale=True)
                     ok = True
+                    break
+                else:
+                    print(" - threebot starting")
+                    time.sleep(1)
+
+            print(" - Threebot stopped")
             if not ok:
                 raise Tools.exceptions.Base("could not stop threebot after install")
+            Tools.execute("j.servers.threebot.default.stop()", die=False, jumpscale=True, showout=False)
+            time.sleep(2)
+            Tools.execute("j.servers.threebot.default.stop()", die=True, jumpscale=True)
 
     def remove_old_parts(self):
         tofind = ["DigitalMe", "Jumpscale", "ZeroRobot"]
@@ -5573,7 +5578,7 @@ class DockerContainer:
             self.execute(BaseInstaller.code_copy_script_get())
 
         if clean:
-            if self.config.done_get("mount"):
+            if self.mount_code_exists:
                 self._log("save first, before start again without mounting")
                 self._update()
                 self._internal_image_save()
@@ -5720,8 +5725,11 @@ class DockerContainer:
         if threebot:
             self.executor.state_set("STATE_THREEBOT")
 
-    def install_jupyter(self):
-        self.execute("j.servers.notebook.install()", jumpscale=True)
+    def install_jupyter(self, force=False):
+        if force:
+            self.execute("j.servers.notebook.install(force=True)", jumpscale=True)
+        else:
+            self.execute("j.servers.notebook.install()", jumpscale=True)
 
     def __repr__(self):
         return "# CONTAINER: \n %s" % Tools._data_serializer_safe(self.config.__dict__)
