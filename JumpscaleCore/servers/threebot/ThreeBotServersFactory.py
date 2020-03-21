@@ -253,14 +253,14 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
         docker = self._docker_jumpscale_get(name="3bot", delete=delete)
         if j.core.myenv.platform() != "linux":
             # only need to use wireguard if on osx or windows (windows not implemented)
-            docker.sshexec("source /sandbox/env.sh;jsx wireguard")  # get the wireguard started
+            docker.execute("source /sandbox/env.sh;jsx wireguard")  # get the wireguard started
             docker.wireguard.connect()
 
         self._log_info("check we can reach the container")
         assert j.sal.nettools.waitConnectionTest(docker.config.ipaddr, 22, timeout=30)
 
         self._log_info("start the threebot server")
-        docker.sshexec("source /sandbox/env.sh;kosmos 'j.servers.threebot.start(packages_add=True)'")
+        docker.execute("source /sandbox/env.sh;kosmos 'j.servers.threebot.start(packages_add=True)'")
         j.shell()
 
     def docker_environment_multi(self):

@@ -234,17 +234,14 @@ def container_install(
             src, dst = port.split(":", 1)
             portmap[src] = dst
 
-    docker = e.DF.container_get(name=name, delete=delete, image=image, ports=portmap, mount=mount)
+    docker = e.DF.container_get(name=name, delete=delete, image=image, ports=portmap)
 
-    docker.install()
-
-    # if prebuilt:
-    #     docker.sandbox_sync()
+    docker.start(mount=True, ssh=True)
 
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False, branch=branch)
 
-    docker.install_jumpscale(branch=branch, redo=reinstall, pull=pull, threebot=threebot)  # , prebuilt=prebuilt)
+    docker.install_jumpscale(branch=branch, force=reinstall, pull=pull, threebot=threebot)
 
     _container_shell()
 
@@ -376,25 +373,28 @@ def container_export(name="3bot", path=None, version=None):
 @click.command(name="container-save")
 @click.option("-n", "--name", default="3bot", help="name of container")
 @click.option(
-    "--dest", default="threefoldtech/3bot2", help="name of container image on docker hub, default threefoldtech/3bot2"
+    "-i",
+    "--image",
+    default="threefoldtech/3bot2",
+    help="name of container image on docker hub, default threefoldtech/3bot2",
 )
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
-@click.option("-c", "--clean", is_flag=True, help="clean runtime")
-@click.option("-cd", "--cleandevel", is_flag=True, help="clean development env")
-def container_save(name="3bot", dest=None, push=False, clean=False, cleandevel=False):
+@click.option("-cc", "--code_copy", is_flag=True, help="don't copy the code when doing a save")
+@click.option("-dev", "--development", is_flag=True, help="clean development env")
+@click.option("-c", "--clean", is_flag=True, help="clean env")
+def container_save(name="3bot", code_copy=False, push=False, image=None, development=False, clean=False):
     """
     starts from an export, if not there will do the export first
     :param name:
     :param path:
     :return:
     """
-    if not dest:
-        dest = "threefoldtech/3bot2"
+    if not image:
+        image = "threefoldtech/3bot2"
     _configure()
     docker = container_get(name=name)
-    if cleandevel:
-        clean = True
-    docker.save(image=dest, clean_runtime=clean, clean_devel=cleandevel)
+    # docker.install_jumpscale(branch=branch, force=reinstall, pull=pull, threebot=threebot)
+    docker.save(image=image, development=development, code_copy=code_copy, clean=clean)
     if push:
         docker.push()
 
@@ -596,7 +596,7 @@ def threebotbuilder(push=False, base=False, cont=False, noclean=False):
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False)
 
-    docker.install_jumpscale(branch=DEFAULT_BRANCH, redo=delete, pull=False, threebot=True)
+    docker.install_jumpscale(branch=DEFAULT_BRANCH, force=delete, pull=False, threebot=True)
     docker.install_tcprouter()
 
     docker.image = dest
@@ -605,9 +605,6 @@ def threebotbuilder(push=False, base=False, cont=False, noclean=False):
         docker.save(image=dest)
         docker.delete()
     else:
-        import pudb
-
-        pu.db
         docker.save(clean_runtime=True, image=dest + "dev", code_copy=True)
         if push:
             docker.push()
@@ -749,8 +746,7 @@ def _container_shell(name="3bot", delete=False, nomount=False):
     - to to your local machine and use browser to go to: http://localhost:7020/ will show webinterface
     
     """
-    docker.sshshell("source /sandbox/env.sh;cd /sandbox/;clear;echo '%s';bash" % IT.Tools.text_replace(msg))
-    # docker.sshshell()
+    docker.shell("echo '%s';bash" % IT.Tools.text_replace(msg))
 
 
 @click.command()
@@ -892,13 +888,13 @@ def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
         #     # the explorer 3bot
         #     # explorer_addr = docker.config.ipaddr
         #     # TODO: why did we do influxdb?
-        #     # docker.sshexec("apt-get install influxdb")
+        #     # docker.execute("apt-get install influxdb")
         #     # docker.jsxexec("sc = j.servers.startupcmd.get('influxd', cmd_start='influxd'); sc.start()")
         #     # time.sleep(2)
         #     # docker.jsxexec("j.clients.influxdb.get('default', database='capacity').create_database('capacity')")
         #     # NO LONGER USED BECAUSE EXPLORER IS CENTRAL
         #     # docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
-        #     # docker.sshexec(
+        #     # docker.execute(
         #     #     "source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_threebot/scripts/explorer.py stress-explorer --count 10"
         #     # )
         # else:
