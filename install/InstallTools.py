@@ -4342,10 +4342,8 @@ class BaseInstaller:
     def cleanup_script_get():
         CMD = """
         cd /
-        rm -f /root/.ssh/authorized_keys
         rm -f /tmp/cleanedup
         rm -f /root/.jsx_history
-        rm -f /root/.ssh/*
         rm -rf /root/.cache
         mkdir -p /root/.cache
         rm -rf /bd_build
@@ -5520,8 +5518,9 @@ class DockerContainer:
         Tools.execute("docker export %s -o %s" % (self.name, path))
         return path
 
-    def _internal_image_save(self, stop=False):
-        image = f"internal_{self.name}"
+    def _internal_image_save(self, stop=False, image=None):
+        if not image:
+            image = f"internal_{self.name}"
         cmd = "docker rmi -f %s" % image
         Tools.execute(cmd, die=False, showout=False)
         cmd = "docker rmi -f %s:latest" % image
@@ -5577,6 +5576,11 @@ class DockerContainer:
             self._internal_image_save()
 
         self.config.save()
+
+        # remove authorized keys
+        self.dexec("rm -f /root/.ssh/*")
+        self._internal_image_save(image=image)
+
         self.stop()
 
     def push(self, image=None):
@@ -5700,9 +5704,6 @@ class DockerContainer:
             self.executor.state_set("STATE_THREEBOT")
 
     def install_jupyter(self):
-        import pudb
-
-        pu.db
         self.execute("j.servers.notebook.install()", jumpscale=True)
 
     def __repr__(self):
