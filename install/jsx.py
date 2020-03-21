@@ -603,9 +603,6 @@ def threebotbuilder(push=False, base=False, cont=False, noclean=False, developme
 
     docker.image = dest
 
-    import pudb
-
-    pu.db
     if noclean:
         docker.save(image=dest)
         docker.delete()

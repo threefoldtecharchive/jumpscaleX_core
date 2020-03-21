@@ -5289,7 +5289,6 @@ class DockerContainer:
             PORTRANGE = ""
 
         if DockerFactory.image_name_exists(f"internal_{self.config.name}:") != False:
-            Tools.shell()
             image = f"internal_{self.config.name}"
 
         run_cmd = f"docker run --name={self.config.name} --hostname={self.config.name} -d {PORTRANGE} \
@@ -5585,12 +5584,12 @@ class DockerContainer:
                 self.stop()
                 self.start(mount=False, update=False)
 
-            self.execute(BaseInstaller.cleanup_script_get())
+            self.execute(BaseInstaller.cleanup_script_get(), die=False)
 
             if development:
                 export_import("%s_dev" % image)
 
-            self.execute(BaseInstaller.cleanup_script_developmentenv_get())
+            self.execute(BaseInstaller.cleanup_script_developmentenv_get(), die=False)
 
             export_import(image=image)
         else:
