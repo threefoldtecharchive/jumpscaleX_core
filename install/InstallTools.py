@@ -1324,6 +1324,8 @@ class Tools:
 
     @staticmethod
     def _cmd_check(command, original_command=None):
+        if not command:
+            return
         if command.find("{DIR_") != -1:
             if original_command:
                 print("COMMAND WAS:\n%s" % command)
@@ -2427,8 +2429,10 @@ class Tools:
         return envars
 
     @staticmethod
-    def execute_jumpscale(cmd):
-        Tools.execute(cmd, jumpscale=True)
+    def execute_jumpscale(cmd, die=True):
+        Tools.execute(cmd, jumpscale=True, die=die)
+        Tools.shell()
+        w
 
     @staticmethod
     def _script_process_jumpscale(script, env={}, debug=False):
@@ -2552,7 +2556,10 @@ class Tools:
         if replace:
             cmd = Tools.text_replace(cmd, args=env, executor=executor)
 
-        return cmd
+        Tools._cmd_check(cmd)
+        Tools._cmd_check(script)
+
+        return dest, cmd
 
     @staticmethod
     def execute(
@@ -2596,7 +2603,7 @@ class Tools:
         if sudo_remove:
             command = command.replace("sudo ", "")
 
-        command = Tools._cmd_process(
+        tempfile, command = Tools._cmd_process(
             command,
             python=python,
             jumpscale=jumpscale,
@@ -2611,7 +2618,7 @@ class Tools:
         if die_if_args_left and "{" in command:
             raise Tools.exceptions.Input("Found { in %s" % command)
 
-        return Tools._execute(
+        r = Tools._execute(
             command,
             async_=async_,
             original_command=original_command,
@@ -2627,6 +2634,9 @@ class Tools:
             die=die,
             errormsg=errormsg,
         )
+        if tempfile:
+            Tools.delete(tempfile)
+        return r
 
     @staticmethod
     def system_cleanup():
@@ -4849,25 +4859,30 @@ class DockerFactory:
         names = Tools.execute("docker images --format='{{.Repository}}:{{.Tag}}'", showout=False, replace=False)[
             1
         ].split("\n")
-        names = [i.strip("\"'") for i in names if i.strip() != ""]
-        return names
+        res = []
+        for name in names:
+            name = name.strip()
+            name = name.strip("\"'")
+            name = name.strip("\"'")
+            if name == "":
+                continue
+            if ":" in name:
+                name = name.split(":", 1)[0]
+            res.append(name)
+
+        return res
 
     @staticmethod
     def image_name_exists(name):
         if ":" in name:
             name = name.split(":")[0]
-        for name_find in DockerFactory.image_names():
-            if name_find.find(name) == 0:
-                return name_find
-        return False
+        return name in DockerFactory.image_names()
 
     @staticmethod
     def image_remove(name):
-
-        for name_find in DockerFactory.image_names():
-            if name_find.find(name) != -1:
-                Tools.log("remove container:%s" % name_find)
-                Tools.execute("docker rmi -f %s" % name)
+        if name in DockerFactory.image_names():
+            Tools.log("remove container:%s" % name)
+            Tools.execute("docker rmi -f %s" % name)
 
     @staticmethod
     def reset(images=True):
@@ -5268,7 +5283,8 @@ class DockerContainer:
         else:
             PORTRANGE = ""
 
-        if DockerFactory.image_name_exists(f"internal_{self.config.name}") != False:
+        if DockerFactory.image_name_exists(f"internal_{self.config.name}:") != False:
+            Tools.shell()
             image = f"internal_{self.config.name}"
 
         run_cmd = f"docker run --name={self.config.name} --hostname={self.config.name} -d {PORTRANGE} \
@@ -5434,8 +5450,9 @@ class DockerContainer:
             self.stop()
             Tools.execute("docker rm -f %s" % self.name, die=False, showout=False)
         Tools.delete(self._path)
-        if DockerFactory.image_name_exists(f"internal_{self.config.name}") != False:
+        if DockerFactory.image_name_exists(f"internal_{self.config.name}"):
             image = f"internal_{self.config.name}"
+            Tools.execute("docker rmi -f %s" % image, die=True, showout=False)
             Tools.shell()
         self.config.done_reset()
 
@@ -6447,7 +6464,7 @@ class ExecutorSSH:
         if not args:
             args = {}
 
-        cmd = Tools._cmd_process(
+        tempfile, cmd = Tools._cmd_process(
             cmd=cmd,
             python=python,
             jumpscale=jumpscale,
@@ -6459,11 +6476,13 @@ class ExecutorSSH:
             executor=self,
         )
 
+        Tools._cmd_check(cmd)
+
         if interactive:
             cmd2 = "ssh -oStrictHostKeyChecking=no -t root@%s -A -p %s '%s'" % (self.addr, self.port, cmd)
         else:
             cmd2 = "ssh -oStrictHostKeyChecking=no root@%s -A -p %s '%s'" % (self.addr, self.port, cmd)
-        return Tools._execute(
+        r = Tools._execute(
             cmd2,
             interactive=interactive,
             showout=showout,
@@ -6472,6 +6491,9 @@ class ExecutorSSH:
             die=die,
             original_command=original_command,
         )
+        if tempfile:
+            Tools.delete(tempfile)
+        return r
 
     def upload(
         self,
