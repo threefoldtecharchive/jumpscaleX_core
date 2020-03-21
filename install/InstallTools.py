@@ -1410,6 +1410,10 @@ class Tools:
         # else:
         #     mswindows = subprocess.mswindows
 
+        if "'" in command:
+            Tools.file_write("/tmp/script_exec_process.sh", command)
+            command = "sh -ex /tmp/script_exec_process.sh"
+
         if env is None or env == {}:
             env = os.environ
 
@@ -2565,8 +2569,10 @@ class Tools:
             command += "%s()" % method_name
             jumpscale = True
 
-        if args is None:
-            env = {}
+        env = {}
+        if args:
+            env.update(args)
+
         if not retry:
             retry = 1
         if not original_command:
@@ -4312,7 +4318,7 @@ class BaseInstaller:
         cd /        
         rm -rf /sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot
         rm -rf  /sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/alerta
-        rsync -rav --exclude '__pycache__' --exclude '.git' --exclude '.idea' --exclude '*.pyc' /sandbox/code/github/threefoldtech/ /sandbox/code_org/
+        [ -d "/sandbox/code/github" ] && rsync -rav --exclude '__pycache__' --exclude '.git' --exclude '.idea' --exclude '*.pyc' /sandbox/code/github/threefoldtech/ /sandbox/code_org/
          
         """
         return Tools.text_strip(CMD, replace=False)
@@ -4355,7 +4361,9 @@ class BaseInstaller:
         #non neccesary files
         find . | grep -E "(__pycache__|\.bak$|\.pyc$|\.pyo$|\.rustup|\.cargo)" | xargs rm -rf
         #IMPORTANT remove secret from config file
-        sed -i -r 's/^SECRET =.*/SECRET =/' /sandbox/cfg/jumpscale_config.toml
+        if test -f "/sandbox/cfg/jumpscale_config.toml"; then
+            sed -i -r 's/^SECRET =.*/SECRET =/' /sandbox/cfg/jumpscale_config.toml
+        fi 
         """
         return Tools.text_strip(CMD, replace=False)
 
@@ -4679,12 +4687,6 @@ class JumpscaleInstaller:
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, PATH, DEST = d
 
-            script = """
-            set -e
-            rm -f {DEST}
-            mkdir -p {DESTPARENT}
-            ln -s {GITPATH}/{PATH} {DEST}
-            """
             (host, type, account, repo, url2, branch2, GITPATH, RPATH, port) = Tools.code_giturl_parse(url=GITURL)
             srcpath = "%s/%s" % (GITPATH, PATH)
             if not Tools.exists(srcpath):
@@ -4692,14 +4694,13 @@ class JumpscaleInstaller:
 
             DESTPARENT = os.path.dirname(DEST.rstrip())
 
-            script = Tools.text_replace(script, args=locals())
-            script = Tools.text_replace(script, args=locals())  # NEED TO DO THIS 2x
-            if "{" in script:
-                script = Tools.text_replace(script, args=locals())
-                Tools.shell()
-                raise Tools.exceptions.BUG("replace did not work")
-            Tools.log(Tools.text_replace("link {GITPATH}/{PATH} {DEST}", args=locals()), data=script)
-            Tools.execute(script, args=locals(), die_if_args_left=True)
+            script = f"""
+            set -e
+            rm -f {DEST}
+            mkdir -p {DESTPARENT}
+            ln -s {GITPATH}/{PATH} {DEST}
+            """
+            Tools.execute(script, die_if_args_left=True)
 
     def cmds_link(self, generate_js=True):
         _, _, _, _, loc = Tools._code_location_get(repo="jumpscaleX_core/", account="threefoldtech")
@@ -4776,16 +4777,16 @@ class DockerFactory:
                     if docker.info["Mounts"] == []:
                         # means the current docker has not been mounted
                         docker.stop()
-                        docker.start(mount_dirs=True)
+                        docker.start(moun=True)
                 else:
                     if docker.info["Mounts"] != []:
                         docker.stop()
-                        docker.start(mount_dirs=False)
+                        docker.start(mount=False)
                 return docker
         if not docker:
             docker = DockerContainer(name=name, image=image, delete=delete, ports=ports)
         if start:
-            docker.start(mount_dirs=mount)
+            docker.start(mount=mount)
         return docker
 
     @staticmethod
@@ -5125,6 +5126,14 @@ class DockerContainer:
             return True
 
     @property
+    def mount_code_exists(self):
+        m = self.info["Mounts"]
+        for item in m:
+            if item["Destination"] == "/sandbox/code":
+                return True
+        return False
+
+    @property
     def container_exists_in_docker(self):
         return self.name in DockerFactory.containers_names()
 
@@ -5193,18 +5202,13 @@ class DockerContainer:
 
         if self.isrunning():
             if mount == True:
-                if self.config.done_get("mount") == False:
+                if not self.mount_code_exists:
                     assert image == None  # because we are creating a new image, so cannot overrule
                     image = self._internal_image_save(stop=True)
-                    self.config.done_set("mount")  # mount was required
             elif mount == False:
-                if self.config.done_get("mount") == True:
+                if self.mount_code_exists:
                     assert image == None
                     image = self._internal_image_save(stop=True)
-                    self.config.done_reset("mount")  # mount was not required so needs to unset
-            else:
-                # mount is None situation
-                mount = self.config.done_get("mount")  # check what the state was, this becomes now reality
 
         if not image:
             image = self.config.image
@@ -5237,6 +5241,9 @@ class DockerContainer:
         else:
             PORTRANGE = ""
 
+        if DockerFactory.image_name_exists(f"internal_{self.config.name}") != False:
+            image = f"internal_{self.config.name}"
+
         run_cmd = f"docker run --name={self.config.name} --hostname={self.config.name} -d {PORTRANGE} \
         --device=/dev/net/tun --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --cap-add=DAC_OVERRIDE \
         --cap-add=DAC_READ_SEARCH {MOUNTS} {image} {self.config.startupcmd}"
@@ -5249,6 +5256,15 @@ class DockerContainer:
         Tools.execute(run_cmd2, interactive=False)
 
         self._update(update=update, ssh=ssh)
+
+        if not mount:
+            # mount the code in the container to the right location to let jumpscale work
+            assert self.mount_code_exists == False
+            if self.executor.exists("/sandbox/code/github/threefoldtech/jumpscaleX_core"):
+                raise Tools.exceptions("cannot use code in container, /sandbox/code/github/... exists")
+            self.dexec("rm -rf /sandbox/code")
+            self.dexec("mkdir -p /sandbox/code/github")
+            self.dexec("ln -s /sandbox/code_org /sandbox/code/github/threefoldtech")
 
     def _update(self, update=False, ssh=False):
 
@@ -5276,7 +5292,6 @@ class DockerContainer:
             self.config.done_set("ssh")
 
         if update or not self.executor.state_exists("install_base"):
-            self.dexec("rm -f /root/.STATE_BASEINSTALL")
             print(" - Upgrade ubuntu")
             self.dexec("add-apt-repository ppa:wireguard/wireguard -y")
             self.dexec("apt-get update")
@@ -5291,8 +5306,7 @@ class DockerContainer:
             self.dexec("apt-get install software-properties-common -y")
             self.dexec("apt-get install wireguard -y")
             self.dexec("apt-get install locales -y")
-            self.dexec("mkdir -p /root/state")
-            self.executor.state_set("install_base")
+            self.executor.state_set("install_base", save=True)
 
         cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % self.name
         rc, out, err = Tools.execute(cmd, replace=False, showout=False, die=False)
@@ -5393,6 +5407,9 @@ class DockerContainer:
             self.stop()
             Tools.execute("docker rm -f %s" % self.name, die=False, showout=False)
         Tools.delete(self._path)
+        if DockerFactory.image_name_exists(f"internal_{self.config.name}") != False:
+            image = f"internal_{self.config.name}"
+            Tools.shell()
         self.config.done_reset()
 
     @property
@@ -5474,7 +5491,7 @@ class DockerContainer:
         Tools.execute("docker export %s -o %s" % (self.name, path))
         return path
 
-    def _internal_image_save(self, stop=True):
+    def _internal_image_save(self, stop=False):
         image = f"internal_{self.name}"
         cmd = "docker rmi -f %s" % image
         Tools.execute(cmd, die=False, showout=False)
@@ -5485,9 +5502,6 @@ class DockerContainer:
         if stop:
             self.stop()
         return image
-
-    def _internal_image_check(self):
-        Tools.shell()
 
     def _log(self, msg):
         Tools.log(msg)
@@ -5513,21 +5527,25 @@ class DockerContainer:
             self._log("copy code")
             self.execute(BaseInstaller.code_copy_script_get())
 
-        if self.config.done_get("mount"):
-            self._log("save first, before start again without mounting")
-            self.save_internal()
-            self.stop()
-            self.start(mount=False)
-            Tools.shell()  # lets verify
-
         if clean:
+            if self.config.done_get("mount"):
+                self._log("save first, before start again without mounting")
+                self._update()
+                self._internal_image_save()
+                self.stop()
+                self.start(mount=False, update=False)
+
             self.execute(BaseInstaller.cleanup_script_get())
 
             if development:
                 export_import("%s_dev" % image)
-                self.execute(BaseInstaller.cleanup_script_developmentenv_get())
 
-        export_import(image=image)
+            self.execute(BaseInstaller.cleanup_script_developmentenv_get())
+
+            export_import(image=image)
+        else:
+            self._update()
+            self._internal_image_save()
 
         self.config.save()
 
@@ -6248,7 +6266,7 @@ class ExecutorSSH:
 
     def state_set(self, key, val=None, save=True):
         key = Tools.text_strip_to_ascii_dense(key)
-        if key not in self.state or self.state[key] != val:
+        if save or key not in self.state or self.state[key] != val:
             self.state[key] = val
             self.save()
 

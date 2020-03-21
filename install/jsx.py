@@ -236,7 +236,7 @@ def container_install(
 
     docker = e.DF.container_get(name=name, delete=delete, image=image, ports=portmap)
 
-    docker.start(mount=True, ssh=True)
+    docker.start(mount=mount, ssh=True)
 
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False, branch=branch)
