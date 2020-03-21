@@ -4363,7 +4363,8 @@ class BaseInstaller:
         rm -rf /tmp
         mkdir -p /tmp
         chmod -R 0777 /tmp        
-        rm -rf /var/cache/luarocks        
+        rm -rf /var/cache/luarocks   
+        apt remove nodejs -y     
         apt-get clean -y
         apt-get autoremove --purge -y
         rm -rf /sandbox/openresty/pod
@@ -4377,11 +4378,15 @@ class BaseInstaller:
         rm -rf /sandbox/cfg/nginx/default_openresty_threebot/static/weblibs
         rm -rf /sandbox/root
         rm -rf /usr/src
+        #remove nodejs things
+        find / | grep -E "(yarn|node_modules)" | xargs rm -rf 2>&1 > /dev/null
+        rm -rf /usr/local/share/jupyter/lab/staging
+        rm -f /sandbox/bin/openresty.old
         #remove apt cache
         rm -rf /var/lib/apt/lists
         mkdir -p /var/lib/apt/lists
         #non neccesary files
-        find . | grep -E "(__pycache__|\.bak$|\.pyc$|\.pyo$|\.rustup|\.cargo)" | xargs rm -rf
+        find / | grep -E "(__pycache__|\.bak$|\.pyc$|\.pyo$|\.rustup|\.cargo)" | xargs rm -rf 2>&1 > /dev/null
         #IMPORTANT remove secret from config file
         if test -f "/sandbox/cfg/jumpscale_config.toml"; then
             sed -i -r 's/^SECRET =.*/SECRET =/' /sandbox/cfg/jumpscale_config.toml
@@ -4412,6 +4417,8 @@ class BaseInstaller:
         rm -rf /var/lib/apt/lists
         mkdir -p /var/lib/apt/lists
         # rm -rf /sandbox/nodejs
+        #remove libgcc
+        rm -rf /usr/lib/gcc        
         
         """
         return Tools.text_strip(CMD, replace=False)
@@ -4816,7 +4823,7 @@ class DockerFactory:
                     if docker.info["Mounts"] == []:
                         # means the current docker has not been mounted
                         docker.stop()
-                        docker.start(moun=True)
+                        docker.start(mount=True)
                 else:
                     if docker.info["Mounts"] != []:
                         docker.stop()
@@ -5152,6 +5159,29 @@ class DockerContainer:
         self._wireguard = None
         self._executor = None
 
+    def done_get(self, name):
+        name = name.strip().lower()
+        path = "/root/state/%s" % name
+        try:
+            self.dexec("cat %s" % path)
+        except:
+            return False
+        return True
+
+    def done_set(self, name):
+        name = name.strip().lower()
+        path = "/root/state/%s" % name
+        self.dexec("touch %s" % path)
+
+    def done_reset(self, name=None):
+        if not name:
+            self.dexec("rm -rf /root/state")
+            self.dexec("mkdir -p /root/state")
+        else:
+            name = name.strip().lower()
+            path = "/root/state/%s" % name
+            self.dexec("rm -f %s" % path)
+
     @property
     def executor(self):
         if not self._executor:
@@ -5307,18 +5337,15 @@ class DockerContainer:
         if not mount:
             # mount the code in the container to the right location to let jumpscale work
             assert self.mount_code_exists == False
-            if self.executor.exists("/sandbox/code/github/threefoldtech/jumpscaleX_core"):
-                raise Tools.exceptions("cannot use code in container, /sandbox/code/github/... exists")
             self.dexec("rm -rf /sandbox/code")
             self.dexec("mkdir -p /sandbox/code/github")
             self.dexec("ln -s /sandbox/code_org /sandbox/code/github/threefoldtech")
 
+        self._log("start done")
+
     def _update(self, update=False, ssh=False):
 
-        # not working because container shows the port like working
-        # sshup = Tools.tcp_port_connection_test("localhost", self.config.sshport)
-
-        if ssh or update or not self.config.done_get("ssh"):
+        if True or ssh or update or not self.config.done_get("ssh"):
             print(" - Configure / Start SSH server")
 
             self.dexec("rm -rf /sandbox/cfg/keys")
@@ -5332,13 +5359,23 @@ class DockerContainer:
             if SSHKEYS.strip() != "":
                 self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS)
             Tools.execute("mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"]))
-            Tools.execute(
-                'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"'
-                % (MyEnv.config["DIR_HOME"], self.config.sshport)
-            )
-            self.config.done_set("ssh")
 
-        if update or not self.executor.state_exists("install_base"):
+            # DIDNT seem to work well, next is better
+            # cmd = 'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"' % (
+            #     MyEnv.config["DIR_HOME"],
+            #     self.config.sshport,
+            # )
+            # Tools.execute(cmd)
+
+            # is to make sure we can login without interactivity
+            cmd = "ssh-keyscan -H -p %s localhost >> %s/.ssh/known_hosts" % (
+                self.config.sshport,
+                MyEnv.config["DIR_HOME"],
+            )
+            Tools.execute(cmd)
+
+        self.dexec("mkdir -p /root/state")
+        if update or not self.done_get("install_base"):
             print(" - Upgrade ubuntu")
             self.dexec("add-apt-repository ppa:wireguard/wireguard -y")
             self.dexec("apt-get update")
@@ -5353,13 +5390,13 @@ class DockerContainer:
             self.dexec("apt-get install software-properties-common -y")
             self.dexec("apt-get install wireguard -y")
             self.dexec("apt-get install locales -y")
-            self.executor.state_set("install_base", save=True)
+            self.done_set("install_base")
 
-        cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % self.name
-        rc, out, err = Tools.execute(cmd, replace=False, showout=False, die=False)
-        if rc == 0:
-            self.config.ipaddr = out.strip()
-            self.config.save()
+        # cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % self.name
+        # rc, out, err = Tools.execute(cmd, replace=False, showout=False, die=False)
+        # if rc == 0:
+        #     self.config.ipaddr = out.strip()
+        #     self.config.save()
 
         # if DockerFactory.container_name_exists("3bot") and self.name != "3bot":
         #     d = DockerFactory.container_get("3bot")
@@ -5457,7 +5494,6 @@ class DockerContainer:
         if DockerFactory.image_name_exists(f"internal_{self.config.name}"):
             image = f"internal_{self.config.name}"
             Tools.execute("docker rmi -f %s" % image, die=True, showout=False)
-            Tools.shell()
         self.config.done_reset()
 
     @property
@@ -5565,6 +5601,8 @@ class DockerContainer:
         """
         image = self._image_clean(image)
 
+        DockerFactory.image_remove("internal_%s" % self.config.name)
+
         def export_import(image, start=True):
             image2 = image.replace("/", "_")
             image2 = self._image_clean(image2)
@@ -5586,15 +5624,24 @@ class DockerContainer:
 
             self.execute(BaseInstaller.cleanup_script_get(), die=False)
 
+            self.dexec("rm -rf /sandbox/code")
+
             if development:
                 export_import("%s_dev" % image)
+                self._internal_image_save(image="%s_dev" % image)
 
             self.execute(BaseInstaller.cleanup_script_developmentenv_get(), die=False)
 
+            DockerFactory.image_remove("internal_%s" % self.config.name)
+            DockerFactory.image_remove("internal_%s_dev" % self.config.name)
+
             export_import(image=image)
+
         else:
             self._update()
             self._internal_image_save()
+
+        DockerFactory.image_remove("internal_%s" % self.config.name)
 
         self.config.save()
 
@@ -5603,6 +5650,7 @@ class DockerContainer:
         self._internal_image_save(image=image)
 
         self.stop()
+        self.delete()
 
     def push(self, image=None):
         if not image:
