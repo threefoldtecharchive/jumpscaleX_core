@@ -336,14 +336,14 @@ class RedisTools:
                     Tools.execute("brew link redis")
                     if not Tools.cmd_installed("redis-server"):
                         raise Tools.exceptions.Base("Cannot find redis-server even after install")
-                Tools.execute("redis-cli -s {DIR_TMP}/redis.sock shutdown", die=False, showout=False)
+                Tools.execute("redis-cli -s {DIR_TEMP}/redis.sock shutdown", die=False, showout=False)
                 Tools.execute("redis-cli -s %s shutdown" % RedisTools.unix_socket_path, die=False, showout=False)
                 Tools.execute("redis-cli shutdown", die=False, showout=False)
             elif MyEnv.platform_is_linux:
                 Tools.execute("apt-get install redis-server -y")
                 if not Tools.cmd_installed("redis-server"):
                     raise Tools.exceptions.Base("Cannot find redis-server even after install")
-                Tools.execute("redis-cli -s {DIR_TMP}/redis.sock shutdown", die=False, showout=False)
+                Tools.execute("redis-cli -s {DIR_TEMP}/redis.sock shutdown", die=False, showout=False)
                 Tools.execute("redis-cli -s %s shutdown" % RedisTools.unix_socket_path, die=False, showout=False)
                 Tools.execute("redis-cli shutdown", die=False, showout=False)
 
@@ -1323,6 +1323,17 @@ class Tools:
         return methodname, code3
 
     @staticmethod
+    def _cmd_check(command, original_command=None):
+        if command.find("{DIR_") != -1:
+            if original_command:
+                print("COMMAND WAS:\n%s" % command)
+                raise Tools.exceptions.Input(
+                    "cannot execute found template var\ncmd:%s\n%s" % (original_command, command)
+                )
+            else:
+                raise Tools.exceptions.Input("cannot execute found template var\ncmd:%s" % command)
+
+    @staticmethod
     def _execute(
         command,
         async_=False,
@@ -1356,6 +1367,7 @@ class Tools:
             if original_command:
                 Tools.log("execute_original:%s" % original_command)
 
+        Tools._cmd_check(command, original_command)
         rc = 1
         counter = 0
         while rc > 0 and counter < retry:
@@ -1409,6 +1421,8 @@ class Tools:
         #     mswindows = subprocess._mswindows
         # else:
         #     mswindows = subprocess.mswindows
+
+        Tools._cmd_check(command)
 
         if "'" in command:
             Tools.file_write("/tmp/script_exec_process.sh", command)
@@ -1961,7 +1975,8 @@ class Tools:
         if executor:
             content2 = Tools.args_replace(
                 content,
-                args_list=(args, executor.config, executor.info.cfg_jumpscale),
+                # , executor.info.cfg_jumpscale
+                args_list=(args, executor.config),
                 ignorecolors=ignorecolors,
                 die_if_args_left=die_if_args_left,
                 primitives_only=primitives_only,
@@ -2514,11 +2529,11 @@ class Tools:
                 dest = "/tmp/script_%s.py" % name
 
                 if jumpscale:
-                    script = Tools._script_process_jumpscale(script=script, die=die, env=env, debug=debug)
-                    cmd = Tools.text_replace("source {DIR_BASE}/env.sh && kosmos %s" % dest, executor=executor)
+                    script = Tools._script_process_jumpscale(script=script, env=env, debug=debug)
+                    cmd = "source {DIR_BASE}/env.sh && kosmos %s" % dest
                 else:
                     script = Tools._script_process_python(script, env=env)
-                    cmd = Tools.text_replace("source {DIR_BASE}/env.sh && python3 %s" % dest, executor=executor)
+                    cmd = "source {DIR_BASE}/env.sh && python3 %s" % dest
             else:
                 dest = "/tmp/script_%s.sh" % name
                 if die:
@@ -2533,9 +2548,9 @@ class Tools:
                 executor.file_write(dest, script)
             else:
                 Tools.file_write(dest, script)
-        else:
-            if replace:
-                cmd = Tools.text_replace(cmd, args=env, executor=executor)
+
+        if replace:
+            cmd = Tools.text_replace(cmd, args=env, executor=executor)
 
         return cmd
 
@@ -4389,6 +4404,7 @@ class BaseInstaller:
         apt-get autoremove --purge -y
         rm -rf /var/lib/apt/lists
         mkdir -p /var/lib/apt/lists
+        # rm -rf /sandbox/nodejs
         
         """
         return Tools.text_strip(CMD, replace=False)
@@ -4604,6 +4620,16 @@ class JumpscaleInstaller:
 
         if threebot:
             Tools.execute_jumpscale("j.servers.threebot.start(background=True)")
+            timestop = time.time() + 240.0
+            ok = False
+            while time.time() < timestop:
+                if MyEnv.db.get("threebot.started") == b"1":
+                    Tools.execute("j.servers.threebot.default.stop()", die=False, jumpscale=True)
+                    time.sleep(3)
+                    Tools.execute_jumpscale("j.servers.threebot.default.stop()", die=True, jumpscale=True)
+                    ok = True
+            if not ok:
+                raise Tools.exceptions.Base("could not stop threebot after install")
 
     def remove_old_parts(self):
         tofind = ["DigitalMe", "Jumpscale", "ZeroRobot"]
@@ -5167,6 +5193,9 @@ class DockerContainer:
     def name(self):
         return self.config.name
 
+    def install(self, update=True, stop=False, delete=False):
+        return self.start(update=update, stop=stop, delete=delete, mount=True)
+
     def start(self, stop=False, delete=False, update=False, ssh=None, mount=None, pull=False, image=None, portmap=True):
         """
         @param mount : will mount the code dir from the host or not, default True
@@ -5362,7 +5391,7 @@ class DockerContainer:
         die=True,
         jumpscale=False,
         python=False,
-        replace=False,
+        replace=True,
         args=None,
         interactive=True,
     ):
@@ -5548,6 +5577,7 @@ class DockerContainer:
             self._internal_image_save()
 
         self.config.save()
+        self.stop()
 
     def push(self, image=None):
         if not image:
@@ -5668,6 +5698,12 @@ class DockerContainer:
         self.executor.state_set("STATE_JUMPSCALE")
         if threebot:
             self.executor.state_set("STATE_THREEBOT")
+
+    def install_jupyter(self):
+        import pudb
+
+        pu.db
+        self.execute("j.servers.notebook.install()", jumpscale=True)
 
     def __repr__(self):
         return "# CONTAINER: \n %s" % Tools._data_serializer_safe(self.config.__dict__)
@@ -6099,6 +6135,9 @@ class ExecutorSSH:
         if self.exists(self._data_path):
             data = self.file_read(self._data_path, binary=True)
             self._config = pickle.loads(data)
+            if "DIR_BASE" not in self._config:
+                self.systemenv_load()
+                self.save()
         else:
             self._config = {}
 
@@ -6184,25 +6223,25 @@ class ExecutorSSH:
             Tools.log("file write:%s" % path)
 
         assert isinstance(path, str)
-        if isinstance(content, str) and not "'" in content:
-
-            cmd = 'echo -n -e "%s" > %s' % (content, path)
-            self._execute(cmd)
-        else:
-            temp = Tools._file_path_tmp_get(ext="data")
-            Tools.file_write(temp, content)
-            self.upload(temp, path)
-            Tools.delete(temp)
-            cmd = ""
-            if mode:
-                cmd += "chmod %s %s && " % (mode, path)
-            if owner:
-                cmd += "chown %s %s && " % (owner, path)
-            if group:
-                cmd += "chgrp %s %s &&" % (group, path)
-            cmd = cmd.strip().strip("&")
-            if cmd:
-                self.execute(cmd, showout=False, interactive=False)
+        # if isinstance(content, str) and not "'" in content:
+        #
+        #     cmd = 'echo -n -e "%s" > %s' % (content, path)
+        #     self.execute(cmd)
+        # else:
+        temp = Tools._file_path_tmp_get(ext="data")
+        Tools.file_write(temp, content)
+        self.upload(temp, path)
+        Tools.delete(temp)
+        cmd = ""
+        if mode:
+            cmd += "chmod %s %s && " % (mode, path)
+        if owner:
+            cmd += "chown %s %s && " % (owner, path)
+        if group:
+            cmd += "chgrp %s %s &&" % (group, path)
+        cmd = cmd.strip().strip("&")
+        if cmd:
+            self.execute(cmd, showout=False, interactive=False)
 
         return None
 

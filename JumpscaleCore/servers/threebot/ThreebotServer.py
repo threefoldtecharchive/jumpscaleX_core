@@ -301,6 +301,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             print("*** 3BOTSERVER IS RUNNING ***")
             print("*****************************")
             j.core.db.delete("threebot.starting")  # remove the marker in redis so we know we started
+            j.core.db.set("threebot.started", ex=60 * 10, value="1")
 
             p = j.threebot.packages
             LogPane.Show = False
@@ -387,7 +388,8 @@ class ThreeBotServer(j.baseclasses.object_config):
             self._log_info("FIND THE PACKAGES ON THE FILESYSTEM")
             j.tools.threebot_packages.load()
 
-            names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta", "admin"]
+            # "alerta"
+            names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "admin"]
             for name in names:
                 name2 = f"zerobot.{name}"
                 if not j.tools.threebot_packages.exists(name=name2):

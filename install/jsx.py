@@ -573,9 +573,10 @@ def wiki_reload(name, reset=False):
 @click.command(name="threebotbuilder")
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 @click.option("-b", "--base", is_flag=True, help="build base image as well")
+@click.option("-d", "--development", is_flag=True, help="build development version")
 @click.option("-c", "--cont", is_flag=True, help="don't delete continue a previously stopped run")
 @click.option("-nc", "--noclean", is_flag=True, help="commit the build (local save), but no cleanup or push.")
-def threebotbuilder(push=False, base=False, cont=False, noclean=False):
+def threebotbuilder(push=False, base=False, cont=False, noclean=False, development=False):
     """
     create the 3bot and 3botdev images
     """
@@ -597,28 +598,27 @@ def threebotbuilder(push=False, base=False, cont=False, noclean=False):
     installer.repos_get(pull=False)
 
     docker.install_jumpscale(branch=DEFAULT_BRANCH, force=delete, pull=False, threebot=True)
-    docker.install_tcprouter()
+    docker._install_tcprouter()
+    docker.install_jupyter()
 
     docker.image = dest
 
+    import pudb
+
+    pu.db
     if noclean:
         docker.save(image=dest)
         docker.delete()
     else:
-        docker.save(clean_runtime=True, image=dest + "dev", code_copy=True)
-        if push:
-            docker.push()
+        docker.save(development=development, image=dest, code_copy=True, clean=True)
 
-        docker = e.DF.container_get(name="3bot", delete=True, image=dest + "dev")
-        docker.install(update=False)
-        # docker.execute("apt update") #just to make sure we have our apt-get metadata in the docker, not really needed though
-        docker.save(image=dest, clean_devel=True)
-        if push:
-            docker.push()
+    if push:
+        docker.push()
 
-    print(" - *OK* threebot container has been built, as image & exported")
-    print(" - if you want to test the container do 'jsx container-shell -d'")
-    print(" - if you want to push you can do 'jsx container-save -p -cd' after playing with it.")
+
+print(" - *OK* threebot container has been built, as image & exported")
+print(" - if you want to test the container do 'jsx container-shell -d'")
+print(" - if you want to push you can do 'jsx container-save -p -cd' after playing with it.")
 
 
 @click.command(name="container-start")
