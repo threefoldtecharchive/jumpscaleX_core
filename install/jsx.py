@@ -340,17 +340,17 @@ def jumpscale_code_get(branch=None, pull=False, reset=False):
 
 @click.command(name="container-import")
 @click.option("-n", "--name", default="3bot", help="name of container")
-@click.option("-i", "--image", default="threefoldtech/3bot2", help="name of image where we will import to")
+@click.option("-i", "--imagename", default="threefoldtech/3bot2", help="name of image where we will import to")
 @click.option("-p", "--path", default=None, help="image location")
 @click.option("--no-start", is_flag=True, help="container will start auto")
-def container_import(name="3bot", path=None, image="threefoldtech/3bot2", no_start=False):
+def container_import(name="3bot", path=None, imagename="threefoldtech/3bot2", no_start=False):
     """
     import container from image file, if not specified will be /tmp/3bot2.tar
     :param args:
     :return:
     """
     docker = container_get(delete=True, name=name)
-    docker.import_(path=path, name=name, image=image)
+    docker.import_(path=path, image=imagename)
     if not no_start:
         docker.start()
 
