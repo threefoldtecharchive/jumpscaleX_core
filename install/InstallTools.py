@@ -5287,6 +5287,11 @@ class DockerContainer:
                     assert image == None
                     image = self._internal_image_save(stop=True)
 
+        if self.container_exists_in_docker:
+            start_cmd = f"docker start {self.config.name}"
+            Tools.execute(start_cmd, interactive=False)
+            return
+
         if not image:
             image = self.config.image
         if ":" in image:
@@ -5307,7 +5312,9 @@ class DockerContainer:
         if mount:
             MOUNTS = f"""
             -v {DIR_CODE}:/sandbox/code \
-            -v {DIR_BASE}/var/containers/shared:/sandbox/myhost
+            -v {DIR_BASE}/var/containers/shared:/sandbox/myhost \
+            -v {DIR_BASE}/var/containers/{self.config.name}/var:/sandbox/var \
+            -v {DIR_BASE}/var/containers/{self.config.name}/cfg:/sandbox/cfg 
             """
             MOUNTS = Tools.text_strip(MOUNTS)
         else:
@@ -5470,8 +5477,6 @@ class DockerContainer:
     def stop(self):
         if self.container_running:
             Tools.execute("docker stop %s" % self.name, showout=False)
-        if self.container_exists_in_docker:
-            Tools.execute("docker rm -f %s" % self.name, die=False, showout=False)
 
     def isrunning(self):
         if self.name in DockerFactory.containers_running():
