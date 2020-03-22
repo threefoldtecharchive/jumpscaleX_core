@@ -731,9 +731,6 @@ def _container_shell(name="3bot", delete=False, nomount=False):
     :return:
     """
     mount = not nomount
-    import pudb
-
-    pu.db
     docker = container_get(name=name, delete=delete, mount=mount, install=False, jumpscale=True)
     msg = """
     WELCOME TO YOUR INSTALLED LOCAL KOSMOS ENVIRONMENT (THREEBOT)
