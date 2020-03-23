@@ -5599,7 +5599,7 @@ class DockerContainer:
     def save(self, development=False, image=None, code_copy=False, clean=False):
         """
 
-        :param clean_runtime: remove all files not needed for a runtime environment
+        :param clean: remove all files not needed for a runtime environment
         :param clean_devel: remove all files not needed for a development environment and a runtime environment
         :param image:
         :return:

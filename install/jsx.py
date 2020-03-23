@@ -460,7 +460,7 @@ def basebuilder_(dest=None, push=False, delete=True):
     docker.install(update=True, stop=delete)
     cmd = "apt install python3-brotli python3-blosc cython3 cmake -y"
     docker.dexec(cmd)
-    docker.save(image=dest, clean_runtime=True)
+    docker.save(image=dest, clean=True)
     if push:
         docker.push()
         if delete:
