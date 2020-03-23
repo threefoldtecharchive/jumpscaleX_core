@@ -152,7 +152,7 @@ def get_completions(self, document, complete_event):
 
     try:
         obj = eval_code(parent, self.get_locals(), self.get_globals())
-    except AttributeError:
+    except (AttributeError, NameError):
         return
     if obj:
         if isinstance(obj, j.baseclasses.object):
@@ -614,7 +614,7 @@ def ptconfig(repl):
             return
         try:
             eval_code(parent, repl.get_locals(), repl.get_globals())
-        except AttributeError as e:
+        except (AttributeError, NameError) as e:
             raise ValidationError(message=str(e))
         except:
             old_validator(self, document)
