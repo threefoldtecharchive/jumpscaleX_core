@@ -126,7 +126,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
             j.sal.process.execute("cd %s;moonc ." % location.path_location)
 
         for location in self.locations_custom:
-            self.write_config(location.config)
+            self.write_config(location, content=location.config)
 
     # Helper function
     @staticmethod
