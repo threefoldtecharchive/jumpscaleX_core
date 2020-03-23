@@ -316,6 +316,11 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         # TODO:
         pass
 
+    def reset(self):
+        for child in self._children_get():
+            if child.name != "system":
+                child.destroy()
+
     def reset_connections(self):
         """
         will remove all remembered connections
