@@ -62,6 +62,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
         force_https = false (B)
 
         """
+    WITH_THREEBOTCONNECT = j.tools.threebot.with_threebotconnect
 
     def get_location_proxy(self, new_location_name):
         return self.check_location_exists(self.locations_proxy, new_location_name)
@@ -100,6 +101,8 @@ class LocationsConfiguration(j.baseclasses.object_config):
         if not content:
             template_name = location._schema.url.split(".")[-1]
             content = self.render(template_name, location)
+        if not self.WITH_THREEBOTCONNECT:
+            location.is_auth = False
         j.sal.fs.writeFile(self.path_cfg_get(location.name), content)
 
     def configure(self):
@@ -114,14 +117,17 @@ class LocationsConfiguration(j.baseclasses.object_config):
         for location in list(self.locations_static) + list(self.locations_spa):
             if not location.path_location.endswith("/"):
                 location.path_location += "/"
+
             self.write_config(location)
 
         for location in self.locations_proxy:
+
             self.write_config(location)
 
         for location in self.locations_lapis:
             if location.path_location == "":
                 location.path_location = self.path_location
+
             self.write_config(location)
             j.sal.process.execute("cd %s;moonc ." % location.path_location)
 

@@ -3699,6 +3699,9 @@ class MyEnv_:
         if not "THREEBOT_DOMAIN" in config:
             config["THREEBOT_DOMAIN"] = "3bot.testnet.grid.tf"
 
+        if not "THREEBOT_CONNECT" in config:
+            config["THREEBOT_CONNECT"] = True
+
         return config
 
     def configure(
@@ -4339,11 +4342,11 @@ class BaseInstaller:
     @staticmethod
     def code_copy_script_get():
         CMD = """
-        cd /        
+        cd /
         rm -rf /sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot
         rm -rf  /sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/alerta
         [ -d "/sandbox/code/github" ] && rsync -rav --exclude '__pycache__' --exclude '.git' --exclude '.idea' --exclude '*.pyc' /sandbox/code/github/threefoldtech/ /sandbox/code_org/
-         
+
         """
         return Tools.text_strip(CMD, replace=False)
 
@@ -4362,17 +4365,17 @@ class BaseInstaller:
         mkdir -p /var/mail
         rm -rf /tmp
         mkdir -p /tmp
-        chmod -R 0777 /tmp        
-        rm -rf /var/cache/luarocks   
-        apt remove nodejs -y     
+        chmod -R 0777 /tmp
+        rm -rf /var/cache/luarocks
+        apt remove nodejs -y
         apt-get clean -y
         apt-get autoremove --purge -y
         rm -rf /sandbox/openresty/pod
         rm -rf /sandbox/openresty/site
         rm -rf /sandbox/var
         mkdir -p /sandbox/var
-        rm -f /sandbox/cfg/bcdb_config   
-        rm -f /sandbox/cfg/schema_meta.msgpack     
+        rm -f /sandbox/cfg/bcdb_config
+        rm -f /sandbox/cfg/schema_meta.msgpack
         rm -rf /sandbox/cfg/bcdb
         rm -rf /sandbox/cfg/keys
         rm -rf /sandbox/cfg/nginx/default_openresty_threebot/static/weblibs
@@ -4390,7 +4393,7 @@ class BaseInstaller:
         #IMPORTANT remove secret from config file
         if test -f "/sandbox/cfg/jumpscale_config.toml"; then
             sed -i -r 's/^SECRET =.*/SECRET =/' /sandbox/cfg/jumpscale_config.toml
-        fi 
+        fi
         """
         return Tools.text_strip(CMD, replace=False)
 
@@ -4401,7 +4404,7 @@ class BaseInstaller:
         apt remove rustc -y
         apt remove llvm -y
         rm -rf  /sandbox/go
-        rm -rf  /sandbox/go_proj        
+        rm -rf  /sandbox/go_proj
         apt-get remove --auto-remove golang-go -y
         rm -rf /usr/lib/x86_64-linux-gnu/libLLVM-6.0.so.1
         rm -rf /usr/lib/llvm-6.0
@@ -4409,7 +4412,7 @@ class BaseInstaller:
         rm -rf /usr/lib/llvm-*.0
         rm -rf /usr/lib/llvm-*
         rm -rf /usr/lib/gcc
-        find / | grep -E "(LLVM|llvm/)" | xargs rm -rf        
+        find / | grep -E "(LLVM|llvm/)" | xargs rm -rf
         export SUDO_FORCE_REMOVE=no
         apt-mark manual wireguard-tools
         apt-mark manual sudo
@@ -4418,8 +4421,8 @@ class BaseInstaller:
         mkdir -p /var/lib/apt/lists
         # rm -rf /sandbox/nodejs
         #remove libgcc
-        rm -rf /usr/lib/gcc        
-        
+        rm -rf /usr/lib/gcc
+
         """
         return Tools.text_strip(CMD, replace=False)
 
@@ -5314,7 +5317,7 @@ class DockerContainer:
             -v {DIR_CODE}:/sandbox/code \
             -v {DIR_BASE}/var/containers/shared:/sandbox/myhost \
             -v {DIR_BASE}/var/containers/{self.config.name}/var:/sandbox/var \
-            -v {DIR_BASE}/var/containers/{self.config.name}/cfg:/sandbox/cfg 
+            -v {DIR_BASE}/var/containers/{self.config.name}/cfg:/sandbox/cfg
             """
             MOUNTS = Tools.text_strip(MOUNTS)
         else:
