@@ -7,7 +7,8 @@
 - [See installation doc](/docs/Installation)
 - Get up to speed by following these [steps](Installation/get_started.md).
 
-
+## Threebot:
+   - [deployer](3Bot/deployer.md)
 ## Help us improve Jumpscale
 
 - For feedback, or to get access to the repository on GitHub, contact us on info@threefold.tech.
