@@ -349,9 +349,10 @@ def container_import(name="3bot", path=None, imagename="threefoldtech/3bot2", no
     :param args:
     :return:
     """
-    start = not no_start
     docker = container_get(delete=True, name=name)
-    docker.import_(path=path, imagename=imagename, start=start)
+    docker.import_(path=path, image=imagename)
+    if not no_start:
+        docker.start()
 
 
 @click.command(name="container-export")
@@ -459,7 +460,7 @@ def basebuilder_(dest=None, push=False, delete=True):
     docker.install(update=True, stop=delete)
     cmd = "apt install python3-brotli python3-blosc cython3 cmake -y"
     docker.dexec(cmd)
-    docker.save(image=dest, clean_runtime=True)
+    docker.save(image=dest, clean=True)
     if push:
         docker.push()
         if delete:

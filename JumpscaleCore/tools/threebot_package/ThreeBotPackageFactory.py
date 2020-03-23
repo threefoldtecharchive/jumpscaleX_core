@@ -26,6 +26,7 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
         7:  bcdbs = (LO) !jumpscale.threebot.package.bcdb.1
         8:  description = (S)
         9:  install_kwargs = (dict)
+        10: frontend_args = (dict)
 
 
         @url = jumpscale.threebot.package.source.1
