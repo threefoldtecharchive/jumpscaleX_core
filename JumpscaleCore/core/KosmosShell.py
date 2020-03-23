@@ -12,6 +12,7 @@ from prompt_toolkit.application import get_app
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
 from prompt_toolkit.completion import Completion
+from prompt_toolkit.validation import ValidationError
 from prompt_toolkit.filters import Condition, is_done
 from prompt_toolkit.formatted_text import (
     ANSI,
@@ -149,7 +150,10 @@ def get_completions(self, document, complete_event):
     except ValueError:
         return
 
-    obj = eval_code(parent, self.get_locals(), self.get_globals())
+    try:
+        obj = eval_code(parent, self.get_locals(), self.get_globals())
+    except AttributeError:
+        return
     if obj:
         if isinstance(obj, j.baseclasses.object):
             # inspect object before getting its members
@@ -476,7 +480,8 @@ def ptconfig(repl):
 
     # Enable input validation. (Don't try to execute when the input contains
     # syntax errors.)
-    # repl.enable_input_validation = True
+    repl.enable_input_validation = True
+    repl.default_buffer.validate_while_typing = lambda: True
 
     # Use this colorscheme for the code.
     repl.use_code_colorscheme("perldoc")
@@ -600,7 +605,23 @@ def ptconfig(repl):
         j.application._in_autocomplete = False
         yield from filter_completions_on_prefix(completions, prefix)
 
+    old_validator = repl._validator.__class__.validate
+
+    def custom_validator(self, document):
+        try:
+            parent, member, prefix = get_current_line(document)
+        except ValueError:
+            return
+        try:
+            eval_code(parent, repl.get_locals(), repl.get_globals())
+        except AttributeError as e:
+            raise ValidationError(message=str(e))
+        except:
+            old_validator(self, document)
+
+
     repl._completer.__class__.get_completions = custom_get_completions
+    repl._validator.__class__.validate = custom_validator
     j.core.tools.custom_log_printer = add_logs_to_pane
 
     parent_container = get_ptpython_parent_container(repl)
