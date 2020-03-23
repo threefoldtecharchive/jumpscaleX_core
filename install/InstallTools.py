@@ -2540,9 +2540,9 @@ class Tools:
             else:
                 dest = "/tmp/script_%s.sh" % name
                 if die:
-                    cmd = "bash -ex %s" % dest
+                    cmd = "bash -e %s" % dest
                 else:
-                    cmd = "bash -x %s" % dest
+                    cmd = "bash %s" % dest
                 script = Tools._script_process_bash(script, die=die, env=env, debug=debug)
 
             if replace:
@@ -4510,11 +4510,11 @@ class UbuntuInstaller:
                 echo deb http://mirror.unix-solutions.be/ubuntu/ bionic main universe multiverse restricted >> /etc/apt/sources.list
             fi
             """
-            Tools.execute(script, interactive=True)
+            Tools.execute(script, interactive=True, die=False)
 
         script = """
         apt-get update
-        apt-get install -y mc wget python3 git tmux
+        apt-get install -y mc wget python3 git tmux telnet
         set +ex
         apt-get install python3-distutils -y
         set -ex
@@ -4914,6 +4914,8 @@ class DockerFactory:
         for image_id in names:
             if image_id:
                 Tools.execute("docker rmi -f %s" % image_id)
+
+        Tools.delete(Tools.text_replace("{DIR_BASE}/var/containers"))
 
     # @staticmethod
     # def get_container_port_binding(container_name="3obt", port="9001/udp"):

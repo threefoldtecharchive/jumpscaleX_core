@@ -69,7 +69,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
                 raise j.exceptions.Base("threebotserver is starting but did not succeed within 5 min")
 
             if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
-                print("** AM WORKING AS SLAVE, BCDB WILL BE READONLY **")
+                # print("** AM WORKING AS SLAVE, BCDB WILL BE READONLY **")
                 self.__master = False
             else:
                 self.__master = True

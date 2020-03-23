@@ -612,10 +612,9 @@ def threebotbuilder(push=False, base=False, cont=False, noclean=False, developme
     if push:
         docker.push()
 
-
-print(" - *OK* threebot container has been built, as image & exported")
-print(" - if you want to test the container do 'jsx container-shell -d'")
-print(" - if you want to push you can do 'jsx container-save -p -cd' after playing with it.")
+    print(" - *OK* threebot container has been built, as image & exported")
+    print(" - if you want to test the container do 'jsx container-shell -d'")
+    print(" - if you want to push you can do 'jsx container-save -p -cd' after playing with it.")
 
 
 @click.command(name="container-start")
@@ -731,19 +730,18 @@ def _container_shell(name="3bot", delete=False, nomount=False):
     :return:
     """
     mount = not nomount
-    import pudb
-
-    pu.db
     docker = container_get(name=name, delete=delete, mount=mount, install=False, jumpscale=True)
-    msg = """
+    httpport = docker.config.portrange * 10 + 7000
+    msg = f"""
     WELCOME TO YOUR INSTALLED LOCAL KOSMOS ENVIRONMENT (THREEBOT)
     
     some tips to get started
 
-    - kosmos  : to get shell into the environment    
+    - kosmos  : to get shell into the environment
+    - 3bot    : to start/stop a 3bot ...    
     - tmux a  : to see the parallel processes running (ctrl b 1 to e.g. go to panel 1)
     - htop    : to see which processes are taking how much resource
-    - to to your local machine and use browser to go to: http://localhost:7020/ will show webinterface
+    - go to your local machine and use browser to go to: http://localhost:{httpport}/ will show webinterface
     
     """
 
