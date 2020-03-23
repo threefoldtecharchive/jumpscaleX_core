@@ -681,6 +681,7 @@ class StartupCMD(j.baseclasses.object_config):
     @property
     def _pane(self):
         if self._pane_ is None:
+            j.servers.tmux.server
             self._pane_ = j.servers.tmux.pane_get(window=self.name, pane="main", reset=False)
         return self._pane_
 

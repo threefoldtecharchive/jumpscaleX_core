@@ -44,8 +44,6 @@ def test_export():
         j.data.bcdb.export(path=f"/tmp/bcdb_export/{export_folder_name}", encrypt=encrypt)
         assert len(farm_model.find()) == 10
         assert len(node_model.find()) == 8
-        # assert bcdb.storclient.count == 1
-        # j.data.bcdb.destroy_all()
         j.data.bcdb.import_(
             path=f"/tmp/bcdb_export/{export_folder_name}", interactive=False, reset=False, is_test_env=True
         )
@@ -55,10 +53,13 @@ def test_export():
     # Testing using ZDB storeclient
     bcdb_zdb, farm_model_zdb, node_model_zdb = load(name="zdb", schema=schema_text, schema2=schema2)
     export_import(bcdb_zdb, farm_model_zdb, node_model_zdb, export_folder_name="zdb_with_encry", encrypt=False)
+    # encryption is not implemented yet
     # export_import(bcdb_zdb, farm_model_zdb, node_model_zdb, export_folder_name="zdb_without_encry", encrypt=True)
+
     # Testing using SQl storeclient
     bcdb_sql, farm_model_sql, node_model_sql = load(name="sqlite", schema=schema_text, schema2=schema2)
     export_import(bcdb_sql, farm_model_sql, node_model_sql, export_folder_name="sql_with_encry", encrypt=False)
+    # encryption is not implemented yet
     # export_import(bcdb_sql, farm_model_sql, node_model_sql, export_folder_name="sql_without_encry", encrypt=True)
 
     j.data.bcdb._log_info("TEST DONE")
