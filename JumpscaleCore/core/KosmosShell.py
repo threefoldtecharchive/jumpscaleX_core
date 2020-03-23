@@ -56,10 +56,7 @@ def eval_code(stmts, locals_=None, globals_=None):
     except SyntaxError:
         return
 
-    try:
-        eval(code, globals_, locals_)
-    except:
-        pass
+    return eval(code, globals_, locals_)
 
 
 def sort_children_key(name):
@@ -179,7 +176,7 @@ def get_completions(self, document, complete_event):
 
 
 def get_doc_string(tbc, locals_, globals_):
-    # j = KosmosShellConfig.j
+    j = KosmosShellConfig.j
 
     obj = eval_code(tbc, locals_=locals_, globals_=globals_)
     if not obj:
@@ -544,7 +541,11 @@ def ptconfig(repl):
                 else:
                     d = get_doc_string(member, repl.get_locals(), repl.get_globals())
         except Exception as exc:
-            j.tools.logger._log_error(str(exc))
+            if hasattr(exc, "message"):
+                msg = exc.message
+            else:
+                msg = str(exc)
+            j.tools.logger._log_error(msg)
             repl.docstring_buffer.reset()
             return
 
