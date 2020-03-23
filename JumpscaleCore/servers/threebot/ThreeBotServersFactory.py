@@ -74,7 +74,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
                     return True
             return False
 
-        fallback_ssl_key_path = j.core.tools.text_replace("{DIR_BASE}/cfg/ss/resty-auto-ssl-fallback.crt")
+        fallback_ssl_key_path = j.core.tools.text_replace("{DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.crt")
         if force or need_install() or not j.sal.fs.exists(fallback_ssl_key_path):
             j.servers.openresty.install()
             j.builders.db.zdb.install()
@@ -111,7 +111,8 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
                 self.default.stop()
 
             if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) is False:
-                self.install()
+                self.install(force=False)
+                
                 client = self.default.start(background=True, packages=packages)
                 assert "." in client.package_name
             else:
@@ -135,7 +136,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
             return client
 
         else:
-            self.install()
+            self.install(force=False)
             self.default.start(background=False, packages=packages, with_shell=with_shell)
 
     # I GUESS ITS NOT USED ANY MORE, WE NEED CLEANUP THERE !!!
