@@ -4640,10 +4640,11 @@ class JumpscaleInstaller:
             timestop = time.time() + 240.0
             ok = False
             while ok == False and time.time() < timestop:
-                if MyEnv.db.get("threebot.started") == b"1":
+                try:
+                    Tools.execute_jumpscale("assert j.core.db.get('threebot.started') == b'1'")
                     ok = True
                     break
-                else:
+                except:
                     print(" - threebot starting")
                     time.sleep(1)
 
@@ -5625,6 +5626,7 @@ class DockerContainer:
             self.execute(BaseInstaller.code_copy_script_get())
 
         if clean:
+            self.execute(BaseInstaller.cleanup_script_get(), die=False)
             if self.mount_code_exists:
                 self._log("save first, before start again without mounting")
                 self._update()
@@ -5632,7 +5634,6 @@ class DockerContainer:
                 self.stop()
                 self.start(mount=False, update=False)
 
-            self.execute(BaseInstaller.cleanup_script_get(), die=False)
 
             self.dexec("rm -rf /sandbox/code")
 
@@ -5782,11 +5783,8 @@ class DockerContainer:
         if threebot:
             self.executor.state_set("STATE_THREEBOT")
 
-    def install_jupyter(self, force=False):
-        if force:
-            self.execute("j.servers.notebook.install(force=True)", jumpscale=True)
-        else:
-            self.execute("j.servers.notebook.install()", jumpscale=True)
+    def install_jupyter(self):
+        Tools.execute_jumpscale("j.servers.notebook.install()")
 
     def __repr__(self):
         return "# CONTAINER: \n %s" % Tools._data_serializer_safe(self.config.__dict__)
