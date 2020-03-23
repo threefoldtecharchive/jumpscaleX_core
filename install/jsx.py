@@ -600,7 +600,7 @@ def threebotbuilder(push=False, base=False, cont=False, noclean=False, developme
 
     docker.install_jumpscale(branch=DEFAULT_BRANCH, force=delete, pull=False, threebot=True)
     docker._install_tcprouter()
-    docker.install_jupyter(force=not cont)
+    docker.install_jupyter()
 
     docker.image = dest
 
