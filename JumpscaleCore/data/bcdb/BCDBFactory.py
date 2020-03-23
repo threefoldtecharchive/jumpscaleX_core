@@ -377,7 +377,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         j.data.schema.meta.save()
         j.sal.fs.copyFile(schema_path, "%s/schema_meta.msgpack" % path)
 
-    def import_(self, path=None, data=True, encryption=False, interactive=False, reset=True):
+    def import_(self, path=None, data=True, encryption=False, interactive=False, reset=True, is_test_env=False):
         """
         import back
 
@@ -393,6 +393,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         :param name:
         :param path:
+        :param is_test_env: used to make servers start in testing environment
         :return:
         """
 
@@ -415,8 +416,11 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
                 ):
                     return
             self.destroy_all()
-
-        self.start_servers_threebot_zdb_sonic()
+        # Validate if it is test environment or not
+        if is_test_env:
+            self.start_servers_test_zdb_sonic(reset=reset)
+        else:
+            self.start_servers_threebot_zdb_sonic(reset=reset)
 
         self._log_info(f"will import BCDB's from path: {path}")
 
@@ -432,14 +436,16 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         for path in paths:
             self._import_bcdb(path=path, data=data, encryption=encryption)
 
-        self.verify()
+        self.verify(is_test_env=is_test_env)
 
-    def verify(self, names=[]):
+    def verify(self, names=[], is_test_env=False):
         """
         kosmos 'j.data.bcdb.verify()'
+        param is_test_env: used to verify the servers start and running  in testing environment
         """
-
-        self.start_servers_threebot_zdb_sonic()
+        # Validate if it is test environment or not
+        if not is_test_env:
+            self.start_servers_threebot_zdb_sonic()
 
         if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
             raise j.exceptions.Base("Cannot import threebot is running")
