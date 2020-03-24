@@ -81,7 +81,7 @@ def jumpscale_get(die=True):
 
 # have to do like this, did not manage to call the click enabled function (don't know why)
 def _configure(
-    codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey_words=None, secret=None
+    codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey_words=None, secret=None,
 ):
     interactive = not no_interactive
     sshagent_use = not no_sshagent
@@ -186,6 +186,11 @@ def configure(
 @click.option("--ports", help="Expose extra ports repeat for multiple eg. 80:80", multiple=True)
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
 @click.option("-nm", "--nomount", is_flag=True, help="will not mount the underlying code directory if set")
+@click.option(
+    "--identity",
+    default=None,
+    help="Identity to be used for nacl should be stored under var/containers/shared/keys/{identity}/priv.key",
+)
 def container_install(
     name="3bot",
     scratch=False,
@@ -199,6 +204,7 @@ def container_install(
     develop=False,
     nomount=False,
     ports=None,
+    identity=None,
 ):
     """
     create the 3bot container and install jumpcale inside
@@ -211,6 +217,11 @@ def container_install(
     IT = load_install_tools(branch=branch, reset=True)
     # IT.MyEnv.interactive = True
     # interactive = not no_interactive
+
+    if identity:
+        identity_path = os.path.join(IT.MyEnv.config["DIR_VAR"], "containers/shared/keys", identity)
+        if not os.path.exists(identity_path):
+            raise RuntimeError("Couldn't find specified identity: {}".format(identity_path))
 
     mount = not nomount
 
@@ -241,7 +252,7 @@ def container_install(
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False, branch=branch)
 
-    docker.install_jumpscale(branch=branch, force=reinstall, pull=pull, threebot=threebot)
+    docker.install_jumpscale(branch=branch, force=reinstall, pull=pull, threebot=threebot, identity=identity)
 
     _container_shell()
 
@@ -279,8 +290,16 @@ def container_get(name="3bot", delete=False, jumpscale=False, install=False, mou
 @click.option("--clean", is_flag=True, help="cleanup all data not needed")
 @click.option("--threebot", is_flag=True, help="install required components for threebot")
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
+@click.option("-i", "--identity", default=None, help="Identity to be used for nacl")
 def install(
-    branch=None, reinstall=False, pull=False, no_interactive=False, prebuilt=False, clean=False, threebot=False
+    branch=None,
+    reinstall=False,
+    pull=False,
+    no_interactive=False,
+    prebuilt=False,
+    clean=False,
+    threebot=False,
+    identity=None,
 ):
     """
     install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.
@@ -303,7 +322,15 @@ def install(
 
     installer = IT.JumpscaleInstaller()
     assert prebuilt is False  # not supported yet
-    installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt, branch=branch, threebot=threebot)
+    installer.install(
+        sandboxed=False,
+        force=force,
+        gitpull=pull,
+        prebuilt=prebuilt,
+        branch=branch,
+        threebot=threebot,
+        identity=identity,
+    )
     if clean:
         IT.BaseInstaller.clean(development=True)
     print("Jumpscale X installed successfully")
@@ -613,10 +640,9 @@ def threebotbuilder(push=False, base=False, cont=False, noclean=False, developme
     if push:
         docker.push()
 
-
-print(" - *OK* threebot container has been built, as image & exported")
-print(" - if you want to test the container do 'jsx container-shell -d'")
-print(" - if you want to push you can do 'jsx container-save -p -cd' after playing with it.")
+    print(" - *OK* threebot container has been built, as image & exported")
+    print(" - if you want to test the container do 'jsx container-shell -d'")
+    print(" - if you want to push you can do 'jsx container-save -p -cd' after playing with it.")
 
 
 @click.command(name="container-start")
@@ -733,15 +759,17 @@ def _container_shell(name="3bot", delete=False, nomount=False):
     """
     mount = not nomount
     docker = container_get(name=name, delete=delete, mount=mount, install=False, jumpscale=True)
-    msg = """
+    httpport = docker.config.portrange * 10 + 7000
+    msg = f"""
     WELCOME TO YOUR INSTALLED LOCAL KOSMOS ENVIRONMENT (THREEBOT)
     
     some tips to get started
 
-    - kosmos  : to get shell into the environment    
+    - kosmos  : to get shell into the environment
+    - 3bot    : to start/stop a 3bot ...    
     - tmux a  : to see the parallel processes running (ctrl b 1 to e.g. go to panel 1)
     - htop    : to see which processes are taking how much resource
-    - to to your local machine and use browser to go to: http://localhost:7020/ will show webinterface
+    - go to your local machine and use browser to go to: http://localhost:{httpport}/ will show webinterface
     
     """
 

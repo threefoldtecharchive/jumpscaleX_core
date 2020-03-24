@@ -2540,9 +2540,9 @@ class Tools:
             else:
                 dest = "/tmp/script_%s.sh" % name
                 if die:
-                    cmd = "bash -ex %s" % dest
+                    cmd = "bash -e %s" % dest
                 else:
-                    cmd = "bash -x %s" % dest
+                    cmd = "bash %s" % dest
                 script = Tools._script_process_bash(script, die=die, env=env, debug=debug)
 
             if replace:
@@ -4514,11 +4514,11 @@ class UbuntuInstaller:
                 echo deb http://mirror.unix-solutions.be/ubuntu/ bionic main universe multiverse restricted >> /etc/apt/sources.list
             fi
             """
-            Tools.execute(script, interactive=True)
+            Tools.execute(script, interactive=True, die=False)
 
         script = """
         apt-get update
-        apt-get install -y mc wget python3 git tmux
+        apt-get install -y mc wget python3 git tmux telnet
         set +ex
         apt-get install python3-distutils -y
         set -ex
@@ -4601,9 +4601,14 @@ class UbuntuInstaller:
 
 
 class JumpscaleInstaller:
-    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False, branch=None, threebot=False):
+    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False, branch=None, threebot=False, identity=None):
 
         MyEnv.check_platform()
+
+        if identity:
+            MyEnv.config["IDENTITY_NAME"] = identity
+            MyEnv.config_save()
+            shutil.copytree(os.path.join(MyEnv.config["DIR_BASE"], "myhost/keys", identity), os.path.join(MyEnv.config["DIR_CFG"], "keys", "default"))
         # will check if there's already a key loaded (forwarded) will continue installation with it
         rc, _, _ = Tools.execute("ssh-add -L")
         if not rc:
@@ -4920,6 +4925,8 @@ class DockerFactory:
             if image_id:
                 Tools.execute("docker rmi -f %s" % image_id)
 
+        Tools.delete(Tools.text_replace("{DIR_BASE}/var/containers"))
+
     # @staticmethod
     # def get_container_port_binding(container_name="3obt", port="9001/udp"):
     #     ports_bindings = Tools.execute(
@@ -5101,9 +5108,11 @@ class DockerConfig:
         udp = 9001 + int(self.portrange) * 10
         ssh = 9000 + int(self.portrange) * 10
         http = 7000 + int(self.portrange) * 10
+        https = 7020 + int(self.portrange) * 10
         self.sshport = ssh
         self.portrange_txt = "-p %s-%s:8005-8009" % (a, b)
         self.portrange_txt = "-p %s:80" % http
+        self.portrange_txt += " -p %s:443" % https
         self.portrange_txt += " -p %s:9001/udp" % udp
         self.portrange_txt += " -p %s:22" % ssh
 
@@ -5693,7 +5702,7 @@ class DockerContainer:
     #     Tools.config_save(self._path + "/cfg/jumpscale_config.toml", CONFIG)
     #
 
-    def install_jumpscale(self, secret=None, privatekey=None, force=False, threebot=True, pull=False, branch=None):
+    def install_jumpscale(self, secret=None, privatekey=None, force=False, threebot=True, pull=False, branch=None, identity=None):
         redo = force  # is for jumpscale only
         if not force:
             if not self.executor.state_exists("STATE_JUMPSCALE"):
@@ -5722,6 +5731,10 @@ class DockerContainer:
         if not MyEnv.interactive:
             args_txt += " --no-interactive"
 
+        identity_arg = ""
+        if identity:
+            identity_arg = " -i {}".format(identity)
+
         dirpath = os.path.dirname(inspect.getfile(Tools))
         if dirpath.startswith(MyEnv.config["DIR_CODE"]):
             cmd = (
@@ -5731,7 +5744,7 @@ class DockerContainer:
             Tools.log("CONFIGURE THE CONTAINER", data=cmd)
             self.execute(cmd)
             self.execute("rm -f /tmp/InstallTools.py;rm -f /tmp/jsx")
-            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s"
+            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s{}".format(identity_arg)
             cmd += args_txt
         else:
             print(" - copy installer over from where I install from")
@@ -5746,8 +5759,8 @@ class DockerContainer:
                 Tools.execute(cmd)
 
                 cmd = (
-                    "cd /tmp;python3 jsx configure --sshkey %s -s;python3 jsx install -s"
-                    % MyEnv.sshagent.key_default_name
+                    "cd /tmp;python3 jsx configure --sshkey %s -s;python3 jsx install -s%s"
+                    % (MyEnv.sshagent.key_default_name, identity_arg)
                 )
                 cmd += args_txt
         print(" - Installing jumpscaleX ")

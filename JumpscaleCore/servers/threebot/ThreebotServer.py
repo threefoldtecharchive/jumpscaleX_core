@@ -384,23 +384,38 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         :return:
         """
+        def load_package(name):
+            if not j.tools.threebot_packages.exists(name=name):
+                raise j.exceptions.Input(f"Could not find package:{name}")
+            p = j.tools.threebot_packages.get(name=name)
+            p.status = "tostart"  # means we need to start
+
+        requiredpackages = ["zerobot.base", "zerobot.webinterface", "zerobot.admin"]
+        extrapackages = ["zerobot.myjobs_ui", "zerobot.packagemanager", "zerobot.oauth2"]
+        packages = j.tools.threebot_packages.find()
+
+        # check if any of the needed packages is missing
+        neededpackages = requiredpackages + extrapackages
+        for package in packages:
+            if package.name in neededpackages:
+                neededpackages.remove(package.name)
+
+        if neededpackages:
+            # some neededpackages are missing let's load
+            j.tools.threebot_packages.load()
+            packages = j.tools.threebot_packages.find()
+
+        for requiredpackage in requiredpackages:
+            load_package(requiredpackage)
         if self.state == "INIT":
             self._log_info("FIND THE PACKAGES ON THE FILESYSTEM")
-            j.tools.threebot_packages.load()
-
-            # "alerta"
-            names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "admin"]
-            for name in names:
-                name2 = f"zerobot.{name}"
-                if not j.tools.threebot_packages.exists(name=name2):
-                    raise j.exceptions.Input("Could not find package:%s" % name2)
-                p = j.tools.threebot_packages.get(name=name2)
-                p.status = "tostart"  # means we need to start
+            for extrapackage in extrapackages:
+                load_package(extrapackage)
 
             self.state = "INSTALLED"
 
         self._log_info("load all packages")
-        for package in j.tools.threebot_packages.find():
+        for package in packages:
             self._package_add(package)
 
         if "package" in j.threebot.__dict__:
