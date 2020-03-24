@@ -5642,7 +5642,7 @@ class DockerContainer:
                 self.start(mount=False, update=False)
 
 
-            self.dexec("umount /sandbox/code")
+            self.dexec("rm -rf /sandbox/code")
 
             if development:
                 export_import("%s_dev" % image)
