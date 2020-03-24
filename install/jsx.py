@@ -94,7 +94,6 @@ def _configure(
         debug_configure=debug,
         interactive=interactive,
         secret=secret,
-        identity=identity
     )
     j = jumpscale_get(die=False)
 
@@ -227,7 +226,7 @@ def container_install(
 
     mount = not nomount
 
-    _configure(no_interactive=no_interactive, identity=identity)
+    _configure(no_interactive=no_interactive)
 
 
     if scratch:
