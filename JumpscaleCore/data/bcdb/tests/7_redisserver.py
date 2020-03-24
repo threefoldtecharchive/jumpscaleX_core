@@ -7,7 +7,7 @@ import time
 """
 try redis commands to get to BCDB
 """
-skip = j.baseclasses.testtools._skip
+
 
 
 def test_redis():
