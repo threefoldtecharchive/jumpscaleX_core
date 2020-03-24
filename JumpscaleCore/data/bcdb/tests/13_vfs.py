@@ -24,9 +24,7 @@ def test_vfs():
     testname = "testvfs"
     # TODO: get bcdb test using right construct
 
-    vfs = j.data.bcdb._get_vfs()
-
-    m_wallet_test = j.data.bcdb._test_model_get(schema=SCHEMA)
+    test_zdb_bcdb, m_wallet_test = j.data.bcdb._test_model_get(bcdb_name=testname, schema=SCHEMA)
     test_case = TestCase()
     for i in range(10):
         o = m_wallet_test.new()
@@ -42,6 +40,7 @@ def test_vfs():
     r = m_wallet_test.get_by_name("myuser_8")
     assert r.addr == "something:8"
 
+    vfs = j.data.bcdb._get_vfs()
     r = vfs.get("/")
     bcdb_names = [i for i in r.list()]
 
