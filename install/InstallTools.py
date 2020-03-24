@@ -5634,14 +5634,13 @@ class DockerContainer:
             self.execute(BaseInstaller.code_copy_script_get())
 
         if clean:
+            self.execute(BaseInstaller.cleanup_script_get(), die=False)
             if self.mount_code_exists:
                 self._log("save first, before start again without mounting")
                 self._update()
                 self._internal_image_save()
                 self.stop()
                 self.start(mount=False, update=False)
-                
-            self.execute(BaseInstaller.cleanup_script_get(), die=False)
             # wait for docker to start and ssh become available
             time.sleep(10)
             self.dexec("umount /sandbox/code")
