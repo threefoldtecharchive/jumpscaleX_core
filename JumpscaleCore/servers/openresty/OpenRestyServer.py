@@ -72,12 +72,12 @@ class OpenRestyServer(j.baseclasses.factory_data):
         :return: a new or an old website instance with the same port
         :rtype: Website
         """
+        website_name = f"default_website_{port}"
 
-        for website in self.websites.find():
-            if website.port == port:
-                return website
+        if self.websites.exists(website_name):
+            return self.websites.get(website_name)
 
-        ws = self.websites.get(f"website_{port}", port=port, domain=domain)
+        ws = self.websites.get(website_name, port=port, domain=domain)
         if ssl is None:
             ws.ssl = port == 443
         else:
