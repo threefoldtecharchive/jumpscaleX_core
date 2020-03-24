@@ -61,6 +61,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
                     # the server did answer, lets now wait till the threebot.starting is gone
                     timeout = j.data.time.epoch + 60
                     while j.data.time.epoch < timeout:
+                        time.sleep(1)
                         if j.core.db.get("threebot.starting") is None:
                             self.__master = False
                             return (
