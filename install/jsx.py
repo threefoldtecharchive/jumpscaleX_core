@@ -81,7 +81,7 @@ def jumpscale_get(die=True):
 
 # have to do like this, did not manage to call the click enabled function (don't know why)
 def _configure(
-    codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey_words=None, secret=None
+    codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey_words=None, secret=None, identity=None
 ):
     interactive = not no_interactive
     sshagent_use = not no_sshagent
@@ -94,6 +94,7 @@ def _configure(
         debug_configure=debug,
         interactive=interactive,
         secret=secret,
+        identity=identity
     )
     j = jumpscale_get(die=False)
 
@@ -186,6 +187,12 @@ def configure(
 @click.option("--ports", help="Expose extra ports repeat for multiple eg. 80:80", multiple=True)
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
 @click.option("-nm", "--nomount", is_flag=True, help="will not mount the underlying code directory if set")
+@click.option(
+    "-i",
+    "--identity",
+    default=None,
+    help="Identity to be used for nacl should be stored under var/containers/shared/keys/{identity}/priv.key",
+)
 def container_install(
     name="3bot",
     scratch=False,
@@ -199,6 +206,7 @@ def container_install(
     develop=False,
     nomount=False,
     ports=None,
+    identity=None,
 ):
     """
     create the 3bot container and install jumpcale inside
@@ -212,9 +220,15 @@ def container_install(
     # IT.MyEnv.interactive = True
     # interactive = not no_interactive
 
+    if identity:
+        identity_path = os.path.join(IT.MyEnv.config["DIR_VAR"], "containers/shared/keys", identity)
+        if not os.path.exists(identity_path):
+            raise RuntimeError("Couldn't find specified identity: {}".format(identity_path))
+
     mount = not nomount
 
-    _configure(no_interactive=no_interactive)
+    _configure(no_interactive=no_interactive, identity=identity)
+
 
     if scratch:
         image = "threefoldtech/base2"
@@ -241,7 +255,7 @@ def container_install(
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False, branch=branch)
 
-    docker.install_jumpscale(branch=branch, force=reinstall, pull=pull, threebot=threebot)
+    docker.install_jumpscale(branch=branch, force=reinstall, pull=pull, threebot=threebot, identity=identity)
 
     _container_shell()
 
@@ -279,8 +293,16 @@ def container_get(name="3bot", delete=False, jumpscale=False, install=False, mou
 @click.option("--clean", is_flag=True, help="cleanup all data not needed")
 @click.option("--threebot", is_flag=True, help="install required components for threebot")
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
+@click.option("-i", "--identity", default=None, help="Identity to be used for nacl")
 def install(
-    branch=None, reinstall=False, pull=False, no_interactive=False, prebuilt=False, clean=False, threebot=False
+    branch=None,
+    reinstall=False,
+    pull=False,
+    no_interactive=False,
+    prebuilt=False,
+    clean=False,
+    threebot=False,
+    identity=None,
 ):
     """
     install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.
@@ -303,7 +325,15 @@ def install(
 
     installer = IT.JumpscaleInstaller()
     assert prebuilt is False  # not supported yet
-    installer.install(sandboxed=False, force=force, gitpull=pull, prebuilt=prebuilt, branch=branch, threebot=threebot)
+    installer.install(
+        sandboxed=False,
+        force=force,
+        gitpull=pull,
+        prebuilt=prebuilt,
+        branch=branch,
+        threebot=threebot,
+        identity=identity,
+    )
     if clean:
         IT.BaseInstaller.clean(development=True)
     print("Jumpscale X installed successfully")

@@ -4601,9 +4601,14 @@ class UbuntuInstaller:
 
 
 class JumpscaleInstaller:
-    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False, branch=None, threebot=False):
+    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False, branch=None, threebot=False, identity=None):
 
         MyEnv.check_platform()
+
+        if identity:
+            MyEnv.config["IDENTITY_NAME"] = identity
+            MyEnv.config_save()
+            shutil.copytree(os.path.join(MyEnv.config["DIR_BASE"], "myhost/keys", identity), os.path.join(MyEnv.config["DIR_CFG"], "keys", "default"))
         # will check if there's already a key loaded (forwarded) will continue installation with it
         rc, _, _ = Tools.execute("ssh-add -L")
         if not rc:
@@ -5698,7 +5703,7 @@ class DockerContainer:
     #     Tools.config_save(self._path + "/cfg/jumpscale_config.toml", CONFIG)
     #
 
-    def install_jumpscale(self, secret=None, privatekey=None, force=False, threebot=True, pull=False, branch=None):
+    def install_jumpscale(self, secret=None, privatekey=None, force=False, threebot=True, pull=False, branch=None, identity=None):
         redo = force  # is for jumpscale only
         if not force:
             if not self.executor.state_exists("STATE_JUMPSCALE"):
@@ -5727,6 +5732,10 @@ class DockerContainer:
         if not MyEnv.interactive:
             args_txt += " --no-interactive"
 
+        identity_arg = ""
+        if identity:
+            identity_arg = " -i {}".format(identity)
+
         dirpath = os.path.dirname(inspect.getfile(Tools))
         if dirpath.startswith(MyEnv.config["DIR_CODE"]):
             cmd = (
@@ -5736,7 +5745,7 @@ class DockerContainer:
             Tools.log("CONFIGURE THE CONTAINER", data=cmd)
             self.execute(cmd)
             self.execute("rm -f /tmp/InstallTools.py;rm -f /tmp/jsx")
-            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s"
+            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s{}".format(identity_arg)
             cmd += args_txt
         else:
             print(" - copy installer over from where I install from")
@@ -5751,8 +5760,8 @@ class DockerContainer:
                 Tools.execute(cmd)
 
                 cmd = (
-                    "cd /tmp;python3 jsx configure --sshkey %s -s;python3 jsx install -s"
-                    % MyEnv.sshagent.key_default_name
+                    "cd /tmp;python3 jsx configure --sshkey %s -s;python3 jsx install -s%s"
+                    % (MyEnv.sshagent.key_default_name, identity_arg)
                 )
                 cmd += args_txt
         print(" - Installing jumpscaleX ")
