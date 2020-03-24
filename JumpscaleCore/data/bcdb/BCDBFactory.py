@@ -829,10 +829,20 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         j.sal.nettools.waitConnectionTest("127.0.0.1", port=6381, timeout=15)
         return db, model
 
-    def _test_bcdb_get(self, type="sqlite", reset=False):
+    def _test_bcdb_get(self, bcdb_name=None, type="sqlite", reset=False):
         """
         ONLY USE THIS BCDB GET FOR THE TESTS
         """
+        # Setting default name for bcdb in case it is not set and we used default types
+        if not bcdb_name and type == "rdb":
+            bcdb_name = "test_rdb"
+        elif not bcdb_name and type == "zdb":
+            bcdb_name = "test_zdb"
+        elif not bcdb_name and type == "sqlite":
+            bcdb_name = "test_sqlite"
+        else:
+            bcdb_name = bcdb_name
+
         if not j.clients.zdb.exists("testserver"):
             reset = True
         if reset or not j.sal.nettools.tcpPortConnectionTest("localhost", 9901):
@@ -841,16 +851,16 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         if type == "rdb":
             j.core.db
             storclient = j.clients.rdb.client_get(bcdbname="test_rdb")
-            bcdb = self.get(name="test_rdb", storclient=storclient, reset=True)
+            bcdb = self.get(name=bcdb_name, storclient=storclient, reset=True)
         elif type == "sqlite":
             storclient = j.clients.sqlitedb.client_get(bcdbname="test_sqlite")
-            bcdb = self.get(name="test_sqlite", storclient=storclient, reset=True)
+            bcdb = self.get(name=bcdb_name, storclient=storclient, reset=True)
         elif type == "zdb":
             storclient = j.clients.zdb.testserver
             storclient.flush()
             assert storclient.nsinfo["public"] == "no"
             assert storclient.ping()
-            bcdb = self.get(name="test_zdb", storclient=storclient, reset=True)
+            bcdb = self.get(name=bcdb_name, storclient=storclient, reset=True)
         else:
             raise j.exceptions.Base("only rdb,zdb,sqlite for stor")
 
@@ -862,7 +872,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         return bcdb
 
-    def _test_model_get(self, type="zdb", schema=None, datagen=False):
+    def _test_model_get(self, bcdb_name=None, type="zdb", schema=None, datagen=False):
         """
 
         kosmos 'j.data.bcdb._test_model_get(type="zdb",datagen=True)'
@@ -896,7 +906,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         type = type.lower()
 
-        bcdb = self._test_bcdb_get(type=type)
+        bcdb = self._test_bcdb_get(bcdb_name=bcdb_name, type=type)
         model = bcdb.model_get(schema=schema)
 
         # lets check the sql index is empty
