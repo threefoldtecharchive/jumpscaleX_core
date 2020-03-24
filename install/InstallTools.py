@@ -5632,10 +5632,10 @@ class DockerContainer:
                 self._internal_image_save()
                 self.stop()
                 self.start(mount=False, update=False)
-                
-            self.execute(BaseInstaller.cleanup_script_get(), die=False)
+
             # wait for docker to start and ssh become available
             time.sleep(10)
+            self.execute(BaseInstaller.cleanup_script_get(), die=False)
             self.dexec("umount /sandbox/code")
 
             if development:
