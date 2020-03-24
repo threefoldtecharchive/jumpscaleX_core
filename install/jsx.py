@@ -81,7 +81,7 @@ def jumpscale_get(die=True):
 
 # have to do like this, did not manage to call the click enabled function (don't know why)
 def _configure(
-    codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey_words=None, secret=None, identity=None
+    codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey_words=None, secret=None,
 ):
     interactive = not no_interactive
     sshagent_use = not no_sshagent
@@ -187,7 +187,6 @@ def configure(
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
 @click.option("-nm", "--nomount", is_flag=True, help="will not mount the underlying code directory if set")
 @click.option(
-    "-i",
     "--identity",
     default=None,
     help="Identity to be used for nacl should be stored under var/containers/shared/keys/{identity}/priv.key",
@@ -227,7 +226,6 @@ def container_install(
     mount = not nomount
 
     _configure(no_interactive=no_interactive)
-
 
     if scratch:
         image = "threefoldtech/base2"
