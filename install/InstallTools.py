@@ -3,7 +3,7 @@ import getpass
 import pickle
 import re
 import copy
-
+import time
 try:
     import msgpack
 except:
@@ -5633,8 +5633,8 @@ class DockerContainer:
                 self._internal_image_save()
                 self.stop()
                 self.start(mount=False, update=False)
-
-
+            # wait for docker to start and ssh become available
+            time.sleep(10)
             self.dexec("umount /sandbox/code")
 
             if development:
