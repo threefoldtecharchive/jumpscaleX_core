@@ -369,6 +369,9 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         if not bcdbname:
             for bcdb in list(self.instances.values()):
+                if bcdb.name in ('myjobs'):
+                    continue
+
                 self.export(name=name, bcdbname=bcdb.name, path=path, yaml=yaml, data=data, encrypt=encrypt)
             return
         elif bcdbname == "system":
