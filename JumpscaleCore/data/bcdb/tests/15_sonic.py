@@ -22,7 +22,7 @@ def test_sonic():
     content*** = (S)
     """
 
-    model = j.data.bcdb._test_model_get(schema=schema)
+    bcdb, model = j.data.bcdb._test_model_get(schema=schema)
 
     for obj in data:
         o = model.new()

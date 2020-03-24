@@ -974,6 +974,6 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         kosmos 'j.data.bcdb.test()'
 
         """
-
+        j.core.myenv.testing_env = True
         self._tests_run(name=name, die=True)
         return "OK"

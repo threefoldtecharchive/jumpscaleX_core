@@ -21,7 +21,10 @@ class SonicFactory(JSConfigs, j.baseclasses.testtools):
         :return:
         """
         adminsecret_ = j.core.myenv.adminsecret
-        return self.get("bcdb", host="127.0.0.1", port=1491, password=adminsecret_)  # default passwd also not ok
+        if j.core.myenv.testing_env:
+            return self.get("bcdb", host="127.0.0.1", port=1492, password="123456")  # default passwd also not ok
+        else:
+            return self.get("bcdb", host="127.0.0.1", port=1491, password=adminsecret_)  # default passwd also not ok
 
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/570")
     def test(self):
