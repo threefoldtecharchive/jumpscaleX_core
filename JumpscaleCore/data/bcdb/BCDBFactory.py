@@ -369,6 +369,9 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         if not bcdbname:
             for bcdb in list(self.instances.values()):
+                if bcdb.name in ('myjobs'):
+                    continue
+
                 self.export(name=name, bcdbname=bcdb.name, path=path, yaml=yaml, data=data, encrypt=encrypt)
             return
         elif bcdbname == "system":
@@ -480,7 +483,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
             name = config["name"]
 
-            if config["type"] not in ["zdb", "sqlite", "redis"]:
+            if config["type"] not in ["zdb", "sqlite", "redis", "sdb"]:
                 # these types usually myjobs instance
                 self._log_warning(f"only zdb, sqlite redis are supported your type is: {config['type']}")
                 return
@@ -586,8 +589,8 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             bcdb = self.get(name=name)
             return bcdb
 
-        if ttype not in ["zdb", "sqlite", "redis"]:
-            raise j.exceptions.Input("ttype can only be zdb or sqlite")
+        if ttype not in ["zdb", "sqlite", "redis", "sdb"]:
+            raise j.exceptions.Input("ttype can only be zdb, redis or sqlite")
         assert name
         if ttype == "zdb":
             zdb = self._core_zdb  # has been started in start_servers_threebot_zdb_sonic
@@ -598,9 +601,9 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             if not zdb_admin.namespace_exists(namespace):
                 zdb_admin.namespace_new(namespace, secret=adminsecret_, maxsize=0, die=True)
             storclient = zdb.client_get(name=name, secret=adminsecret_, nsname=namespace)
-        elif ttype == "sqlite":
+        elif ttype in ("sqlite", "sdb"):
             assert not namespace  # should be empty only relevant in ZDB
-            storclient = j.clients.sdb.client_get(bcdbname=name)
+            storclient = j.clients.sqlitedb.client_get(bcdbname=name)
         elif ttype == "redis":
             assert not namespace  # should be empty only relevant in ZDB
             storclient = j.clients.rdb.client_get(bcdbname=name)
