@@ -4,6 +4,7 @@ import pickle
 import re
 import copy
 import time
+
 try:
     import msgpack
 except:
@@ -5102,9 +5103,11 @@ class DockerConfig:
         udp = 9001 + int(self.portrange) * 10
         ssh = 9000 + int(self.portrange) * 10
         http = 7000 + int(self.portrange) * 10
+        https = 7020 + int(self.portrange) * 10
         self.sshport = ssh
         self.portrange_txt = "-p %s-%s:8005-8009" % (a, b)
         self.portrange_txt = "-p %s:80" % http
+        self.portrange_txt += " -p %s:443" % https
         self.portrange_txt += " -p %s:9001/udp" % udp
         self.portrange_txt += " -p %s:22" % ssh
 
