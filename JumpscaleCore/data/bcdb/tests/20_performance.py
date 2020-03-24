@@ -20,10 +20,10 @@
 
 from Jumpscale import j
 
-skip = j.baseclasses.testtools._skip
+# skip = j.baseclasses.testtools._skip
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
+# @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_performance():
     """
     to run:

@@ -1,14 +1,11 @@
 from Jumpscale import j
 
-skip = j.baseclasses.testtools._skip
 
-
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_migrate_models():
     """
     to run:
 
-    kosmos 'j.data.bcdb.test(name="migrate_models")'
+    kosmos 'j.data.bcdb.test(name="migrate")'
     """
 
     bcdb, _ = j.data.bcdb._test_model_get()
