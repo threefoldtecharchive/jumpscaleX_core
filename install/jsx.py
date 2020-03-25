@@ -933,9 +933,9 @@ def sdk(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False, update
         # print(j.clients.threebot.explorer.actors_all.phonebook.get(name="{docker_name}.3bot"))
         cl = j.clients.threebot.client_get("{docker_name}.3bot")
 
-        r1 = j.tools.threebot.explorer.threebot_record_get(name="{docker_name}.3bot")
+        r1 = j.clients.explorer.default.users.get(name="{docker_name}.3bot")
         print(r1)
-        r2 = j.tools.threebot.explorer.threebot_record_get(tid=cl.tid)
+        r2 = j.clients.explorer.default.users.get(tid=cl.tid)
         assert r2 == r1
 
     def test():
