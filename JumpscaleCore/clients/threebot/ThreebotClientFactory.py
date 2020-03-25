@@ -7,12 +7,6 @@ JSConfigBase = j.baseclasses.object_config_collection
 skip = j.baseclasses.testtools._skip
 
 
-_threefold_explorer_public_keys = {
-    "explorer.testnet.grid.tf": "3b3bc56fdf273f444af1cf298b13c4c856afd69acf5fbb3057ff6fc8479049a4",
-    "explorer.grid.tf": "fc5aec54936cbde0caf3e0c00012a4821dc5a35f3584ed61360725bdae8a4327",
-}
-
-
 class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
     __jslocation__ = "j.clients.threebot"
     _CHILDCLASS = ThreebotClient
@@ -47,7 +41,7 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         else:
             raise j.exceptions.Input("threebot needs to be int or str")
 
-        r = j.tools.threebot.explorer.threebot_record_get(tid=tid, name=tname)
+        r = j.clients.explorer.default.users.get(tid=tid, name=tname)
         if r.id <= 0:
             raise j.exceptions.Input("threebot ID must be a positive integer")
 
