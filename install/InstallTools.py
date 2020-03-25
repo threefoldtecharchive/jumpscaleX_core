@@ -4600,7 +4600,9 @@ class UbuntuInstaller:
 
 
 class JumpscaleInstaller:
-    def install(self, sandboxed=False, force=False, gitpull=False, prebuilt=False, branch=None, threebot=False, identity=None):
+    def install(
+        self, sandboxed=False, force=False, gitpull=False, prebuilt=False, branch=None, threebot=False, identity=None
+    ):
 
         MyEnv.check_platform()
 
@@ -5109,7 +5111,7 @@ class DockerConfig:
         udp = 9001 + int(self.portrange) * 10
         ssh = 9000 + int(self.portrange) * 10
         http = 7000 + int(self.portrange) * 10
-        https = 7020 + int(self.portrange) * 10
+        https = 6000 + int(self.portrange) * 10
         self.sshport = ssh
         self.portrange_txt = "-p %s-%s:8005-8009" % (a, b)
         self.portrange_txt = "-p %s:80" % http
@@ -5703,7 +5705,9 @@ class DockerContainer:
     #     Tools.config_save(self._path + "/cfg/jumpscale_config.toml", CONFIG)
     #
 
-    def install_jumpscale(self, secret=None, privatekey=None, force=False, threebot=True, pull=False, branch=None, identity=None):
+    def install_jumpscale(
+        self, secret=None, privatekey=None, force=False, threebot=True, pull=False, branch=None, identity=None
+    ):
         redo = force  # is for jumpscale only
         if not force:
             if not self.executor.state_exists("STATE_JUMPSCALE"):
@@ -5745,7 +5749,9 @@ class DockerContainer:
             Tools.log("CONFIGURE THE CONTAINER", data=cmd)
             self.execute(cmd)
             self.execute("rm -f /tmp/InstallTools.py;rm -f /tmp/jsx")
-            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s{}".format(identity_arg)
+            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s{}".format(
+                identity_arg
+            )
             cmd += args_txt
         else:
             print(" - copy installer over from where I install from")
@@ -5759,9 +5765,9 @@ class DockerContainer:
                 )
                 Tools.execute(cmd)
 
-                cmd = (
-                    "cd /tmp;python3 jsx configure --sshkey %s -s;python3 jsx install -s%s"
-                    % (MyEnv.sshagent.key_default_name, identity_arg)
+                cmd = "cd /tmp;python3 jsx configure --sshkey %s -s;python3 jsx install -s%s" % (
+                    MyEnv.sshagent.key_default_name,
+                    identity_arg,
                 )
                 cmd += args_txt
         print(" - Installing jumpscaleX ")
