@@ -4244,6 +4244,7 @@ class BaseInstaller:
                 "psutil>=5.4.3",
                 "pudb>=2017.1.2",
                 "pyblake2>=0.9.3",
+                "cython",
                 "pycapnp>=0.5.12",
                 "PyGithub>=1.34",
                 "pymux>=0.13",
@@ -4284,7 +4285,6 @@ class BaseInstaller:
                 "Brotli>=0.6.0",
                 "gipc",
                 # "blosc>=1.5.1",  #don't think we use it, I hope
-                "cython",
                 "scikit-build",
                 # "cmake",  #DO WE NEED THIS??? better not, takes for ever
                 "zerotier>=1.1.2",
