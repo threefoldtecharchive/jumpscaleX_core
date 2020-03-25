@@ -9,7 +9,6 @@ try redis commands to get to BCDB
 """
 
 
-
 def test_redis():
 
     """
@@ -56,3 +55,18 @@ def test_redis():
     j.data.bcdb._log_debug("TEST OK")
 
     return "OK"
+
+
+# Teardown
+def after():
+    # Destroy sqlite databases
+    j.data.bcdb.sqlite.destroy()
+    # Stop and delete sonic
+    j.servers.sonic.testserver.stop()
+    j.servers.sonic.testserver.delete()
+    # Stop and delete zdb
+    j.servers.zdb.testserver.stop()
+    j.servers.zdb.testserver.delete()
+    # Stop and delete redis instance
+    j.servers.startupcmd.bcdb_redis_test.stop()
+

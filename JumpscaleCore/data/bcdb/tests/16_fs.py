@@ -86,3 +86,19 @@ def test_fs():
     )
     s.start()
     print("Dav server running on port 4444")
+
+
+# Teardown
+def after():
+    # Destroy rdb,sqlite and zdb databases
+    j.data.bcdb.test_sqlite.destroy()
+    # Stop and delete sonic
+    j.servers.sonic.testserver.stop()
+    j.servers.sonic.testserver.delete()
+    # Stop and delete zdb
+    j.servers.zdb.testserver.stop()
+    j.servers.zdb.testserver.delete()
+    # Stop and delete webdave
+    j.servers.startupcmd.webdav_fs_test.stop()
+    j.servers.startupcmd.webdav_fs_test.delete()
+

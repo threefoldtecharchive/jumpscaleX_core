@@ -272,3 +272,14 @@ def test_vfs():
 
     j.data.bcdb._log_info("TEST DONE")
     return "OK"
+
+
+# Teardown
+def after():
+    # Stop and delete sonic
+    j.servers.sonic.testserver.stop()
+    j.servers.sonic.testserver.delete()
+    # Stop and delete zdb
+    j.servers.zdb.testserver.stop()
+    j.servers.zdb.testserver.delete()
+

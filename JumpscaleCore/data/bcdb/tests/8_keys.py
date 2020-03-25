@@ -1,8 +1,6 @@
 from Jumpscale import j
 
 
-
-
 def test_keys():
     """
     to run:
@@ -146,3 +144,17 @@ def test_keys():
 
     j.data.bcdb._log_info("TEST DONE")
     return "OK"
+
+
+# Teardown
+def after():
+    # Destroy rdb,sqlite and zdb databases
+    j.data.bcdb.test_sqlite.destroy()
+    j.data.bcdb.test2.destroy()
+    # Stop and delete sonic
+    j.servers.sonic.testserver.stop()
+    j.servers.sonic.testserver.delete()
+    # Stop and delete zdb
+    j.servers.zdb.testserver.stop()
+    j.servers.zdb.testserver.delete()
+

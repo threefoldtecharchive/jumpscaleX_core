@@ -45,3 +45,16 @@ def test_sonic():
 
     j.data.bcdb._log_info("TEST SONIC DONE")
     return "OK"
+
+
+# Teardown
+def after():
+    # Destroy rdb,sqlite and zdb databases
+    j.data.bcdb.test_zdb.destroy()
+    # Stop and delete sonic
+    j.servers.sonic.testserver.stop()
+    j.servers.sonic.testserver.delete()
+    # Stop and delete zdb
+    j.servers.zdb.testserver.stop()
+    j.servers.zdb.testserver.delete()
+

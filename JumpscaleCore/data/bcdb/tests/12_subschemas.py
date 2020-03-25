@@ -90,3 +90,16 @@ def test_subschemas():
         assert s.url == url
 
     return "OK"
+
+
+# Teardown
+def after():
+    # Destroy  databases
+    j.data.bcdb.test_sqlite.destroy()
+    # Stop and delete sonic
+    j.servers.sonic.testserver.stop()
+    j.servers.sonic.testserver.delete()
+    # Stop and delete zdb
+    j.servers.zdb.testserver.stop()
+    j.servers.zdb.testserver.delete()
+

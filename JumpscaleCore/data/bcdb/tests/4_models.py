@@ -4,6 +4,7 @@ skip = j.baseclasses.testtools._skip
 
 
 def test_models():
+    j.debug()
     """
     to run:
 
@@ -36,6 +37,7 @@ def test_models():
 
     # check the right schema in meta stor
     s_ = j.data.schema.get(url="jumpscale.bcdb.test.house")
+    j.debug()
     assert j.data.schema._md5(s) == s_._md5
 
     model = bcdb.model_get(url="jumpscale.bcdb.test.house")
@@ -113,3 +115,15 @@ def test_models():
     assert res[0]._schema._md5 == res[1]._schema._md5
 
     return "OK"
+
+
+# Teardown
+def after():
+    # Destroy zdb databases
+    j.data.bcdb.test_zdb.destroy()
+    # Stop and delete sonic
+    j.servers.sonic.testserver.stop()
+    j.servers.sonic.testserver.delete()
+    # Stop and delete zdb
+    j.servers.zdb.testserver.stop()
+    j.servers.zdb.testserver.delete()

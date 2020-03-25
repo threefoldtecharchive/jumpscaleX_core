@@ -1,8 +1,6 @@
 from Jumpscale import j
 
 
-
-
 def test_acls():
     """
     to run:
@@ -219,3 +217,17 @@ def test_acls():
     test2("SQLITE")
 
     j.data.bcdb._log_info("ACL TESTS ALL DONE")
+
+
+# Teardown
+def after():
+    # Destroy rdb and sqlite databases
+    j.data.bcdb.test_rdb.destroy()
+    j.data.bcdb.test_sqlite.destroy()
+    # Stop and delete sonic
+    j.servers.sonic.testserver.stop()
+    j.servers.sonic.testserver.delete()
+    # Stop and delete zdb
+    j.servers.zdb.testserver.stop()
+    j.servers.zdb.testserver.delete()
+

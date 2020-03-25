@@ -5,8 +5,6 @@ from uuid import uuid4
 from unittest import TestCase
 
 
-
-
 def test_unique_data():
     """
     to run:
@@ -135,3 +133,16 @@ def test_unique_data():
     schema_obj3.test = schema_obj2.test
     schema_obj3.number = schema_obj2.number
     schema_obj3.save()
+
+
+# Teardown
+def after():
+    # Destroy zdb databases
+    j.data.bcdb.test_zdb.destroy()
+    # Stop and delete sonic
+    j.servers.sonic.testserver.stop()
+    j.servers.sonic.testserver.delete()
+    # Stop and delete zdb
+    j.servers.zdb.testserver.stop()
+    j.servers.zdb.testserver.delete()
+

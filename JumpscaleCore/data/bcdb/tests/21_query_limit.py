@@ -36,3 +36,16 @@ def test_main():
     last = model.find(age=3, limit=10, offset=15)
     assert len(last) == 5
     assert last[-1].name == f"student98"
+
+
+# Teardown
+def after():
+    # Destroy rdb,sqlite and zdb databases
+    j.data.bcdb.test_zdb.destroy()
+    # Stop and delete sonic
+    j.servers.sonic.testserver.stop()
+    j.servers.sonic.testserver.delete()
+    # Stop and delete zdb
+    j.servers.zdb.testserver.stop()
+    j.servers.zdb.testserver.delete()
+

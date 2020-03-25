@@ -1,8 +1,6 @@
 from Jumpscale import j
 
 
-
-
 def test_async():
     """
     to run:
@@ -48,3 +46,16 @@ def test_async():
     j.data.bcdb._log_info("TEST ASYNC DONE")
 
     return "OK"
+
+
+# Teardown
+def after():
+    # Destroy zdb databases
+    j.data.bcdb.test_zdb.destroy()
+    # Stop and delete sonic
+    j.servers.sonic.testserver.stop()
+    j.servers.sonic.testserver.delete()
+    # Stop and delete zdb
+    j.servers.zdb.testserver.stop()
+    j.servers.zdb.testserver.delete()
+

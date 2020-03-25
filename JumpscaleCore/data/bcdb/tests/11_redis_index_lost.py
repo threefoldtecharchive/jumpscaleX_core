@@ -20,7 +20,7 @@ def test_redis_index_lost():
 
     """
 
-    bcdb = j.data.bcdb.get("test", reset=True)
+    bcdb = j.data.bcdb.get("test_redis_index", reset=True)
     m = bcdb.model_get(schema=SCHEMA)
     for i in range(10):
         o = m.new()
@@ -36,7 +36,7 @@ def test_redis_index_lost():
 
     assert r.addr == "something:8"
 
-    assert "test" in j.data.bcdb._config
+    assert "test_redis_index" in j.data.bcdb._config
 
     # j.data.bcdb.bcdb_instances = {}  # make sure we don't have instances in memory
 
@@ -68,3 +68,10 @@ def test_redis_index_lost():
 
     j.data.bcdb._log_info("TEST DONE")
     return "OK"
+
+
+# Teardown
+def after():
+    # Destroy sqlite and zdb databases
+    j.data.bcdb.test_redis_index.destroy()
+

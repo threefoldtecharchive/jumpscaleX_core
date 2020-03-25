@@ -94,3 +94,17 @@ def test_webdav():
     # TODO: mount webdav over fuse and do some tests
 
     j.data.bcdb._log_info("test ok")
+
+
+# Teardown
+def after():
+    # Destroy rdb,sqlite and zdb databases
+    j.data.bcdb.test_sqlite.destroy()
+    # Stop and delete sonic
+    j.servers.sonic.testserver.stop()
+    j.servers.sonic.testserver.delete()
+    # Stop and delete zdb
+    j.servers.zdb.testserver.stop()
+    j.servers.zdb.testserver.delete()
+    # Stop and delete redis instance
+    j.servers.startupcmd.bcdb_redis_test.stop()

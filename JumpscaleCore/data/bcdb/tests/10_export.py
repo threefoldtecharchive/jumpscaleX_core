@@ -87,3 +87,16 @@ def load(name, schema, schema2):
     node_model.find()[0].delete()
     return bcdb, farm_model, node_model
 
+
+# Teardown
+def after():
+    # Destroy sqlite and zdb databases
+    j.data.bcdb.test_sqlite.destroy()
+    j.data.bcdb.test_zdb.destroy()
+    # Stop and delete sonic
+    j.servers.sonic.testserver.stop()
+    j.servers.sonic.testserver.delete()
+    # Stop and delete zdb
+    j.servers.zdb.testserver.stop()
+    j.servers.zdb.testserver.delete()
+

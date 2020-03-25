@@ -20,10 +20,7 @@
 
 from Jumpscale import j
 
-# skip = j.baseclasses.testtools._skip
 
-
-# @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_performance():
     """
     to run:
@@ -95,3 +92,18 @@ def test_performance():
     print("\nQuery in sonic")
     sonic_query(model)
     bcdb.reset()
+
+
+# Teardown
+def after():
+    # Destroy rdb,sqlite and zdb databases
+    j.data.bcdb.test_rdb.destroy()
+    j.data.bcdb.test_sqlite.destroy()
+    j.data.bcdb.test_zdb.destroy()
+    # Stop and delete sonic
+    j.servers.sonic.testserver.stop()
+    j.servers.sonic.testserver.delete()
+    # Stop and delete zdb
+    j.servers.zdb.testserver.stop()
+    j.servers.zdb.testserver.delete()
+
