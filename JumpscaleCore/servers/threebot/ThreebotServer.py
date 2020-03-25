@@ -257,7 +257,6 @@ class ThreeBotServer(j.baseclasses.object_config):
             # at this point all packages are known but all in config mode, not installed yet
             # all internal services started but not the gevent rack yet, and should be like this
 
-            # if someone passed along packages  (lazy loading will work for actor, package management in process)
             for path in packages:
                 # j.debug()
                 j.threebot.packages.zerobot.packagemanager.actors.package_manager.package_add(
@@ -388,7 +387,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             self._log_info("FIND THE PACKAGES ON THE FILESYSTEM")
             j.tools.threebot_packages.load()
 
-            names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta"]
+            names = ["base", "webinterface", "myjobs_ui", "packagemanager", "oauth2", "alerta", "admin"]
             for name in names:
                 name2 = f"zerobot.{name}"
                 if not j.tools.threebot_packages.exists(name=name2):

@@ -42,7 +42,7 @@ def profileStop(pr):
     print(s.getvalue())
 
 
-# pr=profileStart()
+# pr = profileStart()
 
 from .core.InstallTools import BaseInstaller
 from .core.InstallTools import JumpscaleInstaller
@@ -66,7 +66,6 @@ class Core:
     def db_reset(self, j):
         if hasattr(j.data, "cache"):
             j.data.cache._cache = {}
-        self.db = j.clients.redis.core_get(fromcache=False)
 
     @property
     def dir_jumpscale(self):
@@ -122,7 +121,6 @@ class Core:
         return serialized
 
 
-from .core.KosmosShell import KosmosShellConfig, ptconfig
 
 
 class Jumpscale:
@@ -151,8 +149,9 @@ class Jumpscale:
         return locals_
 
     def shell(self, loc=True, exit=False, locals_=None, globals_=None):
-
         import inspect
+        from .core.KosmosShell import KosmosShellConfig, ptconfig
+        from ptpython.repl import embed
 
         KosmosShellConfig.j = self
         curframe = inspect.currentframe()
@@ -161,7 +160,6 @@ class Jumpscale:
         if loc:
             print("\n*** file: %s" % f.filename)
             print("*** function: %s [linenr:%s]\n" % (f.function, f.lineno))
-        from ptpython.repl import embed
 
         # Tools.clear()
         history_filename = "%s/.jsx_history" % MyEnv.config["DIR_HOME"]
@@ -337,3 +335,5 @@ if generated and len(j.core.application.errors_init) > 0:
 # time.sleep(1000)
 
 # j.application.log2fs_redis_register("jumpscale")
+
+# j.core.pr = j.core.profileStart()

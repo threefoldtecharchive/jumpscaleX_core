@@ -1,23 +1,20 @@
 import subprocess, uuid, random
 from Jumpscale import j
-from loguru import logger
 
 
 skip = j.baseclasses.testtools._skip
 
 
-ACTORS_PATH = j.core.tools.text_replace(
-    "{DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/JumpscaleCore/servers/gedis/pytests/test_package/actors"
-)
+ACTORS_PATH = j.core.tools.text_replace("{DIR_BASE}")
 ACTOR_FILE_1 = "simple"
 ACTOR_FILE_2 = "actor"
+package = j.tools.threebot_packages.get("zerobot.base")
 
 START_SCRIPT = """
 server=j.servers.gedis.get(name="{name}")
-server.actor_add(path={actor_path}/{actor_file}.py, namespace="{ns}")
+server.actor_add(name="{actor_file}", path="{actor_path}", package="{package}")
 server.start()
 """
-
 gedis_server = ""
 namespace = ""
 instance_name = ""
@@ -25,11 +22,16 @@ port = ""
 
 
 def info(message):
-    logger.info(message)
+    j.tools.logger._log_info(message)
 
 
 def rand_string(size=10):
     return str(uuid.uuid4()).replace("-", "")[1:10]
+
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/558")
+def before_all():
+    j.servers.threebot.start(background=True)
 
 
 def before():
@@ -57,7 +59,6 @@ def after():
         raise AssertionError("Gedis port should be killed")
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
 def test01_actor_add():
     """
     - ​Get gedis server instance.
@@ -68,7 +69,6 @@ def test01_actor_add():
     assert namespace in gedis_server.actors_list(namespace)
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
 def test02_gedis_client():
     """
      - ​Get gedis server instance.
@@ -102,7 +102,6 @@ def test02_gedis_client():
     #     cl.reload(namespace="WRONG_NAMESPACE")
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/502")
 def test03_gedis_add_actors():
     """
     - ​Get gedis server instance.

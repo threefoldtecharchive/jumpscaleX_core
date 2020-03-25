@@ -1,5 +1,7 @@
 from Jumpscale import j
 
+skip = j.baseclasses.testtools._skip
+
 
 def test_models():
     """
@@ -10,7 +12,6 @@ def test_models():
     work with toml files and see if models get generated properly
 
     """
-
     mpath = j.data.bcdb._dirpath + "/tests/models"
     assert j.sal.fs.exists(mpath)
 
@@ -18,7 +19,7 @@ def test_models():
     for item in j.sal.fs.listFilesInDir(mpath, filter="*.py"):
         j.sal.fs.remove(item)
 
-    bcdb, _ = j.data.bcdb._load_test_model()
+    bcdb, _ = j.data.bcdb._test_model_get()
 
     assert bcdb.name in j.data.bcdb.instances
 
@@ -111,7 +112,4 @@ def test_models():
     # Auto migration!
     assert res[0]._schema._md5 == res[1]._schema._md5
 
-    # CLEAN STATE
-    j.servers.zdb.test_instance_stop()
-    j.servers.sonic.default.stop()
     return "OK"

@@ -10,18 +10,12 @@ from pwd import getpwuid
 from subprocess import run, PIPE
 from string import punctuation
 import pickle
-from loguru import logger
-
-
-LOGGER = logger
-LOGGER.add("SAL_FS_{time}.log")
-
 
 skip = j.baseclasses.testtools._skip
 
 
 def info(message):
-    LOGGER.info(message)
+    j.tools.logger._log_info(message)
 
 
 def random_string():
@@ -1712,7 +1706,7 @@ def test034_write_read_obj_to_from_file():
 def test035_zip_files():
     """TC425
     Test case for compressing files using zip.
-    
+
     **Test scenario**
     #. Create a file F1.
     #. Compress a file F1 using gzip.
@@ -1769,7 +1763,7 @@ def test036_clean_up_string():
 def test037_find():
     """TC427
     Test case for finding a file with a regex in a tree.
-    
+
     **Test scenario**
     #. Create a tree with many files.
     #. Create a file with specific regex (R1) under this tree.
@@ -1791,7 +1785,7 @@ def test037_find():
 def test038_grep():
     """TC428
     Test case for finding a line in a file with a regex.
-    
+
     **Test scenario**
     #. Create a file with some lines.
     #. Find in this file what is matched with regex (R1), should not found.

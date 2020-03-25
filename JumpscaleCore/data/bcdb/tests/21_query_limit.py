@@ -1,6 +1,9 @@
 from Jumpscale import j
 
+skip = j.baseclasses.testtools._skip
 
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def main(self):
     """
     to run:
@@ -13,7 +16,7 @@ def main(self):
     name** = (S)
     age** = (I)
     """
-    bcdb, model = self._load_test_model(schema=schema_text)
+    bcdb, model = self._test_model_get(schema=schema_text)
     for i in range(100):
         o = model.new()
         o.name = f"student{i}"

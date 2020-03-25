@@ -24,8 +24,6 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         self._code_generation_dir_ = None
 
-        j.clients.redis.core_get()  # just to make sure the redis got started
-
         self._BCDBModelClass = BCDBModel  # j.data.bcdb._BCDBModelClasses
         self._BCDBModelBase = BCDBModelBase
         self._config = {}
@@ -38,40 +36,15 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         self.__master = None
 
-    def threebotserver_require(self, timeout=120):
-        timeout2 = j.data.time.epoch + timeout
-        while j.data.time.epoch < timeout2:
-            res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380)
-            if res and j.core.db.get("threebot.starting") == None:
-                self._master_set(False)
-                return
-        raise j.exceptions.Base("please start threebotserver, could not reach in '%s' seconds." % timeout)
-
     @property
     def _master(self):
         if self.__master is None:
-            # see if a threebot starting
-            if not j.core.db:
-                # no choice but to say we are master
-                return True
-            if j.core.db.get("threebot.starting"):
-                print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
-                res = j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60)
-                if res:
-                    # the server did answer, lets now wait till the threebot.starting is gone
-                    timeout = j.data.time.epoch + 15
-                    while j.data.time.epoch < timeout:
-                        if j.core.db.get("threebot.starting") is None:
-                            self.__master = False
-                            return (
-                                self.__master
-                            )  # means we found a threebot who was started properly, can now start as slave
-                raise j.exceptions.Base("threebotserver is starting but did not succeed within 60+15 sec")
-
+            # if the threebotserver is started it aquires master and we return slave
+            # otherwise its ok we are master
+            self.__master = True
             if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
+                print("** AM WORKING AS SLAVE, BCDB WILL BE READONLY **")
                 self.__master = False
-            else:
-                self.__master = True
         return self.__master
 
     # def _treebot_set(self, val=True): #ALREADY DONE IN THREEBOTSERVER
@@ -184,7 +157,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         assert j.sal.process.checkProcessRunning("zdb") is False
         assert j.sal.process.checkProcessRunning("sonic") is False
 
-    def start_servers_threebot_zdb_sonic(self, reset=False):
+    def start_servers_threebot_zdb_sonic(self, test=False, reset=False):
         """
         kosmos 'j.data.bcdb.start_servers_threebot_zdb_sonic()'
 
@@ -220,11 +193,36 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         return (s, z)
 
-    def get_test(self, reset=False):
-        bcdb = j.data.bcdb.get(name="testbcdb")
-        bcdb2 = j.data.bcdb._instances["testbcdb"]
-        assert bcdb2.storclient is None
-        return bcdb
+    def start_servers_test_zdb_sonic(self, reset=False):
+
+        admin_secret = "123456"
+        namespaces_secret = "123456"
+        namespaces = ["test"]
+
+        cl = j.servers.zdb.test_instance_start(
+            namespaces=namespaces, admin_secret=admin_secret, namespaces_secret=namespaces_secret, restart=reset
+        )
+        # the test_instance will test the zdb instance (ping & data dir exists)
+        # name of the zdb server is test_instance
+
+        if j.core.myenv.platform_is_linux:
+            if reset:
+                sonic_server = j.servers.sonic.default
+                sonic_server.stop()
+            if j.sal.nettools.tcpPortConnectionTest("localhost", 1492) is False:
+                s = j.servers.sonic.get(name="testserver", port=1492, adminsecret_=admin_secret)
+                s.start()
+            s = j.servers.sonic.get(name="testserver")
+            assert s.adminsecret_ == admin_secret
+        else:
+            s = None
+
+        z = j.servers.zdb.get(name="testserver")
+        assert z.adminsecret_ == admin_secret
+
+        self._core_zdb = z
+
+        return (s, z)
 
     @property
     def _BCDBModelClass(self):
@@ -761,12 +759,82 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         self.redis_server._init2(bcdb=self, port=port, secret=secret, addr=addr)
         return self.redis_server
 
-    def _load_test_model(self, type="zdb", schema=None, datagen=False):
+    def _test_redisserver_get(self, type="sqlite"):
+
+        redis = j.servers.startupcmd.get("bcdb_redis_test")
+        redis.stop()
+        redis.wait_stopped()
+
+        bcdb = self._test_bcdb_get(type)
+
+        cmd = (
+            """
+                . {DIR_BASE}/env.sh;
+                kosmos 'j.data.bcdb.get("%s").redis_server_start(port=6381)'
+                """
+            % bcdb.name
+        )
+
+        schema = """
+                @url = despiegk.test2
+                llist2 = "" (LS)
+                name** = ""
+                email** = ""
+                nr** =  0
+                date_start** =  0 (D)
+                description = ""
+                cost_estimate = 0.0 #this is a comment
+                llist = []
+                llist3 = "1,2,3" (LF)
+                llist4 = "1,2,3" (L)
+                """
+        db, model = self._test_model_get(type=type, schema=schema, datagen=False)
+        self._redisserver_startupcmd = j.servers.startupcmd.get(
+            name="bcdb_redis_test", cmd_start=cmd, ports=[6381], executor="tmux"
+        )
+        self._redisserver_startupcmd.start()
+        j.sal.nettools.waitConnectionTest("127.0.0.1", port=6381, timeout=15)
+        return db, model
+
+    def _test_bcdb_get(self, type="sqlite", reset=False):
+        """
+        ONLY USE THIS BCDB GET FOR THE TESTS
+        """
+        if not j.clients.zdb.exists("testserver"):
+            reset = True
+        if reset or not j.sal.nettools.tcpPortConnectionTest("localhost", 9901):
+            # get the test servers in tmux
+            self.start_servers_test_zdb_sonic(reset=reset)
+        if type == "rdb":
+            j.core.db
+            storclient = j.clients.rdb.client_get(bcdbname="test_rdb")
+            bcdb = self.get(name="test_rdb", storclient=storclient, reset=True)
+        elif type == "sqlite":
+            storclient = j.clients.sqlitedb.client_get(bcdbname="test_sqlite")
+            bcdb = self.get(name="test_sqlite", storclient=storclient, reset=True)
+        elif type == "zdb":
+            storclient = j.clients.zdb.testserver
+            storclient.flush()
+            assert storclient.nsinfo["public"] == "no"
+            assert storclient.ping()
+            bcdb = self.get(name="test_zdb", storclient=storclient, reset=True)
+        else:
+            raise j.exceptions.Base("only rdb,zdb,sqlite for stor")
+
+        assert bcdb.storclient == storclient
+
+        bcdb.reset()  # empty
+
+        assert bcdb.storclient.count == 1
+
+        return bcdb
+
+    def _test_model_get(self, type="zdb", schema=None, datagen=False):
         """
 
-        kosmos 'j.data.bcdb._load_test_model(type="zdb",datagen=True)'
-        kosmos 'j.data.bcdb._load_test_model(type="sqlite",datagen=True)'
-        kosmos 'j.data.bcdb._load_test_model(type="rdb",datagen=True)'
+        kosmos 'j.data.bcdb._test_model_get(type="zdb",datagen=True)'
+        kosmos 'j.data.bcdb._test_model_get(type="sqlite",datagen=True)'
+        kosmos 'j.data.bcdb._test_model_get(type="rdb",datagen=True)'
 
         :param reset:
         :param type:
@@ -778,7 +846,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             schema = """
             @url = despiegk.test
             0:  llist2 = "" (LS)
-            1:  name*** = ""
+            1:  name** = ""
             2:  email** = ""
             3:  nr** = 0
             4:  date_start** = 0 (D)
@@ -795,43 +863,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         type = type.lower()
 
-        def startZDB():
-            zdb = j.servers.zdb.test_instance_start()
-            storclient_admin = zdb.client_admin_get()
-            assert storclient_admin.ping()
-            secret = "1234"
-            storclient = storclient_admin.namespace_new(name="test_zdb", secret=secret)
-            return storclient
-
-        if not j.sal.nettools.tcpPortConnectionTest("localhost", 1491):
-            j.servers.sonic.get(name="default").start()
-
-        if type == "rdb":
-            j.core.db
-            storclient = j.clients.rdb.client_get(bcdbname="test")
-            bcdb = self.get(name="test", storclient=storclient, reset=True)
-        elif type == "sqlite":
-            storclient = j.clients.sqlitedb.client_get(bcdbname="test")
-            bcdb = self.get(name="test", storclient=storclient, reset=True)
-        elif type == "zdb":
-            storclient = startZDB()
-            storclient.flush()
-            assert storclient.nsinfo["public"] == "no"
-            assert storclient.ping()
-            bcdb = self.get(name="test", storclient=storclient, reset=True)
-        else:
-            raise j.exceptions.Base("only rdb,zdb,sqlite for stor")
-
-        assert bcdb.storclient == storclient
-
-        assert bcdb.name == "test"
-
-        bcdb.reset()  # empty
-
-        assert bcdb.storclient.count == 1
-
-        assert bcdb.name == "test"
-
+        bcdb = self._test_bcdb_get(type=type)
         model = bcdb.model_get(schema=schema)
 
         # lets check the sql index is empty
@@ -875,6 +907,23 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
     __repr__ = __str__
 
+    def test_core(self):
+        """
+        will test the core tests which should run everywhere
+        the tests with sonic will not run on osx
+
+        kosmos 'j.data.bcdb.test_core()'
+
+        """
+        # "redisbase"
+        tests = ["base", "meta_test", "async", "models", "acls", "sqlitestor", "unique_data", "subschemas", "sqlite"]
+        errors = 0
+        for name in tests:
+            errors += self._tests_run(name=name, die=False)
+
+        if errors > 0:
+            raise j.exceptions.Base("error in test for bcdb:%s" % errors)
+
     def test(self, name=""):
         """
         following will run all tests
@@ -882,34 +931,6 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         kosmos 'j.data.bcdb.test()'
 
         """
-        print(name)
-        # CLEAN STATE
 
-        redis = j.servers.startupcmd.get("redis_6380")
-        redis.stop()
-        redis.wait_stopped()
-        j.servers.zdb.test_instance_stop()
-        j.servers.sonic.default.stop()
-
-        try:
-            self._tests_run(name=name)
-        except:
-            # clean after errors
-            # CLEAN STATE
-            redis = j.servers.startupcmd.get("redis_6380")
-            redis.stop()
-            redis.wait_stopped()
-            j.servers.zdb.test_instance_stop()
-            j.servers.sonic.default.stop()
-
-            raise
-        else:
-            # CLEAN STATE
-            redis = j.servers.startupcmd.get("redis_6380")
-            redis.stop()
-            redis.wait_stopped()
-            j.servers.zdb.test_instance_stop()
-            j.servers.sonic.default.stop()
-
-        self._log_info("All TESTS DONE")
+        self._tests_run(name=name, die=True)
         return "OK"

@@ -70,4 +70,4 @@ class LoggerFactory(j.baseclasses.object, j.baseclasses.testtools):
         """
         kosmos 'j.tools.logger.test()'
         """
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)

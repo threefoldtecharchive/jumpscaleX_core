@@ -5,6 +5,7 @@ import time
 import psutil
 
 JSBASE = j.baseclasses.object
+skip = j.baseclasses.testtools._skip
 
 
 class Tmux(j.baseclasses.object, j.baseclasses.testtools):

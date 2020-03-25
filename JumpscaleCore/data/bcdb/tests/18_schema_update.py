@@ -1,6 +1,9 @@
 from Jumpscale import j
 
+skip = j.baseclasses.testtools._skip
 
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_schema_update():
     """
     to run:
@@ -11,7 +14,7 @@ def test_schema_update():
     automatically use the latest schema, as long as the changes don't include indexed fields
     """
 
-    bcdb, _ = j.data.bcdb._load_test_model()
+    bcdb, _ = j.data.bcdb._test_model_get()
 
     # to cover all cases, we'll test adding/removing fields of simeple types, and also type object. Also, test that a sub object's fields change
 

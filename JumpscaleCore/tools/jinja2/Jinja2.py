@@ -262,6 +262,7 @@ class Jinja2(j.baseclasses.object):
         if render:
             self.dir_render(path=dest, filter=filter, **args)
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/488")
     def test(self):
         """
         kosmos 'j.tools.jinja2.test()'

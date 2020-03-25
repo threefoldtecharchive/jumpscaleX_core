@@ -81,6 +81,6 @@ class ZDBClientFactory(j.baseclasses.object_config_collection_testtools):
         zdb = j.servers.zdb.test_instance_start()
         cl = zdb.client_admin_get()
         assert cl.ping()
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)
 
         j.servers.zdb.test_instance_stop()

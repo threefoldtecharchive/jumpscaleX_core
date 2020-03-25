@@ -27,6 +27,7 @@ class WireGuard(j.baseclasses.object_config):
     interface_name = "wg0" (S)
     port = 7777 (I)
     peers = (LI)
+    config_path = "" (S)
     """
 
     def _init(self, **kwargs):
@@ -129,9 +130,9 @@ class WireGuard(j.baseclasses.object_config):
             else:
                 peer["AllowedIPs"] = f"{subnet.ip}"
             config += to_section("Peer", peer)
-
-        configpath = f"/tmp/{self.interface_name}.conf"
-        self.executor.file_write(configpath, config)
+        if not self.config_path:
+            self.config_path = f"/tmp/{self.interface_name}.conf"
+        self.executor.file_write(self.config_path, config)
         rc, output, _ = self.executor.execute(f"ip a s dev {self.interface_name}", die=False)
         up = False
         if rc == 0:
@@ -144,10 +145,10 @@ class WireGuard(j.baseclasses.object_config):
 
         if up:
             # interface is not up let's bring it up
-            self.executor.execute(f"wg-quick up {configpath}")
+            self.executor.execute(f"wg-quick up {self.config_path}")
         else:
             # let's update config path
-            self.executor.execute(f"wg-quick strip {configpath} | wg setconf {self.interface_name} /dev/stdin")
+            self.executor.execute(f"wg-quick strip {self.config_path} | wg setconf {self.interface_name} /dev/stdin")
 
     def start(self):
         if self.executor.platformtype.platform_is_osx:

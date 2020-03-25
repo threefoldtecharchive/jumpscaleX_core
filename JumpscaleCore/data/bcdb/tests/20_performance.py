@@ -20,7 +20,10 @@
 
 from Jumpscale import j
 
+skip = j.baseclasses.testtools._skip
 
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/539")
 def test_performance():
     """
     to run:
@@ -60,7 +63,7 @@ def test_performance():
         @url = test.index.1
         text** = (S)
         """
-        bcdb, _ = j.data.bcdb._load_test_model(type=type, schema=schema)
+        bcdb, _ = j.data.bcdb._test_model_get(type=type, schema=schema)
         string_model = bcdb.model_get(url="test.text.1")
         indexed_model = bcdb.model_get(url="test.index.1")
 
@@ -84,10 +87,7 @@ def test_performance():
     @url = test.sonic.1
     text*** = (S)
     """
-    bcdb, model = j.data.bcdb._load_test_model(schema=schema)
-    j.servers.sonic.default.stop()
-    sonic = j.servers.sonic.get(adminsecret_=j.data.hash.md5_string(j.servers.threebot.default.adminsecret_))
-    sonic.start()
+    bcdb, model = j.data.bcdb._test_model_get(schema=schema)
 
     print("\nWrite objects of 64 Bytes of string (sonic)")
     calculate_write_time(model)

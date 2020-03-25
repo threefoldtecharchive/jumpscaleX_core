@@ -130,9 +130,6 @@ class builder_method:
             if j.application.appname != builder._classname and j.application.state != "RUNNING":
                 j.application.start(builder._classname)
 
-            # j.application.log2fs_redis_register(builder._classname)
-            # j.application.log2fs_redis_context_change(builder._classname, name)
-
             try:
                 kwargs = self.get_all_as_keyword_arguments(func, args, kwargs)
                 kwargs_without_reset = {key: value for key, value in kwargs.items() if key not in ["reset", "self"]}
@@ -191,7 +188,7 @@ class builder_method:
             except Exception:
                 res = None
                 print("There is an error happened during building")
-
+            j.application.reset_context()
             return res
 
         return wrapper_action

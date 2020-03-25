@@ -31,4 +31,4 @@ class EmailFactory(JSConfigs, TESTTOOLS):
         print("TEST OK")
 
     def test_mail(self, name=""):
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)

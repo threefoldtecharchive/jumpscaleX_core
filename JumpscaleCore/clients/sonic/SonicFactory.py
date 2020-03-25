@@ -3,6 +3,8 @@ from .SonicClient import SonicClient
 
 JSConfigs = j.baseclasses.object_config_collection
 
+skip = j.baseclasses.testtools._skip
+
 
 class SonicFactory(JSConfigs, j.baseclasses.testtools):
 
@@ -21,6 +23,7 @@ class SonicFactory(JSConfigs, j.baseclasses.testtools):
         adminsecret_ = j.core.myenv.adminsecret
         return self.get("bcdb", host="127.0.0.1", port=1491, password=adminsecret_)  # default passwd also not ok
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/570")
     def test(self):
         """
         kosmos 'j.clients.sonic.test()'
@@ -43,4 +46,4 @@ class SonicFactory(JSConfigs, j.baseclasses.testtools):
         print("TEST OK")
 
     def test_sonic(self, name=""):
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)

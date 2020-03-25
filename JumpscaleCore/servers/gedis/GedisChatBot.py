@@ -139,6 +139,12 @@ class Form:
     def secret_ask(self, msg, **kwargs):
         return self._append(self._session.secret_msg(msg, **kwargs))
 
+    def download_file(self, msg, filename, **kwargs):
+        return self._append(self._session.download_file(msg, filename, **kwargs))
+
+    def upload_file(self, msg, **kwargs):
+        return self._append(self._session.upload_file(msg, **kwargs))
+
     def multi_choice(self, msg, options, **kwargs):
         return self._append(self._session.multi_msg(msg, options, **kwargs), j.data.serializers.json.loads)
 
@@ -209,6 +215,12 @@ class GedisChatBotSession(JSBASE):
 
     def secret_msg(self, msg, **kwargs):
         return {"cat": "secret_ask", "msg": msg, "kwargs": kwargs}
+
+    def download_file(self, msg, filename, **kwargs):
+        return self.ask({"cat": "download_file", "msg": msg, "filename": filename, "kwargs": kwargs})
+
+    def upload_file(self, msg, **kwargs):
+        return self.ask({"cat": "upload_file", "msg": msg, "kwargs": kwargs})
 
     def text_ask(self, msg, **kwargs):
         """

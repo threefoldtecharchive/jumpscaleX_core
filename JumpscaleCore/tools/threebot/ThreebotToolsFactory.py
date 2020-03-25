@@ -7,8 +7,10 @@ from io import BytesIO
 from nacl.signing import VerifyKey
 from nacl.public import PrivateKey, PublicKey, SealedBox
 
+skip = j.baseclasses.testtools._skip
 
-class ThreebotToolsFactory(j.baseclasses.factory_testtools):
+
+class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testtools):
     __jslocation__ = "j.tools.threebot"
     _CHILDCLASSES = [ThreebotMeCollection]
 
@@ -62,6 +64,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         :return:
         """
         j.application.interactive = interactive
+        explorer = j.clients.explorer.default
 
         nacl = j.data.nacl.get(name=myidentity)
         assert nacl.verify_key_hex
@@ -72,7 +75,11 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
             else:
                 raise j.exceptions.Input("please specify name")
 
-        r = j.tools.threebot.explorer.threebot_record_get(name=name, die=False)
+        try:
+            r = explorer.users.get(name=name)
+        except j.exceptions.NotFound:
+            r = None
+
         if not r:
             # means record did not exist yet
             if not email:
@@ -99,10 +106,25 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
                 if not j.tools.console.askYesNo("ok to use your local private key as basis for your threebot?", True):
                     raise j.exceptions.Input("cannot continue, need to register a threebot using j.clients.threebot")
 
-            self.explorer.threebot_register(
-                name=name, ipaddr=ipaddr, email=email, description=description, wallet_name=name, nacl=nacl
+            user = explorer.users.new()
+            user.name = name
+            user.ipaddr = ipaddr
+            user.email = email
+            user.description = description
+            user.pubkey = nacl.verify_key_hex
+            tid = explorer.users.register(user)
+            r = explorer.users.get(tid=tid)
+
+        payload = j.data.nacl.payload_build(r.id, r.name, r.email, r.ipaddr, r.description, nacl.verify_key_hex)
+        payload = j.data.hash.bin2hex(payload).decode()
+        signature = j.data.nacl.payload_sign(
+            r.id, r.name, r.email, r.ipaddr, r.description, nacl.verify_key_hex, nacl=nacl
+        )
+        valid = explorer.users.validate(r.id, payload, signature)
+        if not valid:
+            raise j.exceptions.Input(
+                "signature verification failed, ensure your pubkey to be the same as local configured nacl "
             )
-            r = self.explorer.threebot_record_get(name=name, die=True)
 
         if not nacl.verify_key_hex == r.pubkey:
             raise j.exceptions.Input("your identity needs to be same pubkey as local configured nacl")
@@ -333,13 +355,14 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
         data_list = [True, 1, [1, 2, "a"], jsxobject, "astring", ddict]
         return data_list
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/549")
     def test_register_nacl_clients_get(self):
         """
         kosmos 'j.clients.threebot.test_register()'
         :return:
         """
 
-        j.servers.threebot.start()
+        j.servers.threebot.start(background=True)
 
         self._add_phonebook()
 
@@ -364,6 +387,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
             git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/tfgrid/phonebook"
         )
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/549")
     def test_register_nacl_threebots(self):
 
         self._add_phonebook()
@@ -416,7 +440,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools):
 
         self.me
 
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)
 
         self._log_info("All TESTS DONE")
         return "OK"

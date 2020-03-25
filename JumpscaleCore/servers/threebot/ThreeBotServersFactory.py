@@ -6,6 +6,8 @@ TESTTOOLS = j.baseclasses.testtools
 
 # from .OpenPublish import OpenPublish
 
+skip = j.baseclasses.testtools._skip
+
 
 class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, TESTTOOLS):
     """
@@ -26,18 +28,9 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
         print("MARK THREEBOT IS STARTING")
 
         j.threebot.active = True
-        if j.core.db and starting:
-            j.core.db.set("threebot.starting", ex=120, value="1")
         j.data.bcdb._master_set()
         j.servers.myjobs
         j.tools.executor.local
-
-    def threebotserver_check(self):
-        if j.core.db and j.core.db.get("threebot.starting"):
-            self.threebotserver_require()
-            return True
-        res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380, timeout=0.1)
-        return res
 
     def threebotserver_require(self, timeout=120):
         """
@@ -51,7 +44,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
         timeout2 = j.data.time.epoch + timeout
         while j.data.time.epoch < timeout2:
             res = j.sal.nettools.tcpPortConnectionTest("localhost", 6380, timeout=0.1)
-            if res and j.core.db.get("threebot.starting") is None:
+            if res and not hasattr(j.servers.threebot, "_starting_"):
                 j.data.bcdb._master_set(False)
                 return
             timedone = timeout2 - j.data.time.epoch
@@ -98,6 +91,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
 
         :return:
         """
+        self._starting_ = True
         if not background:
             self._threebot_starting()
 
@@ -117,11 +111,6 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
                     j.shell()
                 assert "." in client.package_name
 
-            # NO LONGER NEEDED BECAUSE PART OF DEFAULT>START
-            # gediscl = j.clients.gedis.get("pkggedis", package_name="zerobot.packagemanager")
-            # for package_path in packages:
-            #     gediscl.actors.package_manager.package_add(path=package_path)
-
             client.reload()
             return client
 
@@ -129,14 +118,17 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
             self.install()
             self.default.start(background=False, packages=packages, with_shell=with_shell)
 
-    def local_start_3bot(self, background=False, reload=False):
-        """starts 3bot with webplatform package.
-        kosmos -p 'j.servers.threebot.local_start_3bot()'
-        """
-        if not background:
-            self._threebot_starting()
-        packages = [f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform"]
-        return self.start(background=background, packages=packages, reload=reload)
+        del self._starting_
+
+    # I GUESS ITS NOT USED ANY MORE, WE NEED CLEANUP THERE !!!
+    # def local_start_3bot(self, background=False, reload=False):
+    #     """starts 3bot with webplatform package.
+    #     kosmos -p 'j.servers.threebot.local_start_3bot()'
+    #     """
+    #     if not background:
+    #         self._threebot_starting()
+    #     packages = [f"{j.dirs.CODEDIR}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webplatform"]
+    #     return self.start(background=background, packages=packages, reload=reload)
 
     def reset(self, debug=True):
         """
@@ -181,6 +173,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
         ]
         return self.start(background=background, packages=packages, reload=reload, with_shell=with_shell)
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/560")
     def test(self, name=None, restart=False):
         """
 
@@ -204,8 +197,9 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
         #
         # gedis_client.reload()
 
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/574")
     def test_explorer(self):
         """
 
@@ -219,7 +213,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
     def _docker_jumpscale_get(self, name="3bot", delete=True):
         docker = j.core.dockerfactory.container_get(name=name, delete=delete)
         docker.install()
-        docker.jumpscale_install()
+        docker.install_jumpscale()
         # now we can access it over 172.0.0.2
         return docker
 

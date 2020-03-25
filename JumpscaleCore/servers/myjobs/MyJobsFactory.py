@@ -12,6 +12,9 @@ from .MyWorker import MyWorkers
 TESTTOOLS = j.baseclasses.testtools
 
 
+skip = j.baseclasses.testtools._skip
+
+
 class MyJobsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
     __jslocation__ = "j.servers.myjobs"
     _CHILDCLASSES = [MyWorkers, MyJobs]
@@ -37,7 +40,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         self._bcdb = self._bcdb_selector()
         if not j.threebot.active:
             j.servers.threebot.threebotserver_require()
-        j.data.bcdb._master_set(j.threebot.active)
+        j.data.bcdb._master_set(True)
         self.model_action = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.action)
         j.clients.bcdbmodel.get(name="myjobs", schema=schemas.worker)
         j.clients.bcdbmodel.get(name="myjobs", schema=schemas.job)
@@ -650,6 +653,7 @@ class MyJobsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         self._cmd.start()
         j.sal.nettools.waitConnectionTest("127.0.0.1", port=6380, timeout=15)
 
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/493")
     def test(self, name="", **kwargs):
         """
         it's run all tests

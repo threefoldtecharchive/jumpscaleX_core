@@ -13,6 +13,7 @@
 
 - Ubuntu 18.04
 - macOS 10.7 or newer
+- Docker desktop and tools installed on your OS
 
 #### Required Packages
 
@@ -60,7 +61,7 @@ curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/inst
 chmod +x /tmp/jsx;
 ```
 
-#### To install in container
+#### To install in container (recommended)
 
 ```bash
 /tmp/jsx container-install
@@ -86,8 +87,7 @@ git clone git@github.com:threefoldtech/jumpscaleX_core.git; cd jumpscaleX_core;
 git pull
 
 # link the installer from tmp to the source directory, makes it easy for the rest of this tutorial
-rm -f /tmp/jsx.py
-rm -f /tmp/InstallTools.py;
+rm -f /tmp/jsx* /tmp/InstallTools.py
 ln -s ~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx;
 ln -s ~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py /tmp/InstallTools.py
 ```

@@ -50,7 +50,7 @@ class BCDB(j.baseclasses.object):
         self.storclient = storclient
 
         j.sal.fs.createDir(self._data_dir)
-        self.readonly = readonly
+        self.readonly = not j.data.bcdb._master
 
         if self.readonly:
             self._log_debug("sqlite file is in readonly mode for: '%s'" % self.name)
@@ -83,6 +83,14 @@ class BCDB(j.baseclasses.object):
     def start(self):
         self._init_props_()
         self._init_system_objects()
+        self.sqlite_index_client
+        # dbpath = self.sqlite_index_client.database.split("file:", 1)[1].split("?", 1)[0]
+        # if not j.sal.fs.exists(dbpath):
+        #     self.sqlite_index_client_stop()
+        #     j.debug()
+        #     self.sqlite_index_client
+        #
+        #     j.shell()
         self.dataprocessor_start()
 
     def stop(self):
@@ -259,10 +267,6 @@ class BCDB(j.baseclasses.object):
                     else:
                         j.sal.fs.writeFile("%s/%s.data" % (pathdata, obj.id), data)
                 if yaml:
-                    # try:
-                    #     C = j.data.serializers.toml.dumps(obj._ddict)
-                    #     ext = "toml"
-                    # except:
                     C = j.data.serializers.yaml.dumps(obj._ddict)
                     ext = "yaml"
                     if hasattr(obj, "name") and "/" not in obj.name:
@@ -541,6 +545,8 @@ class BCDB(j.baseclasses.object):
         remove all data but the bcdb instance remains
         :return:
         """
+        if self.readonly:
+            raise j.exceptions.RuntimeError("cannot reset a db when readonly")
         self.stop()  # will stop sqlite client and the dataprocessor
 
         assert self.storclient

@@ -183,6 +183,8 @@ class ExecutorBase(j.baseclasses.object_config):
         cmd_process=True,
     ):
         """
+        @param cmd_process means we will make script nice to execute (e.g. insert debug, env variables, ...)
+
         @RETURN rc, out, err
         """
         if env or sudo:
@@ -237,7 +239,6 @@ class ExecutorBase(j.baseclasses.object_config):
         """
         if file then will read
         if \n in cmd then will treat as script
-        if ; in cmd then will convert to script
         if script will upload as file
 
         :param cmd:
@@ -257,8 +258,6 @@ class ExecutorBase(j.baseclasses.object_config):
                     python = True
 
         script = None
-        # if ";" in cmd and not "\n" in cmd:
-        #     cmd = "\n".join(cmd.split(";"))
 
         if "\n" in cmd or python or jumpscale:
             script = cmd
@@ -322,8 +321,7 @@ class ExecutorBase(j.baseclasses.object_config):
         if die:
             # first make sure not already one
             if "set -e" not in script:
-                # now only do if multicommands
-                if self.debug:
+                if debug or self.debug:
                     pre += "set -ex\n"
                 else:
                     pre += "set -e\n"

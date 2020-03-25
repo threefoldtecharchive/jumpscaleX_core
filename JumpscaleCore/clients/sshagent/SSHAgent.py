@@ -245,4 +245,4 @@ class SSHAgent(j.baseclasses.object, j.baseclasses.testtools):
     # __repr__ = __str__
 
     def test_sshagent(self, name=""):
-        self._tests_run(name=name)
+        self._tests_run(name=name, die=True)
