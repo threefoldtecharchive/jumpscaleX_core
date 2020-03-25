@@ -11,31 +11,30 @@ def test_schema_update():
     automatically use the latest schema, as long as the changes don't include indexed fields
     """
 
-    bcdb, _ = j.data.bcdb._test_model_get()
-
     # to cover all cases, we'll test adding/removing fields of simeple types, and also type object. Also, test that a sub object's fields change
 
     old_schema = """
-    @url = jumpscale.bcdb.test.house
+    @url = jumpscale.bcdb.test.house_schema_update
     name** = "" (S)
     active** = "" (B)
     enum = "a,b,c" (E) # enum field that will be modified
     cost** =  (N)
     toremove = "" # field to be removed
-    furniture = (O) !jumpscale.bcdb.test.furniture
-    owner = (O) !jumpscale.bcdb.test.owner
+    furniture = (O) !jumpscale.bcdb.test.furniture_schema_update
+    owner = (O) !jumpscale.bcdb.test.owner_schema_update
 
-    @url = jumpscale.bcdb.test.room
+    @url = jumpscale.bcdb.test.room_schema_update
     name = "" (S)
 
-    @url = jumpscale.bcdb.test.furniture
+    @url = jumpscale.bcdb.test.furniture_schema_update
     name = "" (S)
 
-    @url = jumpscale.bcdb.test.owner
+    @url = jumpscale.bcdb.test.owner_schema_update
     name = "" (S)
     """
-
-    model = bcdb.model_get(schema=old_schema)
+    j.debug()
+    bcdb, _ = j.data.bcdb._test_model_get(schema=old_schema)
+    model = bcdb.model_get(url="jumpscale.bcdb.test.house_schema_update")
     schema_md5 = model.schema._md5
 
     obj = model.new()
@@ -60,16 +59,16 @@ def test_schema_update():
     assert obj._schema._md5 == schema_md5
 
     schema_2 = """
-    @url = jumpscale.bcdb.test.house
+    @url = jumpscale.bcdb.test.house_schema_update
     name** = "" (S)
     active** = "" (B)
     cost** =  (N)
     enum = "a,b,c,d" (E) # enum field that was modified
     newprop = "" # new field added
-    room = (O) !jumpscale.bcdb.test.room
-    owner = (O) !jumpscale.bcdb.test.owner
+    room = (O) !jumpscale.bcdb.test.room_schema_update
+    owner = (O) !jumpscale.bcdb.test.owner_schema_update
 
-    @url = jumpscale.bcdb.test.owner
+    @url = jumpscale.bcdb.test.owner_schema_update
     name = "" (S)
     email = "" (S)
     """
@@ -89,7 +88,7 @@ def test_schema_update():
     assert not hasattr(obj, "furniture")
 
     # get the model again using the url to make sure it will get the latest
-    model = bcdb.model_get(url="jumpscale.bcdb.test.house")
+    model = bcdb.model_get(url="jumpscale.bcdb.test.house_schema_update")
     assert model.schema._md5 == model_updated.schema._md5
 
     obj = model.new()
