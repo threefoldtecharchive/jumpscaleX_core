@@ -72,7 +72,14 @@ class ExecutorSSH(ExecutorBase):
         cmd = self._replace(
             cmd, args={"LOGIN": self.sshclient.login, "ADDR": self.sshclient.addr, "PORT": self.sshclient.port}
         )
-        j.sal.process.executeWithoutPipe(cmd)
+        error = False
+        try:
+            j.sal.process.executeWithoutPipe(cmd)
+        except Exception as e:
+            error = True
+        self.execute("rm -f /tmp/myfile")
+        if error:
+            raise j.exceptions.Base("cannot start mosh, see error", data=e)
 
     def _execute_cmd(self, cmd, interactive=True, showout=True, die=True, timeout=3600):
         res = self.sshclient.execute(cmd=cmd, interactive=interactive, showout=showout, die=die, timeout=timeout)

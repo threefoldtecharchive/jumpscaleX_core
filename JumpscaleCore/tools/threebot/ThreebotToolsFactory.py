@@ -355,6 +355,24 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
         data_list = [True, 1, [1, 2, "a"], jsxobject, "astring", ddict]
         return data_list
 
+    @property
+    def with_threebotconnect(self):
+        return j.core.myenv.config.get("THREEBOT_CONNECT", False)
+
+    def threebotconnect_enable(self):
+        """
+        enables threebotconnect auth
+        """
+        j.core.myenv.config["THREEBOT_CONNECT"] = True
+        j.core.myenv.config_save()
+
+    def threebotconnect_disable(self):
+        """
+        disables threebotconnect auth
+        """
+        j.core.myenv.config["THREEBOT_CONNECT"] = False
+        j.core.myenv.config_save()
+
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/549")
     def test_register_nacl_clients_get(self):
         """

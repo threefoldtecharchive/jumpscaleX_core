@@ -65,7 +65,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
                     return True
             return False
 
-        fallback_ssl_key_path = j.core.tools.text_replace("{DIR_BASE}/cfg/ss/resty-auto-ssl-fallback.crt")
+        fallback_ssl_key_path = j.core.tools.text_replace("{DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.crt")
         if force or need_install() or not j.sal.fs.exists(fallback_ssl_key_path):
             j.servers.openresty.install()
             j.builders.db.zdb.install()
@@ -89,6 +89,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
             the packages need to reside in this repo otherwise they will not be found,
             centralized registration will be added but is not there yet
 
+
         :return:
         """
         self._starting_ = True
@@ -102,20 +103,32 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
                 self.default.stop()
 
             if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) is False:
-                self.install()
+                self.install(force=False)
+                
                 client = self.default.start(background=True, packages=packages)
                 assert "." in client.package_name
             else:
                 client = j.clients.gedis.get(name="threebot", port=8901)
-                if not "." in client.package_name:
-                    j.shell()
+                # if not "." in client.package_name:
+                #     j.shell()
                 assert "." in client.package_name
 
             client.reload()
+
+            # need to test sonic, zdb
+            # ZDB
+            assert j.sal.nettools.tcpPortConnectionTest("localhost", port=9900)
+            # SONIC
+            assert j.sal.nettools.tcpPortConnectionTest("localhost", port=1491)
+            # HTTP
+            assert j.sal.nettools.tcpPortConnectionTest("localhost", port=80)
+            # HTTPS
+            # assert j.sal.nettools.tcpPortConnectionTest("localhost", port=443)
+
             return client
 
         else:
-            self.install()
+            self.install(force=False)
             self.default.start(background=False, packages=packages, with_shell=with_shell)
 
         del self._starting_
@@ -144,7 +157,10 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
         rm -rf {DIR_BASE}/cfg/bcdb
         rm -rf {DIR_BASE}/cfg/schema_meta.msgpack
         rm -rf {DIR_BASE}/cfg/sonic_config_threebot.cfg
-        rm -rf {DIR_BASE}/var
+        rm -rf {DIR_BASE}/var/bcdb
+        rm -rf {DIR_BASE}/var/capnp
+        rm -rf {DIR_BASE}/var/codegen
+        # rm -rf {DIR_BASE}/var && echo
         """
         if debug:
             j.core.myenv.config["LOGGER_LEVEL"] = 10
@@ -231,14 +247,14 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
         docker = self._docker_jumpscale_get(name="3bot", delete=delete)
         if j.core.myenv.platform() != "linux":
             # only need to use wireguard if on osx or windows (windows not implemented)
-            docker.sshexec("source /sandbox/env.sh;jsx wireguard")  # get the wireguard started
+            docker.execute("source /sandbox/env.sh;jsx wireguard")  # get the wireguard started
             docker.wireguard.connect()
 
         self._log_info("check we can reach the container")
         assert j.sal.nettools.waitConnectionTest(docker.config.ipaddr, 22, timeout=30)
 
         self._log_info("start the threebot server")
-        docker.sshexec("source /sandbox/env.sh;kosmos 'j.servers.threebot.start(packages_add=True)'")
+        docker.execute("source /sandbox/env.sh;kosmos 'j.servers.threebot.start(packages_add=True)'")
         j.shell()
 
     def docker_environment_multi(self):

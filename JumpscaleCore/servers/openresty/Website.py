@@ -1,4 +1,5 @@
-from .Location import Locations
+from .Location import render_config_template, Locations
+
 from Jumpscale import j
 
 
@@ -23,40 +24,6 @@ class Website(j.baseclasses.factory_data):
         domain = ""
         path = ""
         mother_id** = 0 (I)
-        """
-
-    CONFIG = """
-
-    {% if website.ssl %}
-    server {
-      {% if website.domain %}
-      server_name ~^(www\.)?{{website.domain}}$;
-      {% endif %}
-      listen {{website.port}} ssl;
-      ssl_certificate_by_lua_block {
-        auto_ssl:ssl_certificate()
-      }
-      ssl_certificate {DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.crt;
-      ssl_certificate_key {DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.key;
-      default_type text/html;
-
-      include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
-      include vhosts/*.conf.loc;
-    }
-    {% else %}
-    server {
-      {% if website.domain %}
-      server_name ~^(www\.)?{{website.domain}}$;
-      {% endif %}
-      listen {{website.port}};
-
-      default_type text/html;
-      include {{website.path_cfg_dir}}/{{website.name}}_locations/*.conf;
-      include vhosts/*.conf.loc;
-    }
-
-    {% endif %}
-
         """
 
     @property
@@ -91,9 +58,8 @@ class Website(j.baseclasses.factory_data):
         """
 
         j.sal.fs.createDir(self.path_cfg_dir)
-        self.CONFIG = self.CONFIG.replace("{DIR_BASE}", j.dirs.BASEDIR)
-        r = j.tools.jinja2.template_render(text=self.CONFIG, website=self)
-        j.sal.fs.writeFile(self.path_cfg, r)
+        config = render_config_template("website", base_dir=j.dirs.BASEDIR, website=self)
+        j.sal.fs.writeFile(self.path_cfg, config)
 
         for locationsconfigs in self.locations.find():
             locationsconfigs.configure()

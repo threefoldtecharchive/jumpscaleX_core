@@ -42,13 +42,15 @@ class SSHKey(j.baseclasses.object_config):
                 self._init(**kwargs)
         else:
             if self.privkey:
-                c = j.sal.fs.readFile(self.path)
-                if not c.strip() == self.privkey.strip():
-                    raise j.exceptions.Input("mismatch between key in BCDB and in your filesystem (PRIVKEY)")
+                if j.sal.fs.exists(self.path):
+                    c = j.sal.fs.readFile(self.path)
+                    if not c.strip() == self.privkey.strip():
+                        raise j.exceptions.Input("mismatch between key in BCDB and in your filesystem (PRIVKEY)")
             if self.pubkey:
-                c = j.sal.fs.readFile("%s.pub" % (self.path))
-                if not c.strip() == self.pubkey.strip():
-                    raise j.exceptions.Input("mismatch between key in BCDB and in your filesystem (PUBKEY)")
+                if j.sal.fs.exists("%s.pub" % (self.path)):
+                    c = j.sal.fs.readFile("%s.pub" % (self.path))
+                    if not c.strip() == self.pubkey.strip():
+                        raise j.exceptions.Input("mismatch between key in BCDB and in your filesystem (PUBKEY)")
 
         assert j.sal.fs.exists(self.path)
 

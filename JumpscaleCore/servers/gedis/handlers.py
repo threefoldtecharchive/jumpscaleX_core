@@ -248,6 +248,7 @@ class Handler(JSBASE):
             self._log_error("unexpected error: %s" % str(e), context="%s:%s" % address, exception=e)
         finally:
             gedis_socket.on_disconnect()
+            # self._log_error("connection closed: %s" % str(e), context="%s:%s" % address, exception=e)
 
     def _handle_gedis_session(self, gedis_socket, address, user_session=None):
         """

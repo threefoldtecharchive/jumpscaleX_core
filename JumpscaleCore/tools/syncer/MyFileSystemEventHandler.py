@@ -9,10 +9,12 @@ from watchdog.events import FileSystemEventHandler, FileModifiedEvent, DirModifi
 from watchdog.observers import Observer
 from watchdog_gevent import Observer
 
+# import time
 from watchdog.events import FileModifiedEvent, DirModifiedEvent
 
 # from gevent import Greenlet
-# import gevent
+import gevent
+
 #
 #
 # class FileSystemMonitor(Greenlet):
@@ -46,7 +48,7 @@ class FileSystemMonitor:
     def __init__(self, syncer=None):
         self.syncer = syncer
         self.event_handler = MyFileSystemEventHandler(syncer=self.syncer)
-        self.observer = Observer()
+        self.observer = Observer(timeout=20)
 
     def _log_info(self, msg):
         print(" - %s" % msg)
@@ -62,11 +64,12 @@ class FileSystemMonitor:
 
         self._log_info("WE ARE MONITORING")
 
-        # try:
-        #     while True:
-        #         time.sleep(1)
-        # except KeyboardInterrupt:
-        #     pass
+        try:
+            while True:
+                gevent.time.sleep(1)
+        except KeyboardInterrupt:
+            self.observer.stop()
+        self.observer.join()
 
     def __str__(self):
         return "FileSystemMonitor"

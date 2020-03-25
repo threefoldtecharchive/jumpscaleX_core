@@ -34,11 +34,10 @@
     <content url="file://$MODULE_DIR$/../../../jumpscaleX_threebot/kosmos">
       <sourceFolder url="file://$MODULE_DIR$/../../../jumpscaleX_threebot/kosmos" isTestSource="false" />
     </content>
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="Python 3.7" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="TestRunnerService">
-    <option name="projectConfiguration" value="pytest" />
     <option name="PROJECT_TEST_RUNNER" value="pytest" />
   </component>
 </module>
