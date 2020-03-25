@@ -9,7 +9,7 @@ from importlib import util
 import time
 
 
-DEFAULT_BRANCH = "unstable"
+DEFAULT_BRANCH = "development"
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
