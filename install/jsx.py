@@ -222,6 +222,11 @@ def container_install(
         identity_path = os.path.join(IT.MyEnv.config["DIR_VAR"], "containers/shared/keys", identity)
         if not os.path.exists(identity_path):
             raise RuntimeError("Couldn't find specified identity: {}".format(identity_path))
+        identity_contents = os.listdir(identity_path)
+        if "key.priv" not in identity_contents or "secret" not in identity_contents:
+            raise RuntimeError(
+                "Need to have both `secret` file containing private key secret and `key.priv` for the private key"
+            )
 
     mount = not nomount
 

@@ -4605,9 +4605,12 @@ class JumpscaleInstaller:
         MyEnv.check_platform()
 
         if identity:
+            identity_path = os.path.join(MyEnv.config["DIR_BASE"], "myhost/keys", identity)
+            secret = Tools.file_read(os.path.join(identity_path, "secret"))
             MyEnv.config["IDENTITY_NAME"] = identity
+            MyEnv.config["SECRET"] = secret.decode().strip()
             MyEnv.config_save()
-            shutil.copytree(os.path.join(MyEnv.config["DIR_BASE"], "myhost/keys", identity), os.path.join(MyEnv.config["DIR_CFG"], "keys", "default"))
+            shutil.copytree(identity_path, os.path.join(MyEnv.config["DIR_CFG"], "keys", "default"))
         # will check if there's already a key loaded (forwarded) will continue installation with it
         rc, _, _ = Tools.execute("ssh-add -L")
         if not rc:
