@@ -4,7 +4,6 @@ skip = j.baseclasses.testtools._skip
 
 
 def test_models():
-    j.debug()
     """
     to run:
 
@@ -37,7 +36,6 @@ def test_models():
 
     # check the right schema in meta stor
     s_ = j.data.schema.get(url="jumpscale.bcdb.test.house")
-    j.debug()
     assert j.data.schema._md5(s) == s_._md5
 
     model = bcdb.model_get(url="jumpscale.bcdb.test.house")
