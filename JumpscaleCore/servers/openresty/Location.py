@@ -6,6 +6,10 @@ TEMPLATES_PATH = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), "templates")
 env = j.tools.jinja2.env_get(TEMPLATES_PATH)
 
 
+def render_config_template(name, **kwargs):
+    return env.get_template(f"{name}.conf").render(**kwargs)
+
+
 class LocationsConfiguration(j.baseclasses.object_config):
     """
     Website hosted in openresty
@@ -94,13 +98,10 @@ class LocationsConfiguration(j.baseclasses.object_config):
     def path_web_default(self):
         return self._parent._parent.path_web_default
 
-    def render(self, name, obj):
-        return env.get_template(f"{name}.conf").render(obj=obj)
-
     def write_config(self, location, content=None):
         if not content:
             template_name = location._schema.url.split(".")[-1]
-            content = self.render(template_name, location)
+            content = render_config_template(template_name, obj=location)
         if not self.WITH_THREEBOTCONNECT:
             location.is_auth = False
         j.sal.fs.writeFile(self.path_cfg_get(location.name), content)
