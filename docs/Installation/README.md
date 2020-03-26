@@ -53,6 +53,9 @@ Make sure to check whether **this** ssh key is stored in your github account. If
 
 ### Installation
 
+#### Windows Installation
+for windows installation use [js windows installation](./windows_installation/jsx_windows.md)
+
 #### Download the installer file, change its permission to make it executable
 
 ```bash
@@ -146,4 +149,3 @@ chmod +x /tmp/jsx;
 [init the jumpscale code, can be required after pulling new code](generation.md)
 
 ## When you want to collaborate
-

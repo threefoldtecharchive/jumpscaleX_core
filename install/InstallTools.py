@@ -5806,11 +5806,8 @@ class DockerContainer:
         if threebot:
             self.executor.state_set("STATE_THREEBOT")
 
-    def install_jupyter(self, force=False):
-        if force:
-            self.execute("j.servers.notebook.install(force=True)", jumpscale=True)
-        else:
-            self.execute("j.servers.notebook.install()", jumpscale=True)
+    def install_jupyter(self):
+        self.execute(". /sandbox/env.sh; kosmos 'j.servers.notebook.install()'")
 
     def __repr__(self):
         return "# CONTAINER: \n %s" % Tools._data_serializer_safe(self.config.__dict__)

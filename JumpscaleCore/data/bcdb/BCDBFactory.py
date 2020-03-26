@@ -369,7 +369,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         if not bcdbname:
             for bcdb in list(self.instances.values()):
-                if bcdb.name in ('myjobs'):
+                if bcdb.name in ("myjobs",):
                     continue
 
                 self.export(name=name, bcdbname=bcdb.name, path=path, yaml=yaml, data=data, encrypt=encrypt)
@@ -592,6 +592,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         if ttype not in ["zdb", "sqlite", "redis", "sdb"]:
             raise j.exceptions.Input("ttype can only be zdb, redis or sqlite")
         assert name
+
         if ttype == "zdb":
             zdb = self._core_zdb  # has been started in start_servers_threebot_zdb_sonic
             assert namespace

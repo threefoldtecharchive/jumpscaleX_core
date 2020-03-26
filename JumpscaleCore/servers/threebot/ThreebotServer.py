@@ -384,13 +384,14 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         :return:
         """
+
         def load_package(name):
             if not j.tools.threebot_packages.exists(name=name):
                 raise j.exceptions.Input(f"Could not find package:{name}")
             p = j.tools.threebot_packages.get(name=name)
             p.status = "tostart"  # means we need to start
 
-        requiredpackages = ["zerobot.base", "zerobot.webinterface", "zerobot.admin"]
+        requiredpackages = ["zerobot.base", "zerobot.webinterface", "zerobot.admin", "zerobot.alerta"]
         extrapackages = ["zerobot.myjobs_ui", "zerobot.packagemanager", "zerobot.oauth2"]
         packages = j.tools.threebot_packages.find()
 
