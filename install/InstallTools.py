@@ -3,7 +3,7 @@ import getpass
 import pickle
 import re
 import copy
-
+import time
 try:
     import msgpack
 except:
@@ -4244,6 +4244,7 @@ class BaseInstaller:
                 "psutil>=5.4.3",
                 "pudb>=2017.1.2",
                 "pyblake2>=0.9.3",
+                "cython",
                 "pycapnp>=0.5.12",
                 "PyGithub>=1.34",
                 "pymux>=0.13",
@@ -4284,7 +4285,6 @@ class BaseInstaller:
                 "Brotli>=0.6.0",
                 "gipc",
                 # "blosc>=1.5.1",  #don't think we use it, I hope
-                "cython",
                 "scikit-build",
                 # "cmake",  #DO WE NEED THIS??? better not, takes for ever
                 "zerotier>=1.1.2",
@@ -4378,6 +4378,7 @@ class BaseInstaller:
         rm -f /sandbox/cfg/schema_meta.msgpack
         rm -rf /sandbox/cfg/bcdb
         rm -rf /sandbox/cfg/keys
+        rm -f /var/executor_data
         rm -rf /sandbox/cfg/nginx/default_openresty_threebot/static/weblibs
         rm -rf /sandbox/root
         rm -rf /usr/src
@@ -4650,10 +4651,11 @@ class JumpscaleInstaller:
             timestop = time.time() + 240.0
             ok = False
             while ok == False and time.time() < timestop:
-                if MyEnv.db.get("threebot.started") == b"1":
+                try:
+                    Tools.execute_jumpscale("assert j.core.db.get('threebot.started') == b'1'")
                     ok = True
                     break
-                else:
+                except:
                     print(" - threebot starting")
                     time.sleep(1)
 
@@ -5643,10 +5645,10 @@ class DockerContainer:
                 self._internal_image_save()
                 self.stop()
                 self.start(mount=False, update=False)
-
+            # wait for docker to start and ssh become available
+            time.sleep(10)
             self.execute(BaseInstaller.cleanup_script_get(), die=False)
-
-            self.dexec("rm -rf /sandbox/code")
+            self.dexec("umount /sandbox/code")
 
             if development:
                 export_import("%s_dev" % image)
@@ -5802,11 +5804,8 @@ class DockerContainer:
         if threebot:
             self.executor.state_set("STATE_THREEBOT")
 
-    def install_jupyter(self, force=False):
-        if force:
-            self.execute("j.servers.notebook.install(force=True)", jumpscale=True)
-        else:
-            self.execute("j.servers.notebook.install()", jumpscale=True)
+    def install_jupyter(self):
+        self.execute(". /sandbox/env.sh; kosmos 'j.servers.notebook.install()'")
 
     def __repr__(self):
         return "# CONTAINER: \n %s" % Tools._data_serializer_safe(self.config.__dict__)
