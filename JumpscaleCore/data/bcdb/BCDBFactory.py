@@ -363,13 +363,12 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         if not path:
             path = j.core.tools.text_replace("{DIR_VAR}/bcdb_exports/%s" % name)
-
         if not name and j.sal.fs.exists(path):
             j.sal.fs.remove(path)
 
         if not bcdbname:
             for bcdb in list(self.instances.values()):
-                if bcdb.name in ('myjobs'):
+                if bcdb.name in ("myjobs",):
                     continue
 
                 self.export(name=name, bcdbname=bcdb.name, path=path, yaml=yaml, data=data, encrypt=encrypt)
@@ -589,7 +588,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             bcdb = self.get(name=name)
             return bcdb
 
-        if ttype not in ["zdb", "sqlite", "redis", "sdb"]:
+        if ttype not in ["zdb", "sqlite", "redis"]:
             raise j.exceptions.Input("ttype can only be zdb, redis or sqlite")
         assert name
         if ttype == "zdb":
@@ -601,7 +600,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             if not zdb_admin.namespace_exists(namespace):
                 zdb_admin.namespace_new(namespace, secret=adminsecret_, maxsize=0, die=True)
             storclient = zdb.client_get(name=name, secret=adminsecret_, nsname=namespace)
-        elif ttype in ("sqlite", "sdb"):
+        elif ttype == "sqlite":
             assert not namespace  # should be empty only relevant in ZDB
             storclient = j.clients.sqlitedb.client_get(bcdbname=name)
         elif ttype == "redis":
