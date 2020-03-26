@@ -18,7 +18,7 @@ def includes(doc, path, title=3, **args):
             msg = "cannot execute macro includes, could not find doc:\n%s" % docName
             doc.raiseError(msg)
             return "```\n%s\n```\n" % msg
-        out += "%s %s\n\n" % (titleprefix, doc2.title or docName)
+        out += "%s %s\n\n" % (titleprefix, docName)
         out += "%s\n\n" % doc2.markdown_source.rstrip("\n")
 
     return out

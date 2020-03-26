@@ -41,7 +41,7 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
         @url = jumpscale.threebot.package.bcdb.1
         0: name = ""
         1: namespace = ""
-        2: type = "zdb,sqlite,redis" (E)
+        2: type = "zdb,sqlite,redis,sdb" (E)
         3: instance = "default"
 
         """

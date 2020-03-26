@@ -81,7 +81,7 @@ def jumpscale_get(die=True):
 
 # have to do like this, did not manage to call the click enabled function (don't know why)
 def _configure(
-    codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey_words=None, secret=None,
+    codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey_words=None, secret=None
 ):
     interactive = not no_interactive
     sshagent_use = not no_sshagent
@@ -222,6 +222,11 @@ def container_install(
         identity_path = os.path.join(IT.MyEnv.config["DIR_VAR"], "containers/shared/keys", identity)
         if not os.path.exists(identity_path):
             raise RuntimeError("Couldn't find specified identity: {}".format(identity_path))
+        identity_contents = os.listdir(identity_path)
+        if "key.priv" not in identity_contents or "secret" not in identity_contents:
+            raise RuntimeError(
+                "Need to have both `secret` file containing private key secret and `key.priv` for the private key"
+            )
 
     mount = not nomount
 
@@ -529,10 +534,8 @@ def wiki_load(name=None, url=None, reset=False, foreground=False):
                 "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/zerobot/wiki_examples/wiki",
             )
         )
-        wikis.append(("tokens", "https://github.com/threefoldfoundation/info_tokens/tree/development/docs"))
-        wikis.append(("foundation", "https://github.com/threefoldfoundation/info_foundation/tree/development/docs"))
-        wikis.append(("grid", "https://github.com/threefoldfoundation/info_grid/tree/development/docs"))
-        wikis.append(("freeflowevents", "https://github.com/freeflownation/info_freeflowevents/tree/development/docs"))
+        wikis.append(("threefold", "https://github.com/threefoldfoundation/info_threefold/tree/development/docs"))
+
     else:
         wikis.append((name, url))
 
@@ -627,7 +630,7 @@ def threebotbuilder(push=False, base=False, cont=False, noclean=False, developme
 
     docker.install_jumpscale(branch=DEFAULT_BRANCH, force=delete, pull=False, threebot=True)
     docker._install_tcprouter()
-    docker.install_jupyter(force=not cont)
+    docker.install_jupyter()
 
     docker.image = dest
 
@@ -762,15 +765,15 @@ def _container_shell(name="3bot", delete=False, nomount=False):
     httpport = docker.config.portrange * 10 + 7000
     msg = f"""
     WELCOME TO YOUR INSTALLED LOCAL KOSMOS ENVIRONMENT (THREEBOT)
-    
+
     some tips to get started
 
     - kosmos  : to get shell into the environment
-    - 3bot    : to start/stop a 3bot ...    
+    - 3bot    : to start/stop a 3bot ...
     - tmux a  : to see the parallel processes running (ctrl b 1 to e.g. go to panel 1)
     - htop    : to see which processes are taking how much resource
     - go to your local machine and use browser to go to: http://localhost:{httpport}/ will show webinterface
-    
+
     """
 
     docker.shell("echo '%s';bash" % IT.Tools.text_replace(msg))
