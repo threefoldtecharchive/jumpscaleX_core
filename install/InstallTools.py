@@ -4,6 +4,7 @@ import pickle
 import re
 import copy
 import time
+
 try:
     import msgpack
 except:
@@ -5648,7 +5649,8 @@ class DockerContainer:
             # wait for docker to start and ssh become available
             time.sleep(10)
             self.execute(BaseInstaller.cleanup_script_get(), die=False)
-            self.dexec("umount /sandbox/code")
+            self.dexec("umount /sandbox/code", die=False)
+            self.dexec("rm -rf /sandbox/code")
 
             if development:
                 export_import("%s_dev" % image)
@@ -5804,8 +5806,11 @@ class DockerContainer:
         if threebot:
             self.executor.state_set("STATE_THREEBOT")
 
-    def install_jupyter(self):
-        self.execute(". /sandbox/env.sh; kosmos 'j.servers.notebook.install()'")
+    def install_jupyter(self, force=False):
+        if force:
+            self.execute("j.servers.notebook.install(force=True)", jumpscale=True)
+        else:
+            self.execute("j.servers.notebook.install()", jumpscale=True)
 
     def __repr__(self):
         return "# CONTAINER: \n %s" % Tools._data_serializer_safe(self.config.__dict__)
