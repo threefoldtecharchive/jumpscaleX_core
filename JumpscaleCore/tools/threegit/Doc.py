@@ -49,14 +49,11 @@ class Doc(j.baseclasses.object):
 
         self._extension = None
 
-        self._data = {}  # is all data, from parents as well, also from default data
-
         self._md = None
 
         self._content = None
 
         self._links = []
-        self.render_obj = None
 
     def render_macro_template(self, name, **kwargs):
         return env.get_template(name).render(**kwargs)
@@ -103,45 +100,8 @@ class Doc(j.baseclasses.object):
             self._extension = j.sal.fs.getFileExtension(self.path)
         return self._extension
 
-    @property
-    def title(self):
-        if "title" in self.data:
-            return self.data["title"]
-        else:
-            self.error_raise("Could not find title in doc.")
-
     def error_raise(self, msg):
         return self.docsite.error_raise(msg, doc=self)
-
-    @property
-    def data(self):
-        if self._data == {}:
-
-            # look for parts which are data
-            for part in self.parts_get(cat="data"):
-                for key, val in part.ddict.items():
-                    print("data update")
-                    if j.data.types.list.check(val):
-                        if key not in self._data:
-                            self._data[key] = []
-                        for subval in val:
-                            if subval not in self._data[key] and subval != "":
-                                self._data[key].append(subval)
-                    else:
-                        self._data[key] = val
-
-            # now we have all data from the document itself
-
-            keys = [part for part in self.docsite.data_default.keys()]
-            keys.sort(key=len)
-            for key in keys:
-                key = key.strip("/")
-                if self.path_rel.startswith(key):
-                    data = self.docsite.data_default[key]
-                    self._data_update(data)
-            print("data process doc")
-
-        return self._data
 
     @property
     def markdown_obj(self):
@@ -168,12 +128,7 @@ class Doc(j.baseclasses.object):
         """
         markdown after processing of the full doc
         """
-        res = self.markdown_obj.markdown
-
-        if "{{" in res:
-            # TODO:*1 rendering does not seem to be ok
-            res = j.tools.jinja2.template_render(text=res, obj=self.render_obj, **self.data)
-        return res
+        return self.markdown_obj.markdown
 
     @property
     def markdown_source(self):
@@ -207,13 +162,6 @@ class Doc(j.baseclasses.object):
                 return out
             out += "%s\n" % line
         return out
-
-    def _data_update(self, data):
-        res = {}
-        for key, valUpdate2 in data.items():
-            # check for the keys not in the self.data yet and add them, the others are done above
-            if key not in self._data:
-                self._data[key] = copy.copy(valUpdate2)  # needs to be copy.copy otherwise we rewrite source later
 
     def link_get(self, filename=None, cat=None, nr=0, die=True):
         """
