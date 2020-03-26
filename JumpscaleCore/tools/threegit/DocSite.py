@@ -350,8 +350,8 @@ class DocSite(j.baseclasses.object):
         if name in self.files:
             return self.files[name]
 
-        name = name.replace(j.sal.fs.getFileExtension(name), "")
         if name:
+            name = name.replace(j.sal.fs.getFileExtension(name), "")
             for path in self.files.values():
                 partial_path = path.lower().replace(j.sal.fs.getFileExtension(path), "")
                 if partial_path.endswith(name):
