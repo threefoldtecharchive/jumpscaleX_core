@@ -179,8 +179,11 @@ class GedisChatBotSession(JSBASE):
             try:
                 self.topic_method(bot=self)
             except Exception as e:
+                errmsg = "something went wrong please contact support"
                 j.errorhandler.exception_handle(e, die=False)
-                return self.md_show("Something went wrong please contact support")
+                if "message" in dir(e):
+                    errmsg += f" with error: {e.message}"
+                return self.md_show(errmsg)
 
         self.greenlet = gevent.spawn(wrapper)
 
