@@ -256,8 +256,12 @@ class HasLogs(PythonInputFilter):
 
 class IsInsideString(PythonInputFilter):
     def __call__(self):
-        text = self.python_input.default_buffer.document.text_before_cursor
-        grammer = self.python_input._completer._path_completer_grammar
+        # TODO: something going wrong here, maybe incompatible ptpython?
+        try:
+            text = self.python_input.default_buffer.document.text_before_cursor
+            grammer = self.python_input._completer._path_completer_grammar
+        except:
+            return False
         return bool(grammer.match(text))
 
 
@@ -481,7 +485,7 @@ def ptconfig(repl):
     # Enable input validation. (Don't try to execute when the input contains
     # syntax errors.)
     repl.enable_input_validation = True
-    repl.default_buffer.validate_while_typing = lambda: True
+    repl.default_buffer.validate_while_typing = lambda: False
 
     # Use this colorscheme for the code.
     repl.use_code_colorscheme("perldoc")
@@ -618,7 +622,6 @@ def ptconfig(repl):
             raise ValidationError(message=str(e))
         except:
             old_validator(self, document)
-
 
     repl._completer.__class__.get_completions = custom_get_completions
     repl._validator.__class__.validate = custom_validator

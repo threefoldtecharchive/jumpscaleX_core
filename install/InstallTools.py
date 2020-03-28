@@ -5375,17 +5375,21 @@ class DockerContainer:
         if True or ssh or update or not self.config.done_get("ssh"):
             print(" - Configure / Start SSH server")
 
-            self.dexec("rm -rf /sandbox/cfg/keys")
-            self.dexec("rm -f /root/.ssh/authorized_keys;/etc/init.d/ssh stop 2>&1 > /dev/null", die=False)
-            self.dexec("/usr/bin/ssh-keygen -A")
-            self.dexec("/etc/init.d/ssh start")
-            self.dexec("rm -f /etc/service/sshd/down")
+            self.dexec("rm -rf /sandbox/cfg/keys", showout=False)
+            self.dexec(
+                "rm -f /root/.ssh/authorized_keys;/etc/init.d/ssh stop 2>&1 > /dev/null", die=False, showout=False
+            )
+            self.dexec("/usr/bin/ssh-keygen -A", showout=False)
+            self.dexec("/etc/init.d/ssh start", showout=False)
+            self.dexec("rm -f /etc/service/sshd/down", showout=False)
 
             # get our own loaded ssh pub keys into the container
             SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
             if SSHKEYS.strip() != "":
-                self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS)
-            Tools.execute("mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"]))
+                self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS, showout=False)
+            Tools.execute(
+                "mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"], showout=False)
+            )
 
             # DIDNT seem to work well, next is better
             # cmd = 'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"' % (
@@ -5399,7 +5403,7 @@ class DockerContainer:
                 self.config.sshport,
                 MyEnv.config["DIR_HOME"],
             )
-            Tools.execute(cmd)
+            Tools.execute(cmd, showout=False)
 
         self.dexec("mkdir -p /root/state")
         if update or not self.done_get("install_base"):
@@ -5440,14 +5444,14 @@ class DockerContainer:
         data = json.loads(out)[0]
         return data
 
-    def dexec(self, cmd, interactive=False, die=True):
+    def dexec(self, cmd, interactive=False, die=True, showout=True):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
         if interactive:
             cmd2 = "docker exec -ti %s bash -c '%s'" % (self.name, cmd)
         else:
             cmd2 = "docker exec -t %s bash -c '%s'" % (self.name, cmd)
-        Tools.execute(cmd2, interactive=interactive, showout=True, replace=False, die=die)
+        Tools.execute(cmd2, interactive=interactive, showout=showout, replace=False, die=die)
 
     def shell(self, cmd=None):
         if not self.isrunning():
@@ -5712,6 +5716,8 @@ class DockerContainer:
     def install_jumpscale(
         self, secret=None, privatekey=None, force=False, threebot=True, pull=False, branch=None, identity=None
     ):
+        Tools.shell()
+        w
         redo = force  # is for jumpscale only
         if not force:
             if not self.executor.state_exists("STATE_JUMPSCALE"):
