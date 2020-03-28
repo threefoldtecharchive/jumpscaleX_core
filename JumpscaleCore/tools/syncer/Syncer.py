@@ -88,11 +88,11 @@ class Syncer(j.baseclasses.object_config):
 
         if self.paths == []:
             for item in [
-                "jumpscaleX_builders",
                 "jumpscaleX_core/",
                 "jumpscaleX_libs",
-                "jumpscaleX_libs_extra",
                 "jumpscaleX_threebot",
+                "jumpscaleX_builders",
+                "jumpscaleX_libs_extra",
                 "jumpscaleX_weblibs",
             ]:
                 self.paths.append(
@@ -100,12 +100,14 @@ class Syncer(j.baseclasses.object_config):
                 )
             self.save()
 
-    def _get_paths(self, executor=None):
+    def _get_paths(self, executor=None, paths=None):
         """
         :return: [[src,dest],...]
         """
         res = []
-        for item in self.paths:
+        if not paths:
+            paths = self.paths
+        for item in paths:
 
             if not item.startswith("/") and not item.startswith("{"):
                 item = j.sal.fs.getcwd() + "/" + item
@@ -138,10 +140,10 @@ class Syncer(j.baseclasses.object_config):
                 return dest
         raise j.exceptions.Base("did not find:%s" % src)
 
-    def monitor(self):
+    def monitor(self, minimal=True):
         from .MyFileSystemEventHandler import FileSystemMonitor
 
-        self._monitor = FileSystemMonitor(syncer=self)
+        self._monitor = FileSystemMonitor(syncer=self, minimal=minimal)
         print("## INSTRUCTIONS HOW TO USE")
         print("kosmos -p")
         print("do (if your client is called master): \n    j.clients.ssh.master.syncer.sync()")
@@ -259,10 +261,9 @@ class Syncer(j.baseclasses.object_config):
     #         item.delete()
     #     j.baseclasses.object_config.delete(self)
 
-    def sync(self, monitor=True):
+    def sync(self, monitor=True, minimal=True):
         """
         sync all code to the remote destinations, uses config as set in jumpscale.toml
-
         """
 
         for key, sshclient in self.sshclients.items():
@@ -285,4 +286,4 @@ class Syncer(j.baseclasses.object_config):
                 )
 
         if monitor:
-            self.monitor()
+            self.monitor(minimal=minimal)

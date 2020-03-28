@@ -4,6 +4,7 @@ import pickle
 import re
 import copy
 import time
+
 try:
     import msgpack
 except:
@@ -430,6 +431,7 @@ if redis:
         def fetch(self, block=True, timeout=None):
             """Return an item from the queue without removing"""
             if block:
+                # TODO: doesn not seem right
                 item = self._db_.brpoplpush(self.key, self.key, timeout)
             else:
                 item = self._db_.lindex(self.key, 0)
@@ -4378,7 +4380,6 @@ class BaseInstaller:
         rm -f /sandbox/cfg/schema_meta.msgpack
         rm -rf /sandbox/cfg/bcdb
         rm -rf /sandbox/cfg/keys
-        rm -f /var/executor_data
         rm -rf /sandbox/cfg/nginx/default_openresty_threebot/static/weblibs
         rm -rf /sandbox/root
         rm -rf /usr/src
@@ -5331,9 +5332,7 @@ class DockerContainer:
         if mount:
             MOUNTS = f"""
             -v {DIR_CODE}:/sandbox/code \
-            -v {DIR_BASE}/var/containers/shared:/sandbox/myhost \
-            -v {DIR_BASE}/var/containers/{self.config.name}/var:/sandbox/var \
-            -v {DIR_BASE}/var/containers/{self.config.name}/cfg:/sandbox/cfg
+            -v {DIR_BASE}/var/containers/shared:/sandbox/myhost
             """
             MOUNTS = Tools.text_strip(MOUNTS)
         else:
@@ -5355,7 +5354,7 @@ class DockerContainer:
         run_cmd2 = Tools.text_replace(re.sub("\s+", " ", run_cmd))
 
         print(" - Docker machine gets created: ")
-        print(run_cmd2)
+        # print(run_cmd2)
         Tools.execute(run_cmd2, interactive=False)
 
         self._update(update=update, ssh=ssh)
@@ -5374,17 +5373,21 @@ class DockerContainer:
         if True or ssh or update or not self.config.done_get("ssh"):
             print(" - Configure / Start SSH server")
 
-            self.dexec("rm -rf /sandbox/cfg/keys")
-            self.dexec("rm -f /root/.ssh/authorized_keys;/etc/init.d/ssh stop 2>&1 > /dev/null", die=False)
-            self.dexec("/usr/bin/ssh-keygen -A")
-            self.dexec("/etc/init.d/ssh start")
-            self.dexec("rm -f /etc/service/sshd/down")
+            self.dexec("rm -rf /sandbox/cfg/keys", showout=False)
+            self.dexec(
+                "rm -f /root/.ssh/authorized_keys;/etc/init.d/ssh stop 2>&1 > /dev/null", die=False, showout=False
+            )
+            self.dexec("/usr/bin/ssh-keygen -A", showout=False)
+            self.dexec("/etc/init.d/ssh start", showout=False)
+            self.dexec("rm -f /etc/service/sshd/down", showout=False)
 
             # get our own loaded ssh pub keys into the container
             SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
             if SSHKEYS.strip() != "":
-                self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS)
-            Tools.execute("mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"]))
+                self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS, showout=False)
+            Tools.execute(
+                "mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"], showout=False)
+            )
 
             # DIDNT seem to work well, next is better
             # cmd = 'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"' % (
@@ -5398,7 +5401,9 @@ class DockerContainer:
                 self.config.sshport,
                 MyEnv.config["DIR_HOME"],
             )
-            Tools.execute(cmd)
+            Tools.execute(cmd, showout=False)
+
+        # self.shell()
 
         self.dexec("mkdir -p /root/state")
         if update or not self.done_get("install_base"):
@@ -5406,7 +5411,6 @@ class DockerContainer:
             self.dexec("add-apt-repository ppa:wireguard/wireguard -y")
             self.dexec("apt-get update")
             self.dexec("DEBIAN_FRONTEND=noninteractive apt-get -y upgrade --force-yes")
-            print(" - Upgrade ubuntu ended")
             self.dexec("apt-get install mc git -y")
             self.dexec("apt-get install python3 -y")
             self.dexec("apt-get install wget tmux -y")
@@ -5417,6 +5421,7 @@ class DockerContainer:
             self.dexec("apt-get install wireguard -y")
             self.dexec("apt-get install locales -y")
             self.done_set("install_base")
+            print(" - Upgrade ubuntu ended")
 
         # cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % self.name
         # rc, out, err = Tools.execute(cmd, replace=False, showout=False, die=False)
@@ -5439,14 +5444,14 @@ class DockerContainer:
         data = json.loads(out)[0]
         return data
 
-    def dexec(self, cmd, interactive=False, die=True):
+    def dexec(self, cmd, interactive=False, die=True, showout=True):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
         if interactive:
             cmd2 = "docker exec -ti %s bash -c '%s'" % (self.name, cmd)
         else:
             cmd2 = "docker exec -t %s bash -c '%s'" % (self.name, cmd)
-        Tools.execute(cmd2, interactive=interactive, showout=True, replace=False, die=die)
+        Tools.execute(cmd2, interactive=interactive, showout=showout, replace=False, die=die)
 
     def shell(self, cmd=None):
         if not self.isrunning():
@@ -5648,7 +5653,8 @@ class DockerContainer:
             # wait for docker to start and ssh become available
             time.sleep(10)
             self.execute(BaseInstaller.cleanup_script_get(), die=False)
-            self.dexec("umount /sandbox/code")
+            self.dexec("umount /sandbox/code", die=False)
+            self.dexec("rm -rf /sandbox/code")
 
             if development:
                 export_import("%s_dev" % image)
@@ -5703,7 +5709,6 @@ class DockerContainer:
     #     ]:
     #         if i in MyEnv.config:
     #             CONFIG[i] = MyEnv.config[i]
-    #
     #     Tools.config_save(self._path + "/cfg/jumpscale_config.toml", CONFIG)
     #
 
@@ -6213,6 +6218,7 @@ class ExecutorSSH:
         self.debug = debug
         self._id = None
         self._env = {}
+        self._config = {}
         self.readonly = False
         self.CURDIR = ""
         self._data_path = "/var/executor_data"
@@ -6237,11 +6243,11 @@ class ExecutorSSH:
         if self.exists(self._data_path):
             data = self.file_read(self._data_path, binary=True)
             self._config = pickle.loads(data)
-            if "DIR_BASE" not in self._config:
-                self.systemenv_load()
-                self.save()
         else:
             self._config = {}
+        if "DIR_BASE" not in self._config:
+            self.systemenv_load()
+            self.save()
 
     def cmd_installed(self, cmd):
         rc, out, err = self.execute("which %s" % cmd, die=False, showout=False)
@@ -6384,17 +6390,6 @@ class ExecutorSSH:
             self.save()
         return self.config["IN_DOCKER"]
 
-    # @property
-    # def env_on_system(self):
-    #     if not self._env_on_system:
-    #         self.systemenv_load()
-    #         self._env_on_system = pickle.loads(self.env_on_system_msgpack)
-    #     return self._env_on_system
-    #
-    # @property
-    # def env(self):
-    #     return self.env_on_system["ENV"]
-
     @property
     def state(self):
         if "state" not in self.config:
@@ -6460,6 +6455,7 @@ class ExecutorSSH:
         export
         echo --TEXT--
         """
+        print(" - load systemenv")
         rc, out, err = self.execute(C, showout=False, interactive=False, replace=False)
         res = {}
         state = ""
@@ -6516,10 +6512,13 @@ class ExecutorSSH:
         def get_cfg(name, default):
             name = name.upper()
             if "CFG_JUMPSCALE" in res and name in res["CFG_JUMPSCALE"]:
-                self.config[name] = res["CFG_JUMPSCALE"]
+                self._config[name] = res["CFG_JUMPSCALE"][name]
                 return
-            if name not in self.config:
-                self.config[name] = default
+            if name not in self._config:
+                self._config[name] = default
+
+        if self._config == None:
+            self._config = {}
 
         get_cfg("DIR_HOME", res["ENV"]["HOME"])
         get_cfg("DIR_BASE", "/sandbox")

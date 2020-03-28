@@ -332,7 +332,7 @@ class SSHClientBase(j.baseclasses.object_config):
             cmd = cmd.replace("'", '"')
         cmd2 = "ssh -oStrictHostKeyChecking=no -t {LOGIN}@{ADDR} -A -p {PORT} '%s'" % (cmd)
         cmd3 = j.core.tools.text_replace(cmd2, args={"LOGIN": self.login, "ADDR": self.addr, "PORT": self.port})
-        return j.core.tools.execute(cmd3, interactive=True, showout=False, replace=False, asfile=True, die=die)
+        return j.core.tools.execute(cmd3, interactive=True, showout=False, replace=False, die=die)
 
     def __repr__(self):
         return "SSHCLIENT ssh: %s (%s)" % (self.addr, self.port)

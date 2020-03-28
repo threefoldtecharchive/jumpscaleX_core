@@ -148,11 +148,13 @@ def get_completions(self, document, complete_event):
     try:
         parent, member, prefix = get_current_line(document)
     except ValueError:
+        j.tools.logger._log_error("current line error", data=traceback.format_exc())
         return
 
     try:
         obj = eval_code(parent, self.get_locals(), self.get_globals())
     except (AttributeError, NameError):
+        j.tools.logger._log_error("eval code error", data=traceback.format_exc())
         return
     if obj:
         if isinstance(obj, j.baseclasses.object):
@@ -256,8 +258,12 @@ class HasLogs(PythonInputFilter):
 
 class IsInsideString(PythonInputFilter):
     def __call__(self):
-        text = self.python_input.default_buffer.document.text_before_cursor
-        grammer = self.python_input._completer._path_completer_grammar
+        # TODO: something going wrong here, maybe incompatible ptpython?
+        try:
+            text = self.python_input.default_buffer.document.text_before_cursor
+            grammer = self.python_input._completer._path_completer_grammar
+        except:
+            return False
         return bool(grammer.match(text))
 
 
@@ -589,6 +595,7 @@ def ptconfig(repl):
         try:
             _, _, prefix = get_current_line(document)
         except ValueError:
+            j.tools.logger._log_error("No current line\n" + traceback.format_exc())
             return
 
         completions = []
@@ -618,7 +625,6 @@ def ptconfig(repl):
             raise ValidationError(message=str(e))
         except:
             old_validator(self, document)
-
 
     repl._completer.__class__.get_completions = custom_get_completions
     repl._validator.__class__.validate = custom_validator
