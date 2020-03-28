@@ -15,7 +15,7 @@ try:
 except:
     redis = None
 
-DEFAULT_BRANCH = "development"
+DEFAULT_BRANCH = "unstable"
 GITREPOS = {}
 
 GITREPOS["builders_extra"] = [
