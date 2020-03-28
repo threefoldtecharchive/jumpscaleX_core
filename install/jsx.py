@@ -266,7 +266,7 @@ def container_get(name="3bot", delete=False, jumpscale=True, install=False, moun
     IT.MyEnv.sshagent.key_default_name
     e.DF.init()
     docker = e.DF.container_get(name=name, image="threefoldtech/3bot2", start=True, delete=delete, mount=mount)
-    print(docker.executor.config)
+    # print(docker.executor.config)
     if jumpscale:
         installer = IT.JumpscaleInstaller()
         installer.repos_get(pull=False)
@@ -608,13 +608,12 @@ def wiki_reload(name, reset=False):
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 @click.option("-b", "--base", is_flag=True, help="build base image as well")
 @click.option("-d", "--development", is_flag=True, help="build development version")
-@click.option("-c", "--cont", is_flag=True, help="don't delete continue a previously stopped run")
+@click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
 @click.option("-nc", "--noclean", is_flag=True, help="commit the build (local save), but no cleanup or push.")
-def threebotbuilder(push=False, base=False, cont=False, noclean=False, development=False):
+def threebotbuilder(push=False, base=False, delete=False, noclean=False, development=False):
     """
     create the 3bot and 3botdev images
     """
-    delete = not cont
     if base:
         basebuilder_(push=push)
     dest = "threefoldtech/3bot2"

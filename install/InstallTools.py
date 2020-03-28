@@ -431,6 +431,7 @@ if redis:
         def fetch(self, block=True, timeout=None):
             """Return an item from the queue without removing"""
             if block:
+                # TODO: doesn not seem right
                 item = self._db_.brpoplpush(self.key, self.key, timeout)
             else:
                 item = self._db_.lindex(self.key, 0)
@@ -4379,7 +4380,6 @@ class BaseInstaller:
         rm -f /sandbox/cfg/schema_meta.msgpack
         rm -rf /sandbox/cfg/bcdb
         rm -rf /sandbox/cfg/keys
-        rm -f /var/executor_data
         rm -rf /sandbox/cfg/nginx/default_openresty_threebot/static/weblibs
         rm -rf /sandbox/root
         rm -rf /usr/src
@@ -5332,9 +5332,7 @@ class DockerContainer:
         if mount:
             MOUNTS = f"""
             -v {DIR_CODE}:/sandbox/code \
-            -v {DIR_BASE}/var/containers/shared:/sandbox/myhost \
-            -v {DIR_BASE}/var/containers/{self.config.name}/var:/sandbox/var \
-            -v {DIR_BASE}/var/containers/{self.config.name}/cfg:/sandbox/cfg
+            -v {DIR_BASE}/var/containers/shared:/sandbox/myhost
             """
             MOUNTS = Tools.text_strip(MOUNTS)
         else:
@@ -5356,7 +5354,7 @@ class DockerContainer:
         run_cmd2 = Tools.text_replace(re.sub("\s+", " ", run_cmd))
 
         print(" - Docker machine gets created: ")
-        print(run_cmd2)
+        # print(run_cmd2)
         Tools.execute(run_cmd2, interactive=False)
 
         self._update(update=update, ssh=ssh)
@@ -5405,13 +5403,14 @@ class DockerContainer:
             )
             Tools.execute(cmd, showout=False)
 
+        # self.shell()
+
         self.dexec("mkdir -p /root/state")
         if update or not self.done_get("install_base"):
             print(" - Upgrade ubuntu")
             self.dexec("add-apt-repository ppa:wireguard/wireguard -y")
             self.dexec("apt-get update")
             self.dexec("DEBIAN_FRONTEND=noninteractive apt-get -y upgrade --force-yes")
-            print(" - Upgrade ubuntu ended")
             self.dexec("apt-get install mc git -y")
             self.dexec("apt-get install python3 -y")
             self.dexec("apt-get install wget tmux -y")
@@ -5422,6 +5421,7 @@ class DockerContainer:
             self.dexec("apt-get install wireguard -y")
             self.dexec("apt-get install locales -y")
             self.done_set("install_base")
+            print(" - Upgrade ubuntu ended")
 
         # cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % self.name
         # rc, out, err = Tools.execute(cmd, replace=False, showout=False, die=False)
@@ -5715,8 +5715,6 @@ class DockerContainer:
     def install_jumpscale(
         self, secret=None, privatekey=None, force=False, threebot=True, pull=False, branch=None, identity=None
     ):
-        Tools.shell()
-        w
         redo = force  # is for jumpscale only
         if not force:
             if not self.executor.state_exists("STATE_JUMPSCALE"):
@@ -6245,11 +6243,11 @@ class ExecutorSSH:
         if self.exists(self._data_path):
             data = self.file_read(self._data_path, binary=True)
             self._config = pickle.loads(data)
-            if "DIR_BASE" not in self._config:
-                self.systemenv_load()
-                self.save()
         else:
             self._config = {}
+        if "DIR_BASE" not in self._config:
+            self.systemenv_load()
+            self.save()
 
     def cmd_installed(self, cmd):
         rc, out, err = self.execute("which %s" % cmd, die=False, showout=False)
@@ -6457,6 +6455,7 @@ class ExecutorSSH:
         export
         echo --TEXT--
         """
+        print(" - load systemenv")
         rc, out, err = self.execute(C, showout=False, interactive=False, replace=False)
         res = {}
         state = ""
