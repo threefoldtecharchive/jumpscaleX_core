@@ -25,8 +25,6 @@ from datetime import datetime
 from Jumpscale import j
 from Jumpscale.data.schema.tests.schema import Schema
 
-skip = j.baseclasses.testtools._skip
-
 
 def log(msg):
     j.core.tools.log(msg, level=20)
@@ -39,7 +37,6 @@ def random_string():
 schema = Schema
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/521")
 def test_001_nested_concatenated_schema():
     """
     SCM-039
@@ -62,8 +59,8 @@ def test_001_nested_concatenated_schema():
 
 
     @url = phone.schema
-    mobile_number = "+32 475.99.99.99x123"(tel)
-    home_number = "+32 475.99.99.99x123" (tel)
+    mobile_number = "+32475999999"(tel)
+    home_number = "+324759999888" (tel)
 
     @url = address.schema
     country = (S)
@@ -105,7 +102,6 @@ def test_001_nested_concatenated_schema():
     assert schema_obj3.grades == grades
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/521")
 def test_002_nested_sperated_schema():
     """
     SCM-040

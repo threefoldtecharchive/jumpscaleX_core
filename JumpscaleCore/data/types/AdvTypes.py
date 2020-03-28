@@ -377,6 +377,9 @@ class Numeric(TypeBaseObjFactory):
         if negative:
             val = -val
 
+        if val > 80 and not roundnr:
+            roundnr = 0
+
         if roundnr:
             val = round(val, roundnr)
 
@@ -385,7 +388,7 @@ class Numeric(TypeBaseObjFactory):
         else:
             return val
 
-    def bytes2str(self, bindata, comma=True):
+    def bytes2str(self, bindata, roundnr=None, comma=True):
         if len(bindata) == 0:
             bindata = self.default_get()
 
@@ -422,6 +425,17 @@ class Numeric(TypeBaseObjFactory):
             curcode = currency.id2cur[curtype]
         else:
             curcode = ""
+
+        if not roundnr:
+            if val > 100:
+                roundnr = 0
+            elif val > 10:
+                roundnr = 1
+
+        if roundnr == 0:
+            val = int(val)
+        elif roundnr:
+            val = round(val, roundnr)
 
         if comma:
             out = str(val)
@@ -571,6 +585,7 @@ class Numeric(TypeBaseObjFactory):
         if isinstance(data, bytes):
             return NumericObject(self, data)
         else:
+            # j.debug()
             raise j.exceptions.Value("was not able to clean numeric : %s" % data)
 
     def toData(self, data):

@@ -121,7 +121,6 @@ class Core:
         return serialized
 
 
-# from .core.KosmosShell import KosmosShellConfig, ptconfig
 
 
 class Jumpscale:
@@ -150,7 +149,6 @@ class Jumpscale:
         return locals_
 
     def shell(self, loc=True, exit=False, locals_=None, globals_=None):
-
         import inspect
         from .core.KosmosShell import KosmosShellConfig, ptconfig
         from ptpython.repl import embed

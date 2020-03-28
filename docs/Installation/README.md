@@ -13,6 +13,7 @@
 
 - Ubuntu 18.04
 - macOS 10.7 or newer
+- Docker desktop and tools installed on your OS
 
 #### Required Packages
 
@@ -63,7 +64,7 @@ curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development
 chmod +x /tmp/jsx;
 ```
 
-#### To install in container
+#### To install in container (recommended)
 
 ```bash
 /tmp/jsx container-install

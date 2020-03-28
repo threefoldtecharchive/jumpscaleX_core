@@ -391,6 +391,8 @@ class Application(object):
         if "JSPROCNAME" in os.environ:
             self.appname = os.environ["JSPROCNAME"]
 
+        self._j.core.db.sadd("apps:logs", self.appname)
+
         # if self.state == "RUNNING":
         #     raise self._j.exceptions.RuntimeError("Application %s already started" % self.appname)
 

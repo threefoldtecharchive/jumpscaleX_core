@@ -15,7 +15,7 @@ def test010_jsxobj():
         llist3 = [1,2,3] (LF)
         nr = 4
         date_start = 0 (D)
-        description = "test"
+        description = "test"        
         llist4 = [1,2,3] (L)
         llist5 = [1,2,3] (LI)
         llist6 = "1,2,3" (LI)

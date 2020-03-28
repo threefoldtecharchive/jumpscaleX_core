@@ -8,6 +8,7 @@ The model in BCDB is a class using [JumpScale Schema](/docs/schemas/README.md), 
 - Indexing capabilities
     - To make data queries go faster, you can use indexing with BCDB for the fields you will query with.
   This can be achieved easily by just adding `*` after the field you want to index in the schema
+
         ```
         @url = school.student
         name** =  (S)

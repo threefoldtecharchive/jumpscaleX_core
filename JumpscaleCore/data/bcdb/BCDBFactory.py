@@ -225,7 +225,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
     def start_servers_test_zdb_sonic(self, reset=False):
 
         admin_secret = "123456"
-        namespaces_secret = "1234"
+        namespaces_secret = "123456"
         namespaces = ["test"]
 
         cl = j.servers.zdb.test_instance_start(
