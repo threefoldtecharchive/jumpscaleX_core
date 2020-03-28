@@ -266,6 +266,7 @@ def container_get(name="3bot", delete=False, jumpscale=True, install=False, moun
     IT.MyEnv.sshagent.key_default_name
     e.DF.init()
     docker = e.DF.container_get(name=name, image="threefoldtech/3bot2", start=True, delete=delete, mount=mount)
+    print(docker.executor.config)
     if jumpscale:
         installer = IT.JumpscaleInstaller()
         installer.repos_get(pull=False)

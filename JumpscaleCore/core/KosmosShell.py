@@ -148,11 +148,13 @@ def get_completions(self, document, complete_event):
     try:
         parent, member, prefix = get_current_line(document)
     except ValueError:
+        j.tools.logger._log_error("current line error", data=traceback.format_exc())
         return
 
     try:
         obj = eval_code(parent, self.get_locals(), self.get_globals())
     except (AttributeError, NameError):
+        j.tools.logger._log_error("eval code error", data=traceback.format_exc())
         return
     if obj:
         if isinstance(obj, j.baseclasses.object):
@@ -485,7 +487,7 @@ def ptconfig(repl):
     # Enable input validation. (Don't try to execute when the input contains
     # syntax errors.)
     repl.enable_input_validation = True
-    repl.default_buffer.validate_while_typing = lambda: False
+    repl.default_buffer.validate_while_typing = lambda: True
 
     # Use this colorscheme for the code.
     repl.use_code_colorscheme("perldoc")
@@ -593,6 +595,7 @@ def ptconfig(repl):
         try:
             _, _, prefix = get_current_line(document)
         except ValueError:
+            j.tools.logger._log_error("No current line\n" + traceback.format_exc())
             return
 
         completions = []

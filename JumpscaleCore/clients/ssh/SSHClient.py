@@ -208,6 +208,7 @@ class SSHClient(SSHClientBase):
 
     @property
     def sftp(self):
+
         if self._ftp is None:
             self._ftp = self._client._make_sftp()
         return self._ftp

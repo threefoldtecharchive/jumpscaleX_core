@@ -5709,7 +5709,6 @@ class DockerContainer:
     #     ]:
     #         if i in MyEnv.config:
     #             CONFIG[i] = MyEnv.config[i]
-    #
     #     Tools.config_save(self._path + "/cfg/jumpscale_config.toml", CONFIG)
     #
 
@@ -6221,6 +6220,7 @@ class ExecutorSSH:
         self.debug = debug
         self._id = None
         self._env = {}
+        self._config = {}
         self.readonly = False
         self.CURDIR = ""
         self._data_path = "/var/executor_data"
@@ -6392,17 +6392,6 @@ class ExecutorSSH:
             self.save()
         return self.config["IN_DOCKER"]
 
-    # @property
-    # def env_on_system(self):
-    #     if not self._env_on_system:
-    #         self.systemenv_load()
-    #         self._env_on_system = pickle.loads(self.env_on_system_msgpack)
-    #     return self._env_on_system
-    #
-    # @property
-    # def env(self):
-    #     return self.env_on_system["ENV"]
-
     @property
     def state(self):
         if "state" not in self.config:
@@ -6524,10 +6513,13 @@ class ExecutorSSH:
         def get_cfg(name, default):
             name = name.upper()
             if "CFG_JUMPSCALE" in res and name in res["CFG_JUMPSCALE"]:
-                self.config[name] = res["CFG_JUMPSCALE"]
+                self._config[name] = res["CFG_JUMPSCALE"][name]
                 return
-            if name not in self.config:
-                self.config[name] = default
+            if name not in self._config:
+                self._config[name] = default
+
+        if self._config == None:
+            self._config = {}
 
         get_cfg("DIR_HOME", res["ENV"]["HOME"])
         get_cfg("DIR_BASE", "/sandbox")
