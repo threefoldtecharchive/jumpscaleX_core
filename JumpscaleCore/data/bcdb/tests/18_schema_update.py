@@ -32,7 +32,6 @@ def test_schema_update():
     @url = jumpscale.bcdb.test.owner_schema_update
     name = "" (S)
     """
-    j.debug()
     bcdb, _ = j.data.bcdb._test_model_get(schema=old_schema)
     model = bcdb.model_get(url="jumpscale.bcdb.test.house_schema_update")
     schema_md5 = model.schema._md5

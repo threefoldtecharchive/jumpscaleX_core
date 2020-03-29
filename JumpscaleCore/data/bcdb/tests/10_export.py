@@ -93,6 +93,7 @@ def after():
     # Destroy sqlite and zdb databases
     j.data.bcdb.test_sqlite.destroy()
     j.data.bcdb.test_zdb.destroy()
+    j.data.bcdb.system.destroy()
     # Stop and delete sonic
     j.servers.sonic.testserver.stop()
     j.servers.sonic.testserver.delete()
