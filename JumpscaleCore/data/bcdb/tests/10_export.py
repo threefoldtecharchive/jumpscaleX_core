@@ -41,7 +41,7 @@ def test_export():
     schema2 = j.data.schema.get_from_text(schema_text2)
 
     def export_import(bcdb, farm_model, node_model, export_folder_name="export_test", encrypt=False):
-        j.data.bcdb.export(path=f"/tmp/bcdb_export/{export_folder_name}", encrypt=encrypt)
+        j.data.bcdb.export(path=f"/tmp/bcdb_export/{export_folder_name}", bcdbname=bcdb.name, encrypt=encrypt)
         assert len(farm_model.find()) == 10
         assert len(node_model.find()) == 8
         j.data.bcdb.import_(
@@ -93,7 +93,6 @@ def after():
     # Destroy sqlite and zdb databases
     j.data.bcdb.test_sqlite.destroy()
     j.data.bcdb.test_zdb.destroy()
-    j.data.bcdb.system.destroy()
     # Stop and delete sonic
     j.servers.sonic.testserver.stop()
     j.servers.sonic.testserver.delete()
