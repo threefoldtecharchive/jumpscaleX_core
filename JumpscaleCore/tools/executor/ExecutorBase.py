@@ -28,7 +28,6 @@ class ExecutorBase(j.baseclasses.object_config):
         ostype = "unknown,local,darwin,ubuntu" (E)
         cfg_jumpscale = (DICT)
         env = (DICT)
-
         """
 
     def _init(self, **kwargs):
@@ -541,22 +540,22 @@ class ExecutorBase(j.baseclasses.object_config):
 
         res["ENV"] = envdict
 
-        # def get_cfg(name, default):
-        #     name = name.upper()
-        #     if "CFG_JUMPSCALE" in res and name in res["CFG_JUMPSCALE"]:
-        #         self.config[name] = res["CFG_JUMPSCALE"]
-        #         return
-        #     if name not in self.config:
-        #         self.config[name] = default
-        #
-        # if self.type != "local":
-        #     get_cfg("DIR_HOME", res["ENV"]["HOME"])
-        #     get_cfg("DIR_BASE", "/sandbox")
-        #     get_cfg("DIR_CFG", "/sandbox/cfg")
-        #     get_cfg("DIR_TEMP", "/tmp")
-        #     get_cfg("DIR_VAR", "/sandbox/var")
-        #     get_cfg("DIR_CODE", "/sandbox/code")
-        #     get_cfg("DIR_BIN", "/usr/local/bin")
+        def get_cfg(name, default):
+            name = name.upper()
+            if "CFG_JUMPSCALE" in res and name in res["CFG_JUMPSCALE"]:
+                self.config[name] = res["CFG_JUMPSCALE"][name]
+                return
+            if name not in self.config:
+                self.config[name] = default
+
+        if self.type != "local":
+            get_cfg("DIR_HOME", res["ENV"]["HOME"])
+            get_cfg("DIR_BASE", "/sandbox")
+            get_cfg("DIR_CFG", "/sandbox/cfg")
+            get_cfg("DIR_TEMP", "/tmp")
+            get_cfg("DIR_VAR", "/sandbox/var")
+            get_cfg("DIR_CODE", "/sandbox/code")
+            get_cfg("DIR_BIN", "/usr/local/bin")
 
         return res
 

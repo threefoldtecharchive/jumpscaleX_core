@@ -25,6 +25,7 @@ class LoggerClient(j.baseclasses.object_config):
 
     def _init(self, **kwargs):
         self._redis_client = None
+        # self._apps_set_key = "apps:logs"
         self._log_dir = j.core.tools.text_replace("{DIR_VAR}/logs/")
         j.sal.fs.createDir(self._log_dir)
 

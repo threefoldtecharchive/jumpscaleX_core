@@ -56,7 +56,7 @@ def test022_unique_attributes():
     &number = 0 (I)
     """
     schema = j.data.schema.get_from_text(scm)
-    model = bcdb.model_get(schema=schema)
+    model = j.clients.bcdbmodel.get(schema=schema)
     schema_obj = model.new()
     name = random_string()
     new_name = random_string()

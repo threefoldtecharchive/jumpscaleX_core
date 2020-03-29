@@ -55,6 +55,14 @@ class NACLFactory(j.baseclasses.object, TESTTOOLS):
             n.load()
         return n
 
+    def list(self):
+        keys_dir = j.sal.fs.joinPaths(j.core.myenv.config["DIR_CFG"], "keys")
+        nacls = []
+        for p in j.sal.fs.listDirsInDir(keys_dir):
+            name = j.sal.fs.getBaseName(p)
+            nacls.append(NACL(name=name, configure_if_needed=False))
+        return nacls
+
     def payload_build(self, *args):
         """
         build a bytesIO buffer with all arguments serialized to somethign repeatable

@@ -1,7 +1,7 @@
 from Jumpscale import j
 
 
-def main(self):
+def test011_duration():
     """
     to run:
 
@@ -45,6 +45,6 @@ def main(self):
     self.clean(None) == 0
     self.clean(23) == 23
 
-    self._log_info("TEST DONE DURATION")
+    j.data.types._log_info("TEST DONE DURATION")
 
     return "OK"

@@ -347,15 +347,15 @@ class DocSite(j.baseclasses.object):
         returns path to the file
         """
         name = self._clean(name)
-
         if name in self.files:
             return self.files[name]
 
-        name = name.replace(j.sal.fs.getFileExtension(name), "")
-        for path in self.files.values():
-            partial_path = path.lower().replace(j.sal.fs.getFileExtension(path), "")
-            if partial_path.endswith(name):
-                return path
+        if name:
+            name = name.replace(j.sal.fs.getFileExtension(name), "")
+            for path in self.files.values():
+                partial_path = path.lower().replace(j.sal.fs.getFileExtension(path), "")
+                if partial_path.endswith(name):
+                    return path
 
         if die:
             raise j.exceptions.Input(message="Did not find file:%s in %s" % (name, self))

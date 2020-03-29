@@ -75,6 +75,8 @@ class JSGenerator:
                         self._j.shell()
                     if dirName.find("Jumpscale/core") is not -1:
                         continue
+                    if dirName.find("notebooks/") is not -1:
+                        continue
                         # skip the core files, they don't need to be read
                     for item in fnmatch.filter(fileList, "*.py"):
                         path = os.path.join(dirName, item)

@@ -7,6 +7,7 @@ from .BCDBModelBase import BCDBModelBase
 import os
 import sys
 from .connectors.redis.RedisServer import RedisServer
+import time
 
 TESTTOOLS = j.baseclasses.testtools
 
@@ -54,20 +55,22 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
                 return True
             if j.core.db.get("threebot.starting"):
                 print(" ** WAITING FOR THREEBOT TO STARTUP, STILL LOADING")
-                res = j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=60)
+                res = j.sal.nettools.waitConnectionTest("localhost", 6380, timeout=240)
                 if res:
+                    time.sleep(10)  # lets wait 10 more sec
                     # the server did answer, lets now wait till the threebot.starting is gone
-                    timeout = j.data.time.epoch + 15
+                    timeout = j.data.time.epoch + 60
                     while j.data.time.epoch < timeout:
+                        time.sleep(1)
                         if j.core.db.get("threebot.starting") is None:
                             self.__master = False
                             return (
                                 self.__master
                             )  # means we found a threebot who was started properly, can now start as slave
-                raise j.exceptions.Base("threebotserver is starting but did not succeed within 60+15 sec")
+                raise j.exceptions.Base("threebotserver is starting but did not succeed within 5 min")
 
             if j.sal.nettools.tcpPortConnectionTest("localhost", 6380):
-                print("** AM WORKING AS SLAVE, BCDB WILL BE READONLY **")
+                # print("** AM WORKING AS SLAVE, BCDB WILL BE READONLY **")
                 self.__master = False
             else:
                 self.__master = True
@@ -233,8 +236,13 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         if j.core.myenv.platform_is_linux:
             if reset:
+<<<<<<< HEAD
                 j.servers.sonic.default.stop()
 
+=======
+                sonic_server = j.servers.sonic.default
+                sonic_server.stop()
+>>>>>>> unstable
             if j.sal.nettools.tcpPortConnectionTest("localhost", 1492) is False:
                 s = j.servers.sonic.get(name="testserver", port=1492, adminsecret_=admin_secret)
                 s.start()
@@ -366,6 +374,9 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         if not bcdbname:
             for bcdb in list(self.instances.values()):
+                if bcdb.name in ("myjobs",):
+                    continue
+
                 self.export(name=name, bcdbname=bcdb.name, path=path, yaml=yaml, data=data, encrypt=encrypt)
             return
         elif bcdbname == "system":
@@ -483,7 +494,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
             name = config["name"]
 
-            if config["type"] not in ["zdb", "sqlite", "redis"]:
+            if config["type"] not in ["zdb", "sqlite", "redis", "sdb"]:
                 # these types usually myjobs instance
                 self._log_warning(f"only zdb, sqlite redis are supported your type is: {config['type']}")
                 return
@@ -589,9 +600,10 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             bcdb = self.get(name=name)
             return bcdb
 
-        if ttype not in ["zdb", "sqlite", "redis"]:
-            raise j.exceptions.Input("ttype can only be zdb or sqlite")
+        if ttype not in ["zdb", "sqlite", "redis", "sdb"]:
+            raise j.exceptions.Input("ttype can only be zdb, redis or sqlite")
         assert name
+
         if ttype == "zdb":
             zdb = self._core_zdb  # has been started in start_servers_threebot_zdb_sonic
             assert namespace
@@ -601,9 +613,9 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             if not zdb_admin.namespace_exists(namespace):
                 zdb_admin.namespace_new(namespace, secret=adminsecret_, maxsize=0, die=True)
             storclient = zdb.client_get(name=name, secret=adminsecret_, nsname=namespace)
-        elif ttype == "sqlite":
+        elif ttype in ("sqlite", "sdb"):
             assert not namespace  # should be empty only relevant in ZDB
-            storclient = j.clients.sdb.client_get(bcdbname=name)
+            storclient = j.clients.sqlitedb.client_get(bcdbname=name)
         elif ttype == "redis":
             assert not namespace  # should be empty only relevant in ZDB
             storclient = j.clients.rdb.client_get(bcdbname=name)

@@ -7,7 +7,6 @@ from Jumpscale import j
 from Jumpscale.data.schema.tests.schema import Schema
 import unittest
 
-skip = j.baseclasses.testtools._skip
 
 T = unittest.TestCase()
 
@@ -616,7 +615,6 @@ def test_015_validate_list_of_multilines():
     assert schema_obj.lines_list == lines_list
 
 
-@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/523")
 def test_016_validate_list_of_yaml():
     """
     SCM-037

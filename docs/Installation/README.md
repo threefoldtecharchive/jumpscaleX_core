@@ -13,6 +13,7 @@
 
 - Ubuntu 18.04
 - macOS 10.7 or newer
+- Docker desktop and tools installed on your OS
 
 #### Required Packages
 
@@ -53,6 +54,9 @@ Make sure to check whether **this** ssh key is stored in your github account. If
 
 ### Installation
 
+#### Windows Installation
+for windows installation use [js windows installation](./windows_installation/jsx_windows.md)
+
 #### Download the installer file, change its permission to make it executable
 
 ```bash
@@ -60,7 +64,7 @@ curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development
 chmod +x /tmp/jsx;
 ```
 
-#### To install in container
+#### To install in container (recommended)
 
 ```bash
 /tmp/jsx container-install
@@ -146,4 +150,3 @@ chmod +x /tmp/jsx;
 [init the jumpscale code, can be required after pulling new code](generation.md)
 
 ## When you want to collaborate
-

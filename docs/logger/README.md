@@ -5,7 +5,9 @@
 New jumpscale logger now stores logs in Redis up to 2K records then dumps the oldest 1K to filesystem
 in `/sandbox/var/logs/<APP-NAME>`
 
-To define app we use for example: `j.application.start("threebotserver")` add this to your application init
+- To define app we use for example: `j.application.start("threebotserver")` add this to your application init
+
+- at the end of application make sure to `j.application.reset_context()` to reset the log context to the previous application
 
 *Note* Default appname is **init**
 

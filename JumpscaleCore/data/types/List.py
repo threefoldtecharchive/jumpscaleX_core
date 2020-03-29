@@ -305,7 +305,9 @@ class List(TypeBaseObjFactory):
             if toml:
                 item = ttype.toml_string_get(item)
             else:
-                item = ttype.clean(item, parent=parent)
+                item = ttype.clean(item)
+                # item = ttype.clean(item, parent=parent)
+                # TODO: it was like this, not sure above is ok (despiegk)
 
             if unique:
                 if item not in res:
