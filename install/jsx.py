@@ -932,9 +932,9 @@ def sdk(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False, update
         #     # on last docker do the test
         #     docker.jsxexec(test, docker_name=docker.name, count=count)
 
-        docker.execute("source /sandbox/env.sh;3bot start")
+        docker.execute("source /sandbox/env.sh;bcdb delete --all -f;3bot start")
 
-    IT.Tools.shell()
+    # IT.Tools.shell()
 
     try:
         import webbrowser
