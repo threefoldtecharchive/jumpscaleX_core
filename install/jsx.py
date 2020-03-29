@@ -934,7 +934,13 @@ def sdk(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False, update
 
         docker.execute("source /sandbox/env.sh;bcdb delete --all -f;3bot start")
 
-    # IT.Tools.shell()
+    IT.Tools.shell()
+
+    C = """
+    j.tools.threebot.me.default.admins.append("hamada.3bot")
+    j.tools.threebot.me.default.save()
+    j.tools.threebot.threebotconnect_disable()
+    """
 
     try:
         import webbrowser
