@@ -299,6 +299,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
         if self.status != "config":  # make sure we load the config is not that state yet
             self.config_load()
         self._package_author.prepare()
+        self._package_author.install()
         self.wiki_load(reset=True)
         if self.status != "installed":
             self.status = "installed"

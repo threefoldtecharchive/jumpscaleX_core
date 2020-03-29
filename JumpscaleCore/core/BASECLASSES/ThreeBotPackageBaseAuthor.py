@@ -29,7 +29,10 @@ class ThreeBotPackageBaseAuthor(JSBase):
         :return:
         """
         pass
-
+    
+    def install(self):
+        pass
+    
     def upgrade(self):
         """
         used to upgrade
