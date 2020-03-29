@@ -852,17 +852,6 @@ def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
         cmd = "docker pull threefoldtech/3bot2"
         IT.Tools.execute(cmd, interactive=True)
 
-    def docker_jumpscale_get(name=name, delete=True):
-        docker = e._DF.container_get(name=name, delete=delete)
-        if docker.config.done_get("threebot") is False:
-            # means we have not installed jumpscale yet
-            docker.install()
-            docker.install_jumpscale(threebot=True)
-            # now we can access it over 172.0.0.x normally
-            docker.config.done_set("threebot")
-            docker.config.save()
-        return docker
-
     def configure():
         """
         will be executed in each container
@@ -912,7 +901,9 @@ def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
             name1 = name + str(i + 1)
         else:
             name1 = name
-        docker = docker_jumpscale_get(name=name1, delete=delete)
+
+        docker = container_get(name=name1, delete=delete, jumpscale=True, install=False, mount=True)
+
         # if i == 0:
         #     # the explorer 3bot
         #     # explorer_addr = docker.config.ipaddr
@@ -936,10 +927,12 @@ def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
         #     # on last docker do the test
         #     docker.jsxexec(test, docker_name=docker.name, count=count)
 
+        docker.execute("source /sandbox/env.sh;3bot start")
+
     try:
         import webbrowser
 
-        webbrowser.open_new_tab("http://localhost:7020")
+        webbrowser.open_new_tab("http://localhost:7000")
     except:
         pass
 
