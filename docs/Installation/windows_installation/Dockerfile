@@ -6,6 +6,4 @@ RUN /tmp/jsx configure -s --no-sshagent;
 
 CMD . /sandbox/env.sh && kosmos "j.servers.threebot.start(with_shell=False)"
 
-EXPOSE 80 443
-
-
+EXPOSE 80 443 22
