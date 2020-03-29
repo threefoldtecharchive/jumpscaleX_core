@@ -939,7 +939,7 @@ def sdk(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False, update
     try:
         import webbrowser
 
-        time.sleep(2)
+        time.sleep(5)
         webbrowser.open_new_tab("http://localhost:7000")
     except:
         pass
