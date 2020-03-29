@@ -83,8 +83,8 @@ GITREPOS["tutorials"] = [
 GITREPOS["tutorials"] = [
     "https://github.com/threefoldtech/jumpscaleX_weblibs",
     "%s" % DEFAULT_BRANCH_WEB,
-    "weblibs",
-    "{DIR_BASE}/lib/weblibs",
+    "static",
+    "{DIR_BASE}/lib/weblibs/static",
 ]
 
 GITREPOS["kosmos"] = [
