@@ -5120,7 +5120,7 @@ class DockerConfig:
         udp = 9001 + int(self.portrange) * 10
         ssh = 9000 + int(self.portrange) * 10
         http = 7000 + int(self.portrange) * 10
-        https = 6000 + int(self.portrange) * 10
+        https = 4000 + int(self.portrange) * 10
         self.sshport = ssh
         self.portrange_txt = "-p %s-%s:8005-8009" % (a, b)
         self.portrange_txt = "-p %s:80" % http
