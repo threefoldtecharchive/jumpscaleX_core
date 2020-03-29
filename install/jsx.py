@@ -827,14 +827,15 @@ def connect(test=False, disconnect=False):
 
 
 @click.command()
-@click.option("-c", "--count", default=1, help="nr of containers")
-@click.option("-n", "--net", default="172.0.0.0/16", help="network range for docker")
+# @click.option("-c", "--count", default=1, help="nr of containers")
+# @click.option("-n", "--net", default="172.0.0.0/16", help="network range for docker")
+# @click.option("-w", "--web", is_flag=True, help="if set will install the wikis")
 @click.option(
     "-d", "--delete", is_flag=True, help="if set will delete the test container for threebot if it already exists"
 )
-@click.option("-w", "--web", is_flag=True, help="if set will install the wikis")
 @click.option("-p", "--pull", is_flag=True, help="pull the docker image")
-def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
+@click.option("-u", "--update", is_flag=True, help="update the code files")
+def sdk(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False, update=False):
     """
 
     jsx threebot -d
@@ -895,6 +896,10 @@ def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
         print("EXPLORER NODES:")
         print(nodes)
 
+    if update:
+        installer = IT.JumpscaleInstaller()
+        installer.repos_get(pull=True)
+
     explorer_addr = None
     for i in range(count):
         if i > 0:
@@ -929,9 +934,12 @@ def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
 
         docker.execute("source /sandbox/env.sh;3bot start")
 
+    IT.Tools.shell()
+
     try:
         import webbrowser
 
+        time.sleep(2)
         webbrowser.open_new_tab("http://localhost:7000")
     except:
         pass
@@ -1082,6 +1090,6 @@ if __name__ == "__main__":
         cli.add_command(threebotbuilder, "threebotbuilder")
         cli.add_command(threebot_flist, "threebot-flist")
         cli.add_command(containers)
-        cli.add_command(threebot, "threebot")
+        cli.add_command(sdk)
 
     cli()
