@@ -7,10 +7,23 @@ import requests
 from urllib.request import urlopen
 from importlib import util
 import time
-
+import json
 
 DEFAULT_BRANCH = "unstable"
 os.environ["LC_ALL"] = "en_US.UTF-8"
+
+
+def threebotusers():
+    url = "https://explorer.testnet.grid.tf/explorer/users"
+    with urlopen(url) as resp:
+        if resp.status != 200:
+            raise RuntimeError("fail to download users metadata")
+        data = resp.read().decode("utf-8")
+        data2 = json.loads(data)
+        res = {}
+        for d in data2:
+            res[d["name"]] = d["email"]
+    return res
 
 
 def load_install_tools(branch=None, reset=False):
@@ -900,6 +913,21 @@ def sdk(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False, update
         installer = IT.JumpscaleInstaller()
         installer.repos_get(pull=True)
 
+    users = threebotusers()
+    ok = False
+    while not ok:
+        tname = IT.Tools.ask_string("give your 3bot name, as used with your 3bot connect.")
+        tname = tname.lower().strip()
+        # if tname not in users:
+        #
+        #     break
+        if "." not in tname:
+            assert "3bot" not in tname
+            tname += ".3bot"
+        #
+        # print("Could not find the user. Specify an existing name in 3bot phonebook.")
+        ok = True
+
     explorer_addr = None
     for i in range(count):
         if i > 0:
@@ -932,21 +960,26 @@ def sdk(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False, update
         #     # on last docker do the test
         #     docker.jsxexec(test, docker_name=docker.name, count=count)
 
-        docker.execute("source /sandbox/env.sh;bcdb delete --all -f;3bot start")
+        docker.execute("source /sandbox/env.sh;bcdb delete --all -f")
+        docker.execute(
+            f"""
+        j.tools.threebot.me.default.admins.append("{tname}")
+        j.tools.threebot.me.default.save()
+        """,
+            jumpscale=True,
+        )
+        docker.execute("source /sandbox/env.sh;3bot start")
 
-    IT.Tools.shell()
-
-    C = """
-    j.tools.threebot.me.default.admins.append("hamada.3bot")
-    j.tools.threebot.me.default.save()
-    j.tools.threebot.threebotconnect_disable()
-    """
+    cmd = 'open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors'
 
     try:
         import webbrowser
 
         time.sleep(5)
-        webbrowser.open_new_tab("http://localhost:7000")
+        if IT.MyEnv.platform_is_osx:
+            webbrowser.get("safari").open_new_tab("https://localhost:4000")
+        else:
+            webbrowser.open_new_tab("https://localhost:4000")
     except:
         pass
 
