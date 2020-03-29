@@ -16,6 +16,7 @@ except:
     redis = None
 
 DEFAULT_BRANCH = "unstable"
+DEFAULT_BRANCH_WEB = "development"
 GITREPOS = {}
 
 GITREPOS["builders_extra"] = [
@@ -24,8 +25,6 @@ GITREPOS["builders_extra"] = [
     "JumpscaleBuildersExtra",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersExtra",
 ]
-
-
 GITREPOS["installer"] = [
     "https://github.com/threefoldtech/jumpscaleX_core",
     "%s" % DEFAULT_BRANCH,
@@ -77,6 +76,13 @@ GITREPOS["threebot"] = [
 GITREPOS["tutorials"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs",
     "%s" % DEFAULT_BRANCH,
+    "tutorials",
+    "{DIR_BASE}/lib/jumpscale/tutorials",
+]
+
+GITREPOS["tutorials"] = [
+    "https://github.com/threefoldtech/jumpscaleX_weblibs",
+    "%s" % DEFAULT_BRANCH_WEB,
     "tutorials",
     "{DIR_BASE}/lib/jumpscale/tutorials",
 ]
