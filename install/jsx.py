@@ -607,7 +607,7 @@ def wiki_reload(name, reset=False):
 @click.command(name="threebotbuilder")
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 @click.option("-b", "--base", is_flag=True, help="build base image as well")
-@click.option("-d", "--development", is_flag=True, help="build development version")
+@click.option("-dev", "--development", is_flag=True, help="build development version")
 @click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
 @click.option("-nc", "--noclean", is_flag=True, help="commit the build (local save), but no cleanup or push.")
 def threebotbuilder(push=False, base=False, delete=False, noclean=False, development=False):

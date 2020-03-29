@@ -4281,6 +4281,7 @@ class BaseInstaller:
                 "packet-python>=1.37",
                 "gevent-websocket",
                 "base58",
+                "ansicolors",
             ],
             # level 1: in the middle
             1: [

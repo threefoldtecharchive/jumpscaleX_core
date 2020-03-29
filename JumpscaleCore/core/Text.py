@@ -13,6 +13,28 @@ matchlist = re.compile(r"\[[^\']*\]")
 re_nondigit = re.compile(r"\D")
 re_float = re.compile(r"[0-9]*\.[0-9]+")
 re_digit = re.compile(r"[0-9]*")
+
+# _ansi_regex = (
+#     r"\x1b("
+#     r"(\[\??\d+[hl])|"
+#     r"([=<>a-kzNM78])|"
+#     r"([\(\)][a-b0-2])|"
+#     r"(\[\d{0,2}[ma-dgkjqi])|"
+#     r"(\[\d+;\d+[hfy]?)|"
+#     r"(\[;?[hf])|"
+#     r"(#[3-68])|"
+#     r"([01356]n)|"
+#     r"(O[mlnp-z]?)|"
+#     r"(/Z)|"
+#     r"(\d+)|"
+#     r"(\[\?\d;\d0c)|"
+#     r"(\d;\dR))"
+# )
+# re_ansi = re.compile(_ansi_regex, flags=re.IGNORECASE)
+try:
+    import colors
+except:
+    colors = None
 from builtins import str
 
 try:
@@ -91,6 +113,7 @@ class Text(object):
         text = text.replace("\n", "")
         text = text.replace("\t", "")
         text = text.replace(" ", "")
+        text = self.ansi_remove(text)
 
         def replace(char):
             if char in "-/\\= ;!+()":
@@ -184,23 +207,29 @@ class Text(object):
             txt = txt[0:maxlen]
         return txt.strip()
 
-    def toAscii(self, value, maxlen=0):
-        value = self.toStr(value)
-        out = ""
-        for item in value:
-            if ord(item) > 127:
-                continue
-            out += item
-        # out=out.encode('ascii','ignore')
-        out = out.replace("\x0b", "")
-        out = out.replace("\x0c", "")
-        out = out.replace("\r", "")
-        out = out.replace("\t", "    ")
+    def ansi_remove(self, txt):
+        if colors:
+            return colors.strip_color(txt)
+        else:
+            return txt
+        # return re_ansi.sub("", txt)
 
+    def toAscii(self, value, maxlen=0):
+        value = value.strip()
+        while "  " in value:
+            value = value.replace("  ", " ")
+        value = self.ansi_remove(value)
+        ok = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_!. {}()':"
+        value.replace('"', "'")
+        value.replace("`", "'")
+        out = ""
+        for c in value:
+            if c in ok:
+                out += c
         if maxlen > 0 and len(out) > maxlen:
             out = out[0:maxlen]
-        # out.decode()
-        return out
+
+        return out.strip()
 
     def indent(self, instr, nspaces=4, wrap=180, strip=True, indentchar=" ", args=None):
         """Indent a string a given number of spaces.
