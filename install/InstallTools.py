@@ -5717,7 +5717,7 @@ class DockerContainer:
         secret=None,
         privatekey=None,
         force=False,
-        threebot=True,
+        threebot=False,
         pull=False,
         branch=None,
         identity=None,
