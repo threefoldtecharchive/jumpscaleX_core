@@ -324,6 +324,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
         self.load()
         self._package_author.stop()
         self.running = False
+        self.status = "tostart"
         self.save()
 
     def uninstall(self):
