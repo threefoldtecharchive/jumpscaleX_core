@@ -257,6 +257,9 @@ def container_install(
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False, branch=branch)
 
+    if not docker.executor.exists("/sandbox/cfg/keys/default/key.priv"):
+        reinstall = True
+
     docker.install_jumpscale(branch=branch, force=reinstall, pull=pull, threebot=threebot, identity=identity)
 
     _container_shell()
@@ -267,13 +270,16 @@ def container_get(name="3bot", delete=False, jumpscale=True, install=False, moun
     e.DF.init()
     docker = e.DF.container_get(name=name, image="threefoldtech/3bot2", start=True, delete=delete, mount=mount)
     # print(docker.executor.config)
+    force = False
+    if not docker.executor.exists("/sandbox/cfg/keys/default/key.priv"):
+        jumpscale = True
+        install = True
+        force = True
     if jumpscale:
         installer = IT.JumpscaleInstaller()
         installer.repos_get(pull=False)
-        if not docker.executor.exists("/sandbox/jumpscale_config.toml"):
-            install = True
         if install:
-            docker.install_jumpscale()
+            docker.install_jumpscale(force=force)
     return docker
 
 
@@ -295,19 +301,11 @@ def container_get(name="3bot", delete=False, jumpscale=True, install=False, moun
     is_flag=True,
     help="reinstall, basically means will try to re-do everything without removing the data",
 )
-@click.option("--clean", is_flag=True, help="cleanup all data not needed")
 @click.option("--threebot", is_flag=True, help="install required components for threebot")
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
 @click.option("-i", "--identity", default=None, help="Identity to be used for nacl")
 def install(
-    branch=None,
-    reinstall=False,
-    pull=False,
-    no_interactive=False,
-    prebuilt=False,
-    clean=False,
-    threebot=False,
-    identity=None,
+    branch=None, reinstall=False, pull=False, no_interactive=False, prebuilt=False, threebot=False, identity=None,
 ):
     """
     install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.
@@ -317,6 +315,7 @@ def install(
 
 
     """
+
     # print("DEBUG:: no_sshagent", no_sshagent, "configdir", configdir)  #no_sshagent=no_sshagent
     IT = load_install_tools(branch=branch, reset=True)
     # IT.MyEnv.interactive = True
@@ -339,8 +338,6 @@ def install(
         threebot=threebot,
         identity=identity,
     )
-    if clean:
-        IT.BaseInstaller.clean(development=True)
     print("Jumpscale X installed successfully")
 
 
@@ -607,7 +604,7 @@ def wiki_reload(name, reset=False):
 @click.command(name="threebotbuilder")
 @click.option("-p", "--push", is_flag=True, help="push to docker hub")
 @click.option("-b", "--base", is_flag=True, help="build base image as well")
-@click.option("-d", "--development", is_flag=True, help="build development version")
+@click.option("-dev", "--development", is_flag=True, help="build development version")
 @click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
 @click.option("-nc", "--noclean", is_flag=True, help="commit the build (local save), but no cleanup or push.")
 def threebotbuilder(push=False, base=False, delete=False, noclean=False, development=False):
@@ -830,14 +827,15 @@ def connect(test=False, disconnect=False):
 
 
 @click.command()
-@click.option("-c", "--count", default=1, help="nr of containers")
-@click.option("-n", "--net", default="172.0.0.0/16", help="network range for docker")
+# @click.option("-c", "--count", default=1, help="nr of containers")
+# @click.option("-n", "--net", default="172.0.0.0/16", help="network range for docker")
+# @click.option("-w", "--web", is_flag=True, help="if set will install the wikis")
 @click.option(
     "-d", "--delete", is_flag=True, help="if set will delete the test container for threebot if it already exists"
 )
-@click.option("-w", "--web", is_flag=True, help="if set will install the wikis")
 @click.option("-p", "--pull", is_flag=True, help="pull the docker image")
-def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
+@click.option("-u", "--update", is_flag=True, help="update the code files")
+def sdk(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False, update=False):
     """
 
     jsx threebot -d
@@ -854,17 +852,6 @@ def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
     if pull:
         cmd = "docker pull threefoldtech/3bot2"
         IT.Tools.execute(cmd, interactive=True)
-
-    def docker_jumpscale_get(name=name, delete=True):
-        docker = e._DF.container_get(name=name, delete=delete)
-        if docker.config.done_get("threebot") is False:
-            # means we have not installed jumpscale yet
-            docker.install()
-            docker.install_jumpscale(threebot=True)
-            # now we can access it over 172.0.0.x normally
-            docker.config.done_set("threebot")
-            docker.config.save()
-        return docker
 
     def configure():
         """
@@ -909,13 +896,19 @@ def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
         print("EXPLORER NODES:")
         print(nodes)
 
+    if update:
+        installer = IT.JumpscaleInstaller()
+        installer.repos_get(pull=True)
+
     explorer_addr = None
     for i in range(count):
         if i > 0:
             name1 = name + str(i + 1)
         else:
             name1 = name
-        docker = docker_jumpscale_get(name=name1, delete=delete)
+
+        docker = container_get(name=name1, delete=delete, jumpscale=True, install=False, mount=True)
+
         # if i == 0:
         #     # the explorer 3bot
         #     # explorer_addr = docker.config.ipaddr
@@ -939,10 +932,15 @@ def threebot(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False):
         #     # on last docker do the test
         #     docker.jsxexec(test, docker_name=docker.name, count=count)
 
+        docker.execute("source /sandbox/env.sh;bcdb delete --all -f;3bot start")
+
+    # IT.Tools.shell()
+
     try:
         import webbrowser
 
-        webbrowser.open_new_tab("http://localhost:7020")
+        time.sleep(2)
+        webbrowser.open_new_tab("http://localhost:7000")
     except:
         pass
 
@@ -1092,6 +1090,6 @@ if __name__ == "__main__":
         cli.add_command(threebotbuilder, "threebotbuilder")
         cli.add_command(threebot_flist, "threebot-flist")
         cli.add_command(containers)
-        cli.add_command(threebot, "threebot")
+        cli.add_command(sdk)
 
     cli()

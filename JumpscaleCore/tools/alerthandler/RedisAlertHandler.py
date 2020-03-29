@@ -84,6 +84,8 @@ class AlertHandler(j.baseclasses.object):
         self.db = redis.Redis()
         self.serialize_json = True
         self._rediskey_alerts = "alerts"
+        self._rediskey_alerts_id = "alertsid"
+        self._rediskey_alerts_ids = "alertsids"
         # self._rediskey_logs = "logs:%s" % (self._threebot_name)
 
     def setup(self):
@@ -287,26 +289,33 @@ class AlertHandler(j.baseclasses.object):
             r.context = context
 
     def set(self, alert):
+        if not alert.alert_id:
+            alert.alert_id = self.db.incr(self._rediskey_alerts_id)
+            self.db.hset(self._rediskey_alerts_ids, alert.alert_id, alert.identifier)
+
         data = self._dumps(alert._ddict)
         res = self.db.hset(self._rediskey_alerts, alert.identifier, data)
 
-    # def set(self, key, err):
-    #     if self.serialize_json:
-    #         self.db.set(key, err._json, ex=24 * 3600)  # expires in 24h
-    #     else:
-    #         self.db.set(key, err._data, ex=24 * 3600)  # expires in 24h
-
-    def get(self, identifier, die=False):
+    def get(self, identifier=None, alert_id=None, die=False, new=True):
+        if alert_id:
+            identifier = self.db.hget(self._rediskey_alerts_ids, alert_id)
+            if not identifier:
+                if die:
+                    raise RuntimeError("could not find alert with id:%s" % alert_id)
+                return None
         res = self.db.hget(self._rediskey_alerts, identifier)
         if not res:
             if die:
                 raise RuntimeError("could not find alert with identifier:%s" % identifier)
-            return self.schema_alert.new()
+            if new:
+                return self.schema_alert.new()
+            else:
+                return None
         datadict = self._loads(res)
         alert = self.schema_alert.new(datadict=datadict)
         return alert
 
-    def delete(self, identifier):
+    def delete(self, alert):
         """delete an alert
 
         :param identifier: alert unique identifier
@@ -314,13 +323,18 @@ class AlertHandler(j.baseclasses.object):
         :return: 1 or 0 (if it was not already there)
         :rtype: int
         """
-        return self.db.hdel(self._rediskey_alerts, identifier)
+        assert isinstance(alert, self.schema_alert.objclass())
+        self.db.hdel(self._rediskey_alerts_ids, alert.alert_id)
+        self.db.hdel(self._rediskey_alerts, alert.identifier)
 
     def delete_all(self):
         """
         delete all alerts
         """
         self.db.delete(self._rediskey_alerts)
+        self.db.delete(self._rediskey_alerts_ids)
+        self.db.delete(self._rediskey_alerts_id)
+        self.db.delete("alertslast")
 
     def walk(self, method, args={}):
         """
@@ -354,7 +368,7 @@ class AlertHandler(j.baseclasses.object):
         args = self.walk(llist, args={"res": []})
         return args["res"]
 
-    def find(self, cat="", message="", pid=None, time=None):
+    def find(self, cat="", message="", pid=None, time_from=None, time_to=None, appname=None):
         """filter alerts by cat, message, pid or time
         :param cat: category, defaults to ""
         :type cat: str, optional
@@ -362,8 +376,8 @@ class AlertHandler(j.baseclasses.object):
         :type message: str, optional
         :param pid: process id, defaults to None
         :type pid: int, optional
-        :param time: time (epoch), defaults to None
-        :type time: int, optional
+        :param time_from: alert.time_last needs to be > than specified time_from example -4h
+        :param time_to: alert.time_last needs to be < than specified time_from example -1h
         :return: list of alert objects
         :rtype: list
         """
@@ -371,24 +385,45 @@ class AlertHandler(j.baseclasses.object):
         cat = cat.strip().lower()
         message = message.strip().lower()
 
+        time_from = j.data.types.datetime.clean(time_from)
+        time_to = j.data.types.datetime.clean(time_to)
+
         for _, alert in self.list():
-            found = False
+            found = True
 
             if message:
-                if message in alert.message.strip().lower() or message in alert.message_pub.strip().lower():
-                    found = True
+                if not message in alert.message.strip().lower() and not message in alert.message_pub.strip().lower():
+                    found = False
 
             if cat:
-                if cat in alert.cat.strip().lower():
-                    found = True
+                if not cat in alert.cat.strip().lower():
+                    found = False
+
+            if appname:
+                if alert.appname.lower().find(appname) == -1:
+                    found = False
 
             if pid:
+                found2 = False
                 for event in alert.events:
                     if pid in event.process_ids:
-                        found = True
-            if time:
-                if alert.time_first <= int(time) <= alert.time_last:
-                    found = True
+                        found2 = True
+                if not found2:
+                    found = False
+
+            if time_to or time_from:
+                found2 = False
+                if time_to and time_from:
+                    if int(time_from) <= alert.time_last <= int(time_to):
+                        found2 = True
+                elif time_to:
+                    if alert.time_last <= int(time_to):
+                        found2 = True
+                elif time_from:
+                    if int(time_from) <= alert.time_last:
+                        found2 = True
+                if not found2:
+                    found = False
 
             if found:
                 res.append(alert)
@@ -411,7 +446,7 @@ class AlertHandler(j.baseclasses.object):
             tb_list.append((item.filepath, item.context, item.linenr, item.line, {}))
         return j.core.tools.traceback_format(tb_list)
 
-    def print(self, alert, exclude=None, show_tb=True):
+    def alert_print(self, alert, exclude=None, show_tb=True):
         """print alert information
         :param alert: alert object
         :type alert: jumpscale.alerthandler.alert
@@ -435,7 +470,7 @@ class AlertHandler(j.baseclasses.object):
                     print(f"Traceback (PID: {tb.process_id}, 3bot: {tb.threebot_name})")
                     print(self.format_traceback(tb))
 
-    def print_list(self, alerts):
+    def alerts_print(self, alerts):
         """
         print alerts
         with date, count, identifier and message
@@ -445,7 +480,21 @@ class AlertHandler(j.baseclasses.object):
         """
         exclude = ["alert_id", "cat", "message_pub", "alert_type"]
         for alert in alerts:
-            self.print(alert, exclude=exclude, show_tb=False)
+            self.alert_print(alert, exclude=exclude, show_tb=False)
+
+    def alerts_list(self, alerts):
+
+        for alert in alerts:
+            print(self._alert_oneline(alert))
+
+    def _alert_oneline(self, alert):
+        time_first_hr = j.data.types.datetime.toHR(alert.time_last)
+        if len(alert.message_pub) > 10:
+            msg = alert.message_pub
+        else:
+            msg = alert.message.replace("\n", " ").replace("EXCEPTION:", " ").replace("EXCEPTION:", "  ")
+        msg2 = j.core.text.toAscii(msg, 120)
+        return f" {alert.appname:<20} {time_first_hr:<15} . {alert.alert_id:<5}: {msg2:<100} "
 
     def test(self, delete=True):
         """
