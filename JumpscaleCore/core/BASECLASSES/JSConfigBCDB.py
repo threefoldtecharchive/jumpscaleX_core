@@ -9,21 +9,17 @@ classes who use JSXObject for data storage but provide nice interface to enduser
 class JSConfigBCDB(JSConfigBCDBBase):
     def _init_jsconfig(self, jsxobject=None, datadict=None, name=None, **kwargs):
 
-<<<<<<< HEAD
-        if hasattr(jsxobject, "name"):
-            if not jsxobject.name:
-                jsxobject.name = "default"
-=======
         if name in kwargs:
             name = kwargs.pop("name")
 
-        if not name and jsxobject != None:
-            name = jsxobject.name
-            assert name
+        if jsxobject != None:
+            if name and not jsxobject.name:
+                jsxobject.name = name
+            elif not name and jsxobject.name:
+                name = jsxobject.name
 
         if not name:
             name = "default"
->>>>>>> unstable
 
         if jsxobject:
             self._data = jsxobject
