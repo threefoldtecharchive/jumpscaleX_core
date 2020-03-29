@@ -39,14 +39,14 @@ services:
   jsx:
     build: .
     ports:
-      - "6000:443"
+      - "4000:443"
       - "7000:80"
 ```
 
 ## How to install
 
 - Install docker `gui based`
-  
+
 - Create a new folder and put the `Dockerfile` and `docker-compose.yml` file in it. you will find them next to this readme.
 
 - then run `docker-compose up`

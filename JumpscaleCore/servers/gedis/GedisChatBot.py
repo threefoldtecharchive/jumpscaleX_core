@@ -294,6 +294,15 @@ class GedisChatBotSession(JSBASE):
     def location_msg(self, msg, **kwargs):
         return {"cat": "location_ask", "msg": msg, "kwargs": kwargs}
 
+    def md_show_confirm(self, data, **kwargs):
+        res = "<h1>Please make sure of the entered values before starting deployment</h1>"
+
+        for key, value in data.items():
+            if value:
+                res += f"**{key}**: {value}<br>"
+
+        self.md_show(res)
+
     def md_show(self, msg, **kwargs):
         """
         a special helper method to send markdown content to the bot instead of questions.
