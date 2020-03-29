@@ -16,6 +16,7 @@ except:
     redis = None
 
 DEFAULT_BRANCH = "unstable"
+DEFAULT_BRANCH_WEB = "development"
 GITREPOS = {}
 
 GITREPOS["builders_extra"] = [
@@ -24,8 +25,6 @@ GITREPOS["builders_extra"] = [
     "JumpscaleBuildersExtra",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersExtra",
 ]
-
-
 GITREPOS["installer"] = [
     "https://github.com/threefoldtech/jumpscaleX_core",
     "%s" % DEFAULT_BRANCH,
@@ -79,6 +78,13 @@ GITREPOS["tutorials"] = [
     "%s" % DEFAULT_BRANCH,
     "tutorials",
     "{DIR_BASE}/lib/jumpscale/tutorials",
+]
+
+GITREPOS["tutorials"] = [
+    "https://github.com/threefoldtech/jumpscaleX_weblibs",
+    "%s" % DEFAULT_BRANCH_WEB,
+    "static",
+    "{DIR_BASE}/lib/weblibs/static",
 ]
 
 GITREPOS["kosmos"] = [
@@ -1233,7 +1239,7 @@ class Tools:
         if not isinstance(msg, str):
             msg = str(msg)
 
-        logdict["message"] = msg  # Tools.text_replace(msg)
+        logdict["message"] = msg
 
         logdict["linenr"] = linenr
         logdict["filepath"] = fname
@@ -1263,7 +1269,6 @@ class Tools:
         logdict["data"] = data
         if stdout:
             logdict = copy.copy(logdict)
-            logdict["message"] = Tools.text_replace(logdict["message"])
             Tools.log2stdout(logdict, data_show=data_show)
         elif level > 14:
             Tools.log2stdout(logdict, data_show=False, enduser=True)
@@ -4281,6 +4286,7 @@ class BaseInstaller:
                 "packet-python>=1.37",
                 "gevent-websocket",
                 "base58",
+                "ansicolors",
             ],
             # level 1: in the middle
             1: [
@@ -5713,9 +5719,16 @@ class DockerContainer:
     #
 
     def install_jumpscale(
-        self, secret=None, privatekey=None, force=False, threebot=True, pull=False, branch=None, identity=None
+        self,
+        secret=None,
+        privatekey=None,
+        force=False,
+        threebot=False,
+        pull=False,
+        branch=None,
+        identity=None,
+        redo=False,
     ):
-        redo = force  # is for jumpscale only
         if not force:
             if not self.executor.state_exists("STATE_JUMPSCALE"):
                 force = True
@@ -5743,26 +5756,20 @@ class DockerContainer:
         if not MyEnv.interactive:
             args_txt += " --no-interactive"
 
-        identity_arg = ""
         if identity:
-            identity_arg = " -i {}".format(identity)
+            args_txt += f" -i {identity}"
 
         dirpath = os.path.dirname(inspect.getfile(Tools))
         if dirpath.startswith(MyEnv.config["DIR_CODE"]):
-            cmd = (
-                "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py configure --sshkey %s -s"
-                % MyEnv.sshagent.key_default_name
+            self.execute(
+                """
+            rm -f /tmp/InstallTools.py
+            rm -f /tmp/jsx
+            ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx
+            """
             )
-            Tools.log("CONFIGURE THE CONTAINER", data=cmd)
-            self.execute(cmd)
-            self.execute("rm -f /tmp/InstallTools.py;rm -f /tmp/jsx")
-            cmd = "python3 /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py install -s{}".format(
-                identity_arg
-            )
-            cmd += args_txt
         else:
             print(" - copy installer over from where I install from")
-
             for item in ["jsx", "InstallTools.py"]:
                 src1 = "%s/%s" % (dirpath, item)
                 cmd = "scp -P {} -o StrictHostKeyChecking=no \
@@ -5770,40 +5777,15 @@ class DockerContainer:
                     -r {} root@localhost:/tmp/".format(
                     self.config.sshport, src1
                 )
-                Tools.execute(cmd)
-
-                cmd = "cd /tmp;python3 jsx configure --sshkey %s -s;python3 jsx install -s%s" % (
-                    MyEnv.sshagent.key_default_name,
-                    identity_arg,
-                )
-                cmd += args_txt
+        cmd = f"""
+        cd /tmp
+        python3 jsx configure --sshkey {MyEnv.sshagent.key_default_name} -s
+        python3 jsx install {args_txt}
+        """
         print(" - Installing jumpscaleX ")
-        self.execute("apt-get install python3-click -y")
         self.execute(cmd, retry=2)
 
-        cmd = """
-        echo 'autoclean'
-        apt-get autoclean -y
-        apt-get clean -y
-        apt-get autoremove -y
-        """
-        self.execute(cmd)
-
-        k = """
-
-        install succesfull:
-
-        # if you use a container do:
-        /tmp/jsx container-kosmos
-
-        or
-
-        kosmos
-
-        """
-        args = {}
-        args["port"] = self.config.sshport
-        print(Tools.text_replace(k, args=args))
+        print(" - Install succesfull")
 
         self.executor.state_set("STATE_JUMPSCALE")
         if threebot:

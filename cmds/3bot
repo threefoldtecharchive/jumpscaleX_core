@@ -19,6 +19,15 @@ def start():
     j.servers.threebot.start(background=True)
     print (" - Server started ok")
 
+@click.command()
+def stop():
+    j.servers.threebot.default.stop()
+    print (" - Server stopped ok")
+
+@click.command()
+def restart():
+    j.servers.threebot.default.stop()
+    print (" - Server stopped ok")
 
 
 @click.command()
@@ -28,6 +37,8 @@ def help():
 
 
 cli.add_command(start)
+cli.add_command(restart)
+cli.add_command(stop)
 cli.add_command(help)
 
 if __name__ == "__main__":
