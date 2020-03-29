@@ -257,6 +257,9 @@ def container_install(
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False, branch=branch)
 
+    if not docker.executor.exists("/sandbox/cfg/keys/default/key.priv"):
+        reinstall = True
+
     docker.install_jumpscale(branch=branch, force=reinstall, pull=pull, threebot=threebot, identity=identity)
 
     _container_shell()
@@ -267,13 +270,16 @@ def container_get(name="3bot", delete=False, jumpscale=True, install=False, moun
     e.DF.init()
     docker = e.DF.container_get(name=name, image="threefoldtech/3bot2", start=True, delete=delete, mount=mount)
     # print(docker.executor.config)
+    force = False
+    if not docker.executor.exists("/sandbox/cfg/keys/default/key.priv"):
+        jumpscale = True
+        install = True
+        force = True
     if jumpscale:
         installer = IT.JumpscaleInstaller()
         installer.repos_get(pull=False)
-        if not docker.executor.exists("/sandbox/jumpscale_config.toml"):
-            install = True
         if install:
-            docker.install_jumpscale()
+            docker.install_jumpscale(force=force)
     return docker
 
 
@@ -295,19 +301,11 @@ def container_get(name="3bot", delete=False, jumpscale=True, install=False, moun
     is_flag=True,
     help="reinstall, basically means will try to re-do everything without removing the data",
 )
-@click.option("--clean", is_flag=True, help="cleanup all data not needed")
 @click.option("--threebot", is_flag=True, help="install required components for threebot")
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
 @click.option("-i", "--identity", default=None, help="Identity to be used for nacl")
 def install(
-    branch=None,
-    reinstall=False,
-    pull=False,
-    no_interactive=False,
-    prebuilt=False,
-    clean=False,
-    threebot=False,
-    identity=None,
+    branch=None, reinstall=False, pull=False, no_interactive=False, prebuilt=False, threebot=False, identity=None,
 ):
     """
     install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.
@@ -317,6 +315,7 @@ def install(
 
 
     """
+
     # print("DEBUG:: no_sshagent", no_sshagent, "configdir", configdir)  #no_sshagent=no_sshagent
     IT = load_install_tools(branch=branch, reset=True)
     # IT.MyEnv.interactive = True
@@ -339,8 +338,6 @@ def install(
         threebot=threebot,
         identity=identity,
     )
-    if clean:
-        IT.BaseInstaller.clean(development=True)
     print("Jumpscale X installed successfully")
 
 
