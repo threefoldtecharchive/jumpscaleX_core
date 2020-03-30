@@ -71,7 +71,9 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
 
         if not name:
             if interactive:
-                name = j.tools.console.askString("your threebot name")
+                name = j.tools.console.askString("your threebot name ")
+                if not name.endswith(".3bot"):
+                    name = f"{name}.3bot"
             else:
                 raise j.exceptions.Input("please specify name")
 
