@@ -88,4 +88,4 @@ def team(doc, link, order="random", projects=None, contribution_types=None, pull
             data = filter_on_mapping(mapping, data)
 
     options["dataset"] = data
-    return "```team\n%s```" % j.data.serializers.json.dumps(options)
+    return "```team\n%s\n```" % j.data.serializers.json.dumps(options)
