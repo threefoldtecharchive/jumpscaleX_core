@@ -3,7 +3,7 @@ import cryptocompare as cc
 from Jumpscale import j
 
 
-class CurrencyLayerFactory(j.baseclasses.object_config):
+class CurrencyLayerFactory(j.baseclasses.object_config_collection_testtools):
     """
     Currencylayer provides a JSON-based REST API, 
     delivering currency exchange rates for 168 world currencies and precious metals.

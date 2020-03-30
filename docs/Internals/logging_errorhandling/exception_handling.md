@@ -58,7 +58,6 @@ BaseJSException(message="something", level=None, cat=None, msgpub=None,context=N
 
 - context is e.g. location where something happened
 - cat is any category e.g. in dot notation
--
 
 ## raising of errors
 

@@ -11,7 +11,7 @@ The communication protocol used is [RESP](https://redis.io/topics/protocol)
 
 ## Actors
 
-The RPC interface are define by creating a python class. All the public methods of the class will be exposed as remote RPC call that clients can call. We name such a class an `actor`.
+The RPC interface is defined by creating a python class. All the public methods of the class will be exposed as remote RPC call that clients can call. We name such a class an `actor`.
 
 ### Actor methods
 
@@ -26,7 +26,7 @@ def foo(arg1, arg2):
 
 This actor method will receive what is sent by the client without any data format validation. The user needs to validate the data format manually.
 
-If you want to enforce data validation automatically, you can use the [DigitalMe Schema](../schema/README.md).
+If you want to enforce data validation automatically, click [here](../schemas/README.md) for more details on schemas and refer to [types](../types/README.md) for supported types.
 To define which schema is expected you need to write a docstring to your method. example:
 
 ```python
@@ -48,7 +48,7 @@ def foo(self, wallet, schema_out=None, user_session=None):
     return w
 ```
 
-This actor method has 2 arguments, `wallet` and `schema_out`. With the docstring we ask gedis to validate that `wallet` is actually a valid instance of the schema named `jumpscale.test.ibiza.wallet`. We also define the type of the return value with the `schema_out` argument and the docstring which specify that schema_out is also an instance of the `jumpscale.test.ibiza.wallet`.
+This actor method has 3 arguments, `wallet`, `schema_out` and `user_session`. With the docstring we ask gedis to validate that `wallet` is actually a valid instance of the schema named `jumpscale.test.ibiza.wallet`. We also define the type of the return value with the `schema_out` argument and the docstring which specify that schema_out is also an instance of the `jumpscale.test.ibiza.wallet`.
 
 When defining docstring like this, if the data received or sent back doesn't validate the schema, an error will be raised.
 

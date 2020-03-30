@@ -45,9 +45,9 @@ class Lexers:
         raise j.exceptions.Base("readonly")
 
     def __str__(self):
-        out = j.core.tools.text_replace("{RED}Pygment Lexers:\n\n", colors=True)
+        out = j.core.tools.text_replace("{RED}Pygment Lexers:\n\n")
         for item in self._items:
-            out += j.core.tools.text_replace("{RED}-{RESET} %s\n" % item, colors=True)
+            out += j.core.tools.text_replace("{RED}-{RESET} %s\n" % item)
         return out
 
     __repr__ = __str__
@@ -84,9 +84,9 @@ class Formatters:
         raise j.exceptions.Base("readonly")
 
     def __str__(self):
-        out = j.core.tools.text_replace("{RED}Pygment Formatters:\n\n", colors=True)
+        out = j.core.tools.text_replace("{RED}Pygment Formatters:\n\n")
         for item in self._items:
-            out += j.core.tools.text_replace("{RED}-{RESET} %s\n" % item, colors=True)
+            out += j.core.tools.text_replace("{RED}-{RESET} %s\n" % item)
         return out
 
     __repr__ = __str__

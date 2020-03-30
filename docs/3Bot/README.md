@@ -22,10 +22,13 @@ Add these configs in the wireguard application then press activate.
 
 
 ### Step 3
-Access the docker via the ip that it gives
+Access the docker via the ip that it gives.
 
 **note**: For ubuntu users the ip of the container can be retrieved using
-`docker inspect 3bot` where 3bot is the default name of the container or the name given
+`docker inspect 3bot` where 3bot is the default name of the container or the name given.
+
+It is also posible to use `jsx` tool to access the container:
+
 ```bash
 /tmp/jsx container-shell;
 kosmos -p "j.servers.threebot.start(background=True)"

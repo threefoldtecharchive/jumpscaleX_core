@@ -27,7 +27,7 @@ you can define the schema url like that.
 
 ## basic types
 
-see [types](../types/readme.md) for the internals
+see [types](../types/README.md) for the internals
 
 ## collection types
 
