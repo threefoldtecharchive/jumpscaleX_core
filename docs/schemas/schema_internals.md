@@ -1,7 +1,7 @@
 
 ```python
 #constructor
-def new self, capnpdata=None, serializeddata=None, datadict=None, model=None)
+def (new self, capnpdata=None, serializeddata=None, datadict=None, model=None):
     """
     new schema_object using data and capnpbin
 

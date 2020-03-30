@@ -39,13 +39,9 @@ jsx containers-reset
 
 ```bash
 cd /tmp
-./jsx threebot-test
-#if you want the webcomponents use -w
-./jsx threebot-test -w
-#if you want to delete your container while installing your threebot
-./jsx threebot-test -w -d
-#if you want to install multiple threebots talking to each other (count=3)
-./jsx threebot-test -w -d -c 2
+./jsx sdk
+#or if you want to delete your container while installing your threebot
+./jsx sdk -d
 ```
 
 ### Work with the 3bots

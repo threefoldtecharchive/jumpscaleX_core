@@ -41,18 +41,3 @@ remote_executor.file_write('/tmp/foo', 'hello world')
 
 remote_executor.file_read('/tmp/foo')
 ```
-
-### Docker Executor
-
-This executor deals with local dockers. Using `docker execute`, it doesn't require the docker having ssh running
-
-To use a docker executor:
-
-```python
-# init with container id or name
-docker_executor = j.tools.executor.getLocalDocker('example')
-docker_executor.execute('pwd')
-docker_executor.file_write('/tmp/foo', 'hello world')
-
-docker_executor.file_read('/tmp/foo')
-```

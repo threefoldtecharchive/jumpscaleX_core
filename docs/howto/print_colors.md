@@ -4,7 +4,7 @@ When printing you can send color codes to your screen.
 
 You just need to add our predefined color codes to your text and call:
 
-``` j.core.tools.text_replace```
+```j.core.tools.text_replace```
 
 
 ```python
