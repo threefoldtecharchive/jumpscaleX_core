@@ -15,7 +15,6 @@ class JSConfigBCDB(JSConfigBCDBBase):
         if not name:
             if jsxobject is not None:
                 name = jsxobject.name
-            assert name
 
         if not name:
             name = "default"
