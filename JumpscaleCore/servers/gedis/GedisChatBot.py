@@ -439,6 +439,19 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
         self.q_out.put({"cat": "user_info", "kwargs": kwargs})
         return j.data.serializers.json.loads(self.q_in.get())
 
+    def qrcode_show(self, data):
+        qr_64 = j.tools.qrcode.base64_get(data, scale=10)
+        content = f'''# scan the following qr code with your application:
+
+<p align="center">
+<img src="data:image/png;base64, {qr_64}" alt="qrCode"/>
+</p>
+'''
+        return self.md_show(content)
+
+    def qrcode_show_dict(self, d):
+        data = j.data.serializers.json.dumps(d)
+        return self.qrcode_show(data)
 
 def test(factory):
     sid = "123"
