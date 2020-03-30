@@ -5123,7 +5123,7 @@ class DockerConfig:
         https = 4000 + int(self.portrange) * 10
         self.sshport = ssh
         self.portrange_txt = "-p %s-%s:8005-8009" % (a, b)
-        self.portrange_txt = "-p %s:80" % http
+        self.portrange_txt += " -p %s:80" % http
         self.portrange_txt += " -p %s:443" % https
         self.portrange_txt += " -p %s:9001/udp" % udp
         self.portrange_txt += " -p %s:22" % ssh
@@ -5699,6 +5699,10 @@ class DockerContainer:
         Install tcprouter builder to be part of the image
         """
         self.execute(". /sandbox/env.sh; kosmos 'j.builders.network.tcprouter.install()'")
+
+    def _install_package_dependencies(self):
+        # self.execute("j.tools.threebot_packages._children.threefold__wikis.install()", jumpscale=True)
+        Tools.shell()
 
     # def config_jumpscale(self):
     #     ##no longer ok, intent was to copy values from host but no longer the case

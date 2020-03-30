@@ -13,57 +13,114 @@ DEFAULT_BRANCH = "unstable"
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
-def threebotusers():
-    url = "https://explorer.testnet.grid.tf/explorer/users"
-    with urlopen(url) as resp:
-        if resp.status != 200:
-            raise RuntimeError("fail to download users metadata")
-        data = resp.read().decode("utf-8")
-        data2 = json.loads(data)
-        res = {}
-        for d in data2:
-            res[d["name"]] = d["email"]
-    return res
+class jsx:
+    def __init__(self):
+        self._data = None
 
-
-def load_install_tools(branch=None, reset=False):
-    # get current install.py directory
-
-    path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py"
-    if not os.path.exists(path):
-        path = os.path.expanduser("~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py")
-
-    if not branch:
-        branch = DEFAULT_BRANCH
-    # first check on code tools
-    if not os.path.exists(path):
-        rootdir = os.path.dirname(os.path.abspath(__file__))
-        path = os.path.join(rootdir, "InstallTools.py")
-        # now check on path next to jsx
-        if not os.path.exists(path) or reset:  # or path.find("/code/") == -1:
-            url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py" % branch
-
-            # fallback to default branch if installation is being done for another branch that doesn't exist in core
-            if branch != DEFAULT_BRANCH and requests.get(url).status_code == 404:
-                url = (
-                    "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py"
-                    % DEFAULT_BRANCH
-                )
-
+    @property
+    def phonebook(self):
+        if not self._data:
+            url = "https://explorer.testnet.grid.tf/explorer/users"
             with urlopen(url) as resp:
                 if resp.status != 200:
-                    raise RuntimeError("fail to download InstallTools.py")
-                with open(path, "w+") as f:
-                    f.write(resp.read().decode("utf-8"))
-                print("DOWNLOADED INSTALLTOOLS TO %s" % path)
+                    raise RuntimeError("fail to download users metadata")
+                data = resp.read().decode("utf-8")
+                self._data = json.loads(data)
+        return self._data
 
-    spec = util.spec_from_file_location("IT", path)
-    IT = spec.loader.load_module()
-    IT.MyEnv.init()
-    return IT
+    def _name_clean(self, name):
+        name = name.lower()
+        if "." not in name:
+            name = name + ".3bot"
+        return name
+
+    def _email_clean(self, email):
+        email = email.lower()
+        if "@" not in email:
+            raise IT.Tools.exceptions.Input("email needs to have @ inside, now '%s'" % email)
+        return email
+
+    def phonebook_check(self, name, email):
+        name_res = None
+        email_res = None
+        name = self._name_clean(name)
+        email = self._email_clean(email)
+        for d in self.phonebook:
+            if d["name"] == name:
+                name_res = d
+            if d["email"] == email:
+                email_res = d
+        return name_res, email_res
+
+    def userdata_ask(self, name=None, email=None):
+        name = self._name_clean(name)
+        email = self._email_clean(email)
+        while True:
+            res = self._userdata_ask(name=None, email=None)
+            if res:
+                return res
+
+    def _userdata_ask(self, name=None, email=None):
+        name = name.lower().strip()
+        if not name:
+            name = IT.Tools.ask_string("give your 3bot name, as used with your 3bot connect.")
+        name_res, email_res = self.phonebook_check(tname, None)
+        if name_res:
+            IT.Tools.shell()
+            # IT.Tools.ask_yes_no(
+            #     "your 3botname:'%s' does not exist in the tfgrid explorer, ok to register your name?"
+            # )
+            #
+            #     break
+            # if "." not in tname:
+            #     assert "3bot" not in tname
+            #     tname += ".3bot"
+            #
+            # print("Could not find the user. Specify an existing name in 3bot phonebook.")
+            ok = True
+
+    def load_install_tools(self, branch=None, reset=False):
+        # get current install.py directory
+
+        path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py"
+        if not os.path.exists(path):
+            path = os.path.expanduser("~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py")
+
+        if not branch:
+            branch = DEFAULT_BRANCH
+        # first check on code tools
+        if not os.path.exists(path):
+            rootdir = os.path.dirname(os.path.abspath(__file__))
+            path = os.path.join(rootdir, "InstallTools.py")
+            # now check on path next to jsx
+            if not os.path.exists(path) or reset:  # or path.find("/code/") == -1:
+                url = (
+                    "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py"
+                    % branch
+                )
+
+                # fallback to default branch if installation is being done for another branch that doesn't exist in core
+                if branch != DEFAULT_BRANCH and requests.get(url).status_code == 404:
+                    url = (
+                        "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py"
+                        % DEFAULT_BRANCH
+                    )
+
+                with urlopen(url) as resp:
+                    if resp.status != 200:
+                        raise RuntimeError("fail to download InstallTools.py")
+                    with open(path, "w+") as f:
+                        f.write(resp.read().decode("utf-8"))
+                    print("DOWNLOADED INSTALLTOOLS TO %s" % path)
+
+        spec = util.spec_from_file_location("IT", path)
+        IT = spec.loader.load_module()
+        IT.MyEnv.init()
+        return IT
 
 
-IT = load_install_tools()
+jsx = jsx()
+IT = jsx.load_install_tools()
 IT.MyEnv.interactive = True  # std is interactive
 
 
@@ -227,7 +284,6 @@ def container_install(
 
     """
 
-    IT = load_install_tools(branch=branch, reset=True)
     # IT.MyEnv.interactive = True
     # interactive = not no_interactive
 
@@ -330,7 +386,6 @@ def install(
     """
 
     # print("DEBUG:: no_sshagent", no_sshagent, "configdir", configdir)  #no_sshagent=no_sshagent
-    IT = load_install_tools(branch=branch, reset=True)
     # IT.MyEnv.interactive = True
     _configure(no_interactive=no_interactive)
     if reinstall:
@@ -373,7 +428,6 @@ def jumpscale_code_get(branch=None, pull=False, reset=False):
     if you want to configure other arguments use 'jsx configure ... '
 
     """
-    IT = load_install_tools(branch=branch)
     # IT.MyEnv.interactive = True
     # _configure(no_interactive=True)
     if not branch:
@@ -476,7 +530,6 @@ def basebuilder(dest=None, push=False, cont=False):
 
 
 def _build_phusion(push=False):
-    IT = load_install_tools(branch=DEFAULT_BRANCH)
     path = IT.Tools.text_replace("{DIR_BASE}/code/github/threefoldtech/baseimage-docker")
     if not os.path.exists(path):
         IT.Tools.code_github_get(url="https://github.com/threefoldtech/baseimage-docker", branch="master")
@@ -496,7 +549,6 @@ def basebuilder_(dest=None, push=False, delete=True):
     _build_phusion(push=push)
     if not dest:
         dest = "threefoldtech/base2"
-    IT = load_install_tools(branch=DEFAULT_BRANCH)
     _configure()
 
     # image = "threefoldtech/phusion:19.10"
@@ -628,7 +680,6 @@ def threebotbuilder(push=False, base=False, delete=False, noclean=False, develop
         basebuilder_(push=push)
     dest = "threefoldtech/3bot2"
 
-    IT = load_install_tools(branch=DEFAULT_BRANCH)
     _configure()
 
     docker = e.DF.container_get(name="3botdev", delete=delete, image="threefoldtech/base2")
@@ -643,6 +694,7 @@ def threebotbuilder(push=False, base=False, delete=False, noclean=False, develop
     docker.install_jumpscale(branch=DEFAULT_BRANCH, force=delete, pull=False, threebot=True)
     docker._install_tcprouter()
     docker.install_jupyter()
+    docker._install_package_dependencies()
 
     docker.image = dest
 
@@ -913,21 +965,6 @@ def sdk(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False, update
         installer = IT.JumpscaleInstaller()
         installer.repos_get(pull=True)
 
-    users = threebotusers()
-    ok = False
-    while not ok:
-        tname = IT.Tools.ask_string("give your 3bot name, as used with your 3bot connect.")
-        tname = tname.lower().strip()
-        # if tname not in users:
-        #
-        #     break
-        if "." not in tname:
-            assert "3bot" not in tname
-            tname += ".3bot"
-        #
-        # print("Could not find the user. Specify an existing name in 3bot phonebook.")
-        ok = True
-
     explorer_addr = None
     for i in range(count):
         if i > 0:
@@ -975,6 +1012,7 @@ def sdk(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False, update
     try:
         import webbrowser
 
+        IT.Tools.shell()
         time.sleep(5)
         if IT.MyEnv.platform_is_osx:
             webbrowser.get("safari").open_new_tab("https://localhost:4000")
