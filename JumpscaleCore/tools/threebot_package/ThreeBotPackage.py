@@ -39,10 +39,9 @@ class ThreeBotPackage(ThreeBotPackageBase):
         :return:
         """
         if not self._init_:
-            path = self._changed("package.py")
-            if path:
-                klass, changed = j.tools.codeloader.load(obj_key="Package", path=path, reload=False)
-                self._package_author = klass(package=self)
+            path = j.sal.fs.joinPaths(self.path, "package.py")
+            klass, _ = j.tools.codeloader.load(obj_key="Package", path=path, reload=False)
+            self._package_author = klass(package=self)
         self._init_ = True
 
     def _changed(self, path, die=True, reset=False):
