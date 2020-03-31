@@ -5776,12 +5776,8 @@ class DockerContainer:
             print(" - copy installer over from where I install from")
             for item in ["jsx", "InstallTools.py"]:
                 src1 = "%s/%s" % (dirpath, item)
-                cmd = "scp -P {} -o StrictHostKeyChecking=no \
-                    -o UserKnownHostsFile=/dev/null \
-                    -r {} root@localhost:/tmp/".format(
-                    self.config.sshport, src1
-                )
-                Tools.execute(cmd)
+                self.executor.upload(src1, '/tmp')
+
         cmd = f"""
         cd /tmp
         python3 jsx configure --sshkey {MyEnv.sshagent.key_default_name} -s
