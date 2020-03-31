@@ -5781,6 +5781,7 @@ class DockerContainer:
                     -r {} root@localhost:/tmp/".format(
                     self.config.sshport, src1
                 )
+                Tools.execute(cmd)
         cmd = f"""
         cd /tmp
         python3 jsx configure --sshkey {MyEnv.sshagent.key_default_name} -s
