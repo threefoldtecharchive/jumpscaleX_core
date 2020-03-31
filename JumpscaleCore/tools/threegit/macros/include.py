@@ -3,6 +3,7 @@ import re
 from functools import partial
 
 from Jumpscale import j
+from Jumpscale.tools.threegit.ThreeGitFactory import INCLUDES_PREFIX
 from Jumpscale.tools.threegit.Link import MarkdownLinkParser, Linker, Link, SKIPPED_LINKS
 from Jumpscale.clients.http.HttpClient import HTTPError
 
@@ -187,12 +188,18 @@ def get_content(custom_link, doc, docsite_name=None, host=None, raw=False):
             new_link = Linker.to_custom_link(repo, host)
             # to match any path, start with root `/`
             url = Linker(host, new_link.account, new_link.repo).tree("/")
-            if new_link.repo in TMP_DOCSITE_CACHE:
-                docsite = TMP_DOCSITE_CACHE[new_link.repo]
+
+            # create a new docsite to include content from it, it will not be processed
+            # it will be just used for searching documents and files, start from /
+            # or get it from cache
+            include_docsite_name = f"{new_link.repo}_{INCLUDES_PREFIX}"
+            if include_docsite_name in TMP_DOCSITE_CACHE:
+                docsite = TMP_DOCSITE_CACHE[include_docsite_name]
             else:
-                docsite = j.tools.threegit.get_from_url(new_link.repo, url, base_path="").docsite
+                threegit = j.tools.threegit.get_from_url(include_docsite_name, url, base_path="")
+                docsite = threegit.docsite
                 docsite.load(reset=True)
-                TMP_DOCSITE_CACHE[new_link.repo] = docsite
+                TMP_DOCSITE_CACHE[include_docsite_name] = docsite
             custom_link.path = new_link.path
 
     try:

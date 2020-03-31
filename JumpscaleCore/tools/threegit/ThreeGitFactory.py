@@ -5,6 +5,9 @@ from .ThreeGit import ThreeGit
 
 skip = j.baseclasses.testtools._skip
 
+# a prefix for threegit instances (docsites) created for includes
+INCLUDES_PREFIX = "for_include_macro"
+
 
 class ThreeGitFactory(j.baseclasses.object_config_collection):
     """
@@ -117,6 +120,21 @@ class ThreeGitFactory(j.baseclasses.object_config_collection):
             instance.relative_base_path = j.sal.fs.joinPaths(instance.relative_base_path, base_path)
 
         return instance
+
+    def list_names(self, filter_includes=True):
+        """list threegit instance names (docsites)
+
+        :param filter_includes: filter ones used for includes, defaults to True
+        :type filter_includes: bool, optional
+        """
+        names = []
+
+        for threegit in self.find():
+            if filter_includes and threegit.name.endswith(INCLUDES_PREFIX):
+                continue
+            names.append(threegit.name)
+
+        return names
 
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/573")
     def test(self):
