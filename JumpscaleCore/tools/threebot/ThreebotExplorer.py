@@ -45,7 +45,7 @@ class ThreebotExplorer(j.baseclasses.object):
                 r.id,
                 r.name,
                 r.email,
-                r.ipaddr,
+                r.host,
                 r.description,
                 r.pubkey,
                 verifykey=r.pubkey,

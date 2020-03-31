@@ -51,7 +51,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
         raise RuntimeError("need to implement")
 
     def init_my_threebot(
-        self, myidentity="default", name=None, email=None, description=None, ipaddr="", interactive=True
+        self, myidentity="default", name=None, email=None, description=None, host="", interactive=True
     ):
         """
 
@@ -95,14 +95,14 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
                     description = j.tools.console.askString("your threebot description (optional)")
                 else:
                     description = ""
-            if not ipaddr:
+            if not host:
                 if str(j.core.platformtype.myplatform).startswith("darwin"):
-                    ipaddr = "localhost"
+                    host = "localhost"
                 else:
                     try:
-                        (iface, ipaddr) = j.sal.nettools.getDefaultIPConfig()
+                        (iface, host) = j.sal.nettools.getDefaultIPConfig()
                     except:
-                        ipaddr = "localhost"
+                        host = "localhost"
 
             if interactive:
                 if not j.tools.console.askYesNo("ok to use your local private key as basis for your threebot?", True):
@@ -110,17 +110,17 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
 
             user = explorer.users.new()
             user.name = name
-            user.ipaddr = ipaddr
+            user.host = host
             user.email = email
             user.description = description
             user.pubkey = nacl.verify_key_hex
             tid = explorer.users.register(user)
             r = explorer.users.get(tid=tid)
 
-        payload = j.data.nacl.payload_build(r.id, r.name, r.email, r.ipaddr, r.description, nacl.verify_key_hex)
+        payload = j.data.nacl.payload_build(r.id, r.name, r.email, r.host, r.description, nacl.verify_key_hex)
         payload = j.data.hash.bin2hex(payload).decode()
         signature = j.data.nacl.payload_sign(
-            r.id, r.name, r.email, r.ipaddr, r.description, nacl.verify_key_hex, nacl=nacl
+            r.id, r.name, r.email, r.host, r.description, nacl.verify_key_hex, nacl=nacl
         )
         valid = explorer.users.validate(r.id, payload, signature)
         if not valid:
