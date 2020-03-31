@@ -1,7 +1,6 @@
 from Jumpscale import j
 
 from .ThreebotClient import ThreebotClient
-from io import BytesIO
 
 JSConfigBase = j.baseclasses.object_config_collection
 skip = j.baseclasses.testtools._skip
@@ -46,7 +45,7 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
             raise j.exceptions.Input("threebot ID must be a positive integer")
 
         client = j.baseclasses.object_config_collection_testtools.get(
-            self, name=r.name, tid=r.id, host=r.ipaddr, pubkey=r.pubkey
+            self, name=r.name, tid=r.id, host=r.host, pubkey=r.pubkey
         )
 
         self._id2client_cache[client.tid] = client
