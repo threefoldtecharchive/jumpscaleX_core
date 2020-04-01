@@ -619,13 +619,12 @@ def wiki_load(name=None, url=None, reset=False, foreground=False):
 @click.command(name="threebot-flist")
 @click.option("-i", "--app_id", default=None, help="application id of it's your online")
 @click.option("-s", "--secret", default=None, help="secret of it's your it's your online account")
-@click.option("-u", "--username", default=None, help="username of it's your online account")
-def threebot_flist(username=None, secret=None, app_id=None):
+def threebot_flist(app_id=None, secret=None):
     """
     create flist of 3bot docker image
     ex: jsx threebot-flist -i APP_ID -s SECRET -u USER_NAME
     """
-    if not username and not app_id and not secret:
+    if not app_id and not secret:
         raise RuntimeError("should add it's your online creds")
 
     url = urllib.parse.urljoin("https://itsyou.online/api", "/v1/oauth/access_token")
@@ -1012,7 +1011,6 @@ def sdk(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False, update
     try:
         import webbrowser
 
-        IT.Tools.shell()
         time.sleep(5)
         if IT.MyEnv.platform_is_osx:
             webbrowser.get("safari").open_new_tab("https://localhost:4000")
