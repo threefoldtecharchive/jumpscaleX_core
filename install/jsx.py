@@ -284,11 +284,11 @@ def container_install(
     if you want to configure other arguments use 'jsx configure ... '
 
     """
-
     new_identity = None
+    identities_path = os.path.join(IT.MyEnv.config["DIR_VAR"], "containers/shared/keys")
     if identity:
         identity = _name_clean(identity)
-        identity_path = os.path.join(IT.MyEnv.config["DIR_VAR"], "containers/shared/keys", identity)
+        identity_path = os.path.join(identities_path, identity)
         if not os.path.exists(identity_path):
             if no_interactive:
                 raise RuntimeError("Couldn't find specified identity: {}".format(identity_path))
@@ -302,8 +302,8 @@ def container_install(
                 raise RuntimeError(
                     "Need to have both `secret` file containing private key secret and `key.priv` for the private key"
                 )
-    else:
-        found_identities = os.listdir(os.path.join(IT.MyEnv.config["DIR_VAR"], "containers/shared/keys"))
+    elif os.path.exists(identities_path):
+        found_identities = os.listdir(identities_path)
         if len(found_identities) > 1:
             if no_interactive:
                 raise RuntimeError("Found multiple shared identities please start installation interactively or specify an identity")
