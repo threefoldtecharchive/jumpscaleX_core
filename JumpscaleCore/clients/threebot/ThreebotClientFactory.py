@@ -78,13 +78,12 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
             self, name=record.name, tid=record.id, host=record.ipaddr, pubkey=record.pubkey
         )
 
-    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/487")
     def test(self):
         """
         kosmos 'j.clients.threebot.test()'
         :return:
-        """
-        e = j.clients.threebot.explorer
+        """        
+        e = j.clients.threebot.get()
         a = e.actors_base
         assert a.system.ping() == b"PONG"
 
@@ -97,5 +96,3 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         pnames = [p.name for p in p.package_manager.packages_list().packages]
 
         l = p.package_manager.actors_list()
-
-        j.shell()
