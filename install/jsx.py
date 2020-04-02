@@ -64,7 +64,7 @@ class jsx:
         name = name.lower().strip()
         if not name:
             name = IT.Tools.ask_string("give your 3bot name, as used with your 3bot connect.")
-        name_res, email_res = self.phonebook_check(tname, None)
+        name_res, email_res = self.phonebook_check(name, None)
         if name_res:
             IT.Tools.shell()
             # IT.Tools.ask_yes_no(
@@ -1018,7 +1018,7 @@ def sdk(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False, update
         docker.execute("source /sandbox/env.sh;bcdb delete --all -f")
         docker.execute(
             f"""
-        j.tools.threebot.me.default.admins.append("{tname}")
+        j.tools.threebot.me.default.admins.append("{name}")
         j.tools.threebot.me.default.save()
         """,
             jumpscale=True,
