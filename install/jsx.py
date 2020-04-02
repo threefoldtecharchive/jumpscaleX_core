@@ -13,6 +13,12 @@ DEFAULT_BRANCH = "unstable"
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
+def _name_clean(name):
+    name = name.lower()
+    if "." not in name:
+        name = name + ".3bot"
+    return name
+
 class jsx:
     def __init__(self):
         self._data = None
@@ -28,12 +34,6 @@ class jsx:
                 self._data = json.loads(data)
         return self._data
 
-    def _name_clean(self, name):
-        name = name.lower()
-        if "." not in name:
-            name = name + ".3bot"
-        return name
-
     def _email_clean(self, email):
         email = email.lower()
         if "@" not in email:
@@ -43,7 +43,7 @@ class jsx:
     def phonebook_check(self, name, email):
         name_res = None
         email_res = None
-        name = self._name_clean(name)
+        name = _name_clean(name)
         email = self._email_clean(email)
         for d in self.phonebook:
             if d["name"] == name:
@@ -53,7 +53,7 @@ class jsx:
         return name_res, email_res
 
     def userdata_ask(self, name=None, email=None):
-        name = self._name_clean(name)
+        name = _name_clean(name)
         email = self._email_clean(email)
         while True:
             res = self._userdata_ask(name=None, email=None)
@@ -151,7 +151,7 @@ def jumpscale_get(die=True):
 
 # have to do like this, did not manage to call the click enabled function (don't know why)
 def _configure(
-    codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey_words=None, secret=None
+    codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey_words=None, secret=None, set_secret=True,
 ):
     interactive = not no_interactive
     sshagent_use = not no_sshagent
@@ -164,6 +164,7 @@ def _configure(
         debug_configure=debug,
         interactive=interactive,
         secret=secret,
+        set_secret=set_secret,
     )
     j = jumpscale_get(die=False)
 
@@ -259,7 +260,7 @@ def configure(
 @click.option(
     "--identity",
     default=None,
-    help="Identity to be used for nacl should be stored under var/containers/shared/keys/{identity}/priv.key",
+    help="Identity to be used for the container should be stored under var/containers/shared/keys/{identity}",
 )
 def container_install(
     name="3bot",
@@ -284,22 +285,35 @@ def container_install(
 
     """
 
-    # IT.MyEnv.interactive = True
-    # interactive = not no_interactive
-
+    new_identity = None
     if identity:
+        identity = _name_clean(identity)
         identity_path = os.path.join(IT.MyEnv.config["DIR_VAR"], "containers/shared/keys", identity)
         if not os.path.exists(identity_path):
-            raise RuntimeError("Couldn't find specified identity: {}".format(identity_path))
-        identity_contents = os.listdir(identity_path)
-        if "key.priv" not in identity_contents or "secret" not in identity_contents:
-            raise RuntimeError(
-                "Need to have both `secret` file containing private key secret and `key.priv` for the private key"
-            )
+            if no_interactive:
+                raise RuntimeError("Couldn't find specified identity: {}".format(identity_path))
+            if not IT.Tools.ask_yes_no("Create new identity with name {}".format(identity)):
+                return
+            new_identity = identity
+            identity = None
+        else:
+            identity_contents = os.listdir(identity_path)
+            if "key.priv" not in identity_contents or "conf.toml" not in identity_contents:
+                raise RuntimeError(
+                    "Need to have both `secret` file containing private key secret and `key.priv` for the private key"
+                )
+    else:
+        found_identities = os.listdir(os.path.join(IT.MyEnv.config["DIR_VAR"], "containers/shared/keys"))
+        if len(found_identities) > 1:
+            if no_interactive:
+                raise RuntimeError("Found multiple shared identities please start installation interactively or specify an identity")
+            identity = IT.Tools.ask_choices("Choose an identity to start container with", found_identities)
+        else:
+            identity = found_identities[0]
 
     mount = not nomount
 
-    _configure(no_interactive=no_interactive)
+    _configure(no_interactive=no_interactive, set_secret=not identity)
 
     if scratch:
         image = "threefoldtech/base2"
@@ -331,7 +345,12 @@ def container_install(
 
     docker.install_jumpscale(branch=branch, force=reinstall, pull=pull, threebot=threebot, identity=identity)
 
-    _container_shell()
+    identity = identity or new_identity
+    if identity:
+        threebot_name = '"{}"'.format(identity)
+        docker.execute("source /sandbox/env.sh && kosmos 'j.tools.threebot.init_my_threebot(interactive={}, name={})'".format(not no_interactive, threebot_name))
+
+    _container_shell(name)
 
 
 def container_get(name="3bot", delete=False, jumpscale=True, install=False, mount=True):
