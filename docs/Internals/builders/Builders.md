@@ -6,8 +6,8 @@
 
 - /sandbox      : sandbox directory, has the files in production 
 - DIR_BUILD     : is the directory used for building e.g. compilation of a C program
-    - build dir should only be relevant during build step and as starting point for install step 
-    - property: self.DIR_BUILD
+  - build dir should only be relevant during build step and as starting point for install step 
+  - property: self.DIR_BUILD
 - DIR_SANDBOX  : the location from which we create an flist, files are copied in here from /sandbox (dont copy from /builddir)
   - property: self.DIR_SANDBOX
 
@@ -17,7 +17,8 @@
 
 reset the state of your builder, important to let the state checking restart
 
-### .tools:  Builder tools 
+### .tools:  Builder tools
+
 Builder tools is a set of tools to perform the common tasks in your builder (e.g read a file
 , write to a file, execute bash commands and many other handy methods that you will probably need in your builder)
 
@@ -41,7 +42,6 @@ see [Builders Profile Management](BuildersProfileManagement.md)
 
 Bash for the sandbox
 e.g. self.bash.profile is very useful
-
 
 ## methods you should implement in your builder
 
@@ -94,9 +94,9 @@ e.g. self.bash.profile is very useful
 ### .sandbox(zhub_client)
 
 - copy all required files from /sandbox (NO OTHER LOCATION)  to self.DIR_SANDBOX
-    - example: a binary loacted in `/sanbox/bin/{name}` should be copied to `{DIR_SANDBOX}/sandbox/bin/{name}`
-    - directory structure as how it will be in flist and the container but chroot = `{DIR_SANDBOX}`
-- this method will call: self._flist_create(zhub_client=zhub_client) which will create flist & upload to your zhub
+  - example: a binary loacted in `/sanbox/bin/{name}` should be copied to `{DIR_SANDBOX}/sandbox/bin/{name}`
+  - directory structure as how it will be in flist and the container but chroot = `{DIR_SANDBOX}`
+- this method will call: self._flist_create(zhub_client=zhub_client, merge_base_flist) which will create flist & upload to your zhub and merge it with an existing flist if specified
 - will return: the flist url 
 
 ### .clean()
@@ -156,14 +156,14 @@ make sure dir exists and also call self._replace(path)
 ## IMPORTANT INSTRUCTIONS HOW TO CREATE A BUILDER CLASS
 
 - do not model metadata in e.g. _bins ...
-    - no properties, no hidden models, ...
+  - no properties, no hidden models, ...
 - maintain actor based paradigm where every method as described above is implemented using ONLY
-    - self._replace, self._execute, ...  
-    - self.tools...
-    - j.builders....
-    - j.sal...
-    - j.tools...
-    - self.system... 
+  - self._replace, self._execute, ...  
+  - self.tools...
+  - j.builders....
+  - j.sal...
+  - j.tools...
+  - self.system... 
 - use the DSL in order as specified above first tools, then j.builder, then ...
 - in each method you will not import python, use databases of any sort
 - best practice: dont execute bash commands if primitive exists in self.tools or j...

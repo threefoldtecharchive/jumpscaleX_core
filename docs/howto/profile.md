@@ -1,6 +1,8 @@
+# Using profilers
 
+## Integrated (recommended)
 
-# integrated (recommended)
+To start profiling using JSX you can use the following available methods:
 
 ```python
 pr = j.core.profileStart()
@@ -8,11 +10,13 @@ pr = j.core.profileStart()
 j.core.profileStop(pr)
 ```
 
-# alternatives (more complex)
+## Alternatives (more complex)
 
-## graphical
+JSX doesn't allow for better visualization in that case it is better to use other tools.
 
-### OSX preparation 
+### graphical
+
+#### OSX preparation 
 
 ```bash
 brew install graphviz
@@ -20,25 +24,19 @@ brew install qcachegrind --with-graphviz
 pip3 install pyprof2calltree
 ```
 
-### e.g. hju]startup example
-
-```
+```bash
 rm /tmp/prof.out
 python3 -m cProfile -o /tmp/prof.out /usr/local/bin/js_shell 'print(1)'
 pyprof2calltree -i /tmp/prof.out -k
 ```
 
-## non graphical
+### Non graphical
 
-### OSX
-
-```
+```bash
 pip3 install pyinstrument
 ```
 
-### e.g. js_shell startup example
-
-```
+```bash
 rm /tmp/prof.out
 python3 -m pyinstrument /usr/local/bin/js_shell 'print(1)'
 
