@@ -64,13 +64,9 @@ class ThreeBotPackage(ThreeBotPackageBase):
 
         # Parent root directory for packages needed to be in sys.path
         # in order to be able to import file properly inside packages
-
-        path = self._changed("html", die=False)
-        if path:
+        if j.sal.fs.exists(self.path + "/html"):
             self._web_load("html")
-
-        path = self._changed("frontend", die=False)
-        if path:
+        elif j.sal.fs.exists(self.path + "/frontend"):
             self._web_load("frontend")
 
         # if j.sal.fs.exists(self.path + "/bottle"):
@@ -123,6 +119,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
                         self._log_error(errormsg)
                         print(errormsg)
                         self._actors = None
+                        self._changes.remove(generate_path_md5(path))
                         raise e
                         # print(f"adding actor {name} {fpath} {self.name}")
                     self.gedis_server.actor_add(name=name, path=fpath, package=self)
@@ -158,8 +155,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
         self.models  # always need to have the models
         if self._actors is None:
             self.load()
-            self.reload()
-            # self.actors_load()
+            self.actors_load()
         return self._actors
 
     @property
@@ -203,10 +199,10 @@ class ThreeBotPackage(ThreeBotPackageBase):
 
     @property
     def models(self):
-        if self._models is None:
+        path = self._changed("models", die=False)
+        if self._models is None or path:      # load if models are not initialized or md5 sum of models is changed
             self.load()
             self._models = j.baseclasses.dict()
-            path = self._changed("models", die=False)
             if path:
                 try:
                     model_urls = self.bcdb.models_add(path)
