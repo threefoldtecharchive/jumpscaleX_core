@@ -15,37 +15,6 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         # self._explorer = None
         self._id2client_cache = {}
 
-    # @property
-    # def explorer_addr(self):
-    #     if "EXPLORER_ADDR" not in j.core.myenv.config:
-    #         return "localhost"
-    #     else:
-    #         return j.core.myenv.config["EXPLORER_ADDR"] + ""
-    #
-    # def explorer_addr_set(self, value):
-    #     """
-    #
-    #     :param value:
-    #     :return:
-    #     """
-    #     j.core.myenv.config["EXPLORER_ADDR"] = value
-    #     j.core.myenv.config_save()
-    #     self._explorer = None
-    #
-    # @property
-    # def explorer(self):
-    #     if not self._explorer:
-    #         self._explorer = j.baseclasses.object_config_collection_testtools.get(
-    #             self, name="explorer", host=self.explorer_addr
-    #         )
-    #     return self._explorer
-    #
-    # @property
-    # def _explorer_redis(self):
-    #     cl = j.clients.redis.get(self.explorer_addr, port=8901)
-    #     cl.execute_command("config_format", "json")
-    #     return cl
-
     def client_get(self, threebot=None):
         """
 
