@@ -40,6 +40,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
         use_jumpscale_weblibs = false (B)
         is_auth = false (B)
         force_https = false (B)
+        is_admin = false (B)
 
         @url = jumpscale.openresty.location_proxy
         name = "" (S)
@@ -51,6 +52,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
         scheme = "http,https,ws,wss" (E)
         is_auth = false (B)
         force_https = false (B)
+        is_admin = false (B)
 
         @url = jumpscale.openresty.location_lapis
         name = ""
@@ -58,12 +60,14 @@ class LocationsConfiguration(j.baseclasses.object_config):
         path_location = ""
         is_auth = false (B)
         force_https = false (B)
+        is_admin = false (B)
 
         @url = jumpscale.openresty.location_custom
         name = ""
         config = ""
         is_auth = false (B)
         force_https = false (B)
+        is_admin = false (B)
 
         """
     WITH_THREEBOTCONNECT = j.tools.threebot.with_threebotconnect

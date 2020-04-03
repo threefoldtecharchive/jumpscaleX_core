@@ -457,6 +457,27 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
         data = j.data.serializers.json.dumps(d)
         return self.qrcode_show(data, title, msg, scale=scale)
 
+    def time_delta_ask(self, msg, **kwargs):
+        """
+        helper method to generate a question that expects a time delta string(1h, 2m, 3d,...).
+        html generated in the client side will use `<input type="text"/>`
+        :param msg: the question message
+        :param kwargs: dict of possible extra options like (validate, reset, ...etc)
+        :return: the user answer for the question
+        """
+        message = """{}
+        Format:
+        hour=h, day=d, week=w, month=M
+        I.e. 2 days = 2d
+        """.format(
+            msg
+        )
+        time_delta = self.ask(self.string_msg(message, **kwargs))
+        try:
+            return j.data.time.getDeltaTime(time_delta)
+        except Exception:
+            raise j.exceptions.Value("Wrong time delta format specified please enter a correct one")
+
 
 def test(factory):
     sid = "123"

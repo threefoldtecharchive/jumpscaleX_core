@@ -1,12 +1,12 @@
 # auth endpoint
-location = /auth {
+location /auth {
     # a separate location for auth server, where we do not set Upgrade header like:
     # proxy_set_header Upgrade $http_upgrade
     # because this would make the sub-request of /auth fails (with websockets too)
     # as it causes multiple connection upgrades
 
     internal;
-    proxy_pass              http://127.0.0.1:9999/auth/authenticated;
+    proxy_pass              http://127.0.0.1:9999/auth;
     proxy_pass_request_body off;
     proxy_set_header        Content-Length "";
     proxy_set_header        X-Original-URI $request_uri;

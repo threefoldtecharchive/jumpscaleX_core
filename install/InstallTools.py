@@ -3722,6 +3722,7 @@ class MyEnv_:
         debug_configure=None,
         secret=None,
         interactive=False,
+        set_secret=True,
     ):
         """
 
@@ -3857,11 +3858,12 @@ class MyEnv_:
             # see also: https://github.com/threefoldtech/jumpscaleX_core/issues/561
             self.sshagent = SSHAgent()
             self.sshagent.key_default_name
-        if secret is None:
-            if "SECRET" not in self.config or not self.config["SECRET"]:
-                self.secret_set()  # will create a new one only when it doesn't exist
-        else:
-            self.secret_set(secret)
+        if set_secret:
+            if secret is None:
+                if "SECRET" not in self.config or not self.config["SECRET"]:
+                    self.secret_set()  # will create a new one only when it doesn't exist
+            else:
+                self.secret_set(secret)
 
         if DockerFactory.indocker():
             self.config["IN_DOCKER"] = True
@@ -4616,11 +4618,12 @@ class JumpscaleInstaller:
 
         if identity:
             identity_path = os.path.join(MyEnv.config["DIR_BASE"], "myhost/keys", identity)
-            secret = Tools.file_read(os.path.join(identity_path, "secret"))
-            MyEnv.config["IDENTITY_NAME"] = identity
-            MyEnv.config["SECRET"] = secret.decode().strip()
-            MyEnv.config_save()
-            shutil.copytree(identity_path, os.path.join(MyEnv.config["DIR_CFG"], "keys", "default"))
+            if os.path.exists(identity_path):
+                conf = Tools.config_load(os.path.join(identity_path, "conf.toml"))
+                MyEnv.config["IDENTITY_NAME"] = identity
+                MyEnv.config["SECRET"] = conf["SECRET"].strip()
+                MyEnv.config_save()
+                shutil.copytree(identity_path, os.path.join(MyEnv.config["DIR_CFG"], "keys", "default"))
         # will check if there's already a key loaded (forwarded) will continue installation with it
         rc, _, _ = Tools.execute("ssh-add -L")
         if not rc:

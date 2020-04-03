@@ -136,9 +136,33 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
 
         o = self.me.get(name=myidentity, tid=r.id, tname=r.name, email=r.email, pubkey=r.pubkey)
 
+        self._save_identity(name, interactive=interactive)
+
         print(o)
 
         return o
+
+    def _add_admins(self, name, interactive=False):
+        admins = []
+        conf_path = j.sal.fs.joinPaths(j.dirs.BASEDIR, "myhost", "keys", name, "conf.toml")
+        conf = j.data.serializers.toml.load(conf_path)
+        admins = conf.get("ADMINS", [])
+        if not admins and interactive:
+            admins = j.tools.console.askMultiline("Please enter names of threebot admins").splitlines()
+            conf["ADMINS"] = admins
+            j.data.serializers.toml.dump(conf_path, conf)
+        self.me.default.admins.extend(admins)
+        self.me.default.save()
+
+    def _save_identity(self, name, interactive=False):
+        identity_path = j.sal.fs.joinPaths(j.dirs.BASEDIR, "myhost", "keys", name)
+        j.sal.fs.copyDirTree(
+            j.sal.fs.joinPaths(j.dirs.CFGDIR, "keys", "default"), identity_path,
+        )
+        conf_path = j.sal.fs.joinPaths(identity_path, "conf.toml")
+        if not j.sal.fs.exists(conf_path):
+            j.data.serializers.toml.dump(conf_path, {"SECRET": j.core.myenv.config["SECRET"]})
+        self._add_admins(name, interactive=interactive)
 
     def _serializer_get(self, serialization_format="json"):
         if not serialization_format in ["json", "msgpack"]:
