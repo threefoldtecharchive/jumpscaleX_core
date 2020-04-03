@@ -99,6 +99,79 @@ class Text(object):
         converted_string = re.sub("([^/_.])([A-Z][a-z]+)", r"\1_\2", text)
         return re.sub("([a-z0-9])([A-Z])", r"\1_\2", converted_string).lower()
 
+    def format_list(self, values):
+        """
+        helper function to convert to text
+
+        the values list becomes a str formatted list
+        round done and thousand separator
+
+        """
+        r = []
+
+        for item in values:
+            if item is None:
+                item = ""
+                r.append(item)
+                continue
+            if float(item) == 0:
+                item = ""
+                r.append(item)
+                continue
+            elif isinstance(item, str):
+                r.append(item)
+                continue
+
+            if isinstance(item, int) or float(item) == int(item):
+                item = int(item)
+
+            if item < -10000000 or item > 10000000:
+                item = int(item / 1000000)
+                item = f"{item:,}m"
+                r.append(item)
+                continue
+            if item < -4000000 or item > 4000000:
+                item = round(item / 1000000, 1)
+                item = f"{item:,}m"
+                r.append(item)
+                continue
+            if item < -10000 or item > 10000:
+                item = int(item / 1000)
+                item = f"{item:,}k"
+                r.append(item)
+                continue
+            if item < -4000 or item > 4000:
+                item = round(item / 1000, 1)
+                item = f"{item:,}k"
+                r.append(item)
+                continue
+            if item < -1000 or item > 1000:
+                item = int(item)
+                item = f"{item:,}"
+                r.append(item)
+                continue
+
+            if isinstance(item, int):
+                r.append(str(item))
+                continue
+
+            # now its a float
+            item = float(item)
+            pre = ""
+            if item < 0:
+                pre = "-"
+                item = -item
+            if float(item) < 1:
+                item = str(round(float(item), 2))
+            elif float(item) < 9:
+                item = str(round(float(item), 1))
+            else:
+                item = str(int(item))
+            item = "%s%s" % (pre, item)
+            r.append(item)
+
+        return r
+
     def strip_to_ascii_dense(self, text):
         """
         convert to ascii converting as much as possibe to ascii
@@ -141,6 +214,11 @@ class Text(object):
     def pad(self, text, length):
         while len(text) < length:
             text += " "
+        return text
+
+    def padleft(self, text, length):
+        while len(text) < length:
+            text = " %s" % text
         return text
 
     # def stripItems(self, line, items=["PATH", "\"", " ", "'", ":", "${PATH}", "=", ","]):
