@@ -2,7 +2,8 @@ from Jumpscale import j
 import binascii
 from .ThreebotMe import ThreebotMe
 from .ThreebotMeCollection import ThreebotMeCollection
-from .ThreebotExplorer import ThreebotExplorer
+
+# from .ThreebotExplorer import ThreebotExplorer
 from io import BytesIO
 from nacl.signing import VerifyKey
 from nacl.public import PrivateKey, PublicKey, SealedBox
@@ -16,7 +17,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
 
     def _init(self):
         self._nacl = j.data.nacl.default
-        self.explorer = ThreebotExplorer()
+        # self.explorer = ThreebotExplorer()
 
     def backup_local(self, stop=True):
         """
