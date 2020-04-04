@@ -118,6 +118,8 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
             tid = explorer.users.register(user)
             r = explorer.users.get(tid=tid)
 
+        # why didn't we use the primitives as put on this factory (sign, decrypt, ...)
+        # this means we don't take multiple identities into consideration, defeates the full point of our identity manager here
         payload = j.data.nacl.payload_build(r.id, r.name, r.email, r.host, r.description, nacl.verify_key_hex)
         payload = j.data.hash.bin2hex(payload).decode()
         signature = j.data.nacl.payload_sign(
