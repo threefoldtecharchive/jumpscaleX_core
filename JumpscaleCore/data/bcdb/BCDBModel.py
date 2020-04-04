@@ -149,7 +149,7 @@ class BCDBModel(BCDBModelBase):
         """
         see docs/baseclasses/data_mgmt_on_obj.md
 
-        triggers are called with obj,action,propertyname as kwargs
+        triggers are called with model,obj,action,propertyname as kwargs
 
         return obj or None
 
@@ -171,7 +171,8 @@ class BCDBModel(BCDBModelBase):
         kosmosinstance = self._kosmosinstance
         stop = False
         for method in self._triggers:
-            obj2 = method(model=model, obj=obj, kosmosinstance=kosmosinstance, action=action, propertyname=propertyname)
+            # kosmosinstance=kosmosinstance,
+            obj2 = method(model=model, obj=obj, action=action, propertyname=propertyname)
             if isinstance(obj2, list) or isinstance(obj2, tuple):
                 obj2, stop = obj2
                 if stop:

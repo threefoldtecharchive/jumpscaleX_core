@@ -163,17 +163,24 @@ class JSConfigBCDB(JSConfigBCDBBase):
 
         """
         path = j.core.tools.text_replace("{DIR_TEMP}/js_baseconfig_%s.toml" % self.__class__._location)
-        data_in = self._data._toml
+        data_in = self._data._ddict
+        for key in [i for i in data_in.keys()]:
+            if key.endswith("_"):
+                data_in.pop(key)
+        data_in = j.data.serializers.toml.dumps(data_in)
         j.sal.fs.writeFile(path, data_in)
         j.core.tools.file_edit(path)
         data_out = j.sal.fs.readFile(path)
+        changed = False
         if data_in != data_out:
             self._log_debug(
-                "'%s' instance '%s' has been edited (changed)" % (self._parent.__jslocation__, self._data.name)
+                "'%s' instance '%s' has been edited (changed)" % (self._parent.__class__._location, self._data.name)
             )
             data2 = j.data.serializers.toml.loads(data_out)
-            self._data.data_update(data2)
+            self._data._data_update(data2)
+            changed = True
         j.sal.fs.remove(path)
+        return changed
 
     def _dataprops_names_get(self, filter=None):
         """

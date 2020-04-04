@@ -57,7 +57,10 @@ def eval_code(stmts, locals_=None, globals_=None):
     except SyntaxError:
         return
 
-    return eval(code, globals_, locals_)
+    try:
+        return eval(code, globals_, locals_)
+    except:
+        return
 
 
 def sort_children_key(name):

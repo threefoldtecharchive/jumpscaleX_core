@@ -19,6 +19,7 @@ def _name_clean(name):
         name = name + ".3bot"
     return name
 
+
 class jsx:
     def __init__(self):
         self._data = None
@@ -151,7 +152,14 @@ def jumpscale_get(die=True):
 
 # have to do like this, did not manage to call the click enabled function (don't know why)
 def _configure(
-    codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey_words=None, secret=None, set_secret=True,
+    codedir=None,
+    debug=False,
+    sshkey=None,
+    no_sshagent=False,
+    no_interactive=False,
+    privatekey_words=None,
+    secret=None,
+    set_secret=True,
 ):
     interactive = not no_interactive
     sshagent_use = not no_sshagent
@@ -306,7 +314,9 @@ def container_install(
         found_identities = os.listdir(identities_path)
         if len(found_identities) > 1:
             if no_interactive:
-                raise RuntimeError("Found multiple shared identities please start installation interactively or specify an identity")
+                raise RuntimeError(
+                    "Found multiple shared identities please start installation interactively or specify an identity"
+                )
             identity = IT.Tools.ask_choices("Choose an identity to start container with", found_identities)
         else:
             identity = found_identities[0]
@@ -348,7 +358,11 @@ def container_install(
     identity = identity or new_identity
     if identity:
         threebot_name = '"{}"'.format(identity)
-        docker.execute("source /sandbox/env.sh && kosmos 'j.tools.threebot.init_my_threebot(interactive={}, name={})'".format(not no_interactive, threebot_name))
+        docker.execute(
+            "source /sandbox/env.sh && kosmos 'j.tools.threebot.init_my_threebot(interactive={}, name={})'".format(
+                not no_interactive, threebot_name
+            )
+        )
 
     _container_shell(name)
 
@@ -712,6 +726,8 @@ def threebotbuilder(push=False, base=False, delete=False, noclean=False, develop
     docker.install_jumpscale(branch=DEFAULT_BRANCH, force=delete, pull=False, threebot=True)
     docker._install_tcprouter()
     docker.install_jupyter()
+    docker.execute("rm  /sandbox/bin/micro;cd /tmp;curl https://getmic.ro | bash;mv micro /sandbox/bin")
+    docker.execute("apt install restic -y")
     docker._install_package_dependencies()
 
     docker.image = dest
