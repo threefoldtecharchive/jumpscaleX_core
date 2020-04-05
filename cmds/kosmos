@@ -199,7 +199,7 @@ if options.instruct:
 # if options.init:
 #     j.data.nacl.configure(name="default", interactive=True, generate=False)
 
-import better_exceptions
+# import better_exceptions
 
 better_exceptions.MAX_LENGTH = None
 
