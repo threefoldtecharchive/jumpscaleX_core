@@ -366,3 +366,95 @@ class Me(JSConfigBase):
     # def backup_remote(self):
     #     cl = j.clients.ssh.get(name="explorer")
     #     raise RuntimeError("need to implement")
+
+    def tfgrid_phonebook_register(self, host="", interactive=True):
+        """
+
+        initialize your threebot
+
+        kosmos 'j.tools.threebot.init_my_threebot()'
+
+        :return:
+        """
+        print("TODO USE DATA ON THIS OBJECT")
+        j.shell()
+        j.application.interactive = interactive
+        explorer = j.clients.explorer.default
+
+        nacl = j.data.nacl.get(name=myidentity)
+        assert nacl.verify_key_hex
+
+        if not name:
+            if interactive:
+                name = j.tools.console.askString("your threebot name ")
+                if not name.endswith(".3bot"):
+                    name = f"{name}.3bot"
+            else:
+                raise j.exceptions.Input("please specify name")
+
+        try:
+            r = explorer.users.get(name=name)
+        except j.exceptions.NotFound:
+            r = None
+
+        if not r:
+            # means record did not exist yet
+            if not email:
+                if interactive:
+                    assert j.application.interactive  # TODO: doesn't work when used from kosmos -p ...
+                    email = j.tools.console.askString("your threebot email")
+                else:
+                    raise j.exceptions.Input("please specify email")
+            if not description:
+                if interactive:
+                    description = j.tools.console.askString("your threebot description (optional)")
+                else:
+                    description = ""
+            if not host:
+                if str(j.core.platformtype.myplatform).startswith("darwin"):
+                    host = "localhost"
+                else:
+                    try:
+                        (iface, host) = j.sal.nettools.getDefaultIPConfig()
+                    except:
+                        host = "localhost"
+
+            if interactive:
+                if not j.tools.console.askYesNo("ok to use your local private key as basis for your threebot?", True):
+                    raise j.exceptions.Input("cannot continue, need to register a threebot using j.clients.threebot")
+
+            user = explorer.users.new()
+            user.name = name
+            user.host = host
+            user.email = email
+            user.description = description
+            user.pubkey = nacl.verify_key_hex
+            tid = explorer.users.register(user)
+            r = explorer.users.get(tid=tid)
+
+        # why didn't we use the primitives as put on this factory (sign, decrypt, ...)
+        # this means we don't take multiple identities into consideration, defeates the full point of our identity manager here
+        payload = j.data.nacl.payload_build(r.id, r.name, r.email, r.host, r.description, nacl.verify_key_hex)
+        payload = j.data.hash.bin2hex(payload).decode()
+        signature = j.data.nacl.payload_sign(
+            r.id, r.name, r.email, r.host, r.description, nacl.verify_key_hex, nacl=nacl
+        )
+        valid = explorer.users.validate(r.id, payload, signature)
+        if not valid:
+            raise j.exceptions.Input(
+                "signature verification failed, ensure your pubkey to be the same as local configured nacl "
+            )
+
+        if not nacl.verify_key_hex == r.pubkey:
+            raise j.exceptions.Input("your identity needs to be same pubkey as local configured nacl")
+
+        assert r.id
+        assert r.name
+
+        o = self.me.get(name=myidentity, tid=r.id, tname=r.name, email=r.email, pubkey=r.pubkey)
+
+        self._save_identity(name, interactive=interactive)
+
+        print(o)
+
+        return o

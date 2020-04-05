@@ -8,7 +8,6 @@ import nacl.utils
 import nacl.hash
 import nacl.encoding
 import hashlib
-
 import binascii
 from nacl.exceptions import BadSignatureError
 import sys
@@ -26,6 +25,17 @@ class MeEncryptor(j.baseclasses.object):
         assert len(self.me.secret) == 32
         self.box = nacl.secret.SecretBox(self.me.secret)
         self.reset()
+        self._tools = None
+
+    def tools(self):
+        """
+        these are a variety of tools to do serialization with encryption
+        """
+        if not self._tools:
+            from .EncryptorTools import EncryptorTools
+
+            self._tools = EncryptorTools(self)
+        return self._tools
 
     def reset(self):
         self._signing_key = None
@@ -348,3 +358,34 @@ class MeEncryptor(j.baseclasses.object):
         return "nacl:%s" % self.name
 
     __repr__ = __str__
+
+    def _test_perf(self):
+        """
+        """
+
+        cl = self.default  # get's the default location & generate's keys
+        data = b"something"
+
+        nr = 10000
+        j.tools.timer.start("signing")
+        for i in range(nr):
+            p = str(i).encode()
+            r = cl.sign(data + p)
+        j.tools.timer.stop(i)
+
+        nr = 10000
+        j.tools.timer.start("encode and verify")
+        for i in range(nr):
+            p = str(i).encode()
+            r = cl.sign(data + p)
+            assert cl.verify(data + p, r)
+        j.tools.timer.stop(i)
+
+        nr = 10000
+        data2 = data * 20
+        j.tools.timer.start("encryption/decryption assymetric")
+        for i in range(nr):
+            a = cl.encrypt(data2)
+            b = cl.decrypt(a)
+            assert data2 == b
+        j.tools.timer.stop(i)

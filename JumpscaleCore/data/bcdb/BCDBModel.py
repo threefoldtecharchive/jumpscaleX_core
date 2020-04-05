@@ -353,7 +353,7 @@ class BCDBModel(BCDBModelBase):
                 else:
                     raise e
 
-            bdata_encrypted = j.data.nacl.default.encryptSymmetric(bdata)
+            bdata_encrypted = j.me.encryptor.encryptSymmetric(bdata)
             assert obj.nid > 0
             l = [obj.nid, obj.acl_id, bdata_encrypted]
             data = j.data.serializers.msgpack.dumps(l)

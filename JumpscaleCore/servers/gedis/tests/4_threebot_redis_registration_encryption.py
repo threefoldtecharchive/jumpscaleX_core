@@ -22,16 +22,16 @@ def main(self):
 
     # login wih me
     seed = j.data.idgenerator.generateGUID()  # any seed works, the more random the more secure
-    signature = j.data.nacl.default.sign_hex(seed)  # this is just std signing on nacl and hexifly it
+    signature = j.me.encryptor.sign_hex(seed)  # this is just std signing on nacl and hexifly it
     assert len(signature) == 128
 
     # authentication is done by means of threebotid and a random seed
     # which is signed with the threebot (is the client) private key
-    res = cl.execute_command("auth", j.tools.threebot.me.default.tid, seed, signature)
+    res = cl.execute_command("auth", j.me_identities.me.default.tid, seed, signature)
     assert res == b"OK"
     error = False
     try:
-        res = cl.execute_command("auth", j.tools.threebot.me.default.tid, seed + "a", signature)
+        res = cl.execute_command("auth", j.me_identities.me.default.tid, seed + "a", signature)
     except:
         error = True
     assert error
@@ -52,7 +52,7 @@ def main(self):
 
     # a threebotme is a local threebot definition, it holds your pubkey, ...
     # this returns 2 test nacl sessions & threebot definiions for a fake client & threebotserver
-    nacl_client, nacl_server, threebot_me_client, threebot_me_server = j.tools.threebot.test_register_nacl_threebots()
+    encryptorient, nacl_server, threebot_me_client, threebot_me_server = j.tools.threebot.test_register_nacl_threebots()
 
     j.shell()
 

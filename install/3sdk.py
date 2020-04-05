@@ -86,4 +86,7 @@ docker = Docker()
 
 if __name__ == "__main__":
 
+    # the shell should only show d... j...  (no capitals at start of sentense)
+    # logger needs to be redirected properly
+
     shell(locals_=locals(), globals_=globals())

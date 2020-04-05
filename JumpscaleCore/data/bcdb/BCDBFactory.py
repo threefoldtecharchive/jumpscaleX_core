@@ -151,7 +151,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             if j.sal.fs.exists(self._config_data_path):
                 data_encrypted = j.sal.fs.readFile(self._config_data_path, binary=True)
                 try:
-                    data = j.data.nacl.default.decryptSymmetric(data_encrypted)
+                    data = j.me.encryptor.decryptSymmetric(data_encrypted)
                 except Exception as e:
                     if str(e).find("Ciphertext failed") != -1:
                         raise j.exceptions.Base("%s cannot be decrypted with secret" % self._config_data_path)
@@ -691,7 +691,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
     def _config_write(self):
         data = j.data.serializers.msgpack.dumps(self._config)
-        data_encrypted = j.data.nacl.default.encryptSymmetric(data)
+        data_encrypted = j.me.encryptor.encryptSymmetric(data)
         j.sal.fs.writeFile(self._config_data_path, data_encrypted)
 
     def _new(self, name, storclient=None, reset=False):

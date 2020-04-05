@@ -61,7 +61,6 @@ class SerializerTOML(SerializerBase):
 
     def fancydumps(self, obj, secure=False):
         """
-        if secure then will look for key's ending with _ and will use your secret key to encrypt (see nacl client)
         """
 
         if not j.data.types.dict.check(obj):
@@ -94,7 +93,7 @@ class SerializerTOML(SerializerBase):
 
             ttype = j.data.types.type_detect(val)
             if secure and key.endswith("_") and ttype.BASETYPE == "string":
-                val = j.data.nacl.default.encryptSymmetric(val, hex=True, salt=val)
+                val = j.me.encryptor.encryptSymmetric(val, hex=True, salt=val)
 
             out += "%s\n" % (ttype.toml_string_get(val, key=key))
 
@@ -124,7 +123,7 @@ class SerializerTOML(SerializerBase):
             res = {}
             for key, item in val.items():
                 if key.endswith("_"):
-                    res[key] = j.data.nacl.default.decryptSymmetric(item, hex=True).decode()
+                    res[key] = j.me.encryptor.decryptSymmetric(item, hex=True).decode()
             val = res
         return val
 

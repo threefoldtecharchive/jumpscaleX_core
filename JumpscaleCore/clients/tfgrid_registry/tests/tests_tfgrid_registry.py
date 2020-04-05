@@ -41,7 +41,7 @@ def addRegistryPackage():
 def getNewUser():
     tid = j.data.idgenerator.generateRandomInt(1000, 9000)
     randStr = j.data.idgenerator.generateXCharID(10)
-    return j.tools.threebot.me.get(randStr, tid=tid, email=randStr + "@test.com", tname=randStr + "_name")
+    return j.me_identities.me.get(randStr, tid=tid, email=randStr + "@test.com", tname=randStr + "_name")
 
 
 def getSchemaAndModel(x="hello"):

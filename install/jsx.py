@@ -20,81 +20,78 @@ def _name_clean(name):
     return name
 
 
-class jsx:
-    def __init__(self):
-        self._data = None
+# class jsx:
+#     def __init__(self):
+#         self._data = None
+#
+#     @property
+#     def phonebook(self):
+#         if not self._data:
+#             url = "https://explorer.testnet.grid.tf/explorer/users"
+#             with urlopen(url) as resp:
+#                 if resp.status != 200:
+#                     raise RuntimeError("fail to download users metadata")
+#                 data = resp.read().decode("utf-8")
+#                 self._data = json.loads(data)
+#         return self._data
+#
+#     def _email_clean(self, email):
+#         email = email.lower()
+#         if "@" not in email:
+#             raise IT.Tools.exceptions.Input("email needs to have @ inside, now '%s'" % email)
+#         return email
+#
+#     def phonebook_check(self, name, email):
+#         name_res = None
+#         email_res = None
+#         name = _name_clean(name)
+#         email = self._email_clean(email)
+#         for d in self.phonebook:
+#             if d["name"] == name:
+#                 name_res = d
+#             if d["email"] == email:
+#                 email_res = d
+#         return name_res, email_res
 
-    @property
-    def phonebook(self):
-        if not self._data:
-            url = "https://explorer.testnet.grid.tf/explorer/users"
-            with urlopen(url) as resp:
-                if resp.status != 200:
-                    raise RuntimeError("fail to download users metadata")
-                data = resp.read().decode("utf-8")
-                self._data = json.loads(data)
-        return self._data
 
-    def _email_clean(self, email):
-        email = email.lower()
-        if "@" not in email:
-            raise IT.Tools.exceptions.Input("email needs to have @ inside, now '%s'" % email)
-        return email
+def load_install_tools(branch=None, reset=False):
+    # get current install.py directory
 
-    def phonebook_check(self, name, email):
-        name_res = None
-        email_res = None
-        name = _name_clean(name)
-        email = self._email_clean(email)
-        for d in self.phonebook:
-            if d["name"] == name:
-                name_res = d
-            if d["email"] == email:
-                email_res = d
-        return name_res, email_res
+    path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py"
+    if not os.path.exists(path):
+        path = os.path.expanduser("~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py")
 
-    def load_install_tools(self, branch=None, reset=False):
-        # get current install.py directory
+    if not branch:
+        branch = DEFAULT_BRANCH
+    # first check on code tools
+    if not os.path.exists(path):
+        rootdir = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(rootdir, "InstallTools.py")
+        # now check on path next to jsx
+        if not os.path.exists(path) or reset:  # or path.find("/code/") == -1:
+            url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py" % branch
 
-        path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py"
-        if not os.path.exists(path):
-            path = os.path.expanduser("~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py")
-
-        if not branch:
-            branch = DEFAULT_BRANCH
-        # first check on code tools
-        if not os.path.exists(path):
-            rootdir = os.path.dirname(os.path.abspath(__file__))
-            path = os.path.join(rootdir, "InstallTools.py")
-            # now check on path next to jsx
-            if not os.path.exists(path) or reset:  # or path.find("/code/") == -1:
+            # fallback to default branch if installation is being done for another branch that doesn't exist in core
+            if branch != DEFAULT_BRANCH and requests.get(url).status_code == 404:
                 url = (
                     "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py"
-                    % branch
+                    % DEFAULT_BRANCH
                 )
 
-                # fallback to default branch if installation is being done for another branch that doesn't exist in core
-                if branch != DEFAULT_BRANCH and requests.get(url).status_code == 404:
-                    url = (
-                        "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py"
-                        % DEFAULT_BRANCH
-                    )
+            with urlopen(url) as resp:
+                if resp.status != 200:
+                    raise RuntimeError("fail to download InstallTools.py")
+                with open(path, "w+") as f:
+                    f.write(resp.read().decode("utf-8"))
+                print("DOWNLOADED INSTALLTOOLS TO %s" % path)
 
-                with urlopen(url) as resp:
-                    if resp.status != 200:
-                        raise RuntimeError("fail to download InstallTools.py")
-                    with open(path, "w+") as f:
-                        f.write(resp.read().decode("utf-8"))
-                    print("DOWNLOADED INSTALLTOOLS TO %s" % path)
-
-        spec = util.spec_from_file_location("IT", path)
-        IT = spec.loader.load_module()
-        IT.MyEnv.init()
-        return IT
+    spec = util.spec_from_file_location("IT", path)
+    IT = spec.loader.load_module()
+    IT.MyEnv.init()
+    return IT
 
 
-jsx = jsx()
-IT = jsx.load_install_tools()
+IT = load_install_tools()
 IT.MyEnv.interactive = True  # std is interactive
 
 
@@ -107,6 +104,10 @@ class JSXEnv:
         if not self._DF:
             self._DF.init()
         return self._DF
+
+    def configure(self, identity):
+        identities_path = os.path.join(IT.MyEnv.config["DIR_VAR"], "containers/shared/identities")
+        IT.Tools.shell()
 
 
 e = JSXEnv()
@@ -124,13 +125,40 @@ def jumpscale_get(die=True):
 
 
 # have to do like this, did not manage to call the click enabled function (don't know why)
-def identity_set(
-    tname, sshkey=None, words=None, secret=None,
-):
+def _configure(debug=False, sshkey=None, sshagent=True, interactive=True, privatekey_words=None, secret=None):
+    config = {}
+    if sshkey:
+        assert isinstance(sshkey, str)
+        assert sshkey
+        config["SSH_KEY_DEFAULT"] = sshkey
+
+    if sshagent:
+        assert isinstance(sshagent, bool)
+        config["SSH_AGENT"] = sshagent
 
     IT.MyEnv.configure(
-        sshkey=sshkey, sshagent_use=sshagent_use, secret=secret, set_secret=set_secret,
+        config=config, readonly=False, debug=debug, interactive=interactive, secret=secret,
     )
+    j = jumpscale_get(die=False)
+
+    if not j and privatekey_words:
+        raise RuntimeError(
+            "cannot load jumpscale, \
+            can only configure private key when jumpscale is installed locally use jsx install..."
+        )
+
+    if j and privatekey_words:
+        IT.Tools.shell()
+        j.data.nacl.configure(privkey_words=privatekey_words)
+
+
+"""
+if not IT.MyEnv.state:
+    # this is needed to make sure we can install when nothing has been done yet
+    _configure()
+
+# IT.BaseInstaller.base()
+"""
 
 
 @click.group()
@@ -138,163 +166,49 @@ def cli():
     pass
 
 
-#
-# # INSTALL OF JUMPSCALE IN CONTAINER ENVIRONMENT
-# @click.command(name="container-install")
-# @click.option("-n", "--name", default="3bot", help="name of container")
-# @click.option(
-#     "--scratch", is_flag=True, help="from scratch, means will start from empty ubuntu and re-install everything"
-# )
-# @click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
-# @click.option("--threebot", is_flag=True, help="also install the threebot")
-# @click.option(
-#     "-i",
-#     "--image",
-#     default=None,
-#     help="select the container image to use to create the container, leave empty unless you know what you do (-:",
-# )
-# @click.option(
-#     "-b", "--branch", default=None, help="jumpscale branch. default 'master' or 'development' for unstable release"
-# )
-# @click.option(
-#     "--pull",
-#     is_flag=True,
-#     help="pull code from git, if not specified will only pull if code directory does not exist yet",
-# )
-# @click.option(
-#     "-r",
-#     "--reinstall",
-#     is_flag=True,
-#     help="reinstall, basically means will try to re-do everything without removing the data",
-# )
-# # @click.option("--develop", is_flag=True, help="will use the development docker image to start from.")
-# @click.option("--ports", help="Expose extra ports repeat for multiple eg. 80:80", multiple=True)
-# @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
-# @click.option("-nm", "--nomount", is_flag=True, help="will not mount the underlying code directory if set")
-# @click.option(
-#     "--identity",
-#     default=None,
-#     help="Identity to be used for the container should be stored under var/containers/shared/keys/{identity}",
-# )
-# def container_install(
-#     name="3bot",
-#     scratch=False,
-#     delete=True,
-#     threebot=False,
-#     image=None,
-#     branch=None,
-#     reinstall=False,
-#     no_interactive=False,
-#     pull=False,
-#     develop=False,
-#     nomount=False,
-#     ports=None,
-#     identity=None,
-# ):
-#     """
-#     create the 3bot container and install jumpcale inside
-#     if interactive is True then will ask questions, otherwise will go for the defaults or configured arguments
-#
-#     if you want to configure other arguments use 'jsx configure ... '
-#
-#     """
-#     new_identity = None
-#     identities_path = os.path.join(IT.MyEnv.config["DIR_VAR"], "containers/shared/keys")
-#     if identity:
-#         identity = _name_clean(identity)
-#         identity_path = os.path.join(identities_path, identity)
-#         if not os.path.exists(identity_path):
-#             if no_interactive:
-#                 raise RuntimeError("Couldn't find specified identity: {}".format(identity_path))
-#             if not IT.Tools.ask_yes_no("Create new identity with name {}".format(identity)):
-#                 return
-#             new_identity = identity
-#             identity = None
-#         else:
-#             identity_contents = os.listdir(identity_path)
-#             if "key.priv" not in identity_contents or "conf.toml" not in identity_contents:
-#                 raise RuntimeError(
-#                     "Need to have both `secret` file containing private key secret and `key.priv` for the private key"
-#                 )
-#     elif os.path.exists(identities_path):
-#         found_identities = os.listdir(identities_path)
-#         if len(found_identities) > 1:
-#             if no_interactive:
-#                 raise RuntimeError(
-#                     "Found multiple shared identities please start installation interactively or specify an identity"
-#                 )
-#             identity = IT.Tools.ask_choices("Choose an identity to start container with", found_identities)
-#         else:
-#             identity = found_identities[0]
-#
-#     mount = not nomount
-#
-#     _configure(no_interactive=no_interactive, set_secret=not identity)
-#
-#     if scratch:
-#         image = "threefoldtech/base2"
-#         if scratch:
-#             delete = True
-#         reinstall = True
-#     if not image:
-#         if not develop:
-#             image = "threefoldtech/3bot2"
-#         else:
-#             image = "threefoldtech/3bot2dev"
-#
-#     portmap = None
-#     if ports:
-#         portmap = dict()
-#         for port in ports:
-#             src, dst = port.split(":", 1)
-#             portmap[src] = dst
-#
-#     docker = e.DF.container_get(name=name, delete=delete, image=image, ports=portmap)
-#
-#     docker.start(mount=mount, ssh=True)
-#
-#     installer = IT.JumpscaleInstaller()
-#     installer.repos_get(pull=False, branch=branch)
-#
-#     if not docker.executor.exists("/sandbox/cfg/keys/default/key.priv"):
-#         reinstall = True
-#
-#     docker.install_jumpscale(branch=branch, force=reinstall, pull=pull, threebot=threebot, identity=identity)
-#
-#     identity = identity or new_identity
-#     if identity:
-#         threebot_name = '"{}"'.format(identity)
-#         docker.execute(
-#             "source /sandbox/env.sh && kosmos 'j.tools.threebot.init_my_threebot(interactive={}, name={})'".format(
-#                 not no_interactive, threebot_name
-#             )
-#         )
-#
-#     _container_shell(name)
+# CONFIGURATION (INIT) OF JUMPSCALE ENVIRONMENT
+@click.command()
+@click.option("--no-sshagent", is_flag=True, help="do you want to use an ssh-agent")
+@click.option("--sshkey", default=None, help="if more than 1 ssh-key in ssh-agent, specify here")
+@click.option("--debug", is_flag=True, help="do you want to put kosmos in debug mode?")
+@click.option("-s", "--no-interactive", is_flag=True, help="default is interactive")
+@click.option(
+    "--privatekey",
+    default=False,
+    help="24 words, use '' around the private key if secret specified and private_key not then will ask in -y mode will autogenerate",
+)
+@click.option(
+    "--secret", default=None, help="secret for the private key (to keep secret, also used for admin secret on 3bot)"
+)
+def configure(debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey=None, secret=None):
+    """
+    initialize 3bot (JSX) environment
+    """
 
-
-def container_get(name="3bot", delete=False, jumpscale=True, install=False, mount=True):
-    IT.MyEnv.sshagent.key_default_name
-    e.DF.init()
-    docker = e.DF.container_get(name=name, image="threefoldtech/3bot2", start=True, delete=delete, mount=mount)
-    # print(docker.executor.config)
-    force = False
-    if not docker.executor.exists("/sandbox/cfg/keys/default/key.priv"):
-        jumpscale = True
-        install = True
-        force = True
-    if jumpscale:
-        installer = IT.JumpscaleInstaller()
-        installer.repos_get(pull=False)
-        if install:
-            docker.install_jumpscale(force=force)
-    return docker
+    return _configure(
+        debug=debug,
+        sshkey=sshkey,
+        sshagent=not no_sshagent,
+        interactive=not no_interactive,
+        privatekey_words=privatekey,
+        secret=secret,
+    )
 
 
 # INSTALL OF JUMPSCALE IN CONTAINER ENVIRONMENT
-@click.command()
-# @click.option("--no-sshagent", is_flag=True, help="do you want to use an ssh-agent")
-@click.option("--prebuilt", is_flag=True, help="if set will allow a quick start using prebuilt threebot")
+@click.command(name="container-install")
+@click.option("-n", "--name", default="3bot", help="name of container")
+@click.option(
+    "--scratch", is_flag=True, help="from scratch, means will start from empty ubuntu and re-install everything"
+)
+@click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
+@click.option("--threebot", is_flag=True, help="also install the threebot")
+@click.option(
+    "-i",
+    "--image",
+    default=None,
+    help="select the container image to use to create the container, leave empty unless you know what you do (-:",
+)
 @click.option(
     "-b", "--branch", default=None, help="jumpscale branch. default 'master' or 'development' for unstable release"
 )
@@ -309,11 +223,126 @@ def container_get(name="3bot", delete=False, jumpscale=True, install=False, moun
     is_flag=True,
     help="reinstall, basically means will try to re-do everything without removing the data",
 )
+# @click.option("--develop", is_flag=True, help="will use the development docker image to start from.")
+@click.option("--ports", help="Expose extra ports repeat for multiple eg. 80:80", multiple=True)
+@click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
+@click.option("-nm", "--nomount", is_flag=True, help="will not mount the underlying code directory if set")
+@click.option(
+    "--identity",
+    default=None,
+    help="Identity to be used for nacl should be stored under var/containers/shared/keys/{identity}/priv.key",
+)
+def container_install(
+    name="3bot",
+    scratch=False,
+    delete=True,
+    threebot=False,
+    image=None,
+    branch=None,
+    reinstall=False,
+    no_interactive=False,
+    pull=False,
+    develop=False,
+    nomount=False,
+    ports=None,
+    identity=None,
+):
+    """
+    create the 3bot container and install jumpcale inside
+    if interactive is True then will ask questions, otherwise will go for the defaults or configured arguments
+
+    if you want to configure other arguments use 'jsx configure ... '
+
+    """
+
+    IT = load_install_tools(branch=branch, reset=True)
+    # IT.MyEnv.interactive = True
+    # interactive = not no_interactive
+
+    if identity:
+        identity_path = os.path.join(IT.MyEnv.config["DIR_VAR"], "containers/shared/keys", identity)
+        if not os.path.exists(identity_path):
+            raise RuntimeError("Couldn't find specified identity: {}".format(identity_path))
+        identity_contents = os.listdir(identity_path)
+        if "key.priv" not in identity_contents or "secret" not in identity_contents:
+            raise RuntimeError(
+                "Need to have both `secret` file containing private key secret and `key.priv` for the private key"
+            )
+
+    mount = not nomount
+
+    _configure(no_interactive=no_interactive)
+
+    if scratch:
+        image = "threefoldtech/base2"
+        if scratch:
+            delete = True
+        reinstall = True
+    if not image:
+        if not develop:
+            image = "threefoldtech/3bot2"
+        else:
+            image = "threefoldtech/3bot2dev"
+
+    portmap = None
+    if ports:
+        portmap = dict()
+        for port in ports:
+            src, dst = port.split(":", 1)
+            portmap[src] = dst
+
+    docker = e.DF.container_get(name=name, delete=delete, image=image, ports=portmap)
+
+    docker.start(mount=mount, ssh=True)
+
+    installer = IT.JumpscaleInstaller()
+    installer.repos_get(pull=False, branch=branch)
+
+    if not docker.executor.exists("/sandbox/cfg/keys/default/key.priv"):
+        reinstall = True
+
+    docker.install_jumpscale(branch=branch, force=reinstall, pull=pull, threebot=threebot, identity=identity)
+
+    _container_shell()
+
+
+def container_get(name="3bot", delete=False, jumpscale=True, install=False, mount=True):
+    IT.MyEnv.sshagent.key_default_name
+    e.DF.init()
+    docker = e.DF.container_get(name=name, image="threefoldtech/3bot2", start=True, delete=delete, mount=mount)
+    # print(docker.executor.config)
+    force = False
+    if not docker.executor.exists("/sandbox/cfg/.configured"):
+        jumpscale = True
+        install = True
+        force = True
+    if jumpscale:
+        installer = IT.JumpscaleInstaller()
+        installer.repos_get(pull=False)
+        if install:
+            docker.install_jumpscale(force=force)
+        docker.executor.file_write("/sandbox/cfg/.configured", "")
+    return docker
+
+
+# INSTALL OF JUMPSCALE IN CONTAINER ENVIRONMENT
+@click.command()
+@click.option(
+    "--pull",
+    is_flag=True,
+    help="pull code from git, if not specified will only pull if code directory does not exist yet",
+)
+@click.option(
+    "-r",
+    "--reinstall",
+    is_flag=True,
+    help="reinstall, basically means will try to re-do everything without removing the data",
+)
 @click.option("--threebot", is_flag=True, help="install required components for threebot")
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
-@click.option("-i", "--identity", default=None, help="Identity to be used for nacl")
+@click.option("-i", "--identity", default=None, help="Identity to be used for the 3bot functionality")
 def install(
-    branch=None, reinstall=False, pull=False, no_interactive=False, prebuilt=False, threebot=False, identity=None,
+    reinstall=False, pull=False, no_interactive=False, threebot=False, identity=None,
 ):
     """
     install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.
@@ -324,9 +353,7 @@ def install(
 
     """
 
-    # print("DEBUG:: no_sshagent", no_sshagent, "configdir", configdir)  #no_sshagent=no_sshagent
-    # IT.MyEnv.interactive = True
-    _configure(no_interactive=no_interactive)
+    IT.MyEnv.interactive = not no_interactive
     if reinstall:
         # remove the state
         IT.MyEnv.state_reset()
@@ -335,15 +362,8 @@ def install(
         force = False
 
     installer = IT.JumpscaleInstaller()
-    assert prebuilt is False  # not supported yet
     installer.install(
-        sandboxed=False,
-        force=force,
-        gitpull=pull,
-        prebuilt=prebuilt,
-        branch=branch,
-        threebot=threebot,
-        identity=identity,
+        sandboxed=False, force=force, gitpull=pull, threebot=threebot, identity=identity,
     )
     print("Jumpscale X installed successfully")
 
@@ -359,13 +379,9 @@ def install(
     help="pull code from git, if not specified will only pull if code directory does not exist yet",
 )
 @click.option("--reset", is_flag=True, help="if reset, will remove code, be careful")
-def jumpscale_code_get(branch=None, pull=False, reset=False):
+def getcode(branch=None, pull=False, reset=False):
     """
-    install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.
-    if interactive is True then will ask questions, otherwise will go for the defaults or configured arguments
-
-    if you want to configure other arguments use 'jsx configure ... '
-
+    checkout the code onto your local filesystem
     """
     # IT.MyEnv.interactive = True
     # _configure(no_interactive=True)
@@ -667,6 +683,23 @@ def container_start(name="3bot"):
     docker.start()
 
 
+@click.command()
+@click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
+def tfgrid_simulator(delete=False):
+    """
+    start the 3bot container
+    :param name:
+    :return:
+    """
+    _configure()
+    docker = container_get(name="simulator", delete=delete)
+    docker.start()
+    addr = docker.zerotier_connect()
+    docker.execute("j.tools.tfgrid_simulator.start(background=True)", jumpscale=True)
+    print(f" - CONNECT TO YOUR SIMULATOR ON: http://{addr}:8888/")
+    IT.Tools.shell()
+
+
 @click.command(name="container-delete")
 @click.option("-a", "--all", is_flag=True, help="delete all")
 @click.option("-n", "--name", default="3bot", help="name of container")
@@ -842,17 +875,15 @@ def connect(test=False, disconnect=False):
 )
 @click.option("-p", "--pull", is_flag=True, help="pull the docker image")
 @click.option("-u", "--update", is_flag=True, help="update the code files")
-def sdk(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False, update=False):
+@click.option("-n", "--name", help="name of container, default 3bot")
+@click.option("-s", "--server", help="start the server components")
+@click.option("-id", "--identity", help="name of the identity you want to use, std: 'default'")
+def container(
+    name="3bot", delete=False, count=1, net="172.0.0.0/16", identity=None, server=False, pull=False, update=False
+):
     """
-
-    jsx threebot -d
-
-    :param delete:  delete the containers you want to use in this test
-    :param name:    base name, if more than 1 container then will name+nr e.g. 3bot2  the first one always is 3bot
-    :param count:   nr of containers to create in test, they will all be able to talk to each other
-    :param net:     the network to use for the containers
-    :param web:     if the wiki needs to be started
-    :return:
+    example:
+        jsx container -d -s
     """
 
     name = "3bot"
@@ -880,28 +911,28 @@ def sdk(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False, update
         r2 = j.tools.threebot.explorer.threebot_record_get(tid=cl.tid)
         assert r2 == r1
 
-    def test():
-        docker_name = "{docker_name}"
-        nr_containers = int("{count}")
-
-        print("RUNNING TESTS FROM {docker_name}")
-
-        clients = list()
-
-        clients.append(j.clients.threebot.explorer)
-        clients += [j.clients.threebot.client_get("3bot{0}.3bot".format(i + 1)) for i in range(1, nr_containers - 1)]
-        for client in clients:
-            print("connected to ", client.name, "on", client.host)
-            print("---identity---", client.name, "\n", client.actors_all.identity.threebot_name())
-
-        j.clients.threebot.explorer.reload()
-        j.clients.threebot.explorer.actors_all.package_manager.package_start(
-            "tfgrid.directory"
-        )  # TODO: Fix. we shouldn't have to load here
-        nodes = j.clients.threebot.explorer.actors_all.nodes.list()
-
-        print("EXPLORER NODES:")
-        print(nodes)
+    # def test():
+    #     docker_name = "{docker_name}"
+    #     nr_containers = int("{count}")
+    #
+    #     print("RUNNING TESTS FROM {docker_name}")
+    #
+    #     clients = list()
+    #
+    #     clients.append(j.clients.threebot.explorer)
+    #     clients += [j.clients.threebot.client_get("3bot{0}.3bot".format(i + 1)) for i in range(1, nr_containers - 1)]
+    #     for client in clients:
+    #         print("connected to ", client.name, "on", client.host)
+    #         print("---identity---", client.name, "\n", client.actors_all.identity.threebot_name())
+    #
+    #     j.clients.threebot.explorer.reload()
+    #     j.clients.threebot.explorer.actors_all.package_manager.package_start(
+    #         "tfgrid.directory"
+    #     )  # TODO: Fix. we shouldn't have to load here
+    #     nodes = j.clients.threebot.explorer.actors_all.nodes.list()
+    #
+    #     print("EXPLORER NODES:")
+    #     print(nodes)
 
     if update:
         installer = IT.JumpscaleInstaller()
@@ -940,43 +971,46 @@ def sdk(delete=False, count=1, net="172.0.0.0/16", web=False, pull=False, update
         #     docker.jsxexec(test, docker_name=docker.name, count=count)
 
         docker.execute("source /sandbox/env.sh;bcdb delete --all -f")
+        IT.Tools.shell()
         docker.execute(
             f"""
-        j.tools.threebot.me.default.admins.append("{name}")
-        j.tools.threebot.me.default.save()
+        j.me_identities.me.default.admins.append("{name}")
+        j.me_identities.me.default.save()
         """,
             jumpscale=True,
         )
-        docker.execute("source /sandbox/env.sh;3bot start")
+        if server:
+            docker.execute("source /sandbox/env.sh;3bot start")
 
     cmd = 'open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors'
 
-    try:
-        import webbrowser
+    if server:
+        try:
+            import webbrowser
 
-        time.sleep(5)
-        if IT.MyEnv.platform_is_osx:
-            webbrowser.get("safari").open_new_tab("https://localhost:4000")
-        else:
-            webbrowser.open_new_tab("https://localhost:4000")
-    except:
-        pass
+            time.sleep(5)
+            if IT.MyEnv.platform_is_osx:
+                webbrowser.get("safari").open_new_tab("https://localhost:4000")
+            else:
+                webbrowser.open_new_tab("https://localhost:4000")
+        except:
+            pass
 
     _container_shell()
 
 
-@click.command(name="modules-install")
-# @click.option("--configdir", default=None, help="default {DIR_BASE}/cfg if it exists otherwise ~{DIR_BASE}/cfg")
-@click.option("--url", default="3bot", help="git url e.g. https://github.com/myfreeflow/kosmos")
-def modules_install(url=None):
-    """
-    install jumpscale module in local system
-    :return:
-    """
-    from Jumpscale import j
-
-    path = j.clients.git.getContentPathFromURLorPath(url)
-    _generate(path=path)
+# @click.command(name="modules-install")
+# # @click.option("--configdir", default=None, help="default {DIR_BASE}/cfg if it exists otherwise ~{DIR_BASE}/cfg")
+# @click.option("--url", default="3bot", help="git url e.g. https://github.com/myfreeflow/kosmos")
+# def modules_install(url=None):
+#     """
+#     install jumpscale module in local system
+#     :return:
+#     """
+#     from Jumpscale import j
+#
+#     path = j.clients.git.getContentPathFromURLorPath(url)
+#     _generate(path=path)
 
 
 @click.command()
@@ -1080,7 +1114,7 @@ def _generate(path=None):
 
 if __name__ == "__main__":
 
-    cli.add_command(ssh)
+    # cli.add_command(ssh)
     cli.add_command(check)
     cli.add_command(install)
     cli.add_command(kosmos)
@@ -1090,8 +1124,9 @@ if __name__ == "__main__":
     # cli.add_command(wiki_load, "wiki-load")
     # cli.add_command(wiki_reload)
     # cli.add_command(package_new, "package-new")
-    cli.add_command(jumpscale_code_get, "jumpscale-code-get")
+    cli.add_command(getcode)
     # cli.add_command(connect)
+    cli.add_command(configure)
 
     # DO NOT DO THIS IN ANY OTHER WAY !!!
     if not e._DF.indocker():
@@ -1103,12 +1138,13 @@ if __name__ == "__main__":
         cli.add_command(containers_reset, "containers-reset")
         cli.add_command(container_export, "container-export")
         cli.add_command(container_import, "container-import")
-        # cli.add_command(container_shell, "container-shell")
+        cli.add_command(container_shell, "container-shell")
         cli.add_command(container_save, "container-save")
         # cli.add_command(basebuilder, "basebuilder")
         cli.add_command(builder)
         # cli.add_command(threebot_flist, "threebot-flist")
         cli.add_command(containers)
         cli.add_command(container)
+        cli.add_command(tfgrid_simulator, "tfgrid-simulator")
 
     cli()

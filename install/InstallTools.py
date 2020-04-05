@@ -3712,12 +3712,18 @@ class MyEnv_:
         # max log msgpacks files on the file system each file is 1k logs
         if not "MAX_MSGPACKS_LOGS_COUNT" in config:
             config["MAX_MSGPACKS_LOGS_COUNT"] = 50
+        if not "SSH_KEY_DEFAULT" in config:
+            config["SSH_KEY_DEFAULT"] = False
+
+        if not "SSH_AGENT" in config:
+            config["SSH_AGENT"] = True
+
+        if not "USEGIT" in config:
+            config["USEGIT"] = True
 
         return config
 
-    def configure(
-        self, config=None, readonly=None, debug=None, interactive=None,
-    ):
+    def configure(self, config=None, readonly=None, debug=None, interactive=None, secret=None):
         """
 
         the args of the command line will also be parsed, will check for
@@ -3728,6 +3734,9 @@ class MyEnv_:
 
         :return:
         """
+
+        if secret:
+            self.secret_set(secret)
 
         basedir = self._basedir_get()
 
@@ -3947,9 +3956,9 @@ MyEnv = MyEnv_()
 
 class BaseInstaller:
     @staticmethod
-    def install(configdir=None, force=False, sandboxed=False, branch=None, pips_level=3):
+    def install(force=False, sandboxed=False, branch=None, pips_level=3):
 
-        MyEnv.init(configdir=configdir)
+        MyEnv.init()
 
         if force:
             MyEnv.state_delete("install")
@@ -4251,6 +4260,7 @@ class BaseInstaller:
     def cleanup_script_get():
         CMD = """
         cd /
+        rm -f /sandbox/cfg/.configured
         rm -f /tmp/cleanedup
         rm -f /root/.jsx_history
         rm -rf /root/.cache
@@ -4536,10 +4546,10 @@ class JumpscaleInstaller:
         source env.sh
         mkdir -p {DIR_BASE}/openresty/nginx/logs
         mkdir -p {DIR_BASE}/var/log
-        kosmos 'j.data.nacl.configure(generate=True,interactive=False)'
-        kosmos 'j.core.installer_jumpscale.remove_old_parts()'
+        # kosmos 'j.data.nacl.configure(generate=True,interactive=False)'
+        # kosmos 'j.core.installer_jumpscale.remove_old_parts()'
         # kosmos --instruct=/tmp/instructions.toml
-        kosmos 'j.core.tools.pprint("JumpscaleX init step for encryption OK.")'
+        # kosmos 'j.core.tools.pprint("JumpscaleX init step for encryption OK.")'
         """
         Tools.execute(script, die_if_args_left=True)
 
@@ -5613,15 +5623,7 @@ class DockerContainer:
     #
 
     def install_jumpscale(
-        self,
-        secret=None,
-        privatekey=None,
-        force=False,
-        threebot=False,
-        pull=False,
-        branch=None,
-        identity=None,
-        redo=False,
+        self, secret=None, force=False, threebot=False, pull=False, identity=None, redo=False,
     ):
         if not force:
             if not self.executor.state_exists("STATE_JUMPSCALE"):
@@ -5637,19 +5639,14 @@ class DockerContainer:
         args_txt = ""
         if secret:
             args_txt += " --secret='%s'" % secret
-        if privatekey:
-            args_txt += " --privatekey='%s'" % privatekey
         if redo:
             args_txt += " -r"
         if threebot:
             args_txt += " --threebot"
         if pull:
             args_txt += " --pull"
-        if branch:
-            args_txt += " --branch %s" % branch
         if not MyEnv.interactive:
             args_txt += " --no-interactive"
-
         if identity:
             args_txt += f" -i {identity}"
 
@@ -5684,6 +5681,33 @@ class DockerContainer:
 
     def install_jupyter(self):
         self.execute(". /sandbox/env.sh; kosmos 'j.servers.notebook.install()'")
+
+    def zerotier_connect(self):
+        if not self.executor.state_exists("zerotier_installed"):
+            self.execute("curl -s https://install.zerotier.com | sudo bash", die=False)
+            self.executor.state_set("zerotier_installed")
+        if not self.executor.state_exists("zerotier_joined"):
+            self.execute("killall zerotier-one 2>&1 > /dev/null;zerotier-one -d")
+            self.execute("zerotier-cli join 35c192ce9b01847c", die=False)
+            addr = None
+            while not addr:
+                print("waiting for zerotier to become live")
+                rc, out, err = self.executor.execute("zerotier-cli listnetworks -j")
+                Tools.clear()
+                print("WAITING FOR ZEROTIER")
+                print(out)
+                r = json.loads(out)
+                if len(r) == 1:
+                    r = r[0]
+                    if "assignedAddresses" in r:
+                        addr = r["assignedAddresses"]
+                        if len(addr) > 0:
+                            addr = addr[0].split("/", 1)[0]
+
+            print(" - IP ADDRESS OF YOUR CONTAINER: %s" % addr)
+
+            self.executor.state_set("zerotier_joined")
+        return addr
 
     def __repr__(self):
         return "# CONTAINER: \n %s" % Tools._data_serializer_safe(self.config.__dict__)
