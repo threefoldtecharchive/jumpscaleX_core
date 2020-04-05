@@ -22,7 +22,7 @@ class MeEncryptor(j.baseclasses.object):
     def _init(self, me, **kwargs):
         self.me = me
         self.name = self.me.name
-        assert len(self.secret) == 32
+        # assert len(self.secret) == 32
         self.reset()
         self._tools = None
 
@@ -102,7 +102,7 @@ class MeEncryptor(j.baseclasses.object):
             word3_to_check = j.tools.console.askString("give the 3e word of the private key string")
             if not word3 == word3_to_check:
                 print("the control word was not correct, please try again")
-                return self.word3_check(word3)
+                self._word3_check(word3)
         except KeyboardInterrupt:
             j.sal.fs.remove(self._path_seed)
             print("WE HAVE REMOVED THE KEY, need to restart this procedure.")
@@ -326,10 +326,10 @@ class MeEncryptor(j.baseclasses.object):
     #     return self.hash32(signeddata)
 
     def _bin_to_hex(self, content):
-        return j.myidentites._bin_to_hex(content)
+        return j.myidentities._bin_to_hex(content)
 
     def _hex_to_bin(self, content):
-        return j.myidentites._hex_to_bin(content)
+        return j.myidentities._hex_to_bin(content)
 
     def _error_raise(self, msg):
         raise j.exceptions.Base(msg)
