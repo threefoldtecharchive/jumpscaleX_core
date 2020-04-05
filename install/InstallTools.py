@@ -3584,7 +3584,7 @@ class MyEnv_:
 
         self.sshagent = SSHAgent()
 
-        # sys.excepthook = self.excepthook
+        sys.excepthook = self.excepthook
         if redis and Tools.exists("{}/bin".format(self.config["DIR_BASE"])):  # To check that Js is on host
             self.loghandler_redis = LogHandler(db=self.db)
         else:
