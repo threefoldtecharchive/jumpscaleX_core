@@ -22,7 +22,6 @@ class MeEncryptor(j.baseclasses.object):
     def _init(self, me, **kwargs):
         self.me = me
         self.name = self.me.name
-        # assert len(self.secret) == 32
         self.reset()
         self._tools = None
 

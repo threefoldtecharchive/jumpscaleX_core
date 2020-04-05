@@ -99,6 +99,9 @@ class Me(JSConfigBase):
         """
         @param generate: generate now one,
         """
+        j.tools.console.clear_screen()
+        print(" *** WILL NOW CONFIGURE YOUR PRIVATE 3BOT SECURE KEY (IMPORTANT) ***\n\n")
+
         if generate:
             reset = True
 
@@ -122,7 +125,11 @@ class Me(JSConfigBase):
 
         self.verify_key = self.encryptor.verify_key_hex
 
+        j.tools.console.clear_screen()
+
     def configure_sshkey(self, name=None, reset=False, generate=False):
+        j.tools.console.clear_screen()
+        print(" *** WILL NOW CONFIGURE SSH KEY FOR USE IN 3BOT ***\n\n")
         if generate:
             reset = True
             if not name:
@@ -138,7 +145,7 @@ class Me(JSConfigBase):
         def generate_ssh(name):
             if not name:
                 name = j.tools.console.askString(
-                    "Will generate a ssh key, please specify name of your key, default='default'"
+                    "SSH: Will generate a ssh key, please specify name of your key, default='default'"
                 )
             key = j.clients.sshkey.get(name=name)
             key.generate(reset=True)
@@ -148,18 +155,20 @@ class Me(JSConfigBase):
             key = generate_ssh(name)
 
         if self.sshkey_priv and self.sshkey_pub and self.sshkey_name:
-            if j.tools.console.askYesNo(f"ok to use ssh key: {self.sshkey_name}"):
+            if j.tools.console.askYesNo(f"SSH: ok to use ssh key: {self.sshkey_name}"):
                 return
+
+        j.debug()
 
         keys = j.clients.sshkey.find()
         if not key and len(keys) == 1:
             key = keys[0]
-            if not j.tools.console.askYesNo(f"found preconfigured key, ok to use ssh key: {key.name}"):
+            if not j.tools.console.askYesNo(f"SSH: found preconfigured SSH key, ok to use ssh key: {key.name}"):
                 key = None
 
         if not key and j.clients.sshagent.available and len(j.clients.sshagent.key_names) > 0:
             key = j.clients.sshagent.key_default
-            if not j.tools.console.askYesNo(f"found key in sshagent, ok to use ssh key: {key.name}"):
+            if not j.tools.console.askYesNo(f"SSH: found key in sshagent, ok to use ssh key: {key.name}"):
                 key = None
 
         if not key and len(keys) > 1:
@@ -167,17 +176,19 @@ class Me(JSConfigBase):
             names.append("NEW")
             c = j.tools.console.askChoice(
                 names,
-                descr="Found multiple preconfigered keys, want to use one of those? If yes specify otherwise select NEW.",
+                descr="SSH: Found multiple preconfigered keys, want to use one of those? If yes specify otherwise select NEW.",
             )
             if c != "NEW":
                 key = j.clients.sshkey.get(c)
 
-        if not key and j.tools.console.askYesNo("Cannot find a ssh key, ok to generate a new one?"):
+        if not key and j.tools.console.askYesNo("SSH: Cannot find a ssh key, ok to generate a new one?"):
             key = generate_ssh(name)
 
         self.sshkey_name = key.name
         self.sshkey_priv = key.privkey
         self.sshkey_pub = key.pubkey
+
+        j.tools.console.clear_screen()
 
     def configure(self, tname=None, ask=True, reset=False):
 
@@ -229,7 +240,7 @@ class Me(JSConfigBase):
         while not self.verify_key or not self.signing_key:
             self.configure_encryption(generate=True)
 
-        if ask and j.tools.console.askYesNo("want to add admin's?"):
+        if ask and j.tools.console.askYesNo("want to add threebot administrators?"):
             admins = ""
             if len(self.admins) > 0:
                 admins = ",".join(self.admins)

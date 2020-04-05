@@ -685,6 +685,7 @@ def container_start(name="3bot"):
 
 @click.command()
 @click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
+# @click.option("-r", "--restart", is_flag=True, help="restart the notebook")
 def tfgrid_simulator(delete=False):
     """
     start the 3bot container
@@ -697,6 +698,7 @@ def tfgrid_simulator(delete=False):
     addr = docker.zerotier_connect()
     docker.execute("j.tools.tfgrid_simulator.start(background=True)", jumpscale=True)
     print(f" - CONNECT TO YOUR SIMULATOR ON: http://{addr}:8888/")
+    docker.shell()
 
 
 @click.command(name="container-delete")

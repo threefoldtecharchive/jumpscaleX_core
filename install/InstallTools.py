@@ -4514,14 +4514,6 @@ class JumpscaleInstaller:
 
         MyEnv.check_platform()
 
-        if identity:
-            identity_path = os.path.join(MyEnv.config["DIR_BASE"], "myhost/keys", identity)
-            if os.path.exists(identity_path):
-                conf = Tools.config_load(os.path.join(identity_path, "conf.toml"))
-                MyEnv.config["IDENTITY_NAME"] = identity
-                MyEnv.config["SECRET"] = conf["SECRET"].strip()
-                MyEnv.config_save()
-                shutil.copytree(identity_path, os.path.join(MyEnv.config["DIR_CFG"], "keys", "default"))
         # will check if there's already a key loaded (forwarded) will continue installation with it
         rc, _, _ = Tools.execute("ssh-add -L")
         if not rc:
@@ -4555,6 +4547,11 @@ class JumpscaleInstaller:
         Tools.execute(script, die_if_args_left=True)
 
         if threebot:
+
+            if identity:
+                print("deal with identity")
+                Tools.shell()
+
             Tools.execute_jumpscale("j.servers.threebot.start(background=True)")
             timestop = time.time() + 240.0
             ok = False
@@ -4915,6 +4912,8 @@ class DockerConfig:
 
         self.path_vardir = Tools.text_replace("{DIR_BASE}/var/containers/{NAME}", args={"NAME": name})
         Tools.dir_ensure(self.path_vardir)
+        Tools.dir_ensure(Tools.text_replace("{DIR_BASE}/myhost"))
+        Tools.dir_ensure(Tools.text_replace("{DIR_BASE}/code"))
         self.path_config = "%s/docker_config.toml" % (self.path_vardir)
         # self.wireguard_pubkey
 
@@ -5239,11 +5238,11 @@ class DockerContainer:
         if mount:
             MOUNTS = f"""
             -v {DIR_CODE}:/sandbox/code \
-            -v {DIR_BASE}/var/containers/shared:/sandbox/myhost
+            -v {DIR_BASE}/myhost:/sandbox/myhost
             """
             MOUNTS = Tools.text_strip(MOUNTS)
         else:
-            MOUNTS = f"-v {DIR_BASE}/var/containers/shared:/sandbox/myhost"
+            MOUNTS = f"-v {DIR_BASE}/myhost:/sandbox/myhost"
 
         if portmap:
             PORTRANGE = self.config.ports_txt
