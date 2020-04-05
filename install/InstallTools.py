@@ -5690,24 +5690,25 @@ class DockerContainer:
         if not self.executor.state_exists("zerotier_joined"):
             self.execute("killall zerotier-one 2>&1 > /dev/null;zerotier-one -d")
             self.execute("zerotier-cli join 35c192ce9b01847c", die=False)
-            addr = None
-            while not addr:
-                print("waiting for zerotier to become live")
-                rc, out, err = self.executor.execute("zerotier-cli listnetworks -j")
-                Tools.clear()
-                print("WAITING FOR ZEROTIER")
-                print(out)
-                r = json.loads(out)
-                if len(r) == 1:
-                    r = r[0]
-                    if "assignedAddresses" in r:
-                        addr = r["assignedAddresses"]
-                        if len(addr) > 0:
-                            addr = addr[0].split("/", 1)[0]
-
-            print(" - IP ADDRESS OF YOUR CONTAINER: %s" % addr)
-
             self.executor.state_set("zerotier_joined")
+
+        addr = None
+        while not addr:
+            print("waiting for zerotier to become live")
+            rc, out, err = self.executor.execute("zerotier-cli listnetworks -j")
+            Tools.clear()
+            print("WAITING FOR ZEROTIER")
+            print(out)
+            r = json.loads(out)
+            if len(r) == 1:
+                r = r[0]
+                if "assignedAddresses" in r:
+                    addr = r["assignedAddresses"]
+                    if len(addr) > 0:
+                        addr = addr[0].split("/", 1)[0]
+
+        print(" - IP ADDRESS OF YOUR CONTAINER: %s" % addr)
+
         return addr
 
     def __repr__(self):

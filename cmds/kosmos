@@ -201,7 +201,7 @@ if options.instruct:
 
 # import better_exceptions
 
-better_exceptions.MAX_LENGTH = None
+# better_exceptions.MAX_LENGTH = None
 
 j.application.start("init")
 if len(args) == 1:

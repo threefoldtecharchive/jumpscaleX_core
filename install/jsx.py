@@ -697,7 +697,6 @@ def tfgrid_simulator(delete=False):
     addr = docker.zerotier_connect()
     docker.execute("j.tools.tfgrid_simulator.start(background=True)", jumpscale=True)
     print(f" - CONNECT TO YOUR SIMULATOR ON: http://{addr}:8888/")
-    IT.Tools.shell()
 
 
 @click.command(name="container-delete")
