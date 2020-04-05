@@ -87,7 +87,13 @@ class Me(JSConfigBase):
             # now write to local identity drive
             print(" - save identity:%s" % self.tname)
             j.sal.fs.createDir("{DIR_BASE}/myhost/identities")
-            j.sal.fs.writeFile("{DIR_BASE}/myhost/identities/%s.toml" % self.tname, self._data._toml)
+
+            spath = "{DIR_BASE}/myhost/identities/%s.toml" % self.tname
+            j.sal.fs.writeFile(spath, self._data._toml)
+
+            defaultpath = "{DIR_BASE}/myhost/identities/default.toml"
+            if not j.sal.fs.exists(defaultpath):
+                j.sal.fs.symlink(spath, defaultpath, overwriteTarget=True)
 
     @property
     def encryptor(self):
