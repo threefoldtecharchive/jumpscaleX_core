@@ -1,6 +1,6 @@
 from .Me import Me
-from .MeIdentities import MeIdentities
+from .MyIdentities import MyIdentities
 from Jumpscale import j
 
 j._meClass = Me
-j.myidentities = MeIdentities()
+j.myidentities = MyIdentities()

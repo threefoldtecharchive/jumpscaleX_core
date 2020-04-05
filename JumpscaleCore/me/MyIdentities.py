@@ -5,7 +5,7 @@ import nacl
 import binascii
 
 
-class MeIdentities(j.baseclasses.object_config_collection):
+class MyIdentities(j.baseclasses.object_config_collection):
     _CHILDCLASS = Me
     _classname = "myidentities"
 
@@ -19,17 +19,22 @@ class MeIdentities(j.baseclasses.object_config_collection):
         can be the hash or the originating secret passphrase
         """
         if not secret:
-            secret = j.tools.console.askString("please specify secret (<32chars)")
+            secret = j.tools.console.askPassword("please specify secret (<32chars)")
             assert len(secret) < 32
         if len(secret) != 32:
             secret = j.data.hash.md5_string(secret)
         expiration = self.secret_expiration_hours * 3600
+
         j.core.db.set("threebot.secret.encrypted", secret, ex=expiration)
+        self._secret = j.core.db.get("threebot.secret.encrypted")
+        assert len(self._secret) == 32
 
     @property
     def secret(self):
         if not self._secret:
             self._secret = j.core.db.get("threebot.secret.encrypted")
+            if not self._secret:
+                self.secret_set()
             assert len(self._secret) == 32
             if not self._secret:
                 if j.application.interactive:
