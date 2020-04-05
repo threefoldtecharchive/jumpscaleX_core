@@ -34,7 +34,7 @@ class TFGridRegistryClient(j.baseclasses.object, TESTTOOLS):
 
     def _init(self, **kwargs):
         # TODO update the threebot with threebot session when it is ready to be used
-        self.me = j.me_identities.me.get(
+        self.me = j.myidentities.me.get(
             name="test", tid=3, email="test.test@gmail", tname="testUser", pubkey="asdf3dsfasdlfkjasd88893n"
         )
         cl = j.clients.gedis.get("registry_client", port=8901, package_name="zerobot.packagemanager")

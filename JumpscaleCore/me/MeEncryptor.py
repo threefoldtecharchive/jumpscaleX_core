@@ -22,8 +22,7 @@ class MeEncryptor(j.baseclasses.object):
     def _init(self, me, **kwargs):
         self.me = me
         self.name = self.me.name
-        assert len(self.me.secret) == 32
-        self.box = nacl.secret.SecretBox(self.me.secret)
+        assert len(self.secret) == 32
         self.reset()
         self._tools = None
 
@@ -48,7 +47,7 @@ class MeEncryptor(j.baseclasses.object):
 
     @property
     def signing_key_hex(self):
-        key2 = self.encryptSymmetric(self._signing_key.encode())
+        key2 = j.myidentities.encrypt(self._signing_key.encode())
         return self._bin_to_hex(key2).decode()
 
     @property
@@ -62,11 +61,6 @@ class MeEncryptor(j.baseclasses.object):
     @property
     def private_key(self):
         return self.signing_key.to_curve25519_private_key()
-
-    # @property
-    # def private_key_hex(self):
-    #     keyb = self.encryptSymmetric(self.private_key.encode())
-    #     return self._bin_to_hex(keyb).decode()
 
     @property
     def public_key(self):
@@ -138,7 +132,7 @@ class MeEncryptor(j.baseclasses.object):
         """
         key = SigningKey.generate()
         # seed = key._seed
-        # encrypted_seed = self.encryptSymmetric(seed)
+        # encrypted_seed = j.myidentities.encrypt(seed)
         self._signing_key = key
         self.me.signing_key = self.signing_key_hex
         self.me.verify_key = self.verify_key_hex
@@ -148,7 +142,7 @@ class MeEncryptor(j.baseclasses.object):
     def _signing_key_load(self, die=True):
         seed = self._hex_to_bin(self.me.signing_key)
         try:
-            seed2 = self.decryptSymmetric(seed)
+            seed2 = j.myidentities.decrypt(seed)
         except nacl.exceptions.CryptoError:
             if die:
                 self._error_raise("could not decrypt the private key.")
@@ -178,20 +172,7 @@ class MeEncryptor(j.baseclasses.object):
         m.update(self.tobytes(data))
         return m.digest()[0:8]
 
-    def encryptSymmetric(self, data, hex=False):
-        box = self.box
-        res = box.encrypt(self.tobytes(data))
-        if hex:
-            res = self._bin_to_hex(res).decode()
-        return res
-
-    def decryptSymmetric(self, data, hex=False):
-        if hex:
-            data = self._hex_to_bin(data)
-        res = self.box.decrypt(self.tobytes(data))
-        return res
-
-    def encryptAsymmetric(self, plaintext, public_key=None, verify_key=None, nonce=None, encoder=RawEncoder):
+    def encrypt(self, plaintext, public_key=None, verify_key=None, nonce=None, encoder=RawEncoder):
         """
         Encrypts the plaintext message using the given `nonce` (or generates
         one randomly if omitted) and returns the ciphertext encoded with the
@@ -214,7 +195,7 @@ class MeEncryptor(j.baseclasses.object):
         box = Box(self.private_key, public_key)
         return box.encrypt(plaintext, nonce, encoder)
 
-    def decryptAsymmetric(self, ciphertext, public_key=None, verify_key=None, nonce=None, encoder=RawEncoder):
+    def decrypt(self, ciphertext, public_key=None, verify_key=None, nonce=None, encoder=RawEncoder):
         """Decrypts the ciphertext using the `nonce` (explicitly, when passed as a
         parameter or implicitly, when omitted, as part of the ciphertext) and
         returns the plaintext message.
@@ -345,11 +326,10 @@ class MeEncryptor(j.baseclasses.object):
     #     return self.hash32(signeddata)
 
     def _bin_to_hex(self, content):
-        return binascii.hexlify(content)
+        return j.myidentites._bin_to_hex(content)
 
     def _hex_to_bin(self, content):
-        content = binascii.unhexlify(content)
-        return content
+        return j.myidentites._hex_to_bin(content)
 
     def _error_raise(self, msg):
         raise j.exceptions.Base(msg)

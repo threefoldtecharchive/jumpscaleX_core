@@ -3584,7 +3584,7 @@ class MyEnv_:
 
         self.sshagent = SSHAgent()
 
-        sys.excepthook = self.excepthook
+        # sys.excepthook = self.excepthook
         if redis and Tools.exists("{}/bin".format(self.config["DIR_BASE"])):  # To check that Js is on host
             self.loghandler_redis = LogHandler(db=self.db)
         else:
@@ -3822,7 +3822,6 @@ class MyEnv_:
 
             exception_obj.data = None
             exception_obj.exception = None
-
         try:
             logdict = Tools.log(tb=tb, level=level, exception=exception_obj, stdout=stdout)
         except Exception as e:
@@ -3831,6 +3830,7 @@ class MyEnv_:
             ttype, msg, tb = sys.exc_info()
             traceback.print_exception(etype=ttype, tb=tb, value=msg)
             Tools.pprint("{RESET}")
+            raise e
             sys.exit(1)
 
         exception_obj._logdict = logdict
@@ -4185,6 +4185,7 @@ class BaseInstaller:
                 "gevent-websocket",
                 "base58",
                 "ansicolors",
+                "better_exceptions",
             ],
             # level 1: in the middle
             1: [

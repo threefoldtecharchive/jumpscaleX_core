@@ -27,11 +27,11 @@ def main(self):
 
     # authentication is done by means of threebotid and a random seed
     # which is signed with the threebot (is the client) private key
-    res = cl.execute_command("auth", j.me_identities.me.default.tid, seed, signature)
+    res = cl.execute_command("auth", j.myidentities.me.default.tid, seed, signature)
     assert res == b"OK"
     error = False
     try:
-        res = cl.execute_command("auth", j.me_identities.me.default.tid, seed + "a", signature)
+        res = cl.execute_command("auth", j.myidentities.me.default.tid, seed + "a", signature)
     except:
         error = True
     assert error

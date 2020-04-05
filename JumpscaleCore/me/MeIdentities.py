@@ -1,11 +1,48 @@
 from Jumpscale import j
 import binascii
 from .Me import Me
+import nacl
+import binascii
 
 
 class MeIdentities(j.baseclasses.object_config_collection):
     _CHILDCLASS = Me
     _classname = "myidentities"
+
+    def _init(self, **kwargs):
+        self._box = None
+        self._secret = None
+        self.secret_expiration_hours = 24 * 30 * 12
+
+    def secret_set(self, secret=None):
+        """
+        can be the hash or the originating secret passphrase
+        """
+        if not secret:
+            secret = j.tools.console.askString("please specify secret (<32chars)")
+            assert len(secret) < 32
+        if len(secret) != 32:
+            secret = j.data.hash.md5_string(secret)
+        expiration = self.secret_expiration_hours * 3600
+        j.core.db.set("threebot.secret.encrypted", secret, ex=expiration)
+
+    @property
+    def secret(self):
+        if not self._secret:
+            self._secret = j.core.db.get("threebot.secret.encrypted")
+            assert len(self._secret) == 32
+            if not self._secret:
+                if j.application.interactive:
+                    self.secret_set()
+                else:
+                    raise j.exceptions.Input("secret passphrase not known, need to set it for identity:%s" % self.name)
+        return self._secret
+
+    @property
+    def box(self):
+        if not self._box:
+            self._box = nacl.secret.SecretBox(self.secret)
+        return self._box
 
     @property
     def me(self):
@@ -20,18 +57,36 @@ class MeIdentities(j.baseclasses.object_config_collection):
         """
         return self.get(name="default")
 
+    def encrypt(self, data, hex=False):
+        res = self.box.encrypt(self._tobytes(data))
+        if hex:
+            res = self._bin_to_hex(res).decode()
+        return res
+
+    def decrypt(self, data, hex=False):
+        if hex:
+            data = self._hex_to_bin(data)
+        res = self.box.decrypt(self._tobytes(data))
+        return res
+
+    def _bin_to_hex(self, content):
+        return binascii.hexlify(content)
+
+    def _hex_to_bin(self, content):
+        content = binascii.unhexlify(content)
+        return content
+
+    def _tobytes(self, data):
+        if not j.data.types.bytes.check(data):
+            data = data.encode()  # will encode utf8
+        return data
+
     def get(self, name="default", id=None, **kwargs):
         return j.baseclasses.object_config_collection.get(self, name=name, id=id, autosave=False, **kwargs)
 
-    def secret_set(self, val=None):
-        """
-        kosmos 'j.me_identities.secret_set()'
-        """
-        return self.default.secret_set(val)
-
     def test(self):
         """
-        kosmos 'j.me_identities.test()'
+        kosmos 'j.myidentities.test()'
         """
 
         # means test will not ask questions
@@ -52,24 +107,24 @@ class MeIdentities(j.baseclasses.object_config_collection):
         id2.configure_sshkey(generate=True)
 
         # test symmetric encryption
-        encrypted = id1.encryptor.encryptSymmetric("a")
-        res = id1.encryptor.decryptSymmetric(encrypted)
+        encrypted = id1.encryptor.encrypt("a")
+        res = id1.encryptor.decrypt(encrypted)
         assert res == b"a"
 
         id1.configure_encryption(generate=True)
         id2.configure_encryption(generate=True)
 
-        r1 = id1.encryptor.encryptAsymmetric(b"a", public_key=id2.encryptor.public_key)
-        r2 = id1.encryptor.encryptAsymmetric(b"b", public_key=id2.encryptor.public_key_hex)
-        r3 = id1.encryptor.decryptAsymmetric(r1, public_key=id2.encryptor.public_key)
-        r4 = id1.encryptor.decryptAsymmetric(r2, public_key=id2.encryptor.public_key_hex)
+        r1 = id1.encryptor.encrypt(b"a", public_key=id2.encryptor.public_key)
+        r2 = id1.encryptor.encrypt(b"b", public_key=id2.encryptor.public_key_hex)
+        r3 = id1.encryptor.decrypt(r1, public_key=id2.encryptor.public_key)
+        r4 = id1.encryptor.decrypt(r2, public_key=id2.encryptor.public_key_hex)
         assert r3 == b"a"
         assert r4 == b"b"
 
-        r1 = id1.encryptor.encryptAsymmetric(b"a", verify_key=id2.encryptor.verify_key)
-        r2 = id1.encryptor.encryptAsymmetric(b"b", verify_key=id2.verify_key)  # is in hex
-        r3 = id1.encryptor.decryptAsymmetric(r1, verify_key=id2.encryptor.verify_key)
-        r4 = id1.encryptor.decryptAsymmetric(r2, verify_key=id2.verify_key)
+        r1 = id1.encryptor.encrypt(b"a", verify_key=id2.encryptor.verify_key)
+        r2 = id1.encryptor.encrypt(b"b", verify_key=id2.verify_key)  # is in hex
+        r3 = id1.encryptor.decrypt(r1, verify_key=id2.encryptor.verify_key)
+        r4 = id1.encryptor.decrypt(r2, verify_key=id2.verify_key)
         assert r3 == b"a"
         assert r4 == b"b"
 

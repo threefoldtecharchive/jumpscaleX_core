@@ -974,8 +974,8 @@ def container(
         IT.Tools.shell()
         docker.execute(
             f"""
-        j.me_identities.me.default.admins.append("{name}")
-        j.me_identities.me.default.save()
+        j.myidentities.me.default.admins.append("{name}")
+        j.myidentities.me.default.save()
         """,
             jumpscale=True,
         )

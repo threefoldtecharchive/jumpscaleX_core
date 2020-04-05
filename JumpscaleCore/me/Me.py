@@ -21,13 +21,11 @@ class Me(JSConfigBase):
     sshkey_name = ""
     sshkey_pub = ""
     sshkey_priv = ""
-    secret_expiration_hours = 48 (I)
     """
 
     def _init(self, **kwargs):
         # the threebot config name always corresponds with the config name of nacl, is by design
         self._encryptor = None
-        self._secret = None
 
         self.serialization_format = "json"
         if not self.name:
@@ -52,29 +50,6 @@ class Me(JSConfigBase):
 
     def reset(self):
         self.delete()
-
-    def secret_set(self, secret=None):
-        """
-        can be the hash or the originating secret passphrase
-        """
-        if not secret:
-            secret = j.tools.console.askString("please specify secret (<32chars)")
-            assert len(secret) < 32
-        if len(secret) != 32:
-            secret = j.data.hash.md5_string(secret)
-        expiration = self.secret_expiration_hours * 3600
-        j.core.db.set("threebot.secret.encrypted", secret, ex=expiration)
-
-    @property
-    def secret(self):
-        if not self._secret:
-            self._secret = j.core.db.get("threebot.secret.encrypted")
-            if not self._secret:
-                if j.application.interactive:
-                    self.secret_set()
-                else:
-                    raise j.exceptions.Input("secret passphrase not known, need to set it for identity:%s" % self.name)
-        return self._secret
 
     def _update_data(self, model, obj, action, propertyname):
         if action == "delete":
