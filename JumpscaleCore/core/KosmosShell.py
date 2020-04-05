@@ -157,7 +157,7 @@ def get_completions(self, document, complete_event):
     try:
         obj = eval_code(parent, self.get_locals(), self.get_globals())
     except (AttributeError, NameError):
-        j.tools.logger._log_error("eval code error", data=traceback.format_exc())
+        # j.tools.logger._log_error("eval code error", data=traceback.format_exc())
         return
     if obj:
         if isinstance(obj, j.baseclasses.object):

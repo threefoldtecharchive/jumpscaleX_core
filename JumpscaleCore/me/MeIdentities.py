@@ -8,9 +8,14 @@ class MeIdentities(j.baseclasses.object_config_collection):
     _classname = "myidentities"
 
     @property
-    def default(self):
+    def me(self):
         """
         your default threebot identity
+
+        to configure:
+
+        kosmos 'j.me.configure()'
+
         :return:
         """
         return self.get(name="default")
@@ -51,20 +56,29 @@ class MeIdentities(j.baseclasses.object_config_collection):
         res = id1.encryptor.decryptSymmetric(encrypted)
         assert res == b"a"
 
-        id1.configure_privatekey(generate=True)
-        id2.configure_privatekey(generate=True)
+        id1.configure_encryption(generate=True)
+        id2.configure_encryption(generate=True)
 
-        r1 = id1.encryptor.encryptAsymmetric(id2.encryptor.public_key, b"a")
-        r2 = id1.encryptor.encryptAsymmetric(id2.encryptor.public_key_hex, b"b")
+        r1 = id1.encryptor.encryptAsymmetric(b"a", public_key=id2.encryptor.public_key)
+        r2 = id1.encryptor.encryptAsymmetric(b"b", public_key=id2.encryptor.public_key_hex)
+        r3 = id1.encryptor.decryptAsymmetric(r1, public_key=id2.encryptor.public_key)
+        r4 = id1.encryptor.decryptAsymmetric(r2, public_key=id2.encryptor.public_key_hex)
+        assert r3 == b"a"
+        assert r4 == b"b"
 
-        r3 = id1.encryptor.decryptAsymmetric(id2.encryptor.public_key, r1)
-        r4 = id1.encryptor.decryptAsymmetric(id2.encryptor.public_key_hex, r2)
-
+        r1 = id1.encryptor.encryptAsymmetric(b"a", verify_key=id2.encryptor.verify_key)
+        r2 = id1.encryptor.encryptAsymmetric(b"b", verify_key=id2.verify_key)  # is in hex
+        r3 = id1.encryptor.decryptAsymmetric(r1, verify_key=id2.encryptor.verify_key)
+        r4 = id1.encryptor.decryptAsymmetric(r2, verify_key=id2.verify_key)
         assert r3 == b"a"
         assert r4 == b"b"
 
         signature = id1.encryptor.sign_hex(b"a")
-        id2.encryptor.verify(b"a", signature, verify_key=id2.encryptor.public_key)
-        # id2.encryptor.verify(b"a", signature, verify_key=id2.encryptor.public_key_hex)
+        id2.encryptor.verify(b"a", signature, verify_key=id2.encryptor.verify_key)
+        id2.encryptor.verify(b"a", signature, verify_key=id2.encryptor.verify_key_hex)
+        id2.encryptor.verify(b"a", signature, verify_key=id2.verify_key)
 
-        j.shell()
+        assert len(signature) == 128
+
+        id1.delete()
+        id2.delete()

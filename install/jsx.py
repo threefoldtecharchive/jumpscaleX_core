@@ -53,33 +53,6 @@ class jsx:
                 email_res = d
         return name_res, email_res
 
-    def userdata_ask(self, name=None, email=None):
-        name = _name_clean(name)
-        email = self._email_clean(email)
-        while True:
-            res = self._userdata_ask(name=None, email=None)
-            if res:
-                return res
-
-    def _userdata_ask(self, name=None, email=None):
-        name = name.lower().strip()
-        if not name:
-            name = IT.Tools.ask_string("give your 3bot name, as used with your 3bot connect.")
-        name_res, email_res = self.phonebook_check(name, None)
-        if name_res:
-            IT.Tools.shell()
-            # IT.Tools.ask_yes_no(
-            #     "your 3botname:'%s' does not exist in the tfgrid explorer, ok to register your name?"
-            # )
-            #
-            #     break
-            # if "." not in tname:
-            #     assert "3bot" not in tname
-            #     tname += ".3bot"
-            #
-            # print("Could not find the user. Specify an existing name in 3bot phonebook.")
-            ok = True
-
     def load_install_tools(self, branch=None, reset=False):
         # get current install.py directory
 
@@ -151,48 +124,13 @@ def jumpscale_get(die=True):
 
 
 # have to do like this, did not manage to call the click enabled function (don't know why)
-def _configure(
-    codedir=None,
-    debug=False,
-    sshkey=None,
-    no_sshagent=False,
-    no_interactive=False,
-    privatekey_words=None,
-    secret=None,
-    set_secret=True,
+def identity_set(
+    tname, sshkey=None, words=None, secret=None,
 ):
-    interactive = not no_interactive
-    sshagent_use = not no_sshagent
 
     IT.MyEnv.configure(
-        readonly=None,
-        codedir=codedir,
-        sshkey=sshkey,
-        sshagent_use=sshagent_use,
-        debug_configure=debug,
-        interactive=interactive,
-        secret=secret,
-        set_secret=set_secret,
+        sshkey=sshkey, sshagent_use=sshagent_use, secret=secret, set_secret=set_secret,
     )
-    j = jumpscale_get(die=False)
-
-    if not j and privatekey_words:
-        raise RuntimeError(
-            "cannot load jumpscale, \
-            can only configure private key when jumpscale is installed locally use jsx install..."
-        )
-
-    if j and privatekey_words:
-        j.data.nacl.configure(privkey_words=privatekey_words)
-
-
-"""
-if not IT.MyEnv.state:
-    # this is needed to make sure we can install when nothing has been done yet
-    _configure()
-
-# IT.BaseInstaller.base()
-"""
 
 
 @click.group()
@@ -200,171 +138,139 @@ def cli():
     pass
 
 
-# CONFIGURATION (INIT) OF JUMPSCALE ENVIRONMENT
-@click.command()
-@click.option("--codedir", default=None, help="path where the github code will be checked out, default sandbox/code")
-@click.option("--no-sshagent", is_flag=True, help="do you want to use an ssh-agent")
-@click.option("--sshkey", default=None, help="if more than 1 ssh-key in ssh-agent, specify here")
-@click.option("--debug", is_flag=True, help="do you want to put kosmos in debug mode?")
-@click.option("-s", "--no-interactive", is_flag=True, help="default is interactive")
-@click.option(
-    "--privatekey",
-    default=False,
-    help="24 words, use '' around the private key if secret specified and private_key not then will ask in -y mode will autogenerate",
-)
-@click.option(
-    "--secret", default=None, help="secret for the private key (to keep secret, also used for admin secret on rbot)"
-)
-def configure(
-    codedir=None, debug=False, sshkey=None, no_sshagent=False, no_interactive=False, privatekey=None, secret=None
-):
-    """
-    initialize 3bot (JSX) environment
-    """
-
-    return _configure(
-        codedir=codedir,
-        debug=debug,
-        sshkey=sshkey,
-        no_sshagent=no_sshagent,
-        no_interactive=no_interactive,
-        privatekey_words=privatekey,
-        secret=secret,
-    )
-
-
-# INSTALL OF JUMPSCALE IN CONTAINER ENVIRONMENT
-@click.command(name="container-install")
-@click.option("-n", "--name", default="3bot", help="name of container")
-@click.option(
-    "--scratch", is_flag=True, help="from scratch, means will start from empty ubuntu and re-install everything"
-)
-@click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
-@click.option("--threebot", is_flag=True, help="also install the threebot")
-@click.option(
-    "-i",
-    "--image",
-    default=None,
-    help="select the container image to use to create the container, leave empty unless you know what you do (-:",
-)
-@click.option(
-    "-b", "--branch", default=None, help="jumpscale branch. default 'master' or 'development' for unstable release"
-)
-@click.option(
-    "--pull",
-    is_flag=True,
-    help="pull code from git, if not specified will only pull if code directory does not exist yet",
-)
-@click.option(
-    "-r",
-    "--reinstall",
-    is_flag=True,
-    help="reinstall, basically means will try to re-do everything without removing the data",
-)
-# @click.option("--develop", is_flag=True, help="will use the development docker image to start from.")
-@click.option("--ports", help="Expose extra ports repeat for multiple eg. 80:80", multiple=True)
-@click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
-@click.option("-nm", "--nomount", is_flag=True, help="will not mount the underlying code directory if set")
-@click.option(
-    "--identity",
-    default=None,
-    help="Identity to be used for the container should be stored under var/containers/shared/keys/{identity}",
-)
-def container_install(
-    name="3bot",
-    scratch=False,
-    delete=True,
-    threebot=False,
-    image=None,
-    branch=None,
-    reinstall=False,
-    no_interactive=False,
-    pull=False,
-    develop=False,
-    nomount=False,
-    ports=None,
-    identity=None,
-):
-    """
-    create the 3bot container and install jumpcale inside
-    if interactive is True then will ask questions, otherwise will go for the defaults or configured arguments
-
-    if you want to configure other arguments use 'jsx configure ... '
-
-    """
-    new_identity = None
-    identities_path = os.path.join(IT.MyEnv.config["DIR_VAR"], "containers/shared/keys")
-    if identity:
-        identity = _name_clean(identity)
-        identity_path = os.path.join(identities_path, identity)
-        if not os.path.exists(identity_path):
-            if no_interactive:
-                raise RuntimeError("Couldn't find specified identity: {}".format(identity_path))
-            if not IT.Tools.ask_yes_no("Create new identity with name {}".format(identity)):
-                return
-            new_identity = identity
-            identity = None
-        else:
-            identity_contents = os.listdir(identity_path)
-            if "key.priv" not in identity_contents or "conf.toml" not in identity_contents:
-                raise RuntimeError(
-                    "Need to have both `secret` file containing private key secret and `key.priv` for the private key"
-                )
-    elif os.path.exists(identities_path):
-        found_identities = os.listdir(identities_path)
-        if len(found_identities) > 1:
-            if no_interactive:
-                raise RuntimeError(
-                    "Found multiple shared identities please start installation interactively or specify an identity"
-                )
-            identity = IT.Tools.ask_choices("Choose an identity to start container with", found_identities)
-        else:
-            identity = found_identities[0]
-
-    mount = not nomount
-
-    _configure(no_interactive=no_interactive, set_secret=not identity)
-
-    if scratch:
-        image = "threefoldtech/base2"
-        if scratch:
-            delete = True
-        reinstall = True
-    if not image:
-        if not develop:
-            image = "threefoldtech/3bot2"
-        else:
-            image = "threefoldtech/3bot2dev"
-
-    portmap = None
-    if ports:
-        portmap = dict()
-        for port in ports:
-            src, dst = port.split(":", 1)
-            portmap[src] = dst
-
-    docker = e.DF.container_get(name=name, delete=delete, image=image, ports=portmap)
-
-    docker.start(mount=mount, ssh=True)
-
-    installer = IT.JumpscaleInstaller()
-    installer.repos_get(pull=False, branch=branch)
-
-    if not docker.executor.exists("/sandbox/cfg/keys/default/key.priv"):
-        reinstall = True
-
-    docker.install_jumpscale(branch=branch, force=reinstall, pull=pull, threebot=threebot, identity=identity)
-
-    identity = identity or new_identity
-    if identity:
-        threebot_name = '"{}"'.format(identity)
-        docker.execute(
-            "source /sandbox/env.sh && kosmos 'j.tools.threebot.init_my_threebot(interactive={}, name={})'".format(
-                not no_interactive, threebot_name
-            )
-        )
-
-    _container_shell(name)
+#
+# # INSTALL OF JUMPSCALE IN CONTAINER ENVIRONMENT
+# @click.command(name="container-install")
+# @click.option("-n", "--name", default="3bot", help="name of container")
+# @click.option(
+#     "--scratch", is_flag=True, help="from scratch, means will start from empty ubuntu and re-install everything"
+# )
+# @click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
+# @click.option("--threebot", is_flag=True, help="also install the threebot")
+# @click.option(
+#     "-i",
+#     "--image",
+#     default=None,
+#     help="select the container image to use to create the container, leave empty unless you know what you do (-:",
+# )
+# @click.option(
+#     "-b", "--branch", default=None, help="jumpscale branch. default 'master' or 'development' for unstable release"
+# )
+# @click.option(
+#     "--pull",
+#     is_flag=True,
+#     help="pull code from git, if not specified will only pull if code directory does not exist yet",
+# )
+# @click.option(
+#     "-r",
+#     "--reinstall",
+#     is_flag=True,
+#     help="reinstall, basically means will try to re-do everything without removing the data",
+# )
+# # @click.option("--develop", is_flag=True, help="will use the development docker image to start from.")
+# @click.option("--ports", help="Expose extra ports repeat for multiple eg. 80:80", multiple=True)
+# @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
+# @click.option("-nm", "--nomount", is_flag=True, help="will not mount the underlying code directory if set")
+# @click.option(
+#     "--identity",
+#     default=None,
+#     help="Identity to be used for the container should be stored under var/containers/shared/keys/{identity}",
+# )
+# def container_install(
+#     name="3bot",
+#     scratch=False,
+#     delete=True,
+#     threebot=False,
+#     image=None,
+#     branch=None,
+#     reinstall=False,
+#     no_interactive=False,
+#     pull=False,
+#     develop=False,
+#     nomount=False,
+#     ports=None,
+#     identity=None,
+# ):
+#     """
+#     create the 3bot container and install jumpcale inside
+#     if interactive is True then will ask questions, otherwise will go for the defaults or configured arguments
+#
+#     if you want to configure other arguments use 'jsx configure ... '
+#
+#     """
+#     new_identity = None
+#     identities_path = os.path.join(IT.MyEnv.config["DIR_VAR"], "containers/shared/keys")
+#     if identity:
+#         identity = _name_clean(identity)
+#         identity_path = os.path.join(identities_path, identity)
+#         if not os.path.exists(identity_path):
+#             if no_interactive:
+#                 raise RuntimeError("Couldn't find specified identity: {}".format(identity_path))
+#             if not IT.Tools.ask_yes_no("Create new identity with name {}".format(identity)):
+#                 return
+#             new_identity = identity
+#             identity = None
+#         else:
+#             identity_contents = os.listdir(identity_path)
+#             if "key.priv" not in identity_contents or "conf.toml" not in identity_contents:
+#                 raise RuntimeError(
+#                     "Need to have both `secret` file containing private key secret and `key.priv` for the private key"
+#                 )
+#     elif os.path.exists(identities_path):
+#         found_identities = os.listdir(identities_path)
+#         if len(found_identities) > 1:
+#             if no_interactive:
+#                 raise RuntimeError(
+#                     "Found multiple shared identities please start installation interactively or specify an identity"
+#                 )
+#             identity = IT.Tools.ask_choices("Choose an identity to start container with", found_identities)
+#         else:
+#             identity = found_identities[0]
+#
+#     mount = not nomount
+#
+#     _configure(no_interactive=no_interactive, set_secret=not identity)
+#
+#     if scratch:
+#         image = "threefoldtech/base2"
+#         if scratch:
+#             delete = True
+#         reinstall = True
+#     if not image:
+#         if not develop:
+#             image = "threefoldtech/3bot2"
+#         else:
+#             image = "threefoldtech/3bot2dev"
+#
+#     portmap = None
+#     if ports:
+#         portmap = dict()
+#         for port in ports:
+#             src, dst = port.split(":", 1)
+#             portmap[src] = dst
+#
+#     docker = e.DF.container_get(name=name, delete=delete, image=image, ports=portmap)
+#
+#     docker.start(mount=mount, ssh=True)
+#
+#     installer = IT.JumpscaleInstaller()
+#     installer.repos_get(pull=False, branch=branch)
+#
+#     if not docker.executor.exists("/sandbox/cfg/keys/default/key.priv"):
+#         reinstall = True
+#
+#     docker.install_jumpscale(branch=branch, force=reinstall, pull=pull, threebot=threebot, identity=identity)
+#
+#     identity = identity or new_identity
+#     if identity:
+#         threebot_name = '"{}"'.format(identity)
+#         docker.execute(
+#             "source /sandbox/env.sh && kosmos 'j.tools.threebot.init_my_threebot(interactive={}, name={})'".format(
+#                 not no_interactive, threebot_name
+#             )
+#         )
+#
+#     _container_shell(name)
 
 
 def container_get(name="3bot", delete=False, jumpscale=True, install=False, mount=True):
@@ -598,104 +504,106 @@ def basebuilder_(dest=None, push=False, delete=True):
     print("- *OK* base has been built, as image & exported")
 
 
-@click.command()
-@click.option("-n", "--name", default=None, help="name of the wiki, you're given name")
-@click.option("-u", "--url", default=None, help="url of the github wiki")
-@click.option("-r", "--reset", is_flag=True, help="reset git revision and process all files")
-@click.option("-f", "--foreground", is_flag=True, help="if you don't want to use the job manager (background jobs)")
-def wiki_load(name=None, url=None, reset=False, foreground=False):
-    # monkey patch for myjobs to start/work properly
-    import gevent
-    from gevent import monkey
-    from Jumpscale.tools.threegit.ThreeGit import load_wiki
-
-    import redis
-
-    from Jumpscale import j
-
-    try:
-        threebot_client = j.clients.gedis.get("jsx_threebot", package_name="zerobot.webinterface", port=8901)
-        threebot_client.ping()
-        threebot_client.reload()
-    except (j.exceptions.Base, redis.ConnectionError):
-        print(
-            "Threebot server must be running, please start a local threebot first using `kosmos -p 'j.servers.threebot.start()'`"
-        )
-        return
-
-    wikis = []
-
-    if not name or not url:
-        wikis.append(
-            (
-                "testwikis",
-                "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/zerobot/wiki_examples/wiki",
-            )
-        )
-        wikis.append(("threefold", "https://github.com/threefoldfoundation/info_threefold/tree/development/docs"))
-
-    else:
-        wikis.append((name, url))
-
-    if not foreground:
-        greenlets = [
-            gevent.spawn(threebot_client.actors.wiki_content.load, wiki_name, wiki_url, reset)
-            for wiki_name, wiki_url in wikis
-        ]
-        gevent.wait(greenlets)
-    else:
-        for wiki_name, wiki_url in wikis:
-            load_wiki(wiki_name, wiki_url, reset=reset)
-    print("You'll find the wiki(s) loaded at https://<container or 3bot hostname>/wiki")
-
-
-@click.command(name="threebot-flist")
-@click.option("-i", "--app_id", default=None, help="application id of it's your online")
-@click.option("-s", "--secret", default=None, help="secret of it's your it's your online account")
-def threebot_flist(app_id=None, secret=None):
-    """
-    create flist of 3bot docker image
-    ex: jsx threebot-flist -i APP_ID -s SECRET -u USER_NAME
-    """
-    if not app_id and not secret:
-        raise RuntimeError("should add it's your online creds")
-
-    url = urllib.parse.urljoin("https://itsyou.online/api", "/v1/oauth/access_token")
-    params = {
-        "grant_type": "client_credentials",
-        "client_id": app_id,
-        "client_secret": secret,
-        "response_type": "id_token",
-        "scope": "",
-        "validity": None,
-    }
-
-    resp = requests.post(url, params=params)
-    resp.raise_for_status()
-    jwt = resp.content.decode("utf8")
-
-    params = {"image": "threefoldtech/3bot2:corex"}
-    url = "https://hub.grid.tf/api/flist/me/docker"
-    headers = {"Authorization": "Bearer %s" % jwt}
-    requests.post(url, headers=headers, data=params)
-    print("uploaded 3bot flist")
-
-
-@click.command(name="wiki-reload")
-@click.option("-n", "--name", default=None, help="name of the wiki, you're given name", required=True)
-@click.option("-r", "--reset", is_flag=True, help="reset git revision and process all files")
-def wiki_reload(name, reset=False):
-    """
-    reload the changed files from wikis repo
-    ex: jsx wiki-reload -n foundation
-    """
-    j = jumpscale_get()
-    from Jumpscale.tools.threegit.ThreeGit import reload_wiki
-
-    try:
-        reload_wiki(name, reset=reset)
-    except j.exceptions.NotFound:
-        print("Need to load the wiki first using wiki-load command")
+#
+#
+# @click.command()
+# @click.option("-n", "--name", default=None, help="name of the wiki, you're given name")
+# @click.option("-u", "--url", default=None, help="url of the github wiki")
+# @click.option("-r", "--reset", is_flag=True, help="reset git revision and process all files")
+# @click.option("-f", "--foreground", is_flag=True, help="if you don't want to use the job manager (background jobs)")
+# def wiki_load(name=None, url=None, reset=False, foreground=False):
+#     # monkey patch for myjobs to start/work properly
+#     import gevent
+#     from gevent import monkey
+#     from Jumpscale.tools.threegit.ThreeGit import load_wiki
+#
+#     import redis
+#
+#     from Jumpscale import j
+#
+#     try:
+#         threebot_client = j.clients.gedis.get("jsx_threebot", package_name="zerobot.webinterface", port=8901)
+#         threebot_client.ping()
+#         threebot_client.reload()
+#     except (j.exceptions.Base, redis.ConnectionError):
+#         print(
+#             "Threebot server must be running, please start a local threebot first using `kosmos -p 'j.servers.threebot.start()'`"
+#         )
+#         return
+#
+#     wikis = []
+#
+#     if not name or not url:
+#         wikis.append(
+#             (
+#                 "testwikis",
+#                 "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/zerobot/wiki_examples/wiki",
+#             )
+#         )
+#         wikis.append(("threefold", "https://github.com/threefoldfoundation/info_threefold/tree/development/docs"))
+#
+#     else:
+#         wikis.append((name, url))
+#
+#     if not foreground:
+#         greenlets = [
+#             gevent.spawn(threebot_client.actors.wiki_content.load, wiki_name, wiki_url, reset)
+#             for wiki_name, wiki_url in wikis
+#         ]
+#         gevent.wait(greenlets)
+#     else:
+#         for wiki_name, wiki_url in wikis:
+#             load_wiki(wiki_name, wiki_url, reset=reset)
+#     print("You'll find the wiki(s) loaded at https://<container or 3bot hostname>/wiki")
+#
+#
+# @click.command(name="threebot-flist")
+# @click.option("-i", "--app_id", default=None, help="application id of it's your online")
+# @click.option("-s", "--secret", default=None, help="secret of it's your it's your online account")
+# def threebot_flist(app_id=None, secret=None):
+#     """
+#     create flist of 3bot docker image
+#     ex: jsx threebot-flist -i APP_ID -s SECRET -u USER_NAME
+#     """
+#     if not app_id and not secret:
+#         raise RuntimeError("should add it's your online creds")
+#
+#     url = urllib.parse.urljoin("https://itsyou.online/api", "/v1/oauth/access_token")
+#     params = {
+#         "grant_type": "client_credentials",
+#         "client_id": app_id,
+#         "client_secret": secret,
+#         "response_type": "id_token",
+#         "scope": "",
+#         "validity": None,
+#     }
+#
+#     resp = requests.post(url, params=params)
+#     resp.raise_for_status()
+#     jwt = resp.content.decode("utf8")
+#
+#     params = {"image": "threefoldtech/3bot2:corex"}
+#     url = "https://hub.grid.tf/api/flist/me/docker"
+#     headers = {"Authorization": "Bearer %s" % jwt}
+#     requests.post(url, headers=headers, data=params)
+#     print("uploaded 3bot flist")
+#
+#
+# @click.command(name="wiki-reload")
+# @click.option("-n", "--name", default=None, help="name of the wiki, you're given name", required=True)
+# @click.option("-r", "--reset", is_flag=True, help="reset git revision and process all files")
+# def wiki_reload(name, reset=False):
+#     """
+#     reload the changed files from wikis repo
+#     ex: jsx wiki-reload -n foundation
+#     """
+#     j = jumpscale_get()
+#     from Jumpscale.tools.threegit.ThreeGit import reload_wiki
+#
+#     try:
+#         reload_wiki(name, reset=reset)
+#     except j.exceptions.NotFound:
+#         print("Need to load the wiki first using wiki-load command")
 
 
 @click.command(name="threebotbuilder")
@@ -704,7 +612,7 @@ def wiki_reload(name, reset=False):
 @click.option("-dev", "--development", is_flag=True, help="build development version")
 @click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
 @click.option("-nc", "--noclean", is_flag=True, help="commit the build (local save), but no cleanup or push.")
-def threebotbuilder(push=False, base=False, delete=False, noclean=False, development=False):
+def builder(push=False, base=False, delete=False, noclean=False, development=False):
     """
     create the 3bot and 3botdev images
     """
@@ -1089,117 +997,118 @@ def _generate(path=None):
     j.application.generate(path)
 
 
-@click.command(name="package-new", help="scaffold a new package tree structure")
-@click.option("--name", help="new package name")
-@click.option("--dest", default="", help="new package destination (current dir if not specified)")
-def package_new(name, dest=None):
-    j = jumpscale_get(die=True)
-    if not dest:
-        dest = j.sal.fs.getcwd()
-    capitalized_name = name.capitalize()
-    dirs = ["wiki", "models", "actors", "chatflows"]
-    package_toml_path = j.sal.fs.joinPaths(dest, f"{name}/package.toml")
-    package_py_path = j.sal.fs.joinPaths(dest, f"{name}/package.py")
-
-    for d in dirs:
-        j.sal.fs.createDir(j.sal.fs.joinPaths(dest, name, d))
-
-    package_toml_content = f"""
-[source]
-name = "{name}"
-description = "mypackage"
-threebot = "mybot"
-version = "1.0.0"
-
-
-[[bcdbs]]
-name = "mybot_{name}"
-namespace = "mybot_{name}"
-type = "zdb"
-instance = "default"
-    """
-
-    with open(package_toml_path, "w") as f:
-        f.write(package_toml_content)
-
-    package_py_content = f"""
-from Jumpscale import j
-
-
-class Package(j.baseclasses.threebot_package):
-    pass
-
-    """
-
-    with open(package_py_path, "w") as f:
-        f.write(package_py_content)
-
-    actor_py_path = j.sal.fs.joinPaths(dest, name, "actors", f"{name}.py")
-    actor_py_content = f"""
-from Jumpscale import j
-
-
-class {name}(j.baseclasses.threebot_actor):
-    pass
-    """
-    with open(actor_py_path, "w") as f:
-        f.write(actor_py_content)
-
-    chat_py_path = j.sal.fs.joinPaths(dest, name, "chatflows", f"{name}.py")
-    chat_py_content = f"""
-from Jumpscale import j
-import gevent
-
-
-def chat(bot):
-
-    # form = bot.new_form()
-    # food = form.string_ask("What do you need to eat?")
-    # amount = form.int_ask("Enter the amount you need to eat from %s in grams:" % food)
-    # sides = form.multi_choice("Choose your side dishes: ", ["rice", "fries", "saute", "mashed potato"])
-    # drink = form.single_choice("Choose your Drink: ", ["tea", "coffee", "lemon"])
-    # form.ask()
-
-    # bot.md_show(res)
-    # bot.redirect("https://threefold.me")
-    pass
-
-    """
-    with open(chat_py_path, "w") as f:
-        f.write(chat_py_content)
+#
+# @click.command(name="package-new", help="scaffold a new package tree structure")
+# @click.option("--name", help="new package name")
+# @click.option("--dest", default="", help="new package destination (current dir if not specified)")
+# def package_new(name, dest=None):
+#     j = jumpscale_get(die=True)
+#     if not dest:
+#         dest = j.sal.fs.getcwd()
+#     capitalized_name = name.capitalize()
+#     dirs = ["wiki", "models", "actors", "chatflows"]
+#     package_toml_path = j.sal.fs.joinPaths(dest, f"{name}/package.toml")
+#     package_py_path = j.sal.fs.joinPaths(dest, f"{name}/package.py")
+#
+#     for d in dirs:
+#         j.sal.fs.createDir(j.sal.fs.joinPaths(dest, name, d))
+#
+#     package_toml_content = f"""
+# [source]
+# name = "{name}"
+# description = "mypackage"
+# threebot = "mybot"
+# version = "1.0.0"
+#
+#
+# [[bcdbs]]
+# name = "mybot_{name}"
+# namespace = "mybot_{name}"
+# type = "zdb"
+# instance = "default"
+#     """
+#
+#     with open(package_toml_path, "w") as f:
+#         f.write(package_toml_content)
+#
+#     package_py_content = f"""
+# from Jumpscale import j
+#
+#
+# class Package(j.baseclasses.threebot_package):
+#     pass
+#
+#     """
+#
+#     with open(package_py_path, "w") as f:
+#         f.write(package_py_content)
+#
+#     actor_py_path = j.sal.fs.joinPaths(dest, name, "actors", f"{name}.py")
+#     actor_py_content = f"""
+# from Jumpscale import j
+#
+#
+# class {name}(j.baseclasses.threebot_actor):
+#     pass
+#     """
+#     with open(actor_py_path, "w") as f:
+#         f.write(actor_py_content)
+#
+#     chat_py_path = j.sal.fs.joinPaths(dest, name, "chatflows", f"{name}.py")
+#     chat_py_content = f"""
+# from Jumpscale import j
+# import gevent
+#
+#
+# def chat(bot):
+#
+#     # form = bot.new_form()
+#     # food = form.string_ask("What do you need to eat?")
+#     # amount = form.int_ask("Enter the amount you need to eat from %s in grams:" % food)
+#     # sides = form.multi_choice("Choose your side dishes: ", ["rice", "fries", "saute", "mashed potato"])
+#     # drink = form.single_choice("Choose your Drink: ", ["tea", "coffee", "lemon"])
+#     # form.ask()
+#
+#     # bot.md_show(res)
+#     # bot.redirect("https://threefold.me")
+#     pass
+#
+#     """
+#     with open(chat_py_path, "w") as f:
+#         f.write(chat_py_content)
 
 
 if __name__ == "__main__":
 
-    cli.add_command(configure)
+    cli.add_command(ssh)
     cli.add_command(check)
     cli.add_command(install)
     cli.add_command(kosmos)
     cli.add_command(generate)
-    cli.add_command(wireguard)
-    cli.add_command(modules_install, "modules-install")
-    cli.add_command(wiki_load, "wiki-load")
-    cli.add_command(wiki_reload)
-    cli.add_command(package_new, "package-new")
+    # cli.add_command(wireguard)
+    # cli.add_command(modules_install, "modules-install")
+    # cli.add_command(wiki_load, "wiki-load")
+    # cli.add_command(wiki_reload)
+    # cli.add_command(package_new, "package-new")
     cli.add_command(jumpscale_code_get, "jumpscale-code-get")
-    cli.add_command(connect)
+    # cli.add_command(connect)
 
     # DO NOT DO THIS IN ANY OTHER WAY !!!
     if not e._DF.indocker():
         cli.add_command(container_kosmos, "container-kosmos")
-        cli.add_command(container_install, "container-install")
+        # cli.add_command(container_install, "container-install")
         cli.add_command(container_stop, "container-stop")
         cli.add_command(container_start, "container-start")
-        cli.add_command(container_delete, "container-delete")
+        # cli.add_command(container_delete, "container-delete")
         cli.add_command(containers_reset, "containers-reset")
         cli.add_command(container_export, "container-export")
         cli.add_command(container_import, "container-import")
-        cli.add_command(container_shell, "container-shell")
+        # cli.add_command(container_shell, "container-shell")
         cli.add_command(container_save, "container-save")
-        cli.add_command(basebuilder, "basebuilder")
-        cli.add_command(threebotbuilder, "threebotbuilder")
-        cli.add_command(threebot_flist, "threebot-flist")
+        # cli.add_command(basebuilder, "basebuilder")
+        cli.add_command(builder)
+        # cli.add_command(threebot_flist, "threebot-flist")
         cli.add_command(containers)
-        cli.add_command(sdk)
+        cli.add_command(container)
 
     cli()

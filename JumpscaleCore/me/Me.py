@@ -13,10 +13,10 @@ class Me(JSConfigBase):
     @url = jumpscale.threebot.me
     name** = ""
     tid =  0 (I)                    #my threebot id
-    tname = "me" (S)                #my threebot name
+    tname = "" (S)                #my threebot name
     email = "" (S)
-    privkey = ""
-    pubkey = ""                     
+    signing_key = ""
+    verify_key = ""                     
     admins = (LS)                   #3bot names which are admin of this 3bot (corresponds to 3bot connect name)
     sshkey_name = ""
     sshkey_pub = ""
@@ -35,6 +35,23 @@ class Me(JSConfigBase):
                 "threebot.me not filled in, please do j.tools.threebot.init_my_threebot(interactive=True)"
             )
         self._model.trigger_add(self._update_data)
+
+        if not self.signing_key and len(self.tname) > 4:
+            self.load()
+
+    def load(self, tname=None):
+        """
+        kosmos 'j.me.configure(tname="my3bot")'
+        """
+        if tname:
+            self.tname = tname
+        path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/%s.toml" % self.tname)
+        if j.sal.fs.exists(path):
+            text_toml = j.sal.fs.readFile(path)
+            self._data._data_update(j.data.serializers.toml.loads(text_toml))
+
+    def reset(self):
+        self.delete()
 
     def secret_set(self, secret=None):
         """
@@ -60,6 +77,8 @@ class Me(JSConfigBase):
         return self._secret
 
     def _update_data(self, model, obj, action, propertyname):
+        if action == "delete":
+            return
         if propertyname == "admins" or action == "set_pre":
             # make sure we have 3bot at end if not specified
             if len(self.tname) < 5:
@@ -84,8 +103,16 @@ class Me(JSConfigBase):
                 r.append(admin)
             if change:
                 self.admins = r
+
+            # you are always yourself an admin, lets add
+            if self.tname not in self.admins:
+                self.admins.append(self.tname)
+
         if action == "set_post":
-            j.shell()
+            # now write to local identity drive
+            print(" - save identity:%s" % self.tname)
+            j.sal.fs.createDir("{DIR_BASE}/myhost/identities")
+            j.sal.fs.writeFile("{DIR_BASE}/myhost/identities/%s.toml" % self.tname, self._data._toml)
 
     @property
     def encryptor(self):
@@ -93,7 +120,7 @@ class Me(JSConfigBase):
             self._encryptor = MeEncryptor(me=self)
         return self._encryptor
 
-    def configure_privatekey(self, words=None, reset=False, generate=False):
+    def configure_encryption(self, words=None, reset=False, generate=False):
         """
         @param generate: generate now one,
         """
@@ -103,22 +130,22 @@ class Me(JSConfigBase):
         key = None
 
         if reset:
-            self.privkey = ""
-            self.pubkey = ""
+            self.signing_key = ""
+            self.verify_key = ""
 
         if words:
             j.shell()
 
-        if not self.privkey or not self.pubkey:
+        if not self.signing_key or not self.verify_key:
             generate = True
 
         if generate:
             if j.application.interactive:
-                self.privkey = self.encryptor.words_ask()
+                self.signing_key = self.encryptor.words_ask()
             else:
-                self.privkey = self.encryptor._priv_key_generate()
+                self.signing_key = self.encryptor._signing_key_generate()
 
-        self.pubkey = self.encryptor.public_key_hex
+        self.verify_key = self.encryptor.verify_key_hex
 
     def configure_sshkey(self, name=None, reset=False, generate=False):
         if generate:
@@ -177,7 +204,21 @@ class Me(JSConfigBase):
         self.sshkey_priv = key.privkey
         self.sshkey_pub = key.pubkey
 
-    def configure(self):
+    def configure(self, tname=None, ask=True, reset=False):
+
+        """
+        kosmos 'j.me.configure()'
+        kosmos 'j.me.configure(tname="my3bot",ask=False)'
+        kosmos 'j.me.configure(tname="my3bot",reset=True)'
+
+        """
+
+        if tname:
+            self.tname = tname
+
+        if reset:
+            self.reset()
+
         intro = True
 
         def dointro(intro):
@@ -186,20 +227,45 @@ class Me(JSConfigBase):
                 print("THREEBOT IDENTITY NOT PROVIDED YET, WILL ASK SOME QUESTIONS NOW\n\n")
             return False
 
-        while not self.tname:
+        ask1 = bool(ask)
+        while ask1 or not self.tname or len(self.tname) < 5:
             intro = dointro(intro)
-            self.tname = j.tools.console.askString("please provide your threebot connect name")
-        while not self.email:
+            self.tname = j.tools.console.askString(
+                "please provide your threebot connect name (min 5 chars)", default=self.tname
+            )
+            ask1 = False
+
+        if not self.signing_key and len(self.tname) > 4:
+            self.load()
+
+        ask1 = bool(ask)
+        while ask1 or not self.email or len(self.email) < 6 or "@" not in self.email:
             intro = dointro(intro)
-            self.email = j.tools.console.askString("please provide your email")
+            self.email = j.tools.console.askString("please provide your email", default=self.email)
             if "@" not in self.email:
                 print("please specify valid email")
                 self.email = ""
                 print()
+            ask1 = False
+
         while not self.sshkey_priv or not self.sshkey_pub or not self.sshkey_name:
             intro = dointro(intro)
-            j.debug()
             self.configure_sshkey()
+        while not self.verify_key or not self.signing_key:
+            self.configure_encryption(generate=True)
+
+        if ask and j.tools.console.askYesNo("want to add admin's?"):
+            admins = ""
+            if len(self.admins) > 0:
+                admins = ",".join(self.admins)
+            admins = j.tools.console.askString("please provide admins (comma separated)", default=admins)
+            r = []
+            for admin in admins.split(","):
+                if admin.strip() == "":
+                    continue
+                if not admin in r:
+                    r.append(admin)
+            self.admins = admins
 
         self.save()
 

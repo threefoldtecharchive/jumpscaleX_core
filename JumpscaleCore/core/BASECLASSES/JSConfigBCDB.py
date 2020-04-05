@@ -131,7 +131,7 @@ class JSConfigBCDB(JSConfigBCDBBase):
     def _delete(self):
         if not self._model:
             return
-        self._model.delete(self._data)
+        self._data.delete()
         if self._parent:
             if self._data.name in self._parent._children:
                 if not isinstance(self._parent, j.baseclasses.factory):

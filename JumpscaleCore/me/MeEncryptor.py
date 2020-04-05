@@ -28,21 +28,35 @@ class MeEncryptor(j.baseclasses.object):
         self.reset()
 
     def reset(self):
-        self._signingkey = None
+        self._signing_key = None
 
     @property
     def signing_key(self):
-        if not self._signingkey:
-            self._priv_key_load()
-        return self._signingkey
+        if not self._signing_key:
+            self._signing_key_load()
+        return self._signing_key
+
+    @property
+    def signing_key_hex(self):
+        key2 = self.encryptSymmetric(self._signing_key.encode())
+        return self._bin_to_hex(key2).decode()
 
     @property
     def verify_key(self):
         return self.signing_key.verify_key
 
     @property
+    def verify_key_hex(self):
+        return self._bin_to_hex(self.verify_key.encode()).decode()
+
+    @property
     def private_key(self):
         return self.signing_key.to_curve25519_private_key()
+
+    # @property
+    # def private_key_hex(self):
+    #     keyb = self.encryptSymmetric(self.private_key.encode())
+    #     return self._bin_to_hex(keyb).decode()
 
     @property
     def public_key(self):
@@ -52,15 +66,9 @@ class MeEncryptor(j.baseclasses.object):
     def public_key_hex(self):
         return self._bin_to_hex(self.public_key.encode()).decode()
 
-    @property
-    def verify_key_hex(self):
-        key = self.verify_key.encode()
-        key2 = self.encryptSymmetric(key)
-        return self._bin_to_hex(key2).decode()
-
     def words_ask(self):
         """
-        :param privkey_words:
+        :param signing_key_words:
         :return:
         """
         msg = """
@@ -70,7 +78,7 @@ class MeEncryptor(j.baseclasses.object):
         if Tools.ask_yes_no("Ok to generate private key (Y or 1 for yes, otherwise provide words)?"):
             print("\nWe have generated a private key for you.")
             print("\nThe private key:\n\n")
-            self._priv_key_generate()
+            self._signing_key_generate()
             print("{RED}")
             print("{BLUE}" + self.words + "{RESET}\n")
             print("\n{RED}ITS IMPORTANT TO STORE THIS KEY IN A SAFE PLACE{RESET}")
@@ -99,18 +107,18 @@ class MeEncryptor(j.baseclasses.object):
     def words(self):
         """
         """
-        if self._signingkey is None:
+        if self._signing_key is None:
             raise j.exceptions.NotFound("seed not found, generate a new key pair first")
         seed = self.signing_key._seed
         return j.data.encryption.mnemonic.to_mnemonic(seed)
 
     def words_set(self, words):
         seed = j.data.encryption.mnemonic.to_entropy(words)
-        self._signingkey = SigningKey(seed)
-        self.me.privkey = self.verify_key_hex
-        self.me.pubkey = self.public_key_hex
+        self._signing_key = SigningKey(seed)
+        self.me.signing_key = self.verify_key_hex
+        self.me.verify_key = self.public_key_hex
 
-    def _priv_key_generate(self):
+    def _signing_key_generate(self):
         """
         Generate an ed25519 signing key
         if words if specified, words are used as seed to rengerate a known key
@@ -121,21 +129,21 @@ class MeEncryptor(j.baseclasses.object):
         key = SigningKey.generate()
         # seed = key._seed
         # encrypted_seed = self.encryptSymmetric(seed)
-        self._signingkey = key
-        self.me.privkey = self.verify_key_hex
-        self.me.pubkey = self.public_key_hex
-        self._priv_key_load()
+        self._signing_key = key
+        self.me.signing_key = self.signing_key_hex
+        self.me.verify_key = self.verify_key_hex
+        self._signing_key_load()
         return self.verify_key_hex
 
-    def _priv_key_load(self, die=True):
-        seed = self._hex_to_bin(self.me.privkey)
+    def _signing_key_load(self, die=True):
+        seed = self._hex_to_bin(self.me.signing_key)
         try:
             seed2 = self.decryptSymmetric(seed)
         except nacl.exceptions.CryptoError:
             if die:
                 self._error_raise("could not decrypt the private key.")
             return
-        self._signingkey = SigningKey(seed2)
+        self._signing_key = SigningKey(seed2)
 
     def _hash(self, data):
         m = hashlib.sha256()
@@ -173,7 +181,7 @@ class MeEncryptor(j.baseclasses.object):
         res = self.box.decrypt(self.tobytes(data))
         return res
 
-    def encryptAsymmetric(self, public_key, plaintext, nonce=None, encoder=RawEncoder):
+    def encryptAsymmetric(self, plaintext, public_key=None, verify_key=None, nonce=None, encoder=RawEncoder):
         """
         Encrypts the plaintext message using the given `nonce` (or generates
         one randomly if omitted) and returns the ciphertext encoded with the
@@ -192,20 +200,11 @@ class MeEncryptor(j.baseclasses.object):
         :return: encrypted plaintext
         :rtype: nacl.utils.EncryptedMessage
         """
-        public_key = self._public_key_get(public_key)
+        public_key = self._public_key_get(public_key=public_key, verify_key=verify_key)
         box = Box(self.private_key, public_key)
         return box.encrypt(plaintext, nonce, encoder)
 
-    def _public_key_get(self, public_key):
-        if not isinstance(public_key, nacl.public.PublicKey):
-            if isinstance(public_key, str) and len(public_key) == 64:
-                keyb = self._hex_to_bin(public_key)
-                public_key = nacl.public.PublicKey(keyb)
-            else:
-                raise j.exceptions.Input("public key needs to be hex 64 char's representation or nacl pubkey obj")
-        return public_key
-
-    def decryptAsymmetric(self, public_key, ciphertext, nonce=None, encoder=RawEncoder):
+    def decryptAsymmetric(self, ciphertext, public_key=None, verify_key=None, nonce=None, encoder=RawEncoder):
         """Decrypts the ciphertext using the `nonce` (explicitly, when passed as a
         parameter or implicitly, when omitted, as part of the ciphertext) and
         returns the plaintext message.
@@ -222,7 +221,7 @@ class MeEncryptor(j.baseclasses.object):
         :return: decrypted ciphertext
         :rtype: bytes
         """
-        public_key = self._public_key_get(public_key)
+        public_key = self._public_key_get(public_key=public_key, verify_key=verify_key)
         box = Box(self.private_key, public_key)
         return box.decrypt(ciphertext, nonce, encoder)
 
@@ -287,7 +286,25 @@ class MeEncryptor(j.baseclasses.object):
             keyb = self._hex_to_bin(verify_key)
             return VerifyKey(keyb)
         else:
-            raise j.exceptions.Input("public key needs to be hex 64 char's representation or nacl pubkey obj")
+            raise j.exceptions.Input("public key needs to be hex 64 char's representation or nacl verify_key obj")
+
+    def _public_key_get(self, public_key=None, verify_key=None):
+
+        if public_key:
+            if not isinstance(public_key, nacl.public.PublicKey):
+                if isinstance(public_key, str) and len(public_key) == 64:
+                    keyb = self._hex_to_bin(public_key)
+                    public_key = nacl.public.PublicKey(keyb)
+                else:
+                    raise j.exceptions.Input(
+                        "public key needs to be hex 64 char's representation or nacl verify_key obj"
+                    )
+        else:
+            assert verify_key
+            verify_key = self._verify_key_get(verify_key)
+            return verify_key.to_curve25519_public_key()
+
+        return public_key
 
     def verify(self, data, signature, verify_key=""):
         """ data is the original data we have to verify with signature

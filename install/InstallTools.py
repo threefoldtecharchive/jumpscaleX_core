@@ -3519,11 +3519,9 @@ class MyEnv_:
             self._db = RedisTools._core_get()
         return self._db
 
-    def init(self, reset=False, configdir=None):
+    def init(self):
         if self.__init:
             return
-
-        args = Tools.cmd_args_get()
 
         if self.platform() == "linux":
             self.platform_is_linux = True
@@ -3536,22 +3534,28 @@ class MyEnv_:
         else:
             raise Tools.exceptions.Base("platform not supported, only linux or osx for now.")
 
-        if not configdir:
-            if "JSX_DIR_CFG" in os.environ:
-                configdir = os.environ["JSX_DIR_CFG"]
-            else:
-                if configdir is None and "configdir" in args:
-                    configdir = args["configdir"]
-                else:
-                    configdir = self._cfgdir_get()
+        configdir = self._cfgdir_get()
+        basedir = self._basedir_get()
+
+        if basedir == "/sandbox" and not os.path.exists(basedir):
+            script = """
+            set -ex
+            cd /
+            sudo mkdir -p /sandbox/cfg
+            sudo chown -R {USERNAME}:{GROUPNAME} /sandbox
+            mkdir -p /usr/local/EGG-INFO
+            sudo chown -R {USERNAME}:{GROUPNAME} /usr/local/EGG-INFO
+            """
+            args = {}
+            args["USERNAME"] = getpass.getuser()
+            st = os.stat(self.config["DIR_HOME"])
+            gid = st.st_gid
+            args["GROUPNAME"] = grp.getgrgid(gid)[0]
+            Tools.execute(script, interactive=True, args=args, die_if_args_left=True)
 
         # Set codedir
-        Tools.dir_ensure("{}/code".format(self._basedir_get()))
+        Tools.dir_ensure(f"{basedir}/code")
         self.config_file_path = os.path.join(configdir, "jumpscale_config.toml")
-        # if DockerFactory.indocker():
-        #     # this is important it means if we push a container we keep the state file
-        #     self.state_file_path = os.path.join(self._homedir_get(), ".jumpscale_done.toml")
-        # else:
         self.state_file_path = os.path.join(configdir, "jumpscale_done.toml")
 
         if Tools.exists(self.config_file_path):
@@ -3578,8 +3582,7 @@ class MyEnv_:
 
         self._state_load()
 
-        if self.config["SSH_AGENT"]:
-            self.sshagent = SSHAgent()
+        self.sshagent = SSHAgent()
 
         sys.excepthook = self.excepthook
         if redis and Tools.exists("{}/bin".format(self.config["DIR_BASE"])):  # To check that Js is on host
@@ -3589,10 +3592,6 @@ class MyEnv_:
             self.loghandler_redis = None
 
         self.__init = True
-
-    # def _init(self, **kwargs):
-    #     if not self.__init:
-    #         raise RuntimeError("init on MyEnv did not happen yet")
 
     def platform(self):
         """
@@ -3659,8 +3658,6 @@ class MyEnv_:
         if not "DIR_CFG" in config:
             config["DIR_CFG"] = self._cfgdir_get()
 
-        if not "USEGIT" in config:
-            config["USEGIT"] = True
         if not "READONLY" in config:
             config["READONLY"] = False
         if not "DEBUG" in config:
@@ -3669,12 +3666,6 @@ class MyEnv_:
             config["DEBUGGER"] = "pudb"
         if not "INTERACTIVE" in config:
             config["INTERACTIVE"] = True
-        if not "SECRET" in config:
-            config["SECRET"] = ""
-        if "SSH_AGENT" not in config:
-            config["SSH_AGENT"] = True
-        if "SSH_KEY_DEFAULT" not in config:
-            config["SSH_KEY_DEFAULT"] = ""
         if "LOGGER_INCLUDE" not in config:
             config["LOGGER_INCLUDE"] = ["*"]
         if "LOGGER_EXCLUDE" not in config:
@@ -3725,158 +3716,39 @@ class MyEnv_:
         return config
 
     def configure(
-        self,
-        configdir=None,
-        codedir=None,
-        config={},
-        readonly=None,
-        sshkey=None,
-        sshagent_use=None,
-        debug_configure=None,
-        secret=None,
-        interactive=False,
-        set_secret=True,
+        self, config=None, readonly=None, debug=None, interactive=None,
     ):
         """
 
         the args of the command line will also be parsed, will check for
 
-        --configdir=                    default $BASEDIR/cfg
-        --codedir=                      default $BASEDIR/code
-
-        --sshkey=                       key to use for ssh-agent if any
-        --no-sshagent                   default is to use the sshagent, if you want to disable use this flag
-
         --readonly                      default is false
-        --no-interactive                default is interactive, means will ask questions
-        --debug_configure               default debug_configure is False, will configure in debug mode
+        --interactive                   default is interactive, means will ask questions
+        --debug                         default debug is False
 
-        :param configdir: is the directory where all configuration & keys will be stored
-        :param basedir: the root of the sandbox
-        :param config: configuration arguments which go in the config file
-        :param readonly: specific mode of operation where minimal changes will be done while using JSX
-        :param codedir: std $sandboxdir/code
         :return:
         """
 
         basedir = self._basedir_get()
 
-        if not os.path.exists(self.config_file_path):
-            self.config = self.config_default_get(config=config)
-        else:
-            self._config_load()
+        assert os.path.exists(self.config_file_path)  # needs to be there because init was already done
 
-        if interactive not in [True, False]:
-            raise Tools.exceptions.Base("interactive is True or False")
-        args = Tools.cmd_args_get()
+        if config:
+            self.config.update(config)
 
-        if configdir is None and "configdir" in args:
-            configdir = args["configdir"]
-        if codedir is None and "codedir" in args:
-            codedir = args["codedir"]
-        # if sshkey is None and "sshkey" in args:
-        #     sshkey = args["sshkey"]
+        if readonly:
+            self.config["READONLY"] = readonly
 
-        if readonly is None and "readonly" in args:
-            readonly = True
+        if debug:
+            self.config["DEBUG"] = debug
 
-        if sshagent_use is None or ("no-sshagent" in args and sshagent_use is False):
-            sshagent_use = False
-        else:
-            sshagent_use = True
-
-        if debug_configure is None and "debug_configure" in args:
-            debug_configure = True
-
-        if not configdir:
-            if "DIR_CFG" in config:
-                configdir = config["DIR_CFG"]
-            elif "JSX_DIR_CFG" in os.environ:
-                configdir = os.environ["JSX_DIR_CFG"]
-            else:
-                configdir = self._cfgdir_get()
-        config["DIR_CFG"] = configdir
+        if interactive:
+            self.config["INTERACTIVE"] = interactive
 
         # installpath = os.path.dirname(inspect.getfile(os.path))
         # # MEI means we are pyexe BaseInstaller
         # if installpath.find("/_MEI") != -1 or installpath.endswith("dist/install"):
         #     pass  # dont need yet but keep here
-
-        config["DIR_BASE"] = basedir
-
-        if basedir == "/sandbox" and not os.path.exists(basedir):
-            script = """
-            set -ex
-            cd /
-            sudo mkdir -p /sandbox/cfg
-            sudo chown -R {USERNAME}:{GROUPNAME} /sandbox
-            mkdir -p /usr/local/EGG-INFO
-            sudo chown -R {USERNAME}:{GROUPNAME} /usr/local/EGG-INFO
-            """
-            args = {}
-            args["USERNAME"] = getpass.getuser()
-            st = os.stat(self.config["DIR_HOME"])
-            gid = st.st_gid
-            args["GROUPNAME"] = grp.getgrgid(gid)[0]
-            Tools.execute(script, interactive=True, args=args, die_if_args_left=True)
-
-        self.config_file_path = os.path.join(config["DIR_CFG"], "jumpscale_config.toml")
-
-        if codedir is not None:
-            config["DIR_CODE"] = codedir
-
-        if not os.path.exists(self.config_file_path):
-            self.config = self.config_default_get(config=config)
-        else:
-            self._config_load()
-
-        # merge interactive flags
-        if "INTERACTIVE" in self.config:
-            self.interactive = interactive and self.config["INTERACTIVE"]
-            # enforce interactive flag consistency after having read the config file,
-            # arguments overrides config file behaviour
-        self.config["INTERACTIVE"] = self.interactive
-
-        if not "DIR_TEMP" in self.config:
-            config.update(self.config)
-            self.config = self.config_default_get(config=config)
-
-        if readonly:
-            self.config["READONLY"] = readonly
-
-        self.config["SSH_AGENT"] = sshagent_use
-        if sshkey:
-            self.config["SSH_KEY_DEFAULT"] = sshkey
-        if debug_configure:
-            self.config["DEBUG"] = debug_configure
-
-        for key, val in config.items():
-            self.config[key] = val
-
-        if not sshagent_use and self.interactive:  # just a warning when interactive
-            T = """
-            Did not find an ssh agent, is this ok?
-            It's recommended to have a SSH key as used on github loaded in your ssh-agent
-            If the SSH key is not found, repositories will be cloned using https.
-            Is better to stop now and to load an ssh-agent with 1 key.
-            """
-            print(Tools.text_strip(T))
-            if self.interactive:
-                if not Tools.ask_yes_no("OK to continue?"):
-                    sys.exit(1)
-
-        # defaults are now set, lets now configure the system
-        if sshagent_use:
-            # TODO: this is an error SSH_agent does not work because cannot identify which private key to use
-            # see also: https://github.com/threefoldtech/jumpscaleX_core/issues/561
-            self.sshagent = SSHAgent()
-            self.sshagent.key_default_name
-        if set_secret:
-            if secret is None:
-                if "SECRET" not in self.config or not self.config["SECRET"]:
-                    self.secret_set()  # will create a new one only when it doesn't exist
-            else:
-                self.secret_set(secret)
 
         if DockerFactory.indocker():
             self.config["IN_DOCKER"] = True
@@ -3884,7 +3756,7 @@ class MyEnv_:
             self.config["IN_DOCKER"] = False
 
         self.config_save()
-        self.init(configdir=configdir)
+        self.init()
 
     @property
     def adminsecret(self):
@@ -3984,6 +3856,8 @@ class MyEnv_:
         """
         ttype, msg, tb = sys.exc_info()
         return self.excepthook(ttype, exception_obj, tb, die=die, stdout=stdout, level=level)
+
+    # def identity_set(self,name="default",):
 
     def config_edit(self):
         """
