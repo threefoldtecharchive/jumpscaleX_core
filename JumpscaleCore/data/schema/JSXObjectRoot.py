@@ -115,7 +115,7 @@ class JSXObjectRoot(JSXObjectBase):
                 self._model.delete(self)
 
         self._reset()  # remove all dangling children & _deserialized_items
-        self._defaults_set()
+
         self._capnp_obj
         self._deserialized_items = {}
         self._changed_deserialized_items = False
