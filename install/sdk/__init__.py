@@ -1,4 +1,4 @@
-__all__ = ["container"]
+__all__ = ["container", "install"]
 
 
 import os
