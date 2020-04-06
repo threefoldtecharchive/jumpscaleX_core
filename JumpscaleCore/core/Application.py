@@ -618,6 +618,7 @@ class Application(object):
         :return:
         """
         j = self._j
+        j.debug()
 
         if generate:
             self.generate()
@@ -630,8 +631,10 @@ class Application(object):
         except Exception as e:
             if str(e).find("could not find the path of the private key") != -1:
                 print("WARNING:cannot find the private key")
-                j.data.nacl.configure()
+                j.me.configure()
             raise e
+        if not j.me.signing_key:
+            j.me.configure(ask=False)
 
         def decrypt():
             try:
