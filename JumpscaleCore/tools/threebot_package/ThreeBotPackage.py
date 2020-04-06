@@ -1,5 +1,4 @@
 import sys
-from Jumpscale.tools.threegit.ThreeGit import load_wiki
 from Jumpscale import j
 
 from .ThreeBotPackageBase import ThreeBotPackageBase
@@ -93,7 +92,13 @@ class ThreeBotPackage(ThreeBotPackageBase):
         wiki_path = j.sal.fs.joinPaths(self.path, "wiki")
         if not j.sal.fs.exists(wiki_path):
             return
-        j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=wiki_path, reset=reset)
+
+        try:
+            j.tools.mdbook.load(self.name, wiki_path)
+        except j.exceptions.Base as e:
+            self._log_error(f"error loading wiki of {self.name}", exception=e)
+            return
+
         self._wikis[self.name] = wiki_path
 
     def actors_load(self):
