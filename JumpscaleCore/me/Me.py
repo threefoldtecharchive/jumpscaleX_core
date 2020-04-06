@@ -34,19 +34,20 @@ class Me(JSConfigBase):
             )
         self._model.trigger_add(self._update_data)
 
-        if not self.signing_key and len(self.tname) > 4:
-            self.load()
-
-    def load(self, tname=None):
+    def load(self):
         """
         kosmos 'j.me.configure(tname="my3bot")'
         """
-        if tname:
-            self.tname = tname
-        path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/%s.toml" % self.tname)
+        if self.tname and len(self.tname) > 4:
+            path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/%s.toml" % self.tname)
+            if j.sal.fs.exists(path):
+                text_toml = j.sal.fs.readFile(path)
+                self._data._data_update(j.data.serializers.toml.loads(text_toml))
+                return
+        path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/default")
         if j.sal.fs.exists(path):
-            text_toml = j.sal.fs.readFile(path)
-            self._data._data_update(j.data.serializers.toml.loads(text_toml))
+            self.tname = j.core.tools.file_read(path).strip()
+            return self.load()
 
     def reset(self):
         self.delete()
@@ -91,9 +92,9 @@ class Me(JSConfigBase):
             spath = "{DIR_BASE}/myhost/identities/%s.toml" % self.tname
             j.sal.fs.writeFile(spath, self._data._toml)
 
-            defaultpath = "{DIR_BASE}/myhost/identities/default.toml"
+            defaultpath = "{DIR_BASE}/myhost/identities/default"
             if not j.sal.fs.exists(defaultpath):
-                j.sal.fs.symlink(spath, defaultpath, overwriteTarget=True)
+                j.sal.fs.writeFile(defaultpath, self.tname)
 
     @property
     def encryptor(self):

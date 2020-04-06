@@ -8,6 +8,7 @@ from urllib.request import urlopen
 from importlib import util
 import time
 import json
+import random
 
 DEFAULT_BRANCH = "unstable"
 os.environ["LC_ALL"] = "en_US.UTF-8"
@@ -306,7 +307,7 @@ def container_install(
     _container_shell()
 
 
-def container_get(name="3bot", delete=False, jumpscale=True, install=False, mount=True):
+def container_get(name="3bot", delete=False, jumpscale=True, install=False, mount=True, secret=None, identity=None):
     IT.MyEnv.sshagent.key_default_name
     e.DF.init()
     docker = e.DF.container_get(name=name, image="threefoldtech/3bot2", start=True, delete=delete, mount=mount)
@@ -317,10 +318,39 @@ def container_get(name="3bot", delete=False, jumpscale=True, install=False, moun
         install = True
         force = True
     if jumpscale:
+
+        if not secret:
+            secret = IT.MyEnv.db.get("threebot.secret.encrypted")
+
+        if not secret:
+            secret = str(random.Random().random())
+
+        if isinstance(secret, bytes):
+            secret = secret.decode()
+
         installer = IT.JumpscaleInstaller()
         installer.repos_get(pull=False)
         if install:
             docker.install_jumpscale(force=force)
+
+        if not identity:
+            identity = "DEFAULT"
+
+        docker.execute("source /sandbox/env.sh;bcdb delete --all -f")
+        docker.execute(
+            f"""
+            j.myidentities.secret_set("{secret}")
+            identity='{identity}'
+            if not identity=='DEFAULT':
+                j.me.tname=identity
+            j.me.load()
+            if not j.me.signing_key:
+                j.me.configure()
+            j.me.save()
+            """,
+            jumpscale=True,
+        )
+
         docker.executor.file_write("/sandbox/cfg/.configured", "")
     return docker
 
@@ -878,9 +908,20 @@ def connect(test=False, disconnect=False):
 @click.option("-u", "--update", is_flag=True, help="update the code files")
 @click.option("-n", "--name", help="name of container, default 3bot")
 @click.option("-s", "--server", help="start the server components")
+@click.option(
+    "--secret", help="if you want to specify the secret for the container, if not will be from host or random"
+)
 @click.option("-id", "--identity", help="name of the identity you want to use, std: 'default'")
 def container(
-    name="3bot", delete=False, count=1, net="172.0.0.0/16", identity=None, server=False, pull=False, update=False
+    name="3bot",
+    delete=False,
+    count=1,
+    net="172.0.0.0/16",
+    identity=None,
+    server=False,
+    pull=False,
+    update=False,
+    secret=None,
 ):
     """
     example:
@@ -946,7 +987,9 @@ def container(
         else:
             name1 = name
 
-        docker = container_get(name=name1, delete=delete, jumpscale=True, install=False, mount=True)
+        docker = container_get(
+            name=name1, delete=delete, jumpscale=True, install=False, mount=True, secret=secret, identity=identity
+        )
 
         # if i == 0:
         #     # the explorer 3bot
@@ -971,15 +1014,6 @@ def container(
         #     # on last docker do the test
         #     docker.jsxexec(test, docker_name=docker.name, count=count)
 
-        docker.execute("source /sandbox/env.sh;bcdb delete --all -f")
-        IT.Tools.shell()
-        docker.execute(
-            f"""
-        j.myidentities.me.default.admins.append("{name}")
-        j.myidentities.me.default.save()
-        """,
-            jumpscale=True,
-        )
         if server:
             docker.execute("source /sandbox/env.sh;3bot start")
 
