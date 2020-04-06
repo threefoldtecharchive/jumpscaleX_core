@@ -48,9 +48,6 @@ class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtoo
             cl = j.clients.gedis.get(name="test", port=8901)
 
         cl_pm = j.clients.gedis.get(name="packagemanager", port=8901, package_name="zerobot.packagemanager")
-        cl_pm.actors.package_manager.package_add(
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/development_actorsimprovement/ThreeBotPackages/tfgrid/phonebook"
-        )
 
         self._threebot_client_default = cl
         self._threebot_client_default_packagemanager = cl_pm

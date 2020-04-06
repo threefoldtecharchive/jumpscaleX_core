@@ -426,13 +426,6 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
 
         return nacl1, nacl2, threebot1, threebot2
 
-    # def _add_phonebook(self):
-    #     pm = j.clients.gedis.get(
-    #         name="threebot", port=8901, package_name="zerobot.packagemanager"
-    #     ).actors.package_manager
-    #     pm.package_add(
-    #         git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/tfgrid/phonebook"
-    #     )
 
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/549")
     def test_register_nacl_threebots(self):
@@ -475,17 +468,6 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
 
 
         """
-
-        cl = j.servers.threebot.local_start_explorer(background=True)
-
-        self._add_phonebook()
-
-        e = j.clients.threebot.explorer
-
-        # get actors to phonebook
-        self.actor_phonebook = e.actors_get("tfgrid.phonebook").phonebook
-
-        self.me
 
         self._tests_run(name=name, die=True)
 

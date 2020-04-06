@@ -29,8 +29,7 @@ def info(message):
 
 def addRegistryPackage():
     # . Start threebot server, add registery package, then reload the client.
-    # j.servers.threebot.local_start_3bot(background=True)
-    j.servers.threebot.local_start_explorer(background=True)
+    j.servers.threebot.local_start_3bot(background=True)
     gedis_cl = j.clients.gedis.get("pm", port=8901, package_name="zerobot.packagemanager")
     gedis_cl.actors.package_manager.package_add(
         path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry"
