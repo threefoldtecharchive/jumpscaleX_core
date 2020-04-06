@@ -165,8 +165,6 @@ class Me(JSConfigBase):
             if j.tools.console.askYesNo(f"SSH: ok to use ssh key: {self.sshkey_name}"):
                 return
 
-        j.debug()
-
         keys = j.clients.sshkey.find()
         if not key and len(keys) == 1:
             key = keys[0]
