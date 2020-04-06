@@ -94,7 +94,7 @@ class MeEncryptor(j.baseclasses.object):
         word3 = self.words.split(" ")[2]
         self._word3_check(word3)
 
-        return self.verify_key_hex
+        return self.signing_key_hex
 
     def _word3_check(self, word3):
         try:
@@ -118,8 +118,8 @@ class MeEncryptor(j.baseclasses.object):
     def words_set(self, words):
         seed = j.data.encryption.mnemonic.to_entropy(words)
         self._signing_key = SigningKey(seed)
-        self.me.signing_key = self.verify_key_hex
-        self.me.verify_key = self.public_key_hex
+        self.me.signing_key = self.signing_key_hex
+        self.me.verify_key = self.verify_key_hex
 
     def _signing_key_generate(self):
         """
