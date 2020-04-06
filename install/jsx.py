@@ -148,9 +148,10 @@ def _configure(debug=False, sshkey=None, sshagent=True, interactive=True, privat
             can only configure private key when jumpscale is installed locally use jsx install..."
         )
 
-    if j and privatekey_words:
-        IT.Tools.shell()
-        j.data.nacl.configure(privkey_words=privatekey_words)
+    # TODO make j.me accept pvt_key in interactive=False
+    # if j and privatekey_words:
+    #     IT.Tools.shell()
+    #     j.data.nacl.configure(privkey_words=privatekey_words)
 
 
 """
@@ -804,9 +805,9 @@ def container_kosmos(name="3bot"):
 def kosmos(name="3bot", target="auto"):
     j = jumpscale_get(die=True)
     j.application.interactive = True
-    n = j.data.nacl.get(load=False)  # important to make sure private key is loaded
-    if n.load(die=False) is False:
-        n.configure()
+    j.me.load(name)
+    if not j.me.sshkey_priv: # important to make sure private key is loaded
+        j.me.configure(tname=name)
     j.data.bcdb.system  # needed to make sure we have bcdb running, needed for code completion
     j.shell(loc=False, locals_=locals(), globals_=globals())
 
