@@ -70,7 +70,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
         is_admin = false (B)
 
         """
-    WITH_THREEBOTCONNECT = j.tools.threebot.with_threebotconnect
+    WITH_THREEBOTCONNECT = j.core.myenv.config.get("THREEBOT_CONNECT", False)
 
     def get_location_proxy(self, new_location_name):
         return self.check_location_exists(self.locations_proxy, new_location_name)
