@@ -9,6 +9,7 @@ import nacl.hash
 import nacl.encoding
 import hashlib
 import binascii
+from io import BytesIO
 from nacl.exceptions import BadSignatureError
 import sys
 
@@ -368,3 +369,71 @@ class MeEncryptor(j.baseclasses.object):
             b = cl.decrypt(a)
             assert data2 == b
         j.tools.timer.stop(i)
+
+    def payload_verify(self, *args, verifykey=None, signature=None, die=True):
+        """
+        :param args:
+        :param verifykey:
+        :param signature: 64 bytes or 128 bytes hex encoded (binascii.hexlify)
+        :param die:
+        :return: True if ok, False if failed or die when die==True
+        """
+        payload = self.payload_build(*args)
+        self._log_debug("payload", data=payload)
+        assert signature
+        assert verifykey
+        assert len(signature) == 64 or len(signature) == 128
+
+        verifykey = self._verifykey_obj_get(verifykey)
+
+        if len(signature) == 128:
+            signature = binascii.unhexlify(signature)
+
+        try:
+            verifykey.verify(payload, signature)
+        except BadSignatureError:
+            if die:
+                raise j.exceptions.Input("cannot verify payload")
+            return False
+        return True
+
+    def payload_sign(self, *args, nacl=None):
+        """
+        :param nacl: the nacl from the author, by default  j.data.nacl.default
+        :param args: what needs to be serialized in same order and signed
+        :return: 128 chars hexstring
+        """
+
+        if not nacl:
+            nacl = j.data.nacl.default
+
+        payload = self.payload_build(*args)
+
+        signature = nacl.sign(payload)
+        return binascii.hexlify(signature).decode()
+
+    def payload_build(self, *args):
+        """
+        build a bytesIO buffer with all arguments serialized to somethign repeatable
+        :param args:
+        :return:
+        """
+        buffer = BytesIO()
+        for item in args:
+            if isinstance(item, str):
+                item = item.encode()
+            elif isinstance(item, int) or isinstance(item, float):
+                item = str(item).encode()
+            elif isinstance(item, bytes):
+                pass
+            elif isinstance(item, j.data.schema._JSXObjectClass):
+                item = item._json
+            elif isinstance(item, j.baseclasses.dict):
+                item = j.data.serializers.json.dumps(item._data).encode()
+            elif item is None:
+                raise j.exceptions.Input("should not be None")
+            else:
+                item = j.data.serializers.json.dumps(item).encode()
+            buffer.write(item)
+        return buffer.getvalue()
+
