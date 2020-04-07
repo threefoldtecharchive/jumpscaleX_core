@@ -564,7 +564,11 @@ class JSBase:
         elif isinstance(item, j.baseclasses.object_config):
             return item.name
         elif isinstance(item, j.baseclasses.object):
-            return item._name
+            try:
+                return item._name
+            except:
+                pass
+            # TODO: need to do differently
         else:
             raise j.exceptions.JSBUG("don't know how to find name")
 

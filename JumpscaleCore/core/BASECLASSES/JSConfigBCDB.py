@@ -189,7 +189,9 @@ class JSConfigBCDB(JSConfigBCDBBase):
 
         :return: list of the names
         """
-        return self._filter(filter=filter, llist=self._schema_.propertynames)
+        if self._schema_:
+            return self._filter(filter=filter, llist=self._schema_.propertynames)
+        return []
 
     def __str__(self):
         return str(self._data)

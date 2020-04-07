@@ -354,7 +354,7 @@ class Float(TypeBaseClass):
         return isinstance(value, float)
 
     def toHR(self, v):
-        return "%d" % v
+        return "{:.2f}".format(v)
 
     def toJSON(self, v):
         return self.clean(v)
