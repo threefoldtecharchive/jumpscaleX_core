@@ -12,6 +12,12 @@ from Jumpscale import j
 JSBASE = j.baseclasses.object
 
 
+class StopChatFlow(Exception):
+    def __init__(self, msg=None):
+        super().__init__(self, msg)
+        self.msg = msg
+
+
 class GedisChatBotFactory(JSBASE):
     def __init__(self):
         JSBASE.__init__(self)
@@ -178,6 +184,9 @@ class GedisChatBotSession(JSBASE):
         def wrapper():
             try:
                 self.topic_method(bot=self)
+            except StopChatFlow as e:
+                if e.msg:
+                    self.md_show(e.msg)
             except Exception as e:
                 errmsg = "something went wrong please contact support"
                 j.errorhandler.exception_handle(e, die=False)
@@ -192,6 +201,9 @@ class GedisChatBotSession(JSBASE):
     # ###################################
     def new_form(self):
         return Form(self)
+
+    def stop(self, msg=None):
+        raise StopChatFlow(msg)
 
     def string_ask(self, msg, **kwargs):
         """
