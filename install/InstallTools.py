@@ -905,7 +905,7 @@ class LogHandler:
 
             # rotate old msgpacks if we have logs > MAX_MSGPACKS_LOGS_COUNT (default: 50) file
             # means 50k logs, we delete the oldest 10 files, 10k logs
-            msgpacks_count = MyEnv.config.get("MAX_MSGPACKS_LOGS_COUNT")
+            msgpacks_count = MyEnv.config.get("MAX_MSGPACKS_LOGS_COUNT", 50)
             if len(os.listdir(app_logs_path)) > msgpacks_count + 1:
                 all_files = sorted(Path(app_logs_path).iterdir(), key=os.path.getmtime)
                 files_to_delete = all_files[: len(all_files) - msgpacks_count + 10]
