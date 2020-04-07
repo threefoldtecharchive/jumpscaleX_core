@@ -405,7 +405,7 @@ class MeEncryptor(j.baseclasses.object):
         """
 
         if not nacl:
-            nacl = j.data.nacl.default
+            nacl = self
 
         payload = self.payload_build(*args)
 
