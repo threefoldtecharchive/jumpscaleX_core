@@ -132,7 +132,7 @@ class Form:
 
     def _append(self, msg, loader=str):
         self.messages.append(msg)
-        result = Result()
+        result = Result(loader)
         self.results.append(result)
         return result
 
