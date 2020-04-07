@@ -898,12 +898,21 @@ class LogHandler:
                 r.append(d)
             assert len(r) == 1000
             log_dir = Tools.text_replace("{DIR_VAR}/logs")
-            path = "%s/%s" % (log_dir, self.appname)
-            Tools.dir_ensure(path)
+            app_logs_path = "%s/%s" % (log_dir, self.appname)
+            Tools.dir_ensure(app_logs_path)
             path = "%s/%s/%s.msgpack" % (log_dir, self.appname, stopid)
             Tools.file_write(path, msgpack.dumps(r))
-        # now remove from redis
 
+            # rotate old msgpacks if we have logs > MAX_MSGPACKS_LOGS_COUNT (default: 50) file
+            # means 50k logs, we delete the oldest 10 files, 10k logs
+            msgpacks_count = MyEnv.config.get("MAX_MSGPACKS_LOGS_COUNT")
+            if len(os.listdir(app_logs_path)) > msgpacks_count + 1:
+                all_files = sorted(Path(app_logs_path).iterdir(), key=os.path.getmtime)
+                files_to_delete = all_files[: len(all_files) - msgpacks_count + 10]
+                for file in files_to_delete:
+                    Tools.delete(file.as_posix())
+
+        # now remove from redis
         keystodelete = []
         for key in self.db.hkeys(self.rediskey_logs):
             if int(key) < stopid + 1:
@@ -3709,6 +3718,10 @@ class MyEnv_:
         if not "THREEBOT_CONNECT" in config:
             config["THREEBOT_CONNECT"] = True
 
+        # max log msgpacks files on the file system each file is 1k logs
+        if not "MAX_MSGPACKS_LOGS_COUNT" in config:
+            config["MAX_MSGPACKS_LOGS_COUNT"] = 50
+
         return config
 
     def configure(
@@ -5779,7 +5792,7 @@ class DockerContainer:
             print(" - copy installer over from where I install from")
             for item in ["jsx", "InstallTools.py"]:
                 src1 = "%s/%s" % (dirpath, item)
-                self.executor.upload(src1, '/tmp')
+                self.executor.upload(src1, "/tmp")
 
         cmd = f"""
         cd /tmp
