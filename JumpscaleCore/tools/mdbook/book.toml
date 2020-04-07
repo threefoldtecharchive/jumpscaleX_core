@@ -1,0 +1,16 @@
+[book]
+authors = ["3bot"]
+language = "en"
+multilingual = false
+src = "."
+title = "{{ name }}"
+
+[output.html.fold]
+enable = true
+level = 0
+
+[output.html]
+default-theme = "light"
+
+[build]
+build-dir = "{{ dest_path }}"
