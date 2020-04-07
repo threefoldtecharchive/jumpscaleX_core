@@ -39,11 +39,11 @@ class UserSession(UserSessionBase):
     @property
     def admin(self):
         if self._admin is None:
-            if self.threebot_name == j.myidentities.me.default.tname:
+            if self.threebot_name == j.myidentities.me.tname:
                 self._admin = True
-            elif int(self.threebot_id) == j.myidentities.me.default.tid:
+            elif int(self.threebot_id) == j.myidentities.me.tid:
                 self._admin = True
-            elif self.threebot_name in j.myidentities.me.default.admins:
+            elif self.threebot_name in j.myidentities.me.admins:
                 self._admin = True
         return self._admin
 

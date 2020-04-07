@@ -172,8 +172,8 @@ class Application(object):
     def admin_session(self):
         if not self._admin_session:
             self._admin_session = UserSessionAdmin()
-            self._admin_session.threebot_id = self._j.myidentities.me.default.tid
-            self._admin_session.threebot_name = self._j.myidentities.me.default.tname
+            self._admin_session.threebot_id = self._j.myidentities.me.tid
+            self._admin_session.threebot_name = self._j.myidentities.me.tname
             if self._admin_session.threebot_id is None or not self._admin_session.threebot_name:
                 raise self._j.exceptions.Input("initialize your threebot")
         return self._admin_session
@@ -618,13 +618,12 @@ class Application(object):
         :return:
         """
         j = self._j
-        j.debug()
 
         if generate:
             self.generate()
 
-        print("NEEDS TO BE REDONE, is now j.me")
-        self._j.shell()
+        # print("NEEDS TO BE REDONE, is now j.me")
+        # self._j.shell()
 
         try:
             j.me.encryptor
@@ -667,6 +666,7 @@ class Application(object):
                     j.data.bcdb.system
 
         j.data.bcdb.check()
+        print("OK")
 
     def generate(self, path=None):
         j = self._j

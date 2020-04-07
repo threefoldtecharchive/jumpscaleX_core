@@ -806,7 +806,7 @@ def kosmos(name="3bot", target="auto"):
     j = jumpscale_get(die=True)
     j.application.interactive = True
     j.me.load(name)
-    if not j.me.sshkey_priv: # important to make sure private key is loaded
+    if not j.me.sshkey_priv:  # important to make sure private key is loaded
         j.me.configure(tname=name)
     j.data.bcdb.system  # needed to make sure we have bcdb running, needed for code completion
     j.shell(loc=False, locals_=locals(), globals_=globals())
@@ -1015,6 +1015,15 @@ def container(
         #     # on last docker do the test
         #     docker.jsxexec(test, docker_name=docker.name, count=count)
 
+        docker.execute("source /sandbox/env.sh;bcdb delete --all -f")
+        IT.Tools.shell()
+        docker.execute(
+            f"""
+        j.myidentities.me.admins.append("{name}")
+        j.myidentities.me.save()
+        """,
+            jumpscale=True,
+        )
         if server:
             docker.execute("source /sandbox/env.sh;3bot start")
 

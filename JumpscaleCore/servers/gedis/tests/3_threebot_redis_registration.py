@@ -15,8 +15,10 @@ def main(self):
     if j.sal.nettools.tcpPortConnectionTest("www.google.com", 443):
         phonebook.actors.phonebook.wallet_create("test")
 
-    j.data.nacl.configure(name="client_test", generate=True, interactive=False)
-    client_nacl = j.data.nacl.get(name="client_test")
+    j.me.configure(name="client_test", ask=False, reset=True)
+    client_nacl = j.myidentities.get(name="client_test").encryptor
+    # j.data.nacl.configure(name="client_test", generate=True, interactive=False)
+    # client_nacl = j.data.nacl.get(name="client_test")
 
     cl = j.clients.redis.get(port=8901)
 
@@ -29,12 +31,12 @@ def main(self):
 
         data_return_json = cl.execute_command(
             "default.phonebook.name_register",
-            j.data.serializers.json.dumps({"name": myname, "pubkey": client_nacl.verify_key_hex}),
+            j.data.serializers.json.dumps({"name": myname, "pubkey": client_nacl.verify_key}),
         )
 
         data_return = j.data.serializers.json.loads(data_return_json)
 
-        assert data_return["pubkey"] == client_nacl.verify_key_hex
+        assert data_return["pubkey"] == client_nacl.verify_key
         assert data_return["name"] == myname
 
         data = {
@@ -43,7 +45,7 @@ def main(self):
             "email": "something@threefold.com",
             "ipaddr": "212.3.247.26",
             "description": "",
-            "pubkey": client_nacl.verify_key_hex,
+            "pubkey": client_nacl.verify_key,
         }
 
         def sign(nacl, *args):
