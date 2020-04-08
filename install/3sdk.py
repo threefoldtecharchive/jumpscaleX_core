@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 import sys
 import jedi
-import sdk
+import sdk as _sdk
 
 from ptpython.repl import embed
 
-from sdk import Tools, MyEnv
+from jsx import IT
 from sdk.shell import ptconfig
-from sdk import container, install
+from sdk import container, sdk
 
 
 # for auto-completion data
 # also, jedi and parso hooks need to be available
 # for autoc-completion to work with pyinstaller build
-jedi.preload_module("sdk")
+jedi.preload_module("_sdk")
 
 
 def get_doc(root_module, level=0, size=4):
@@ -29,11 +29,21 @@ def get_doc(root_module, level=0, size=4):
     :return: docstring
     :rtype: str
     """
+    if level > 20:
+        return ""
+    import inspect
     doc = ""
 
-    for name in root_module.__all__:
-        obj = getattr(root_module, name)
-        is_module = hasattr(obj, "__all__")
+    if hasattr(root_module, "__all__"):
+        members = [(name, getattr(root_module, name)) for name in root_module.__all__]
+    else:
+        members = inspect.getmembers(root_module)
+    for name, obj in members:
+        if name.startswith("_"):
+            continue
+        is_module = inspect.ismodule(obj)
+        if is_module and level != 0:
+            continue
 
         spaces = " " * level
         doc += f"{spaces}{name}"
@@ -58,11 +68,13 @@ def get_doc(root_module, level=0, size=4):
 
 
 def info():
-    print(get_doc(sdk))
+    print(get_doc(_sdk))
 
 
-def shell(loc=False, exit=False, locals_=None, globals_=None):
+def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
     import inspect
+    if not expert:
+        _sdk.__all__.remove("container")
 
     curframe = inspect.currentframe()
     calframe = inspect.getouterframes(curframe, 2)
@@ -73,20 +85,21 @@ def shell(loc=False, exit=False, locals_=None, globals_=None):
 
     print("Welcome to sdk shell, for available modules, call info()")
 
-    # Tools.clear()
-    history_filename = "%s/.jsx_sdk_history" % MyEnv.config["DIR_HOME"]
-    if not Tools.exists(history_filename):
-        Tools.file_write(history_filename, "")
+    history_filename = "%s/.jsx_sdk_history" % IT.MyEnv.config["DIR_HOME"]
+    if not IT.Tools.exists(history_filename):
+        IT.Tools.file_write(history_filename, "")
 
+    result = embed(globals_, locals_, configure=ptconfig, history_filename=history_filename)
     if exit:
-        sys.exit(embed(globals_, locals_, configure=ptconfig, history_filename=history_filename))
-    else:
-        embed(globals_, locals_, configure=ptconfig, history_filename=history_filename)
+        sys.exit(result)
+    return result
 
 
 if __name__ == "__main__":
-
     # the shell should only show d... j...  (no capitals at start of sentense)
     # logger needs to be redirected properly
-
-    shell(locals_=locals(), globals_=globals())
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--expert", default=False, action="store_true")
+    options = parser.parse_args()
+    shell(locals_=locals(), globals_=globals(), expert=options.expert)
