@@ -20,8 +20,10 @@ This will as you about your information, 3botname, email, description .. and if 
 
  ![Identity photo](./images/identity.png)
 
-- Congratulations your 3bot is ready now you can start the 3bot server and start your reservation.
+#### Congratulations your 3bot is ready now you can start the 3bot server and start your reservation.
 
-- To save your identity you can copy these files to safe place
+## To save your identity you can copy these files to safe place
+
+These contains the identity information, please keep them safe
 
  ![recover photo](./images/identity2.png)
