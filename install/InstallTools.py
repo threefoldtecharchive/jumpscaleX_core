@@ -15,7 +15,7 @@ try:
 except:
     redis = None
 
-DEFAULT_BRANCH = "unstable"
+DEFAULT_BRANCH = "unstable_identity2"
 DEFAULT_BRANCH_WEB = "development"
 GITREPOS = {}
 
@@ -4378,7 +4378,7 @@ class OSXInstaller:
             """
             # graphviz #TODO: need to be put elsewhere but not in baseinstaller
             Tools.execute(script, replace=True)
-        BaseInstaller.pips_install(["click"])  # TODO: *1
+        BaseInstaller.pips_install(["click, redis"])  # TODO: *1
 
     @staticmethod
     def brew_install():
