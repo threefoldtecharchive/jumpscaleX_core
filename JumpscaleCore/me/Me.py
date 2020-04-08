@@ -398,7 +398,7 @@ class Me(JSConfigBase):
                     raise j.exceptions.Input("cannot continue, need to register a threebot using j.clients.threebot")
 
             user = explorer.users.new()
-            user.name = self.name
+            user.name = self.tname
             user.host = host
             user.email = self.email
             user.description = description
