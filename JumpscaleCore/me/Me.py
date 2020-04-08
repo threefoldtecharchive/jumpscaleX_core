@@ -12,11 +12,11 @@ class Me(JSConfigBase):
     _SCHEMATEXT = """
     @url = jumpscale.threebot.me
     name** = ""
-    tid =  0 (I)                    #my threebot id
+    tid =  0 (I)                  #my threebot id
     tname = "" (S)                #my threebot name
     email = "" (S)
     signing_key = ""
-    verify_key = ""                     
+    verify_key = ""
     admins = (LS)                   #3bot names which are admin of this 3bot (corresponds to 3bot connect name)
     sshkey_name = ""
     sshkey_pub = ""
@@ -206,6 +206,7 @@ class Me(JSConfigBase):
 
         if tname:
             self.tname = tname
+            self.name = tname
 
         if reset:
             self.reset()
@@ -410,10 +411,7 @@ class Me(JSConfigBase):
         # this means we don't take multiple identities into consideration, defeates the full point of our identity manager here
         payload = nacl.payload_build(r.id, r.name, r.email, r.host, r.description, nacl.verify_key_hex)
         payload = j.data.hash.bin2hex(payload).decode()
-        signature = nacl.payload_sign(
-            r.id, r.name, r.email, r.host, r.description, nacl.verify_key_hex, nacl=nacl
-        )
-
+        signature = nacl.payload_sign(r.id, r.name, r.email, r.host, r.description, nacl.verify_key_hex, nacl=nacl)
         valid = explorer.users.validate(r.id, payload, signature)
         if not valid:
             raise j.exceptions.Input(

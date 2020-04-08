@@ -305,7 +305,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
             LogPane.Show = False
-
+            j.me.load()
             if with_shell:
                 j.shell()  # for now removed otherwise debug does not work
 

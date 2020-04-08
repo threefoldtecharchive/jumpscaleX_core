@@ -50,6 +50,14 @@ class MyIdentities(j.baseclasses.object_config_collection):
         return self._box
 
     @property
+    def default(self):
+        DEFAULT_PATH = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/default")
+        if j.sal.fs.exists(DEFAULT_PATH):
+            default_identity = j.sal.fs.readFile(DEFAULT_PATH).strip("\n")
+            return self.get(name=default_identity)
+        return self.get(name="default")
+
+    @property
     def me(self):
         """
         your default threebot identity
@@ -60,7 +68,7 @@ class MyIdentities(j.baseclasses.object_config_collection):
 
         :return:
         """
-        return self.get(name="default")
+        return self.default
 
     def encrypt(self, data, hex=False):
         res = self.box.encrypt(self._tobytes(data))
