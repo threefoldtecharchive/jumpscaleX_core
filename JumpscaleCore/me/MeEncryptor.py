@@ -399,7 +399,7 @@ class MeEncryptor(j.baseclasses.object):
 
     def payload_sign(self, *args, nacl=None):
         """
-        :param nacl: the nacl from the author, by default  j.data.nacl.default
+        :param nacl: the nacl from the author, by default  j.me.encryptor
         :param args: what needs to be serialized in same order and signed
         :return: 128 chars hexstring
         """
