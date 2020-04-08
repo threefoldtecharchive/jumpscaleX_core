@@ -805,7 +805,8 @@ def container_kosmos(name="3bot"):
 def kosmos(name="3bot", target="auto"):
     j = jumpscale_get(die=True)
     j.application.interactive = True
-    j.me.load(name)
+    j.me.tname = name
+    j.me.load()
     if not j.me.sshkey_priv:  # important to make sure private key is loaded
         j.me.configure(tname=name)
     j.data.bcdb.system  # needed to make sure we have bcdb running, needed for code completion
