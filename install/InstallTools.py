@@ -3209,6 +3209,7 @@ class Tools:
             url = "https://github.com/%s/%s.git"
 
         repo_url = url % (account, repo)
+        fallback_url = "https://github.com/%s/%s.git" % (account, repo)
         exists, foundgit, dontpull, ACCOUNT_DIR, REPO_DIR = Tools._code_location_get(account=account, repo=repo)
         if exists and reset:
             # need to remove because could be left over from previous sync operations
@@ -3218,6 +3219,7 @@ class Tools:
         args["ACCOUNT_DIR"] = ACCOUNT_DIR
         args["REPO_DIR"] = REPO_DIR
         args["URL"] = repo_url
+        args["FALLBACK_URL"] = fallback_url
         args["NAME"] = repo
 
         args["BRANCH"] = branch  # TODO:no support for multiple branches yet
@@ -3240,27 +3242,50 @@ class Tools:
             C = ""
 
             if exists is False:
-                C = """
-                set -e
-                mkdir -p {ACCOUNT_DIR}
-                """
-                Tools.log("get code [git] (first time): %s" % repo)
-                Tools.execute(C, args=args, showout=True, die_if_args_left=True)
-                C = """
-                cd {ACCOUNT_DIR}
-                git clone {URL} -b {BRANCH}
-                cd {NAME}
-                """
-                rc, out, err = Tools.execute(
-                    C,
-                    args=args,
-                    die=True,
-                    showout=True,
-                    interactive=True,
-                    retry=4,
-                    errormsg="Could not clone %s" % repo_url,
-                    die_if_args_left=True,
-                )
+                try:
+                    C = """
+                    set -e
+                    mkdir -p {ACCOUNT_DIR}
+                    """
+                    Tools.log("get code [git] (first time): %s" % repo)
+                    Tools.execute(C, args=args, showout=True, die_if_args_left=True)
+                    C = """
+                    cd {ACCOUNT_DIR}
+                    git clone {URL} -b {BRANCH}
+                    cd {NAME}
+                    """
+                    rc, out, err = Tools.execute(
+                        C,
+                        args=args,
+                        die=True,
+                        showout=True,
+                        interactive=True,
+                        retry=4,
+                        errormsg="Could not clone %s" % repo_url,
+                        die_if_args_left=True,
+                    )
+                except Exception:
+                    C = """
+                    set -e
+                    mkdir -p {ACCOUNT_DIR}
+                    """
+                    Tools.log("get code [https] (second time): %s" % repo)
+                    Tools.execute(C, args=args, showout=True, die_if_args_left=True)
+                    C = """
+                    cd {ACCOUNT_DIR}
+                    git clone {FALLBACK_URL} -b {BRANCH}
+                    cd {NAME}
+                    """
+                    rc, out, err = Tools.execute(
+                        C,
+                        args=args,
+                        die=True,
+                        showout=True,
+                        interactive=True,
+                        retry=4,
+                        errormsg="Could not clone %s" % repo_url,
+                        die_if_args_left=True,
+                    )
 
             else:
                 if pull:
