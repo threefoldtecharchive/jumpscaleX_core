@@ -79,6 +79,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
             j.servers.openresty.install()
             j.builders.db.zdb.install()
             j.builders.apps.sonic.install()
+            j.builders.apps.mdbook.install()
             self._log_info("install done for threebot server.")
 
     def bcdb_get(self, name, secret="", use_zdb=False):
