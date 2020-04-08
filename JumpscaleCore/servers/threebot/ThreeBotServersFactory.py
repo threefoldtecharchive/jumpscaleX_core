@@ -69,7 +69,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
 
     def install(self, force=True):
         def need_install():
-            for cmd in ["resty", "lua", "sonic", "zdb"]:
+            for cmd in ["resty", "lua", "sonic", "zdb", "mdbook"]:
                 if not j.core.tools.cmd_installed(cmd):
                     return True
             return False
@@ -79,7 +79,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
             j.servers.openresty.install()
             j.builders.db.zdb.install()
             j.builders.apps.sonic.install()
-            j.builders.apps.mdbook.install()
+            j.builders.apps.mdbook.install(reset=True)
             self._log_info("install done for threebot server.")
 
     def bcdb_get(self, name, secret="", use_zdb=False):
