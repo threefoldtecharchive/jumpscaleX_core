@@ -330,7 +330,7 @@ def container_get(name="3bot", delete=False, jumpscale=True, install=False, moun
             secret = secret.decode()
 
         installer = IT.JumpscaleInstaller()
-        installer.repos_get(pull=False)
+        installer.repos_get(pull=False, branch=DEFAULT_BRANCH)
         if install:
             docker.install_jumpscale(force=force)
 
@@ -935,54 +935,10 @@ def container(
         cmd = "docker pull threefoldtech/3bot2"
         IT.Tools.execute(cmd, interactive=True)
 
-    def configure():
-        """
-        will be executed in each container
-        :return:
-        """
-        # j.clients.threebot.explorer_addr_set("{explorer_addr}")
-        docker_name = "{docker_name}"
-        j.tools.threebot.init_my_threebot(
-            name="{docker_name}.3bot", email="{docker_name}@threefold.io", interactive=False
-        )
-        j.clients.threebot.explorer.reload()  # make sure we have the actors loaded
-        # lets low level talk to the phonebook actor
-        # print(j.clients.threebot.explorer.actors_all.phonebook.get(name="{docker_name}.3bot"))
-        cl = j.clients.threebot.client_get("{docker_name}.3bot")
-
-        r1 = j.tools.threebot.explorer.threebot_record_get(name="{docker_name}.3bot")
-        print(r1)
-        r2 = j.tools.threebot.explorer.threebot_record_get(tid=cl.tid)
-        assert r2 == r1
-
-    # def test():
-    #     docker_name = "{docker_name}"
-    #     nr_containers = int("{count}")
-    #
-    #     print("RUNNING TESTS FROM {docker_name}")
-    #
-    #     clients = list()
-    #
-    #     clients.append(j.clients.threebot.explorer)
-    #     clients += [j.clients.threebot.client_get("3bot{0}.3bot".format(i + 1)) for i in range(1, nr_containers - 1)]
-    #     for client in clients:
-    #         print("connected to ", client.name, "on", client.host)
-    #         print("---identity---", client.name, "\n", client.actors_all.identity.threebot_name())
-    #
-    #     j.clients.threebot.explorer.reload()
-    #     j.clients.threebot.explorer.actors_all.package_manager.package_start(
-    #         "tfgrid.directory"
-    #     )  # TODO: Fix. we shouldn't have to load here
-    #     nodes = j.clients.threebot.explorer.actors_all.nodes.list()
-    #
-    #     print("EXPLORER NODES:")
-    #     print(nodes)
-
     if update:
-        installer = IT.JumpscaleInstaller()
-        installer.repos_get(pull=True)
+        installer = IT.JumpscaleInstaller(branch=DEFAULT_BRANCH)
+        installer.repos_get(pull=True, branch=DEFAULT_BRANCH)
 
-    explorer_addr = None
     for i in range(count):
         if i > 0:
             name1 = name + str(i + 1)
@@ -993,42 +949,13 @@ def container(
             name=name1, delete=delete, jumpscale=True, install=False, mount=True, secret=secret, identity=identity
         )
 
-        # if i == 0:
-        #     # the explorer 3bot
-        #     # explorer_addr = docker.config.ipaddr
-        #     # TODO: why did we do influxdb?
-        #     # docker.execute("apt-get install influxdb")
-        #     # docker.jsxexec("sc = j.servers.startupcmd.get('influxd', cmd_start='influxd'); sc.start()")
-        #     # time.sleep(2)
-        #     # docker.jsxexec("j.clients.influxdb.get('default', database='capacity').create_database('capacity')")
-        #     # NO LONGER USED BECAUSE EXPLORER IS CENTRAL
-        #     # docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
-        #     # docker.execute(
-        #     #     "source /sandbox/env.sh; python3 /sandbox/code/github/threefoldtech/jumpscaleX_threebot/scripts/explorer.py stress-explorer --count 10"
-        #     # )
-        # else:
-        #     raise RuntimeError("not implemented")
-        #     start_cmd = "j.servers.threebot.start(background=True)"
-        #     docker.jsxexec(start_cmd)
-        #     docker.jsxexec(configure, explorer_addr=explorer_addr, docker_name=docker.name)
-        # TODO: to check test works
-        # if i == count - 1:
-        #     # on last docker do the test
-        #     docker.jsxexec(test, docker_name=docker.name, count=count)
-
         docker.execute("source /sandbox/env.sh;bcdb delete --all -f")
-        IT.Tools.shell()
-        docker.execute(
-            f"""
-        j.myidentities.me.admins.append("{name}")
-        j.myidentities.me.save()
-        """,
-            jumpscale=True,
-        )
         if server:
             docker.execute("source /sandbox/env.sh;3bot start")
 
-    cmd = 'open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors'
+    # if IT.MyEnv.platform_is_osx:
+    #     cmd = 'open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+    #             --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors'
 
     if server:
         try:

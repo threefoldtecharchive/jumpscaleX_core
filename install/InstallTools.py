@@ -15,7 +15,7 @@ try:
 except:
     redis = None
 
-DEFAULT_BRANCH = "unstable_identity2"
+DEFAULT_BRANCH = "unstable"
 DEFAULT_BRANCH_WEB = "development"
 GITREPOS = {}
 

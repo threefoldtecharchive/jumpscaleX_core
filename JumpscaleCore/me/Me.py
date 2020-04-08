@@ -38,15 +38,15 @@ class Me(JSConfigBase):
         """
         kosmos 'j.me.configure(tname="my3bot")'
         """
-        if self.tname and len(self.tname) > 4:
-            path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/%s.toml" % self.tname)
+        if self.name and len(self.name) > 4:
+            path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/%s.toml" % self.name)
             if j.sal.fs.exists(path):
                 text_toml = j.sal.fs.readFile(path)
                 self._data._data_update(j.data.serializers.toml.loads(text_toml))
                 return
         path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/default")
         if j.sal.fs.exists(path):
-            self.tname = j.core.tools.file_read(path).strip()
+            self.name = j.core.tools.file_read(path).strip()
             return self.load()
 
     def reset(self):
@@ -57,10 +57,10 @@ class Me(JSConfigBase):
             return
         if propertyname == "admins" or action == "set_pre":
             # make sure we have 3bot at end if not specified
-            if len(self.tname) < 5:
+            if len(self.name) < 5:
                 raise j.exceptions.Input("threebot name needs to be 5 or more letters.")
-            if "." not in self.tname:
-                self.tname += ".3bot"
+            if "." not in self.name:
+                self.name += ".3bot"
 
         if propertyname == "admins" or action == "set_pre":
             # make sure we have 3bot at end if not specified
@@ -81,20 +81,20 @@ class Me(JSConfigBase):
                 self.admins = r
 
             # you are always yourself an admin, lets add
-            if self.tname not in self.admins:
-                self.admins.append(self.tname)
+            if self.name not in self.admins:
+                self.admins.append(self.name)
 
         if action == "set_post":
             # now write to local identity drive
-            print(" - save identity:%s" % self.tname)
+            print(" - save identity:%s" % self.name)
             j.sal.fs.createDir("{DIR_BASE}/myhost/identities")
 
-            spath = "{DIR_BASE}/myhost/identities/%s.toml" % self.tname
+            spath = "{DIR_BASE}/myhost/identities/%s.toml" % self.name
             j.sal.fs.writeFile(spath, self._data._toml)
 
             defaultpath = "{DIR_BASE}/myhost/identities/default"
             if not j.sal.fs.exists(defaultpath):
-                j.sal.fs.writeFile(defaultpath, self.tname)
+                j.sal.fs.writeFile(defaultpath, self.name)
 
     @property
     def encryptor(self):
@@ -220,14 +220,14 @@ class Me(JSConfigBase):
             return False
 
         ask1 = bool(ask)
-        while ask1 or not self.tname or len(self.tname) < 5:
+        while ask1 or not self.name or len(self.name) < 5:
             intro = dointro(intro)
-            self.tname = j.tools.console.askString(
-                "please provide your threebot connect name (min 5 chars)", default=self.tname
+            self.name = j.tools.console.askString(
+                "please provide your threebot connect name (min 5 chars)", default=self.name
             )
             ask1 = False
 
-        if not self.signing_key and len(self.tname) > 4:
+        if not self.signing_key and len(self.name) > 4:
             self.load()
 
         ask1 = bool(ask)
@@ -375,7 +375,7 @@ class Me(JSConfigBase):
         nacl = self.encryptor
         assert nacl.verify_key_hex
         try:
-            r = explorer.users.get(name=self.tname)
+            r = explorer.users.get(name=self.name)
         except j.exceptions.NotFound:
             r = None
 
@@ -399,7 +399,7 @@ class Me(JSConfigBase):
                     raise j.exceptions.Input("cannot continue, need to register a threebot using j.clients.threebot")
 
             user = explorer.users.new()
-            user.name = self.tname
+            user.name = self.name
             user.host = host
             user.email = self.email
             user.description = description
