@@ -98,4 +98,4 @@ JSX> j.servers.threebot.start(background=True, identity="test2.3bot")
 
 - You will find your identity set in 3bot server
 
-![recover photo](./images/identity4.jpg)
+![multiple_identities](./images/identity4.jpg)
