@@ -26,6 +26,7 @@ class MeEncryptor(j.baseclasses.object):
         self.reset()
         self._tools = None
 
+    @property
     def tools(self):
         """
         these are a variety of tools to do serialization with encryption

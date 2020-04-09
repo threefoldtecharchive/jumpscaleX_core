@@ -1,4 +1,6 @@
+import binascii
 from Jumpscale import j
+from nacl.public import PublicKey
 
 
 class EncryptorTools:
@@ -17,14 +19,14 @@ class EncryptorTools:
         """
         :param data: can be a binary blob or a list of items, which will be converted to binary counterpart
         :param serialization_format: json or msgpack
-    
+
         unserialization as follows:
-    
+
             int,float,str,binary,list and dict  -> stay in native format
             jsxobject -> jsxobject.json
             jsxdict -> jsxdict._data which is the source dict format of our jumpscale dict representation
-    
-    
+
+
         """
         serializer = self._serializer_get(serialization_format)
 
@@ -54,17 +56,15 @@ class EncryptorTools:
         """
         :param data: can be a binary blob or a list of items, which will be converted to binary counterpart
         :param serialization_format: json or msgpack
-    
+
         serialization as follows:
-    
+
             int,float,str,binary,list and dict  -> stay in native format
             jsxobject -> jsxobject.json
             jsxdict -> jsxdict._data which is the source dict format of our jumpscale dict representation
-    
-    
-        """
-        serializer = self._serializer_get(serialization_format)
 
+
+        """
         if isinstance(data, str) or isinstance(data, int) or isinstance(data, float) or isinstance(data, bytes):
             return data
         if isinstance(data, j.data.schema._JSXObjectClass):
@@ -79,24 +79,24 @@ class EncryptorTools:
         """
         :param data: a list which needs to be serialized, or single item
         :param serialization_format: json or msgpack
-    
+
         members of the list (if a list) or the item itself if no list
-    
+
             int,float,str,binary,list and dict  -> stay in native format
             jsxobject -> jsxobject.json
             jsxdict -> jsxdict._data which is the source dict format of our jumpscale dict representation
-    
-    
+
+
         return serialized list of serialized items
         or if no list
         return serialized item
-    
+
         """
         serializer = self._serializer_get(serialization_format)
         if isinstance(data, list):
             res = []
             for item in data:
-                res.append(self._serialize_item(item, serialization_format=serialization_format))
+                res.append(self._serialize_item(item))
             return serializer.dumps(res)
         else:
             return serializer.dumps(data)
@@ -105,17 +105,17 @@ class EncryptorTools:
         """
         :param data: a list which needs to be unserialized, or 1 item
         :param serialization_format: json or msgpack
-    
+
         members of the list (if a list) or the item itself if no list
-    
+
             int,float,str,binary,list and dict  -> stay in native format
             jsxobject -> jsxobject.json
             jsxdict -> jsxdict._data which is the source dict format of our jumpscale dict representation
-    
+
         return unserialized list of unserialized items
         or if no list
         return serialized item
-    
+
         """
         serializer = self._serializer_get(serialization_format)
         data = serializer.loads(data)
@@ -127,7 +127,7 @@ class EncryptorTools:
         else:
             return self._unserialize_item(data, serialization_format=serialization_format, schema=schema)
 
-    def _serialize_sign_encrypt(self, data, serialization_format="json", pubkey_hex=None, threebot=None):
+    def _serialize_sign_encrypt(self, data, serialization_format="json", pubkey_hex=None, threebot=None, encryptor=None):
         """
         will sign any data with private key of our local 3bot private key
         if public_encryption_key given will then encrypt using the pub key given (as binary hex encoded key)
