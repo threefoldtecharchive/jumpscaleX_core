@@ -6,8 +6,9 @@ import sdk as _sdk
 from ptpython.repl import embed
 
 from jsx import IT
+from functools import partial
 from sdk.shell import ptconfig
-from sdk import container, sdk
+from sdk import container, sdk, simulator, install  # pylint: disable=F401
 
 
 # for auto-completion data
@@ -29,8 +30,6 @@ def get_doc(root_module, level=0, size=4):
     :return: docstring
     :rtype: str
     """
-    if level > 20:
-        return ""
     import inspect
     doc = ""
 
@@ -89,7 +88,8 @@ def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
     if not IT.Tools.exists(history_filename):
         IT.Tools.file_write(history_filename, "")
 
-    result = embed(globals_, locals_, configure=ptconfig, history_filename=history_filename)
+    myptconfig = partial(ptconfig, expert=expert)
+    result = embed(globals_, locals_, configure=myptconfig, history_filename=history_filename)
     if exit:
         sys.exit(result)
     return result

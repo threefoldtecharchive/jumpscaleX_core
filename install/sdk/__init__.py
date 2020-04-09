@@ -1,7 +1,7 @@
 from . import container, simulator
 from . import sdk
 import jsx
-__all__ = ["container", "install", "sdk", "simulator"]
+__all__ = ["sdk", "simulator", "container", "install"]
 
 
 def install():
