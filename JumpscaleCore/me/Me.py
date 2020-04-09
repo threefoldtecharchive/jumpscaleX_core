@@ -31,7 +31,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         self.serialization_format = "json"
         if not self.name:
             raise j.exceptions.Input(
-                "threebot.me not filled in, please configure your identity"
+                "threebot.me not filled in, please do j.tools.threebot.init_my_threebot(interactive=True)"
             )
         self._model.trigger_add(self._update_data)
 
@@ -274,6 +274,8 @@ class Me(JSConfigBase, j.baseclasses.testtools):
 
     def data_received_unserialize(self, threebot, data, signature, serialization_format="json"):
         """
+        instead of deprecated j.tools.threebot._deserialize_check_decrypt
+
         data which came from a threebot needs to be unserialized and verified
         the data comes in encrypted
         :param threebot:
@@ -285,7 +287,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
 
     def backup(self, stop=True):
         """
-        kosmos 'j.me.backup(stop=True)'
+        kosmos 'j.tools.threebot.backup_local(stop=True)'
         :return:
         """
         if stop:
@@ -320,7 +322,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
 
         initialize your threebot
 
-        kosmos 'j.me.tfgrid_phonebook_register()'
+        kosmos 'j.tools.threebot.init_my_threebot()'
 
         :return:
         """

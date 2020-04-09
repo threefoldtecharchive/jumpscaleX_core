@@ -64,7 +64,7 @@ class Package(j.baseclasses.threebot_package):
 ## How to load a package
 after creating your package you can load it so it can be started when your threebot start
 ```python
-j.me.encryptor.tools_packages.get("package_name",
+j.tools.threebot_packages.get("package_name",
                             giturl="{git url if it's not local}",
                             path="{path to your local package}" ,
                             threebotserver_name="{threebot server name}")

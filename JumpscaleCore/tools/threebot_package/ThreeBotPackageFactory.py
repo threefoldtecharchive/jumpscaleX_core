@@ -12,7 +12,7 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
 
     """
 
-    __jslocation__ = "j.me.encryptor.tools_packages"
+    __jslocation__ = "j.tools.threebot_packages"
 
     _SCHEMATEXT = """
         @url = jumpscale.threebot.package.1
@@ -60,7 +60,7 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
     def add_from_git(self, giturl=None, branch=None):
         """
 
-        kosmos 'j.me.encryptor.tools_packages.add_from_git()'
+        kosmos 'j.tools.threebot_packages.add_from_git()'
 
         :param giturl:
         :param branch:
@@ -145,8 +145,8 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
 
     def load(self, reset=False):
         """
-        kosmos -p 'j.me.encryptor.tools_packages.load(reset=True)'
-        kosmos -p 'j.me.encryptor.tools_packages.load()'
+        kosmos -p 'j.tools.threebot_packages.load(reset=True)'
+        kosmos -p 'j.tools.threebot_packages.load()'
         """
         if reset:
             self.delete()
@@ -156,7 +156,7 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
     def test(self):
         """
 
-        kosmos 'j.me.encryptor.tools_packages.test()'
+        kosmos 'j.tools.threebot_packages.test()'
 
         :return:
         """

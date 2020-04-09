@@ -12,7 +12,7 @@ skip = j.baseclasses.testtools._skip
 
 
 class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testtools):
-    __jslocation__ = "j.me.encryptor.tools"
+    __jslocation__ = "j.tools.threebot"
     _CHILDCLASSES = [ThreebotMeCollection]
 
     def _init(self):
@@ -21,7 +21,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
 
     def backup_local(self, stop=True):
         """
-        kosmos 'j.me.encryptor.tools.backup_local(stop=True)'
+        kosmos 'j.tools.threebot.backup_local(stop=True)'
         :return:
         """
         if stop:
@@ -58,7 +58,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
 
         initialize your threebot
 
-        kosmos 'j.me.encryptor.tools.init_my_threebot(name="test2.ibiza",interactive=False)'
+        kosmos 'j.tools.threebot.init_my_threebot(name="test2.ibiza",interactive=False)'
 
         :param myidentity is the name of the nacl to use, std default, is your private/public key pair
 
@@ -327,7 +327,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
             data3 = threebot_client.encrypt_for_threebot(data2)
             tid = threebot_client.tid
         else:
-            tid = j.me.tid
+            tid = j.tools.threebot.me.default.tid
             if pubkey_hex:
                 assert len(pubkey_hex) == 64
                 pubkey = PublicKey(binascii.unhexlify(pubkey_hex))
@@ -436,7 +436,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
         nacl2 = j.data.nacl.get(name="test_server")
 
         # name needs to correspond with the nacl name, this is your pub/priv key pair
-        threebot_me_client = j.me.encryptor.tools.init_my_threebot(
+        threebot_me_client = j.tools.threebot.init_my_threebot(
             myidentity="test_client",
             name="test_client",
             email="someting@sss.com",
@@ -444,7 +444,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
             ipaddr="localhost",
             interactive=False,
         )
-        threebot_me_server = j.me.encryptor.tools.init_my_threebot(
+        threebot_me_server = j.tools.threebot.init_my_threebot(
             myidentity="test_server",
             name="test_server",
             email="somethingelse@ddd.com",
@@ -458,11 +458,11 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
     def test(self, name=""):
         """
 
-        this test needs the j.me.encryptor.tools.me to exist (registration done)
+        this test needs the j.tools.threebot.me to exist (registration done)
 
         following will run all tests
 
-        kosmos 'j.me.encryptor.tools.test()'
+        kosmos 'j.tools.threebot.test()'
         :return:
 
 

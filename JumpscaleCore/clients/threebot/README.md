@@ -11,7 +11,7 @@ cl = j.servers.threebot.start(web=True)
 - Create the `default` instance from threebot.me
 
 ```python
-j.me.encryptor.tools.init_my_threebot(myidentity='default', name='hamdy farag', email='ham1dy@d.com', description=None, ipaddr='127.0.0.1', interactive=False)```
+j.tools.threebot.init_my_threebot(myidentity='default', name='hamdy farag', email='ham1dy@d.com', description=None, ipaddr='127.0.0.1', interactive=False)```
 ```
 
 - Add a test package and reload the server after loading the new package
@@ -24,7 +24,7 @@ cl.reload()
 - Get the client and use it (registering my threebot.me id), It will authenticate automatically
 
 ```python
-c = j.clients.threebot.client_get(j.me.encryptor.tools.me.default.tid)
+c = j.clients.threebot.client_get(j.tools.threebot.me.default.tid)
 ```
 
 - use the client

@@ -49,8 +49,8 @@ class ThreeBotFactoryBase(JSBase, TestTools):
         print("CONNECT")
         if self.packagename in j.threebot.packages.__dict__:
             return
-        if j.me.encryptor.tools_packages.exists(self.packagename):
-            p = j.me.encryptor.tools_packages.get(self.packagename)
+        if j.tools.threebot_packages.exists(self.packagename):
+            p = j.tools.threebot_packages.get(self.packagename)
             p.start()
             j.threebot.packages.__dict__[self.packagename] = p
         else:
@@ -62,7 +62,7 @@ class ThreeBotFactoryBase(JSBase, TestTools):
         server.save()
         # TODO: need to call the package_manager actor on the threebot, and ask to load the package there
         # should not be done manually
-        package = j.me.encryptor.tools_packages.get(self.packagename, path=self._dirpath, threebot_server_name=server.name)
+        package = j.tools.threebot_packages.get(self.packagename, path=self._dirpath, threebot_server_name=server.name)
         package.prepare()
         package.save()
         self._log_info(f"{packagename} loaded")

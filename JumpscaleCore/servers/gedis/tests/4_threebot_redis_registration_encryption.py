@@ -52,7 +52,7 @@ def main(self):
 
     # a threebotme is a local threebot definition, it holds your pubkey, ...
     # this returns 2 test nacl sessions & threebot definiions for a fake client & threebotserver
-    encryptorient, nacl_server, threebot_me_client, threebot_me_server = j.me.encryptor.tools.test_register_nacl_threebots()
+    encryptorient, nacl_server, threebot_me_client, threebot_me_server = j.tools.threebot.test_register_nacl_threebots()
 
     j.shell()
 
