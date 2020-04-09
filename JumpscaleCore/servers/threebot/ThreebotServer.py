@@ -183,7 +183,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             gevent.sleep(day1)
 
-    def start(self, background=False, restart=False, packages=None, with_shell=True, identity=None):
+    def start(self, background=False, restart=False, packages=None, with_shell=True, identity=""):
         """
 
         kosmos -p 'j.servers.threebot.default.start(background=True)'
@@ -455,7 +455,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.client = None
         j.data.bcdb._master_set(False)
 
-    def get_startup_cmd(self, packages=None, identity=None):
+    def get_startup_cmd(self, packages=None, identity=""):
         if self.web:
             web = "True"
         else:

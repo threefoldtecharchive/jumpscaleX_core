@@ -84,7 +84,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def start(self, background=False, packages=None, reload=False, with_shell=True, identity=None):
+    def start(self, background=False, packages=None, reload=False, with_shell=True, identity=""):
         """
         kosmos -p 'j.servers.threebot.start(background=True)'
         kosmos -p 'j.servers.threebot.start(background=False,with_shell=False)'
