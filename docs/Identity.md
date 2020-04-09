@@ -88,7 +88,7 @@ JSX>
 ```
 - Then register to the tf_phonebook using
 ```python
-j.me.tfgrid_phonebook_register()
+i.tfgrid_phonebook_register()
 ```
 
 - Then start 3bot server with your preferred identity using
