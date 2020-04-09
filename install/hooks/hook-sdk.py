@@ -1,1 +1,1 @@
-hiddenimports = ["packaging.requirements", "pkg_resources.py2_warn"]
+hiddenimports = ["packaging.requirements", "pkg_resources.py2_warn", "pathlib"]
