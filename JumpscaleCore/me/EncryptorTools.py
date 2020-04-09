@@ -269,7 +269,7 @@ class EncryptorTools:
     #     )
 
     def test_register_encryptor_threebots(self):
-
+        # FIXME remove?
         self._add_phonebook()
 
         encryptor1 = j.data.encryptor.get(name="test_client")
@@ -308,6 +308,7 @@ class EncryptorTools:
     
     
         """
+        # FIXME remove?
 
         cl = j.servers.threebot.local_start_explorer(background=True)
 
