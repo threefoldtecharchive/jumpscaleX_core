@@ -14,9 +14,11 @@ def test_threebot_phonebook():
 
     cl = j.servers.threebot.client
 
-    nacl_test = j.data.nacl.get(name="test", configure_if_needed=True)
+    j.me.configure(name="test", ask=False, reset=True)
+    nacl_test = j.myidentities.get(name="test").encryptor
+    # nacl_test = j.data.nacl.get(name="test", configure_if_needed=True)
 
-    r = cl.actors.phonebook.name_register(name="kristof.gouna2", pubkey=nacl_test.verify_key_hex)
+    r = cl.actors.phonebook.name_register(name="kristof.gouna2", pubkey=nacl_test.verify_key)
     assert r.id
 
     # not such a good testthere is better in j.tools.threebot

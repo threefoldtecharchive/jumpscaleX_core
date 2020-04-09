@@ -47,6 +47,11 @@ class ListObject(TypeBaseObjClass, MutableSequence):
             if isinstance(item, j.data.schema._JSXObjectClass):
                 item.serialize()
 
+    def _reset(self):
+        for item in self._inner_list:
+            if isinstance(item, j.data.schema._JSXObjectClass):
+                item._reset()
+
     @_changed.setter
     def _changed(self, value):
         if value == False:

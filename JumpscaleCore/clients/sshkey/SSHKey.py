@@ -61,7 +61,7 @@ class SSHKey(j.baseclasses.object_config):
         if not self.pubkey and self.privkey:
             path = "%s.pub" % (self.path)
             if not j.sal.fs.exists(path):
-                cmd = 'ssh-keygen -f {} -N "{}"'.format(self.path, self.passphrase_)
+                cmd = f"ssh-keygen -y -f {self.path} > {self.path}.pub"
                 j.sal.process.execute(cmd)
             self.pubkey = j.sal.fs.readFile(path)
             self._save()
@@ -100,6 +100,7 @@ class SSHKey(j.baseclasses.object_config):
             if not j.sal.fs.exists(self.path):
                 if self.privkey != "" and self.pubkey != "":
                     self.write_to_sshdir()
+                    return
 
         if self.pubkey:
             raise j.exceptions.Base("cannot generate key because pubkey already known")

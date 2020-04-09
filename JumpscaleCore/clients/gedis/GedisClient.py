@@ -67,9 +67,9 @@ class GedisClient(JSConfigBase):
 
     # def auth(self, bot_id):
     #     j.shell()
-    #     nacl_cl = j.data.nacl.get()
-    #     nacl_cl._load_privatekey()
-    #     signing_key = nacl.signing.SigningKey(nacl_cl.privkey.encode())
+    #     encryptor = j.me.encryptor
+    #     encryptor._load_privatekey()
+    #     signing_key = nacl.signing.SigningKey(encryptor.privkey.encode())
     #     epoch = str(j.data.time.epoch)
     #     signed_message = signing_key.sign(epoch.encode())
     #     cmd = "auth {} {} {}".format(bot_id, epoch, signed_message)
@@ -183,7 +183,7 @@ class GedisClient(JSConfigBase):
     @property
     def _threebot_me(self):
         if not self._threebot_me_:
-            self._threebot_me_ = j.tools.threebot.me.get(self.threebot_local_profile, needexist=False)
+            self._threebot_me_ = j.myidentities.get(self.threebot_local_profile, needexist=False)
         return self._threebot_me_
 
     @property

@@ -34,7 +34,7 @@ class TFGridRegistryClient(j.baseclasses.object, TESTTOOLS):
 
     def _init(self, **kwargs):
         # TODO update the threebot with threebot session when it is ready to be used
-        self.me = j.tools.threebot.me.get(
+        self.me = j.myidentities.get(
             name="test", tid=3, email="test.test@gmail", tname="testUser", pubkey="asdf3dsfasdlfkjasd88893n"
         )
         cl = j.clients.gedis.get("registry_client", port=8901, package_name="zerobot.packagemanager")
@@ -330,10 +330,10 @@ class TFGridRegistryClient(j.baseclasses.object, TESTTOOLS):
         """
 
     def __sign_data(self, dataobj):
-        pubkey = self.me.nacl.public_key.encode()
-        signingkey = self.me.nacl.signing_key.encode()
-        verifykey = self.me.nacl.verify_key.encode()
-        signed_data = self.me.nacl.sign(dataobj._data)
+        pubkey = self.me.encryptor.public_key.encode()
+        signingkey = self.me.encryptor.signing_key.encode()
+        verifykey = self.me.encryptor.verify_key.encode()
+        signed_data = self.me.encryptor.sign(dataobj._data)
         return verifykey, signed_data
 
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/571")

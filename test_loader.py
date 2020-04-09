@@ -34,7 +34,7 @@ class CoreTests(TestCase):
         [
             "j.data.bcdb.test()",
             "j.data.capnp.test()",
-            "j.data.nacl.test()",
+            # "j.data.nacl.test()",
             "j.data.schema.test()",
             "j.data.types.test()",
             "j.clients.sshkey.test()",

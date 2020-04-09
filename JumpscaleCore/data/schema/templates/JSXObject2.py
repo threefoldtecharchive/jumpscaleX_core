@@ -126,7 +126,6 @@ class JSXObject2(j.data.schema._JSXObjectClassSub):
             ddict["{{prop.name_camel}}"] = data
         {% endfor %}
 
-
         try:
             self._capnp_obj_ = self._capnp_schema.new_message(**ddict)
         #KjException
@@ -148,6 +147,15 @@ class JSXObject2(j.data.schema._JSXObjectClassSub):
         {% for prop in obj.properties %}
         {% if prop.is_jsxobject or prop.is_list %}
         self.{{prop.name}}.serialize()
+        {% endif %}
+        {% endfor %}
+        self._deserialized_items = {}
+        self._changed_deserialized_items=False
+
+    def _reset(self):
+        {% for prop in obj.properties %}
+        {% if prop.is_jsxobject or prop.is_list %}
+        self.{{prop.name}}._reset()
         {% endif %}
         {% endfor %}
         self._deserialized_items = {}
