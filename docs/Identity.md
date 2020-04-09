@@ -107,3 +107,20 @@ JSX> j.servers.threebot.start(background=True, identity="test2.3bot")
 - You will find your identity set in 3bot server
 
 ![multiple_identities](./images/identity4.jpg)
+
+
+## Recovering identites
+
+In case you lost your identites, we can restore from the saved toml keys in `/sandbox/myhost/identities`.
+
+These contains the identity information, please keep them safe
+
+ ![recover photo](./images/identity2.png)
+
+- `default` file contains the name default identity, please make it to refer to your recovered identity
+
+Example:
+
+```
+3BOTDEVEL:3bot:identities: cat default 
+walid.3bot
