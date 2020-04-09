@@ -27,7 +27,15 @@ This will as you about your information, 3botname, email, description .. and if 
 These contains the identity information, please keep them safe
 
  ![recover photo](./images/identity2.png)
- 
+
+- `default` file contains the name default identity, please make it to refer to your recovered identity
+
+Example:
+
+```
+3BOTDEVEL:3bot:identities: cat default 
+walid.3bot
+```
  
 ## Creating multiple identities:
 You can either start kosmos with a new identity name ```jsx kosmos -n newname.3bot``` which will guide you through configuration, or you can do it from kosmos shell as follows:
