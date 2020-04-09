@@ -165,7 +165,7 @@ class EncryptorTools:
             data3 = threebot_client.encrypt_for_threebot(data2)
             tid = threebot_client.tid
         else:
-            tid = j.myidentities.me.tid
+            tid = j.me.tid
             if pubkey_hex:
                 assert len(pubkey_hex) == 64
                 pubkey = PublicKey(binascii.unhexlify(pubkey_hex))
