@@ -346,24 +346,27 @@ def ptconfig(repl, expert=False):
                 if field not in line:
                     yield Completion(field, 0, display=field)
 
+        def complete_module(module, prefix=""):
+            rmembers = inspect.getmembers(module, inspect.isfunction)
+            for rmember, _ in rmembers:
+                if rmember.startswith(prefix):
+                    yield Completion(rmember, -len(prefix), display=rmember)
+
         parts = line.split()
-        if len(parts) == 0:
+        if len(parts) == 0 or (len(parts) == 1 and not line.endswith(" ")):
             for rootitem in sdkall + ["info"]:
+                if not rootitem.startswith(line):
+                    continue
                 yield Completion(rootitem, -len(line), display=rootitem)
         if parts[0] in sdkall:
             root = repl.get_globals()[parts[0]]
             if inspect.isfunction(root):
                 yield from complete_function(root)
             if len(parts) == 1 and line.endswith(" "):
-                rmembers = inspect.getmembers(root, inspect.isfunction)
-                for rmember, _ in rmembers:
-                    yield Completion(rmember, 0, display=rmember)
+                yield from complete_module(root)
             elif len(parts) == 2 and not line.endswith(" "):
                 root = repl.get_globals()[parts[0]]
-                rmembers = inspect.getmembers(root, inspect.isfunction)
-                for rmember, _ in rmembers:
-                    if rmember.startswith(parts[1]):
-                        yield Completion(rmember, -len(parts[1]), display=rmember)
+                yield from complete_module(root, parts[1])
             elif (len(parts) >= 3 or len(parts) == 2 and line.endswith(" ")) and hasattr(root, parts[1]):
                 func = getattr(root, parts[1])
                 yield from complete_function(func)
