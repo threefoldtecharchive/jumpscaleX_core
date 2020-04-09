@@ -114,7 +114,7 @@ def rewriteline(line, globals, locals):
             elif ":" in arg:
                 kwarg = arg.split(":")
                 line += f"{kwarg[0]}="
-                if kwarg[1].isdigt():
+                if kwarg[1].isdigit():
                     line += f"{kwarg[1]}, "
                 else:
                     line += f"'{kwarg[1]}', "
@@ -340,11 +340,11 @@ def ptconfig(repl, expert=False):
     def get_novice_completions(self, document, complete_event):
         line = document.current_line_before_cursor
 
-        def complete_function(func):
+        def complete_function(func, prefix=""):
             for arg in inspect.getargspec(func).args:
                 field = arg + ":"
-                if field not in line:
-                    yield Completion(field, 0, display=field)
+                if field not in line and field.startswith(prefix):
+                    yield Completion(field, -len(prefix), display=field)
 
         def complete_module(module, prefix=""):
             rmembers = inspect.getmembers(module, inspect.isfunction)
@@ -369,7 +369,10 @@ def ptconfig(repl, expert=False):
                 yield from complete_module(root, parts[1])
             elif (len(parts) >= 3 or len(parts) == 2 and line.endswith(" ")) and hasattr(root, parts[1]):
                 func = getattr(root, parts[1])
-                yield from complete_function(func)
+                prefix = ""
+                if len(parts) >= 3:
+                    prefix = parts[-1]
+                yield from complete_function(func, prefix)
 
     def custom_get_completions(self, document, complete_event):
         try:
