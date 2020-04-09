@@ -5,6 +5,7 @@ import pudb
 import time
 import inspect
 import os
+from jsx import IT
 
 from . import __all__ as sdkall
 
@@ -16,6 +17,7 @@ from prompt_toolkit.formatted_text.utils import fragment_list_width
 from prompt_toolkit.completion import Completion
 from prompt_toolkit.formatted_text import (
     ANSI,
+    HTML,
     FormattedText,
     merge_formatted_text,
 )
@@ -164,7 +166,11 @@ def patched_execute(self, line):
         # Try eval first
         try:
             code = compile_with_flags(line, "eval")
-            result = eval(code, self.get_globals(), self.get_locals())
+            try:
+                result = eval(code, self.get_globals(), self.get_locals())
+            except IT.BaseJSException as e:
+                print_formatted_text(HTML(f"<ansired>{e}</ansired>"))
+                return
 
             locals = self.get_locals()
             locals["_"] = locals["_%i" % self.current_statement_index] = result

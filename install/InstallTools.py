@@ -699,7 +699,10 @@ class BaseJSException(Exception):
         return msg.strip()
 
     def __str__(self):
-        return Tools._data_serializer_safe(self.logdict)
+        if self.logdict:
+            return Tools._data_serializer_safe(self.logdict)
+        else:
+            return self.message
 
     def __repr__(self):
         if not self.logdict:
