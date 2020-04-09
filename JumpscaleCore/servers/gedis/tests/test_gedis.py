@@ -8,7 +8,7 @@ skip = j.baseclasses.testtools._skip
 ACTORS_PATH = j.core.tools.text_replace("{DIR_BASE}")
 ACTOR_FILE_1 = "simple"
 ACTOR_FILE_2 = "actor"
-package = j.tools.threebot_packages.get("zerobot.base")
+package = j.me.encryptor.tools_packages.get("zerobot.base")
 
 START_SCRIPT = """
 server=j.servers.gedis.get(name="{name}")

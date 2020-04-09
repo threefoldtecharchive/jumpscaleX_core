@@ -269,14 +269,14 @@ class EncryptorTools:
     #     )
 
     def test_register_encryptor_threebots(self):
-
+        # FIXME remove ?
         self._add_phonebook()
 
         encryptor1 = j.data.encryptor.get(name="test_client")
         encryptor2 = j.data.encryptor.get(name="test_server")
 
         # name needs to correspond with the encryptor name, this is your pub/priv key pair
-        threebot_me_client = j.tools.threebot.init_my_threebot(
+        threebot_me_client = j.me.encryptor.tools.init_my_threebot(
             myidentity="test_client",
             name="test_client",
             email="someting@sss.com",
@@ -284,7 +284,7 @@ class EncryptorTools:
             ipaddr="localhost",
             interactive=False,
         )
-        threebot_me_server = j.tools.threebot.init_my_threebot(
+        threebot_me_server = j.me.encryptor.tools.init_my_threebot(
             myidentity="test_server",
             name="test_server",
             email="somethingelse@ddd.com",
@@ -298,17 +298,17 @@ class EncryptorTools:
     def test(self, name=""):
         """
     
-        this test needs the j.tools.threebot.me to exist (registration done)
+        this test needs the j.me.encryptor.tools.me to exist (registration done)
     
         following will run all tests
     
-        kosmos 'j.tools.threebot.test()'
+        kosmos 'j.me.encryptor.tools.test()'
         :return:
     
     
     
         """
-
+        # FIXME remove ?
         cl = j.servers.threebot.local_start_explorer(background=True)
 
         self._add_phonebook()

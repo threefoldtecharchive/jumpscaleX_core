@@ -41,7 +41,7 @@ class CoreTests(TestCase):
             "j.clients.sshagent.test()",
             "j.clients.ssh.test()",
             "j.sal.bcdbfs.test()",
-            "j.tools.threebot.packages.test()",
+            "j.me.encryptor.tools.packages.test()",
             "j.tools.syncer.test()",
             "j.tools.executor.test()",
             "j.tools.time.test()",

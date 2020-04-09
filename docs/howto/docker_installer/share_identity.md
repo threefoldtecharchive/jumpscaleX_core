@@ -21,6 +21,6 @@ If `--identity` option is not specified:
 - If multiple found will ask the user if interactive install otherwise it will fail
 - Will create a new identity otherwise
 
-At the end of the installation `j.tools.threebot.init_my_threebot` is called if the identity is specified whether by the user or choosen during installation.
+At the end of the installation `j.me.encryptor.tools.init_my_threebot` is called if the identity is specified whether by the user or choosen during installation.
 
 In the case of no identity specified, it will be the responsibility of the user to init threebot after install.

@@ -5629,7 +5629,7 @@ class DockerContainer:
         self.execute(". /sandbox/env.sh; kosmos 'j.builders.network.tcprouter.install()'")
 
     def _install_package_dependencies(self):
-        # self.execute("j.tools.threebot_packages._children.threefold__wikis.install()", jumpscale=True)
+        # self.execute("j.me.encryptor.tools_packages._children.threefold__wikis.install()", jumpscale=True)
         Tools.shell()
 
     # def config_jumpscale(self):

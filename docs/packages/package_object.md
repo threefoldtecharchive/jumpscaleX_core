@@ -5,7 +5,7 @@ Its a configuration mgmt object in Jumpscale.
 
 You can only find packages here which have been installed using the 
 - [package manager actor in a threebot](package_manager_actor.md)
-- the factory: ```j.tools.threebot_packages```
+- the factory: ```j.me.encryptor.tools_packages```
 
 If not initialized yet then cannot find because not configured.
 

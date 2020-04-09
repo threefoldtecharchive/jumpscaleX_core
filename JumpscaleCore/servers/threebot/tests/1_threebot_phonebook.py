@@ -21,6 +21,6 @@ def test_threebot_phonebook():
     r = cl.actors.phonebook.name_register(name="kristof.gouna2", pubkey=nacl_test.verify_key)
     assert r.id
 
-    # not such a good testthere is better in j.tools.threebot
+    # not such a good testthere is better in j.me.encryptor.tools
 
     j.servers.threebot._log_info("3bot worked")

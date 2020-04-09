@@ -78,7 +78,7 @@ if options.threebot:
 
         j.threebot.__dict__["packages"] = Packages()
 
-        for package in j.tools.threebot_packages.find():
+        for package in j.me.encryptor.tools_packages.find():
             if package.source.threebot not in j.threebot.packages.__dict__:
                 j.threebot.packages.__dict__[package.source.threebot] = PackageGroup()
             g = j.threebot.packages.__dict__[package.source.threebot]

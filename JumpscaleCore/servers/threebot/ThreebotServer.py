@@ -37,7 +37,7 @@ class Packages:
 #
 #     def install(self):
 #         server = j.servers.threebot.default
-#         package = j.tools.threebot_packages.get(self.name, path=self.path, threebot_server_name=server.name)
+#         package = j.me.encryptor.tools_packages.get(self.name, path=self.path, threebot_server_name=server.name)
 #         package.prepare()
 #         package.save()
 #         name = self.name
@@ -264,7 +264,7 @@ class ThreeBotServer(j.baseclasses.object_config):
                     path=path, install=False, reload=False
                 )
 
-            for package in j.tools.threebot_packages.find():
+            for package in j.me.encryptor.tools_packages.find():
 
                 if package.status in ["toinstall"]:
                     self._log_info("INSTALL:%s" % package.name)
@@ -394,14 +394,14 @@ class ThreeBotServer(j.baseclasses.object_config):
         """
 
         def load_package(name):
-            if not j.tools.threebot_packages.exists(name=name):
+            if not j.me.encryptor.tools_packages.exists(name=name):
                 raise j.exceptions.Input(f"Could not find package:{name}")
-            p = j.tools.threebot_packages.get(name=name)
+            p = j.me.encryptor.tools_packages.get(name=name)
             p.status = "tostart"  # means we need to start
 
         requiredpackages = ["zerobot.base", "zerobot.webinterface", "zerobot.admin", "zerobot.alerta"]
         extrapackages = ["zerobot.myjobs_ui", "zerobot.packagemanager"]
-        packages = j.tools.threebot_packages.find()
+        packages = j.me.encryptor.tools_packages.find()
 
         # check if any of the needed packages is missing
         neededpackages = requiredpackages + extrapackages
@@ -411,8 +411,8 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         if neededpackages:
             # some neededpackages are missing let's load
-            j.tools.threebot_packages.load()
-            packages = j.tools.threebot_packages.find()
+            j.me.encryptor.tools_packages.load()
+            packages = j.me.encryptor.tools_packages.find()
 
         for requiredpackage in requiredpackages:
             load_package(requiredpackage)
