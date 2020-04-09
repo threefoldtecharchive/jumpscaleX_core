@@ -5730,6 +5730,8 @@ class DockerContainer:
                     addr = r["assignedAddresses"]
                     if len(addr) > 0:
                         addr = addr[0].split("/", 1)[0]
+            else:
+                self.execute("zerotier-cli join 35c192ce9b01847c", die=False)
 
         print(" - IP ADDRESS OF YOUR CONTAINER: %s" % addr)
 
