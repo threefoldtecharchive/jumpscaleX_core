@@ -28,3 +28,7 @@ Try running it with:
 ```bash
 ./dist/3sdk
 ```
+
+## Running a new container
+
+to start a new container `sdk start name:mycontainer`	
