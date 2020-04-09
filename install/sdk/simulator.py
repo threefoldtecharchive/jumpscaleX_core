@@ -26,4 +26,4 @@ def kosmos(name="simulator"):
     """
     Start kosmos shell on simulator
     """
-    jsx.kosmos(name)
+    jsx.kosmos.callback(name)
