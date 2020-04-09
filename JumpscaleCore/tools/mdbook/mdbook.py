@@ -82,3 +82,54 @@ class MdBook(j.baseclasses.object):
         dir_summary(path=pkg_path+'wiki', indent='')
         
         j.sal.fs.writeFile(filename=pkg_path+'wiki/SUMMARY.md', contents=self.summary)
+
+    def generate_index_book(self):
+        """ Generate index for all packages books """
+        
+        index_content = "# Index\n"
+
+        # Create dir to copy package books into
+        pkgs_books_path = j.sal.fs.joinPaths(j.dirs.TMPDIR, "pkgs_books")
+        j.sal.fs.createDir(pkgs_books_path)
+
+        packages = j.tools.threebot_packages.find()
+        for package in packages:
+            pkg_wiki_path = package.path + 'wiki/'
+            if j.sal.fs.exists(path=pkg_wiki_path):
+                # Create dir with package name and copy the book into it
+                dest_path = j.sal.fs.joinPaths(pkgs_books_path, package.name)
+                j.sal.fs.createDir(dest_path)
+                j.sal.fs.copyDirTree(src=pkg_wiki_path, dst=dest_path)
+
+                if not j.sal.fs.exists(path=dest_path + '/SUMMARY.md'):
+                    raise ValueError(package.name + " has no SUMMARY.md")
+                
+                pkg_summary = j.sal.fs.readFile(filename=dest_path+'/SUMMARY.md')
+                # Indent pkg summary in index
+                pkg_summary = '  '.join(('\n'+pkg_summary.lstrip()).splitlines(True))   
+                # Add package name to files pathes
+                pkg_summary = pkg_summary.replace('(',f"({package.name}/")
+
+                # Add a link to the package summary in the index
+                index_content += '- [' + package.name + ']' + '(' + package.name + '/README.md)\n'
+                index_content += pkg_summary
+        
+        # Generate index dir
+        j.sal.fs.writeFile(filename=pkgs_books_path+'/SUMMARY.md', contents=index_content)
+        indexbook_path = j.sal.fs.joinPaths(j.dirs.TMPDIR, "indexbook")
+        j.sal.fs.createDir(indexbook_path)
+        
+        # Create new empty book
+        toml_path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), "indexbook.toml")
+        j.sal.process.execute(f"cd {indexbook_path} && rm -rf * && mkdir -p book src && cp {toml_path} .")
+
+        # Copy packages books into the index book src dir
+        j.sal.process.execute(f"cd {pkgs_books_path} && mv * {indexbook_path}/src/")
+
+        # Build the mdbook
+        j.sal.process.execute(f"cd {indexbook_path} && mdbook build")
+
+        # Copy rendered book to mdbooks dir
+        rendered_index_path = j.sal.fs.joinPaths(j.sal.fs.joinPaths(j.dirs.VARDIR, "mdbooks"),"index")
+        j.sal.fs.createDir(rendered_index_path)
+        j.sal.fs.copyDirTree(src=indexbook_path+'/book', dst=rendered_index_path)
