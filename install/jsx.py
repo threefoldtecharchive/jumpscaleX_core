@@ -931,7 +931,6 @@ def container(
         jsx container -d -s
     """
 
-    name = "3bot"
     if pull:
         cmd = "docker pull threefoldtech/3bot2"
         IT.Tools.execute(cmd, interactive=True)
