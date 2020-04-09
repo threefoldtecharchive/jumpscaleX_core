@@ -97,7 +97,7 @@ def main(self):
         assert threebot_info3 == threebot_info4
 
         # verify the data (is same logic as above in register threebot, to see if record is valid)
-        rc = j.data.nacl.payload_verify(
+        rc = j.me.encryptor.payload_verify(
             threebot_info4["id"],
             threebot_info4["name"],
             threebot_info4["email"],
