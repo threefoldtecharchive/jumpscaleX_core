@@ -183,7 +183,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             gevent.sleep(day1)
 
-    def start(self, background=False, restart=False, packages=None, with_shell=True):
+    def start(self, background=False, restart=False, packages=None, with_shell=True, identity=None):
         """
 
         kosmos -p 'j.servers.threebot.default.start(background=True)'
@@ -191,6 +191,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         :param background: if True will start all servers including threebot itself in the background
         :param packages: a list of package paths to load by default
+        :param identity: identity used to initialize the server. must be name of your identity. if None will use default identity
         :type packages: list of str
         ports & paths used for threebotserver
         see: {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/docs/3Bot/web_environment.md
@@ -305,7 +306,14 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
             LogPane.Show = False
-            j.me.load()
+            if not identity:
+                j.me.load()
+            else:
+                if j.myidentities.exists(identity):
+                    j.me.name = identity
+                    j.me.load()
+                else:
+                    raise j.exceptions.Input(f"identity {identity} doesn't exist. please configure it")
             if with_shell:
                 j.shell()  # for now removed otherwise debug does not work
 
@@ -320,7 +328,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.data.bcdb._master_set(False)
             sys.exit()
         else:
-            cmd = self.get_startup_cmd(packages=packages)
+            cmd = self.get_startup_cmd(packages=packages, identity=identity)
             if not cmd.is_running():
                 cmd.start()
                 time.sleep(1)
@@ -447,7 +455,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.client = None
         j.data.bcdb._master_set(False)
 
-    def get_startup_cmd(self, packages=None):
+    def get_startup_cmd(self, packages=None, identity=None):
         if self.web:
             web = "True"
         else:
@@ -458,9 +466,9 @@ class ThreeBotServer(j.baseclasses.object_config):
         from Jumpscale import j
         j.core.db.delete("threebot.starting")
         server = j.servers.threebot.get("{name}", executor='{executor}')
-        server.start(background=False, packages={packages})
+        server.start(background=False, packages={packages}, identity='{identity}')
         """.format(
-            name=self.name, executor=self.executor, web=web, packages=packages
+            name=self.name, executor=self.executor, web=web, packages=packages, identity=identity,
         )
         cmd_start = j.core.tools.text_strip(cmd_start)
         startup = j.servers.startupcmd.get(name="threebot_{}".format(self.name), cmd_start=cmd_start)

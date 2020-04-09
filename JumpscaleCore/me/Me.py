@@ -228,9 +228,6 @@ class Me(JSConfigBase, j.baseclasses.testtools):
             )
             ask1 = False
 
-        if not self.signing_key and len(self.name) > 4:
-            self.load()
-
         ask1 = bool(ask)
         while ask1 or not self.email or len(self.email) < 6 or "@" not in self.email:
             intro = dointro(intro)
