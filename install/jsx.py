@@ -10,7 +10,7 @@ import time
 import json
 import random
 
-DEFAULT_BRANCH = "unstable_identity2"
+DEFAULT_BRANCH = "unstable"
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
