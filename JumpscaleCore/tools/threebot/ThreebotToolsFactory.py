@@ -12,6 +12,7 @@ skip = j.baseclasses.testtools._skip
 
 
 class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testtools):
+    __jslocation__ = "j.me.encryptor.tools"
     _CHILDCLASSES = [ThreebotMeCollection]
 
     def _init(self):
@@ -424,6 +425,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
         )
 
         return nacl1, nacl2, threebot1, threebot2
+
 
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/549")
     def test_register_nacl_threebots(self):

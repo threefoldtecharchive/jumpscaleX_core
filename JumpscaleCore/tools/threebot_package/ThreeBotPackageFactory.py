@@ -12,7 +12,7 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
 
     """
 
-    __jslocation__ = "j.tools.threebot_packages"
+    __jslocation__ = "j.me.encryptor.tools_packages"
 
     _SCHEMATEXT = """
         @url = jumpscale.threebot.package.1
