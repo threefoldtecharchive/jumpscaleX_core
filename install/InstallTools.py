@@ -5691,12 +5691,14 @@ class DockerContainer:
                 src1 = "%s/%s" % (dirpath, item)
                 self.executor.upload(src1, "/tmp")
 
+        # python3 jsx configure --sshkey {MyEnv.sshagent.key_default_name} -s
+        # WHY DO WE NEED THIS, in container ssh-key should always be there & loaded, don't think there is a reason to configure it
         cmd = f"""
-        cd /tmp
-        python3 jsx configure --sshkey {MyEnv.sshagent.key_default_name} -s
+        cd /tmp        
         python3 jsx install {args_txt}
         """
         print(" - Installing jumpscaleX ")
+
         self.execute(cmd, retry=2)
 
         print(" - Install succesfull")
@@ -6056,7 +6058,11 @@ class SSHAgent:
 
     @property
     def keypub(self):
-        return Tools.file_read(self.keypub_path_get()).decode()
+        # lets change it to get the pub keys from the ssh-agent
+        ks = MyEnv.sshagent._read_keys()
+        if len(ks) > 0:
+            return ks[0][1]
+        # return Tools.file_read(self.keypub_path_get()).decode()
 
     def profile_js_configure(self):
         """

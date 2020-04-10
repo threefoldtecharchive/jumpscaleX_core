@@ -911,7 +911,7 @@ def connect(test=False, disconnect=False):
 @click.option("-p", "--pull", is_flag=True, help="pull the docker image")
 @click.option("-u", "--update", is_flag=True, help="update the code files")
 @click.option("-n", "--name", help="name of container, default 3bot")
-@click.option("-s", "--server", help="start the server components")
+@click.option("-s", "--server", is_flag=True, help="start the server components")
 @click.option(
     "--secret", help="if you want to specify the secret for the container, if not will be from host or random"
 )

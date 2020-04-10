@@ -30,9 +30,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
 
         self.serialization_format = "json"
         if not self.name:
-            raise j.exceptions.Input(
-                "threebot.me not filled in, please configure your identity"
-            )
+            raise j.exceptions.Input("threebot.me not filled in, please configure your identity")
         self._model.trigger_add(self._update_data)
 
     def load(self):
@@ -359,7 +357,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
                     raise j.exceptions.Input("cannot continue, need to register a threebot using j.clients.threebot")
 
             user = explorer.users.new()
-            user.name = self.name
+            user.name = self.tname
             user.host = host
             user.email = self.email
             user.description = description
