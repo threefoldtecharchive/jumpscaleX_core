@@ -3768,8 +3768,6 @@ class MyEnv_:
 
         basedir = self._basedir_get()
 
-        assert os.path.exists(self.config_file_path)  # needs to be there because init was already done
-
         if config:
             self.config.update(config)
 
