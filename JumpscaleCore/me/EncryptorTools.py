@@ -65,6 +65,8 @@ class EncryptorTools:
 
 
         """
+        # serializer = self._serializer_get(serialization_format)
+
         if isinstance(data, str) or isinstance(data, int) or isinstance(data, float) or isinstance(data, bytes):
             return data
         if isinstance(data, j.data.schema._JSXObjectClass):
@@ -97,6 +99,7 @@ class EncryptorTools:
             res = []
             for item in data:
                 res.append(self._serialize_item(item))
+                # res.append(self._serialize_item(item, serialization_format=serialization_format))
             return serializer.dumps(res)
         else:
             return serializer.dumps(data)

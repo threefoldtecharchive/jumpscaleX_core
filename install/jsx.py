@@ -337,6 +337,7 @@ def container_get(name="3bot", delete=False, jumpscale=True, install=False, moun
         if not identity:
             identity = "DEFAULT"
 
+        docker.execute("source /sandbox/env.sh;bcdb delete --all -f")
         docker.execute(
             f"""
             j.myidentities.secret_set("{secret}")

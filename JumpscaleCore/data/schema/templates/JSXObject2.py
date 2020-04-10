@@ -8,8 +8,11 @@ class JSXObject2(j.data.schema._JSXObjectClassRoot):
 class JSXObject2(j.data.schema._JSXObjectClassSub):
 {% endif %}
 
-    __slots__ = ["id","_model","_capnp_obj_","_deserialized_items","_acl_id","_acl",
-                        {% for prop in obj.properties %}"_{{prop.name}}",{% endfor %}]
+    __slots__ = ["id","_model","_capnp_obj_","_deserialized_items","acl_id","_acl","_protected",
+                        "_deserialized_items","_changed_deserialized_items","_schema","_capnp_obj_",
+                        "_model","_root","nid","_parent","_children","_properties_","_methods_",
+                        "_autosave","_schema"]
+    __props__ = [{% for prop in obj.properties %}"{{prop.name}}",{% endfor %}]
 
     {# generate the properties #}
     {% for prop in obj.properties %}

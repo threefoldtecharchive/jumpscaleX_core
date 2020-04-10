@@ -1047,11 +1047,13 @@ class SystemFS(JSBASE, TESTTOOLS):
             j.sal.process.execute(cmd)
 
     @path_check(src={"required", "replace", "exists"}, dest={"required", "replace"})
-    def symlinkFilesInDir(self, src, dest, delete=True, includeDirs=False, makeExecutable=False):
+    def symlinkFilesInDir(self, src, dest, delete=True, includeDirs=False, makeExecutable=False, filter=None):
         if includeDirs:
-            items = self.listFilesAndDirsInDir(src, recursive=False, followSymlinks=False, listSymlinks=False)
+            items = self.listFilesAndDirsInDir(
+                src, recursive=False, followSymlinks=False, listSymlinks=False, filter=filter
+            )
         else:
-            items = self.listFilesInDir(src, recursive=False, followSymlinks=True, listSymlinks=True)
+            items = self.listFilesInDir(src, recursive=False, followSymlinks=True, listSymlinks=True, filter=filter)
         for item in items:
             dest2 = "%s/%s" % (dest, self.getBaseName(item))
             dest2 = dest2.replace("//", "/")

@@ -147,6 +147,15 @@ class JSXObjectBase(j.baseclasses.object):
     def _msgpack(self):
         return j.data.serializers.msgpack.dumps(self._ddict)
 
+    # def __setattr__(self, name, value):
+    #     if name in self.__class__.__slots__:
+    #         self.__dict__[name] = value
+    #         return
+    #     if name in self.__class__.__props__:
+    #         self.__dict__[name] = value
+    #         return
+    #     raise j.exceptions.Base("protected property on jsxobj:%s" % name)
+
     def __eq__(self, val):
         if isinstance(val, str) or isinstance(val, int) or isinstance(val, float) or isinstance(val, set):
             return False
