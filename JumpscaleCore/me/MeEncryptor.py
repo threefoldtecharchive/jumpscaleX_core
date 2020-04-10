@@ -437,4 +437,3 @@ class MeEncryptor(j.baseclasses.object):
                 item = j.data.serializers.json.dumps(item).encode()
             buffer.write(item)
         return buffer.getvalue()
-

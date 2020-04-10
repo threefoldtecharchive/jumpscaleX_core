@@ -3590,23 +3590,22 @@ class MyEnv_:
             self._config_load()
             if not "DIR_BASE" in self.config:
                 return
-
-            self.log_includes = [i for i in self.config.get("LOGGER_INCLUDE", []) if i.strip().strip("''") != ""]
-            self.log_excludes = [i for i in self.config.get("LOGGER_EXCLUDE", []) if i.strip().strip("''") != ""]
-            self.log_level = self.config.get("LOGGER_LEVEL", 10)
-            # self.log_console = self.config.get("LOGGER_CONSOLE", False)
-            # self.log_redis = self.config.get("LOGGER_REDIS", True)
-            self.debug = self.config.get("DEBUG", False)
-            self.debugger = self.config.get("DEBUGGER", "pudb")
-            self.interactive = self.config.get("INTERACTIVE", True)
-
-            if os.path.exists(os.path.join(self.config["DIR_BASE"], "bin", "python3.6")):
-                self.sandbox_python_active = True
-            else:
-                self.sandbox_python_active = False
-
         else:
             self.config = self.config_default_get()
+
+        self.log_includes = [i for i in self.config.get("LOGGER_INCLUDE", []) if i.strip().strip("''") != ""]
+        self.log_excludes = [i for i in self.config.get("LOGGER_EXCLUDE", []) if i.strip().strip("''") != ""]
+        self.log_level = self.config.get("LOGGER_LEVEL", 10)
+        # self.log_console = self.config.get("LOGGER_CONSOLE", False)
+        # self.log_redis = self.config.get("LOGGER_REDIS", True)
+        self.debug = self.config.get("DEBUG", False)
+        self.debugger = self.config.get("DEBUGGER", "pudb")
+        self.interactive = self.config.get("INTERACTIVE", True)
+
+        if os.path.exists(os.path.join(self.config["DIR_BASE"], "bin", "python3.6")):
+            self.sandbox_python_active = True
+        else:
+            self.sandbox_python_active = False
 
         self._state_load()
 
