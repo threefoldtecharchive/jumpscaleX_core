@@ -182,7 +182,7 @@ class SystemFS(JSBASE, TESTTOOLS):
         @param deletefirst: bool (Set to True if you want to erase symlinks/folders in the destination that also exist in the source, before copying.)
         @param overwriteFiles: if True will overwrite files, otherwise will not overwrite when destination exists
         """
-        default_ignore_dir = [".egg-info", ".dist-info", "__pycache__"]
+        default_ignore_dir = [".egg-info", ".dist-info", "__pycache__", "build", "dist"]
         if ignoredir is None:
             ignoredir = []
         if ignorefiles is None:

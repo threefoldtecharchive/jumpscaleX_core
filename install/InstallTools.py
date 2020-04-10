@@ -3616,7 +3616,7 @@ class MyEnv_:
         if redis and Tools.exists("{}/bin".format(self.config["DIR_BASE"])):  # To check that Js is on host
             self.loghandler_redis = LogHandler(db=self.db)
         else:
-            print("- redis loghandler cannot be loaded")
+            # print("- redis loghandler cannot be loaded")
             self.loghandler_redis = None
 
         self.__init = True

@@ -678,10 +678,10 @@ def builder(push=False, base=False, delete=False, noclean=False, development=Fal
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False)
 
-    docker.install_jumpscale(branch=DEFAULT_BRANCH, force=delete, pull=False, threebot=True)
+    docker.install_jumpscale(force=delete, pull=False, threebot=True)
     docker._install_tcprouter()
     docker.install_jupyter()
-    docker.execute("rm  /sandbox/bin/micro;cd /tmp;curl https://getmic.ro | bash;mv micro /sandbox/bin")
+    # docker.execute("rm  /sandbox/bin/micro;cd /tmp;curl https://getmic.ro | bash;mv micro /sandbox/bin")
     docker.execute("apt install restic -y")
     docker._install_package_dependencies()
 
