@@ -4609,6 +4609,7 @@ class JumpscaleInstaller:
         reset=None,
         jsinit=True,
         email=None,
+        words=None,
     ):
 
         MyEnv.check_platform()
@@ -4653,7 +4654,7 @@ class JumpscaleInstaller:
             if not email:
                 email = ""
             C = f"""
-            j.me.configure(tname='{identity}',ask=False, email='{email}')
+            j.me.configure(tname='{identity}',ask=False, email='{email}',words='{words}')
             """
             Tools.execute(C, die=True, interactive=True, jumpscale=True)
 
@@ -5733,7 +5734,16 @@ class DockerContainer:
     #
 
     def install_jumpscale(
-        self, secret=None, force=False, threebot=False, pull=False, redo=False, reset=False, identity=None, email=None
+        self,
+        secret=None,
+        force=False,
+        threebot=False,
+        pull=False,
+        redo=False,
+        reset=False,
+        identity=None,
+        email=None,
+        words=None,
     ):
         if not force:
             if not self.executor.state_exists("STATE_JUMPSCALE"):
@@ -5763,6 +5773,9 @@ class DockerContainer:
             args_txt += " --reset"
         if email:
             args_txt += f" --email={email}"
+        if words:
+            args_txt += f" --words='{words}'"
+
         if not MyEnv.interactive:
             args_txt += " --no-interactive"
         if identity:

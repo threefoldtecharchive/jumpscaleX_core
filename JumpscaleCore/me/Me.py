@@ -69,9 +69,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         if template:
             path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/%s.toml" % self.tname)
             j.core.tools.delete(path)
-        name = self.name + ""
         self.delete()
-        self._data.name = name
 
     def _update_data(self, model, obj, action, propertyname):
         if action == "delete":
@@ -211,7 +209,9 @@ class Me(JSConfigBase, j.baseclasses.testtools):
 
         j.tools.console.clear_screen()
 
-    def configure(self, tname=None, email=None, ask=True, reset=True, phonebook_register=True, template_overwrite=True):
+    def configure(
+        self, tname=None, email=None, ask=True, reset=True, phonebook_register=True, template_overwrite=True, words=None
+    ):
 
         """
         kosmos 'j.me.configure()'
@@ -227,7 +227,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         if email == "":
             email = None
 
-        if tname.endswith(".test"):
+        if tname and tname.endswith(".test"):
             if not email:
                 email = f"someone@{tname}"
 
@@ -254,8 +254,8 @@ class Me(JSConfigBase, j.baseclasses.testtools):
             idpath_default = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/default")
             if j.sal.fs.exists(idpath_default):
                 print(" - found default identity")
-                self.tname = self._name_get(j.sal.fs.readFile(idpath_default))
                 self.reset()  # just to be sure old data gone
+                self.tname = self._name_get(j.sal.fs.readFile(idpath_default))
 
         intro = True
 
@@ -276,6 +276,10 @@ class Me(JSConfigBase, j.baseclasses.testtools):
             ask_name = False
 
         self.load()
+        if words:
+            self.encryptor.reset()
+            self.verify_key = ""
+            self.signing_key = ""
 
         if email:
             ask_email = False
@@ -298,7 +302,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         #     self.configure_sshkey()
 
         while not self.verify_key or not self.signing_key:
-            self.configure_encryption(reset=True, ask=ask)
+            self.configure_encryption(reset=False, ask=ask, words=words)
 
         if ask and j.tools.console.askYesNo("want to add threebot administrators?"):
             admins = ""

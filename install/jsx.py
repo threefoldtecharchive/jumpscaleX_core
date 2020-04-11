@@ -310,7 +310,15 @@ def cli():
 
 
 def container_get(
-    name="3bot", delete=False, jumpscale=True, install=False, mount=True, identity=None, reset=False, email=None
+    name="3bot",
+    delete=False,
+    jumpscale=True,
+    install=False,
+    mount=True,
+    identity=None,
+    reset=False,
+    email=None,
+    words=None,
 ):
     """
     @param identity, if None will be "test"
@@ -347,7 +355,9 @@ def container_get(
 
             assert secret
             assert len(secret) == 32
-            docker.install_jumpscale(force=force, reset=reset, secret=secret, identity=identity, email=email)
+            docker.install_jumpscale(
+                force=force, reset=reset, secret=secret, identity=identity, email=email, words=words
+            )
 
         docker.executor.file_write("/sandbox/cfg/.configured", "")
 
@@ -372,7 +382,17 @@ def container_get(
 @click.option("-i", "--identity", default=None, help="Identity to be used for the 3bot functionality")
 @click.option("--reset", is_flag=True, help="Delete BCDB, dangerous !")
 @click.option("--email", help="email address to be used")
-def install(reinstall=False, pull=False, no_interactive=False, threebot=False, identity=None, reset=None, email=None):
+@click.option("--words", help="words of private key")
+def install(
+    reinstall=False,
+    pull=False,
+    no_interactive=False,
+    threebot=False,
+    identity=None,
+    reset=None,
+    email=None,
+    words=None,
+):
     """
     install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.
     if interactive is True then will ask questions, otherwise will go for the defaults or configured arguments
@@ -392,7 +412,14 @@ def install(reinstall=False, pull=False, no_interactive=False, threebot=False, i
 
     installer = IT.JumpscaleInstaller()
     installer.install(
-        sandboxed=False, force=force, gitpull=pull, threebot=threebot, identity=identity, reset=reset, email=email
+        sandboxed=False,
+        force=force,
+        gitpull=pull,
+        threebot=threebot,
+        identity=identity,
+        reset=reset,
+        email=email,
+        words=words,
     )
     print("Jumpscale X installed successfully")
 
@@ -932,6 +959,7 @@ def secret_set(secret=None):
 @click.option("--reset", is_flag=True, help="delete bcdb")
 @click.option("-id", "--identity", help="name of the identity you want to use, std: 'default'")
 @click.option("--email", help="email address to be used")
+@click.option("--words", help="words for your private key")
 def container(
     name="3bot",
     delete=False,
@@ -943,6 +971,7 @@ def container(
     update=False,
     reset=False,
     email=None,
+    words=None,
 ):
     """
     example:
@@ -976,6 +1005,7 @@ def container(
             identity=identity,
             reset=reset,
             email=email,
+            words=words,
         )
 
         if server:
@@ -1136,7 +1166,7 @@ if __name__ == "__main__":
         # cli.add_command(container_install, "container-install")
         cli.add_command(container_stop, "container-stop")
         cli.add_command(container_start, "container-start")
-        # cli.add_command(container_delete, "container-delete")
+        cli.add_command(container_delete, "container-delete")
         cli.add_command(containers_reset, "containers-reset")
         cli.add_command(container_export, "container-export")
         cli.add_command(container_import, "container-import")

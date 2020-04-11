@@ -121,6 +121,8 @@ class MeEncryptor(j.baseclasses.object):
     def words(self):
         """
         """
+        self.private_key
+        self.signing_key_hex
         if self._signing_key is None:
             raise j.exceptions.NotFound("seed not found, generate a new key pair first")
         seed = self.signing_key._seed
