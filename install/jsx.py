@@ -667,6 +667,7 @@ def builder(push=False, base=False, delete=False, noclean=False, development=Fal
     docker.install_jumpscale(force=delete, pull=False, threebot=True, identity="build", reset=True)
     # because identity==build the secret will be build
     # the hex/hashed repr of the secret: 'b0da275520918e23dd615e2a747528f1'
+
     docker._install_tcprouter()
     docker.install_jupyter()
     # docker.execute("rm  /sandbox/bin/micro;cd /tmp;curl https://getmic.ro | bash;mv micro /sandbox/bin")

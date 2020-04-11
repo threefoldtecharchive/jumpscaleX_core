@@ -4660,25 +4660,32 @@ class JumpscaleInstaller:
                 Tools.execute(C, die=True, interactive=True, jumpscale=True)
 
         if threebot:
-            print("START THREEBOT, can take upto 3-4 min for the first time")
-            Tools.execute_jumpscale("j.servers.threebot.start(background=True)")
-            timestop = time.time() + 240.0
-            ok = False
-            while ok == False and time.time() < timestop:
-                try:
-                    Tools.execute_jumpscale("assert j.core.db.get('threebot.started') == b'1'")
-                    ok = True
-                    break
-                except:
-                    print(" - threebot starting")
-                    time.sleep(1)
+            self.threebot_init(stop=True)
 
-            print(" - Threebot stopped")
-            if not ok:
-                raise Tools.exceptions.Base("could not stop threebot after install")
+    def threebot_init(self, stop=False):
+        print("START THREEBOT, can take upto 3-4 min for the first time")
+        # build all dependencies
+        Tools.execute_jumpscale("j.servers.threebot.install()")
+        # now start to see we have all
+        Tools.execute_jumpscale("j.servers.threebot.start(background=True)")
+        timestop = time.time() + 240.0
+        ok = False
+        while ok == False and time.time() < timestop:
+            try:
+                Tools.execute_jumpscale("assert j.core.db.get('threebot.started') == b'1'")
+                ok = True
+                break
+            except:
+                print(" - threebot starting")
+                time.sleep(1)
+        if not ok:
+            raise Tools.exceptions.Base("could not stop threebot after install")
+        print(" - Threebot Started")
+        if stop:
             Tools.execute("j.servers.threebot.default.stop()", die=False, jumpscale=True, showout=False)
             time.sleep(2)
             Tools.execute("j.servers.threebot.default.stop()", die=True, jumpscale=True)
+            print(" - Threebot stopped")
 
     def remove_old_parts(self):
         tofind = ["DigitalMe", "Jumpscale", "ZeroRobot"]

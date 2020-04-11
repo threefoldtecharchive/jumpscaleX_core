@@ -138,9 +138,6 @@ class builder_method:
 
             reset = reset or state_reset
 
-            # if reset:
-            #     builder.state_reset()  # lets not reset the full module
-
             if self.already_done(func, builder, done_key, reset):
                 builder._log_info("no need to do: %s:%s, was already done" % (builder._classname, kwargs_without_reset))
                 return builder.ALREADY_DONE_VALUE
@@ -158,11 +155,11 @@ class builder_method:
                 if builder._done_check(done_key):
                     builder.stop()
                 builder.profile_builder_select()
-                builder.build()
+                builder.build(reset=reset)
 
             if name == "sandbox":
                 builder.profile_builder_select()
-                builder.install()
+                builder.install(reset=reset)
                 kwargs["zhub_client"] = self.get_default_zhub_client(kwargs)
 
             if name in ["stop", "running", "_init"]:
@@ -360,6 +357,9 @@ class BuilderBaseClass(JSBase):
             cmd = self._replace(cmd, args=args)
         if cmd.strip() == "":
             raise j.exceptions.Base("cmd cannot be empty")
+
+        if not j.sal.fs.exists(self.profile.profile_path):
+            self.profile._save()
 
         cmd = "cd /tmp/\n. %s\n%s" % (self.profile.profile_path, cmd)
         name = self.__class__._classname
