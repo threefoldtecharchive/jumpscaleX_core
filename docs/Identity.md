@@ -60,6 +60,11 @@ this will remove your container & redo your registration
 
 Your own 3bot name (the one as configured in the default identity is automatically added as administrator to any 3bot created.)
  
+## how to start from an existing private key
+
+```
+jsx container -d -id someone.3bot --words='course salon aword ship team broccoli explain gate three again heart busy vessel parrot bar chalk pig world snow ...' --email='...'
+```
 
 ## Creating multiple identities:
 
