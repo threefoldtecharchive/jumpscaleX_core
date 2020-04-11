@@ -320,6 +320,7 @@ def container_get(
     reset=False,
     email=None,
     words=None,
+    stop=False,
 ):
     """
     @param identity, if None will be "test"
@@ -330,7 +331,11 @@ def container_get(
 
     e.DF.init()
 
-    docker = e.DF.container_get(name=name, image="threefoldtech/3bot2", start=True, delete=delete, mount=mount)
+    if stop:
+        docker = e.DF.container_get(name=name, image="threefoldtech/3bot2", start=False, delete=True, mount=mount)
+        return docker
+    else:
+        docker = e.DF.container_get(name=name, image="threefoldtech/3bot2", start=True, delete=delete, mount=mount)
     # print(docker.executor.config)
     force = False
     if not docker.executor.exists("/sandbox/cfg/.configured"):
@@ -750,10 +755,13 @@ def tfgrid_simulator(delete=False, restart=False, shell=False, browser=True, sto
     :param name:
     :return:
     """
-    docker = container_get(name="simulator", delete=delete)
+
     if stop:
-        docker.stop()
+        d = e.DF.container_get("simulator")
+        d.stop()
+        d.delete()
         return
+    docker = container_get(name="simulator", delete=delete)
 
     if restart:
         if not docker.info["State"]["Status"] == "running":
