@@ -27,7 +27,6 @@ class Me(JSConfigBase, j.baseclasses.testtools):
     def _init(self, **kwargs):
         # the threebot config name always corresponds with the config name of nacl, is by design
         self._encryptor = None
-
         self.serialization_format = "json"
         if not self.name:
             raise j.exceptions.Input("threebot.me not filled in, please configure your identity")
@@ -67,7 +66,9 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         if template:
             path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/%s.toml" % self.tname)
             j.core.tools.delete(path)
+        name = self.name + ""
         self.delete()
+        self._data.name = name
 
     def _update_data(self, model, obj, action, propertyname):
         if action == "delete":
@@ -217,6 +218,13 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         print("CONFIGURE IDENTITY")
         if reset:
             self.reset()
+
+        if tname == "build":
+            # means we can generate default identity
+            self.tname = tname
+
+            self.configure_encryption(ask=False, reset=True)
+            return
 
         idpath_default = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/default")
         if j.sal.fs.exists(idpath_default):

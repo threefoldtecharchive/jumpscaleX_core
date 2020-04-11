@@ -114,13 +114,6 @@ class JSXEnv:
 
 e = JSXEnv()
 
-if not "secret" in sys.argv:
-    secret = IT.MyEnv.secret_get()  # this will ask for a secret if not set yet
-    # can also set the secret as ENV argument
-    # export JSXSECRET=1234
-
-    assert secret
-
 
 def jumpscale_get(die=True):
     # jumpscale need to be available otherwise cannot do
@@ -325,12 +318,8 @@ def container_get(name="3bot", delete=False, jumpscale=True, install=False, moun
     IT.MyEnv.sshagent.key_default_name
 
     e.DF.init()
-    # if not identity:
-    #     identity = "test"
 
-    docker = e.DF.container_get(
-        name=name, image="threefoldtech/3bot2", start=True, delete=delete, mount=mount, identity=identity
-    )
+    docker = e.DF.container_get(name=name, image="threefoldtech/3bot2", start=True, delete=delete, mount=mount)
     # print(docker.executor.config)
     force = False
     if not docker.executor.exists("/sandbox/cfg/.configured"):
@@ -342,9 +331,16 @@ def container_get(name="3bot", delete=False, jumpscale=True, install=False, moun
         installer = IT.JumpscaleInstaller()
         installer.repos_get(pull=False, branch=DEFAULT_BRANCH)
         if install:
+
+            secret = IT.MyEnv.secret_get()  # this will ask for a secret if not set yet
+            # can also set the secret as ENV argument
+            # export JSXSECRET=1234
+
+            assert secret
+
             assert secret
             assert len(secret) == 32
-            docker.install_jumpscale(force=force, reset=reset, secret=secret)
+            docker.install_jumpscale(force=force, reset=reset, secret=secret, identity=identity)
 
         if not identity:
             identity = "DEFAULT"
@@ -659,7 +655,7 @@ def builder(push=False, base=False, delete=False, noclean=False, development=Fal
         basebuilder_(push=push)
     dest = "threefoldtech/3bot2"
 
-    docker = e.DF.container_get(name="3botdev", delete=delete, image="threefoldtech/base2", testaccount=True)
+    docker = e.DF.container_get(name="3botdev", delete=delete, image="threefoldtech/base2")
 
     docker.install(update=delete, stop=delete)
 
@@ -668,7 +664,9 @@ def builder(push=False, base=False, delete=False, noclean=False, development=Fal
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False)
 
-    docker.install_jumpscale(force=delete, pull=False, threebot=True)
+    docker.install_jumpscale(force=delete, pull=False, threebot=True, identity="build", reset=True)
+    # because identity==build the secret will be build
+    # the hex/hashed repr of the secret: 'b0da275520918e23dd615e2a747528f1'
     docker._install_tcprouter()
     docker.install_jupyter()
     # docker.execute("rm  /sandbox/bin/micro;cd /tmp;curl https://getmic.ro | bash;mv micro /sandbox/bin")

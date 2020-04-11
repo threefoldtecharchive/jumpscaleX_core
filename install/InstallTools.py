@@ -2746,7 +2746,7 @@ class Tools:
             raise Tools.exceptions.Base("Cannot use console in a non interactive mode.")
 
     @staticmethod
-    def ask_password(question="give secret", confirm=True, regex=None, retry=-1, validate=None):
+    def ask_password(question="give secret", confirm=True, regex=None, retry=-1, validate=None, emptyok=False):
         """Present a password input question to the user
 
         @param question: Password prompt message
@@ -2772,6 +2772,8 @@ class Tools:
         retryCount = retry
         while retryCount != 0:
             response = getpass.getpass(question)
+            if emptyok and not response:
+                return ""
             if (not regex or re.match(regex, response)) and (not validate or validate(response)):
                 if value == response or not confirm:
                     return response
@@ -3699,7 +3701,6 @@ class MyEnv_:
         if "JSXDEBUG" in os.environ:
             self.debug = True
         self.debugger = self.config.get("DEBUGGER", "pudb")
-        self.interactive = self.config.get("INTERACTIVE", True)
 
         if os.path.exists(os.path.join(self.config["DIR_BASE"], "bin", "python3.6")):
             self.sandbox_python_active = True
@@ -3790,8 +3791,6 @@ class MyEnv_:
             config["DEBUG"] = False
         if not "DEBUGGER" in config:
             config["DEBUGGER"] = "pudb"
-        if not "INTERACTIVE" in config:
-            config["INTERACTIVE"] = True
         if "LOGGER_INCLUDE" not in config:
             config["LOGGER_INCLUDE"] = ["*"]
         if "LOGGER_EXCLUDE" not in config:
@@ -3839,7 +3838,7 @@ class MyEnv_:
         if not "MAX_MSGPACKS_LOGS_COUNT" in config:
             config["MAX_MSGPACKS_LOGS_COUNT"] = 50
         if not "SSH_KEY_DEFAULT" in config:
-            config["SSH_KEY_DEFAULT"] = False
+            config["SSH_KEY_DEFAULT"] = ""
 
         if not "SSH_AGENT" in config:
             config["SSH_AGENT"] = True
@@ -3849,13 +3848,12 @@ class MyEnv_:
 
         return config
 
-    def configure(self, config=None, readonly=None, debug=None, interactive=None, secret=None):
+    def configure(self, config=None, readonly=None, debug=None, secret=None):
         """
 
         the args of the command line will also be parsed, will check for
 
         --readonly                      default is false
-        --interactive                   default is interactive, means will ask questions
         --debug                         default debug is False
 
         :return:
@@ -3875,9 +3873,6 @@ class MyEnv_:
         if debug:
             self.config["DEBUG"] = debug
 
-        if interactive:
-            self.config["INTERACTIVE"] = interactive
-
         # installpath = os.path.dirname(inspect.getfile(os.path))
         # # MEI means we are pyexe BaseInstaller
         # if installpath.find("/_MEI") != -1 or installpath.endswith("dist/install"):
@@ -3893,9 +3888,7 @@ class MyEnv_:
 
     @property
     def adminsecret(self):
-        if not self.config["SECRET"]:
-            self.secret_set()
-        return self.config["SECRET"][0:32]
+        return self.secret_get()
 
     def test(self):
         if not MyEnv.loghandlers != []:
@@ -4606,7 +4599,15 @@ class UbuntuInstaller:
 
 class JumpscaleInstaller:
     def install(
-        self, sandboxed=False, force=False, gitpull=False, branch=None, threebot=False, identity=None, reset=None
+        self,
+        sandboxed=False,
+        force=False,
+        gitpull=False,
+        branch=None,
+        threebot=False,
+        identity=None,
+        reset=None,
+        jsinit=True,
     ):
 
         MyEnv.check_platform()
@@ -4623,7 +4624,7 @@ class JumpscaleInstaller:
         self.repos_link()
         self.cmds_link()
 
-        if not Tools.exists(os.path.join(MyEnv.config["DIR_BASE"], "lib/jumpscale/jumpscale_generated.py")):
+        if jsinit or not Tools.exists(os.path.join(MyEnv.config["DIR_BASE"], "lib/jumpscale/jumpscale_generated.py")):
             Tools.execute("cd {DIR_BASE};source env.sh;js_init generate", interactive=False, die_if_args_left=True)
 
         script = """
@@ -4651,10 +4652,12 @@ class JumpscaleInstaller:
             j.me.configure(tname='{identity}',ask=False)
             """
             Tools.execute(C, die=True, interactive=True, jumpscale=True)
-            C = f"""
-            j.me.tfgrid_phonebook_register(interactive=False)
-            """
-            Tools.execute(C, die=True, interactive=True, jumpscale=True)
+
+            if identity != "build":
+                C = f"""
+                j.me.tfgrid_phonebook_register(interactive=False)
+                """
+                Tools.execute(C, die=True, interactive=True, jumpscale=True)
 
         if threebot:
             print("START THREEBOT, can take upto 3-4 min for the first time")
@@ -4830,9 +4833,7 @@ class DockerFactory:
                     DockerContainer(name_found)
 
     @staticmethod
-    def container_get(
-        name, image="threefoldtech/3bot2", start=False, delete=False, ports=None, mount=True, identity=None
-    ):
+    def container_get(name, image="threefoldtech/3bot2", start=False, delete=False, ports=None, mount=True):
         DockerFactory.init()
         assert name
         assert len(name) > 3
@@ -4858,7 +4859,7 @@ class DockerFactory:
                         docker.start(mount=False)
                 return docker
         if not docker:
-            docker = DockerContainer(name=name, image=image, delete=delete, ports=ports, identity=identity)
+            docker = DockerContainer(name=name, image=image, delete=delete, ports=ports)
         if start:
             docker.start(mount=mount)
         return docker
@@ -5002,7 +5003,7 @@ class DockerFactory:
 
 
 class DockerConfig:
-    def __init__(self, name, image=None, startupcmd=None, delete=False, ports=None, identity=None):
+    def __init__(self, name, image=None, startupcmd=None, delete=False, ports=None):
         """
         port config is as follows:
 
@@ -5017,7 +5018,6 @@ class DockerConfig:
         """
         self.name = name
         self.ports = ports
-        self.identity = identity
 
         self.path_vardir = Tools.text_replace("{DIR_BASE}/var/containers/{NAME}", args={"NAME": name})
         Tools.dir_ensure(self.path_vardir)
@@ -5173,9 +5173,7 @@ class DockerContainer:
             raise Tools.exceptions.JSBUG("make sure to call DockerFactory.init() bedore getting a container")
         DockerFactory._dockers[name] = self
 
-        self.config = DockerConfig(
-            name=name, image=image, startupcmd=startupcmd, delete=delete, ports=ports, identity=identity
-        )
+        self.config = DockerConfig(name=name, image=image, startupcmd=startupcmd, delete=delete, ports=ports)
 
         if self.config.portrange is None:
             self.config._find_port_range()
@@ -5186,13 +5184,7 @@ class DockerContainer:
 
             self.config.save()
 
-        if len(MyEnv.sshagent.keys_list()) == 0:
-            #     if "SSH_Agent" in MyEnv.config and MyEnv.config["SSH_Agent"]:
-            #         MyEnv.sshagent.key_default_name  # means we will load ssh-agent and help user to load it properly
-            #
-            # if len(MyEnv.sshagent.keys_list()) == 0:
-            ##TODO: need to make support for working without ssh-agent
-            raise Tools.exceptions.Base("Please load your ssh-agent with a ssh key!")
+        MyEnv.sshagent.key_default_name
 
         self._wireguard = None
         self._executor = None
@@ -5431,6 +5423,7 @@ class DockerContainer:
             self.dexec("DEBIAN_FRONTEND=noninteractive apt-get -y upgrade --force-yes")
             self.dexec("apt-get install mc git -y")
             self.dexec("apt-get install python3 -y")
+            self.dexec("pip3 install redis")
             self.dexec("apt-get install wget tmux -y")
             self.dexec("apt-get install curl rsync unzip redis-server htop -y")
             self.dexec("apt-get install python3-distutils python3-psutil python3-pip python3-click -y")
@@ -5734,7 +5727,9 @@ class DockerContainer:
     #     Tools.config_save(self._path + "/cfg/jumpscale_config.toml", CONFIG)
     #
 
-    def install_jumpscale(self, secret=None, force=False, threebot=False, pull=False, redo=False, reset=False):
+    def install_jumpscale(
+        self, secret=None, force=False, threebot=False, pull=False, redo=False, reset=False, identity=None
+    ):
         if not force:
             if not self.executor.state_exists("STATE_JUMPSCALE"):
                 force = True
@@ -5745,6 +5740,9 @@ class DockerContainer:
 
         if not force:
             return
+
+        if identity == "build":
+            secret = "build"
 
         if not secret:
             secret = MyEnv.secret_get()
@@ -5760,10 +5758,8 @@ class DockerContainer:
             args_txt += " --reset"
         if not MyEnv.interactive:
             args_txt += " --no-interactive"
-        if self.config.identity == "None":
-            self.config.identity = None
-        if self.config.identity:
-            args_txt += f" -i {self.config.identity}"
+        if identity:
+            args_txt += f" -i {identity}"
 
         dirpath = os.path.dirname(inspect.getfile(Tools))
         if dirpath.startswith(MyEnv.config["DIR_CODE"]):
@@ -5789,6 +5785,7 @@ class DockerContainer:
         python3 jsx secret {secret} 
         """
         print(" - Configure secret ")
+        # best to set the secret first because otherwise we cannot be sure bcdb will work
         self.execute(cmd)
 
         cmd = f"""
@@ -5875,7 +5872,9 @@ class SSHAgent:
             if MyEnv.config["SSH_KEY_DEFAULT"]:
                 name = MyEnv.config["SSH_KEY_DEFAULT"]
             elif MyEnv.interactive:
-                name = Tools.ask_string("give name for your sshkey")
+                name = Tools.ask_string("give name for your sshkey,default='default'")
+                if not name:
+                    name = "default"
             else:
                 name = "default"
         return name
@@ -5891,11 +5890,8 @@ class SSHAgent:
         name = self._key_name_get(name)
 
         if not passphrase:
-            if MyEnv.config["interactive"]:
-                passphrase = Tools.ask_password(
-                    "passphrase for ssh key to generate, \
-                        press enter to skip and not use a passphrase"
-                )
+            if MyEnv.interactive:
+                passphrase = Tools.ask_password("passphrase for ssh key to generate (empty=None)", emptyok=True)
 
         path = Tools.text_replace("{DIR_HOME}/.ssh/%s" % name)
         Tools.dir_ensure("{DIR_HOME}/.ssh")
@@ -5958,14 +5954,14 @@ class SSHAgent:
 
         self._keys  # will fetch the keys if not possible will show error
 
-        if "SSH_KEY_DEFAULT" in MyEnv.config:
+        if "SSH_KEY_DEFAULT" in MyEnv.config and MyEnv.config["SSH_KEY_DEFAULT"]:
             sshkey = MyEnv.config["SSH_KEY_DEFAULT"]
             if not sshkey in self.key_names:
-                res = self.key_load(sshkey, die=False)
+                res = self.key_load(name=sshkey, die=False)
                 if res == None:
                     return None
                 sshkey = None
-                MyEnv.config["SSH_KEY_DEFAULT"] = None
+                MyEnv.config["SSH_KEY_DEFAULT"] = ""
         else:
             sshkey = None
 
@@ -5980,7 +5976,7 @@ class SSHAgent:
                 sshkey = ask_key(choices)
 
         myhost_sshkey_dir = f"{DIR_BASE}/myhost/sshkey"
-        if not sshkey:
+        if not sshkey and Tools.exists(myhost_sshkey_dir):
             # lets check if there is a key in the myhost dir
             res = os.listdir(myhost_sshkey_dir)
             if len(res) == 1:
@@ -5993,8 +5989,7 @@ class SSHAgent:
         if not sshkey:
             if Tools.ask_yes_no("ok to generate a default ssh key?"):
                 sshkey = self._key_name_get()
-                passphrase = Tools.ask_password("please provide passphrase of sshkey")
-                sshkeypath = self.key_generate(name=sshkey, passphrase=passphrase)
+                sshkeypath = self.key_generate(name=sshkey)
             else:
                 print("CANNOT CONTINUE, PLEASE GENERATE AN SSHKEY AND RESTART")
                 sys.exit(1)
@@ -6033,13 +6028,12 @@ class SSHAgent:
         :raises RuntimeError: Path to load sshkey on couldn't be found
         :return: name,path
         """
+        if not path and not name:
+            raise Tools.exceptions.Input("name or path needs to be specified")
         if name:
             path = Tools.text_replace("{DIR_HOME}/.ssh/%s" % name)
         elif path:
             name = os.path.basename(path)
-        else:
-            name = self._key_name_get(name)
-            path = Tools.text_replace("{DIR_HOME}/.ssh/%s" % name)
 
         if name in self.key_names:
             return

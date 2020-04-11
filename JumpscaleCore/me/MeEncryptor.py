@@ -148,6 +148,8 @@ class MeEncryptor(j.baseclasses.object):
         self.me.verify_key = self.verify_key_hex
         self._signing_key_load()
 
+        self.me.save()
+
     def _signing_key_load(self, die=True):
         seed = self._hex_to_bin(self.me.signing_key)
         try:
