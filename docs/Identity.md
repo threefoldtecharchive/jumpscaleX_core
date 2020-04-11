@@ -44,7 +44,6 @@ Example:
 walid.3bot
 ```
 
-<<<<<<< HEAD
 ## .test identities (3bot names)
 
 - for tests use ```aname.test```  (aname to be changed)
@@ -61,8 +60,7 @@ this will remove your container & redo your registration
 
 Your own 3bot name (the one as configured in the default identity is automatically added as administrator to any 3bot created.)
  
-=======
->>>>>>> 28dc371631fddf7b4e406f63e82bd8c285629611
+
 ## Creating multiple identities:
 
 You can either start kosmos with a new identity name ```jsx kosmos -n newname.3bot``` which will guide you through configuration, or you can do it from kosmos shell as follows:
