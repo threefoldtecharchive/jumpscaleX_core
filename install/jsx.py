@@ -824,16 +824,7 @@ def container_shell(name="3bot", delete=False, nomount=False):
     _container_shell(name=name, delete=delete, nomount=nomount)
 
 
-def _container_shell(name="3bot", delete=False, nomount=False):
-    """
-    open a  shell to the container for 3bot
-    :param name: name of container if not the default
-    :return:
-    """
-    mount = not nomount
-    docker = container_get(name=name, delete=delete, mount=mount, install=False, jumpscale=True)
-    httpport = docker.config.portrange * 10 + 7000
-    msg = f"""
+container_shell_msg = f"""
     WELCOME TO YOUR INSTALLED LOCAL KOSMOS ENVIRONMENT (THREEBOT)
 
     some tips to get started
@@ -846,7 +837,18 @@ def _container_shell(name="3bot", delete=False, nomount=False):
 
     """
 
-    docker.shell("echo '%s';bash" % IT.Tools.text_replace(msg))
+
+def _container_shell(name="3bot", delete=False, nomount=False):
+    """
+    open a  shell to the container for 3bot
+    :param name: name of container if not the default
+    :return:
+    """
+    mount = not nomount
+    docker = container_get(name=name, delete=delete, mount=mount, install=False, jumpscale=True)
+    httpport = docker.config.portrange * 10 + 7000
+
+    docker.shell("echo '%s';bash" % IT.Tools.text_replace(container_shell_msg))
 
 
 @click.command()
@@ -985,7 +987,7 @@ def container(
         except:
             pass
 
-    _container_shell()
+    docker.shell("echo '%s';bash" % IT.Tools.text_replace(container_shell_msg))
 
 
 # @click.command(name="modules-install")
