@@ -1586,7 +1586,7 @@ class Tools:
         # if "'" in cmd or cmd.startswith("source") or "&" in cmd:
         Tools.file_write("/tmp/script_exec_interactive.sh", cmd)
         Tools._cmd_check(cmd)
-        cmd = "bash -ex /tmp/script_exec_interactive.sh"
+        cmd = "bash -e /tmp/script_exec_interactive.sh"
         returncode = os.system(cmd)
         # args = cmd.split(" ")
         # args[0] = shutil.which(args[0])
@@ -4608,6 +4608,7 @@ class JumpscaleInstaller:
         identity=None,
         reset=None,
         jsinit=True,
+        email=None,
     ):
 
         MyEnv.check_platform()
@@ -4646,18 +4647,15 @@ class JumpscaleInstaller:
             Tools.execute("source /sandbox/env.sh;bcdb delete --all -f")
 
         if True or identity or threebot:
+
             if not identity:
                 identity = ""
+            if not email:
+                email = ""
             C = f"""
-            j.me.configure(tname='{identity}',ask=False)
+            j.me.configure(tname='{identity}',ask=False, email='{email}')
             """
             Tools.execute(C, die=True, interactive=True, jumpscale=True)
-
-            if identity != "build":
-                C = f"""
-                j.me.tfgrid_phonebook_register(interactive=False)
-                """
-                Tools.execute(C, die=True, interactive=True, jumpscale=True)
 
         if threebot:
             self.threebot_init(stop=True)
@@ -5735,7 +5733,7 @@ class DockerContainer:
     #
 
     def install_jumpscale(
-        self, secret=None, force=False, threebot=False, pull=False, redo=False, reset=False, identity=None
+        self, secret=None, force=False, threebot=False, pull=False, redo=False, reset=False, identity=None, email=None
     ):
         if not force:
             if not self.executor.state_exists("STATE_JUMPSCALE"):
@@ -5763,6 +5761,8 @@ class DockerContainer:
             args_txt += " --pull"
         if reset:
             args_txt += " --reset"
+        if email:
+            args_txt += f" --email={email}"
         if not MyEnv.interactive:
             args_txt += " --no-interactive"
         if identity:

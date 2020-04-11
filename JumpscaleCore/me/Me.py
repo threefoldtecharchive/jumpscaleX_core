@@ -99,7 +99,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
             if self.tname not in self.admins:
                 self.admins.append(self.tname)
 
-    def save_as_template(self, overwrite=False):
+    def save_as_template(self, overwrite=True):
         # now write to local identity drive
         print(" - save identity:%s" % self.tname)
         j.sal.fs.createDir("{DIR_BASE}/myhost/identities")
@@ -142,6 +142,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         j.tools.console.clear_screen()
 
     def configure_sshkey(self, name=None, reset=False, ask=True, generate=False):
+        raise j.exceptions.Base("not supported for now")
         # TODO: not needed for now, will ignore
         j.tools.console.clear_screen()
         print(" *** WILL NOW CONFIGURE SSH KEY FOR USE IN 3BOT ***\n\n")
@@ -207,7 +208,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
 
         j.tools.console.clear_screen()
 
-    def configure(self, tname=None, ask=False, reset=True):
+    def configure(self, tname=None, email=None, ask=True, reset=True, phonebook_register=True, template_overwrite=True):
 
         """
         kosmos 'j.me.configure()'
@@ -215,25 +216,43 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         kosmos 'j.me.configure(tname="my3bot",reset=True)'
 
         """
+
         print("CONFIGURE IDENTITY")
+
+        if tname == "":
+            tname = None
+        if email == "":
+            email = None
+
+        if tname.endswith(".test"):
+            if not email:
+                email = f"someone@{tname}"
+
+            ask = False
+
         if reset:
             self.reset()
 
-        if tname == "build":
-            # means we can generate default identity
+        if tname:
+            # no need to ask was specified
+            ask_name = False
+            if self.tname != tname:
+                self.reset()
             self.tname = tname
+        else:
+            ask_name = bool(ask)
 
+        if self.tname == "build":
+            # means we can generate default identity
             self.configure_encryption(ask=False, reset=True)
             return
 
-        idpath_default = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/default")
-        if j.sal.fs.exists(idpath_default):
-            print(" - found default identity")
-            tname = self._name_get(j.sal.fs.readFile(idpath_default))
-
-        if tname:
-            self.tname = tname
-            self.load()
+        if not self.tname:
+            idpath_default = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/default")
+            if j.sal.fs.exists(idpath_default):
+                print(" - found default identity")
+                self.tname = self._name_get(j.sal.fs.readFile(idpath_default))
+                self.reset()  # just to be sure old data gone
 
         intro = True
 
@@ -243,24 +262,32 @@ class Me(JSConfigBase, j.baseclasses.testtools):
                 print("THREEBOT IDENTITY NOT PROVIDED YET, WILL ASK SOME QUESTIONS NOW\n\n")
             return False
 
-        ask1 = bool(ask)
-        while ask1 or not self.tname or len(self.tname) < 5:
+        while ask_name or not self.tname or len(self.tname) < 5:
             intro = dointro(intro)
-            self.tname = j.tools.console.askString(
+            tname = j.tools.console.askString(
                 "please provide your threebot connect name (min 5 chars)", default=self.tname
             )
-            ask1 = False
+            if self.tname != tname:
+                self.reset()
+            self.tname = tname
+            ask_name = False
+
         self.load()
 
-        ask1 = bool(ask)
-        while ask1 or not self.email or len(self.email) < 6 or "@" not in self.email:
+        if email:
+            ask_email = False
+            self.email = email
+        else:
+            ask_email = bool(ask)
+
+        while ask_email or not self.email or len(self.email) < 6 or "@" not in self.email:
             intro = dointro(intro)
             self.email = j.tools.console.askString("please provide your email", default=self.email)
             if "@" not in self.email:
                 print("please specify valid email")
-                self.email = ""
+                email = ""
                 print()
-            ask1 = False
+            ask_email = False
 
         # NOT NEEDED FOR NOW I THINK (HOPE)
         # while not self.sshkey_priv or not self.sshkey_pub or not self.sshkey_name:
@@ -268,7 +295,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         #     self.configure_sshkey()
 
         while not self.verify_key or not self.signing_key:
-            self.configure_encryption(reset=True)
+            self.configure_encryption(reset=True, ask=ask)
 
         if ask and j.tools.console.askYesNo("want to add threebot administrators?"):
             admins = ""
@@ -283,9 +310,11 @@ class Me(JSConfigBase, j.baseclasses.testtools):
                     r.append(admin)
             self.admins = admins
 
-        self.save()
+        if phonebook_register:
+            self.tfgrid_phonebook_register(force=True, interactive=False)
 
-        self.save_as_template()
+        self.save()
+        self.save_as_template(overwrite=template_overwrite)
 
     def sign(self, data):
         return self.encryptor.sign(data)
@@ -345,7 +374,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
     #     cl = j.clients.ssh.get(name="explorer")
     #     raise RuntimeError("need to implement")
 
-    def tfgrid_phonebook_register(self, host="", interactive=True):
+    def tfgrid_phonebook_register(self, host="", interactive=True, force=True):
         """
 
         initialize your threebot
@@ -354,6 +383,8 @@ class Me(JSConfigBase, j.baseclasses.testtools):
 
         :return:
         """
+        if self.tid and self.tid > 0 and not force:
+            return
         j.application.interactive = interactive
         explorer = j.clients.explorer.default
         nacl = self.encryptor
@@ -388,7 +419,13 @@ class Me(JSConfigBase, j.baseclasses.testtools):
             user.email = self.email
             user.description = description
             user.pubkey = nacl.verify_key_hex
-            tid = explorer.users.register(user)
+            try:
+                tid = explorer.users.register(user)
+            except Exception as e:
+                msg = str(e)
+                if msg.find("user with same name or email exists") != -1:
+                    raise j.exceptions.Input("Eser with same name or email exists om TFGrid phonebook.", data=user)
+                raise e
             r = explorer.users.get(tid=tid)
 
         # why didn't we use the primitives as put on this factory (sign, decrypt, ...)

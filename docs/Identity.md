@@ -2,21 +2,23 @@
 
 ## For the first start of jsx container
 
-- Start kosmos shell using `jsx kosmos -n <YOUR-THREEBOT-NAME>`
+- Start kosmos shell using ```jsx constainer```
+- it will ask your for your identity
+    - if you want to specify it at start ```jsx constainer -id someone.3bot```
+    - ps:is no need to specify 3bot at the end, will happen automatically
+- if you want to work with more than 1 container use ```-n aname```
 
-Example: `jsx kosmos -n hamada.3bot`
+
+## if you want to check your configuration or change
 
 - After kosmos starts make configure to j.me
+    
     ```python
     j.me.configure()
     ```
 
-This will as you about your information, 3botname, email, description .. and if you want to add admins to your system
-
-- Then register to the tf_phonebook using
-    ```python
-    j.me.tfgrid_phonebook_register()
-    ```
+This will as you about your information, 3botname, email, description .. and if you want to add admins to your system.
+This command will automatically register your information in the phonebook.
 
  ![Identity photo](./images/identity.png)
 
@@ -36,9 +38,27 @@ Example:
 3BOTDEVEL:3bot:identities: cat default 
 walid.3bot
 ```
+
+## .test identities (3bot names)
+
+- for tests use ```aname.test```  (aname to be changed)
+- the email address you can specify but if not done will be someone@aname.test (--email)
+- when using a .test name everything will happen automatically, you will find the generated identity in your identity folder
+
+example
+
+```bash
+jsx container -id test5.test -n test -d
+```
+
+this will remove your container & redo your registration
+
+Your own 3bot name (the one as configured in the default identity is automatically added as administrator to any 3bot created.)
  
 ## Creating multiple identities:
+
 You can either start kosmos with a new identity name ```jsx kosmos -n newname.3bot``` which will guide you through configuration, or you can do it from kosmos shell as follows:
+
 ```bash
 JSX> j.myidentities.get("test2.3bot")
  - save identity:test1.3bot

@@ -309,7 +309,9 @@ def cli():
 #     _container_shell()
 
 
-def container_get(name="3bot", delete=False, jumpscale=True, install=False, mount=True, identity=None, reset=False):
+def container_get(
+    name="3bot", delete=False, jumpscale=True, install=False, mount=True, identity=None, reset=False, email=None
+):
     """
     @param identity, if None will be "test"
     """
@@ -326,10 +328,15 @@ def container_get(name="3bot", delete=False, jumpscale=True, install=False, moun
         jumpscale = True
         install = True
         force = True
+
     if jumpscale:
 
         installer = IT.JumpscaleInstaller()
         installer.repos_get(pull=False, branch=DEFAULT_BRANCH)
+
+        # if not identity:
+        #     identity = "DEFAULT"
+
         if install:
 
             secret = IT.MyEnv.secret_get()  # this will ask for a secret if not set yet
@@ -340,12 +347,10 @@ def container_get(name="3bot", delete=False, jumpscale=True, install=False, moun
 
             assert secret
             assert len(secret) == 32
-            docker.install_jumpscale(force=force, reset=reset, secret=secret, identity=identity)
-
-        if not identity:
-            identity = "DEFAULT"
+            docker.install_jumpscale(force=force, reset=reset, secret=secret, identity=identity, email=email)
 
         docker.executor.file_write("/sandbox/cfg/.configured", "")
+
     return docker
 
 
@@ -366,7 +371,8 @@ def container_get(name="3bot", delete=False, jumpscale=True, install=False, moun
 @click.option("-s", "--no-interactive", is_flag=True, help="default is interactive, -s = silent")
 @click.option("-i", "--identity", default=None, help="Identity to be used for the 3bot functionality")
 @click.option("--reset", is_flag=True, help="Delete BCDB, dangerous !")
-def install(reinstall=False, pull=False, no_interactive=False, threebot=False, identity=None, reset=None):
+@click.option("--email", help="email address to be used")
+def install(reinstall=False, pull=False, no_interactive=False, threebot=False, identity=None, reset=None, email=None):
     """
     install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.
     if interactive is True then will ask questions, otherwise will go for the defaults or configured arguments
@@ -385,7 +391,9 @@ def install(reinstall=False, pull=False, no_interactive=False, threebot=False, i
         force = False
 
     installer = IT.JumpscaleInstaller()
-    installer.install(sandboxed=False, force=force, gitpull=pull, threebot=threebot, identity=identity, reset=reset)
+    installer.install(
+        sandboxed=False, force=force, gitpull=pull, threebot=threebot, identity=identity, reset=reset, email=email
+    )
     print("Jumpscale X installed successfully")
 
 
@@ -712,7 +720,6 @@ def tfgrid_simulator(delete=False):
     :param name:
     :return:
     """
-
     docker = container_get(name="simulator", delete=delete)
     docker.start()
     addr = docker.zerotier_connect()
@@ -766,42 +773,42 @@ def containers(configdir=None):
     e.DF.list()
 
 
-@click.command(name="container-kosmos")
-@click.option("-n", "--name", default="3bot", help="name of container")
-def container_kosmos(name="3bot"):
-    """
-    open a kosmos shell in container
-    :param name: name of container if not the default =  3bot
-    :return:
-    """
-    docker = container_get(name=name, jumpscale=True, install=False)
-    os.execv(
-        shutil.which("ssh"),
-        [
-            "ssh",
-            "root@localhost",
-            "-A",
-            "-t",
-            "-oStrictHostKeyChecking=no",
-            "-p",
-            str(docker.config.sshport),
-            "source /sandbox/env.sh;kosmos 'print()';clear;echo WELCOME TO YOUR INTERACTIVE KOSMOS SESSION;kosmos -p",
-        ],
-    )
+# @click.command(name="container-kosmos")
+# @click.option("-n", "--name", default="3bot", help="name of container")
+# def container_kosmos(name="3bot"):
+#     """
+#     open a kosmos shell in container
+#     :param name: name of container if not the default =  3bot
+#     :return:
+#     """
+#     docker = container_get(name=name, jumpscale=True, install=False)
+#     os.execv(
+#         shutil.which("ssh"),
+#         [
+#             "ssh",
+#             "root@localhost",
+#             "-A",
+#             "-t",
+#             "-oStrictHostKeyChecking=no",
+#             "-p",
+#             str(docker.config.sshport),
+#             "source /sandbox/env.sh;kosmos 'print()';clear;echo WELCOME TO YOUR INTERACTIVE KOSMOS SESSION;kosmos -p",
+#         ],
+#     )
+#
 
-
-@click.command()
-@click.option("-n", "--name", default="3bot", help="name of container")
-@click.option("-t", "--target", default="auto", help="auto,local,container, default is auto will try container first")
-def kosmos(name="3bot", target="auto"):
-    j = jumpscale_get(die=True)
-    j.application.interactive = True
-    j.me.tname = name
-    j.me.load()
-    if not j.me.sshkey_priv:  # important to make sure private key is loaded
-        j.me.configure(tname=name)
-    j.data.bcdb.system  # needed to make sure we have bcdb running, needed for code completion
-    j.shell(loc=False, locals_=locals(), globals_=globals())
+# @click.command()
+# @click.option("-n", "--name", default="3bot", help="name of container")
+# @click.option("-t", "--target", default="auto", help="auto,local,container, default is auto will try container first")
+# def kosmos(name="3bot", target="auto"):
+#     j = jumpscale_get(die=True)
+#     j.application.interactive = True
+#     j.me.tname = name
+#     j.me.load()
+#     if not j.me.sshkey_priv:  # important to make sure private key is loaded
+#         j.me.configure(tname=name)
+#     j.data.bcdb.system  # needed to make sure we have bcdb running, needed for code completion
+#     j.shell(loc=False, locals_=locals(), globals_=globals())
 
 
 @click.command(name="container-shell")
@@ -912,6 +919,7 @@ def secret_set(secret=None):
 @click.option("-s", "--server", is_flag=True, help="start the server components")
 @click.option("--reset", is_flag=True, help="delete bcdb")
 @click.option("-id", "--identity", help="name of the identity you want to use, std: 'default'")
+@click.option("--email", help="email address to be used")
 def container(
     name="3bot",
     delete=False,
@@ -922,6 +930,7 @@ def container(
     pull=False,
     update=False,
     reset=False,
+    email=None,
 ):
     """
     example:
@@ -947,7 +956,14 @@ def container(
             name1 = name
 
         docker = container_get(
-            name=name1, delete=delete, jumpscale=True, install=False, mount=True, identity=identity, reset=reset
+            name=name1,
+            delete=delete,
+            jumpscale=True,
+            install=False,
+            mount=True,
+            identity=identity,
+            reset=reset,
+            email=email,
         )
 
         if server:
@@ -1090,7 +1106,7 @@ if __name__ == "__main__":
     # cli.add_command(ssh)
     cli.add_command(check)
     cli.add_command(install)
-    cli.add_command(kosmos)
+    # cli.add_command(kosmos)
     cli.add_command(generate)
     # cli.add_command(wireguard)
     # cli.add_command(modules_install, "modules-install")
@@ -1104,7 +1120,7 @@ if __name__ == "__main__":
 
     # DO NOT DO THIS IN ANY OTHER WAY !!!
     if not e._DF.indocker():
-        cli.add_command(container_kosmos, "container-kosmos")
+        # cli.add_command(container_kosmos, "container-kosmos")
         # cli.add_command(container_install, "container-install")
         cli.add_command(container_stop, "container-stop")
         cli.add_command(container_start, "container-start")
