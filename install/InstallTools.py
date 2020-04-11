@@ -4653,6 +4653,8 @@ class JumpscaleInstaller:
                 identity = ""
             if not email:
                 email = ""
+            if not words:
+                words = ""
             C = f"""
             j.me.configure(tname='{identity}',ask=False, email='{email}',words='{words}')
             """

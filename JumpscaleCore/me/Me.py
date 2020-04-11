@@ -226,6 +226,8 @@ class Me(JSConfigBase, j.baseclasses.testtools):
             tname = None
         if email == "":
             email = None
+        if words == "":
+            words = None
 
         if tname and tname.endswith(".test"):
             if not email:
