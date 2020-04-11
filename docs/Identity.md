@@ -6,6 +6,11 @@
 
 Example: `jsx kosmos -n hamada.3bot`
 
+- This will ask you abot a secret work, this secret is saved in redis and encrypt your identites
+please keep it safe
+
+ ![Identity photo](./images/identity1.png)
+
 - After kosmos starts make configure to j.me
     ```python
     j.me.configure()
@@ -33,10 +38,10 @@ These contains the identity information, please keep them safe
 Example:
 
 ```
-3BOTDEVEL:3bot:identities: cat default 
+3BOTDEVEL:3bot:identities: cat default
 walid.3bot
 ```
- 
+
 ## Creating multiple identities:
 You can either start kosmos with a new identity name ```jsx kosmos -n newname.3bot``` which will guide you through configuration, or you can do it from kosmos shell as follows:
 ```bash
@@ -61,38 +66,38 @@ JSX> i = j.myidentities.get("test2.3bot")
 ```
 - Then configure your new identity
 ```
-JSX> i.configure()                                                                                                                                                                    
-                                                                                                                                                                                        
-THREEBOT IDENTITY NOT PROVIDED YET, WILL ASK SOME QUESTIONS NOW                                                                                                                         
-                                                                                                                                                                                        
-                                                                                                                                                                                        
-please provide your threebot connect name (min 5 chars) [test2.3bot]:                                                                                                                   
-please provide your email: test2@mail.com                                                                                                                                               
-                                                                                                                                                                                        
- *** WILL NOW CONFIGURE SSH KEY FOR USE IN 3BOT ***                                                                                                                                     
-                                                                                                                                                                                        
-                                                                                                                                                                                        
-SSH: found preconfigured SSH key, ok to use ssh key: id_rsa [y/n]: y                                                                                                                    
-                                                                                                                                                                                        
- *** WILL NOW CONFIGURE YOUR PRIVATE 3BOT SECURE KEY (IMPORTANT) ***                                                                                                                    
-                                                                                                                                                                                        
-                                                                                                                                                                                        
-Ok to generate private key (Y or 1 for yes, otherwise provide words)?                                                                                                                   
-make your choice (y,n): y                                                                                                                                                               
-We have generated a private key for you.                                                                                                                                                
-The private key:                                                                                                                                                                        
-                                                                                                                                                                                        
-fine bitter abandon annual inject among vanish supply custom pause beach type puppy exhibit carbon neutral hole trouble drastic remain artwork antique laptop material                  
-ITS IMPORTANT TO STORE THIS KEY IN A SAFE PLACE                                                                                                                                         
-Did you write the words down and store them in safe place?                                                                                                                              
-make your choice (y,n): y                                                                                                                                                               
-                                                                                                                                                                                        
-give the 3e word of the private key string: abandon                                                                                                                                     
-                                                                                                                                                                                        
-want to add threebot administrators? [y/n]: n                                                                                                                                           
- - save identity:test1.3bot                                                                                                                                                             
- - save identity:test2.3bot                                                                                                                                                             
-JSX> 
+JSX> i.configure()
+
+THREEBOT IDENTITY NOT PROVIDED YET, WILL ASK SOME QUESTIONS NOW
+
+
+please provide your threebot connect name (min 5 chars) [test2.3bot]:
+please provide your email: test2@mail.com
+
+ *** WILL NOW CONFIGURE SSH KEY FOR USE IN 3BOT ***
+
+
+SSH: found preconfigured SSH key, ok to use ssh key: id_rsa [y/n]: y
+
+ *** WILL NOW CONFIGURE YOUR PRIVATE 3BOT SECURE KEY (IMPORTANT) ***
+
+
+Ok to generate private key (Y or 1 for yes, otherwise provide words)?
+make your choice (y,n): y
+We have generated a private key for you.
+The private key:
+
+fine bitter abandon annual inject among vanish supply custom pause beach type puppy exhibit carbon neutral hole trouble drastic remain artwork antique laptop material
+ITS IMPORTANT TO STORE THIS KEY IN A SAFE PLACE
+Did you write the words down and store them in safe place?
+make your choice (y,n): y
+
+give the 3e word of the private key string: abandon
+
+want to add threebot administrators? [y/n]: n
+ - save identity:test1.3bot
+ - save identity:test2.3bot
+JSX>
 ```
 - Then register to the tf_phonebook using
 ```python
@@ -122,5 +127,5 @@ These contains the identity information, please keep them safe
 Example:
 
 ```
-3BOTDEVEL:3bot:identities: cat default 
+3BOTDEVEL:3bot:identities: cat default
 walid.3bot
