@@ -10,6 +10,7 @@ import time
 import json
 import random
 import sys
+import gevent
 
 DEFAULT_BRANCH = "unstable"
 os.environ["LC_ALL"] = "en_US.UTF-8"
@@ -740,19 +741,45 @@ def container_start(name="3bot"):
 
 @click.command()
 @click.option("-d", "--delete", is_flag=True, help="if set will delete the docker container if it already exists")
-# @click.option("-r", "--restart", is_flag=True, help="restart the notebook")
-def tfgrid_simulator(delete=False):
+@click.option("-r", "--restart", is_flag=True, help="restart the notebook")
+@click.option("-q", "--stop", is_flag=True, help="stop the container & the notebook")
+@click.option("-j", "--shell", is_flag=True, help="open shell to SDK container running the simulator")
+def tfgrid_simulator(delete=False, restart=False, shell=False, browser=True, stop=False):
     """
     start the 3bot container
     :param name:
     :return:
     """
     docker = container_get(name="simulator", delete=delete)
-    docker.start()
-    addr = docker.zerotier_connect()
-    docker.execute("j.tools.tfgrid_simulator.start(background=True)", jumpscale=True)
-    print(f" - CONNECT TO YOUR SIMULATOR ON: http://{addr}:8888/")
-    shell = IT.Tools.ask_yes_no("Continue to shell?")
+    if stop:
+        docker.stop()
+        return
+
+    if restart:
+        if not docker.info["State"]["Status"] == "running":
+            docker.start()
+        else:
+            j = jumpscale_get()
+            j.servers.notebook.stop(background=True)
+            j.servers.notebook.start(background=True)
+    else:
+        docker.start()
+        addr = docker.zerotier_connect()
+        docker.execute("j.tools.tfgrid_simulator.start(background=True)", jumpscale=True)
+        print(f" - CONNECT TO YOUR SIMULATOR ON: http://{addr}:8888/")
+
+    if browser:
+        try:
+            import webbrowser
+
+            time.sleep(3)
+            if IT.MyEnv.platform_is_osx:
+                webbrowser.get("safari").open_new_tab(f"http://{addr}:8888")
+            else:
+                webbrowser.open_new_tab(f"http://{addr}:8888")
+        except:
+            pass
+
     if shell:
         docker.shell()
 
@@ -790,14 +817,27 @@ def containers_reset(configdir=None):
 
 
 @click.command(name="containers")
-def containers(configdir=None):
+@click.option("-d", "--delete", is_flag=True, help="delete all containers")
+@click.option("-q", "--stop", is_flag=True, help="remove all containers")
+@click.option("-f", "--filter", help="filter, does a startswith search")
+def containers(delete=False, stop=False, filter=None):
     """
     list the containers
     :param name:
     :return:
     """
-
-    e.DF.list()
+    for item in e.DF.list():
+        if filter:
+            if not item.startswith(filter):
+                continue
+        if delete or stop:
+            d = e.DF.container_get(item)
+            if stop:
+                print(f" - STOP: {item}")
+                d.stop()
+            if delete:
+                print(f" - DELETE: {item}")
+                d.delete()
 
 
 # @click.command(name="container-kosmos")
@@ -1177,6 +1217,6 @@ if __name__ == "__main__":
         # cli.add_command(threebot_flist, "threebot-flist")
         cli.add_command(containers)
         cli.add_command(container)
-        cli.add_command(tfgrid_simulator, "tfgrid-simulator")
+        cli.add_command(tfgrid_simulator, "simulator")
 
     cli()
