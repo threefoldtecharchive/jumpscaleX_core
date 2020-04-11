@@ -309,7 +309,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             identity = identity or j.myidentities.me.tname
 
             if j.myidentities.exists(identity):
-                j.me.name = identity
+                j.me.tname = identity
                 j.me.load()
             else:
                 raise j.exceptions.Input(f"identity {identity} doesn't exist. please configure it")
