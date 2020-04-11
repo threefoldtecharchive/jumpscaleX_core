@@ -1,4 +1,4 @@
-    from Jumpscale import j
+from Jumpscale import j
 
 
 class SSHKey(j.baseclasses.object_config):
@@ -59,7 +59,7 @@ class SSHKey(j.baseclasses.object_config):
             self._save()
 
         if not self.pubkey and self.privkey:
-            #TODO: duplicate with installtools SSHAgent
+            # TODO: duplicate with installtools SSHAgent
             path = "%s.pub" % (self.path)
             if not j.sal.fs.exists(path):
                 cmd = f"ssh-keygen -y -f {self.path} > {self.path}.pub"
@@ -90,7 +90,7 @@ class SSHKey(j.baseclasses.object_config):
         :param reset: if True, then delete old ssh key from dir, defaults to False
         :type reset: bool, optional
         """
-        #TODO: use SSHAgent in installtools
+        # TODO: use SSHAgent in installtools
         j.shell()
 
     def delete(self):
@@ -110,7 +110,6 @@ class SSHKey(j.baseclasses.object_config):
         """
         j.sal.fs.writeFile(self.path, self.privkey)
         j.sal.fs.writeFile(self.path + ".pub", self.pubkey)
-
 
     def load(self):
         """
