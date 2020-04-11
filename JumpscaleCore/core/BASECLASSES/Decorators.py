@@ -62,8 +62,15 @@ def actor_method(func):
             kwargs["user_session"] = j.application.admin_session
             kwargs["schema_out"] = schema_out
 
-        res = func(self, **kwargs)
-        return res
+        # TODO: j.application.appname is init at this point the error that happens never registed.
+        try:
+            res = func(self, **kwargs)
+        except Exception as e:
+            # print("err: ", str(e))
+            j.errorhandler.exception_handle(e, die=False)
+            raise e
+        else:
+            return res
 
     return wrapper_action
 
