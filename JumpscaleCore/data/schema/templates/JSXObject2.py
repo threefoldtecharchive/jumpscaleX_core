@@ -62,6 +62,8 @@ class JSXObject2(j.data.schema._JSXObjectClassSub):
             {% if prop.is_complex_type %}
             self._deserialized_items["{{prop.name}}"].__changed = True
             {% endif %}
+            if self._ignore_model_autosave:
+                return
             if self._model:
                 self._model._triggers_call(obj=self, action="change", propertyname="{{prop.name}}")
             if self._root._autosave:  #need to check always at lowest level

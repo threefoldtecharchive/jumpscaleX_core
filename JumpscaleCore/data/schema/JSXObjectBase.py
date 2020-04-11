@@ -14,6 +14,7 @@ class JSXObjectBase(j.baseclasses.object):
         self._load_from_data(capnpdata=capnpdata)  # ONLY LOADS THE self._capnp_obj_
         # self._changed_props = []
         self.id = None
+        self._ignore_model_autosave = False
 
         if datadict:
             self._data_update(datadict)
@@ -22,9 +23,11 @@ class JSXObjectBase(j.baseclasses.object):
 
     def _defaults_set(self):
         # j.debug()
+        self._ignore_model_autosave = True
         for prop in self._schema.properties:
             # name = prop.name
             setattr(self, prop.name, prop.default)
+        self._ignore_model_autosave = False
 
     @property
     def _readonly(self):
