@@ -182,7 +182,10 @@ class SystemFS(JSBASE, TESTTOOLS):
         @param deletefirst: bool (Set to True if you want to erase symlinks/folders in the destination that also exist in the source, before copying.)
         @param overwriteFiles: if True will overwrite files, otherwise will not overwrite when destination exists
         """
-        default_ignore_dir = [".egg-info", ".dist-info", "__pycache__", "build", "dist"]
+
+        # Don't include `build` in here, you will break lua/luarocks builder
+        # check https://github.com/threefoldtech/jumpscaleX_builders/issues/62
+        default_ignore_dir = [".egg-info", ".dist-info", "__pycache__"]
         if ignoredir is None:
             ignoredir = []
         if ignorefiles is None:
