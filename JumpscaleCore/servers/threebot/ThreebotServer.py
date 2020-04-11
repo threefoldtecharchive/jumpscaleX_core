@@ -399,8 +399,8 @@ class ThreeBotServer(j.baseclasses.object_config):
             p = j.tools.threebot_packages.get(name=name)
             p.status = "tostart"  # means we need to start
 
-        requiredpackages = ["zerobot.base", "zerobot.webinterface", "zerobot.admin", "zerobot.alerta"]
-        extrapackages = ["zerobot.myjobs_ui", "zerobot.packagemanager"]
+        requiredpackages = ["zerobot.base", "zerobot.webinterface", "zerobot.admin"]
+        extrapackages = []
         packages = j.tools.threebot_packages.find()
 
         # check if any of the needed packages is missing
@@ -468,7 +468,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         server = j.servers.threebot.get("{name}", executor='{executor}')
         server.start(background=False, packages={packages}, identity='{identity}')
         """.format(
-            name=self.name, executor=self.executor, web=web, packages=packages, identity=identity,
+            name=self.name, executor=self.executor, web=web, packages=packages, identity=identity
         )
         cmd_start = j.core.tools.text_strip(cmd_start)
         startup = j.servers.startupcmd.get(name="threebot_{}".format(self.name), cmd_start=cmd_start)
