@@ -11,37 +11,20 @@ class MyIdentities(j.baseclasses.object_config_collection):
 
     def _init(self, **kwargs):
         self._box = None
-        self._secret = None
         self.secret_expiration_hours = 24 * 30 * 12
 
     def secret_set(self, secret=None):
         """
         can be the hash or the originating secret passphrase
         """
-        if not secret:
-            secret = j.tools.console.askPassword("please specify secret (<32chars)")
-            assert len(secret) < 32
-        if len(secret) != 32:
-            secret = j.data.hash.md5_string(secret)
-        expiration = self.secret_expiration_hours * 3600
-
-        j.core.db.set("threebot.secret.encrypted", secret, ex=expiration)
-        self._secret = j.core.db.get("threebot.secret.encrypted")
-        assert len(self._secret) == 32
+        j.core.myenv.secret_set(secret=secret)
 
     @property
     def secret(self):
-        if not self._secret:
-            self._secret = j.core.db.get("threebot.secret.encrypted")
-            if not self._secret:
-                self.secret_set()
-            assert len(self._secret) == 32
-            if not self._secret:
-                if j.application.interactive:
-                    self.secret_set()
-                else:
-                    raise j.exceptions.Input("secret passphrase not known, need to set it for identity:%s" % self.name)
-        return self._secret
+        secret = j.core.myenv.secret_get()
+        if not isinstance(secret, bytes):
+            secret = secret.encode()
+        return secret
 
     @property
     def box(self):
@@ -61,10 +44,10 @@ class MyIdentities(j.baseclasses.object_config_collection):
         :return:
         """
         DEFAULT_PATH = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/default")
-        default_identity=None
+        default_identity = None
         if j.sal.fs.exists(DEFAULT_PATH):
             default_identity = j.sal.fs.readFile(DEFAULT_PATH).strip("\n")
-        return self.get(name="default",tname=default_identity)
+        return self.get(name="default", tname=default_identity)
 
     def encrypt(self, data, hex=False):
         res = self.box.encrypt(self._tobytes(data))

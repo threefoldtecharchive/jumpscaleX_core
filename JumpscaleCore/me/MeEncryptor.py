@@ -93,8 +93,17 @@ class MeEncryptor(j.baseclasses.object):
 
             word3 = self.words.split(" ")[2]
 
-        word3 = self.words.split(" ")[2]
-        self._word3_check(word3)
+            word3 = self.words.split(" ")[2]
+            self._word3_check(word3)
+
+        else:
+            while True:
+                words = Tools.ask_string("give your words for your private key:")
+                try:
+                    self.words_set(words)
+                    return self.signing_key_hex
+                except Exception as e:
+                    print(str(e))
 
         return self.signing_key_hex
 
@@ -138,7 +147,6 @@ class MeEncryptor(j.baseclasses.object):
         self.me.signing_key = self.signing_key_hex
         self.me.verify_key = self.verify_key_hex
         self._signing_key_load()
-        return self.verify_key_hex
 
     def _signing_key_load(self, die=True):
         seed = self._hex_to_bin(self.me.signing_key)

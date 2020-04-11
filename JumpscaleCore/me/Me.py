@@ -33,22 +33,40 @@ class Me(JSConfigBase, j.baseclasses.testtools):
             raise j.exceptions.Input("threebot.me not filled in, please configure your identity")
         self._model.trigger_add(self._update_data)
 
+    def _name_get(self, name):
+        name = name.lower().strip()
+        if "." not in name:
+            name += ".3bot"
+        return name
+
     def load(self):
         """
         kosmos 'j.me.configure(tname="my3bot")'
         """
-        if self.tname and len(self.tname) > 4:
-            path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/%s.toml" % self.tname)
-            if j.sal.fs.exists(path):
-                text_toml = j.sal.fs.readFile(path)
-                self._data._data_update(j.data.serializers.toml.loads(text_toml))
-                return
+
+        name = None
         path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/default")
         if j.sal.fs.exists(path):
-            self.tname = j.core.tools.file_read(path).strip()
-            return self.load()
+            name = j.core.tools.file_read(path).strip()
 
-    def reset(self):
+        if self.tname and len(self.tname) > 4:
+            name = self.tname
+
+        path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/%s.toml" % name)
+        if j.sal.fs.exists(path):
+            print(" - load identity info from filesystem")
+            text_toml = j.sal.fs.readFile(path)
+            data = j.data.serializers.toml.loads(text_toml)
+            data.pop("id")
+            self._data._data_update(data)
+            print(f" - found id info: {path}")
+
+        self.tname = name
+
+    def reset(self, template=False):
+        if template:
+            path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/%s.toml" % self.tname)
+            j.core.tools.delete(path)
         self.delete()
 
     def _update_data(self, model, obj, action, propertyname):
@@ -58,11 +76,8 @@ class Me(JSConfigBase, j.baseclasses.testtools):
             # make sure we have 3bot at end if not specified
             if len(self.tname) < 5:
                 raise j.exceptions.Input("threebot name needs to be 5 or more letters.")
-            if "." not in self.tname:
-                self.tname += ".3bot"
+            self.tname = self._name_get(self.tname)
 
-        if propertyname == "admins" or action == "set_pre":
-            # make sure we have 3bot at end if not specified
             r = []
             change = False
             for admin in self.admins:
@@ -83,17 +98,18 @@ class Me(JSConfigBase, j.baseclasses.testtools):
             if self.tname not in self.admins:
                 self.admins.append(self.tname)
 
-        if action == "set_post":
-            # now write to local identity drive
-            print(" - save identity:%s" % self.tname)
-            j.sal.fs.createDir("{DIR_BASE}/myhost/identities")
+    def save_as_template(self, overwrite=False):
+        # now write to local identity drive
+        print(" - save identity:%s" % self.tname)
+        j.sal.fs.createDir("{DIR_BASE}/myhost/identities")
 
-            spath = "{DIR_BASE}/myhost/identities/%s.toml" % self.tname
+        spath = "{DIR_BASE}/myhost/identities/%s.toml" % self.tname
+        if not j.sal.fs.exists(spath) or overwrite:
             j.sal.fs.writeFile(spath, self._data._toml)
 
-            defaultpath = "{DIR_BASE}/myhost/identities/default"
-            if not j.sal.fs.exists(defaultpath):
-                j.sal.fs.writeFile(defaultpath, self.tname)
+        defaultpath = "{DIR_BASE}/myhost/identities/default"
+        if not j.sal.fs.exists(defaultpath):
+            j.sal.fs.writeFile(defaultpath, self.tname)
 
     @property
     def encryptor(self):
@@ -101,39 +117,31 @@ class Me(JSConfigBase, j.baseclasses.testtools):
             self._encryptor = MeEncryptor(me=self)
         return self._encryptor
 
-    def configure_encryption(self, words=None, reset=False, generate=False):
+    def configure_encryption(self, words=None, reset=False, ask=True):
         """
         @param generate: generate now one,
         """
         j.tools.console.clear_screen()
         print(" *** WILL NOW CONFIGURE YOUR PRIVATE 3BOT SECURE KEY (IMPORTANT) ***\n\n")
 
-        if generate:
-            reset = True
-
-        key = None
-
         if reset:
             self.signing_key = ""
             self.verify_key = ""
 
         if words:
-            j.shell()
+            self.encryptor.words_set(words)
 
-        if not self.signing_key or not self.verify_key:
-            generate = True
-
-        if generate:
-            if j.application.interactive:
-                self.signing_key = self.encryptor.words_ask()
-            else:
-                self.signing_key = self.encryptor._signing_key_generate()
+        if not ask:
+            self.encryptor._signing_key_generate()
+        else:
+            self.signing_key = self.encryptor.words_ask()
 
         self.verify_key = self.encryptor.verify_key_hex
 
         j.tools.console.clear_screen()
 
-    def configure_sshkey(self, name=None, reset=False, generate=False):
+    def configure_sshkey(self, name=None, reset=False, ask=True, generate=False):
+        # TODO: not needed for now, will ignore
         j.tools.console.clear_screen()
         print(" *** WILL NOW CONFIGURE SSH KEY FOR USE IN 3BOT ***\n\n")
         if generate:
@@ -159,16 +167,20 @@ class Me(JSConfigBase, j.baseclasses.testtools):
 
         if generate:
             key = generate_ssh(name)
+            ask = False
 
         if self.sshkey_priv and self.sshkey_pub and self.sshkey_name:
-            if j.tools.console.askYesNo(f"SSH: ok to use ssh key: {self.sshkey_name}"):
+            if ask and j.tools.console.askYesNo(f"SSH: ok to use ssh key: {self.sshkey_name}"):
+                return
+            else:
                 return
 
         keys = j.clients.sshkey.find()
         if not key and len(keys) == 1:
             key = keys[0]
-            if not j.tools.console.askYesNo(f"SSH: found preconfigured SSH key, ok to use ssh key: {key.name}"):
-                key = None
+            if ask:
+                if not j.tools.console.askYesNo(f"SSH: found preconfigured SSH key, ok to use ssh key: {key.name}"):
+                    key = None
 
         if not key and j.clients.sshagent.available and len(j.clients.sshagent.key_names) > 0:
             key = j.clients.sshagent.key_default
@@ -194,7 +206,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
 
         j.tools.console.clear_screen()
 
-    def configure(self, tname=None, ask=True, reset=False):
+    def configure(self, tname=None, ask=False, reset=True):
 
         """
         kosmos 'j.me.configure()'
@@ -202,18 +214,24 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         kosmos 'j.me.configure(tname="my3bot",reset=True)'
 
         """
+        print("CONFIGURE IDENTITY")
+        if reset:
+            self.reset()
+
+        idpath_default = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/default")
+        if j.sal.fs.exists(idpath_default):
+            print(" - found default identity")
+            tname = self._name_get(j.sal.fs.readFile(idpath_default))
 
         if tname:
             self.tname = tname
-
-        if reset:
-            self.reset()
+            self.load()
 
         intro = True
 
         def dointro(intro):
             if intro:
-                j.tools.console.clear_screen()
+                # j.tools.console.clear_screen()
                 print("THREEBOT IDENTITY NOT PROVIDED YET, WILL ASK SOME QUESTIONS NOW\n\n")
             return False
 
@@ -224,9 +242,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
                 "please provide your threebot connect name (min 5 chars)", default=self.tname
             )
             ask1 = False
-
-        if not self.signing_key and len(self.tname) > 4:
-            self.load()
+        self.load()
 
         ask1 = bool(ask)
         while ask1 or not self.email or len(self.email) < 6 or "@" not in self.email:
@@ -238,11 +254,13 @@ class Me(JSConfigBase, j.baseclasses.testtools):
                 print()
             ask1 = False
 
-        while not self.sshkey_priv or not self.sshkey_pub or not self.sshkey_name:
-            intro = dointro(intro)
-            self.configure_sshkey()
+        # NOT NEEDED FOR NOW I THINK (HOPE)
+        # while not self.sshkey_priv or not self.sshkey_pub or not self.sshkey_name:
+        #     intro = dointro(intro)
+        #     self.configure_sshkey()
+
         while not self.verify_key or not self.signing_key:
-            self.configure_encryption(generate=True)
+            self.configure_encryption(reset=True)
 
         if ask and j.tools.console.askYesNo("want to add threebot administrators?"):
             admins = ""
@@ -258,6 +276,8 @@ class Me(JSConfigBase, j.baseclasses.testtools):
             self.admins = admins
 
         self.save()
+
+        self.save_as_template()
 
     def sign(self, data):
         return self.encryptor.sign(data)
@@ -326,8 +346,6 @@ class Me(JSConfigBase, j.baseclasses.testtools):
 
         :return:
         """
-        # print("TODO USE DATA ON THIS OBJECT")
-        # j.shell()
         j.application.interactive = interactive
         explorer = j.clients.explorer.default
         nacl = self.encryptor
