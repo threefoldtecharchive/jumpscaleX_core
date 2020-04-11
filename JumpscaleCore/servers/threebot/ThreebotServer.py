@@ -306,14 +306,14 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
             LogPane.Show = False
-            if not identity:
+            identity = identity or j.myidentities.me.tname
+
+            if j.myidentities.exists(identity):
+                j.me.name = identity
                 j.me.load()
             else:
-                if j.myidentities.exists(identity):
-                    j.me.name = identity
-                    j.me.load()
-                else:
-                    raise j.exceptions.Input(f"identity {identity} doesn't exist. please configure it")
+                raise j.exceptions.Input(f"identity {identity} doesn't exist. please configure it")
+
             if with_shell:
                 j.shell()  # for now removed otherwise debug does not work
 
