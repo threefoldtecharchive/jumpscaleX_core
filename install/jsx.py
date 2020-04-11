@@ -833,7 +833,6 @@ container_shell_msg = f"""
     - 3bot    : to start/stop a 3bot ...
     - tmux a  : to see the parallel processes running (ctrl b 1 to e.g. go to panel 1)
     - htop    : to see which processes are taking how much resource
-    - go to your local machine and use browser to go to: http://localhost:{httpport}/ will show webinterface
 
     """
 
@@ -847,7 +846,18 @@ def _container_shell(name="3bot", delete=False, nomount=False):
     mount = not nomount
     docker = container_get(name=name, delete=delete, mount=mount, install=False, jumpscale=True)
     httpport = docker.config.portrange * 10 + 7000
+    container_shell_msg = f"""
+        WELCOME TO YOUR INSTALLED LOCAL KOSMOS ENVIRONMENT (THREEBOT)
 
+        some tips to get started
+
+        - kosmos  : to get shell into the environment
+        - 3bot    : to start/stop a 3bot ...
+        - tmux a  : to see the parallel processes running (ctrl b 1 to e.g. go to panel 1)
+        - htop    : to see which processes are taking how much resource
+        - go to your local machine and use browser to go to: http://localhost:{httpport}/ will show webinterface
+
+        """
     docker.shell("echo '%s';bash" % IT.Tools.text_replace(container_shell_msg))
 
 
