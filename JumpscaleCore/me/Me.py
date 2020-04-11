@@ -33,6 +33,8 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         self._model.trigger_add(self._update_data)
 
     def _name_get(self, name):
+        if isinstance(name, bytes):
+            name = name.decode()
         name = name.lower().strip()
         if "." not in name:
             name += ".3bot"
@@ -47,6 +49,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/default")
         if j.sal.fs.exists(path):
             name = j.core.tools.file_read(path).strip()
+            name = self._name_get(name)
 
         if self.tname and len(self.tname) > 4:
             name = self.tname
@@ -310,11 +313,30 @@ class Me(JSConfigBase, j.baseclasses.testtools):
                     r.append(admin)
             self.admins = admins
 
+        self._admin_add_default()
+
         if phonebook_register:
             self.tfgrid_phonebook_register(force=True, interactive=False)
 
         self.save()
         self.save_as_template(overwrite=template_overwrite)
+
+    def _admin_add_default(self):
+        """
+        find the admin from default and add it
+        """
+        path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/default")
+        if j.sal.fs.exists(path):
+            name = j.core.tools.file_read(path).strip()
+            name = self._name_get(name)
+            path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/%s.toml" % name)
+            if j.sal.fs.exists(path):
+                print(" - load identity info from filesystem")
+                text_toml = j.sal.fs.readFile(path)
+                data = j.data.serializers.toml.loads(text_toml)
+                admin = data["tname"]
+                if admin not in self.admins:
+                    self.admins.append(admin)
 
     def sign(self, data):
         return self.encryptor.sign(data)

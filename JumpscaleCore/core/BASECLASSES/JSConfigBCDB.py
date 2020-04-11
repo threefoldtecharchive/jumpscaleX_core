@@ -131,6 +131,7 @@ class JSConfigBCDB(JSConfigBCDBBase):
     def _delete(self):
         if not self._model:
             return
+        name = self._data.name + ""  # makes copy
         self._data.delete()
         if self._parent:
             if self._data.name in self._parent._children:
@@ -138,6 +139,8 @@ class JSConfigBCDB(JSConfigBCDBBase):
                     # if factory then cannot delete from the mother because its the only object
                     del self._parent._children[self._data.name]
         self._children_delete()
+        # need to delete everything but keep the name otherwise the config object cannot be saved
+        self._data.name = name
 
     def save(self):
         self.save_()
