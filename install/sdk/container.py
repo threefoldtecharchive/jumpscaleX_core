@@ -7,7 +7,7 @@ _containers = SDKContainers(core=core, args=args)
 __all__ = ["install", "stop", "start", "shell", "kosmos", "list"]
 
 
-def containers_do(prefix=None, delete=False, stop=False):
+def _containers_do(prefix=None, delete=False, stop=False):
     for item in _containers.IT.DockerFactory.list():
         if prefix == "":
             prefix = None
@@ -77,7 +77,7 @@ def list():
     """
     list the containers
     """
-    containers_do()
+    _containers_do()
 
 
 def start(name=None):
@@ -94,9 +94,9 @@ def stop(name=None):
     """
     if name and "*" in name:
         prefix = name.replace("*", "")
-        containers_do(prefix=prefix, delete=False, stop=True)
+        _containers_do(prefix=prefix, delete=False, stop=True)
     elif name == None:
-        containers_do(delete=False, stop=True)
+        _containers_do(delete=False, stop=True)
     else:
         c = _containers.get(name=name)
         c.stop()
@@ -109,8 +109,8 @@ def delete(name=None):
     """
     if name and "*" in name:
         prefix = name.replace("*", "")
-        containers_do(prefix=prefix, delete=True, stop=False)
+        _containers_do(prefix=prefix, delete=True, stop=False)
     elif name == None:
-        containers_do(delete=True, stop=False)
+        _containers_do(delete=True, stop=False)
     else:
         d = _containers.delete(name=name)
