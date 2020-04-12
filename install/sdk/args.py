@@ -68,6 +68,5 @@ def reset():
     args.words = None
 
 
-def str():
-    print("Arguments:\n\n")
-    print(args)
+def __str__():
+    return f"Arguments:\n\n{args}"
