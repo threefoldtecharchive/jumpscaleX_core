@@ -16,6 +16,8 @@ def install():
 
 
 def _get_doc_line(doc):
+    if not doc:
+        return ""
     for line in doc.splitlines():
         if line.strip():
             return line.strip()

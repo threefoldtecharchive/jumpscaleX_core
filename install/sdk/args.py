@@ -1,6 +1,5 @@
+"""configurable arguments"""
 import os
-import sys
-import json
 from .core import core
 
 os.environ["LC_ALL"] = "en_US.UTF-8"
@@ -70,3 +69,9 @@ def reset():
 
 def __str__():
     return f"Arguments:\n\n{args}"
+
+
+identity.__property__ = True
+secret.__property__ = True
+email.__property__ = True
+words.__property__ = True

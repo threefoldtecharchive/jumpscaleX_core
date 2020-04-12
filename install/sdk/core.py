@@ -1,8 +1,8 @@
+"""core configuration"""
 __all__ = ["branch", "redis"]
 
 from importlib import util
 import os
-from urllib.request import urlopen
 import requests
 
 
@@ -38,12 +38,12 @@ class Core:
                         % self._default_branch
                     )
 
-                with urlopen(url) as resp:
-                    if resp.status != 200:
-                        raise RuntimeError("fail to download InstallTools.py")
-                    with open(path, "w+") as f:
-                        f.write(resp.read().decode("utf-8"))
-                    print("DOWNLOADED INSTALLTOOLS TO %s" % path)
+                resp = requests.get(url)
+                if resp.status != 200:
+                    raise RuntimeError("fail to download InstallTools.py")
+                with open(path, "w+") as f:
+                    f.write(resp.content)
+                print("DOWNLOADED INSTALLTOOLS TO %s" % path)
 
         spec = util.spec_from_file_location("IT", path)
         IT = spec.loader.load_module()
@@ -72,3 +72,6 @@ def redis():
     start redis so it will remember our secret and other arguments
     """
     core.IT.RedisTools._core_get()
+
+
+branch.__property__ = True
