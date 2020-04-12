@@ -34,9 +34,8 @@ class SDKContainers:
 
     def delete(self, name=None):
         name = self._name(name)
-        docker = self.IT.DockerFactory.container_get(name=name, image=self.image, start=False, delete=True)
+        docker = self.IT.DockerFactory.container_delete(name=name)
         self.container = None
-        docker.delete()
 
     def get(self, identity=None, name=None, delete=False, mount=True, email=None, words=None, secret=None):
         """
@@ -45,7 +44,7 @@ class SDKContainers:
 
         identity = self._identity_ask(identity)
 
-        if self.container and not reset:
+        if self.container and not delete:
             return self.container
 
         # need to make sure 1 sshkey has been created, does not have to be in github

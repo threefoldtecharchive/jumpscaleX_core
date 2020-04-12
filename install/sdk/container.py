@@ -14,14 +14,13 @@ def containers_do(prefix=None, delete=False, stop=False):
         if prefix:
             if not item.startswith(prefix):
                 continue
-        if delete or stop:
+        if stop:
             d = _containers.IT.DockerFactory.container_get(item)
-            if stop:
-                print(f" - STOP: {item}")
-                d.stop()
-            if delete:
-                print(f" - DELETE: {item}")
-                d.delete()
+            print(f" - STOP: {item}")
+            d.stop()
+        if delete:
+            print(f" - DELETE: {item}")
+            d = _containers.IT.DockerFactory.container_delete(item, delete=True)
 
 
 def install(name=None, testnr=None, identity=None, delete=False, mount=True, email=None, words=None):
