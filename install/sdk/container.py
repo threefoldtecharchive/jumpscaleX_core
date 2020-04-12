@@ -27,10 +27,10 @@ def _containers_do(prefix=None, delete=False, stop=False):
 
 def install(name=None, testnr=None, identity=None, delete=False, mount=True, email=None, words=None, server=False):
     """
+    create the 3bot container and install jumpscale inside
 
     identity is the name of your threebot
 
-    create the 3bot container and install jumpscale inside
     if interactive is True then will ask questions, otherwise will go for the defaults or configured arguments
 
     if you want to configure other arguments use 'jsx configure ... '
