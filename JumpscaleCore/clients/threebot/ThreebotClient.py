@@ -50,7 +50,7 @@ class ThreebotClient(JSConfigBase):
             actors = GedisClientActors()
 
             package_manager_actor = j.clients.gedis.get(
-                name="packagemanager", host=self.host, port=self.port, package_name="zerobot.packagemanager"
+                name="packagemanager", host=self.host, port=self.port, package_name="zerobot.admin"
             ).actors.package_manager
             for package in package_manager_actor.packages_list(status=status).packages:
                 name = package.name
