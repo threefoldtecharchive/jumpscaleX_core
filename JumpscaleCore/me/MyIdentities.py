@@ -32,6 +32,10 @@ class MyIdentities(j.baseclasses.object_config_collection):
             self._box = nacl.secret.SecretBox(self.secret)
         return self._box
 
+    def exists(self, tname):
+        basepath = j.core.tools.text_replace("{DIR_BASE}/myhost/identities")
+        return j.sal.fs.exists(f"{basepath}/{tname}.toml")
+
     @property
     def me(self):
         """
