@@ -8,7 +8,9 @@ from ptpython.repl import embed
 from jsx import IT
 from functools import partial
 from sdk.shell import ptconfig
-from sdk import container, builder, simulator, install, args, core  # pylint: disable=F401
+from sdk import container, sdk, simulator, install  # pylint: disable=F401
+from prompt_toolkit.shortcuts import print_formatted_text
+from prompt_toolkit.formatted_text import HTML
 
 
 # for auto-completion data
@@ -49,10 +51,11 @@ def get_doc(root_module, level=0, size=4):
             continue
 
         spaces = " " * level
-        doc += f"{spaces}{name}"
 
         if is_module:
-            doc += " (module)"
+            doc += f"{spaces}<ansiblue>{name}</ansiblue>"
+        else:
+            doc += f"{spaces}<ansigreen>{name}</ansigreen>"
 
         if obj.__doc__:
             try:
@@ -71,7 +74,7 @@ def get_doc(root_module, level=0, size=4):
 
 
 def info():
-    print(get_doc(_sdk))
+    print_formatted_text(HTML(get_doc(_sdk)))
 
 
 def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):

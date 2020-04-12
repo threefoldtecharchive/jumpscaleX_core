@@ -5,6 +5,7 @@ import pudb
 import time
 import inspect
 import os
+from functools import partial
 from jsx import IT
 
 from . import __all__ as sdkall
@@ -140,77 +141,6 @@ def rewriteline(line, globals, locals):
     return line
 
 
-def patched_execute(self, line):
-    """
-    Evaluate the line and print the result.
-    """
-    output = self.app.output
-
-    # WORKAROUND: Due to a bug in Jedi, the current directory is removed
-    # from sys.path. See: https://github.com/davidhalter/jedi/issues/1148
-    if "" not in sys.path:
-        sys.path.insert(0, "")
-
-    def compile_with_flags(code, mode):
-        " Compile code with the right compiler flags. "
-        return compile(code, "<stdin>", mode, flags=self.get_compiler_flags(), dont_inherit=True)
-
-    line = rewriteline(line, self.get_globals(), self.get_locals())
-    if line.lstrip().startswith("\x1a"):
-        # When the input starts with Ctrl-Z, quit the REPL.
-        self.app.exit()
-
-    elif line.lstrip().startswith("!"):
-        # Run as shell command
-        os.system(line[1:])
-    else:
-        # Try eval first
-        try:
-            code = compile_with_flags(line, "eval")
-            try:
-                result = eval(code, self.get_globals(), self.get_locals())
-            except IT.BaseJSException as e:
-                print_formatted_text(HTML(f"<ansired>{e}</ansired>"))
-                return
-
-            locals = self.get_locals()
-            locals["_"] = locals["_%i" % self.current_statement_index] = result
-
-            if result is not None:
-                out_prompt = self.get_output_prompt()
-
-                try:
-                    result_str = "%r\n" % (result,)
-                except UnicodeDecodeError:
-                    # In Python 2: `__repr__` should return a bytestring,
-                    # so to put it in a unicode context could raise an
-                    # exception that the 'ascii' codec can't decode certain
-                    # characters. Decode as utf-8 in that case.
-                    result_str = "%s\n" % repr(result).decode("utf-8")
-
-                # Align every line to the first one.
-                line_sep = "\n" + " " * fragment_list_width(out_prompt)
-                result_str = line_sep.join(result_str.splitlines()) + "\n"
-
-                # Support ansi formatting (removed syntax higlighting)
-                ansi_formatted = ANSI(result_str)._formatted_text
-                formatted_output = merge_formatted_text([FormattedText(out_prompt) + ansi_formatted])
-
-                print_formatted_text(
-                    formatted_output,
-                    style=self._current_style,
-                    style_transformation=self.style_transformation,
-                    include_default_pygments_style=False,
-                )
-
-        # If not a valid `eval` expression, run using `exec` instead.
-        except SyntaxError:
-            code = compile_with_flags(line, "exec")
-            six.exec_(code, self.get_globals(), self.get_locals())
-
-        output.flush()
-
-
 def ptconfig(repl, expert=False):
 
     repl.exit_message = "We hope you had fun using our sdk shell"
@@ -344,6 +274,81 @@ def ptconfig(repl, expert=False):
 
     old_get_completions = repl._completer.__class__.get_completions
 
+    # overwritten functions
+    def patched_execute(self, line):
+        """
+        Evaluate the line and print the result.
+        """
+        output = self.app.output
+
+        # WORKAROUND: Due to a bug in Jedi, the current directory is removed
+        # from sys.path. See: https://github.com/davidhalter/jedi/issues/1148
+        if "" not in sys.path:
+            sys.path.insert(0, "")
+
+        def compile_with_flags(code, mode):
+            " Compile code with the right compiler flags. "
+            return compile(code, "<stdin>", mode, flags=self.get_compiler_flags(), dont_inherit=True)
+
+        line = rewriteline(line, self.get_globals(), self.get_locals())
+        if line.lstrip().startswith("\x1a"):
+            # When the input starts with Ctrl-Z, quit the REPL.
+            self.app.exit()
+
+        elif line.lstrip().startswith("!"):
+            # Run as shell command
+            os.system(line[1:])
+        else:
+            # Try eval first
+            try:
+                code = compile_with_flags(line, "eval")
+                try:
+                    result = eval(code, self.get_globals(), self.get_locals())
+                except IT.BaseJSException as e:
+                    print_formatted_text(HTML(f"<ansired>{e}</ansired>"))
+                    return
+
+                locals = self.get_locals()
+                locals["_"] = locals["_%i" % self.current_statement_index] = result
+
+                if result is not None:
+                    out_prompt = self.get_output_prompt()
+
+                    try:
+                        if not expert:
+                            docstr = getattr(result, "__doc__", str(result))
+                            result_str = "%s\n" % docstr.strip()
+                        else:
+                            result_str = "%r\n" % (result,)
+                    except UnicodeDecodeError:
+                        # In Python 2: `__repr__` should return a bytestring,
+                        # so to put it in a unicode context could raise an
+                        # exception that the 'ascii' codec can't decode certain
+                        # characters. Decode as utf-8 in that case.
+                        result_str = "%s\n" % repr(result).decode("utf-8")
+
+                    # Align every line to the first one.
+                    line_sep = "\n" + " " * fragment_list_width(out_prompt)
+                    result_str = line_sep.join(result_str.splitlines()) + "\n"
+
+                    # Support ansi formatting (removed syntax higlighting)
+                    ansi_formatted = ANSI(result_str)._formatted_text
+                    formatted_output = merge_formatted_text([FormattedText(out_prompt) + ansi_formatted])
+
+                    print_formatted_text(
+                        formatted_output,
+                        style=self._current_style,
+                        style_transformation=self.style_transformation,
+                        include_default_pygments_style=False,
+                    )
+
+            # If not a valid `eval` expression, run using `exec` instead.
+            except SyntaxError:
+                code = compile_with_flags(line, "exec")
+                six.exec_(code, self.get_globals(), self.get_locals())
+
+            output.flush()
+
     def get_novice_completions(self, document, complete_event):
         line = document.current_line_before_cursor
 
@@ -351,20 +356,23 @@ def ptconfig(repl, expert=False):
             for arg in inspect.getargspec(func).args:
                 field = arg + ":"
                 if field not in line and field.startswith(prefix):
-                    yield Completion(field, -len(prefix), display=field)
+                    yield Completion(field, -len(prefix), display=field, style="bg:ansired")
 
         def complete_module(module, prefix=""):
             rmembers = inspect.getmembers(module, inspect.isfunction)
             for rmember, _ in rmembers:
                 if rmember.startswith(prefix):
-                    yield Completion(rmember, -len(prefix), display=rmember)
+                    yield Completion(rmember, -len(prefix), display=rmember, style="bg:ansigreen")
 
         parts = line.split()
         if len(parts) == 0 or (len(parts) == 1 and not line.endswith(" ")):
             for rootitem in sdkall + ["info"]:
                 if not rootitem.startswith(line):
                     continue
-                yield Completion(rootitem, -len(line), display=rootitem)
+                color = "blue"
+                if rootitem in ["info", "install"]:
+                    color = "green"
+                yield Completion(rootitem, -len(line), display=rootitem, style=f"bg:ansi{color}")
         if parts[0] in sdkall:
             # print(repl.get_globals())
             root = repl.get_globals()[parts[0]]
