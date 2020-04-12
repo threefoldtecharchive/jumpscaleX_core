@@ -417,7 +417,7 @@ def ptconfig(repl, expert=False):
             elif (len(parts) >= 3 or len(parts) == 2 and line.endswith(" ")) and hasattr(root, parts[1]):
                 func = getattr(root, parts[1])
                 prefix = ""
-                if len(parts) >= 3:
+                if len(parts) >= 3 and not line.endswith(" "):
                     prefix = parts[-1]
                 yield from complete_function(func, prefix)
 
