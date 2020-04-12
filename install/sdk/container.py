@@ -53,6 +53,7 @@ def install(name=None, testnr=None, identity=None, delete=False, mount=True, ema
         email = f"test{testnr}@{identity_you}"
         identity_you = identity_you.split(".", 1)[0]
         identity = f"{identity_you}{testnr}.test"
+        name = f"test{testnr}"
 
     c = _containers.get(identity=identity, name=name, delete=delete, mount=mount, email=email)
 

@@ -28,7 +28,8 @@ class SDKContainers:
             if self.container:
                 name = self.container.name
             else:
-                name = self.IT.Tools.ask_string("name of the container (default 3bot):", default="3bot")
+                name = "3bot"
+                # self.IT.Tools.ask_string("name of the container (default 3bot):", default="3bot")
         return name
 
     def delete(self, name=None):
