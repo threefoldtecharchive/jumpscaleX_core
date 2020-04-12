@@ -47,9 +47,6 @@ def install(name=None, testnr=None, identity=None, delete=False, mount=True, ema
     if words:
         args.words = words
 
-    import pudb
-
-    pu.db
     if testnr:
         testnr = int(testnr)
         identity_you = _containers._identity_ask(identity)
@@ -116,4 +113,4 @@ def delete(name=None):
     elif name == None:
         containers_do(delete=True, stop=False)
     else:
-        _containers.delete(name=name)
+        d = _containers.delete(name=name)
