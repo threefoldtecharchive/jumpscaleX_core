@@ -6,9 +6,23 @@ class SDKContainers:
         self.core = core
         self.args = args
 
+    def _identity_ask(self, identity=None):
+        if not identity and self.args.identity:
+            return self.args.identity
+        if not identity:
+            identity = self.core.IT.Tools.ask_string("what is your threebot name (identity)?")
+        if "." not in identity:
+            identity += ".3bot"
+        identity = identity.lower()
+        if not identity.endswith("test") and self.args.identity != identity:
+            self.args.identity = identity
+            self.args.words = None
+            self.args.email = None
+        return identity
+
     def _name(self, name):
         if name:
-            if self.container.name != name:
+            if self.container and self.container.name != name:
                 self.container = None
         else:
             if self.container:
@@ -20,12 +34,14 @@ class SDKContainers:
     def delete(self, name=None):
         name = self._name(name)
         docker = self.IT.DockerFactory.container_get(name=name, image=self.image, start=False, delete=True)
-        return docker
+        docker.delete()
 
-    def get(self, name=None, reset=False, mount=True):
+    def get(self, identity=None, name=None, delete=False, mount=True, email=None, words=None, secret=None):
         """
         """
         name = self._name(name)
+
+        identity = self._identity_ask(identity)
 
         if self.container and not reset:
             return self.container
@@ -35,26 +51,36 @@ class SDKContainers:
 
         self.IT.DockerFactory.init()
 
-        if name.startswith("test"):
-            self.args.secret = "test"
-        else:
-            if not self.args.secret:
-                self.IT.Tools.ask_secret("specify secret passphrase please:")
-
-        docker = self.IT.DockerFactory.container_get(name=name, image=self.image, start=True, delete=reset, mount=mount)
+        docker = self.IT.DockerFactory.container_get(
+            name=name, image=self.image, start=True, delete=delete, mount=mount
+        )
 
         if not docker.executor.exists("/sandbox/cfg/.configured"):
 
             installer = self.IT.JumpscaleInstaller()
+            print(" - make sure jumpscale code is on local filesystem.")
             installer.repos_get(pull=False, branch=self.core.branch)
 
+            assert self.args.identity
+
+            print(f" - install jumpscale for identity:{self.args.identity}")
+
+            if not email:
+                email = self.args.email
+            if not words:
+                words = self.args.words
+
+            if identity.endswith(".test"):
+                secret = "test"
+            else:
+                if not secret:
+                    self.args.secret = self.IT.Tools.ask_password("specify secret passphrase please:")
+
+            if not secret:
+                secret = self.args.secret
+
             docker.install_jumpscale(
-                force=reset,
-                reset=reset,
-                secret=self.args.secret,
-                identity=self.args.identity,
-                email=self.args.email,
-                words=self.args.words,
+                force=False, reset=False, secret=secret, identity=identity, email=email, words=words,
             )
 
             docker.executor.file_write("/sandbox/cfg/.configured", "")

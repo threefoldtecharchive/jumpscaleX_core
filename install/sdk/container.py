@@ -15,7 +15,7 @@ def containers_do(prefix=None, delete=False, stop=False):
             if not item.startswith(prefix):
                 continue
         if delete or stop:
-            d = _containers.DockerFactory.container_get(item)
+            d = _containers.IT.DockerFactory.container_get(item)
             if stop:
                 print(f" - STOP: {item}")
                 d.stop()
@@ -24,21 +24,7 @@ def containers_do(prefix=None, delete=False, stop=False):
                 d.delete()
 
 
-def _identity_ask(identity=None):
-    if not identity and args.identity:
-        return args.identity
-    if not identity:
-        identity = core.IT.Tools.ask_string("what is your threebot name?")
-    if "." not in identity:
-        identity += ".3bot"
-    identity = identity.lower()
-    if args.identity != identity:
-        args.identity = identity
-        args.words = None
-        args.email = None
-
-
-def install(name=None, identity=None, reset=False, mount=True, email=None, words=None):
+def install(name=None, testnr=None, identity=None, delete=False, mount=True, email=None, words=None):
     """
 
     identity is the name of your threebot
@@ -48,15 +34,30 @@ def install(name=None, identity=None, reset=False, mount=True, email=None, words
 
     if you want to configure other arguments use 'jsx configure ... '
 
+    @param testnr: if not Null the identity will become: $your3botname$testnr.test,
+        secret for that container will be test
+        email will be also predefined, and you will become admin automatically in the 3bot
+
     """
-    reset = core.IT.Tools.bool(reset)
+    delete = core.IT.Tools.bool(delete)
     mount = core.IT.Tools.bool(mount)
-    _identity_ask(identity)
+
     if email:
         args.email = email
     if words:
         args.words = words
-    c = _containers.get(name=name, reset=reset, mount=mount)
+
+    import pudb
+
+    pu.db
+    if testnr:
+        testnr = int(testnr)
+        identity_you = _containers._identity_ask(identity)
+        email = f"test{testnr}@{identity_you}"
+        identity_you = identity_you.split(".", 1)[0]
+        identity = f"{identity_you}{testnr}.test"
+
+    c = _containers.get(identity=identity, name=name, delete=delete, mount=mount, email=email)
 
 
 def shell(name=None):

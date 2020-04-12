@@ -1,9 +1,9 @@
+__all__ = ["branch", "redis"]
+
 from importlib import util
 import os
 from urllib.request import urlopen
 import requests
-
-__all__ = ["branch"]
 
 
 class Core:
@@ -64,3 +64,10 @@ def branch(val=""):
             core.branch = val
             print(" - load the IT tools")
             core.load()
+
+
+def redis():
+    """
+    start redis so it will remember our secret and other arguments
+    """
+    core.IT.RedisTools._core_get()

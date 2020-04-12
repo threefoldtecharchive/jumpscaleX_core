@@ -937,6 +937,71 @@ class LogHandler:
             w
 
 
+class BaseClassProperties:
+    def __init__(self, **kwargs):
+        self._key = None
+
+        for key, val in kwargs.items():
+            setattr(self, key, val)
+        self._protected = False
+
+        self._init(**kwargs)
+
+        self._protected = True
+
+        self._load()
+
+    def _init(self, **kwargs):
+        """
+        this needs to be overruled
+        """
+        assert self._key
+
+    def __setattr__(self, name, value):
+
+        if name.startswith("_"):
+            self.__dict__[name] = value
+            return
+
+        if not self._protected:
+            if name not in self.__dict__:
+                self.__dict__[name] = None
+        else:
+            if name not in self.__dict__:
+                raise Tools.exceptions.Input(f"try to write protected argument on {name}")
+
+        if self.__dict__[name] != value:
+            self.__dict__[name] = value
+            # print("-sabe")
+            self._save()
+
+    def _load(self):
+        if MyEnv.db:
+            data = MyEnv.db.get(self._key).decode()
+            if data:
+                data2 = json.loads(data)
+                self.__dict__.update(data2)
+
+    def _save(self):
+        if MyEnv.db:
+            data = {}
+            for key in self.__dict__.keys():
+                if not key.startswith("_"):
+                    data[key] = getattr(self, key)
+            data2 = json.dumps(data)
+            MyEnv.db.set(self._key, data2)
+
+    def __str__(self):
+        out = ""
+        for key in self.__dict__.keys():
+            if not key.startswith("_"):
+                val = getattr(self, key)
+                out += f" - {key} : {val}\n"
+        return out
+
+    __repr__ = __str__
+
+
 class Tools:
 
     _supported_editors = ["micro", "mcedit", "joe", "vim", "vi"]  # DONT DO AS SET  OR ITS SORTED
@@ -953,6 +1018,7 @@ class Tools:
     exceptions = JSExceptions()
 
     formatter = OurTextFormatter()
+    _BaseClassProperties = BaseClassProperties
 
     @staticmethod
     def traceback_list_format(tb):
@@ -5756,6 +5822,7 @@ class DockerContainer:
         email=None,
         words=None,
     ):
+
         if not force:
             if not self.executor.state_exists("STATE_JUMPSCALE"):
                 force = True
@@ -5763,9 +5830,6 @@ class DockerContainer:
         if not force and threebot:
             if not self.executor.state_exists("STATE_THREEBOT"):
                 force = True
-
-        if not force:
-            return
 
         if identity == "build":
             secret = "build"

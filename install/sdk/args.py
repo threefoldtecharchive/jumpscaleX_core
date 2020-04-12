@@ -1,26 +1,21 @@
 import os
 import sys
+import json
+from .core import core
 
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 __all__ = ["identity", "secret", "email", "words", "reset"]
 
 
-class Args:
-    def __init__(self):
+class Args(core.IT.Tools._BaseClassProperties):
+    def _init(self, **kwargs):
         self.identity = None
         self.secret = None
         self.email = None
         self.words = None
-
-    def __str__(self):
-        out = ""
-        out += f" - identity : {self.identity}\n"
-        out += f" - secret : {self.secret}\n"
-        out += f" - email  : {self.email}\n"
-        out += f" - words  : {self.words}\n"
-
-    __repr__ = __str__
+        self._key = "3sdk:data"
+        self._load
 
 
 args = Args()

@@ -220,8 +220,6 @@ class Me(JSConfigBase, j.baseclasses.testtools):
 
         """
 
-        print("CONFIGURE IDENTITY")
-
         if tname == "":
             tname = None
         if email == "":
@@ -234,6 +232,8 @@ class Me(JSConfigBase, j.baseclasses.testtools):
                 email = f"someone@{tname}"
 
             ask = False
+
+        print(f"CONFIGURE IDENTITY: '{tname}'")
 
         if reset:
             self.reset()
