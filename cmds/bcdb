@@ -54,7 +54,8 @@ def delete(name=None, all=False, force=False):
             do(name)
 
     # load your identity again
-    j.me.configure(ask=False)
+    # don't load in mem gives weird results
+    j.core.tools.execute("j.me.configure(ask=False)", jumpscale=True, interactive=True)
 
 
 @click.command()

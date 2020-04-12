@@ -907,8 +907,10 @@ class BCDB(j.baseclasses.object):
             model = self.model_get(schema=schema)
             obj = j.data.serializers.jsxdata.loads(bdata, model=model)
             if schema:
-                # if not obj._schema == schema:
-                #     j.shell()
+                if not obj._schema == schema:
+                    j.debug()
+                    obj = j.data.serializers.jsxdata.loads(bdata, model=model)
+                    j.shell()
                 assert obj._schema == schema
             obj.nid = nid
             if not obj.id and id:

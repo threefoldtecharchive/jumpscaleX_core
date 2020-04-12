@@ -122,6 +122,7 @@ class JSXObjectRoot(JSXObjectBase):
         self._deserialized_items = {}
         self._changed_deserialized_items = False
         self._defaults_set()
+        self.id = None
 
     def stop(self):
         # will be called when BCDB stops, if changes will save
