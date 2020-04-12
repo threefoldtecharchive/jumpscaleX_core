@@ -53,6 +53,9 @@ def delete(name=None, all=False, force=False):
             # _unlock(name)
             do(name)
 
+    # load your identity again
+    j.me.configure(ask=False)
+
 
 @click.command()
 def check(name=None):
