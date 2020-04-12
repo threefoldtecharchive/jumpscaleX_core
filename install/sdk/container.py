@@ -22,7 +22,7 @@ def _containers_do(prefix=None, delete=False, stop=False):
             d.stop()
         if delete:
             print(f" - DELETE: {item}")
-            d = _containers.IT.DockerFactory.container_delete(item, delete=True)
+            d = _containers.IT.DockerFactory.container_delete(item)
 
 
 def install(name=None, testnr=None, identity=None, delete=False, mount=True, email=None, words=None, server=False):
