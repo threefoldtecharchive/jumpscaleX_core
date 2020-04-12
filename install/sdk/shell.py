@@ -400,7 +400,7 @@ def ptconfig(repl, expert=False):
             for rootitem in sdkall + ["info"]:
                 if not rootitem.startswith(line):
                     continue
-                color = "blue"
+                color = "brightblue"
                 if rootitem in ["info", "install"]:
                     color = "green"
                 yield Completion(rootitem, -len(line), display=rootitem, style=f"bg:ansi{color}")
