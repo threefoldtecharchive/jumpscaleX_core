@@ -117,7 +117,7 @@ def stop(name=None):
     if name and "*" in name:
         prefix = name.replace("*", "")
         _containers_do(prefix=prefix, delete=False, stop=True)
-    elif name == None:
+    elif name is None:
         _containers_do(delete=False, stop=True)
     else:
         c = _containers.get(name=name)
@@ -132,10 +132,10 @@ def delete(name=None):
     if name and "*" in name:
         prefix = name.replace("*", "")
         _containers_do(prefix=prefix, delete=True, stop=False)
-    elif name == None:
+    elif name is None:
         _containers_do(delete=True, stop=False)
     else:
-        d = _containers.delete(name=name)
+        _containers.delete(name=name)
 
 
 # def wireguard(name=None, test=False, disconnect=False):

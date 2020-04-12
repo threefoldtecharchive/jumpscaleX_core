@@ -5,7 +5,6 @@ import pudb
 import time
 import inspect
 import os
-from functools import partial
 from .core import core
 
 IT = core.IT
@@ -109,10 +108,10 @@ def rewriteline(line, globals, locals):
     """
     Check if commands are entered in novice mode and rewrite them to python
     """
-
-    def get_args_string(argslist):
+    def get_args_string(argslist, func):
         line = ""
-        for arg in argslist:
+        funcspec = inspect.getargspec(func)
+        for idx, arg in enumerate(argslist):
             if arg in globals or arg in locals:
                 line += f"{arg}, "
             elif arg.isdigit():
@@ -120,25 +119,38 @@ def rewriteline(line, globals, locals):
             elif ":" in arg:
                 kwarg = arg.split(":")
                 line += f"{kwarg[0]}="
-                if kwarg[1].isdigit():
+                argidx = funcspec.args.index(kwarg[0])
+                isbool = isinstance(funcspec.defaults[argidx], bool)
+                if isbool:
+                    value = True
+                    if kwarg[1]:
+                        value = kwarg[1].lower() in ["y", "yes", "1", "true"]
+                    line += f"{value}, "
+                elif kwarg[1].isdigit():
                     line += f"{kwarg[1]}, "
                 else:
                     line += f"'{kwarg[1]}', "
             else:
                 # let's assume its a string
-                line += f"'{arg}', "
+                isbool = isinstance(funcspec.defaults[idx], bool)
+                if isbool:
+                    value = arg.lower() in ["y", "yes", "1", "true"]
+                    line += f"{value}, "
+                else:
+                    line += f"'{arg}', "
         return line
 
     parts = line.split()
     if parts[0] in sdkall + ["info"]:
         root = globals[parts[0]]
         if len(parts) >= 2:
+            func = getattr(root, parts[1])
             line = f"{parts[0]}.{parts[1]}("
-            line += get_args_string(parts[2:])
+            line += get_args_string(parts[2:], func)
             line += ")"
         elif inspect.isfunction(root):
             line = f"{parts[0]}("
-            line += get_args_string(parts[1:])
+            line += get_args_string(parts[1:], root)
             line += ")"
     return line
 
@@ -377,6 +389,7 @@ def ptconfig(repl, expert=False):
                 if rootitem in ["info", "install"]:
                     color = "green"
                 yield Completion(rootitem, -len(line), display=rootitem, style=f"bg:ansi{color}")
+            return
         if parts[0] in sdkall:
             root = repl.get_globals()[parts[0]]
             if inspect.isfunction(root):
