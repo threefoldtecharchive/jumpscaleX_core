@@ -57,6 +57,8 @@ def get_doc(root_module, level=0, size=4):
 
         if is_module:
             doc += f"{spaces}<ansibrightblue>{name}</ansibrightblue>"
+        elif getattr(obj, "__property__", False):
+            doc += f"{spaces}<ansicyan>{name}</ansicyan>"
         else:
             doc += f"{spaces}<ansigreen>{name}</ansigreen>"
 
