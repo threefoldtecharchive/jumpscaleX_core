@@ -51,14 +51,14 @@ class ThreebotClientFactory(j.baseclasses.object_config_collection_testtools):
         """
         kosmos 'j.clients.threebot.test()'
         :return:
-        """        
+        """
         e = j.clients.threebot.get()
         a = e.actors_base
         assert a.system.ping() == b"PONG"
 
         a2 = e.actors_get("threebot.blog")
 
-        p = e.actors_get("zerobot.packagemanager")
+        p = e.actors_get("zerobot.admin")
 
         l = p.package_manager.packages_list()
 

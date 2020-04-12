@@ -7,7 +7,7 @@ from ptpython.repl import embed
 
 from functools import partial
 from sdk.shell import ptconfig
-from sdk import container, builder, simulator, install, args, core  # pylint: disable=F401
+from sdk import container, builder, simulator, install, args, core, _get_doc_line  # pylint: disable=F401
 
 IT = core.core.IT
 
@@ -56,14 +56,14 @@ def get_doc(root_module, level=0, size=4):
         spaces = " " * level
 
         if is_module:
-            doc += f"{spaces}<ansiblue>{name}</ansiblue>"
+            doc += f"{spaces}<ansibrightblue>{name}</ansibrightblue>"
         else:
             doc += f"{spaces}<ansigreen>{name}</ansigreen>"
 
         if obj.__doc__:
             try:
                 # only get first line of member docstring
-                first_line = obj.__doc__.split("\n")[1].strip()
+                first_line = _get_doc_line(obj.__doc__)
                 doc += f": {first_line}"
             except IndexError:
                 pass

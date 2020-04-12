@@ -8,6 +8,7 @@ import requests
 
 class Core:
     def __init__(self):
+        self._default_branch = "master"
         self.branch = "unstable"
         self.load()
 
@@ -31,10 +32,10 @@ class Core:
                 url = f"https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/{self.branch}/install/InstallTools.py"
 
                 # fallback to default branch if installation is being done for another branch that doesn't exist in core
-                if branch != branch and requests.get(url).status_code == 404:
+                if self.branch != self._default_branch and requests.get(url).status_code == 404:
                     url = (
                         "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py"
-                        % branch
+                        % self._default_branch
                     )
 
                 with urlopen(url) as resp:

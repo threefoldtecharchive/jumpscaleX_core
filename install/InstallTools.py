@@ -985,9 +985,9 @@ class BaseClassProperties:
 
     def _load(self):
         if MyEnv.db:
-            data = MyEnv.db.get(self._key).decode()
+            data = MyEnv.db.get(self._key)
             if data:
-                data2 = json.loads(data)
+                data2 = json.loads(data.decode())
                 self.__dict__.update(data2)
 
     def _save(self):

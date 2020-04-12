@@ -47,7 +47,7 @@ class GedisFactory(j.baseclasses.object_config_collection, j.baseclasses.testtoo
         else:
             cl = j.clients.gedis.get(name="test", port=8901)
 
-        cl_pm = j.clients.gedis.get(name="packagemanager", port=8901, package_name="zerobot.packagemanager")
+        cl_pm = j.clients.gedis.get(name="packagemanager", port=8901, package_name="zerobot.admin")
 
         self._threebot_client_default = cl
         self._threebot_client_default_packagemanager = cl_pm

@@ -130,29 +130,31 @@ class EncryptorTools:
         else:
             return self._unserialize_item(data, serialization_format=serialization_format, schema=schema)
 
-    def _serialize_sign_encrypt(self, data, serialization_format="json", pubkey_hex=None, threebot=None, encryptor=None):
+    def _serialize_sign_encrypt(
+        self, data, serialization_format="json", pubkey_hex=None, threebot=None, encryptor=None
+    ):
         """
         will sign any data with private key of our local 3bot private key
         if public_encryption_key given will then encrypt using the pub key given (as binary hex encoded key)
-    
+
         :param data: can be a binary blob or a list of items, which will be converted to binary counterpart
         :param serialization_format: json or msgpack
-    
+
         a list of following items
-    
+
             int,float,str,binary,list and dict  -> stay in native format
             jsxobject -> jsxobject.json
             jsxdict -> jsxdict._data which is the source dict format of our jumpscale dict representation
-    
-    
+
+
         this gets serialized using the chosen format
-    
+
         result is [3botid,serializeddata,signature]
-    
+
         this then gets signed with private key of this threebot
-    
+
         the serializeddata optionally gets encrypted with pubkey_hex (the person who asked for the info)
-    
+
         :return: [3botid,serializeddata,signature]
         """
         if not encryptor:
@@ -179,17 +181,17 @@ class EncryptorTools:
 
     def _deserialize_check_decrypt(self, data, serialization_format="json", verifykey_hex=None, threebot=None):
         """
-    
+
         if pubkey_hex given will then check the signature (is binary encoded pub key)
         decryption will happen with the private key
         the serialization_format should be the one used in self._serialize_sign_encrypt()
         as we will use it to deserialize the encrypted data
         :param data: result of self._serialize_sign_encrypt()
         :param serialization_format: json or msgpack
-    
+
         :return: [list of items] deserialized but which were serialized in data using serialization_format
         raises exceptions if decryption or signature fails
-    
+
         """
         assert len(verifykey_hex) == 64
         encryptor = self.encryptor
@@ -265,7 +267,7 @@ class EncryptorTools:
 
     # def _add_phonebook(self):
     #     pm = j.clients.gedis.get(
-    #         name="threebot", port=8901, package_name="zerobot.packagemanager"
+    #         name="threebot", port=8901, package_name="zerobot.admin"
     #     ).actors.package_manager
     #     pm.package_add(
     #         git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/tfgrid/phonebook"
@@ -300,16 +302,16 @@ class EncryptorTools:
 
     def test(self, name=""):
         """
-    
+
         this test needs the j.tools.threebot.me to exist (registration done)
-    
+
         following will run all tests
-    
+
         kosmos 'j.tools.threebot.test()'
         :return:
-    
-    
-    
+
+
+
         """
         # FIXME remove?
 

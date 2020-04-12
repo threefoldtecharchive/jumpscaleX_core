@@ -8,7 +8,7 @@ j.servers.threebot.start(background=True)
 PACKAGE_NAME = "test_package"
 path = "/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/examples/test_package"
 result_path = j.sal.fs.joinPaths(path, "result")
-gedis_client = j.clients.gedis.get(str(uuid4())[:10], port=8901, package_name="zerobot.packagemanager")
+gedis_client = j.clients.gedis.get(str(uuid4())[:10], port=8901, package_name="zerobot.admin")
 package_manager = gedis_client.actors.package_manager
 skip = j.baseclasses.testtools._skip
 

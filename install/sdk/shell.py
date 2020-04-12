@@ -8,9 +8,14 @@ import os
 import re
 from .core import core
 from . import __all__ as sdkall
+from . import _get_doc_line
 
 from prompt_toolkit.application import get_app
 from prompt_toolkit.keys import Keys
+from prompt_toolkit.document import Document
+from prompt_toolkit.layout.containers import ConditionalContainer, Window
+from prompt_toolkit.filters import Filter
+from prompt_toolkit.layout.controls import BufferControl
 from prompt_toolkit.validation import ValidationError
 from prompt_toolkit.shortcuts import print_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_width
@@ -174,6 +179,7 @@ def ptconfig(repl, expert=False):
 
     repl.exit_message = "We hope you had fun using our sdk shell"
     repl.show_docstring = True
+    repl.removed_filter = False
 
     # When CompletionVisualisation.POP_UP has been chosen, use this
     # scroll_offset in the completion menu.
@@ -248,8 +254,13 @@ def ptconfig(repl, expert=False):
     repl.color_depth = "DEPTH_24_BIT"  # True color.
 
     repl.enable_syntax_highlighting = True
+    repl.show_docstring = True
 
     repl.min_brightness = 0.3
+
+    class ShowDocWindow(Filter):
+        def __call__(self):
+            return True
 
     @repl.add_key_binding(Keys.ControlJ)
     def _debug_event(event):
@@ -283,6 +294,15 @@ def ptconfig(repl, expert=False):
                 b.delete_before_cursor(count=len(w))
                 b.insert_text(corrections[w])
         b.insert_text(" ")
+        if not repl.removed_filter:
+            repl.removed_filter = True
+            app = get_app()
+            for content in app.layout.walk():
+                if isinstance(content, ConditionalContainer):
+                    if isinstance(content.content, Window):
+                        buffercontrol = getattr(content.content, "content", None)
+                        if isinstance(buffercontrol, BufferControl) and buffercontrol.buffer is repl.docstring_buffer:
+                            content.filter = ShowDocWindow()
 
     class CustomPrompt(PromptStyle):
         """
@@ -384,6 +404,7 @@ def ptconfig(repl, expert=False):
         line = document.current_line_before_cursor
 
         def complete_function(func, prefix=""):
+            repl.docstring_buffer.reset(Document(_get_doc_line(func.__doc__), cursor_position=0))
             for arg in inspect.getargspec(func).args:
                 field = arg + "="
                 if field not in line and field.startswith(prefix):
@@ -400,7 +421,7 @@ def ptconfig(repl, expert=False):
             for rootitem in sdkall + ["info"]:
                 if not rootitem.startswith(line):
                     continue
-                color = "blue"
+                color = "brightblue"
                 if rootitem in ["info", "install"]:
                     color = "green"
                 yield Completion(rootitem, -len(line), display=rootitem, style=f"bg:ansi{color}")

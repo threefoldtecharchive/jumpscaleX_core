@@ -13,3 +13,10 @@ def install():
     Install 3bot on host
     """
     jsx.install.callback()
+
+
+def _get_doc_line(doc):
+    for line in doc.splitlines():
+        if line.strip():
+            return line.strip()
+    return ""
