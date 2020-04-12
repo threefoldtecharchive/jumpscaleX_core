@@ -5,6 +5,7 @@ import pudb
 import time
 import inspect
 import os
+import re
 from .core import core
 from . import __all__ as sdkall
 
@@ -100,6 +101,17 @@ def eval_code(stmts, locals_=None, globals_=None):
         return
 
 
+def partition_line(line):
+    def replacer(m):
+        return m.group().replace(" ", "\0").strip("'")
+
+    result = re.sub(r"'.*?'", replacer, line)
+    parts = []
+    for part in result.split():
+        parts.append(part.replace('\0', ' '))
+    return parts
+
+
 def rewriteline(line, globals, locals):
     """
     Check if commands are entered in novice mode and rewrite them to python
@@ -107,6 +119,13 @@ def rewriteline(line, globals, locals):
     def get_args_string(argslist, func):
         line = ""
         funcspec = inspect.getargspec(func)
+
+        def get_default(idx):
+            if funcspec.defaults:
+                if len(funcspec.defaults) >= idx:
+                    return funcspec.defaults[idx]
+            return None
+
         for idx, arg in enumerate(argslist):
             if arg in globals or arg in locals:
                 line += f"{arg}, "
@@ -116,7 +135,7 @@ def rewriteline(line, globals, locals):
                 kwarg = arg.split("=")
                 line += f"{kwarg[0]}="
                 argidx = funcspec.args.index(kwarg[0])
-                isbool = isinstance(funcspec.defaults[argidx], bool)
+                isbool = isinstance(get_default(argidx), bool)
                 if isbool:
                     value = True
                     if kwarg[1]:
@@ -128,7 +147,7 @@ def rewriteline(line, globals, locals):
                     line += f"'{kwarg[1]}', "
             else:
                 # let's assume its a string
-                isbool = isinstance(funcspec.defaults[idx], bool)
+                isbool = isinstance(get_default(idx), bool)
                 if isbool:
                     value = arg.lower() in ["y", "yes", "1", "true"]
                     line += f"{value}, "
@@ -136,7 +155,7 @@ def rewriteline(line, globals, locals):
                     line += f"'{arg}', "
         return line
 
-    parts = line.split()
+    parts = partition_line(line)
     if parts[0] in sdkall + ["info"]:
         root = globals[parts[0]]
         if len(parts) >= 2:
