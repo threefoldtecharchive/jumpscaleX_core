@@ -112,8 +112,8 @@ def rewriteline(line, globals, locals):
                 line += f"{arg}, "
             elif arg.isdigit():
                 line += f"{arg}, "
-            elif ":" in arg:
-                kwarg = arg.split(":")
+            elif "=" in arg:
+                kwarg = arg.split("=")
                 line += f"{kwarg[0]}="
                 argidx = funcspec.args.index(kwarg[0])
                 isbool = isinstance(funcspec.defaults[argidx], bool)
@@ -366,7 +366,7 @@ def ptconfig(repl, expert=False):
 
         def complete_function(func, prefix=""):
             for arg in inspect.getargspec(func).args:
-                field = arg + ":"
+                field = arg + "="
                 if field not in line and field.startswith(prefix):
                     yield Completion(field, -len(prefix), display=field, style="bg:ansired")
 
