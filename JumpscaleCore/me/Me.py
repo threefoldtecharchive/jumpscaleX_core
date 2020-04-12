@@ -30,7 +30,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         self.serialization_format = "json"
         if not self.name:
             raise j.exceptions.Input("threebot.me not filled in, please configure your identity")
-        # self._model.trigger_add(self._update_data)
+        self._model.trigger_add(self._update_data)
 
     def _name_get(self, name):
         if isinstance(name, bytes):
