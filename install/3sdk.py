@@ -8,7 +8,7 @@ from ptpython.repl import embed
 from jsx import IT
 from functools import partial
 from sdk.shell import ptconfig
-from sdk import container, sdk, simulator, install  # pylint: disable=F401
+from sdk import container, builder, simulator, install, args, core  # pylint: disable=F401
 
 
 # for auto-completion data
@@ -31,6 +31,7 @@ def get_doc(root_module, level=0, size=4):
     :rtype: str
     """
     import inspect
+
     doc = ""
 
     if hasattr(root_module, "__all__"):
@@ -40,6 +41,9 @@ def get_doc(root_module, level=0, size=4):
     for name, obj in members:
         if name.startswith("_"):
             continue
+        if name[0].lower() != name[0]:
+            continue
+
         is_module = inspect.ismodule(obj)
         if is_module and level != 0:
             continue
@@ -72,8 +76,9 @@ def info():
 
 def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
     import inspect
+
     if not expert:
-        _sdk.__all__.remove("container")
+        _sdk.__all__.remove("builder")
 
     curframe = inspect.currentframe()
     calframe = inspect.getouterframes(curframe, 2)
@@ -96,9 +101,10 @@ def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
 
 
 if __name__ == "__main__":
-    # the shell should only show d... j...  (no capitals at start of sentense)
+    # the shell should only show d... j...  (no capitals at start of sentence)
     # logger needs to be redirected properly
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert", default=False, action="store_true")
     options = parser.parse_args()

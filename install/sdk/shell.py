@@ -63,7 +63,7 @@ def get_rhs(line):
         stmt = mod.body[0]
         # only assignment statements
         if type(stmt) in (ast.Assign, ast.AugAssign, ast.AnnAssign):
-            return line[stmt.value.col_offset:].strip()
+            return line[stmt.value.col_offset :].strip()
     return line
 
 
@@ -106,6 +106,7 @@ def rewriteline(line, globals, locals):
     """
     Check if commands are entered in novice mode and rewrite them to python
     """
+
     def get_args_string(argslist):
         line = ""
         for arg in argslist:
@@ -365,6 +366,7 @@ def ptconfig(repl, expert=False):
                     continue
                 yield Completion(rootitem, -len(line), display=rootitem)
         if parts[0] in sdkall:
+            # print(repl.get_globals())
             root = repl.get_globals()[parts[0]]
             if inspect.isfunction(root):
                 yield from complete_function(root)

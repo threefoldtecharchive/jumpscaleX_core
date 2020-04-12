@@ -1908,6 +1908,15 @@ class Tools:
         return content
 
     @staticmethod
+    def bool(txt):
+        if not txt:
+            return False
+        txt = str(txt).lower().strip()
+        if txt in ["true", "1", "yes"]:
+            return True
+        return False
+
+    @staticmethod
     def text_strip_to_ascii_dense(text):
         """
         convert to ascii converting as much as possibe to ascii
@@ -4994,7 +5003,7 @@ class DockerFactory:
         )[1].split("\n")
         if not container_ip:
             raise Tools.exceptions.Input(
-                f"Error happened during parsing the container {conitainer_name} ip address data "
+                f"Error happened during parsing the container {container_name} ip address data "
             )
         # Get the data in the required format
         formatted_container_ip = container_ip[0].strip("\"'")
