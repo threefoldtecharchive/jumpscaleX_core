@@ -315,7 +315,9 @@ def ptconfig(repl, expert=False):
 
                     try:
                         if not expert:
-                            docstr = getattr(result, "__doc__", str(result))
+                            docstr = getattr(result, "__str__", lambda: "")()
+                            if not docstr:
+                                docstr = getattr(result, "__doc__", str(result))
                             result_str = "%s\n" % docstr.strip()
                         else:
                             result_str = "%r\n" % (result,)
