@@ -969,6 +969,14 @@ class BaseClassProperties:
         else:
             if name not in self.__dict__:
                 raise Tools.exceptions.Input(f"try to write protected argument on {name}")
+        if isinstance(value, str):
+            value = value.strip()
+            if len(value) > 0:
+                if value.startswith("'") and value.endswith("'"):
+                    value = value.strip("'")
+                if value.startswith('"') and value.endswith('"'):
+                    value = value.strip('"')
+                value = value.strip()
 
         if self.__dict__[name] != value:
             self.__dict__[name] = value
@@ -4916,6 +4924,16 @@ class DockerFactory:
                     DockerContainer(name_found)
 
     @staticmethod
+    def container_delete(name):
+        DockerFactory.init()
+        assert name
+        assert len(name) > 3
+        if name in DockerFactory._dockers:
+            docker = DockerFactory._dockers[name]
+            docker.delete()
+            DockerFactory._dockers.pop(name)
+
+    @staticmethod
     def container_get(name, image="threefoldtech/3bot2", start=False, delete=False, ports=None, mount=True):
         DockerFactory.init()
         assert name
@@ -4925,7 +4943,8 @@ class DockerFactory:
             docker.delete()
             # needed because docker object is being retained
             docker.config.save()
-            DockerFactory._dockers.pop(name)
+            if name in DockerFactory._dockers:
+                DockerFactory._dockers.pop(name)
 
         docker = None
         if name in DockerFactory._dockers:
@@ -4942,7 +4961,7 @@ class DockerFactory:
                         docker.start(mount=False)
                 return docker
         if not docker:
-            docker = DockerContainer(name=name, image=image, delete=delete, ports=ports)
+            docker = DockerContainer(name=name, image=image, ports=ports)
         if start:
             docker.start(mount=mount)
         return docker
@@ -5111,6 +5130,7 @@ class DockerConfig:
 
         if delete:
             Tools.delete(self.path_vardir)
+            Tools.delete(self.path_config)
 
         if not Tools.exists(self.path_config):
 
@@ -5157,7 +5177,6 @@ class DockerConfig:
         :return:
         """
         Tools.delete(self.path_vardir)
-        self.load()
 
     def done_get(self, name):
         name2 = "done_%s" % name
@@ -5244,7 +5263,7 @@ class DockerConfig:
 
 
 class DockerContainer:
-    def __init__(self, name="default", delete=False, image=None, startupcmd=None, ports=None, identity=None):
+    def __init__(self, name="default", image=None, startupcmd=None, ports=None, identity=None):
         """
         if you want to start from scratch use: "phusion/baseimage:master"
 
@@ -5256,15 +5275,10 @@ class DockerContainer:
             raise Tools.exceptions.JSBUG("make sure to call DockerFactory.init() bedore getting a container")
         DockerFactory._dockers[name] = self
 
-        self.config = DockerConfig(name=name, image=image, startupcmd=startupcmd, delete=delete, ports=ports)
+        self.config = DockerConfig(name=name, image=image, startupcmd=startupcmd, ports=ports)
 
         if self.config.portrange is None:
             self.config._find_port_range()
-            self.config.save()
-
-        if delete:
-            self.delete()
-
             self.config.save()
 
         MyEnv.sshagent.key_default_name
@@ -5617,7 +5631,9 @@ class DockerContainer:
         if DockerFactory.image_name_exists(f"internal_{self.config.name}"):
             image = f"internal_{self.config.name}"
             Tools.execute("docker rmi -f %s" % image, die=True, showout=False)
-        self.config.done_reset()
+        self.config.reset()
+        if self.name in DockerFactory._dockers:
+            DockerFactory._dockers.pop(self.name)
 
     @property
     def export_last_image_path(self):

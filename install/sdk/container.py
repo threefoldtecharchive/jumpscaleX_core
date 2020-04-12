@@ -7,21 +7,20 @@ _containers = SDKContainers(core=core, args=args)
 __all__ = ["install", "stop", "start", "shell", "kosmos", "list"]
 
 
-def containers_do(prefix=None, delete=False, stop=False):
+def _containers_do(prefix=None, delete=False, stop=False):
     for item in _containers.IT.DockerFactory.list():
         if prefix == "":
             prefix = None
         if prefix:
             if not item.startswith(prefix):
                 continue
-        if delete or stop:
+        if stop:
             d = _containers.IT.DockerFactory.container_get(item)
-            if stop:
-                print(f" - STOP: {item}")
-                d.stop()
-            if delete:
-                print(f" - DELETE: {item}")
-                d.delete()
+            print(f" - STOP: {item}")
+            d.stop()
+        if delete:
+            print(f" - DELETE: {item}")
+            d = _containers.IT.DockerFactory.container_delete(item, delete=True)
 
 
 def install(name=None, testnr=None, identity=None, delete=False, mount=True, email=None, words=None):
@@ -47,15 +46,13 @@ def install(name=None, testnr=None, identity=None, delete=False, mount=True, ema
     if words:
         args.words = words
 
-    import pudb
-
-    pu.db
     if testnr:
         testnr = int(testnr)
         identity_you = _containers._identity_ask(identity)
         email = f"test{testnr}@{identity_you}"
         identity_you = identity_you.split(".", 1)[0]
         identity = f"{identity_you}{testnr}.test"
+        name = f"test{testnr}"
 
     c = _containers.get(identity=identity, name=name, delete=delete, mount=mount, email=email)
 
@@ -80,7 +77,7 @@ def list():
     """
     list the containers
     """
-    containers_do()
+    _containers_do()
 
 
 def start(name=None):
@@ -97,9 +94,9 @@ def stop(name=None):
     """
     if name and "*" in name:
         prefix = name.replace("*", "")
-        containers_do(prefix=prefix, delete=False, stop=True)
+        _containers_do(prefix=prefix, delete=False, stop=True)
     elif name == None:
-        containers_do(delete=False, stop=True)
+        _containers_do(delete=False, stop=True)
     else:
         c = _containers.get(name=name)
         c.stop()
@@ -112,8 +109,8 @@ def delete(name=None):
     """
     if name and "*" in name:
         prefix = name.replace("*", "")
-        containers_do(prefix=prefix, delete=True, stop=False)
+        _containers_do(prefix=prefix, delete=True, stop=False)
     elif name == None:
-        containers_do(delete=True, stop=False)
+        _containers_do(delete=True, stop=False)
     else:
-        _containers.delete(name=name)
+        d = _containers.delete(name=name)
