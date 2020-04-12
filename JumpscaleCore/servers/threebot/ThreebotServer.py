@@ -183,7 +183,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             gevent.sleep(day1)
 
-    def start(self, background=False, restart=False, packages=None, with_shell=True, identity=""):
+    def start(self, background=False, restart=False, packages=None, with_shell=True):
         """
 
         kosmos -p 'j.servers.threebot.default.start(background=True)'
@@ -306,13 +306,8 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
             LogPane.Show = False
-            identity = identity or j.myidentities.me.tname
-
-            if j.myidentities.exists(identity):
-                j.me.tname = identity
-                j.me.load()
-            else:
-                raise j.exceptions.Input(f"identity {identity} doesn't exist. please configure it")
+            identity = j.myidentities.me.tname
+            assert identity
 
             if with_shell:
                 j.shell()  # for now removed otherwise debug does not work
@@ -328,7 +323,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.data.bcdb._master_set(False)
             sys.exit()
         else:
-            cmd = self.get_startup_cmd(packages=packages, identity=identity)
+            cmd = self.get_startup_cmd(packages=packages)
             if not cmd.is_running():
                 cmd.start()
                 time.sleep(1)
@@ -455,7 +450,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.client = None
         j.data.bcdb._master_set(False)
 
-    def get_startup_cmd(self, packages=None, identity=""):
+    def get_startup_cmd(self, packages=None):
         if self.web:
             web = "True"
         else:
@@ -466,9 +461,9 @@ class ThreeBotServer(j.baseclasses.object_config):
         from Jumpscale import j
         j.core.db.delete("threebot.starting")
         server = j.servers.threebot.get("{name}", executor='{executor}')
-        server.start(background=False, packages={packages}, identity='{identity}')
+        server.start(background=False, packages={packages})
         """.format(
-            name=self.name, executor=self.executor, web=web, packages=packages, identity=identity
+            name=self.name, executor=self.executor, web=web, packages=packages
         )
         cmd_start = j.core.tools.text_strip(cmd_start)
         startup = j.servers.startupcmd.get(name="threebot_{}".format(self.name), cmd_start=cmd_start)

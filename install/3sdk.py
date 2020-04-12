@@ -5,10 +5,12 @@ import sdk as _sdk
 
 from ptpython.repl import embed
 
-from jsx import IT
 from functools import partial
 from sdk.shell import ptconfig
 from sdk import container, builder, simulator, install, args, core  # pylint: disable=F401
+
+IT = core.core.IT
+
 
 from prompt_toolkit.shortcuts import print_formatted_text
 from prompt_toolkit.formatted_text import HTML

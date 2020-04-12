@@ -89,7 +89,9 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def start(self, background=False, packages=None, reload=False, with_shell=True, identity=""):
+    def start(
+        self, background=False, packages=None, reload=False, with_shell=True,
+    ):
         """
         kosmos -p 'j.servers.threebot.start(background=True)'
         kosmos -p 'j.servers.threebot.start(background=False,with_shell=False)'
@@ -119,7 +121,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
             if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) is False:
                 self.install(force=False)
 
-                client = self.default.start(background=True, packages=packages, identity=identity)
+                client = self.default.start(background=True, packages=packages)
                 assert "." in client.package_name
             else:
                 client = j.clients.gedis.get(name="threebot", port=8901)
@@ -143,7 +145,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
 
         else:
             self.install(force=False)
-            self.default.start(background=False, packages=packages, with_shell=with_shell, identity=identity)
+            self.default.start(background=False, packages=packages, with_shell=with_shell)
 
         del self._starting_
 

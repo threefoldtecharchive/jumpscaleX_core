@@ -6,7 +6,9 @@ import time
 import inspect
 import os
 from functools import partial
-from jsx import IT
+from .core import core
+
+IT = core.IT
 
 from . import __all__ as sdkall
 
@@ -64,7 +66,7 @@ def get_rhs(line):
         stmt = mod.body[0]
         # only assignment statements
         if type(stmt) in (ast.Assign, ast.AugAssign, ast.AnnAssign):
-            return line[stmt.value.col_offset:].strip()
+            return line[stmt.value.col_offset :].strip()
     return line
 
 
@@ -107,6 +109,7 @@ def rewriteline(line, globals, locals):
     """
     Check if commands are entered in novice mode and rewrite them to python
     """
+
     def get_args_string(argslist):
         line = ""
         for arg in argslist:

@@ -1,6 +1,8 @@
 from .lib.SDKContainers import SDKContainers
 from .core import core
 from .args import args
+import time
+
 
 _containers = SDKContainers(core=core, args=args)
 
@@ -23,7 +25,7 @@ def _containers_do(prefix=None, delete=False, stop=False):
             d = _containers.IT.DockerFactory.container_delete(item, delete=True)
 
 
-def install(name=None, testnr=None, identity=None, delete=False, mount=True, email=None, words=None):
+def install(name=None, testnr=None, identity=None, delete=False, mount=True, email=None, words=None, server=False):
     """
 
     identity is the name of your threebot
@@ -80,11 +82,31 @@ def list():
     _containers_do()
 
 
-def start(name=None):
+def start(name=None, server=False):
     """
+
+    @param is server True will start 3bot server
     """
+    server = core.IT.Tools.bool(server)
     c = _containers.get(name=name)
     c.start()
+    if server:
+        c.execute("source /sandbox/env.sh;3bot start")
+
+        # if IT.MyEnv.platform_is_osx:
+        #     cmd = 'open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+        #             --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors'
+
+        try:
+            import webbrowser
+
+            time.sleep(5)
+            if core.IT.MyEnv.platform_is_osx:
+                webbrowser.get("safari").open_new_tab("https://localhost:4000")
+            else:
+                webbrowser.open_new_tab("https://localhost:4000")
+        except:
+            pass
 
 
 def stop(name=None):
@@ -114,3 +136,68 @@ def delete(name=None):
         _containers_do(delete=True, stop=False)
     else:
         d = _containers.delete(name=name)
+
+
+# def wireguard(name=None, test=False, disconnect=False):
+#     """
+#     jsx wireguard
+#     enable wireguard, can be on host or server
+#     :return:
+#     """
+#     docker = container_get(name=name)
+#     wg = docker.wireguard
+#     if disconnect:
+#         wg.disconnect()
+#     elif test:
+#         print(wg)
+#         IT.Tools.shell()
+#     else:
+#         wg.reset()
+#         print(wg)
+#         wg.server_start()
+#         wg.connect()
+
+# def connect(test=False, disconnect=False):
+#     """
+#     only for core developers and engineers of threefold, will connect to some core
+#     infrastructure for helping us to communicate
+#     :return:
+#     """
+#     myid = IT.MyEnv.registry.myid
+#     addr = IT.MyEnv.registry.addr[0]
+#     wg = IT.WireGuardServer(addr=addr, myid=myid)
+#     if disconnect:
+#         wg.disconnect()
+#     elif test:
+#         print(wg)
+#         IT.Tools.shell()
+#     else:
+#         wg.reset()
+#         print(wg)
+#         wg.server_start()
+#         wg.connect()
+
+
+#
+# def container_import(name="3bot", path=None, imagename="threefoldtech/3bot2", no_start=False):
+#     """
+#     import container from image file, if not specified will be /tmp/3bot2.tar
+#     :param args:
+#     :return:
+#     """
+#     docker = container_get(delete=True, name=name)
+#     docker.import_(path=path, image=imagename)
+#     if not no_start:
+#         docker.start()
+#
+#
+# def container_export(name="3bot", path=None, version=None):
+#     """
+#     export the 3bot to image file, if not specified will be /tmp/3bot2.tar
+#     :param name:
+#     :param path:
+#     :return:
+#     """
+#
+#     docker = container_get(name=name)
+#     docker.export(path=path, version=version)
