@@ -4931,7 +4931,7 @@ class DockerFactory:
         if name in DockerFactory._dockers:
             docker = DockerFactory._dockers[name]
             docker.delete()
-            if name in DockerFactory._docker:
+            if name in DockerFactory._dockers:
                 DockerFactory._dockers.pop(name)
 
     @staticmethod
