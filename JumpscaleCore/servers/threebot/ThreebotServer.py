@@ -260,7 +260,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             for path in packages:
                 # j.debug()
-                j.threebot.packages.zerobot.packagemanager.actors.package_manager.package_add(
+                j.threebot.packages.zerobot.admin.actors.package_manager.package_add(
                     path=path, install=False, reload=False
                 )
 
