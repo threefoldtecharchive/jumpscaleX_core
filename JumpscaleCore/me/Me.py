@@ -214,11 +214,6 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         kosmos 'j.me.configure(tname="my3bot",reset=True)'
 
         """
-
-        import pudb
-
-        pu.db
-
         if tname == "":
             tname = None
         if email == "":
