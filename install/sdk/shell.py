@@ -6,9 +6,6 @@ import time
 import inspect
 import os
 from .core import core
-
-IT = core.IT
-
 from . import __all__ as sdkall
 
 from prompt_toolkit.application import get_app
@@ -26,9 +23,8 @@ from prompt_toolkit.formatted_text import (
 
 from ptpython.prompt_style import PromptStyle
 
-from . import __all__
 
-
+IT = core.IT
 __name__ = "<sdk>"
 
 
@@ -377,7 +373,7 @@ def ptconfig(repl, expert=False):
         def complete_module(module, prefix=""):
             rmembers = inspect.getmembers(module, inspect.isfunction)
             for rmember, _ in rmembers:
-                if rmember.startswith(prefix):
+                if rmember.startswith(prefix) and not rmember.startswith(HIDDEN_PREFIXES):
                     yield Completion(rmember, -len(prefix), display=rmember, style="bg:ansigreen")
 
         parts = line.split()
