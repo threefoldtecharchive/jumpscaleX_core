@@ -2,9 +2,9 @@
 
 ## For the first start of jsx container
 
-- Start kosmos shell using ```jsx constainer```
+- Start kosmos shell using ```jsx container```
 - it will ask your for your identity
-    - if you want to specify it at start ```jsx constainer -id someone.3bot```
+    - if you want to specify it at start ```jsx container -id someone.3bot```
     - ps:is no need to specify 3bot at the end, will happen automatically
 - if you want to work with more than 1 container use ```-n aname```
 
