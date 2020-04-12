@@ -40,9 +40,6 @@ class MdBook(j.baseclasses.object):
     
     def generate_pkg_summary(self, name):
 
-        #TODO: check failed links to readme files (readme-> index in mdbook build)
-        #TODO: index.html in wiki (error)
-
         self.summary = ""
         pkg_path = ""
         if not j.tools.threebot_packages.find(name=name):
@@ -55,10 +52,10 @@ class MdBook(j.baseclasses.object):
             j.sal.fs.remove(path=f"{pkg_path}/wiki/SUMMARY.md")
         if not j.sal.fs.exists(path=f"{pkg_path}/wiki/README.md"):
             j.sal.fs.writeFile(filename=pkg_path+'wiki/README.md', contents=name)
-        
-        # Recursive generation of summary from md files
+
         def dir_summary(path, indent):
             """
+            Recursive generation of summary from md files
             @param path: path of the dir
             @param indent: lvl of indentation of the current dir in the summary file
             """
@@ -108,10 +105,12 @@ class MdBook(j.baseclasses.object):
                 # Indent pkg summary in index
                 pkg_summary = '  '.join(('\n'+pkg_summary.lstrip()).splitlines(True))   
                 # Add package name to files pathes
-                pkg_summary = pkg_summary.replace('(',f"({package.name}/")
+                # TODO: may result in naming errors if file name contains ']('
+                #       should find a better way
+                pkg_summary = pkg_summary.replace('](',f"]({package.name}/")
 
                 # Add a link to the package summary in the index
-                index_content += '- [' + package.name + ']' + '(' + package.name + '/README.md)\n'
+                index_content += '- [' + package.name + '](' + package.name + '/README.md)\n'
                 index_content += pkg_summary
         
         # Generate index dir
@@ -130,6 +129,6 @@ class MdBook(j.baseclasses.object):
         j.sal.process.execute(f"cd {indexbook_path} && mdbook build")
 
         # Copy rendered book to mdbooks dir
-        rendered_index_path = j.sal.fs.joinPaths(j.sal.fs.joinPaths(j.dirs.VARDIR, "mdbooks"),"index")
+        rendered_index_path = j.sal.fs.joinPaths(j.dirs.VARDIR, "mdbooks", "index")
         j.sal.fs.createDir(rendered_index_path)
         j.sal.fs.copyDirTree(src=indexbook_path+'/book', dst=rendered_index_path)
