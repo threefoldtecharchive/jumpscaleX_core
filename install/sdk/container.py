@@ -22,7 +22,7 @@ def _containers_do(prefix=None, delete=False, stop=False):
             d.stop()
         if delete:
             print(f" - DELETE: {item}")
-            d = _containers.IT.DockerFactory.container_delete(item, delete=True)
+            d = _containers.IT.DockerFactory.container_delete(item)
 
 
 def install(name=None, testnr=None, identity=None, delete=False, mount=True, email=None, words=None, server=False):
@@ -58,6 +58,9 @@ def install(name=None, testnr=None, identity=None, delete=False, mount=True, ema
 
     c = _containers.get(identity=identity, name=name, delete=delete, mount=mount, email=email)
 
+    if server:
+        _server(c)
+
 
 def shell(name=None):
     """
@@ -91,22 +94,26 @@ def start(name=None, server=False):
     c = _containers.get(name=name)
     c.start()
     if server:
-        c.execute("source /sandbox/env.sh;3bot start")
+        _server(c)
 
-        # if IT.MyEnv.platform_is_osx:
-        #     cmd = 'open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
-        #             --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors'
 
-        try:
-            import webbrowser
+def _server(c):
+    c.execute("source /sandbox/env.sh;3bot start")
 
-            time.sleep(5)
-            if core.IT.MyEnv.platform_is_osx:
-                webbrowser.get("safari").open_new_tab("https://localhost:4000")
-            else:
-                webbrowser.open_new_tab("https://localhost:4000")
-        except:
-            pass
+    # if IT.MyEnv.platform_is_osx:
+    #     cmd = 'open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+    #             --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors'
+
+    try:
+        import webbrowser
+
+        time.sleep(5)
+        if core.IT.MyEnv.platform_is_osx:
+            webbrowser.get("safari").open_new_tab("https://localhost:4000")
+        else:
+            webbrowser.open_new_tab("https://localhost:4000")
+    except:
+        pass
 
 
 def stop(name=None):

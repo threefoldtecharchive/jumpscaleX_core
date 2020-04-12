@@ -74,7 +74,7 @@ class SDKContainers:
             if identity.endswith(".test"):
                 secret = "test"
             else:
-                if not secret:
+                if not self.args.secret:
                     self.args.secret = self.IT.Tools.ask_password("specify secret passphrase please:")
 
             if not secret:

@@ -45,16 +45,10 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         kosmos 'j.me.configure(tname="my3bot")'
         """
 
-        name = None
-        path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/default")
-        if j.sal.fs.exists(path):
-            name = j.core.tools.file_read(path).strip()
-            name = self._name_get(name)
+        assert self.tname
+        assert len(self.tname) > 4
 
-        if self.tname and len(self.tname) > 4:
-            name = self.tname
-
-        path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/%s.toml" % name)
+        path = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/%s.toml" % self.tname)
         if j.sal.fs.exists(path):
             print(" - load identity info from filesystem")
             text_toml = j.sal.fs.readFile(path)
@@ -62,8 +56,6 @@ class Me(JSConfigBase, j.baseclasses.testtools):
             data.pop("id")
             self._data._data_update(data)
             print(f" - found id info: {path}")
-
-        self.tname = name
 
     def reset(self, template=False):
         if template:
@@ -74,6 +66,9 @@ class Me(JSConfigBase, j.baseclasses.testtools):
     def _update_data(self, model, obj, action, propertyname):
         if action == "delete":
             return
+        if propertyname == "tname" or action == "set_pre":
+            self.tname = self._name_get(self.tname)
+
         if propertyname == "admins" or action == "set_pre":
             # make sure we have 3bot at end if not specified
             if len(self.tname) < 5:
@@ -219,7 +214,6 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         kosmos 'j.me.configure(tname="my3bot",reset=True)'
 
         """
-
         if tname == "":
             tname = None
         if email == "":

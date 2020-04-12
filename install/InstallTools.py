@@ -4931,7 +4931,8 @@ class DockerFactory:
         if name in DockerFactory._dockers:
             docker = DockerFactory._dockers[name]
             docker.delete()
-            DockerFactory._dockers.pop(name)
+            if name in DockerFactory._dockers:
+                DockerFactory._dockers.pop(name)
 
     @staticmethod
     def container_get(name, image="threefoldtech/3bot2", start=False, delete=False, ports=None, mount=True):
