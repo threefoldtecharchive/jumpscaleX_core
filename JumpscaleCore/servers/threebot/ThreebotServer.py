@@ -394,7 +394,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             p = j.tools.threebot_packages.get(name=name)
             p.status = "tostart"  # means we need to start
 
-        requiredpackages = ["zerobot.base", "zerobot.webinterface", "zerobot.admin"]
+        requiredpackages = ["zerobot.base", "zerobot.webinterface", "zerobot.admin", "zerobot.github_webhooks"]
         extrapackages = []
         packages = j.tools.threebot_packages.find()
 
