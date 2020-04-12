@@ -157,6 +157,9 @@ class Form:
     def single_choice(self, msg, options, **kwargs):
         return self._append(self._session.single_msg(msg, options, **kwargs))
 
+    def drop_down_choice(self, msg, options, **kwargs):
+        return self._append(self._session.drop_down_msg(msg, options, **kwargs))
+
 
 class GedisChatBotSession(JSBASE):
     """
