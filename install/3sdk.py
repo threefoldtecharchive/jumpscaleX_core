@@ -56,7 +56,7 @@ def get_doc(root_module, level=0, size=4):
         spaces = " " * level
 
         if is_module:
-            doc += f"{spaces}<ansiblue>{name}</ansiblue>"
+            doc += f"{spaces}<ansibrightblue>{name}</ansibrightblue>"
         else:
             doc += f"{spaces}<ansigreen>{name}</ansigreen>"
 
