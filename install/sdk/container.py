@@ -160,6 +160,10 @@ def stop(name=None):
 
 
 def delete(name=None):
+    return _delete(name)
+
+
+def _delete(name=None):
     """
     delete specified containers, can use * in name
     if name not specified then its current container
@@ -194,8 +198,9 @@ def threebot(delete=False, identity=None, email=None, words=None, restart=False,
     when 3bot becomes unrepsonsive you can always ask a restart on server, the container will not be restarted
 
     """
+    _delete("3bot")
     if not _containers.IT.DockerFactory.container_name_exists("3bot"):
-        install("3bot", delete=delete, identity=identity, email=email, words=words)
+        install("3bot", delete=delete, identity=identity, email=email, words=words, server=True)
 
     c = _containers.get(name="3bot")
     if restart:
