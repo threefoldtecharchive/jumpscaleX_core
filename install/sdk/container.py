@@ -117,11 +117,17 @@ def _server(c):
     _threebot_browser()
 
 
-def _threebot_browser():
+def _threebot_browser(url=None):
+
+    if not url:
+        url = "https://localhost:4000/"
 
     if core.IT.MyEnv.platform_is_osx:
-        cmd = 'open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
-                --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors https://localhost:4000/'
+        cmd = (
+            'open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+                --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors %s'
+            % url
+        )
         core.IT.Tools.execute(cmd)
 
     # try:

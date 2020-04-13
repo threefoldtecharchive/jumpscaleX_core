@@ -1,85 +1,67 @@
-def install():
+"""manage containers"""
+from .core import core
+from .args import args
+from .container import _containers, _threebot_browser
+from .container import install as _install_container
+from .container import delete as _delete_container
+from .container import stop as _stop_container
+
+
+def start(delete=False, browser_open=True):
     """
     install & run a container with SDK & simulator
     a connection to zerotier network will be made
     """
-    jsx.container_stop.callback(name)
+    if not _containers.IT.DockerFactory.container_name_exists("simulator"):
+        _install_container("simulator", delete=delete)
+        c = _containers.get(name="simulator")
+        c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
+    else:
+        c = _containers.get(name="simulator")
 
-
-def delete():
-    """
-    stop simulator & remove the container
-    """
-    jsx.container_stop.callback(name)
-
-
-def start():
-    """
-    start simulator in the container if it was stopped before
-    """
-    jsx.tfgrid_simulator.callback(name)
+    if browser_open:
+        browser()
 
 
 def stop():
     """
-    stop the simulator, container remains but simulator stops
+    stop simulator & remove the container
     """
-    jsx.tfgrid_simulator.callback(name)
+    _delete_container("simulator")
 
 
-def restart():
+def browser():
+    """
+    connect browser to your jupyter, make sure its not open yet
+    """
+    c = _containers.get(name="simulator")
+    httpnb = 5000 + int(c.config.portrange) * 10
+    url = f"http://localhost:{httpnb}"
+    _threebot_browser(url)
+    print(f" - CONNECT TO YOUR SIMULATOR ON: {url}")
+
+
+def restart(browser_open=False):
     """
     restart the simulator, this can help to remove all running kernels
     the pyjupyter notebook can become super heavy
     """
-    jsx.tfgrid_simulator.callback(name)
+    if not _containers.IT.DockerFactory.container_name_exists("simulator"):
+        start()
+    else:
+        c = _containers.get(name="simulator")
+        c.execute("j.tools.tfgrid_simulator.stop()", jumpscale=True)
+        c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
+
+    if browser_open:
+        browser()
 
 
 def shell():
     """
     get a shell into the simulator
     """
-    jsx.container_shell.callback(name)
-
-
-# def tfgrid_simulator(delete=False, restart=False, shell=False, browser=True, stop=False):
-#     """
-#     start the 3bot container
-#     :param name:
-#     :return:
-#     """
-#
-#     if stop:
-#         d = e.DF.container_get("simulator")
-#         d.stop()
-#         d.delete()
-#         return
-#     docker = container_get(name="simulator", delete=delete)
-#
-#     if restart:
-#         if not docker.info["State"]["Status"] == "running":
-#             docker.start()
-#         else:
-#             j = jumpscale_get()
-#             j.servers.notebook.stop(background=True)
-#             j.servers.notebook.start(background=True)
-#     else:
-#         docker.start()
-#         addr = docker.zerotier_connect()
-#         docker.execute("j.tools.tfgrid_simulator.start(background=True)", jumpscale=True)
-#         print(f" - CONNECT TO YOUR SIMULATOR ON: http://{addr}:8888/")
-#
-#     if browser:
-#         try:
-#             import webbrowser
-#
-#             time.sleep(3)
-#             if IT.MyEnv.platform_is_osx:
-#                 webbrowser.get("safari").open_new_tab(f"http://{addr}:8888")
-#             else:
-#                 webbrowser.open_new_tab(f"http://{addr}:8888")
-#         except:
-#             pass
-#
-#     if shell:
-#         docker.shell()
+    if not _containers.IT.DockerFactory.container_name_exists("simulator"):
+        start()
+    c = _containers.get(name="simulator")
+    c.shell()
