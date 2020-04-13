@@ -2,6 +2,7 @@ from . import container, simulator
 from . import builder
 from . import core
 from . import args
+import textwrap
 
 # import jsx
 
@@ -22,3 +23,9 @@ def _get_doc_line(doc):
         if line.strip():
             return line.strip()
     return ""
+
+
+def _get_doc(doc):
+    if not doc:
+        return ""
+    return textwrap.dedent(doc)
