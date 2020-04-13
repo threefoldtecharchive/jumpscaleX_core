@@ -241,10 +241,10 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         else:
             ask_name = bool(ask)
 
-        if self.tname == "build":
-            # means we can generate default identity
-            self.configure_encryption(ask=False, reset=True)
-            return
+        # if self.tname == "build":
+        #     # means we can generate default identity
+        #     self.configure_encryption(ask=False, reset=True)
+        #     return
 
         if not self.tname:
             idpath_default = j.core.tools.text_replace("{DIR_BASE}/myhost/identities/default")

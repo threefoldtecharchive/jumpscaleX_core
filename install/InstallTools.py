@@ -5850,8 +5850,8 @@ class DockerContainer:
             if not self.executor.state_exists("STATE_THREEBOT"):
                 force = True
 
-        if identity == "build":
-            secret = "build"
+        # if identity == "build":
+        #     secret = "build"
 
         if not secret:
             secret = MyEnv.secret_get()
