@@ -8,7 +8,7 @@ import os
 import re
 from .core import core
 from . import __all__ as sdkall
-from . import _get_doc_line
+from . import _get_doc_line, _get_doc
 
 from prompt_toolkit.application import get_app
 from prompt_toolkit.keys import Keys
@@ -326,7 +326,7 @@ def ptconfig(repl, expert=False):
         if obj:
             doc = get_doc_from_obj(obj)
             if doc:
-                repl.docstring_buffer.reset(Document(_get_doc_line(doc), cursor_position=0))
+                repl.docstring_buffer.reset(Document(_get_doc(doc), cursor_position=0))
 
     repl.default_buffer.on_text_changed.add_handler(_on_completion)
 
@@ -354,6 +354,7 @@ def ptconfig(repl, expert=False):
         """
         Evaluate the line and print the result.
         """
+        repl.docstring_buffer.reset(Document("", 0))
         output = self.app.output
 
         # WORKAROUND: Due to a bug in Jedi, the current directory is removed

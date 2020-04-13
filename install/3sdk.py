@@ -78,6 +78,9 @@ def get_doc(root_module, level=0, size=4):
 
 
 def info():
+    """
+    show commands available in 3sdk
+    """
     print_formatted_text(HTML(get_doc(_sdk)))
 
 
