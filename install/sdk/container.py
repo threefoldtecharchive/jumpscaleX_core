@@ -26,7 +26,17 @@ def _containers_do(prefix=None, delete=False, stop=False):
             d = _containers.IT.DockerFactory.container_delete(item)
 
 
-def install(name=None, testnr=None, identity=None, delete=False, mount=True, email=None, words=None, server=False):
+def install(
+    name=None,
+    testnr=None,
+    identity=None,
+    delete=False,
+    mount=True,
+    email=None,
+    words=None,
+    server=False,
+    zerotier=False,
+):
     """
     create the 3bot container and install jumpscale inside
 
@@ -59,6 +69,10 @@ def install(name=None, testnr=None, identity=None, delete=False, mount=True, ema
         name = f"test{testnr}"
 
     c = _containers.get(identity=identity, name=name, delete=delete, mount=mount, email=email)
+
+    if zerotier:
+        addr = c.zerotier_connect()
+        print(f" - CONNECT TO YOUR 3BOT ON: https://{addr}:4000/")
 
     if server:
         _server(c)
@@ -100,21 +114,27 @@ def start(name=None, server=False):
 
 def _server(c):
     c.execute("source /sandbox/env.sh;3bot start")
+    _threebot_browser()
 
-    # if IT.MyEnv.platform_is_osx:
-    #     cmd = 'open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
-    #             --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors'
 
-    try:
-        import webbrowser
+def _threebot_browser():
 
-        time.sleep(5)
-        if core.IT.MyEnv.platform_is_osx:
-            webbrowser.get("safari").open_new_tab("https://localhost:4000")
-        else:
-            webbrowser.open_new_tab("https://localhost:4000")
-    except:
-        pass
+    if core.IT.MyEnv.platform_is_osx:
+        cmd = 'open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+                --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors https://localhost:4000/'
+        core.IT.Tools.execute(cmd)
+
+    # try:
+    #     import webbrowser
+    #
+    #     core.IT.Tools.shell()
+    #     # time.sleep(5)
+    #     # if core.IT.MyEnv.platform_is_osx:
+    #     #     webbrowser.get("safari").open_new_tab("https://localhost:4000")
+    #     # else:
+    #     webbrowser.open_new_tab("https://localhost:4000")
+    # except:
+    #     pass
 
 
 def stop(name=None):
@@ -157,7 +177,29 @@ def wireguard(name=None, connect=True):
     raise RuntimeError("implement")
 
 
-def zerotier(name=None, connect=True):
+def threebot(delete=False, identity=None, email=None, words=None, restart=False, browser=True):
+    """
+    will make sure you have your 3bot alive
+
+    - identity is your 3bot unique name (only needed to specify once)
+    - email is your email (only needed to specify once)
+    - if you already have your secret key, specify the words of your key
+
+    when 3bot becomes unrepsonsive you can always ask a restart on server, the container will not be restarted
+
+    """
+    if not _containers.IT.DockerFactory.container_name_exists("3bot"):
+        install("3bot", delete=delete, identity=identity, email=email, words=words)
+
+    c = _containers.get(name="3bot")
+    if restart:
+        c.execute("source /sandbox/env.sh;3bot stop")
+        c.execute("source /sandbox/env.sh;3bot start")
+    if browser:
+        _threebot_browser()
+
+
+def zerotier(name=None, connect=False):
     """
     enable zerotier server inside your container
     if connect will use local zerotier tools to make the connection to same network
@@ -165,8 +207,12 @@ def zerotier(name=None, connect=True):
     its using a predefined range in which all SDK's will be connected if zerotier enabled
 
     """
-    # TODO: zerotier (see what is done in simulator, use that network)
-    raise RuntimeError("implement")
+    c = _containers.get(name=name)
+    addr = c.zerotier_connect()
+    print(f" - CONNECT TO YOUR 3BOT ON: https://{addr}:4000/")
+    if connect:
+        # TODO: zerotier (see what is done in simulator, use that network)
+        raise RuntimeError("implement")
 
 
 # def wireguard(name=None, test=False, disconnect=False):
