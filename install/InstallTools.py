@@ -209,7 +209,12 @@ class RedisTools:
         :param unix_socket_path:
         :return:
         """
-        import redis
+        try:
+            import redis
+        except ImportError:
+            if die:
+                raise
+            return
 
         unix_socket_path = Tools.text_replace(unix_socket_path)
         RedisTools.unix_socket_path = unix_socket_path
