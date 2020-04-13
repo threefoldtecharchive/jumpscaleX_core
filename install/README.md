@@ -37,7 +37,7 @@ This will require python3, git on the user system
 - `pip3 install jedi pudb ptpython==2.0.4`
 - `cd /tmp && git clone https://github.com/threefoldtech/jumpscaleX_core/ && cd jumpscaleX_core && git checkout unstable && git pull`
 - `sudo -s`
-- `ln /tmp/jumpscaleX_core/threefoldtech/jumpscaleX_core/install/3sdk.py /usr/bin/3sdk`
+- `ln /tmp/jumpscaleX_core/install/3sdk.py /usr/bin/3sdk`
 
 
 
