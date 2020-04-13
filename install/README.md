@@ -50,8 +50,9 @@ launch `3sdk`
 
 ### Getting help
 
-![](images/3sdk3.png)
+You can type `info` or `info()` and you will see a list of available commands that you can use.
 
+![](images/3sdk3.png)
 
 
 ### to start a threebot container in one command
@@ -74,7 +75,7 @@ to start a new container `container start name:mycontainer`
 
 
 
-## troubleshooting
+## Troubleshooting
 
 ### REMOTE HOST IDENTIFICATION HAS CHANGED
 
