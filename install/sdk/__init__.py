@@ -5,7 +5,7 @@ from . import args
 
 # import jsx
 
-__all__ = ["builder", "simulator", "container", "install", "args", "core"]
+__all__ = ["builder", "simulator", "container", "install", "args", "core", "installer"]
 
 
 def install():

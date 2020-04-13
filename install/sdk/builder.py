@@ -1,22 +1,45 @@
-def start():
+def base():
     """
-    build the threebot container
+    build the ubuntu base container
     """
-    jsx.tfgrid_simulator.callback(name)
+    # TODO: ubuntu base
+    raise RuntimeError("implement")
 
 
-def shell(name="simulator"):
+def sdk():
     """
-    Shell for simulator
+    build the sdk (threebot) container
     """
-    jsx.container_shell.callback(name)
+    # TODO: threebot container build, see code below
+    raise RuntimeError("implement")
 
 
-def kosmos(name="simulator"):
+def container_import(name=None, path=None, imagename="threefoldtech/3bot2", no_start=False):
     """
-    Start kosmos shell on simulator
+    import container from image file, if not specified will be /tmp/3bot2.tar
+    :param args:
+    :return:
     """
-    jsx.kosmos.callback(name)
+    # TODO: implement container_import
+    raise RuntimeError("implement")
+    docker = container_get(delete=True, name=name)
+    docker.import_(path=path, image=imagename)
+    if not no_start:
+        docker.start()
+
+
+def container_export(name=None, path=None, version=None):
+    """
+    export the 3bot to image file, if not specified will be /tmp/3bot2.tar
+    :param name:
+    :param path:
+    :return:
+    """
+    # TODO: implement container_export
+    raise RuntimeError("implement")
+
+    docker = container_get(name=name)
+    docker.export(path=path, version=version)
 
 
 # def builder(push=False, base=False, delete=False, noclean=False, development=False):

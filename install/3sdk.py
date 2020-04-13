@@ -7,7 +7,7 @@ from ptpython.repl import embed
 
 from functools import partial
 from sdk.shell import ptconfig
-from sdk import container, builder, simulator, install, args, core  # pylint: disable=F401
+from sdk import container, builder, simulator, install, args, core, installer  # pylint: disable=F401
 
 IT = core.core.IT
 
@@ -85,6 +85,7 @@ def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
 
     if not expert:
         _sdk.__all__.remove("builder")
+        _sdk.__all__.remove("installer")
 
     curframe = inspect.currentframe()
     calframe = inspect.getouterframes(curframe, 2)

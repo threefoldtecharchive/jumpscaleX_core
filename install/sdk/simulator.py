@@ -1,29 +1,45 @@
-def stop(name="simulator"):
+def install():
     """
-    Stop simulator
+    install & run a container with SDK & simulator
+    a connection to zerotier network will be made
     """
     jsx.container_stop.callback(name)
 
 
-def start(name="simulator"):
+def delete():
     """
-    Start simulator
+    stop simulator & remove the container
+    """
+    jsx.container_stop.callback(name)
+
+
+def start():
+    """
+    start simulator in the container if it was stopped before
     """
     jsx.tfgrid_simulator.callback(name)
 
 
-def shell(name="simulator"):
+def stop():
     """
-    Shell for simulator
+    stop the simulator, container remains but simulator stops
+    """
+    jsx.tfgrid_simulator.callback(name)
+
+
+def restart():
+    """
+    restart the simulator, this can help to remove all running kernels
+    the pyjupyter notebook can become super heavy
+    """
+    jsx.tfgrid_simulator.callback(name)
+
+
+def shell():
+    """
+    get a shell into the simulator
     """
     jsx.container_shell.callback(name)
-
-
-def kosmos(name="simulator"):
-    """
-    Start kosmos shell on simulator
-    """
-    jsx.kosmos.callback(name)
 
 
 # def tfgrid_simulator(delete=False, restart=False, shell=False, browser=True, stop=False):

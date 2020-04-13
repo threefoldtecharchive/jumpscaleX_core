@@ -65,7 +65,7 @@ def install(name=None, testnr=None, identity=None, delete=False, mount=True, ema
 
 def shell(name=None):
     """
-    Shell
+    shell into your container
     """
     c = _containers.get(name=name)
     c.shell()
@@ -73,7 +73,7 @@ def shell(name=None):
 
 def kosmos(name=None):
     """
-    Start kosmos shell
+    start kosmos shell
     """
     c = _containers.get(name=name)
     c.kosmos()
@@ -88,8 +88,7 @@ def list():
 
 def start(name=None, server=False):
     """
-
-    @param is server True will start 3bot server
+    @param server=True will start 3bot server
     """
     server = core.IT.Tools.bool(server)
     c = _containers.get(name=name)
@@ -122,6 +121,7 @@ def stop(name=None):
     stop specified containers, can use * in name
     if name not specified then its current container
     """
+    # TODO: need to make sure is saved, when starting afterwards do not have to reinstall jumpscale
     if name and "*" in name:
         prefix = name.replace("*", "")
         _containers_do(prefix=prefix, delete=False, stop=True)
@@ -144,6 +144,28 @@ def delete(name=None):
         _containers_do(delete=True, stop=False)
     else:
         _containers.delete(name=name)
+
+
+def wireguard(name=None, connect=True):
+    """
+    enable wireguard server inside your container
+    if connect will use local wireguard tools (userspace prob) if installed locally to make connection to the container
+    """
+    # TODO: wireguard (also test on OSX)
+    # TODO: wireguard the connect & install is in 1 method
+    raise RuntimeError("implement")
+
+
+def zerotier(name=None, connect=True):
+    """
+    enable zerotier server inside your container
+    if connect will use local zerotier tools to make the connection to same network
+
+    its using a predefined range in which all SDK's will be connected if zerotier enabled
+
+    """
+    # TODO: zerotier (see what is done in simulator, use that network)
+    raise RuntimeError("implement")
 
 
 # def wireguard(name=None, test=False, disconnect=False):
@@ -184,28 +206,3 @@ def delete(name=None):
 #         print(wg)
 #         wg.server_start()
 #         wg.connect()
-
-
-#
-# def container_import(name="3bot", path=None, imagename="threefoldtech/3bot2", no_start=False):
-#     """
-#     import container from image file, if not specified will be /tmp/3bot2.tar
-#     :param args:
-#     :return:
-#     """
-#     docker = container_get(delete=True, name=name)
-#     docker.import_(path=path, image=imagename)
-#     if not no_start:
-#         docker.start()
-#
-#
-# def container_export(name="3bot", path=None, version=None):
-#     """
-#     export the 3bot to image file, if not specified will be /tmp/3bot2.tar
-#     :param name:
-#     :param path:
-#     :return:
-#     """
-#
-#     docker = container_get(name=name)
-#     docker.export(path=path, version=version)
