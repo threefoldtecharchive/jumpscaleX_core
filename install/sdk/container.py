@@ -7,7 +7,7 @@ import time
 
 _containers = SDKContainers(core=core, args=args)
 
-__all__ = ["install", "stop", "start", "shell", "kosmos", "list"]
+__all__ = ["install", "stop", "start", "shell", "kosmos", "list", "threebot", "delete"]
 
 
 def _containers_do(prefix=None, delete=False, stop=False):
