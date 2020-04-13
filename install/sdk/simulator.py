@@ -12,6 +12,9 @@ def start(delete=False, browser_open=True):
     install & run a container with SDK & simulator
     a connection to zerotier network will be made
     """
+    if delete:
+        _delete_container("simulator")
+
     if not _containers.IT.DockerFactory.container_name_exists("simulator"):
         _install_container("simulator", delete=delete)
         c = _containers.get(name="simulator")
