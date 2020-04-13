@@ -41,7 +41,7 @@ class Core:
                 resp = requests.get(url)
                 if resp.status_code != 200:
                     raise RuntimeError("fail to download InstallTools.py")
-                with open(path, "w+") as f:
+                with open(path, "wb+") as f:
                     f.write(resp.content)
                 print("DOWNLOADED INSTALLTOOLS TO %s" % path)
 
