@@ -5881,7 +5881,8 @@ class DockerContainer:
             args_txt += f" -i {identity}"
 
         dirpath = os.path.dirname(inspect.getfile(Tools))
-        if dirpath.startswith(MyEnv.config["DIR_CODE"]):
+        jsxfile = os.path.join(dirpath, "jsx")
+        if not os.path.exists(jsxfile):
             self.execute(
                 """
             rm -f /tmp/InstallTools.py
