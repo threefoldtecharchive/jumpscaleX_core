@@ -160,14 +160,15 @@ def stop(name=None):
 
 
 def delete(name=None):
-    return _delete(name)
-
-
-def _delete(name=None):
     """
     delete specified containers, can use * in name
     if name not specified then its current container
     """
+    _delete(name)
+
+
+def _delete(name=None):
+
     if name and "*" in name:
         prefix = name.replace("*", "")
         _containers_do(prefix=prefix, delete=True, stop=False)
