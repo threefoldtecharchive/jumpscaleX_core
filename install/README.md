@@ -44,7 +44,8 @@ This will require python3, git on the user system
 
 ## using 3sdk
 
-- launch `3sdk`
+launch `3sdk`
+
 ![](images/3sdk2.png)
 
 ### Getting help
@@ -53,13 +54,13 @@ This will require python3, git on the user system
 
 
 
-## to start a threebot container in one command
+### to start a threebot container in one command
 
 
 > `container threebot`
 
 
-## Install a new container
+### Install a new container
 > `container install name=notsomeuser3 identity=notsomeuser3 email=notsomeuser3@gmail.com server=True`
 
 - server=True means to start 3bot server
@@ -67,7 +68,7 @@ This will require python3, git on the user system
 
 
 
-## Running a new container
+### Running a new container
 
 to start a new container `container start name:mycontainer`	
 
