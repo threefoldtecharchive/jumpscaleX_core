@@ -38,11 +38,12 @@ This will require python3, git on the user system
 - `cd /tmp && git clone https://github.com/threefoldtech/jumpscaleX_core/ && cd jumpscaleX_core && git checkout unstable && git pull`
 - `sudo -s`
 - `ln /tmp/jumpscaleX_core/install/3sdk.py /usr/bin/3sdk`
-
-
+ 
 
 
 ## using 3sdk
+
+Binaries should be in the [release](https://github.com/threefoldtech/jumpscaleX_core/releases/tag/v10.4-rc4) page for osx and linux 
 
 launch `3sdk`
 
