@@ -40,8 +40,7 @@ kosmos -p  "j.servers.threebot.start(background=True)"
 
       ```python
     . /sandbox/env.sh kosmos -p
-      package_manager = j.clients.gedis.get("package_manager",package_name="zerobot.packagemanager")
+      package_manager = j.clients.gedis.get("package_manager",package_name="zerobot.admin")
       package_manager.actors.package_manager.package_add(path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/workloads")
       ```
   * through admin dashboard you can be installed
-

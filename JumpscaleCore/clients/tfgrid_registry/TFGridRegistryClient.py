@@ -37,7 +37,7 @@ class TFGridRegistryClient(j.baseclasses.object, TESTTOOLS):
         self.me = j.myidentities.get(
             name="test", tid=3, email="test.test@gmail", tname="testUser", pubkey="asdf3dsfasdlfkjasd88893n"
         )
-        cl = j.clients.gedis.get("registry_client", port=8901, package_name="zerobot.packagemanager")
+        cl = j.clients.gedis.get("registry_client", port=8901, package_name="zerobot.admin")
         cl.reload()
         cl.actors.package_manager.package_add(
             path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry"

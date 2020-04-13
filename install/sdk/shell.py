@@ -8,9 +8,14 @@ import os
 import re
 from .core import core
 from . import __all__ as sdkall
+from . import _get_doc_line
 
 from prompt_toolkit.application import get_app
 from prompt_toolkit.keys import Keys
+from prompt_toolkit.document import Document
+from prompt_toolkit.layout.containers import ConditionalContainer, Window
+from prompt_toolkit.filters import Filter
+from prompt_toolkit.layout.controls import BufferControl
 from prompt_toolkit.validation import ValidationError
 from prompt_toolkit.shortcuts import print_formatted_text
 from prompt_toolkit.formatted_text.utils import fragment_list_width
@@ -62,7 +67,7 @@ def get_rhs(line):
         stmt = mod.body[0]
         # only assignment statements
         if type(stmt) in (ast.Assign, ast.AugAssign, ast.AnnAssign):
-            return line[stmt.value.col_offset :].strip()
+            return line[stmt.value.col_offset:].strip()
     return line
 
 
@@ -108,7 +113,7 @@ def partition_line(line):
     result = re.sub(r"'.*?'", replacer, line)
     parts = []
     for part in result.split():
-        parts.append(part.replace('\0', ' '))
+        parts.append(part.replace("\0", " "))
     return parts
 
 
@@ -116,6 +121,7 @@ def rewriteline(line, globals, locals):
     """
     Check if commands are entered in novice mode and rewrite them to python
     """
+
     def get_args_string(argslist, func):
         line = ""
         funcspec = inspect.getargspec(func)
@@ -173,7 +179,7 @@ def rewriteline(line, globals, locals):
 def ptconfig(repl, expert=False):
 
     repl.exit_message = "We hope you had fun using our sdk shell"
-    repl.show_docstring = True
+    repl.show_docstring = False
 
     # When CompletionVisualisation.POP_UP has been chosen, use this
     # scroll_offset in the completion menu.
@@ -248,8 +254,16 @@ def ptconfig(repl, expert=False):
     repl.color_depth = "DEPTH_24_BIT"  # True color.
 
     repl.enable_syntax_highlighting = True
+    repl.show_docstring = True
 
     repl.min_brightness = 0.3
+
+    # disable builtin docstring collection
+    repl._get_signatures_thread_running = True
+
+    class ShowDocWindow(Filter):
+        def __call__(self):
+            return True
 
     @repl.add_key_binding(Keys.ControlJ)
     def _debug_event(event):
@@ -283,6 +297,38 @@ def ptconfig(repl, expert=False):
                 b.delete_before_cursor(count=len(w))
                 b.insert_text(corrections[w])
         b.insert_text(" ")
+
+    def _get_current_object(line):
+        parts = line.split()
+        if len(parts) == 0:
+            return None
+        globals = repl.get_globals()
+        if parts[0] in globals:
+            root = globals[parts[0]]
+            for part in parts[1:]:
+                newroot = getattr(root, part, None)
+                if newroot:
+                    root = newroot
+                else:
+                    break
+            return root
+        return None
+
+    def get_doc_from_obj(obj):
+        docstr = getattr(obj, "__doc__", "")
+        if not docstr:
+            docstr = getattr(obj, "__str__", lambda: "")()
+        return docstr or ""
+
+    def _on_completion(buffer):
+        # get obj
+        obj = _get_current_object(buffer.text)
+        if obj:
+            doc = get_doc_from_obj(obj)
+            if doc:
+                repl.docstring_buffer.reset(Document(_get_doc_line(doc), cursor_position=0))
+
+    repl.default_buffer.on_text_changed.add_handler(_on_completion)
 
     class CustomPrompt(PromptStyle):
         """
@@ -384,6 +430,7 @@ def ptconfig(repl, expert=False):
         line = document.current_line_before_cursor
 
         def complete_function(func, prefix=""):
+            repl.docstring_buffer.reset(Document(_get_doc_line(func.__doc__), cursor_position=0))
             for arg in inspect.getargspec(func).args:
                 field = arg + "="
                 if field not in line and field.startswith(prefix):
@@ -391,9 +438,12 @@ def ptconfig(repl, expert=False):
 
         def complete_module(module, prefix=""):
             rmembers = inspect.getmembers(module, inspect.isfunction)
-            for rmember, _ in rmembers:
+            for rmember, func in rmembers:
                 if rmember.startswith(prefix) and not rmember.startswith(HIDDEN_PREFIXES):
-                    yield Completion(rmember, -len(prefix), display=rmember, style="bg:ansigreen")
+                    if getattr(func, '__property__', False):
+                        yield Completion(rmember, -len(prefix), display=rmember, style="bg:ansicyan")
+                    else:
+                        yield Completion(rmember, -len(prefix), display=rmember, style="bg:ansigreen")
 
         parts = line.split()
         if len(parts) == 0 or (len(parts) == 1 and not line.endswith(" ")):
@@ -456,3 +506,10 @@ def ptconfig(repl, expert=False):
     repl._completer.__class__.get_completions = custom_get_completions
     repl._validator.__class__.validate = custom_validator
     repl.__class__._execute = patched_execute
+
+    for content in repl.ptpython_layout.layout.walk():
+        if isinstance(content, ConditionalContainer):
+            if isinstance(content.content, Window):
+                buffercontrol = getattr(content.content, "content", None)
+                if isinstance(buffercontrol, BufferControl) and buffercontrol.buffer is repl.docstring_buffer:
+                    content.filter = ShowDocWindow()

@@ -1,13 +1,14 @@
+"""core configuration"""
 __all__ = ["branch", "redis"]
 
 from importlib import util
 import os
-from urllib.request import urlopen
 import requests
 
 
 class Core:
     def __init__(self):
+        self._default_branch = "master"
         self.branch = "unstable"
         self.load()
 
@@ -31,18 +32,18 @@ class Core:
                 url = f"https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/{self.branch}/install/InstallTools.py"
 
                 # fallback to default branch if installation is being done for another branch that doesn't exist in core
-                if branch != branch and requests.get(url).status_code == 404:
+                if self.branch != self._default_branch and requests.get(url).status_code == 404:
                     url = (
                         "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py"
-                        % branch
+                        % self._default_branch
                     )
 
-                with urlopen(url) as resp:
-                    if resp.status != 200:
-                        raise RuntimeError("fail to download InstallTools.py")
-                    with open(path, "w+") as f:
-                        f.write(resp.read().decode("utf-8"))
-                    print("DOWNLOADED INSTALLTOOLS TO %s" % path)
+                resp = requests.get(url)
+                if resp.status != 200:
+                    raise RuntimeError("fail to download InstallTools.py")
+                with open(path, "w+") as f:
+                    f.write(resp.content)
+                print("DOWNLOADED INSTALLTOOLS TO %s" % path)
 
         spec = util.spec_from_file_location("IT", path)
         IT = spec.loader.load_module()
@@ -71,3 +72,6 @@ def redis():
     start redis so it will remember our secret and other arguments
     """
     core.IT.RedisTools._core_get()
+
+
+branch.__property__ = True
