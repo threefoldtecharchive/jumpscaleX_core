@@ -13,6 +13,7 @@ def install():
     """
     Install 3bot on host
     """
+    # TODO: needs to be implemented
     jsx.install.callback()
 
 
