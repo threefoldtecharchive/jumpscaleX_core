@@ -213,7 +213,7 @@ def secret_set(secret=None):
 @click.command()
 def generate():
     j = jumpscale_get(die=True)
-    j.application.generate(path)
+    j.application.generate()
 
 
 @click.command()
