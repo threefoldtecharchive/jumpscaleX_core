@@ -2,6 +2,7 @@
 import sys
 import jedi
 import sdk as _sdk
+import cgi
 
 from ptpython.repl import embed
 
@@ -9,13 +10,11 @@ from functools import partial
 from sdk.shell import ptconfig
 from sdk import container, builder, simulator, install, args, core, installer, _get_doc_line  # pylint: disable=F401
 
-IT = core.core.IT
-
-
 from prompt_toolkit.shortcuts import print_formatted_text
 from prompt_toolkit.formatted_text import HTML
 
 
+IT = core.core.IT
 # for auto-completion data
 # also, jedi and parso hooks need to be available
 # for autoc-completion to work with pyinstaller build
@@ -66,7 +65,7 @@ def get_doc(root_module, level=0, size=4):
             try:
                 # only get first line of member docstring
                 first_line = _get_doc_line(obj.__doc__)
-                doc += f": {first_line}"
+                doc += cgi.html.escape(f": {first_line}")
             except IndexError:
                 pass
 
