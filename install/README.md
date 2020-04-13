@@ -31,7 +31,7 @@ Try running it with:
 ./dist/3sdk
 ```
 
-## advanced (manual) 3sdk.py setup
+## advanced (manual) 3sdk setup from source
 This will require python3, git on the user system 
 
 - `pip3 install jedi pudb ptpython==2.0.4`
@@ -44,15 +44,23 @@ This will require python3, git on the user system
 
 ## using 3sdk
 
+- launch `3sdk`
+![](images/3sdk2.png)
+
+### Getting help
+
+![](images/3sdk3.png)
+
+
+
 ## to start a threebot container in one command
 
-`~> 3sdk`
 
 > `container threebot`
 
 
 ## Install a new container
-> container install name=notsomeuser3 identity=notsomeuser3 email=notsomeuser3@gmail.com server=True 
+> `container install name=notsomeuser3 identity=notsomeuser3 email=notsomeuser3@gmail.com server=True`
 
 - server=True means to start 3bot server
 
