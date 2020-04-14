@@ -33,7 +33,7 @@ Try running it with:
 
 
 
-## using 3sdk
+## Using 3sdk
 
 Binaries should be in the [release](https://github.com/threefoldtech/jumpscaleX_core/releases/tag/v10.4-rc4) page for osx and linux 
 
@@ -48,7 +48,7 @@ You can type `info` or `info()` and you will see a list of available commands th
 ![](images/3sdk3.png)
 
 
-### to start a threebot container in one command
+### Start a threebot container in one command
 
 
 > `container threebot`
@@ -60,13 +60,11 @@ You can type `info` or `info()` and you will see a list of available commands th
 - server=True means to start 3bot server
 
 
-
-
 ### Running a new container
 
 to start a new container `container start name:mycontainer`	
 
-### listing containers
+### Listing containers
 
 ```
 3sdk> container list                                                                                       
