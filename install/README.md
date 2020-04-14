@@ -1,4 +1,5 @@
 
+* [Requirements](#Requirements)
 * [Using 3sdk](#Using3sdk)
 	* [Getting help](#Gettinghelp)
 	* [Basic Features](#BasicFeatures)
@@ -12,14 +13,19 @@
 * [Packaged installer (sdk)](#Packagedinstallersdk)
 * [Using 3sdk.py from source](#Using3sdk.pyfromsource)
 * [Troubleshooting](#Troubleshooting)
+	* [Existing user](#ExistingUser)
 	* [REMOTE HOST IDENTIFICATION HAS CHANGED](#REMOTEHOSTIDENTIFICATIONHASCHANGED)
 
 
 
 
+## <a name='Requirements'></a>Requirements
+- Docker
+- Chrome browser for OSX users
+
 ## <a name='Using3sdk'></a>Using 3sdk
 
-Binaries should be in the [release](https://github.com/threefoldtech/jumpscaleX_core/releases/tag/v10.4-rc4) page for osx and linux 
+Binaries should be in the [release](https://github.com/threefoldtech/jumpscaleX_core/releases) page for osx and linux 
 
 launch `3sdk`
 
@@ -127,6 +133,12 @@ This will require python3, git on the user system
 
 ## <a name='Troubleshooting'></a>Troubleshooting
 
+### <a name='ExistingUser'></a>Existing user / using your private words (mnemonics)
+- You have to use same username & same email
+- use the `words=` parameter in the your commands
+- e.g `container install words=''`
+
+
 ### <a name='REMOTEHOSTIDENTIFICATIONHASCHANGED'></a>REMOTE HOST IDENTIFICATION HAS CHANGED
 
 ```
@@ -150,3 +162,10 @@ stderr:
     Host key verification failed.
 ```
 Just execute `ssh-keygen -f "/root/.ssh/known_hosts" -R "[localhost]:9010"`
+
+### Chrome errors with certificate (OSX)
+
+You can start chrome manually using
+```
+open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome  --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors'
+```
