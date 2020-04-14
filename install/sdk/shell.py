@@ -108,9 +108,9 @@ def eval_code(stmts, locals_=None, globals_=None):
 
 def partition_line(line):
     def replacer(m):
-        return m.group().replace(" ", "\0").strip("'")
+        return m.group().replace(" ", "\0").strip("\"'")
 
-    result = re.sub(r"'.*?'", replacer, line)
+    result = re.sub(r"""(['"]).*?\1""", replacer, line)
     parts = []
     for part in result.split():
         parts.append(part.replace("\0", " "))
@@ -128,7 +128,7 @@ def rewriteline(line, globals, locals):
 
         def get_default(idx):
             if funcspec.defaults:
-                if len(funcspec.defaults) >= idx:
+                if len(funcspec.defaults) > idx:
                     return funcspec.defaults[idx]
             return None
 
@@ -380,7 +380,7 @@ def ptconfig(repl, expert=False):
                 code = compile_with_flags(line, "eval")
                 try:
                     result = eval(code, self.get_globals(), self.get_locals())
-                except IT.BaseJSException as e:
+                except (NameError, IT.BaseJSException) as e:
                     print_formatted_text(HTML(f"<ansired>{e}</ansired>"))
                     return
 
@@ -423,7 +423,11 @@ def ptconfig(repl, expert=False):
             # If not a valid `eval` expression, run using `exec` instead.
             except SyntaxError:
                 code = compile_with_flags(line, "exec")
-                six.exec_(code, self.get_globals(), self.get_locals())
+                try:
+                    six.exec_(code, self.get_globals(), self.get_locals())
+                except (NameError, IT.BaseJSException, SyntaxError) as e:
+                    print_formatted_text(HTML(f"<ansired>{e}</ansired>"))
+                    return
 
             output.flush()
 
