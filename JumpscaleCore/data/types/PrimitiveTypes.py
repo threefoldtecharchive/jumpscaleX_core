@@ -474,3 +474,70 @@ class CapnpBin(Bytes):
 
     def toml_string_get(self, value, key):
         raise NotImplemented()
+
+class Int64(TypeBaseClass):
+
+    """Generic int64 (long) type"""
+
+    NAME = "i64,int64"
+
+    def __init__(self, default=None):
+        self.BASETYPE = "int"
+        if not default:
+            default = 2147483647
+        self._default = default
+
+    def checkString(self, s):
+        return s.isdigit()
+
+    def check(self, value):
+        """Check whether provided value is an integer"""
+        return isinstance(value, int)
+
+    def toHR(self, v):
+        if int(v) == 2147483647:
+            return "-"  # means not set yet
+        return "{:,}".format(self.clean(v))
+
+    def fromString(self, s):
+        return self.clean(s)
+
+    def toJSON(self, v):
+        return self.clean(v)
+
+    def clean(self, value, parent=None):
+        """
+        used to change the value to a predefined standard for this type
+        """
+        if value is None:
+            return self.default_get()
+        if isinstance(value, float):
+            value = int(value)
+
+        if isinstance(value, str):
+            value = j.data.types.string.clean(value).strip()
+            if "," in value:
+                value = value.replace(",", "")
+            if value == "":
+                value = 0
+            else:
+                try:
+                    value = int(value)
+                except ValueError:
+                    pass
+
+        if not self.check(value):
+            raise j.exceptions.Value("Invalid value for integer: '%s'" % value)
+        return value
+
+    def toml_string_get(self, value, key=""):
+        """
+        will translate to what we need in toml
+        """
+        if key == "":
+            return "%s" % (self.clean(value))
+        else:
+            return "%s = %s" % (key, self.clean(value))
+
+    def capnp_schema_get(self, name, nr):
+        return "%s @%s :Int64;" % (name, nr)
