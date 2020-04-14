@@ -48,6 +48,7 @@ def sdktool():
     cd {DIR_BASE}/installer
     rm -rf dist
     rm -rf build
+    # rm -rf {DIR_BASE}/installer/sdk/InstallTools.py
     echo "find the build sdk on /tmp/3sdk_{name} or ~/Downloads/3sdk_{name}"
     """
     IT.Tools.execute(C)
