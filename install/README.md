@@ -13,7 +13,7 @@
 * [Packaged installer (sdk)](#Packagedinstallersdk)
 * [Using 3sdk.py from source](#Using3sdk.pyfromsource)
 * [Troubleshooting](#Troubleshooting)
-	* [Signature Verification Error/Already registerd users with wrong secret on phonebook](#ConflictingUser)
+	* [Signature Verification Error/Already registerd users with wrong secret on phonebook](#SignatureVerification)
 	* [REMOTE HOST IDENTIFICATION HAS CHANGED](#REMOTEHOSTIDENTIFICATIONHASCHANGED)
 
 
@@ -149,7 +149,7 @@ This will require python3, git on the user system
 
 
 
-## <a name='ConflictingUsers'></a>signature verification failed, ensure your pubkey to be the same as local configured nacl
+## <a name='SignatureVerification'></a>signature verification failed, ensure your pubkey to be the same as local configured nacl
 
 ```
 Tue 14 19:18:01 e/Jumpscale/me/Me.py - 461 - tfgrid_phonebook_register          : EXCEPTION: 
