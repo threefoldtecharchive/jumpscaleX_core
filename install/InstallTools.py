@@ -14,7 +14,7 @@ try:
 except:
     redis = None
 
-DEFAULT_BRANCH = "unstable"
+DEFAULT_BRANCH = "unstable_sdk_windows"
 DEFAULT_BRANCH_WEB = "development"
 GITREPOS = {}
 
@@ -2525,7 +2525,8 @@ class Tools:
     def _file_path_tmp_get(ext="sh"):
         ext = ext.strip(".")
         if "win32" in MyEnv.platform():
-            return Tools.text_replace("{DIR_BASE}\{RANDOM}.{ext}", args={"RANDOM": Tools._random(), "ext": ext})
+            Tools.dir_ensure(Tools.text_replace("{DIR_BASE}\tmp"))
+            return Tools.text_replace("{DIR_BASE}\tmp\{RANDOM}.{ext}", args={"RANDOM": Tools._random(), "ext": ext})
         return Tools.text_replace("/tmp/jumpscale/scripts/{RANDOM}.{ext}", args={"RANDOM": Tools._random(), "ext": ext})
 
     @staticmethod
@@ -2714,12 +2715,15 @@ class Tools:
 
         # windows only
         if "win32" in MyEnv.platform():
-            command = Tools.text_replace(command, args=args).rstrip("\n").replace("\n", "&&")
-            res = Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            if replace:
+                command = Tools.text_replace(command, args=args).rstrip("\n").replace("\n", "&&")
+            res = Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=useShell)
             out = res.communicate()[0].decode()
             rc = res.returncode
             if rc > 0:
                 raise Tools.exceptions.RuntimeError(f"Error in executing {command}: Traceback:\n{out}")
+            if interactive:
+                res.wait()
             return rc, out, None
 
         if callable(command):
@@ -3897,7 +3901,7 @@ class MyEnv_:
     def _cfgdir_get(self):
         if self.readonly:
             return "/tmp/jumpscale/cfg"
-        return "%s/cfg" % self._basedir_get()
+        return "%s/cfg" % self._basedir_get() if not "win32" in MyEnv.platform() else "%s\cfg" % self._basedir_get()
 
     def _identitydir_get(self):
         return f"{self._basedir_get()}/myhost" if not "win32" in MyEnv.platform() else "%s\myhost" % self._basedir_get()
@@ -3915,7 +3919,7 @@ class MyEnv_:
         if not "DIR_CFG" in config:
             config["DIR_CFG"] = self._cfgdir_get()
 
-        if not "DIR_CFG" in config:
+        if not "DIR_IDENTITY" in config:
             config["DIR_IDENTITY"] = self._identitydir_get()
 
         if not "READONLY" in config:
@@ -5636,6 +5640,7 @@ class DockerContainer:
         Tools.execute(cmd2, interactive=interactive, showout=showout, replace=False, die=die)
 
     def shell(self, cmd=None):
+        import pdb; pdb.set_trace()
         if not self.isrunning():
             self.start()
         if cmd:
@@ -5986,7 +5991,10 @@ class DockerContainer:
         python3 jsx install {args_txt}
         """
         print(" - Installing jumpscaleX ")
-        self.execute(cmd)
+        if "win32" in MyEnv.platform():
+            self.execute(cmd, interactive=True)
+        else:
+            self.execute(cmd)
 
         print(" - Install succesfull")
 
@@ -6552,13 +6560,7 @@ class ExecutorSSH:
 
     def exists(self, path):
         path = self._replace(path)
-        if "win32" in MyEnv.platform():
-            if os.path.exists(path):
-                return True
-            else:
-                return False
-        else:
-            rc, _, _ = self.execute("test -e %s" % path, die=False, showout=False)
+        rc, _, _ = self.execute("test -e %s" % path, die=False, showout=False)
         if rc > 0:
             return False
         else:
