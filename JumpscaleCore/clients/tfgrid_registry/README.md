@@ -39,11 +39,11 @@ Check the package docs [here](https://github.com/threefoldtech/jumpscaleX_threeb
 * create some threebot ids for testing
 
 ```python
-first_id= j.tools.threebot.me.get("first_id", tid=1, email="test@test.com", tname="first")
-second_id= j.tools.threebot.me.get("second_id", tid=10, email="test1@test.com", tname="second")
-third_id= j.tools.threebot.me.get("third_id", tid=100, email="test2@test.com", tname="third")
-fourh_id= j.tools.threebot.me.get("fourh_id", tid=50, email="test3@test.com", tname="fourth")
-fifth_id= j.tools.threebot.me.get("fifth_id", tid=60, email="test4@test.com", tname="fifth")
+first_id= j.myidentities.get("first_id", tid=1, email="test@test.com", tname="first")
+second_id= j.myidentities.get("second_id", tid=10, email="test1@test.com", tname="second")
+third_id= j.myidentities.get("third_id", tid=100, email="test2@test.com", tname="third")
+fourh_id= j.myidentities.get("fourh_id", tid=50, email="test3@test.com", tname="fourth")
+fifth_id= j.myidentities.get("fifth_id", tid=60, email="test4@test.com", tname="fifth")
 ```
 
 * Register encrypted data
