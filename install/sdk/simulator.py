@@ -42,7 +42,7 @@ def browser():
     c = _containers.get(name="simulator")
     httpnb = 5000 + int(c.config.portrange) * 10
     url = f"http://localhost:{httpnb}"
-    _threebot_browser(url)
+    _threebot_browser(c, url=url)
     print(f" - CONNECT TO YOUR SIMULATOR ON: {url}")
 
 

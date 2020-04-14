@@ -3282,7 +3282,7 @@ class Tools:
             current_branch = getbranch(args=args)
             if current_branch != branch:
                 script = """
-                set -ex
+                set -e
                 cd {REPO_DIR}
                 git checkout {BRANCH} -f
                 """
@@ -3459,7 +3459,7 @@ class Tools:
             args["BRANCH"] = branch.strip()
 
             script = """
-            set -ex
+            set -e
             cd {DIR_TEMP}
             rm -f download.zip
             curl -L {URL} > download.zip
@@ -3472,7 +3472,7 @@ class Tools:
                 raise Tools.exceptions.Operations("cannot download:%s resulting file was too small" % args["URL"])
             else:
                 script = """
-                set -ex
+                set -e
                 cd {DIR_TEMP}
                 rm -rf {NAME}-{BRANCH}
                 mkdir -p {REPO_DIR}
@@ -3754,7 +3754,7 @@ class MyEnv_:
 
         if basedir == "/sandbox" and not os.path.exists(basedir):
             script = """
-            set -ex
+            set -e
             cd /
             sudo mkdir -p /sandbox/cfg
             sudo chown -R {USERNAME}:{GROUPNAME} /sandbox
@@ -4226,7 +4226,7 @@ class BaseInstaller:
             Tools.code_github_get(repo=reponame, branch=["master"])
 
             script = """
-            set -ex
+            set -e
             cd {DIR_BASE}
             rsync -ra code/github/threefoldtech/{REPONAME}/base/ .
             mkdir -p root
@@ -4604,9 +4604,9 @@ class UbuntuInstaller:
         script = """
         apt-get update
         apt-get install -y mc wget python3 git tmux telnet
-        set +ex
+        set +e
         apt-get install python3-distutils -y
-        set -ex
+        set -e
         apt-get install python3-psutil -y
         apt-get install -y curl rsync unzip
         locale-gen --purge en_US.UTF-8

@@ -115,13 +115,14 @@ def start(name=None, server=False):
 
 def _server(c):
     c.execute("source /sandbox/env.sh;3bot start")
-    _threebot_browser()
+    _threebot_browser(c)
 
 
-def _threebot_browser(url=None):
+def _threebot_browser(c, url=None):
 
     if not url:
-        url = "https://localhost:4000/"
+        https = 4000 + int(c.config.portrange) * 10
+        url = f"https://localhost:{https}/"
 
     if core.IT.MyEnv.platform_is_osx:
         cmd = (
@@ -213,7 +214,7 @@ def threebot(delete=False, identity=None, email=None, words=None, restart=False,
         c.execute("source /sandbox/env.sh;3bot stop")
         c.execute("source /sandbox/env.sh;3bot start")
     if browser:
-        _threebot_browser()
+        _threebot_browser(c)
 
 
 def zerotier(name=None, connect=False):
