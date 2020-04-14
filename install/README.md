@@ -10,7 +10,6 @@
 		* [Getting Container Kosmos](#GettingContainerKosmos)
 	* [Advanced features](#Advancedfeatures)
 * [Packaged installer (sdk)](#Packagedinstallersdk)
-	* [Build:](#Build:)
 * [Using 3sdk.py from source](#Using3sdk.pyfromsource)
 * [Troubleshooting](#Troubleshooting)
 	* [REMOTE HOST IDENTIFICATION HAS CHANGED](#REMOTEHOSTIDENTIFICATIONHASCHANGED)
