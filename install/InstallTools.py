@@ -1715,7 +1715,11 @@ class Tools:
         if isinstance(content, str):
             if replace:
                 content = Tools.text_replace(content, args=args)
-            p.write_text(content)
+            if "win32" in MyEnv.platform():
+                with open(path, "w", newline='\n') as p:
+                    p.write(content)
+            else:
+                p.write_text(content)
         else:
             p.write_bytes(content)
 
@@ -2522,6 +2526,8 @@ class Tools:
     @staticmethod
     def _file_path_tmp_get(ext="sh"):
         ext = ext.strip(".")
+        if "win32" in MyEnv.platform():
+            return Tools.text_replace("{DIR_BASE}\{RANDOM}.{ext}", args={"RANDOM": Tools._random(), "ext": ext})
         return Tools.text_replace("/tmp/jumpscale/scripts/{RANDOM}.{ext}", args={"RANDOM": Tools._random(), "ext": ext})
 
     @staticmethod
@@ -5543,17 +5549,16 @@ class DockerContainer:
             if "win32" in MyEnv.platform():
                 path = f"{MyEnv._homedir_get()}\.ssh\id_rsa.pub"
                 with open(path) as ssh_key_file:
-                    SSHKEYS = ssh_key_file.read()
+                    SSHKEYS = ssh_key_file.read().strip("\n")
             else:
                 SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
             if SSHKEYS.strip() != "":
-                self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS, showout=False)
+                if "win32" in MyEnv.platform():
+                    self.dexec('echo %s > /root/.ssh/authorized_keys' % SSHKEYS, showout=False)
+                else:
+                    self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS, showout=False)
             
-            if "win32" in MyEnv.platform():
-                Tools.execute(
-                    "mkdir -p {0}\.ssh && touch {0}\.ssh\known_hosts".format(MyEnv._homedir_get(), showout=False)
-                )
-            else:
+            if not "win32" in MyEnv.platform():
                 Tools.execute(
                     "mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"], showout=False)
                 )
@@ -5567,16 +5572,16 @@ class DockerContainer:
 
             # is to make sure we can login without interactivity
             if "win32" in MyEnv.platform():
-                cmd = "ssh-keyscan -H -p %s localhost >> %s\.ssh\known_hosts" % (
-                    self.config.sshport,
-                    MyEnv._homedir_get(),
-                )
+                cmd = "ssh-keyscan -H -p %s localhost" % self.config.sshport
+                path = f"%s\.ssh\known_hosts" %MyEnv._homedir_get()
+                _, content, _ = Tools.execute(cmd, showout=False)
+                Tools.file_write(path, content)
             else:
                 cmd = "ssh-keyscan -H -p %s localhost >> %s/.ssh/known_hosts" % (
                     self.config.sshport,
                     MyEnv.config["DIR_HOME"],
                 )
-            Tools.execute(cmd, showout=False)
+                Tools.execute(cmd, showout=False)
 
         # self.shell()
 
@@ -5952,8 +5957,16 @@ class DockerContainer:
         else:
             print(" - copy installer over from where I install from")
             for item in ["jsx", "InstallTools.py"]:
-                src1 = "%s/%s" % (dirpath, item)
-                self.executor.upload(src1, "/tmp")
+                if "win32" in MyEnv.platform():
+                    dirpath = dirpath.replace("/", "\\")
+                    src1 = "%s\%s" % (dirpath, item)
+                    if not Tools.exists(src1) and item == "jsx":
+                        new_item = "jsx.py"
+                        src1 = "%s\%s" % (dirpath, new_item)
+                    self.executor.upload(src1, f"/tmp/{item}")
+                else:
+                    src1 = "%s/%s" % (dirpath, item)
+                    self.executor.upload(src1, "/tmp")
 
         # python3 jsx configure --sshkey {MyEnv.sshagent.key_default_name} -s
         # WHY DO WE NEED THIS, in container ssh-key should always be there & loaded, don't think there is a reason to configure it
@@ -6489,7 +6502,7 @@ class ExecutorSSH:
         self._config = {}
         self.readonly = False
         self.CURDIR = ""
-        self._data_path = "/var/executor_data"
+        self._data_path = "/var/executor_data" if not "win32" in MyEnv.platform() else "/sandbox/var/executor_data"
         self._init3()
 
     def reset(self):
@@ -6730,7 +6743,29 @@ class ExecutorSSH:
         echo --TEXT--
         """
         print(" - load systemenv")
-        import pdb; pdb.set_trace()
+        res = {}
+        def get_cfg(name, default):
+            name = name.upper()
+            if "CFG_JUMPSCALE" in res and name in res["CFG_JUMPSCALE"]:
+                self._config[name] = res["CFG_JUMPSCALE"][name]
+                return
+            if name not in self._config:
+                self._config[name] = default
+
+        if self._config == None:
+            self._config = {}
+
+        # WINDOWS ONLY
+        if "win32" in MyEnv.platform():
+            get_cfg("DIR_HOME", MyEnv._homedir_get())
+            get_cfg("DIR_BASE", MyEnv._basedir_get())
+            get_cfg("DIR_CFG", "%s\cfg" % MyEnv._basedir_get())
+            get_cfg("DIR_TEMP", "/tmp")
+            get_cfg("DIR_VAR", "%s\var" % MyEnv._basedir_get())
+            get_cfg("DIR_CODE", "%s\code" % MyEnv._basedir_get())
+            get_cfg("DIR_BIN", "/usr/local/bin")
+            return
+
         rc, out, err = self.execute(C, showout=False, interactive=False, replace=False)
         res = {}
         state = ""
@@ -6784,17 +6819,6 @@ class ExecutorSSH:
 
         res["ENV"] = envdict
 
-        def get_cfg(name, default):
-            name = name.upper()
-            if "CFG_JUMPSCALE" in res and name in res["CFG_JUMPSCALE"]:
-                self._config[name] = res["CFG_JUMPSCALE"][name]
-                return
-            if name not in self._config:
-                self._config[name] = default
-
-        if self._config == None:
-            self._config = {}
-
         get_cfg("DIR_HOME", res["ENV"]["HOME"])
         get_cfg("DIR_BASE", "/sandbox")
         get_cfg("DIR_CFG", "%s/cfg" % self.config["DIR_BASE"])
@@ -6840,15 +6864,18 @@ class ExecutorSSH:
             cmd2 = "ssh -oStrictHostKeyChecking=no -t root@%s -A -p %s '%s'" % (self.addr, self.port, cmd)
         else:
             cmd2 = "ssh -oStrictHostKeyChecking=no root@%s -A -p %s '%s'" % (self.addr, self.port, cmd)
-        r = Tools._execute(
-            cmd2,
-            interactive=interactive,
-            showout=showout,
-            timeout=timeout,
-            retry=retry,
-            die=die,
-            original_command=original_command,
-        )
+        if not "win32" in MyEnv.platform():
+            r = Tools._execute(
+                cmd2,
+                interactive=interactive,
+                showout=showout,
+                timeout=timeout,
+                retry=retry,
+                die=die,
+                original_command=original_command,
+            )
+        else:
+            r = Tools.execute(cmd2)
         if tempfile:
             Tools.delete(tempfile)
         return r
@@ -6890,7 +6917,10 @@ class ExecutorSSH:
                 destdir = os.path.dirname(source)
                 self.dir_ensure(destdir)
             cmd = "scp -P %s %s root@%s:%s" % (self.port, source, self.addr, dest)
-            Tools._execute(cmd, showout=True, interactive=False)
+            if "win32" in MyEnv.platform():
+                Tools.execute(cmd, showout=True, interactive=False)
+            else:
+                Tools._execute(cmd, showout=True, interactive=False)
             return
         raise Tools.exceptions.RuntimeError("not implemented")
         dest = self._replace(dest)
