@@ -458,11 +458,13 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         valid = explorer.users.validate(r.id, payload, signature)
         if not valid:
             raise j.exceptions.Input(
-                "signature verification failed, ensure your pubkey to be the same as local configured nacl "
+                "signature verification failed on TFGrid explorer, did you specify the right secret key?"
             )
 
         if not nacl.verify_key_hex == r.pubkey:
-            raise j.exceptions.Input("your identity needs to be same pubkey as local configured nacl")
+            raise j.exceptions.Input(
+                "The verify key on your local system does not correspond with verify key on the TFGrid explorer"
+            )
 
         assert r.id
         assert r.name
