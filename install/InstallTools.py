@@ -2722,8 +2722,6 @@ class Tools:
             rc = res.returncode
             if rc > 0:
                 raise Tools.exceptions.RuntimeError(f"Error in executing {command}: Traceback:\n{out}")
-            if interactive:
-                res.wait()
             return rc, out, None
 
         if callable(command):
@@ -5640,7 +5638,6 @@ class DockerContainer:
         Tools.execute(cmd2, interactive=interactive, showout=showout, replace=False, die=die)
 
     def shell(self, cmd=None):
-        import pdb; pdb.set_trace()
         if not self.isrunning():
             self.start()
         if cmd:
