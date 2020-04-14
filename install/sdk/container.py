@@ -204,6 +204,7 @@ def threebot(delete=False, identity=None, email=None, words=None, restart=False,
         install("3bot", delete=delete, identity=identity, email=email, words=words, server=True)
 
     c = _containers.get(name="3bot")
+    c.execute("mkdir -p /tmp/jumpscale")
     if restart:
         c.execute("source /sandbox/env.sh;3bot stop")
         c.execute("source /sandbox/env.sh;3bot start")

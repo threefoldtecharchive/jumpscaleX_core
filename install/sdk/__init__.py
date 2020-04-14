@@ -6,12 +6,12 @@ import textwrap
 
 # import jsx
 
-__all__ = ["builder", "simulator", "container", "install", "args", "core", "installer"]
+__all__ = ["builder", "simulator", "container", "args", "core", "installer", "install"]
 
 
 def install():
     """
-    Install 3bot on host
+    Install jumpscale on host (not all platforms supported)
     """
     # TODO: needs to be implemented
     jsx.install.callback()
