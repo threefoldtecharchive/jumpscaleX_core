@@ -38,7 +38,7 @@ class SDKContainers:
         docker = self.IT.DockerFactory.container_delete(name=name)
         self.container = None
 
-    def get(self, identity=None, name=None, delete=False, mount=True, email=None, words=None, secret=None):
+    def get(self, identity=None, name=None, delete=False, mount=True, email=None, words=None, secret=None, pull=False):
         """
         """
         name = self._name(name)
@@ -54,14 +54,14 @@ class SDKContainers:
         self.IT.DockerFactory.init()
 
         docker = self.IT.DockerFactory.container_get(
-            name=name, image=self.image, start=True, delete=delete, mount=mount
+            name=name, image=self.image, start=True, delete=delete, mount=mount, pull=pull
         )
 
         if not docker.executor.exists("/sandbox/cfg/.configured"):
 
             installer = self.IT.JumpscaleInstaller()
             print(" - make sure jumpscale code is on local filesystem.")
-            installer.repos_get(pull=False, branch=self.core.branch)
+            installer.repos_get(pull=pull, branch=self.core.branch)
 
             if not identity.endswith(".test"):
                 assert self.args.identity

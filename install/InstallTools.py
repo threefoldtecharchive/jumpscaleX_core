@@ -4940,7 +4940,7 @@ class DockerFactory:
                 DockerFactory._dockers.pop(name)
 
     @staticmethod
-    def container_get(name, image="threefoldtech/3bot2", start=False, delete=False, ports=None, mount=True):
+    def container_get(name, image="threefoldtech/3bot2", start=False, delete=False, ports=None, mount=True, pull=False):
         DockerFactory.init()
         assert name
         assert len(name) > 3
@@ -4969,7 +4969,7 @@ class DockerFactory:
         if not docker:
             docker = DockerContainer(name=name, image=image, ports=ports)
         if start:
-            docker.start(mount=mount)
+            docker.start(mount=mount, pull=pull)
         return docker
 
     @staticmethod
@@ -5398,6 +5398,9 @@ class DockerContainer:
         @param portmap: if you want to map ports from host to docker container
 
         """
+        Tools.shell()
+        if not image:
+            image = self.image
         if not self.container_exists_config:
             raise Tools.exceptions.Operations("ERROR: cannot find docker with name:%s, cannot start" % self.name)
 

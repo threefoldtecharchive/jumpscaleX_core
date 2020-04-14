@@ -36,6 +36,7 @@ def install(
     words=None,
     server=False,
     zerotier=False,
+    pull=False,
 ):
     """
     create the 3bot container and install jumpscale inside
@@ -68,7 +69,7 @@ def install(
         identity = f"{identity_you}{testnr}.test"
         name = f"test{testnr}"
 
-    c = _containers.get(identity=identity, name=name, delete=delete, mount=mount, email=email)
+    c = _containers.get(identity=identity, name=name, delete=delete, mount=mount, email=email, pull=pull)
 
     if zerotier:
         addr = c.zerotier_connect()
@@ -188,7 +189,7 @@ def wireguard(name=None, connect=True):
     raise RuntimeError("implement")
 
 
-def threebot(delete=False, identity=None, email=None, words=None, restart=False, browser=True):
+def threebot(delete=False, identity=None, email=None, words=None, restart=False, browser=True, pull=False):
     """
     will make sure you have your 3bot alive
 
@@ -196,12 +197,15 @@ def threebot(delete=False, identity=None, email=None, words=None, restart=False,
     - email is your email (only needed to specify once)
     - if you already have your secret key, specify the words of your key
 
-    when 3bot becomes unrepsonsive you can always ask a restart on server, the container will not be restarted
+    when 3bot becomes unresponsive you can always ask a restart on server, the container will not be restarted
+
+    pull will update the docker image as well as the code on github
 
     """
-    _delete("3bot")
+    if delete:
+        _delete("3bot")
     if not _containers.IT.DockerFactory.container_name_exists("3bot"):
-        install("3bot", delete=delete, identity=identity, email=email, words=words, server=True)
+        install("3bot", delete=delete, identity=identity, email=email, words=words, server=True, pull=pull)
 
     c = _containers.get(name="3bot")
     c.execute("mkdir -p /tmp/jumpscale")
