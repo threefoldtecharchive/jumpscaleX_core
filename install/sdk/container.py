@@ -7,7 +7,7 @@ import time
 
 _containers = SDKContainers(core=core, args=args)
 
-__all__ = ["install", "stop", "start", "shell", "kosmos", "list"]
+__all__ = ["install", "stop", "start", "shell", "kosmos", "list", "threebot", "delete"]
 
 
 def _containers_do(prefix=None, delete=False, stop=False):
@@ -164,6 +164,11 @@ def delete(name=None):
     delete specified containers, can use * in name
     if name not specified then its current container
     """
+    _delete(name)
+
+
+def _delete(name=None):
+
     if name and "*" in name:
         prefix = name.replace("*", "")
         _containers_do(prefix=prefix, delete=True, stop=False)
@@ -194,10 +199,12 @@ def threebot(delete=False, identity=None, email=None, words=None, restart=False,
     when 3bot becomes unrepsonsive you can always ask a restart on server, the container will not be restarted
 
     """
+    _delete("3bot")
     if not _containers.IT.DockerFactory.container_name_exists("3bot"):
-        install("3bot", delete=delete, identity=identity, email=email, words=words)
+        install("3bot", delete=delete, identity=identity, email=email, words=words, server=True)
 
     c = _containers.get(name="3bot")
+    c.execute("mkdir -p /tmp/jumpscale")
     if restart:
         c.execute("source /sandbox/env.sh;3bot stop")
         c.execute("source /sandbox/env.sh;3bot start")

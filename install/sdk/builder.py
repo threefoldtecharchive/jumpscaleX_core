@@ -1,3 +1,8 @@
+from .core import core
+
+IT = core.IT
+
+
 def base():
     """
     build the ubuntu base container
@@ -12,6 +17,33 @@ def sdk():
     """
     # TODO: threebot container build, see code below
     raise RuntimeError("implement")
+
+
+def sdktool():
+    """
+    build the sdk tool as a binary and will copy to /tmp directory
+    """
+    # TODO: call the local jumpscale installer
+
+    DIR_BASE = IT.MyEnv.config["DIR_BASE"]
+    if IT.MyEnv.platform_is_osx:
+        name = "osx"
+    elif IT.MyEnv.platform_is_linux:
+        name = "osx"
+    else:
+        raise IT.Tools.exceptions.Input("platform not supported")
+
+    C = f"""
+    cd {DIR_BASE}/installer
+    rm -rf dist
+    rm -rf build
+    bash package.sh
+    cp {DIR_BASE}/installer/dist/3sdk /tmp/3sdk_{name}
+    rm -rf dist
+    rm -rf build
+    echo "find the build sdk on /tmp/3sdk_{name}"
+    """
+    IT.Tools.execute(C)
 
 
 def container_import(name=None, path=None, imagename="threefoldtech/3bot2", no_start=False):

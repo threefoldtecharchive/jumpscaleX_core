@@ -6,6 +6,8 @@ from .container import install as _install_container
 from .container import delete as _delete_container
 from .container import stop as _stop_container
 
+__all__ = ["browser", "stop", "start", "shell", "restart"]
+
 
 def start(delete=False, browser_open=True):
     """

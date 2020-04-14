@@ -206,7 +206,12 @@ class RedisTools:
         :param unix_socket_path:
         :return:
         """
-        import redis
+        try:
+            import redis
+        except ImportError:
+            if die:
+                raise
+            return
 
         unix_socket_path = Tools.text_replace(unix_socket_path)
         RedisTools.unix_socket_path = unix_socket_path
@@ -5909,8 +5914,8 @@ class DockerContainer:
             if not self.executor.state_exists("STATE_THREEBOT"):
                 force = True
 
-        if identity == "build":
-            secret = "build"
+        # if identity == "build":
+        #     secret = "build"
 
         if not secret:
             secret = MyEnv.secret_get()
@@ -5935,7 +5940,8 @@ class DockerContainer:
             args_txt += f" -i {identity}"
 
         dirpath = os.path.dirname(inspect.getfile(Tools))
-        if dirpath.startswith(MyEnv.config["DIR_CODE"]):
+        jsxfile = os.path.join(dirpath, "jsx")
+        if not os.path.exists(jsxfile):
             self.execute(
                 """
             rm -f /tmp/InstallTools.py

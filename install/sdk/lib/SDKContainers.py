@@ -14,10 +14,11 @@ class SDKContainers:
         if "." not in identity:
             identity += ".3bot"
         identity = identity.lower()
-        if not identity.endswith("test") and self.args.identity != identity:
+        if self.args.identity != identity:
             self.args.identity = identity
             self.args.words = None
             self.args.email = None
+
         return identity
 
     def _name(self, name):
@@ -66,7 +67,8 @@ class SDKContainers:
             print(" - make sure jumpscale code is on local filesystem.")
             installer.repos_get(pull=False, branch=self.core.branch)
 
-            assert self.args.identity
+            if not identity.endswith(".test"):
+                assert self.args.identity
 
             print(f" - install jumpscale for identity:{self.args.identity}")
 
@@ -75,11 +77,8 @@ class SDKContainers:
             if not words:
                 words = self.args.words
 
-            if identity.endswith(".test"):
-                secret = "test"
-            else:
-                if not self.args.secret:
-                    self.args.secret = self.IT.Tools.ask_password("specify secret passphrase please:")
+            if not self.args.secret:
+                self.args.secret = self.IT.Tools.ask_password("specify secret passphrase please:")
 
             if not secret:
                 secret = self.args.secret
