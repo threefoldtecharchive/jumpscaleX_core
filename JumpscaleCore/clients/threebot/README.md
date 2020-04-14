@@ -24,7 +24,7 @@ cl.reload()
 - Get the client and use it (registering my threebot.me id), It will authenticate automatically
 
 ```python
-c = j.clients.threebot.client_get(j.tools.threebot.me.default.tid)
+c = j.clients.threebot.client_get(j.myidentities.default.tid)
 ```
 
 - use the client
