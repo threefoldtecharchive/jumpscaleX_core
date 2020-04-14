@@ -2628,10 +2628,10 @@ class Tools:
             env = {}
 
         if Tools.exists(cmd):
-            ext = os.path.splitext(cmd).lower()
+            ext = os.path.splitext(cmd)[1].lower()
             cmd = Tools.file_read(cmd)
             if python is None and jumpscale is None:
-                if ext == "py":
+                if ext == ".py":
                     python = True
 
         script = None
