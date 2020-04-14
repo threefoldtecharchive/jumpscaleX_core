@@ -5398,7 +5398,6 @@ class DockerContainer:
         @param portmap: if you want to map ports from host to docker container
 
         """
-        Tools.shell()
         if not image:
             image = self.image
         if not self.container_exists_config:
