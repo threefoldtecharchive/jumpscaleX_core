@@ -189,8 +189,10 @@ when done do `jsx check`
 ##### Retrieve the words 
 
 execute that in kosmos `j.data.nacl.default.words`
+
 NOTE: these words aren't compatible with the keys you have in 3bot connect 
 
+NOTE: You may have to delete `/sandbox/cfg/bcdb_config` and `pkill redis` if you got secret conflicts
 
 
 
