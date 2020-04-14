@@ -5027,7 +5027,7 @@ class DockerFactory:
 
     @staticmethod
     def containers_names():
-        names = Tools.execute('docker container ps -a --format="{{json .Names}}"', showout=False, replace=False)[
+        names = Tools.execute('docker container ls -a --format="{{json .Names}}"', showout=False, replace=False)[
             1
         ].split("\n")
         names = [i.strip("\"'") for i in names if i.strip() != ""]
@@ -5285,9 +5285,11 @@ class DockerConfig:
         ssh = 9000 + int(self.portrange) * 10
         http = 7000 + int(self.portrange) * 10
         https = 4000 + int(self.portrange) * 10
+        httpnb = 5000 + int(self.portrange) * 10  # notebook
         self.sshport = ssh
         self.portrange_txt = "-p %s-%s:8005-8009" % (a, b)
         self.portrange_txt += " -p %s:80" % http
+        self.portrange_txt += " -p %s:8888" % httpnb
         self.portrange_txt += " -p %s:443" % https
         self.portrange_txt += " -p %s:9001/udp" % udp
         self.portrange_txt += " -p %s:22" % ssh
