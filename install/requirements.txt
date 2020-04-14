@@ -1,4 +1,4 @@
 ptpython==2.0.4
-#prompt-toolkit==2.0.9
+PyInstaller==3.6
 pudb
 jedi

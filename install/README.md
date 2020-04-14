@@ -1,20 +1,111 @@
-# Installer
+
+* [Requirements](#Requirements)
+* [Using 3sdk](#Using3sdk)
+	* [Getting help](#Gettinghelp)
+	* [Basic Features](#BasicFeatures)
+		* [Start Threebot Container (one command)](#StartThreebotContaineronecommand)
+		* [Install New Container](#InstallNewContainer)
+		* [Running New Container](#RunningNewContainer)
+		* [Listing Containers](#ListingContainers)
+		* [Accessing Container Shell](#AccessingContainerShell)
+		* [Getting Container Kosmos](#GettingContainerKosmos)
+	* [Advanced features](#Advancedfeatures)
+* [Packaged installer (sdk)](#Packagedinstallersdk)
+* [Using 3sdk.py from source](#Using3sdk.pyfromsource)
+* [Troubleshooting](#Troubleshooting)
+	* [Existing user](#ExistingUser)
+	* [REMOTE HOST IDENTIFICATION HAS CHANGED](#REMOTEHOSTIDENTIFICATIONHASCHANGED)
 
 
 
-## Packaged installer (sdk)
 
-To build, you need to have:
-* `python3`
-* `pip`
+## <a name='Requirements'></a>Requirements
+- Docker
+- Chrome browser for OSX users
+
+## <a name='Using3sdk'></a>Using 3sdk
+
+Binaries should be in the [release](https://github.com/threefoldtech/jumpscaleX_core/releases) page for osx and linux 
+
+launch `3sdk`
+
+![](images/3sdk2.png)
+
+### <a name='Gettinghelp'></a>Getting help
+
+You can type `info` or `info()` and you will see a list of available commands that you can use.
+
+![](images/3sdk3.png)
+
+### <a name='BasicFeatures'></a>Basic Features
+
+
+#### <a name='StartThreebotContaineronecommand'></a>Start Threebot Container (one command)
+
+
+> `container threebot`
+
+
+#### <a name='InstallNewContainer'></a>Install New Container
+> `container install name=notsomeuser3 identity=notsomeuser3 email=notsomeuser3@gmail.com server=True`
+
+- server=True means to start 3bot server
+
+
+#### <a name='RunningNewContainer'></a>Running New Container
+
+to start a new container `container start name:mycontainer`	
+
+#### <a name='ListingContainers'></a>Listing Containers
+
+```
+3sdk> container list                                                                                       
+ 
+list the containers 
+                                                                                                           
+ - notsomeuser3 : localhost       : threefoldtech/3bot2       (sshport:9000)
+ - notsomeuser4 : localhost       : threefoldtech/3bot2       (sshport:9010)
+ - 3bot       : localhost       : threefoldtech/3bot2       (sshport:9020)
+3sdk>  
+```
+also using the sshport information you can do `ssh root@localhost -p $SSH_PORT` to manually ssh into the 
+
+#### <a name='AccessingContainerShell'></a>Accessing Container Shell
+
+Either use the sshport info from `container list` command and `ssh root@localhost -p $SSH_PORT` or just execute `container shell` and optionally give it the name of your container
+
+#### <a name='GettingContainerKosmos'></a>Getting Container Kosmos
+
+Execute `container kosmos` to get into kosmos shell
+
+
+
+### <a name='Advancedfeatures'></a>Advanced features
+
+##### installing 3bot on the host
+
+just `install` in 3sdk
+
+##### Controlling code branches
+
+use `core branch` command
+
+
+
+## <a name='Packagedinstallersdk'></a>Packaged installer (sdk)
+
+To build the SDK yourself, you need to have:
+* `python3`: `apt-get install python3`
+* `pip`: `apt-get install python3-pip`
 * `upx` is used to compress binary executable, can be installed with:
     * ubuntu: `apt-get install upx`
     * macos (using brew): `brew install upx`
+* `patchelf`: `apt install patchelf`
 * `pyinstaller` can be installed using `pip3 install pyinstaller --user`
 
 
 
-### Build:
+### <a name='Build:'></a>Build:
 
 Run the packaging script:
 
@@ -31,7 +122,7 @@ Try running it with:
 ./dist/3sdk
 ```
 
-## advanced (manual) 3sdk setup from source
+## <a name='Using3sdk.pyfromsource'></a>Using 3sdk.py from source
 This will require python3, git on the user system 
 
 - `pip3 install jedi pudb ptpython==2.0.4`
@@ -40,45 +131,15 @@ This will require python3, git on the user system
 - `ln /tmp/jumpscaleX_core/install/3sdk.py /usr/bin/3sdk`
  
 
+## <a name='Troubleshooting'></a>Troubleshooting
 
-## using 3sdk
-
-Binaries should be in the [release](https://github.com/threefoldtech/jumpscaleX_core/releases/tag/v10.4-rc4) page for osx and linux 
-
-launch `3sdk`
-
-![](images/3sdk2.png)
-
-### Getting help
-
-You can type `info` or `info()` and you will see a list of available commands that you can use.
-
-![](images/3sdk3.png)
+### <a name='ExistingUser'></a>Existing user / using your private words (mnemonics)
+- You have to use same username & same email
+- use the `words=` parameter in the your commands
+- e.g `container install words=''`
 
 
-### to start a threebot container in one command
-
-
-> `container threebot`
-
-
-### Install a new container
-> `container install name=notsomeuser3 identity=notsomeuser3 email=notsomeuser3@gmail.com server=True`
-
-- server=True means to start 3bot server
-
-
-
-
-### Running a new container
-
-to start a new container `container start name:mycontainer`	
-
-
-
-## Troubleshooting
-
-### REMOTE HOST IDENTIFICATION HAS CHANGED
+### <a name='REMOTEHOSTIDENTIFICATIONHASCHANGED'></a>REMOTE HOST IDENTIFICATION HAS CHANGED
 
 ```
 Could not execute:    scp -P 9010 root@localhost:/var/executor_data /tmp/jumpscale/scripts/35865.data
@@ -101,3 +162,10 @@ stderr:
     Host key verification failed.
 ```
 Just execute `ssh-keygen -f "/root/.ssh/known_hosts" -R "[localhost]:9010"`
+
+### Chrome errors with certificate (OSX)
+
+You can start chrome manually using
+```
+open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome  --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors'
+```

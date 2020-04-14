@@ -1,4 +1,4 @@
-"""manage containers"""
+"""manage simulator"""
 from .core import core
 from .args import args
 from .container import _containers, _threebot_browser
@@ -42,7 +42,7 @@ def browser():
     c = _containers.get(name="simulator")
     httpnb = 5000 + int(c.config.portrange) * 10
     url = f"http://localhost:{httpnb}"
-    _threebot_browser(url)
+    _threebot_browser(c, url=url)
     print(f" - CONNECT TO YOUR SIMULATOR ON: {url}")
 
 

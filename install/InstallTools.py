@@ -2636,10 +2636,10 @@ class Tools:
             env = {}
 
         if Tools.exists(cmd):
-            ext = os.path.splitext(cmd).lower()
+            ext = os.path.splitext(cmd)[1].lower()
             cmd = Tools.file_read(cmd)
             if python is None and jumpscale is None:
-                if ext == "py":
+                if ext == ".py":
                     python = True
 
         script = None
@@ -3300,7 +3300,7 @@ class Tools:
             current_branch = getbranch(args=args)
             if current_branch != branch:
                 script = """
-                set -ex
+                set -e
                 cd {REPO_DIR}
                 git checkout {BRANCH} -f
                 """
@@ -3480,7 +3480,7 @@ class Tools:
             args["BRANCH"] = branch.strip()
 
             script = """
-            set -ex
+            set -e
             cd {DIR_TEMP}
             rm -f download.zip
             curl -L {URL} > download.zip
@@ -3493,7 +3493,7 @@ class Tools:
                 raise Tools.exceptions.Operations("cannot download:%s resulting file was too small" % args["URL"])
             else:
                 script = """
-                set -ex
+                set -e
                 cd {DIR_TEMP}
                 rm -rf {NAME}-{BRANCH}
                 mkdir -p {REPO_DIR}
@@ -3782,7 +3782,7 @@ class MyEnv_:
 
         if basedir == "/sandbox" and not os.path.exists(basedir):
             script = """
-            set -ex
+            set -e
             cd /
             sudo mkdir -p /sandbox/cfg
             sudo chown -R {USERNAME}:{GROUPNAME} /sandbox
@@ -4272,7 +4272,7 @@ class BaseInstaller:
             Tools.code_github_get(repo=reponame, branch=["master"])
 
             script = """
-            set -ex
+            set -e
             cd {DIR_BASE}
             rsync -ra code/github/threefoldtech/{REPONAME}/base/ .
             mkdir -p root
@@ -4650,9 +4650,9 @@ class UbuntuInstaller:
         script = """
         apt-get update
         apt-get install -y mc wget python3 git tmux telnet
-        set +ex
+        set +e
         apt-get install python3-distutils -y
-        set -ex
+        set -e
         apt-get install python3-psutil -y
         apt-get install -y curl rsync unzip
         locale-gen --purge en_US.UTF-8
@@ -4990,7 +4990,7 @@ class DockerFactory:
                 DockerFactory._dockers.pop(name)
 
     @staticmethod
-    def container_get(name, image="threefoldtech/3bot2", start=False, delete=False, ports=None, mount=True):
+    def container_get(name, image="threefoldtech/3bot2", start=False, delete=False, ports=None, mount=True, pull=False):
         DockerFactory.init()
         assert name
         assert len(name) > 3
@@ -5019,7 +5019,7 @@ class DockerFactory:
         if not docker:
             docker = DockerContainer(name=name, image=image, ports=ports)
         if start:
-            docker.start(mount=mount)
+            docker.start(mount=mount, pull=pull)
         return docker
 
     @staticmethod
@@ -5447,6 +5447,8 @@ class DockerContainer:
         @param portmap: if you want to map ports from host to docker container
 
         """
+        if not image:
+            image = self.image
         if not self.container_exists_config:
             raise Tools.exceptions.Operations("ERROR: cannot find docker with name:%s, cannot start" % self.name)
 

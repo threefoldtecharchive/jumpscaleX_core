@@ -446,7 +446,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
             except Exception as e:
                 msg = str(e)
                 if msg.find("user with same name or email exists") != -1:
-                    raise j.exceptions.Input("Eser with same name or email exists om TFGrid phonebook.", data=user)
+                    raise j.exceptions.Input("A user with same name or email exists om TFGrid phonebook.", data=user)
                 raise e
             r = explorer.users.get(tid=tid)
 

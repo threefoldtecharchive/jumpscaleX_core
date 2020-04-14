@@ -303,7 +303,7 @@ class EncryptorTools:
     def test(self, name=""):
         """
 
-        this test needs the j.tools.threebot.me to exist (registration done)
+        this test needs the j.myidentities to exist (registration done)
 
         following will run all tests
 

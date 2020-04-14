@@ -53,7 +53,16 @@ def words(val=""):
     words as used for the encryption key
     """
     if not val:
-        return args.words
+        if args.words:
+            return args.words
+        else:
+            from .container import _containers
+
+            if _containers.IT.DockerFactory.container_name_exists("3bot"):
+                c = _containers.get(name="3bot")
+                c.execute("print(j.me.encryptor.words);print(\n\n)", jumpscale=True)
+            else:
+                print(" - ERROR: cannot retrieve words, container 3bot not found.")
     else:
         args.words = val
 

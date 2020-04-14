@@ -26,6 +26,7 @@ def sdktool():
     # TODO: call the local jumpscale installer
 
     DIR_BASE = IT.MyEnv.config["DIR_BASE"]
+    DIR_HOME = IT.MyEnv.config["DIR_HOME"]
     if IT.MyEnv.platform_is_osx:
         name = "osx"
     elif IT.MyEnv.platform_is_linux:
@@ -39,9 +40,16 @@ def sdktool():
     rm -rf build
     bash package.sh
     cp {DIR_BASE}/installer/dist/3sdk /tmp/3sdk_{name}
+    """
+    IT.Tools.execute(C)
+    if IT.MyEnv.platform_is_osx:
+        IT.Tools.execute(f"cp {DIR_BASE}/installer/dist/3sdk {DIR_HOME}/Downloads/3sdk_{name}", die=False)
+    C = f"""
+    cd {DIR_BASE}/installer
     rm -rf dist
     rm -rf build
-    echo "find the build sdk on /tmp/3sdk_{name}"
+    # rm -rf {DIR_BASE}/installer/sdk/InstallTools.py
+    echo "find the build sdk on /tmp/3sdk_{name} or ~/Downloads/3sdk_{name}"
     """
     IT.Tools.execute(C)
 
