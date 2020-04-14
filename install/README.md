@@ -13,7 +13,7 @@
 * [Packaged installer (sdk)](#Packagedinstallersdk)
 * [Using 3sdk.py from source](#Using3sdk.pyfromsource)
 * [Troubleshooting](#Troubleshooting)
-	* [Existing user](#ExistingUser)
+	* [Signature Verification Error/Already registerd users with wrong secret on phonebook](#ConflictingUser)
 	* [REMOTE HOST IDENTIFICATION HAS CHANGED](#REMOTEHOSTIDENTIFICATIONHASCHANGED)
 
 
@@ -22,6 +22,14 @@
 ## <a name='Requirements'></a>Requirements
 - Docker
 - Chrome browser for OSX users
+
+
+## Know your 3bot secret
+
+- From 3botconnect application go to settings, then show phrase to get your mnemonics
+- Take a note of the 3bot name and your email
+- When registering for the first time you can use these private words in your configurations
+
 
 ## <a name='Using3sdk'></a>Using 3sdk
 
@@ -39,11 +47,17 @@ You can type `info` or `info()` and you will see a list of available commands th
 
 ### <a name='BasicFeatures'></a>Basic Features
 
+### Using the 3botconnect app words (mnemonics)
+
+- You have to use same username & same email
+- use the `words=` parameter in the your commands (you will see example commands in the upcoming section)
 
 #### <a name='StartThreebotContaineronecommand'></a>Start Threebot Container (one command)
 
 
 > `container threebot`
+
+if you want to set 3botconnect application words `container install words=''`
 
 
 #### <a name='InstallNewContainer'></a>Install New Container
@@ -133,10 +147,51 @@ This will require python3, git on the user system
 
 ## <a name='Troubleshooting'></a>Troubleshooting
 
-### <a name='ExistingUser'></a>Existing user / using your private words (mnemonics)
-- You have to use same username & same email
-- use the `words=` parameter in the your commands
-- e.g `container install words=''`
+
+
+## <a name='ConflictingUsers'></a>signature verification failed, ensure your pubkey to be the same as local configured nacl
+
+```
+Tue 14 19:18:01 e/Jumpscale/me/Me.py - 461 - tfgrid_phonebook_register          : EXCEPTION: 
+    signature verification failed, ensure your pubkey to be the same as local configured nacl
+--TRACEBACK------------------
+
+```
+
+is most likely caused that you registered on phonebook with different words other than the ones in the 3bot connect app
+
+## case you have an old container with your old key and secret
+you can get your private key `cat /sandbox/cfg/keys/default/key.priv`
+and the secret `cat /sandbox/cfg/jumpscale_config.toml | grep SECRET`
+
+
+#### Recovering old words (saved)
+if you have your key.priv and secret from jumpscale_config and want to restore them
+
+
+
+##### Restore estore the key
+either copy the file back into `/sandbox/cfg/keys/default/key.priv` or
+
+```
+root@3bot:/sandbox# echo -n 'PRIVATEKEYCONTENT' > /sandbox/cfg/keys/default/key.priv
+root@3bot:/sandbox# cat /sandbox/cfg/keys/default/key.priv | wc -c
+144
+```
+
+make sure the length is 144
+
+##### Restore the secret
+
+edit `/sandbox/cfg/jumpscale_config.toml` and set `SECRET` to the old secret.
+
+when done do `jsx check`
+##### Retrieve the words 
+
+execute that in kosmos `j.data.nacl.default.words`
+NOTE: these words aren't compatible with the keys you have in 3bot connect 
+
+
 
 
 ### <a name='REMOTEHOSTIDENTIFICATIONHASCHANGED'></a>REMOTE HOST IDENTIFICATION HAS CHANGED
