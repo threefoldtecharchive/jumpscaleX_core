@@ -1,4 +1,4 @@
-"""manage containers"""
+"""manage simulator"""
 from .core import core
 from .args import args
 from .container import _containers, _threebot_browser

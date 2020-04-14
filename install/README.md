@@ -31,14 +31,6 @@ Try running it with:
 ./dist/3sdk
 ```
 
-## advanced (manual) 3sdk setup from source
-This will require python3, git on the user system 
-
-- `pip3 install jedi pudb ptpython==2.0.4`
-- `cd /tmp && git clone https://github.com/threefoldtech/jumpscaleX_core/ && cd jumpscaleX_core && git checkout unstable && git pull`
-- `sudo -s`
-- `ln /tmp/jumpscaleX_core/install/3sdk.py /usr/bin/3sdk`
- 
 
 
 ## using 3sdk
@@ -74,7 +66,51 @@ You can type `info` or `info()` and you will see a list of available commands th
 
 to start a new container `container start name:mycontainer`	
 
+### listing containers
 
+```
+3sdk> container list                                                                                       
+ 
+list the containers 
+                                                                                                           
+ - notsomeuser3 : localhost       : threefoldtech/3bot2       (sshport:9000)
+ - notsomeuser4 : localhost       : threefoldtech/3bot2       (sshport:9010)
+ - 3bot       : localhost       : threefoldtech/3bot2       (sshport:9020)
+3sdk>  
+```
+also using the sshport information you can do `ssh root@localhost -p $SSH_PORT` to manually ssh into the 
+
+### Accessing the container shell
+
+Either use the sshport info from `container list` command and `ssh root@localhost -p $SSH_PORT` or just execute `container shell` and optionally give it the name of your container
+
+### Getting into kosmos of the container
+
+Execute `container kosmos` to get into kosmos shell
+
+
+
+#### Advanced features
+
+##### installing 3bot on the host
+
+just `install` in 3sdk
+
+##### Controlling code branches
+
+use `core branch` command
+
+
+
+
+## Using 3sdk.py from source
+This will require python3, git on the user system 
+
+- `pip3 install jedi pudb ptpython==2.0.4`
+- `cd /tmp && git clone https://github.com/threefoldtech/jumpscaleX_core/ && cd jumpscaleX_core && git checkout unstable && git pull`
+- `sudo -s`
+- `ln /tmp/jumpscaleX_core/install/3sdk.py /usr/bin/3sdk`
+ 
 
 ## Troubleshooting
 
