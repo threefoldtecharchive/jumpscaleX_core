@@ -484,7 +484,7 @@ class Int64(TypeBaseClass):
     def __init__(self, default=None):
         self.BASETYPE = "int"
         if not default:
-            default = 2147483647
+            default = 9223372036854775807
         self._default = default
 
     def checkString(self, s):
