@@ -67,7 +67,7 @@ def get_rhs(line):
         stmt = mod.body[0]
         # only assignment statements
         if type(stmt) in (ast.Assign, ast.AugAssign, ast.AnnAssign):
-            return line[stmt.value.col_offset:].strip()
+            return line[stmt.value.col_offset :].strip()
     return line
 
 
@@ -445,7 +445,7 @@ def ptconfig(repl, expert=False):
             rmembers = inspect.getmembers(module, inspect.isfunction)
             for rmember, func in rmembers:
                 if rmember.startswith(prefix) and not rmember.startswith(HIDDEN_PREFIXES):
-                    if getattr(func, '__property__', False):
+                    if getattr(func, "__property__", False):
                         yield Completion(rmember, -len(prefix), display=rmember, style="bg:ansicyan")
                     else:
                         yield Completion(rmember, -len(prefix), display=rmember, style="bg:ansigreen")

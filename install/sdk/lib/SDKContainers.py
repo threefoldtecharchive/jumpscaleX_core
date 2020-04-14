@@ -57,10 +57,10 @@ class SDKContainers:
         docker = self.IT.DockerFactory.container_get(
             name=name, image=self.image, start=True, delete=delete, mount=mount, pull=pull
         )
-        
-        config_path = f"{self.IT.MyEnv._basedir_get()}/cfg/.configured" 
+
+        config_path = f"{self.IT.MyEnv._basedir_get()}/cfg/.configured"
         if "win32" in self.IT.MyEnv.platform():
-            config_path = f"{self.IT.MyEnv._basedir_get()}\cfg\.configured" 
+            config_path = f"{self.IT.MyEnv._basedir_get()}\cfg\.configured"
 
         if not docker.executor.exists(config_path):
             installer = self.IT.JumpscaleInstaller()

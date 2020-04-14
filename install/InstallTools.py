@@ -52,7 +52,6 @@ GITREPOS["builders_community"] = [
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersCommunity",
 ]
 
-
 GITREPOS["libs_extra"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs_extra",
     "%s" % DEFAULT_BRANCH,
@@ -1013,7 +1012,6 @@ class BaseClassProperties:
 
 
 class Tools:
-
     _supported_editors = ["micro", "mcedit", "joe", "vim", "vi"]  # DONT DO AS SET  OR ITS SORTED
     j = None
     _shell = None
@@ -1716,7 +1714,7 @@ class Tools:
             if replace:
                 content = Tools.text_replace(content, args=args)
             if "win32" in MyEnv.platform():
-                with open(path, "w", newline='\n') as p:
+                with open(path, "w", newline="\n") as p:
                     p.write(content)
             else:
                 p.write_text(content)
@@ -3796,6 +3794,7 @@ class MyEnv_:
             # import is here cause it's only unix
             # for windows support
             import grp
+
             args["GROUPNAME"] = grp.getgrgid(gid)[0]
             Tools.execute(script, interactive=True, args=args, die_if_args_left=True)
 
@@ -3877,7 +3876,7 @@ class MyEnv_:
     def _basedir_get(self):
         if self.readonly:
             return "/tmp/jumpscale"
-        
+
         if "linux" in self.platform():
             isroot = None
             rc, out, err = Tools.execute("whoami", showout=False, die=False)
@@ -3899,7 +3898,7 @@ class MyEnv_:
         if self.readonly:
             return "/tmp/jumpscale/cfg"
         return "%s/cfg" % self._basedir_get()
-    
+
     def _identitydir_get(self):
         return f"{self._basedir_get()}/myhost" if not "win32" in MyEnv.platform() else "%s\myhost" % self._basedir_get()
 
@@ -3915,7 +3914,7 @@ class MyEnv_:
 
         if not "DIR_CFG" in config:
             config["DIR_CFG"] = self._cfgdir_get()
-        
+
         if not "DIR_CFG" in config:
             config["DIR_IDENTITY"] = self._identitydir_get()
 
@@ -4039,7 +4038,6 @@ class MyEnv_:
         :return: logdict see github/threefoldtech/jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md
         """
         if isinstance(exception_obj, Tools.exceptions.RemoteException):
-
             print(Tools.text_replace("{RED}*****Remote Exception*****{RESET}"))
             logdict = exception_obj.data
             Tools.log2stdout(logdict)
@@ -4930,7 +4928,6 @@ class JumpscaleInstaller:
 
 
 class DockerFactory:
-
     _init = False
     _dockers = {}
 
@@ -5024,13 +5021,13 @@ class DockerFactory:
 
     @staticmethod
     def containers_running():
-        names = Tools.execute("docker ps --format=\"{{json .Names}}\"", showout=False, replace=False)[1].split("\n")
+        names = Tools.execute('docker ps --format="{{json .Names}}"', showout=False, replace=False)[1].split("\n")
         names = [i.strip("\"'") for i in names if i.strip() != ""]
         return names
 
     @staticmethod
     def containers_names():
-        names = Tools.execute("docker container ps -a --format=\"{{json .Names}}\"", showout=False, replace=False)[
+        names = Tools.execute('docker container ps -a --format="{{json .Names}}"', showout=False, replace=False)[
             1
         ].split("\n")
         names = [i.strip("\"'") for i in names if i.strip() != ""]
@@ -5556,10 +5553,10 @@ class DockerContainer:
                 SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
             if SSHKEYS.strip() != "":
                 if "win32" in MyEnv.platform():
-                    self.dexec('echo %s > /root/.ssh/authorized_keys' % SSHKEYS, showout=False)
+                    self.dexec("echo %s > /root/.ssh/authorized_keys" % SSHKEYS, showout=False)
                 else:
                     self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS, showout=False)
-            
+
             if not "win32" in MyEnv.platform():
                 Tools.execute(
                     "mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"], showout=False)
@@ -5575,7 +5572,7 @@ class DockerContainer:
             # is to make sure we can login without interactivity
             if "win32" in MyEnv.platform():
                 cmd = "ssh-keyscan -H -p %s localhost" % self.config.sshport
-                path = f"%s\.ssh\known_hosts" %MyEnv._homedir_get()
+                path = f"%s\.ssh\known_hosts" % MyEnv._homedir_get()
                 _, content, _ = Tools.execute(cmd, showout=False)
                 Tools.file_write(path, content)
             else:
@@ -5631,9 +5628,9 @@ class DockerContainer:
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
         if interactive:
-            cmd2 = "docker exec -ti %s bash -c \"%s\"" % (self.name, cmd)
+            cmd2 = 'docker exec -ti %s bash -c "%s"' % (self.name, cmd)
         else:
-            cmd2 = "docker exec -t %s bash -c \"%s\"" % (self.name, cmd)
+            cmd2 = 'docker exec -t %s bash -c "%s"' % (self.name, cmd)
         Tools.execute(cmd2, interactive=interactive, showout=showout, replace=False, die=die)
 
     def shell(self, cmd=None):
@@ -5976,7 +5973,7 @@ class DockerContainer:
         cmd = f"""
         cd /tmp
         #next will start redis and make sure secret is in there
-        python3 jsx secret {secret} 
+        python3 jsx secret {secret}
         """
         print(" - Configure secret ")
         # best to set the secret first because otherwise we cannot be sure bcdb will work
@@ -6746,6 +6743,7 @@ class ExecutorSSH:
         """
         print(" - load systemenv")
         res = {}
+
         def get_cfg(name, default):
             name = name.upper()
             if "CFG_JUMPSCALE" in res and name in res["CFG_JUMPSCALE"]:
@@ -7265,7 +7263,6 @@ class WireGuardServer:
         C = Tools.text_replace(C, args=config, die_if_args_left=True)
 
         for client_id, client in self.config["clients"].items():
-
             C2 = """
 
             [Peer]
