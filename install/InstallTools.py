@@ -4695,7 +4695,7 @@ class JumpscaleInstaller:
         threebot=False,
         identity=None,
         reset=None,
-        jsinit=False,
+        jsinit=True,
         email=None,
         words=None,
     ):
