@@ -86,16 +86,9 @@ def cli():
 @click.option("-i", "--identity", default=None, help="Identity to be used for the 3bot functionality")
 @click.option("--reset", is_flag=True, help="Delete BCDB, dangerous !")
 @click.option("--email", help="email address to be used")
-@click.option("--words", help="words of private key")
+@click.option("--words", help="words of private key retrieved from 3bot connect app")
 def install(
-    reinstall=False,
-    pull=False,
-    no_interactive=False,
-    threebot=False,
-    identity=None,
-    reset=None,
-    email=None,
-    words=None,
+    reinstall=False, pull=False, no_interactive=False, threebot=False, identity=None, reset=None, email=None, words=None
 ):
     """
     install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.

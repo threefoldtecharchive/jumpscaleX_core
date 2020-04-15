@@ -3320,9 +3320,11 @@ class Tools:
         repo_url = url % (account, repo)
         fallback_url = "https://github.com/%s/%s.git" % (account, repo)
         exists, foundgit, dontpull, ACCOUNT_DIR, REPO_DIR = Tools._code_location_get(account=account, repo=repo)
-        if exists and reset:
-            # need to remove because could be left over from previous sync operations
-            Tools.delete(REPO_DIR)
+
+        # if exists and reset and not pull:
+        #     # need to remove because could be left over from previous sync operations
+        #     # only reset if no pull
+        #     Tools.delete(REPO_DIR)
 
         args = {}
         args["ACCOUNT_DIR"] = ACCOUNT_DIR
@@ -3400,7 +3402,6 @@ class Tools:
                 if pull:
                     if reset:
                         C = """
-                        set -x
                         cd {REPO_DIR}
                         git checkout . --force
                         """
@@ -3424,7 +3425,6 @@ class Tools:
                             else:
                                 raise Tools.exceptions.Input("found changes, do not want to commit")
                             C = """
-                            set -x
                             cd {REPO_DIR}
                             git add . -A
                             git commit -m "{MESSAGE}"
@@ -3432,7 +3432,6 @@ class Tools:
                             Tools.log("get code & commit [git]: %s" % repo)
                             Tools.execute(C, args=args, die_if_args_left=True, interactive=True)
                     C = """
-                    set -x
                     cd {REPO_DIR}
                     git pull
                     """
@@ -4698,6 +4697,7 @@ class JumpscaleInstaller:
         jsinit=True,
         email=None,
         words=None,
+        code_update_force=False,
     ):
 
         MyEnv.check_platform()
@@ -4710,7 +4710,7 @@ class JumpscaleInstaller:
 
         Tools.file_touch(os.path.join(MyEnv.config["DIR_BASE"], "lib/jumpscale/__init__.py"))
 
-        self.repos_get(pull=gitpull, branch=branch)
+        self.repos_get(pull=gitpull, branch=branch, reset=code_update_force)
         self.repos_link()
         self.cmds_link()
 
@@ -4832,9 +4832,15 @@ class JumpscaleInstaller:
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
 
+        done = []
+
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
+            if GITURL in done:
+                continue
+
             if branch:
+                # dont understand this code, looks bad TODO:
                 C = f"""git ls-remote --heads {GITURL} {branch}"""
                 _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True, interactive=False)
                 if out:
@@ -4844,7 +4850,9 @@ class JumpscaleInstaller:
                 dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
             except Exception as e:
                 r = Tools.code_git_rewrite_url(url=GITURL, ssh=False)
-                Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull)
+                Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
+
+            done.append(GITURL)
 
         if prebuilt:
             self.prebuilt_copy()
