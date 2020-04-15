@@ -7,7 +7,7 @@ import cgi
 from ptpython.repl import embed
 
 from functools import partial
-from sdk.shell import ptconfig
+from sdk.shell import ptconfig, rewriteline
 from sdk import container, builder, simulator, install, args, core, installer, _get_doc_line  # pylint: disable=F401
 
 from prompt_toolkit.shortcuts import print_formatted_text
@@ -118,5 +118,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert", default=False, action="store_true")
-    options = parser.parse_args()
-    shell(locals_=locals(), globals_=globals(), expert=options.expert)
+    options, extra = parser.parse_known_args()
+    if extra:
+        line = rewriteline(extra, globals(), locals())
+        exec(line, globals(), locals())
+    else:
+        shell(locals_=locals(), globals_=globals(), expert=options.expert)
