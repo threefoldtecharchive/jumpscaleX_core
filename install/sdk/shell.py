@@ -117,7 +117,7 @@ def partition_line(line):
     return parts
 
 
-def rewriteline(line, globals, locals):
+def rewriteline(parts, globals, locals):
     """
     Check if commands are entered in novice mode and rewrite them to python
     """
@@ -161,7 +161,7 @@ def rewriteline(line, globals, locals):
                     line += f"'{arg}', "
         return line
 
-    parts = partition_line(line)
+    line = ""
     if parts[0] in sdkall + ["info"]:
         root = globals[parts[0]]
         if len(parts) >= 2:
@@ -366,7 +366,7 @@ def ptconfig(repl, expert=False):
             " Compile code with the right compiler flags. "
             return compile(code, "<stdin>", mode, flags=self.get_compiler_flags(), dont_inherit=True)
 
-        line = rewriteline(line, self.get_globals(), self.get_locals())
+        line = rewriteline(partition_line(line), self.get_globals(), self.get_locals())
         if line.lstrip().startswith("\x1a"):
             # When the input starts with Ctrl-Z, quit the REPL.
             self.app.exit()
