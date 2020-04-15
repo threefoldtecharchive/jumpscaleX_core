@@ -51,6 +51,8 @@ class SDKContainers:
         code_update_force=False,
     ):
         """
+
+        code_update_force: be careful, if set will remove your local code repo changes
         """
         name = self._name(name)
 
@@ -72,6 +74,7 @@ class SDKContainers:
 
             installer = self.IT.JumpscaleInstaller()
             print(" - make sure jumpscale code is on local filesystem.")
+
             installer.repos_get(pull=pull, branch=self.core.branch, reset=code_update_force)
 
             if not identity.endswith(".test"):

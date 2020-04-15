@@ -13,13 +13,16 @@ def start(delete=False, browser_open=True, code_update_force=True):
     """
     install & run a container with SDK & simulator
     a connection to zerotier network will be made
+
+    param: code_update_force be careful, will remove your code changes
+
     """
     if delete:
         _delete_container("simulator")
         code_update_force = True
 
     if not _containers.IT.DockerFactory.container_name_exists("simulator"):
-        _install_container("simulator", delete=delete, code_update_force=code_update_force)
+        _install_container("simulator", delete=delete, code_update_force=code_update_force, pull=True)
         c = _containers.get(name="simulator")
         c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
     else:
