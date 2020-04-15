@@ -9,7 +9,7 @@ from .container import stop as _stop_container
 __all__ = ["browser", "stop", "start", "shell", "restart"]
 
 
-def start(delete=False, browser_open=True, code_update_force=True):
+def start(delete=False, browser_open=True, code_update_force=False):
     """
     install & run a container with SDK & simulator
     a connection to zerotier network will be made
@@ -19,7 +19,6 @@ def start(delete=False, browser_open=True, code_update_force=True):
     """
     if delete:
         _delete_container("simulator")
-        code_update_force = True
 
     if not _containers.IT.DockerFactory.container_name_exists("simulator"):
         _install_container("simulator", delete=delete, code_update_force=code_update_force, pull=True)
