@@ -2525,8 +2525,8 @@ class Tools:
     def _file_path_tmp_get(ext="sh"):
         ext = ext.strip(".")
         if "win32" in MyEnv.platform():
-            Tools.dir_ensure(Tools.text_replace("{DIR_BASE}\tmp"))
-            return Tools.text_replace("{DIR_BASE}\tmp\{RANDOM}.{ext}", args={"RANDOM": Tools._random(), "ext": ext})
+            Tools.dir_ensure(Tools.text_replace("{DIR_BASE}\\tmp"))
+            return Tools.text_replace("{DIR_BASE}\\tmp\\{RANDOM}.{ext}", args={"RANDOM": Tools._random(), "ext": ext})
         return Tools.text_replace("/tmp/jumpscale/scripts/{RANDOM}.{ext}", args={"RANDOM": Tools._random(), "ext": ext})
 
     @staticmethod
@@ -2711,18 +2711,26 @@ class Tools:
         executor=None,
         debug=False,
         useShell=True,
+        windows_interactive=False
     ):
 
         # windows only
         if "win32" in MyEnv.platform():
             if replace:
                 command = Tools.text_replace(command, args=args).rstrip("\n").replace("\n", "&&")
-            res = Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=useShell)
-            out = res.communicate()[0].decode()
-            rc = res.returncode
-            if rc > 0:
-                raise Tools.exceptions.RuntimeError(f"Error in executing {command}: Traceback:\n{out}")
-            return rc, out, None
+            if windows_interactive:
+                try:
+                    os.system(command)
+                except:
+                    print("Process Completed!")
+                return
+            else:
+                res = Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=useShell)
+                out = res.communicate()[0].decode()
+                rc = res.returncode or 0
+                if rc > 0 and die:
+                    raise Tools.exceptions.RuntimeError(f"Error in executing {command}: Traceback:\n{out}")
+                return rc, out, None
 
         if callable(command):
             method_name, command = Tools.method_code_get(command, **args)
@@ -3375,7 +3383,10 @@ class Tools:
                     mkdir -p {ACCOUNT_DIR}
                     """
                     Tools.log("get code [git] (first time): %s" % repo)
-                    Tools.execute(C, args=args, showout=True, die_if_args_left=True)
+                    if "win32" in MyEnv.platform():
+                        Tools.execute("mkdir -p {ACCOUNT_DIR}", args=args, showout=True, die_if_args_left=True)
+                    else:
+                        Tools.execute(C, args=args, showout=True, die_if_args_left=True)
                     C = """
                     cd {ACCOUNT_DIR}
                     git clone {URL} -b {BRANCH}
@@ -3396,26 +3407,57 @@ class Tools:
                     mkdir -p {ACCOUNT_DIR}
                     """
                     Tools.log("get code [https] (second time): %s" % repo)
-                    Tools.execute(C, args=args, showout=True, die_if_args_left=True)
+                    if "win32" in MyEnv.platform():
+                        if not Tools.exists(ACCOUNT_DIR):
+                            Tools.execute("mkdir {ACCOUNT_DIR}", args=args, showout=True, die_if_args_left=True)
+                    else:
+                        Tools.execute(C, args=args, showout=True, die_if_args_left=True)
                     C = """
                     cd {ACCOUNT_DIR}
                     git clone {FALLBACK_URL} -b {BRANCH}
                     cd {NAME}
                     """
+                    # FOR WINDOWS ONLY
                     if "win32" in MyEnv.platform():
                         C = """
                         git -C {ACCOUNT_DIR} clone {FALLBACK_URL} -b {BRANCH}
                         """
-                    rc, out, err = Tools.execute(
-                        C,
-                        args=args,
-                        die=True,
-                        showout=True,
-                        interactive=True,
-                        retry=4,
-                        errormsg="Could not clone %s" % repo_url,
-                        die_if_args_left=True,
-                    )
+                        try:
+                            rc, out, err = Tools.execute(
+                                C,
+                                args=args,
+                                die=True,
+                                showout=True,
+                                interactive=True,
+                                retry=4,
+                                errormsg="Could not clone %s" % repo_url,
+                                die_if_args_left=True,
+                            )
+                        except Exception:
+                            C = """
+                            git -C {ACCOUNT_DIR} clone {FALLBACK_URL}
+                            """
+                            rc, out, err = Tools.execute(
+                                    C,
+                                    args=args,
+                                    die=True,
+                                    showout=True,
+                                    interactive=True,
+                                    retry=4,
+                                    errormsg="Could not clone %s" % repo_url,
+                                    die_if_args_left=True,
+                                )
+                    else:
+                        rc, out, err = Tools.execute(
+                            C,
+                            args=args,
+                            die=True,
+                            showout=True,
+                            interactive=True,
+                            retry=4,
+                            errormsg="Could not clone %s" % repo_url,
+                            die_if_args_left=True,
+                        )
 
             else:
                 if pull:
@@ -5641,9 +5683,9 @@ class DockerContainer:
         if not self.isrunning():
             self.start()
         if cmd:
-            self.execute("source /sandbox/env.sh;cd /sandbox;clear;%s" % cmd, interactive=True)
+            self.execute("source /sandbox/env.sh;cd /sandbox;clear;%s" % cmd, interactive=True, windows_interactive=True)
         else:
-            self.execute("source /sandbox/env.sh;cd /sandbox;clear;bash", interactive=True)
+            self.execute("source /sandbox/env.sh;cd /sandbox;clear;bash", interactive=True, windows_interactive=True)
 
     def diskusage(self):
         """
@@ -5664,6 +5706,7 @@ class DockerContainer:
         replace=True,
         args=None,
         interactive=True,
+        windows_interactive=False
     ):
         self.executor.execute(
             cmd,
@@ -5676,6 +5719,7 @@ class DockerContainer:
             replace=replace,
             args=args,
             interactive=interactive,
+            windows_interactive=windows_interactive
         )
 
     def kosmos(self):
@@ -5989,10 +6033,9 @@ class DockerContainer:
         """
         print(" - Installing jumpscaleX ")
         if "win32" in MyEnv.platform():
-            self.execute(cmd, interactive=True)
+            self.execute(cmd, windows_interactive=True)
         else:
             self.execute(cmd)
-
         print(" - Install succesfull")
 
         self.executor.state_set("STATE_JUMPSCALE")
@@ -6842,6 +6885,7 @@ class ExecutorSSH:
         python=False,
         jumpscale=False,
         debug=False,
+        windows_interactive=False
     ):
         original_command = cmd + ""
         if not args:
@@ -6876,7 +6920,15 @@ class ExecutorSSH:
                 original_command=original_command,
             )
         else:
-            r = Tools.execute(cmd2)
+            r = Tools.execute(cmd2,
+                interactive=interactive, 
+                showout=showout,
+                timeout=timeout,
+                retry=retry,
+                die=die,
+                original_command=original_command,
+                windows_interactive=windows_interactive)
+                
         if tempfile:
             Tools.delete(tempfile)
         return r
@@ -6955,7 +7007,10 @@ class ExecutorSSH:
         Tools.dir_ensure(destdir)
 
         cmd = "scp -P %s root@%s:%s %s" % (self.port, self.addr, source, dest)
-        Tools._execute(cmd, showout=True, interactive=False)
+        if not "win32" in MyEnv.platform():
+            Tools._execute(cmd, showout=True, interactive=False)
+        else:
+            Tools.execute(cmd, showout=True, interactive=False)
 
     def kosmos(self):
         self.jsxexec("j.shell()")
