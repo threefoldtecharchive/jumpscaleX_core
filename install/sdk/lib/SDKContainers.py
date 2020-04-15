@@ -98,6 +98,7 @@ class SDKContainers:
             if not "win32" in self.IT.MyEnv.platform():
                 docker.executor.file_write(f"{self.IT.MyEnv._basedir_get()}/cfg/.configured", "")
             else:
+                self.IT.Tools.file_write(f"{self.IT.MyEnv._basedir_get()}/cfg/.configured", "")
                 docker.executor.file_write(f"/sandbox/cfg/.configured", "")
 
         self.container = docker
