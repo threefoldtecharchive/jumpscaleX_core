@@ -66,7 +66,7 @@ class SDKContainers:
             config_path = f"/sandbox/cfg/.configured"
             win_config_path = f"{self.IT.MyEnv._basedir_get()}/cfg/.configured"
             if self.IT.Tools.exists(win_config_path):
-                windows_config_exists =True
+                windows_config_exists = True
 
         windows_ok = "win32" in self.IT.MyEnv.platform() and windows_config_exists
 

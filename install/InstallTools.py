@@ -2711,7 +2711,7 @@ class Tools:
         executor=None,
         debug=False,
         useShell=True,
-        windows_interactive=False
+        windows_interactive=False,
     ):
 
         # windows only
@@ -3438,15 +3438,15 @@ class Tools:
                             git -C {ACCOUNT_DIR} clone {FALLBACK_URL}
                             """
                             rc, out, err = Tools.execute(
-                                    C,
-                                    args=args,
-                                    die=True,
-                                    showout=True,
-                                    interactive=True,
-                                    retry=4,
-                                    errormsg="Could not clone %s" % repo_url,
-                                    die_if_args_left=True,
-                                )
+                                C,
+                                args=args,
+                                die=True,
+                                showout=True,
+                                interactive=True,
+                                retry=4,
+                                errormsg="Could not clone %s" % repo_url,
+                                die_if_args_left=True,
+                            )
                     else:
                         rc, out, err = Tools.execute(
                             C,
@@ -5683,7 +5683,9 @@ class DockerContainer:
         if not self.isrunning():
             self.start()
         if cmd:
-            self.execute("source /sandbox/env.sh;cd /sandbox;clear;%s" % cmd, interactive=True, windows_interactive=True)
+            self.execute(
+                "source /sandbox/env.sh;cd /sandbox;clear;%s" % cmd, interactive=True, windows_interactive=True
+            )
         else:
             self.execute("source /sandbox/env.sh;cd /sandbox;clear;bash", interactive=True, windows_interactive=True)
 
@@ -5706,7 +5708,7 @@ class DockerContainer:
         replace=True,
         args=None,
         interactive=True,
-        windows_interactive=False
+        windows_interactive=False,
     ):
         self.executor.execute(
             cmd,
@@ -5719,7 +5721,7 @@ class DockerContainer:
             replace=replace,
             args=args,
             interactive=interactive,
-            windows_interactive=windows_interactive
+            windows_interactive=windows_interactive,
         )
 
     def kosmos(self):
@@ -6885,7 +6887,7 @@ class ExecutorSSH:
         python=False,
         jumpscale=False,
         debug=False,
-        windows_interactive=False
+        windows_interactive=False,
     ):
         original_command = cmd + ""
         if not args:
@@ -6920,15 +6922,17 @@ class ExecutorSSH:
                 original_command=original_command,
             )
         else:
-            r = Tools.execute(cmd2,
-                interactive=interactive, 
+            r = Tools.execute(
+                cmd2,
+                interactive=interactive,
                 showout=showout,
                 timeout=timeout,
                 retry=retry,
                 die=die,
                 original_command=original_command,
-                windows_interactive=windows_interactive)
-                
+                windows_interactive=windows_interactive,
+            )
+
         if tempfile:
             Tools.delete(tempfile)
         return r
