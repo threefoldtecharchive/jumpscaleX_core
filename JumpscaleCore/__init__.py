@@ -121,13 +121,18 @@ class Core:
         return serialized
 
 
-
-
 class Jumpscale:
     def __init__(self):
         self._shell = None
         self.exceptions = None
+        self._me = None
         # Tools.j=self
+
+    @property
+    def me(self):
+        if not self._me:
+            self._me = self._meClass()
+        return self._me
 
     def _locals_get(self, locals_):
         def add(locals_, name, obj):
@@ -234,6 +239,7 @@ rootdir = os.path.dirname(os.path.abspath(__file__))
 j.core.myenv = MyEnv
 j.core.redistools = RedisTools
 
+
 j.core.installer_base = BaseInstaller
 j.core.installer_jumpscale = JumpscaleInstaller()
 j.core.tools = Tools
@@ -258,6 +264,8 @@ j.core.dirs = j.dirs
 # from .core.logging.LoggerFactory import LoggerFactory
 # j.logger = LoggerFactory(j)
 # j.core.logger = j.logger
+
+j.core.myenv.redis_start()
 
 
 from .core.BASECLASSES.BaseClasses import BaseClasses
@@ -337,3 +345,5 @@ if generated and len(j.core.application.errors_init) > 0:
 # j.application.log2fs_redis_register("jumpscale")
 
 # j.core.pr = j.core.profileStart()
+
+import Jumpscale.me

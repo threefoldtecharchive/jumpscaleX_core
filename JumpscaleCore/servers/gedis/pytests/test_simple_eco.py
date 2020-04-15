@@ -14,7 +14,7 @@ class TestSimpleEcho(TestCase):
     def setUpClass(cls):
         j.servers.threebot.start(background=True)
         cls.package_manager_client = j.clients.gedis.get(
-            name="default", host="127.0.0.1", port=8901, package_name="zerobot.packagemanager"
+            name="default", host="127.0.0.1", port=8901, package_name="zerobot.admin"
         )
         package_path = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), "test_package")
         cls.package_manager_client.actors.package_manager.package_add(path=package_path)

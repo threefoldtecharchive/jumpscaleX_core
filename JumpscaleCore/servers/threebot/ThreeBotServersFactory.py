@@ -67,7 +67,11 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
             self._default = self.get("default")
         return self._default
 
-    def install(self, force=True):
+    def install(self, force=False):
+        """
+         j.servers.threebot.install()
+        """
+
         def need_install():
             for cmd in ["resty", "lua", "sonic", "zdb", "mdbook"]:
                 if not j.core.tools.cmd_installed(cmd):
@@ -76,16 +80,19 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
 
         fallback_ssl_key_path = j.core.tools.text_replace("{DIR_BASE}/cfg/ssl/resty-auto-ssl-fallback.crt")
         if force or need_install() or not j.sal.fs.exists(fallback_ssl_key_path):
-            j.servers.openresty.install()
-            j.builders.db.zdb.install()
-            j.builders.apps.sonic.install()
-            j.builders.apps.mdbook.install()
+            j.servers.openresty.install(reset=force)
+            j.builders.db.zdb.install(reset=force)
+            j.builders.apps.sonic.install(reset=force)
+            j.builders.apps.mdbook.install(reset=force)
+
             self._log_info("install done for threebot server.")
 
     def bcdb_get(self, name, secret="", use_zdb=False):
         return self.default.bcdb_get(name, secret, use_zdb)
 
-    def start(self, background=False, packages=None, reload=False, with_shell=True):
+    def start(
+        self, background=False, packages=None, reload=False, with_shell=True,
+    ):
         """
         kosmos -p 'j.servers.threebot.start(background=True)'
         kosmos -p 'j.servers.threebot.start(background=False,with_shell=False)'

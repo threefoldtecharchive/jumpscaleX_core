@@ -191,6 +191,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
         :param background: if True will start all servers including threebot itself in the background
         :param packages: a list of package paths to load by default
+        :param identity: identity used to initialize the server. must be name of your identity. if None will use default identity
         :type packages: list of str
         ports & paths used for threebotserver
         see: {DIR_BASE}/code/github/threefoldtech/jumpscaleX_core/docs/3Bot/web_environment.md
@@ -259,7 +260,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             for path in packages:
                 # j.debug()
-                j.threebot.packages.zerobot.packagemanager.actors.package_manager.package_add(
+                j.threebot.packages.zerobot.admin.actors.package_manager.package_add(
                     path=path, install=False, reload=False
                 )
 
@@ -305,6 +306,8 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
             LogPane.Show = False
+            identity = j.myidentities.me.tname
+            assert identity
 
             if with_shell:
                 j.shell()  # for now removed otherwise debug does not work
@@ -391,8 +394,8 @@ class ThreeBotServer(j.baseclasses.object_config):
             p = j.tools.threebot_packages.get(name=name)
             p.status = "tostart"  # means we need to start
 
-        requiredpackages = ["zerobot.base", "zerobot.webinterface", "zerobot.admin", "zerobot.alerta"]
-        extrapackages = ["zerobot.myjobs_ui", "zerobot.packagemanager"]
+        requiredpackages = ["zerobot.base", "zerobot.webinterface", "zerobot.admin", "zerobot.github_webhooks"]
+        extrapackages = []
         packages = j.tools.threebot_packages.find()
 
         # check if any of the needed packages is missing

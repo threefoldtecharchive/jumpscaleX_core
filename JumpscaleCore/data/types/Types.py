@@ -23,6 +23,7 @@ class Types(j.baseclasses.object, j.baseclasses.testtools):
             Path,
             Boolean,
             Integer,
+            Int64,
             Float,
             String,
             Bytes,
@@ -111,6 +112,7 @@ class Types(j.baseclasses.object, j.baseclasses.testtools):
         - s, str, string
         - bytes
         - i, int, integer
+        - i64, int64
         - f, float
         - b, bool,boolean
         - tel, mobile

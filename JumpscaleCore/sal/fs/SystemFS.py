@@ -182,6 +182,9 @@ class SystemFS(JSBASE, TESTTOOLS):
         @param deletefirst: bool (Set to True if you want to erase symlinks/folders in the destination that also exist in the source, before copying.)
         @param overwriteFiles: if True will overwrite files, otherwise will not overwrite when destination exists
         """
+
+        # Don't include `build` in here, you will break lua/luarocks builder
+        # check https://github.com/threefoldtech/jumpscaleX_builders/issues/62
         default_ignore_dir = [".egg-info", ".dist-info", "__pycache__"]
         if ignoredir is None:
             ignoredir = []
@@ -1047,11 +1050,13 @@ class SystemFS(JSBASE, TESTTOOLS):
             j.sal.process.execute(cmd)
 
     @path_check(src={"required", "replace", "exists"}, dest={"required", "replace"})
-    def symlinkFilesInDir(self, src, dest, delete=True, includeDirs=False, makeExecutable=False):
+    def symlinkFilesInDir(self, src, dest, delete=True, includeDirs=False, makeExecutable=False, filter=None):
         if includeDirs:
-            items = self.listFilesAndDirsInDir(src, recursive=False, followSymlinks=False, listSymlinks=False)
+            items = self.listFilesAndDirsInDir(
+                src, recursive=False, followSymlinks=False, listSymlinks=False, filter=filter
+            )
         else:
-            items = self.listFilesInDir(src, recursive=False, followSymlinks=True, listSymlinks=True)
+            items = self.listFilesInDir(src, recursive=False, followSymlinks=True, listSymlinks=True, filter=filter)
         for item in items:
             dest2 = "%s/%s" % (dest, self.getBaseName(item))
             dest2 = dest2.replace("//", "/")

@@ -199,6 +199,10 @@ if options.instruct:
 # if options.init:
 #     j.data.nacl.configure(name="default", interactive=True, generate=False)
 
+# import better_exceptions
+
+# better_exceptions.MAX_LENGTH = None
+
 j.application.start("init")
 if len(args) == 1:
     j.application.interactive = True
@@ -213,14 +217,4 @@ if len(args) == 1:
 else:
     j.data.bcdb.system  # needed to make sure we have bcdb running, needed for code completion
     j.application.interactive = True
-    n = j.data.nacl.get(load=False)  # important to make sure private key is loaded
-    if n.load(die=False) is False:
-        j.application.check()
-        # print("ERROR: CANNOT LOAD THE PRIVATE KEY FROM THE FILESYSTEM")
-        # print("")
-        # j.core.myenv.secret_set()
-        # if n.load(die=False) is False:
-        #     print("there is prob something wrong with private key, OH MY GOD, I HOPE YOU STILL HAVE THE WORDS.")
-        #     n.configure()
-
     j.shell(loc=False, locals_=locals(), globals_=globals())

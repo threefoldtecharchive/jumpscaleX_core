@@ -66,85 +66,6 @@ class SSHAgent(j.baseclasses.object, j.baseclasses.testtools):
 
         return self._default_key
 
-    # def keys_pub_get(self):
-    #     """
-    #
-    #     :return: [(pre,key,user)] pre e.g. ssh-rsa , user e.g. info@kkk.com
-    #     """
-    #     rc, out, err = j.core.tools.execute("ssh-add -L")
-    #     res = []
-    #     for line in out.split("\n"):
-    #         if line.strip() == "":
-    #             continue
-    #         line = line.strip()
-    #         pre, key, user = line.split(" ")
-    #         res.append((pre, key, user))
-    #     return res
-    #
-    # def key_pub_get(self, keyname=None):
-    #     """
-    #     Returns Content of public key that is loaded in the agent
-    #
-    #     :param keyname: name of key loaded to agent to get content from, if not specified is default
-    #     :type keyname: str
-    #     :raises RuntimeError: Key not found with given keyname
-    #     :return: Content of public key
-    #     :rtype: str
-    #     """
-    #     if not keyname:
-    #         keyname = j.core.myenv.config["SSH_KEY_DEFAULT"].strip()
-    #     rc, out, err = j.core.tools.execute("ssh-add -L")
-    #     for line in out.split("\n"):
-    #         if line.strip() == "":
-    #             continue
-    #         if keyname:
-    #             if line.endswith(keyname):
-    #                 return line
-    #
-    #     raise j.exceptions.Base("did not find public key")
-
-    #
-    # def _paramiko_keys_get(self):
-    #     import paramiko.agent
-    #
-    #     a = paramiko.agent.Agent()
-    #     return [key for key in a.get_keys()]
-    #
-    # def _paramiko_key_get(self, keyname=None):
-    #     if not keyname:
-    #         keyname = j.core.myenv.sshagent.key_default_name
-    #     for key in self._paramiko_keys_get():
-    #         # ISSUE, is always the same name, there is no way how to figure out which sshkey to use?
-    #         if key.name == keyname:
-    #             # maybe we can get this to work using comparing of the public keys?
-    #             return key
-    #
-    #     raise j.exceptions.Base("could not find key:%s" % keyname)
-
-    # def sign(self, data, keyname=None, hash=True):
-    #     """
-    #     will sign the data with the ssh-agent loaded
-    #     :param data: the data to sign
-    #     :param hash, if True, will use
-    #     :param keyname is the name of the key to use to sign, if not specified will be the default key
-    #     :return:
-    #     """
-    #     if not j.data.types.bytes.check(data):
-    #         data = data.encode()
-    #     self._init()
-    #     import hashlib
-    #
-    #     key = self._paramiko_key_get(keyname)
-    #     data_sha1 = hashlib.sha1(data).digest()
-    #     res = key.sign_ssh_data(data_sha1)
-    #     if hash:
-    #         m = hashlib.sha256()
-    #         m.update(res)
-    #         return m.digest()
-    #     else:
-    #         return res
-    #
-
     def _script_get_sshload(self, keyname=None, duration=3600 * 8):
         """
         kosmos 'j.clients.sshagent._script_get_sshload()'
@@ -152,6 +73,7 @@ class SSHAgent(j.baseclasses.object, j.baseclasses.testtools):
         :param duration:
         :return:
         """
+        # TODO: why is this here????
         DURATION = duration
         if not keyname:
             PRIVKEY = j.clients.sshkey.default.privkey.strip()

@@ -61,7 +61,6 @@ class BCDB(j.baseclasses.object):
         if reset:
             self.reset()
 
-        j.data.nacl.default
         self.dataprocessor_start()
 
         self.check()
@@ -262,7 +261,7 @@ class BCDB(j.baseclasses.object):
                     data = obj._data
                     # print("OBJ._DATA:", data)
                     if encrypt:
-                        data = j.data.nacl.default.encryptSymmetric(data)
+                        data = j.myidentities.encrypt(data)
                         j.sal.fs.writeFile("%s/%s.data.encr" % (pathdata, obj.id), data)
                     else:
                         j.sal.fs.writeFile("%s/%s.data" % (pathdata, obj.id), data)
@@ -277,7 +276,7 @@ class BCDB(j.baseclasses.object):
                         # print(" - %s:%s" % (obj._schema.url, obj.id))
                         dpath_file = "%s/%s.%s" % (pathyaml, obj.id, ext)
                     if encrypt:
-                        C = j.data.nacl.default.encryptSymmetric(C)
+                        C = j.myidentities.encrypt(C)
                         j.sal.fs.writeFile(dpath_file + ".encr", C)
                     else:
                         j.sal.fs.writeFile(dpath_file, C)
@@ -352,7 +351,7 @@ class BCDB(j.baseclasses.object):
                 #     self._log("encr:%s" % item)
                 #     data2 = j.sal.fs.readFile(item, binary=True)
                 #     if is_encrypted:
-                #         data2 = j.data.nacl.default.decryptSymmetric(data2)
+                #         data2 = j.myidentities.decrypt(data2)
                 data2 = j.sal.fs.readFile(path, binary=True)
                 obj = j.data.serializers.jsxdata.loads(data2)
                 # print(f"data decrypted {data}")
@@ -369,7 +368,7 @@ class BCDB(j.baseclasses.object):
                 #         if is_encrypted:
                 #             self._log("decrypting toml:%s" % item)
                 #             data_encr = j.sal.fs.readFile(item, binary=True)
-                #             data_encr = j.data.nacl.default.decryptSymmetric(data_encr)
+                #             data_encr = j.myidentities.decrypt(data_encr)
                 #             datadict = j.data.serializers.toml.loads(data_encr)
                 #         else:
                 #             datadict = j.data.serializers.toml.load(item)
@@ -379,7 +378,7 @@ class BCDB(j.baseclasses.object):
                 #         if is_encrypted:
                 #             self._log("decrypting yaml:%s" % item)
                 #             data_encr = j.sal.fs.readFile(item, binary=True)
-                #             data_encr = j.data.nacl.default.decryptSymmetric(data_encr)
+                #             data_encr = j.myidentities.decrypt(data_encr)
                 #             datadict = j.data.serializers.yaml.loads(data_encr)
                 #         else:
                 #             datadict = j.data.serializers.yaml.load(item)
@@ -868,7 +867,7 @@ class BCDB(j.baseclasses.object):
         else:
             raise j.exceptions.Base("not supported format")
 
-        data = j.data.nacl.default.decryptSymmetric(bdata_encrypted)
+        data = j.myidentities.decrypt(bdata_encrypted)
 
         versionnr = int.from_bytes(data[0:1], byteorder="little")
 
@@ -896,7 +895,7 @@ class BCDB(j.baseclasses.object):
         else:
             raise j.exceptions.Base("not supported format")
 
-        bdata = j.data.nacl.default.decryptSymmetric(bdata_encrypted)
+        bdata = j.myidentities.decrypt(bdata_encrypted)
 
         if return_as_capnp:
             return bdata
@@ -908,8 +907,10 @@ class BCDB(j.baseclasses.object):
             model = self.model_get(schema=schema)
             obj = j.data.serializers.jsxdata.loads(bdata, model=model)
             if schema:
-                # if not obj._schema == schema:
-                #     j.shell()
+                if not obj._schema == schema:
+                    j.debug()
+                    obj = j.data.serializers.jsxdata.loads(bdata, model=model)
+                    j.shell()
                 assert obj._schema == schema
             obj.nid = nid
             if not obj.id and id:

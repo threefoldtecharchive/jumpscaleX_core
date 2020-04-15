@@ -3,6 +3,9 @@ from Jumpscale import j
 import pprint
 import click
 
+# needs to become master !
+j.data.bcdb._master_set(True)
+
 
 @click.group()
 def cli():
@@ -10,30 +13,33 @@ def cli():
 
 
 HELP = """
-
 threebot tool
 """
+
 
 @click.command()
 def start():
     j.servers.threebot.start(background=True)
-    print (" - Server started ok")
+    print(" - Server started ok")
+
 
 @click.command()
 def stop():
     j.servers.threebot.default.stop()
-    print (" - Server stopped ok")
+    print(" - Server stopped ok")
+
 
 @click.command()
 def restart():
     j.servers.threebot.default.stop()
-    print (" - Server stopped ok")
+    print(" - Server stopped ok")
+    j.servers.threebot.default.start()
+    print(" - Server started ok")
 
 
 @click.command()
 def help():
     print(HELP)
-
 
 
 cli.add_command(start)

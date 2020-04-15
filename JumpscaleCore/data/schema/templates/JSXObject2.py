@@ -8,8 +8,11 @@ class JSXObject2(j.data.schema._JSXObjectClassRoot):
 class JSXObject2(j.data.schema._JSXObjectClassSub):
 {% endif %}
 
-    __slots__ = ["id","_model","_capnp_obj_","_deserialized_items","_acl_id","_acl",
-                        {% for prop in obj.properties %}"_{{prop.name}}",{% endfor %}]
+    __slots__ = ["id","_model","_capnp_obj_","_deserialized_items","acl_id","_acl","_protected",
+                        "_deserialized_items","_changed_deserialized_items","_schema","_capnp_obj_",
+                        "_model","_root","nid","_parent","_children","_properties_","_methods_",
+                        "_autosave","_schema"]
+    __props__ = [{% for prop in obj.properties %}"{{prop.name}}",{% endfor %}]
 
     {# generate the properties #}
     {% for prop in obj.properties %}
@@ -59,6 +62,8 @@ class JSXObject2(j.data.schema._JSXObjectClassSub):
             {% if prop.is_complex_type %}
             self._deserialized_items["{{prop.name}}"].__changed = True
             {% endif %}
+            if self._ignore_model_autosave:
+                return
             if self._model:
                 self._model._triggers_call(obj=self, action="change", propertyname="{{prop.name}}")
             if self._root._autosave:  #need to check always at lowest level
@@ -126,7 +131,6 @@ class JSXObject2(j.data.schema._JSXObjectClassSub):
             ddict["{{prop.name_camel}}"] = data
         {% endfor %}
 
-
         try:
             self._capnp_obj_ = self._capnp_schema.new_message(**ddict)
         #KjException
@@ -148,6 +152,15 @@ class JSXObject2(j.data.schema._JSXObjectClassSub):
         {% for prop in obj.properties %}
         {% if prop.is_jsxobject or prop.is_list %}
         self.{{prop.name}}.serialize()
+        {% endif %}
+        {% endfor %}
+        self._deserialized_items = {}
+        self._changed_deserialized_items=False
+
+    def _reset(self):
+        {% for prop in obj.properties %}
+        {% if prop.is_jsxobject or prop.is_list %}
+        self.{{prop.name}}._reset()
         {% endif %}
         {% endfor %}
         self._deserialized_items = {}

@@ -1,0 +1,4 @@
+ptpython==2.0.4
+PyInstaller==3.6
+pudb
+jedi

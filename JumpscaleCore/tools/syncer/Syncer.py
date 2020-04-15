@@ -81,7 +81,7 @@ class Syncer(j.baseclasses.object_config):
         for name in self.sshclient_names:
             self.sshclients_add(name)
 
-        self.IGNOREDIR = [".git", ".github"]
+        self.IGNOREDIR = [".git", ".github", "build", "dist"]
         self._executor = None
 
         self._log_info("syncer started")

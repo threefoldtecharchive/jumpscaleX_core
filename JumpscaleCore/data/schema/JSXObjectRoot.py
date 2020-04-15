@@ -113,9 +113,16 @@ class JSXObjectRoot(JSXObjectBase):
                 raise j.exceptions.Base("object _readonly, cannot be saved.\n%s" % self)
             if not self._model.__class__.__name__ == "ACL":
                 self._model.delete(self)
-            return self
 
-        raise j.exceptions.Base("cannot save, model not known")
+        self._capnp_obj_ = self._capnp_schema.new_message()
+
+        self._reset()  # remove all dangling children & _deserialized_items
+
+        self._capnp_obj
+        self._deserialized_items = {}
+        self._changed_deserialized_items = False
+        self._defaults_set()
+        self.id = None
 
     def stop(self):
         # will be called when BCDB stops, if changes will save

@@ -235,11 +235,11 @@ class Console(j.baseclasses.object):  #!!!CONSOLE!!!
         """
         clear()
 
-    def askString(self, question, defaultparam="", regex=None, retry=-1, validate=None):
+    def askString(self, question, default="", regex=None, retry=-1, validate=None):
         """Get a string response on a question
 
         @param question: Question to respond to
-        @param defaultparam: Default response on the question if response not passed
+        @param default: Default response on the question if response not passed
         @param regex: Regex to match in the response
         @param retry: Integer counter to retry ask for respone on the question
         @param validate: Function to validate provided value
@@ -251,8 +251,8 @@ class Console(j.baseclasses.object):  #!!!CONSOLE!!!
         if validate and not isinstance(validate, collections.Callable):
             raise j.exceptions.Value("The validate argument should be a callable")
         response = ""
-        if not defaultparam == "" and defaultparam:
-            question += " [%s]" % defaultparam
+        if not default == "" and default:
+            question += " [%s]" % default
         question += ": "
         retryCount = retry
         while retryCount != 0:
@@ -260,8 +260,8 @@ class Console(j.baseclasses.object):  #!!!CONSOLE!!!
                 response = input(question).rstrip()
             else:
                 response = input(question).rstrip()
-            if response == "" and not defaultparam == "" and defaultparam:
-                return defaultparam
+            if response == "" and not default == "" and default:
+                return default
             if (not regex or re.match(regex, response)) and (not validate or validate(response)):
                 return response
             else:
@@ -293,11 +293,11 @@ class Console(j.baseclasses.object):  #!!!CONSOLE!!!
             question=question, confirm=confirm, regex=regex, retry=retry, validate=validate
         )
 
-    def askInteger(self, question, defaultValue=None, minValue=None, maxValue=None, retry=-1, validate=None):
+    def askInteger(self, question, default=None, minValue=None, maxValue=None, retry=-1, validate=None, property=None):
         """Get an integer response on asked question
 
         @param question: Question need to get response on
-        @param defaultparam: default response on the question if response not passed
+        @param default: default response on the question if response not passed
         @param minValue: minimum accepted value for that integer
         @param maxValue: maximum accepted value for that integer
         @param retry: int counter to retry ask for respone on the question
@@ -315,9 +315,9 @@ class Console(j.baseclasses.object):  #!!!CONSOLE!!!
         elif maxValue is not None:
             question += " (max. %d)" % maxValue
 
-        if defaultValue is not None:
-            defaultValue = int(defaultValue)
-            question += " [%d]" % defaultValue
+        if default is not None:
+            default = int(default)
+            question += " [%d]" % default
         question += ": "
 
         retryCount = retry
@@ -327,8 +327,8 @@ class Console(j.baseclasses.object):  #!!!CONSOLE!!!
                 response = input(question).rstrip(chr(13))
             else:
                 response = input(question).rstrip(chr(13))
-            if response == "" and defaultValue is not None:
-                return defaultValue
+            if response == "" and default is not None:
+                return default
             if (re.match("^-?[0-9]+$", response.strip())) and (not validate or validate(response)):
                 responseInt = int(response.strip())
                 if (minValue is None or responseInt >= minValue) and (maxValue is None or responseInt <= maxValue):

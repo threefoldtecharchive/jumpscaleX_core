@@ -99,6 +99,58 @@ class Text(object):
         converted_string = re.sub("([^/_.])([A-Z][a-z]+)", r"\1_\2", text)
         return re.sub("([a-z0-9])([A-Z])", r"\1_\2", converted_string).lower()
 
+    def format_item(self, item):
+        if item is None:
+            item = ""
+            return item
+        if float(item) == 0:
+            item = ""
+            return item
+        elif isinstance(item, str):
+            return item
+
+        if isinstance(item, int) or float(item) == int(item):
+            item = int(item)
+
+        if item < -10000000 or item > 10000000:
+            item = int(item / 1000000)
+            item = f"{item:,}m"
+            return item
+        if item < -4000000 or item > 4000000:
+            item = round(item / 1000000, 1)
+            item = f"{item:,}m"
+            return item
+        if item < -10000 or item > 10000:
+            item = int(item / 1000)
+            item = f"{item:,}k"
+            return item
+        if item < -4000 or item > 4000:
+            item = round(item / 1000, 1)
+            item = f"{item:,}k"
+            return item
+        if item < -1000 or item > 1000:
+            item = int(item)
+            item = f"{item:,}"
+            return item
+
+        if isinstance(item, int):
+            return item
+
+        # now its a float
+        item = float(item)
+        pre = ""
+        if item < 0:
+            pre = "-"
+            item = -item
+        if float(item) < 1:
+            item = str(round(float(item), 2))
+        elif float(item) < 9:
+            item = str(round(float(item), 1))
+        else:
+            item = str(int(item))
+        item = "%s%s" % (pre, item)
+        return item
+
     def format_list(self, values):
         """
         helper function to convert to text
@@ -110,64 +162,7 @@ class Text(object):
         r = []
 
         for item in values:
-            if item is None:
-                item = ""
-                r.append(item)
-                continue
-            if float(item) == 0:
-                item = ""
-                r.append(item)
-                continue
-            elif isinstance(item, str):
-                r.append(item)
-                continue
-
-            if isinstance(item, int) or float(item) == int(item):
-                item = int(item)
-
-            if item < -10000000 or item > 10000000:
-                item = int(item / 1000000)
-                item = f"{item:,}m"
-                r.append(item)
-                continue
-            if item < -4000000 or item > 4000000:
-                item = round(item / 1000000, 1)
-                item = f"{item:,}m"
-                r.append(item)
-                continue
-            if item < -10000 or item > 10000:
-                item = int(item / 1000)
-                item = f"{item:,}k"
-                r.append(item)
-                continue
-            if item < -4000 or item > 4000:
-                item = round(item / 1000, 1)
-                item = f"{item:,}k"
-                r.append(item)
-                continue
-            if item < -1000 or item > 1000:
-                item = int(item)
-                item = f"{item:,}"
-                r.append(item)
-                continue
-
-            if isinstance(item, int):
-                r.append(str(item))
-                continue
-
-            # now its a float
-            item = float(item)
-            pre = ""
-            if item < 0:
-                pre = "-"
-                item = -item
-            if float(item) < 1:
-                item = str(round(float(item), 2))
-            elif float(item) < 9:
-                item = str(round(float(item), 1))
-            else:
-                item = str(int(item))
-            item = "%s%s" % (pre, item)
+            item = self.format_item(item)
             r.append(item)
 
         return r

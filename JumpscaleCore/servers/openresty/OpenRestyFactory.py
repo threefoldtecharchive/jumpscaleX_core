@@ -32,9 +32,11 @@ class OpenRestyFactory(j.baseclasses.object_config_collection_testtools, TESTTOO
         """
         if reset:
             j.sal.fs.remove(j.core.tools.text_replace("{DIR_BASE}/var/web"))
-        j.builders.web.openresty.install()
-        j.builders.runtimes.lua.install()
-        j.builders.runtimes.lua.install_certificates()
+        # LETS PUT THE RIGHT ORDER IN HERE, in THE BUILDERS ITS KIND OF NOT WELL DONE
+        j.builders.web.openresty.install(reset=reset)
+        # don't convert to build, we need to have luarocks packages at this point..
+        j.builders.runtimes.lua.install(reset=reset)  # will install openresty !
+        j.builders.runtimes.lua.install_certificates(reset=reset)
 
     def test(self, name=None, install=True):
         """

@@ -327,7 +327,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
             data3 = threebot_client.encrypt_for_threebot(data2)
             tid = threebot_client.tid
         else:
-            tid = j.tools.threebot.me.default.tid
+            tid = j.myidentities.default.tid
             if pubkey_hex:
                 assert len(pubkey_hex) == 64
                 pubkey = PublicKey(binascii.unhexlify(pubkey_hex))
@@ -426,7 +426,6 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
 
         return nacl1, nacl2, threebot1, threebot2
 
-
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/549")
     def test_register_nacl_threebots(self):
 
@@ -458,7 +457,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
     def test(self, name=""):
         """
 
-        this test needs the j.tools.threebot.me to exist (registration done)
+        this test needs the j.myidentities to exist (registration done)
 
         following will run all tests
 

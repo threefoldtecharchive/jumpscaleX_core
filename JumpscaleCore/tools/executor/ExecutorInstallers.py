@@ -90,9 +90,9 @@ class ExecutorInstallers(j.baseclasses.object):
         script = """
         apt-get update
         apt-get install -y mc wget python3 git tmux
-        set +ex
+        set +e
         apt-get install python3-distutils -y
-        set -ex
+        set -e
         apt-get install python3-psutil -y
         apt-get install -y curl rsync unzip
         locale-gen --purge en_US.UTF-8
