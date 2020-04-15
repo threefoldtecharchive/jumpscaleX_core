@@ -38,7 +38,18 @@ class SDKContainers:
         docker = self.IT.DockerFactory.container_delete(name=name)
         self.container = None
 
-    def get(self, identity=None, name=None, delete=False, mount=True, email=None, words=None, secret=None, pull=False):
+    def get(
+        self,
+        identity=None,
+        name=None,
+        delete=False,
+        mount=True,
+        email=None,
+        words=None,
+        secret=None,
+        pull=False,
+        code_update_force=False,
+    ):
         """
         """
         name = self._name(name)
@@ -74,7 +85,7 @@ class SDKContainers:
 
             installer = self.IT.JumpscaleInstaller()
             print(" - make sure jumpscale code is on local filesystem.")
-            installer.repos_get(pull=pull, branch=self.core.branch)
+            installer.repos_get(pull=pull, branch=self.core.branch, reset=code_update_force)
 
             if not identity.endswith(".test"):
                 assert self.args.identity

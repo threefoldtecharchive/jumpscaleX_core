@@ -4794,6 +4794,7 @@ class JumpscaleInstaller:
         jsinit=True,
         email=None,
         words=None,
+        code_update_force=False,
     ):
 
         MyEnv.check_platform()
@@ -4806,7 +4807,7 @@ class JumpscaleInstaller:
 
         Tools.file_touch(os.path.join(MyEnv.config["DIR_BASE"], "lib/jumpscale/__init__.py"))
 
-        self.repos_get(pull=gitpull, branch=branch)
+        self.repos_get(pull=gitpull, branch=branch, reset=code_update_force)
         self.repos_link()
         self.cmds_link()
 
@@ -4928,9 +4929,15 @@ class JumpscaleInstaller:
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
 
+        done = []
+
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
+            if GITURL in done:
+                continue
+
             if branch:
+                # dont understand this code, looks bad TODO:
                 C = f"""git ls-remote --heads {GITURL} {branch}"""
                 _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True, interactive=False)
                 if out:
@@ -4940,7 +4947,9 @@ class JumpscaleInstaller:
                 dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
             except Exception as e:
                 r = Tools.code_git_rewrite_url(url=GITURL, ssh=False)
-                Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull)
+                Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
+
+            done.append(GITURL)
 
         if prebuilt:
             self.prebuilt_copy()

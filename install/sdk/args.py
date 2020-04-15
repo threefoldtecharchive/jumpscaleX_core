@@ -50,7 +50,7 @@ def email(val=""):
 
 def words(val=""):
     """
-    words as used for the encryption key
+    words as used for the encryption key retrieved from 3bot connect app
     """
     if not val:
         if args.words:
