@@ -50,6 +50,7 @@ def install(
     @param testnr: if not Null the identity will become: $your3botname$testnr.test,
         secret for that container will be test
         email will be also predefined, and you will become admin automatically in the 3bot
+        words should be retrieved from 3bot connect app to be used for encryption
 
     """
     delete = core.IT.Tools.bool(delete)
@@ -196,7 +197,7 @@ def threebot(delete=False, identity=None, email=None, words=None, restart=False,
 
     - identity is your 3bot unique name (only needed to specify once)
     - email is your email (only needed to specify once)
-    - if you already have your secret key, specify the words of your key
+    - if you already have your secret key, specify the words of your key retrieved from 3bot connect app
 
     when 3bot becomes unresponsive you can always ask a restart on server, the container will not be restarted
 
