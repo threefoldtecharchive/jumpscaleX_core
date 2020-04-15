@@ -2659,10 +2659,10 @@ class Tools:
                     script = Tools._script_process_jumpscale(
                         script=script, env=env, debug=debug, interactive=interactive
                     )
-                    cmd = "source {DIR_BASE}/env.sh && python3 %s" % dest
+                    cmd = "source {DIR_BASE}/env.sh && python3 %s" % dest if not "win32" in MyEnv.platform() else "source /sandbox/env.sh && python3 %s" % dest
                 else:
                     script = Tools._script_process_python(script, env=env)
-                    cmd = "source {DIR_BASE}/env.sh && python3 %s" % dest
+                    cmd = "source {DIR_BASE}/env.sh && python3 %s" % dest if not "win32" in MyEnv.platform() else "source /sandbox/env.sh && python3 %s" % dest
             else:
                 dest = "/tmp/script_%s.sh" % name
                 if die:
@@ -2720,7 +2720,7 @@ class Tools:
                 command = Tools.text_replace(command, args=args).rstrip("\n").replace("\n", "&&")
             if windows_interactive:
                 try:
-                    os.system(command)
+                    subprocess.call(command, shell=True)
                 except:
                     print("Process Completed!")
                 return
@@ -5725,7 +5725,7 @@ class DockerContainer:
         )
 
     def kosmos(self):
-        self.execute("j.shell()", interactive=True, jumpscale=True)
+        self.execute("j.shell()", interactive=True, windows_interactive=True, jumpscale=True)
 
     def stop(self):
         if self.container_running:
