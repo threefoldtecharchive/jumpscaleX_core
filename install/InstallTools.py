@@ -6924,9 +6924,9 @@ class ExecutorSSH:
         Tools._cmd_check(cmd)
 
         if interactive:
-            cmd2 = "ssh -oStrictHostKeyChecking=no -t root@%s -A -p %s '%s'" % (self.addr, self.port, cmd)
+            cmd2 = 'ssh -oStrictHostKeyChecking=no -t root@%s -A -p %s "%s"' % (self.addr, self.port, cmd)
         else:
-            cmd2 = "ssh -oStrictHostKeyChecking=no root@%s -A -p %s '%s'" % (self.addr, self.port, cmd)
+            cmd2 = 'ssh -oStrictHostKeyChecking=no root@%s -A -p %s "%s"' % (self.addr, self.port, cmd)
         if not "win32" in MyEnv.platform():
             r = Tools._execute(
                 cmd2,
