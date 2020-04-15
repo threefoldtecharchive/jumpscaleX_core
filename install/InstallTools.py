@@ -3354,9 +3354,11 @@ class Tools:
         repo_url = url % (account, repo)
         fallback_url = "https://github.com/%s/%s.git" % (account, repo)
         exists, foundgit, dontpull, ACCOUNT_DIR, REPO_DIR = Tools._code_location_get(account=account, repo=repo)
-        if exists and reset:
-            # need to remove because could be left over from previous sync operations
-            Tools.delete(REPO_DIR)
+
+        # if exists and reset and not pull:
+        #     # need to remove because could be left over from previous sync operations
+        #     # only reset if no pull
+        #     Tools.delete(REPO_DIR)
 
         args = {}
         args["ACCOUNT_DIR"] = ACCOUNT_DIR
@@ -3471,7 +3473,6 @@ class Tools:
                 if pull:
                     if reset:
                         C = """
-                        set -x
                         cd {REPO_DIR}
                         git checkout . --force
                         """
@@ -3495,7 +3496,6 @@ class Tools:
                             else:
                                 raise Tools.exceptions.Input("found changes, do not want to commit")
                             C = """
-                            set -x
                             cd {REPO_DIR}
                             git add . -A
                             git commit -m "{MESSAGE}"
@@ -3503,7 +3503,6 @@ class Tools:
                             Tools.log("get code & commit [git]: %s" % repo)
                             Tools.execute(C, args=args, die_if_args_left=True, interactive=True)
                     C = """
-                    set -x
                     cd {REPO_DIR}
                     git pull
                     """
