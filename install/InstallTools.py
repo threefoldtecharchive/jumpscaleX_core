@@ -2659,10 +2659,18 @@ class Tools:
                     script = Tools._script_process_jumpscale(
                         script=script, env=env, debug=debug, interactive=interactive
                     )
-                    cmd = "source {DIR_BASE}/env.sh && python3 %s" % dest if not "win32" in MyEnv.platform() else "source /sandbox/env.sh && python3 %s" % dest
+                    cmd = (
+                        "source {DIR_BASE}/env.sh && python3 %s" % dest
+                        if not "win32" in MyEnv.platform()
+                        else "source /sandbox/env.sh && python3 %s" % dest
+                    )
                 else:
                     script = Tools._script_process_python(script, env=env)
-                    cmd = "source {DIR_BASE}/env.sh && python3 %s" % dest if not "win32" in MyEnv.platform() else "source /sandbox/env.sh && python3 %s" % dest
+                    cmd = (
+                        "source {DIR_BASE}/env.sh && python3 %s" % dest
+                        if not "win32" in MyEnv.platform()
+                        else "source /sandbox/env.sh && python3 %s" % dest
+                    )
             else:
                 dest = "/tmp/script_%s.sh" % name
                 if die:
