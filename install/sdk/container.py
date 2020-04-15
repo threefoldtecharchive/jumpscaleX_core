@@ -37,6 +37,7 @@ def install(
     server=False,
     zerotier=False,
     pull=False,
+    code_update_force=False,
 ):
     """
     create the 3bot container and install jumpscale inside
@@ -56,13 +57,15 @@ def install(
     delete = core.IT.Tools.bool(delete)
     mount = core.IT.Tools.bool(mount)
 
+    if code_update_force:
+        pull = True
+
     if email:
         args.email = email
     if words:
         args.words = words
 
     if testnr:
-        # core.IT.Tools.shell()
         testnr = int(testnr)
         identity_you = _containers._identity_ask(identity)
         email = f"test{testnr}@{identity_you}"
@@ -70,7 +73,15 @@ def install(
         identity = f"{identity_you}{testnr}.test"
         name = f"test{testnr}"
 
-    c = _containers.get(identity=identity, name=name, delete=delete, mount=mount, email=email, pull=pull)
+    c = _containers.get(
+        identity=identity,
+        name=name,
+        delete=delete,
+        mount=mount,
+        email=email,
+        pull=pull,
+        code_update_force=code_update_force,
+    )
 
     if zerotier:
         addr = c.zerotier_connect()
