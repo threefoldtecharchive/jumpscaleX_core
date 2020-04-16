@@ -78,6 +78,7 @@ def install(
         email=email,
         pull=pull,
         code_update_force=code_update_force,
+        words=words,
     )
 
     if zerotier:
