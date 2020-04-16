@@ -2659,18 +2659,10 @@ class Tools:
                     script = Tools._script_process_jumpscale(
                         script=script, env=env, debug=debug, interactive=interactive
                     )
-                    cmd = (
-                        "source {DIR_BASE}/env.sh && python3 %s" % dest
-                        if not MyEnv.platform_is_windows
-                        else "source /sandbox/env.sh && python3 %s" % dest
-                    )
+                    cmd = "source {DIR_BASE}/env.sh && python3 %s" % dest
                 else:
                     script = Tools._script_process_python(script, env=env)
-                    cmd = (
-                        "source {DIR_BASE}/env.sh && python3 %s" % dest
-                        if not MyEnv.platform_is_windows
-                        else "source /sandbox/env.sh && python3 %s" % dest
-                    )
+                    cmd = "source {DIR_BASE}/env.sh && python3 %s" % dest
             else:
                 dest = "/tmp/script_%s.sh" % name
                 if die:
@@ -2727,15 +2719,12 @@ class Tools:
             if replace:
                 command = Tools.text_replace(command, args=args).rstrip("\n").replace("\n", "&&")
             if windows_interactive:
-                try:
-                    subprocess.call(command, shell=True)
-                except:
-                    print("Process Completed!")
+                subprocess.call(command, shell=True)
                 return
             else:
                 res = Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=useShell)
                 out = res.communicate()[0].decode()
-                rc = res.returncode or 0
+                rc = res.wait()
                 if rc > 0 and die:
                     raise Tools.exceptions.RuntimeError(f"Error in executing {command}: Traceback:\n{out}")
                 return rc, out, None
@@ -3388,21 +3377,13 @@ class Tools:
 
             if exists is False:
                 try:
-                    C = """
-                    set -e
-                    mkdir -p {ACCOUNT_DIR}
-                    """
                     Tools.log("get code [git] (first time): %s" % repo)
-                    if MyEnv.platform_is_windows:
-                        Tools.execute("mkdir -p {ACCOUNT_DIR}", args=args, showout=True, die_if_args_left=True)
-                    else:
-                        Tools.execute(C, args=args, showout=True, die_if_args_left=True)
+                    if not Tools.exists(ACCOUNT_DIR):
+                        os.makedirs(ACCOUNT_DIR)
                     C = """
-                    cd {ACCOUNT_DIR}
-                    git clone {URL} -b {BRANCH}
-                    cd {NAME}
+                    git -C {ACCOUNT_DIR} clone {URL} -b {BRANCH}
                     """
-                    rc, out, err = Tools.execute(
+                    Tools.execute(
                         C,
                         args=args,
                         die=True,
@@ -3412,52 +3393,27 @@ class Tools:
                         errormsg="Could not clone %s" % repo_url,
                         die_if_args_left=True,
                     )
+
                 except Exception:
-                    C = """
-                    mkdir -p {ACCOUNT_DIR}
-                    """
                     Tools.log("get code [https] (second time): %s" % repo)
-                    if MyEnv.platform_is_windows:
-                        if not Tools.exists(ACCOUNT_DIR):
-                            Tools.execute("mkdir {ACCOUNT_DIR}", args=args, showout=True, die_if_args_left=True)
-                    else:
-                        Tools.execute(C, args=args, showout=True, die_if_args_left=True)
-                    C = """
-                    cd {ACCOUNT_DIR}
-                    git clone {FALLBACK_URL} -b {BRANCH}
-                    cd {NAME}
-                    """
-                    # FOR WINDOWS ONLY
-                    if MyEnv.platform_is_windows:
-                        C = """
-                        git -C {ACCOUNT_DIR} clone {FALLBACK_URL} -b {BRANCH}
-                        """
-                        try:
-                            rc, out, err = Tools.execute(
-                                C,
-                                args=args,
-                                die=True,
-                                showout=True,
-                                interactive=True,
-                                retry=4,
-                                errormsg="Could not clone %s" % repo_url,
-                                die_if_args_left=True,
-                            )
-                        except Exception:
-                            C = """
-                            git -C {ACCOUNT_DIR} clone {FALLBACK_URL}
-                            """
-                            rc, out, err = Tools.execute(
-                                C,
-                                args=args,
-                                die=True,
-                                showout=True,
-                                interactive=True,
-                                retry=4,
-                                errormsg="Could not clone %s" % repo_url,
-                                die_if_args_left=True,
-                            )
-                    else:
+                    if not Tools.exists(ACCOUNT_DIR):
+                        os.makedirs(ACCOUNT_DIR)
+                    C = "git -C {ACCOUNT_DIR} clone {FALLBACK_URL} -b {BRANCH}"
+
+                    try:
+                        rc, out, err = Tools.execute(
+                            C,
+                            args=args,
+                            die=True,
+                            showout=True,
+                            interactive=True,
+                            retry=4,
+                            errormsg="Could not clone %s" % repo_url,
+                            die_if_args_left=True,
+                        )
+                    except Exception:
+                        # try with default branch if doesn't exist
+                        C = "git -C {ACCOUNT_DIR} clone {FALLBACK_URL}"
                         rc, out, err = Tools.execute(
                             C,
                             args=args,
@@ -5032,6 +4988,11 @@ class DockerFactory:
                     if name_found != name and name_found.strip().lower() not in ["shared"]:
                         DockerContainer(name_found)
             else:
+                _, out, _ = Tools.execute("docker -v")
+                if "Docker" not in out:
+                    raise Tools.exceptions.RuntimeError("""
+                        Docker is not installed or running please check: https://docs.docker.com/docker-for-windows/install/
+                    """)
                 MyEnv.init()
                 DockerFactory._init = True
 
@@ -5081,12 +5042,16 @@ class DockerFactory:
 
     @staticmethod
     def containers_running():
+        # IMPORTANT use single quotes in the outer and double in between
+        # Windows needs " not '
         names = Tools.execute('docker ps --format="{{json .Names}}"', showout=False, replace=False)[1].split("\n")
         names = [i.strip("\"'") for i in names if i.strip() != ""]
         return names
 
     @staticmethod
     def containers_names():
+        # IMPORTANT use single quotes in the outer and double in between
+        # Windows needs " not '
         names = Tools.execute('docker container ls -a --format="{{json .Names}}"', showout=False, replace=False)[
             1
         ].split("\n")
@@ -5112,7 +5077,9 @@ class DockerFactory:
 
     @staticmethod
     def image_names():
-        names = Tools.execute("docker images --format='{{.Repository}}:{{.Tag}}'", showout=False, replace=False)[
+        # IMPORTANT use single quotes in the outer and double in between
+        # Windows needs " not '
+        names = Tools.execute('docker images --format="{{.Repository}}:{{.Tag}}"', showout=False, replace=False)[
             1
         ].split("\n")
         res = []
@@ -5154,10 +5121,12 @@ class DockerFactory:
             d.delete()
 
         # will get all images based on id
-        names = Tools.execute("docker images --format='{{.ID}}'", showout=False, replace=False)[1].split("\n")
+        # IMPORTANT use single quotes in the outer and double in between
+        # Windows needs " not '
+        names = Tools.execute('docker images --format="{{.ID}}"', showout=False, replace=False)[1].split("\n")
         for image_id in names:
             if image_id:
-                Tools.execute("docker rmi -f %s" % image_id)
+                Tools.execute("""docker rmi -f %s""" % image_id)
 
         Tools.delete(Tools.text_replace("{DIR_BASE}/var/containers"))
 
@@ -5608,15 +5577,14 @@ class DockerContainer:
             # get our own loaded ssh pub keys into the container
             if MyEnv.platform_is_windows:
                 path = f"{MyEnv._homedir_get()}\.ssh\id_rsa.pub"
+                if not Tools.exists(path):
+                    raise Tools.exceptions.Input(f"Please make sure your ssh-key is existed in {path}")
                 with open(path) as ssh_key_file:
                     SSHKEYS = ssh_key_file.read().strip("\n")
             else:
                 SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
             if SSHKEYS.strip() != "":
-                if MyEnv.platform_is_windows:
-                    self.dexec("echo %s > /root/.ssh/authorized_keys" % SSHKEYS, showout=False)
-                else:
-                    self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS, showout=False)
+                self.dexec("echo %s > /root/.ssh/authorized_keys" % SSHKEYS, showout=False)
 
             if not MyEnv.platform_is_windows:
                 Tools.execute(
@@ -5688,6 +5656,9 @@ class DockerContainer:
     def dexec(self, cmd, interactive=False, die=True, showout=True):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
+        
+        # IMPORTANT use single quotes in the outer and double in between
+        # Windows needs " not '
         if interactive:
             cmd2 = 'docker exec -ti %s bash -c "%s"' % (self.name, cmd)
         else:
@@ -6568,7 +6539,7 @@ class ExecutorSSH:
         self._config = {}
         self.readonly = False
         self.CURDIR = ""
-        self._data_path = "/var/executor_data" if not MyEnv.platform_is_windows else "/sandbox/var/executor_data"
+        self._data_path = "/var/executor_data"
         self._init3()
 
     def reset(self):
@@ -6914,6 +6885,7 @@ class ExecutorSSH:
             cmd2 = 'ssh -oStrictHostKeyChecking=no -t root@%s -A -p %s "%s"' % (self.addr, self.port, cmd)
         else:
             cmd2 = 'ssh -oStrictHostKeyChecking=no root@%s -A -p %s "%s"' % (self.addr, self.port, cmd)
+        
         if not MyEnv.platform_is_windows:
             r = Tools._execute(
                 cmd2,
@@ -6935,7 +6907,7 @@ class ExecutorSSH:
                 original_command=original_command,
                 windows_interactive=windows_interactive,
             )
-
+            
         if tempfile:
             Tools.delete(tempfile)
         return r
