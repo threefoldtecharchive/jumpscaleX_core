@@ -71,19 +71,7 @@ class SDKContainers:
             name=name, image=self.image, start=True, delete=delete, mount=mount, pull=pull
         )
 
-        config_path = f"{self.IT.MyEnv._basedir_get()}/cfg/.configured"
-
-        # windows only
-        windows_config_exists = False
-        if self.IT.MyEnv.platform_is_windows:
-            config_path = f"/sandbox/cfg/.configured"
-            win_config_path = f"{self.IT.MyEnv._basedir_get()}/cfg/.configured"
-            if self.IT.Tools.exists(win_config_path):
-                windows_config_exists = True
-
-        windows_ok = self.IT.MyEnv.platform_is_windows and windows_config_exists
-
-        if not windows_ok or not docker.executor.exists(config_path):
+        if not docker.executor.exists("/sandbox/cfg/.configured"):
 
             installer = self.IT.JumpscaleInstaller()
             print(" - make sure jumpscale code is on local filesystem.")
@@ -109,11 +97,8 @@ class SDKContainers:
             docker.install_jumpscale(
                 force=False, reset=False, secret=secret, identity=identity, email=email, words=words,
             )
-            if not self.IT.MyEnv.platform_is_windows:
-                docker.executor.file_write(f"{self.IT.MyEnv._basedir_get()}/cfg/.configured", "")
-            else:
-                self.IT.Tools.file_write(f"{self.IT.MyEnv._basedir_get()}/cfg/.configured", "")
-                docker.executor.file_write(f"/sandbox/cfg/.configured", "")
+
+            docker.executor.file_write(f"/sandbox/cfg/.configured", "")
 
         self.container = docker
         return docker
