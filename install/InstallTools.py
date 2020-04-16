@@ -4990,9 +4990,11 @@ class DockerFactory:
             else:
                 _, out, _ = Tools.execute("docker -v")
                 if "Docker" not in out:
-                    raise Tools.exceptions.RuntimeError("""
+                    raise Tools.exceptions.RuntimeError(
+                        """
                         Docker is not installed or running please check: https://docs.docker.com/docker-for-windows/install/
-                    """)
+                    """
+                    )
                 MyEnv.init()
                 DockerFactory._init = True
 
@@ -5656,7 +5658,7 @@ class DockerContainer:
     def dexec(self, cmd, interactive=False, die=True, showout=True):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
-        
+
         # IMPORTANT use single quotes in the outer and double in between
         # Windows needs " not '
         if interactive:
@@ -6885,7 +6887,7 @@ class ExecutorSSH:
             cmd2 = 'ssh -oStrictHostKeyChecking=no -t root@%s -A -p %s "%s"' % (self.addr, self.port, cmd)
         else:
             cmd2 = 'ssh -oStrictHostKeyChecking=no root@%s -A -p %s "%s"' % (self.addr, self.port, cmd)
-        
+
         if not MyEnv.platform_is_windows:
             r = Tools._execute(
                 cmd2,
@@ -6907,7 +6909,7 @@ class ExecutorSSH:
                 original_command=original_command,
                 windows_interactive=windows_interactive,
             )
-            
+
         if tempfile:
             Tools.delete(tempfile)
         return r
