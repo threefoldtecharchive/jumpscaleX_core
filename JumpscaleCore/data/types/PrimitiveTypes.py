@@ -495,7 +495,7 @@ class Int64(TypeBaseClass):
         return isinstance(value, int)
 
     def toHR(self, v):
-        if int(v) == 2147483647:
+        if int(v) == 9223372036854775807:
             return "-"  # means not set yet
         return "{:,}".format(self.clean(v))
 
