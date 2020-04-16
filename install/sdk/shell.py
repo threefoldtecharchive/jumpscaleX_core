@@ -39,6 +39,10 @@ __name__ = "<sdk>"
 HIDDEN_PREFIXES = ("_", "__")
 
 
+def print_error(error):
+    print_formatted_text(HTML("<ansired>{}</ansired>".format(cgi.html.escape(str(error)))))
+
+
 def filter_completions_on_prefix(completions, prefix=None, expert=False):
     for completion in completions:
         text = completion.text
@@ -385,7 +389,7 @@ def ptconfig(repl, expert=False):
                 try:
                     result = eval(code, self.get_globals(), self.get_locals())
                 except (NameError, IT.BaseJSException) as e:
-                    print_formatted_text(HTML(cgi.html.escape(f"<ansired>{e}</ansired>")))
+                    print_error(e)
                     return
 
                 locals = self.get_locals()
@@ -430,7 +434,7 @@ def ptconfig(repl, expert=False):
                 try:
                     six.exec_(code, self.get_globals(), self.get_locals())
                 except (NameError, IT.BaseJSException, SyntaxError) as e:
-                    print_formatted_text(HTML(cgi.html.entities(f"<ansired>{e}</ansired>")))
+                    print_error(e)
                     return
 
             output.flush()
