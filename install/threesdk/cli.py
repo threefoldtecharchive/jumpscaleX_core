@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 import sys
 import jedi
-import sdk as _sdk
+import threesdk as _sdk
 import cgi
 
 from ptpython.repl import embed
 
 from functools import partial
-from sdk.shell import ptconfig, rewriteline
-from sdk import container, builder, simulator, install, args, core, installer, _get_doc_line  # pylint: disable=F401
+from threesdk.shell import ptconfig, rewriteline
+from threesdk import container, builder, simulator, install, args, core, installer, _get_doc_line  # pylint: disable=F401
 
 from prompt_toolkit.shortcuts import print_formatted_text
 from prompt_toolkit.formatted_text import HTML
@@ -118,9 +118,7 @@ def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
     return result
 
 
-if __name__ == "__main__":
-    # the shell should only show d... j...  (no capitals at start of sentence)
-    # logger needs to be redirected properly
+def main():
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -131,3 +129,9 @@ if __name__ == "__main__":
         exec(line, globals(), locals())
     else:
         shell(locals_=locals(), globals_=globals(), expert=options.expert)
+
+
+if __name__ == "__main__":
+    # the shell should only show d... j...  (no capitals at start of sentence)
+    # logger needs to be redirected properly
+    main()

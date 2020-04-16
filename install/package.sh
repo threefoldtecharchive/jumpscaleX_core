@@ -20,9 +20,9 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
     brew install upx
 fi
 
-cp InstallTools.py sdk/
+#cp InstallTools.py threesdk/
 pyinstaller 3sdk.spec
-rm sdk/InstallTools.py
+#rm threesdk/InstallTools.py
 #--onefile --additional-hooks-dir=./hooks
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     # on linux we want to build a static binary to avoid libc issues
