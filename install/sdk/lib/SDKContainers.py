@@ -98,7 +98,7 @@ class SDKContainers:
                 force=False, reset=False, secret=secret, identity=identity, email=email, words=words,
             )
 
-            docker.executor.file_write(f"/sandbox/cfg/.configured", "")
+            docker.executor.file_write("/sandbox/cfg/.configured", "")
 
         self.container = docker
         return docker
