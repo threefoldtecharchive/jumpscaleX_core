@@ -81,7 +81,7 @@ class SDKContainers:
             if self.IT.Tools.exists(win_config_path):
                 windows_config_exists = True
 
-        windows_ok = "win32" in self.IT.MyEnv.platform_is_windows and windows_config_exists
+        windows_ok = self.IT.MyEnv.platform_is_windows and windows_config_exists
 
         if not windows_ok or not docker.executor.exists(config_path):
 

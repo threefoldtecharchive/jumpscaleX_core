@@ -6803,29 +6803,6 @@ class ExecutorSSH:
         echo --TEXT--
         """
         print(" - load systemenv")
-        res = {}
-
-        def get_cfg(name, default):
-            name = name.upper()
-            if "CFG_JUMPSCALE" in res and name in res["CFG_JUMPSCALE"]:
-                self._config[name] = res["CFG_JUMPSCALE"][name]
-                return
-            if name not in self._config:
-                self._config[name] = default
-
-        if self._config == None:
-            self._config = {}
-
-        # WINDOWS ONLY
-        if MyEnv.platform_is_windows:
-            get_cfg("DIR_HOME", MyEnv._homedir_get())
-            get_cfg("DIR_BASE", MyEnv._basedir_get())
-            get_cfg("DIR_CFG", "%s\cfg" % MyEnv._basedir_get())
-            get_cfg("DIR_TEMP", "/tmp")
-            get_cfg("DIR_VAR", "%s\var" % MyEnv._basedir_get())
-            get_cfg("DIR_CODE", "%s\code" % MyEnv._basedir_get())
-            get_cfg("DIR_BIN", "/usr/local/bin")
-            return
 
         rc, out, err = self.execute(C, showout=False, interactive=False, replace=False)
         res = {}
@@ -6879,6 +6856,17 @@ class ExecutorSSH:
                 envdict[pname.strip().upper()] = pval.strip()
 
         res["ENV"] = envdict
+
+        def get_cfg(name, default):
+            name = name.upper()
+            if "CFG_JUMPSCALE" in res and name in res["CFG_JUMPSCALE"]:
+                self._config[name] = res["CFG_JUMPSCALE"][name]
+                return
+            if name not in self._config:
+                self._config[name] = default
+
+        if self._config == None:
+            self._config = {}
 
         get_cfg("DIR_HOME", res["ENV"]["HOME"])
         get_cfg("DIR_BASE", "/sandbox")
