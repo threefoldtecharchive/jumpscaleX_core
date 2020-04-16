@@ -5586,7 +5586,10 @@ class DockerContainer:
             else:
                 SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
             if SSHKEYS.strip() != "":
-                self.dexec("echo %s > /root/.ssh/authorized_keys" % SSHKEYS, showout=False)
+                if MyEnv.platform_is_windows:
+                    self.dexec("echo %s > /root/.ssh/authorized_keys" % SSHKEYS, showout=False)
+                else:
+                    self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS, showout=False)
 
             if not MyEnv.platform_is_windows:
                 Tools.execute(
@@ -5662,9 +5665,15 @@ class DockerContainer:
         # IMPORTANT use single quotes in the outer and double in between
         # Windows needs " not '
         if interactive:
-            cmd2 = 'docker exec -ti %s bash -c "%s"' % (self.name, cmd)
+            if MyEnv.platform_is_windows:
+                cmd2 = 'docker exec -ti %s bash -c "%s"' % (self.name, cmd)
+            else:
+                cmd2 = "docker exec -ti %s bash -c '%s'" % (self.name, cmd)
         else:
-            cmd2 = 'docker exec -t %s bash -c "%s"' % (self.name, cmd)
+            if MyEnv.platform_is_windows:
+                cmd2 = 'docker exec -t %s bash -c "%s"' % (self.name, cmd)
+            else:
+                cmd2 = "docker exec -t %s bash -c '%s'" % (self.name, cmd)
         Tools.execute(cmd2, interactive=interactive, showout=showout, replace=False, die=die)
 
     def shell(self, cmd=None):
