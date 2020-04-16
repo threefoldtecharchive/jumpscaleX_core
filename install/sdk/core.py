@@ -9,7 +9,7 @@ import requests
 class Core:
     def __init__(self):
         self._default_branch = "master"
-        self.branch = "unstable_sdk_windows"
+        self.branch = "unstable"
         self.load()
 
     def load(self):
