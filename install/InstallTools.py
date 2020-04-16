@@ -52,7 +52,6 @@ GITREPOS["builders_community"] = [
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersCommunity",
 ]
 
-
 GITREPOS["libs_extra"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs_extra",
     "%s" % DEFAULT_BRANCH,
@@ -96,7 +95,6 @@ GITREPOS["kosmos"] = [
 PREBUILT_REPO = ["https://github.com/threefoldtech/sandbox_threebot_linux64", "master", "", "not used"]
 
 import socket
-import grp
 import os
 import random
 import shutil
@@ -107,8 +105,6 @@ import textwrap
 import time
 import re
 
-from fcntl import F_GETFL, F_SETFL, fcntl
-from os import O_NONBLOCK
 from pathlib import Path
 from subprocess import Popen
 import inspect
@@ -1016,7 +1012,6 @@ class BaseClassProperties:
 
 
 class Tools:
-
     _supported_editors = ["micro", "mcedit", "joe", "vim", "vi"]  # DONT DO AS SET  OR ITS SORTED
     j = None
     _shell = None
@@ -1559,6 +1554,11 @@ class Tools:
             )
 
         # set the O_NONBLOCK flag of p.stdout file descriptor:
+        # moving import here
+        # not supported on windows
+        from fcntl import F_GETFL, F_SETFL, fcntl
+        from os import O_NONBLOCK
+
         flags = fcntl(p.stdout, F_GETFL)  # get current p.stdout flags
         flags = fcntl(p.stderr, F_GETFL)  # get current p.stderr flags
         fcntl(p.stdout, F_SETFL, flags | O_NONBLOCK)
@@ -1713,7 +1713,11 @@ class Tools:
         if isinstance(content, str):
             if replace:
                 content = Tools.text_replace(content, args=args)
-            p.write_text(content)
+            if MyEnv.platform_is_windows:
+                with open(path, "w", newline="\n") as p:
+                    p.write(content)
+            else:
+                p.write_text(content)
         else:
             p.write_bytes(content)
 
@@ -2520,6 +2524,9 @@ class Tools:
     @staticmethod
     def _file_path_tmp_get(ext="sh"):
         ext = ext.strip(".")
+        if MyEnv.platform_is_windows:
+            Tools.dir_ensure(Tools.text_replace("{DIR_BASE}\\tmp"))
+            return Tools.text_replace("{DIR_BASE}\\tmp\\{RANDOM}.{ext}", args={"RANDOM": Tools._random(), "ext": ext})
         return Tools.text_replace("/tmp/jumpscale/scripts/{RANDOM}.{ext}", args={"RANDOM": Tools._random(), "ext": ext})
 
     @staticmethod
@@ -2704,7 +2711,23 @@ class Tools:
         executor=None,
         debug=False,
         useShell=True,
+        windows_interactive=False,
     ):
+
+        # windows only
+        if MyEnv.platform_is_windows:
+            if replace:
+                command = Tools.text_replace(command, args=args).rstrip("\n").replace("\n", "&&")
+            if windows_interactive:
+                subprocess.call(command, shell=True)
+                return
+            else:
+                res = Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=useShell)
+                out = res.communicate()[0].decode()
+                rc = res.wait()
+                if rc > 0 and die:
+                    raise Tools.exceptions.RuntimeError(f"Error in executing {command}: Traceback:\n{out}")
+                return rc, out, None
 
         if callable(command):
             method_name, command = Tools.method_code_get(command, **args)
@@ -3354,18 +3377,13 @@ class Tools:
 
             if exists is False:
                 try:
-                    C = """
-                    set -e
-                    mkdir -p {ACCOUNT_DIR}
-                    """
                     Tools.log("get code [git] (first time): %s" % repo)
-                    Tools.execute(C, args=args, showout=True, die_if_args_left=True)
+                    if not Tools.exists(ACCOUNT_DIR):
+                        os.makedirs(ACCOUNT_DIR)
                     C = """
-                    cd {ACCOUNT_DIR}
-                    git clone {URL} -b {BRANCH}
-                    cd {NAME}
+                    git -C {ACCOUNT_DIR} clone {URL} -b {BRANCH}
                     """
-                    rc, out, err = Tools.execute(
+                    Tools.execute(
                         C,
                         args=args,
                         die=True,
@@ -3375,28 +3393,37 @@ class Tools:
                         errormsg="Could not clone %s" % repo_url,
                         die_if_args_left=True,
                     )
+
                 except Exception:
-                    C = """
-                    set -e
-                    mkdir -p {ACCOUNT_DIR}
-                    """
                     Tools.log("get code [https] (second time): %s" % repo)
-                    Tools.execute(C, args=args, showout=True, die_if_args_left=True)
-                    C = """
-                    cd {ACCOUNT_DIR}
-                    git clone {FALLBACK_URL} -b {BRANCH}
-                    cd {NAME}
-                    """
-                    rc, out, err = Tools.execute(
-                        C,
-                        args=args,
-                        die=True,
-                        showout=True,
-                        interactive=True,
-                        retry=4,
-                        errormsg="Could not clone %s" % repo_url,
-                        die_if_args_left=True,
-                    )
+                    if not Tools.exists(ACCOUNT_DIR):
+                        os.makedirs(ACCOUNT_DIR)
+                    C = "git -C {ACCOUNT_DIR} clone {FALLBACK_URL} -b {BRANCH}"
+
+                    try:
+                        rc, out, err = Tools.execute(
+                            C,
+                            args=args,
+                            die=True,
+                            showout=True,
+                            interactive=True,
+                            retry=4,
+                            errormsg="Could not clone %s" % repo_url,
+                            die_if_args_left=True,
+                        )
+                    except Exception:
+                        # try with default branch if doesn't exist
+                        C = "git -C {ACCOUNT_DIR} clone {FALLBACK_URL}"
+                        rc, out, err = Tools.execute(
+                            C,
+                            args=args,
+                            die=True,
+                            showout=True,
+                            interactive=True,
+                            retry=4,
+                            errormsg="Could not clone %s" % repo_url,
+                            die_if_args_left=True,
+                        )
 
             else:
                 if pull:
@@ -3741,12 +3768,19 @@ class MyEnv_:
             self.platform_is_linux = True
             self.platform_is_unix = True
             self.platform_is_osx = False
+            self.platform_is_windows = False
         elif "darwin" in self.platform():
             self.platform_is_linux = False
             self.platform_is_unix = True
             self.platform_is_osx = True
+            self.platform_is_windows = False
+        elif "win32" in self.platform():
+            self.platform_is_linux = False
+            self.platform_is_unix = False
+            self.platform_is_osx = False
+            self.platform_is_windows = True
         else:
-            raise Tools.exceptions.Base("platform not supported, only linux or osx for now.")
+            raise Tools.exceptions.Base("platform not supported, only linux, osx and windows.")
 
         configdir = self._cfgdir_get()
         basedir = self._basedir_get()
@@ -3764,6 +3798,10 @@ class MyEnv_:
             args["USERNAME"] = getpass.getuser()
             st = os.stat(self.config["DIR_HOME"])
             gid = st.st_gid
+            # import is here cause it's only unix
+            # for windows support
+            import grp
+
             args["GROUPNAME"] = grp.getgrgid(gid)[0]
             Tools.execute(script, interactive=True, args=args, die_if_args_left=True)
 
@@ -3832,6 +3870,8 @@ class MyEnv_:
             raise Tools.exceptions.Base("Your platform is not supported")
 
     def _homedir_get(self):
+        if self.platform_is_windows:
+            return os.environ["USERPROFILE"]
         if "HOMEDIR" in os.environ:
             dir_home = os.environ["HOMEDIR"]
         elif "HOME" in os.environ:
@@ -3843,7 +3883,8 @@ class MyEnv_:
     def _basedir_get(self):
         if self.readonly:
             return "/tmp/jumpscale"
-        if "darwin" not in self.platform():
+
+        if "linux" in self.platform():
             isroot = None
             rc, out, err = Tools.execute("whoami", showout=False, die=False)
             if rc == 0:
@@ -3852,7 +3893,10 @@ class MyEnv_:
             if Tools.exists("/sandbox") or isroot == 1:
                 Tools.dir_ensure("/sandbox")
                 return "/sandbox"
-        p = "%s/sandbox" % self._homedir_get()
+        if self.platform_is_windows:
+            p = "%s\sandbox" % self._homedir_get()
+        else:
+            p = "%s/sandbox" % self._homedir_get()
         if not Tools.exists(p):
             Tools.dir_ensure(p)
         return p
@@ -3860,7 +3904,13 @@ class MyEnv_:
     def _cfgdir_get(self):
         if self.readonly:
             return "/tmp/jumpscale/cfg"
-        return "%s/cfg" % self._basedir_get()
+        return "%s/cfg" % self._basedir_get() if not MyEnv.platform_is_windows else "%s\cfg" % self._basedir_get()
+
+    def _identitydir_get(self):
+        return f"{self._basedir_get()}/myhost" if not MyEnv.platform_is_windows else "%s\myhost" % self._basedir_get()
+
+    def _codedir_get(self):
+        return f"{self._basedir_get()}/code" if not MyEnv.platform_is_windows else "%s\code" % self._basedir_get()
 
     def config_default_get(self, config={}):
         if "DIR_BASE" not in config:
@@ -3871,6 +3921,9 @@ class MyEnv_:
 
         if not "DIR_CFG" in config:
             config["DIR_CFG"] = self._cfgdir_get()
+
+        if not "DIR_IDENTITY" in config:
+            config["DIR_IDENTITY"] = self._identitydir_get()
 
         if not "READONLY" in config:
             config["READONLY"] = False
@@ -3903,7 +3956,7 @@ class MyEnv_:
         if not "DIR_VAR" in config:
             config["DIR_VAR"] = "%s/var" % config["DIR_BASE"]
         if not "DIR_CODE" in config:
-            config["DIR_CODE"] = "%s/code" % config["DIR_BASE"]
+            config["DIR_CODE"] = self._codedir_get()
             # if Tools.exists("%s/code" % config["DIR_BASE"]):
             #     config["DIR_CODE"] = "%s/code" % config["DIR_BASE"]
             # else:
@@ -3992,7 +4045,6 @@ class MyEnv_:
         :return: logdict see github/threefoldtech/jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md
         """
         if isinstance(exception_obj, Tools.exceptions.RemoteException):
-
             print(Tools.text_replace("{RED}*****Remote Exception*****{RESET}"))
             logdict = exception_obj.data
             Tools.log2stdout(logdict)
@@ -4892,7 +4944,6 @@ class JumpscaleInstaller:
 
 
 class DockerFactory:
-
     _init = False
     _dockers = {}
 
@@ -4910,31 +4961,42 @@ class DockerFactory:
     @staticmethod
     def init(name=None):
         if not DockerFactory._init:
-            rc, out, _ = Tools.execute("cat /proc/1/cgroup", die=False, showout=False)
-            if rc == 0 and out.find("/docker/") != -1:
-                # nothing to do we are in docker already
-                return
+            if not MyEnv.platform_is_windows:
+                rc, out, _ = Tools.execute("cat /proc/1/cgroup", die=False, showout=False)
+                if rc == 0 and out.find("/docker/") != -1:
+                    # nothing to do we are in docker already
+                    return
 
-            MyEnv.init()
+                MyEnv.init()
 
-            if MyEnv.platform() == "linux" and not Tools.cmd_installed("docker"):
-                UbuntuInstaller.docker_install()
-                MyEnv._cmd_installed["docker"] = shutil.which("docker")
+                if MyEnv.platform() == "linux" and not Tools.cmd_installed("docker"):
+                    UbuntuInstaller.docker_install()
+                    MyEnv._cmd_installed["docker"] = shutil.which("docker")
 
-            if not Tools.cmd_installed("docker"):
-                raise Tools.exceptions.Operations("Could not find Docker installed")
+                if not Tools.cmd_installed("docker"):
+                    raise Tools.exceptions.Operations("Could not find Docker installed")
 
-            DockerFactory._init = True
-            cdir = Tools.text_replace("{DIR_BASE}/var/containers")
-            Tools.dir_ensure(cdir)
-            for name_found in os.listdir(cdir):
-                if not os.path.isdir(os.path.join(cdir, name_found)):
-                    # https://github.com/threefoldtech/jumpscaleX_core/issues/297
-                    # in case .DS_Store is created when opened in finder
-                    continue
-                # to make sure there is no recursive behaviour if called from a docker container
-                if name_found != name and name_found.strip().lower() not in ["shared"]:
-                    DockerContainer(name_found)
+                DockerFactory._init = True
+                cdir = Tools.text_replace("{DIR_BASE}/var/containers")
+                Tools.dir_ensure(cdir)
+                for name_found in os.listdir(cdir):
+                    if not os.path.isdir(os.path.join(cdir, name_found)):
+                        # https://github.com/threefoldtech/jumpscaleX_core/issues/297
+                        # in case .DS_Store is created when opened in finder
+                        continue
+                    # to make sure there is no recursive behaviour if called from a docker container
+                    if name_found != name and name_found.strip().lower() not in ["shared"]:
+                        DockerContainer(name_found)
+            else:
+                _, out, _ = Tools.execute("docker -v", die=False)
+                if "Docker" not in out:
+                    raise Tools.exceptions.RuntimeError(
+                        """
+                        Docker is not installed or running please check: https://docs.docker.com/docker-for-windows/install/
+                    """
+                    )
+                MyEnv.init()
+                DockerFactory._init = True
 
     @staticmethod
     def container_delete(name):
@@ -4982,13 +5044,17 @@ class DockerFactory:
 
     @staticmethod
     def containers_running():
-        names = Tools.execute("docker ps --format='{{json .Names}}'", showout=False, replace=False)[1].split("\n")
+        # IMPORTANT use single quotes in the outer and double in between
+        # Windows needs " not '
+        names = Tools.execute('docker ps --format="{{json .Names}}"', showout=False, replace=False)[1].split("\n")
         names = [i.strip("\"'") for i in names if i.strip() != ""]
         return names
 
     @staticmethod
     def containers_names():
-        names = Tools.execute("docker container ls -a --format='{{json .Names}}'", showout=False, replace=False)[
+        # IMPORTANT use single quotes in the outer and double in between
+        # Windows needs " not '
+        names = Tools.execute('docker container ls -a --format="{{json .Names}}"', showout=False, replace=False)[
             1
         ].split("\n")
         names = [i.strip("\"'") for i in names if i.strip() != ""]
@@ -5013,7 +5079,9 @@ class DockerFactory:
 
     @staticmethod
     def image_names():
-        names = Tools.execute("docker images --format='{{.Repository}}:{{.Tag}}'", showout=False, replace=False)[
+        # IMPORTANT use single quotes in the outer and double in between
+        # Windows needs " not '
+        names = Tools.execute('docker images --format="{{.Repository}}:{{.Tag}}"', showout=False, replace=False)[
             1
         ].split("\n")
         res = []
@@ -5055,10 +5123,12 @@ class DockerFactory:
             d.delete()
 
         # will get all images based on id
-        names = Tools.execute("docker images --format='{{.ID}}'", showout=False, replace=False)[1].split("\n")
+        # IMPORTANT use single quotes in the outer and double in between
+        # Windows needs " not '
+        names = Tools.execute('docker images --format="{{.ID}}"', showout=False, replace=False)[1].split("\n")
         for image_id in names:
             if image_id:
-                Tools.execute("docker rmi -f %s" % image_id)
+                Tools.execute("""docker rmi -f %s""" % image_id)
 
         Tools.delete(Tools.text_replace("{DIR_BASE}/var/containers"))
 
@@ -5296,8 +5366,8 @@ class DockerContainer:
         if self.config.portrange is None:
             self.config._find_port_range()
             self.config.save()
-
-        MyEnv.sshagent.key_default_name
+        if not MyEnv.platform_is_windows:
+            MyEnv.sshagent.key_default_name
 
         self._wireguard = None
         self._executor = None
@@ -5450,18 +5520,19 @@ class DockerContainer:
             return
 
         # Now create the container
-        DIR_CODE = MyEnv.config["DIR_CODE"]
-        DIR_BASE = MyEnv.config["DIR_BASE"]
+        DIR_CODE = MyEnv.config["DIR_CODE"] if not MyEnv.platform_is_windows else "%s\code" % MyEnv._basedir_get()
+        DIR_BASE = MyEnv.config["DIR_BASE"] if not MyEnv.platform_is_windows else MyEnv._basedir_get()
+        DIR_IDENTITY = f"{DIR_BASE}/myhost" if not MyEnv.platform_is_windows else "%s\myhost" % MyEnv._basedir_get()
 
         MOUNTS = ""
         if mount:
             MOUNTS = f"""
             -v {DIR_CODE}:/sandbox/code \
-            -v {DIR_BASE}/myhost:/sandbox/myhost
+            -v {DIR_IDENTITY}:/sandbox/myhost
             """
             MOUNTS = Tools.text_strip(MOUNTS)
         else:
-            MOUNTS = f"-v {DIR_BASE}/myhost:/sandbox/myhost"
+            MOUNTS = f"-v {DIR_IDENTITY}:/sandbox/myhost"
 
         if portmap:
             PORTRANGE = self.config.ports_txt
@@ -5477,7 +5548,6 @@ class DockerContainer:
 
         run_cmd = Tools.text_strip(run_cmd)
         run_cmd2 = Tools.text_replace(re.sub("\s+", " ", run_cmd))
-
         print(" - Docker machine gets created: ")
         # print(run_cmd2)
         Tools.execute(run_cmd2, interactive=False)
@@ -5507,12 +5577,24 @@ class DockerContainer:
             self.dexec("rm -f /etc/service/sshd/down", showout=False)
 
             # get our own loaded ssh pub keys into the container
-            SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
+            if MyEnv.platform_is_windows:
+                path = f"{MyEnv._homedir_get()}\.ssh\id_rsa.pub"
+                if not Tools.exists(path):
+                    raise Tools.exceptions.Input(f"Please make sure your ssh-key is existed in {path}")
+                with open(path) as ssh_key_file:
+                    SSHKEYS = ssh_key_file.read().strip("\n")
+            else:
+                SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
             if SSHKEYS.strip() != "":
-                self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS, showout=False)
-            Tools.execute(
-                "mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"], showout=False)
-            )
+                if MyEnv.platform_is_windows:
+                    self.dexec("echo %s > /root/.ssh/authorized_keys" % SSHKEYS, showout=False)
+                else:
+                    self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS, showout=False)
+
+            if not MyEnv.platform_is_windows:
+                Tools.execute(
+                    "mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"], showout=False)
+                )
 
             # DIDNT seem to work well, next is better
             # cmd = 'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"' % (
@@ -5522,11 +5604,17 @@ class DockerContainer:
             # Tools.execute(cmd)
 
             # is to make sure we can login without interactivity
-            cmd = "ssh-keyscan -H -p %s localhost >> %s/.ssh/known_hosts" % (
-                self.config.sshport,
-                MyEnv.config["DIR_HOME"],
-            )
-            Tools.execute(cmd, showout=False)
+            if MyEnv.platform_is_windows:
+                cmd = "ssh-keyscan -H -p %s localhost" % self.config.sshport
+                path = f"%s\.ssh\known_hosts" % MyEnv._homedir_get()
+                _, content, _ = Tools.execute(cmd, showout=False)
+                Tools.file_write(path, content)
+            else:
+                cmd = "ssh-keyscan -H -p %s localhost >> %s/.ssh/known_hosts" % (
+                    self.config.sshport,
+                    MyEnv.config["DIR_HOME"],
+                )
+                Tools.execute(cmd, showout=False)
 
         # self.shell()
 
@@ -5573,19 +5661,30 @@ class DockerContainer:
     def dexec(self, cmd, interactive=False, die=True, showout=True):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
+
+        # IMPORTANT use single quotes in the outer and double in between
+        # Windows needs " not '
         if interactive:
-            cmd2 = "docker exec -ti %s bash -c '%s'" % (self.name, cmd)
+            if MyEnv.platform_is_windows:
+                cmd2 = 'docker exec -ti %s bash -c "%s"' % (self.name, cmd)
+            else:
+                cmd2 = "docker exec -ti %s bash -c '%s'" % (self.name, cmd)
         else:
-            cmd2 = "docker exec -t %s bash -c '%s'" % (self.name, cmd)
+            if MyEnv.platform_is_windows:
+                cmd2 = 'docker exec -t %s bash -c "%s"' % (self.name, cmd)
+            else:
+                cmd2 = "docker exec -t %s bash -c '%s'" % (self.name, cmd)
         Tools.execute(cmd2, interactive=interactive, showout=showout, replace=False, die=die)
 
     def shell(self, cmd=None):
         if not self.isrunning():
             self.start()
         if cmd:
-            self.execute("source /sandbox/env.sh;cd /sandbox;clear;%s" % cmd, interactive=True)
+            self.execute(
+                "source /sandbox/env.sh;cd /sandbox;clear;%s" % cmd, interactive=True, windows_interactive=True
+            )
         else:
-            self.execute("source /sandbox/env.sh;cd /sandbox;clear;bash", interactive=True)
+            self.execute("source /sandbox/env.sh;cd /sandbox;clear;bash", interactive=True, windows_interactive=True)
 
     def diskusage(self):
         """
@@ -5606,8 +5705,8 @@ class DockerContainer:
         replace=True,
         args=None,
         interactive=True,
+        windows_interactive=False,
     ):
-
         self.executor.execute(
             cmd,
             retry=retry,
@@ -5619,10 +5718,11 @@ class DockerContainer:
             replace=replace,
             args=args,
             interactive=interactive,
+            windows_interactive=windows_interactive,
         )
 
     def kosmos(self):
-        self.execute("j.shell()", interactive=True, jumpscale=True)
+        self.execute("j.shell()", interactive=True, windows_interactive=True, jumpscale=True)
 
     def stop(self):
         if self.container_running:
@@ -5903,8 +6003,16 @@ class DockerContainer:
         else:
             print(" - copy installer over from where I install from")
             for item in ["jsx", "InstallTools.py"]:
-                src1 = "%s/%s" % (dirpath, item)
-                self.executor.upload(src1, "/tmp")
+                if MyEnv.platform_is_windows:
+                    dirpath = dirpath.replace("/", "\\")
+                    src1 = "%s\%s" % (dirpath, item)
+                    if not Tools.exists(src1) and item == "jsx":
+                        new_item = "jsx.py"
+                        src1 = "%s\%s" % (dirpath, new_item)
+                    self.executor.upload(src1, f"/tmp/{item}")
+                else:
+                    src1 = "%s/%s" % (dirpath, item)
+                    self.executor.upload(src1, "/tmp")
 
         # python3 jsx configure --sshkey {MyEnv.sshagent.key_default_name} -s
         # WHY DO WE NEED THIS, in container ssh-key should always be there & loaded, don't think there is a reason to configure it
@@ -5912,7 +6020,7 @@ class DockerContainer:
         cmd = f"""
         cd /tmp
         #next will start redis and make sure secret is in there
-        python3 jsx secret {secret} 
+        python3 jsx secret {secret}
         """
         print(" - Configure secret ")
         # best to set the secret first because otherwise we cannot be sure bcdb will work
@@ -5923,8 +6031,10 @@ class DockerContainer:
         python3 jsx install {args_txt}
         """
         print(" - Installing jumpscaleX ")
-        self.execute(cmd)
-
+        if MyEnv.platform_is_windows:
+            self.execute(cmd, windows_interactive=True)
+        else:
+            self.execute(cmd)
         print(" - Install succesfull")
 
         self.executor.state_set("STATE_JUMPSCALE")
@@ -6675,6 +6785,7 @@ class ExecutorSSH:
         echo --TEXT--
         """
         print(" - load systemenv")
+
         rc, out, err = self.execute(C, showout=False, interactive=False, replace=False)
         res = {}
         state = ""
@@ -6761,6 +6872,7 @@ class ExecutorSSH:
         python=False,
         jumpscale=False,
         debug=False,
+        windows_interactive=False,
     ):
         original_command = cmd + ""
         if not args:
@@ -6781,18 +6893,38 @@ class ExecutorSSH:
         Tools._cmd_check(cmd)
 
         if interactive:
-            cmd2 = "ssh -oStrictHostKeyChecking=no -t root@%s -A -p %s '%s'" % (self.addr, self.port, cmd)
+            if MyEnv.platform_is_windows:
+                cmd2 = 'ssh -oStrictHostKeyChecking=no -t root@%s -A -p %s "%s"' % (self.addr, self.port, cmd)
+            else:
+                cmd2 = "ssh -oStrictHostKeyChecking=no -t root@%s -A -p %s '%s'" % (self.addr, self.port, cmd)
         else:
-            cmd2 = "ssh -oStrictHostKeyChecking=no root@%s -A -p %s '%s'" % (self.addr, self.port, cmd)
-        r = Tools._execute(
-            cmd2,
-            interactive=interactive,
-            showout=showout,
-            timeout=timeout,
-            retry=retry,
-            die=die,
-            original_command=original_command,
-        )
+            if MyEnv.platform_is_windows:
+                cmd2 = 'ssh -oStrictHostKeyChecking=no root@%s -A -p %s "%s"' % (self.addr, self.port, cmd)
+            else:
+                cmd2 = "ssh -oStrictHostKeyChecking=no root@%s -A -p %s '%s'" % (self.addr, self.port, cmd)
+
+        if not MyEnv.platform_is_windows:
+            r = Tools._execute(
+                cmd2,
+                interactive=interactive,
+                showout=showout,
+                timeout=timeout,
+                retry=retry,
+                die=die,
+                original_command=original_command,
+            )
+        else:
+            r = Tools.execute(
+                cmd2,
+                interactive=interactive,
+                showout=showout,
+                timeout=timeout,
+                retry=retry,
+                die=die,
+                original_command=original_command,
+                windows_interactive=windows_interactive,
+            )
+
         if tempfile:
             Tools.delete(tempfile)
         return r
@@ -6834,7 +6966,10 @@ class ExecutorSSH:
                 destdir = os.path.dirname(source)
                 self.dir_ensure(destdir)
             cmd = "scp -P %s %s root@%s:%s" % (self.port, source, self.addr, dest)
-            Tools._execute(cmd, showout=True, interactive=False)
+            if MyEnv.platform_is_windows:
+                Tools.execute(cmd, showout=True, interactive=False)
+            else:
+                Tools._execute(cmd, showout=True, interactive=False)
             return
         raise Tools.exceptions.RuntimeError("not implemented")
         dest = self._replace(dest)
@@ -6868,7 +7003,10 @@ class ExecutorSSH:
         Tools.dir_ensure(destdir)
 
         cmd = "scp -P %s root@%s:%s %s" % (self.port, self.addr, source, dest)
-        Tools._execute(cmd, showout=True, interactive=False)
+        if not MyEnv.platform_is_windows:
+            Tools._execute(cmd, showout=True, interactive=False)
+        else:
+            Tools.execute(cmd, showout=True, interactive=False)
 
     def kosmos(self):
         self.jsxexec("j.shell()")
@@ -7177,7 +7315,6 @@ class WireGuardServer:
         C = Tools.text_replace(C, args=config, die_if_args_left=True)
 
         for client_id, client in self.config["clients"].items():
-
             C2 = """
 
             [Peer]

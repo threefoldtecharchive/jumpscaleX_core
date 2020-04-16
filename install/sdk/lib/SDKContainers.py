@@ -62,7 +62,8 @@ class SDKContainers:
             return self.container
 
         # need to make sure 1 sshkey has been created, does not have to be in github
-        self.IT.MyEnv.sshagent.key_default_name
+        if not self.IT.MyEnv.platform_is_windows:
+            self.IT.MyEnv.sshagent.key_default_name
 
         self.IT.DockerFactory.init()
 
