@@ -12,7 +12,6 @@ __all__ = ["browser", "stop", "start", "shell", "restart"]
 def start(delete=False, browser_open=True, code_update_force=False):
     """
     install & run a container with SDK & simulator
-    a connection to zerotier network will be made
 
     param: code_update_force be careful, will remove your code changes
 
@@ -73,3 +72,12 @@ def shell():
         start()
     c = _containers.get(name="simulator")
     c.shell()
+
+
+def monitor():
+    """
+    monitor the resources of your container
+    there needs to be enough free memory and cpu resources
+    """
+    c = _containers.get(name="simulator")
+    c.execute("htop", interactive=True, showout=False)
