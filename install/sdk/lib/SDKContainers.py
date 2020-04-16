@@ -35,7 +35,7 @@ class SDKContainers:
 
     def delete(self, name=None):
         name = self._name(name)
-        docker = self.IT.DockerFactory.container_delete(name=name)
+        self.IT.DockerFactory.container_delete(name=name)
         self.container = None
 
     def get(
@@ -62,7 +62,8 @@ class SDKContainers:
             return self.container
 
         # need to make sure 1 sshkey has been created, does not have to be in github
-        self.IT.MyEnv.sshagent.key_default_name
+        if not self.IT.MyEnv.platform_is_windows:
+            self.IT.MyEnv.sshagent.key_default_name
 
         self.IT.DockerFactory.init()
 

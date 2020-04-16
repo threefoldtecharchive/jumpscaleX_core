@@ -115,7 +115,8 @@ class GitFactory(j.baseclasses.object, j.baseclasses.testtools):
                 self._log_info("reset branch to:%s" % branch)
                 cmd += " git reset --hard origin/%s" % branch
             else:
-                cmd += " git reset --hard"
+                cmd += " git checkout . ; git clean -xfd;"
+            cmd += " git pull"
             j.core.tools.execute(cmd, timeout=timeout, retry=3, errormsg="cannot fetch %s" % url)
 
         if branch == "":

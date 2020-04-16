@@ -2,7 +2,6 @@
 from .lib.SDKContainers import SDKContainers
 from .core import core
 from .args import args
-import time
 
 
 _containers = SDKContainers(core=core, args=args)
@@ -43,9 +42,7 @@ def install(
     create the 3bot container and install jumpscale inside
 
     identity is the name of your threebot
-
     if interactive is True then will ask questions, otherwise will go for the defaults or configured arguments
-
     if you want to configure other arguments use 'jsx configure ... '
 
     @param testnr: if not Null the identity will become: $your3botname$testnr.test,
@@ -81,6 +78,7 @@ def install(
         email=email,
         pull=pull,
         code_update_force=code_update_force,
+        words=words,
     )
 
     if zerotier:
