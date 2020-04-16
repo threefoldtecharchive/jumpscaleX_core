@@ -5,6 +5,7 @@ import pudb
 import time
 import inspect
 import os
+import cgi
 import re
 from .core import core
 from . import __all__ as sdkall
@@ -384,7 +385,7 @@ def ptconfig(repl, expert=False):
                 try:
                     result = eval(code, self.get_globals(), self.get_locals())
                 except (NameError, IT.BaseJSException) as e:
-                    print_formatted_text(HTML(f"<ansired>{e}</ansired>"))
+                    print_formatted_text(HTML(cgi.html.escape(f"<ansired>{e}</ansired>")))
                     return
 
                 locals = self.get_locals()
@@ -429,7 +430,7 @@ def ptconfig(repl, expert=False):
                 try:
                     six.exec_(code, self.get_globals(), self.get_locals())
                 except (NameError, IT.BaseJSException, SyntaxError) as e:
-                    print_formatted_text(HTML(f"<ansired>{e}</ansired>"))
+                    print_formatted_text(HTML(cgi.html.entities(f"<ansired>{e}</ansired>")))
                     return
 
             output.flush()
