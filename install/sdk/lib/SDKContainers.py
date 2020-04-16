@@ -35,7 +35,7 @@ class SDKContainers:
 
     def delete(self, name=None):
         name = self._name(name)
-        docker = self.IT.DockerFactory.container_delete(name=name)
+        self.IT.DockerFactory.container_delete(name=name)
         self.container = None
 
     def get(
