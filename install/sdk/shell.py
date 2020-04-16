@@ -39,6 +39,10 @@ __name__ = "<sdk>"
 HIDDEN_PREFIXES = ("_", "__")
 
 
+def print_error(error):
+    print_formatted_text(HTML("<ansired>{}</ansired>".format(cgi.html.escape(str(error)))))
+
+
 def filter_completions_on_prefix(completions, prefix=None, expert=False):
     for completion in completions:
         text = completion.text
@@ -69,7 +73,7 @@ def get_rhs(line):
         stmt = mod.body[0]
         # only assignment statements
         if type(stmt) in (ast.Assign, ast.AugAssign, ast.AnnAssign):
-            return line[stmt.value.col_offset:].strip()
+            return line[stmt.value.col_offset :].strip()
     return line
 
 
@@ -385,7 +389,7 @@ def ptconfig(repl, expert=False):
                 try:
                     result = eval(code, self.get_globals(), self.get_locals())
                 except (NameError, IT.BaseJSException) as e:
-                    print_formatted_text(HTML(cgi.html.escape(f"<ansired>{e}</ansired>")))
+                    print_error(e)
                     return
 
                 locals = self.get_locals()
@@ -430,7 +434,7 @@ def ptconfig(repl, expert=False):
                 try:
                     six.exec_(code, self.get_globals(), self.get_locals())
                 except (NameError, IT.BaseJSException, SyntaxError) as e:
-                    print_formatted_text(HTML(cgi.html.entities(f"<ansired>{e}</ansired>")))
+                    print_error(e)
                     return
 
             output.flush()
@@ -449,7 +453,7 @@ def ptconfig(repl, expert=False):
             rmembers = inspect.getmembers(module, inspect.isfunction)
             for rmember, func in rmembers:
                 if rmember.startswith(prefix) and not rmember.startswith(HIDDEN_PREFIXES):
-                    if getattr(func, '__property__', False):
+                    if getattr(func, "__property__", False):
                         yield Completion(rmember, -len(prefix), display=rmember, style="bg:ansicyan")
                     else:
                         yield Completion(rmember, -len(prefix), display=rmember, style="bg:ansigreen")
