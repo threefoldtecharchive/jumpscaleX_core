@@ -1713,7 +1713,7 @@ class Tools:
         if isinstance(content, str):
             if replace:
                 content = Tools.text_replace(content, args=args)
-            if "win32" in MyEnv.platform():
+            if MyEnv.platform_is_windows:
                 with open(path, "w", newline="\n") as p:
                     p.write(content)
             else:
@@ -2524,7 +2524,7 @@ class Tools:
     @staticmethod
     def _file_path_tmp_get(ext="sh"):
         ext = ext.strip(".")
-        if "win32" in MyEnv.platform():
+        if MyEnv.platform_is_windows:
             Tools.dir_ensure(Tools.text_replace("{DIR_BASE}\\tmp"))
             return Tools.text_replace("{DIR_BASE}\\tmp\\{RANDOM}.{ext}", args={"RANDOM": Tools._random(), "ext": ext})
         return Tools.text_replace("/tmp/jumpscale/scripts/{RANDOM}.{ext}", args={"RANDOM": Tools._random(), "ext": ext})
@@ -2661,14 +2661,14 @@ class Tools:
                     )
                     cmd = (
                         "source {DIR_BASE}/env.sh && python3 %s" % dest
-                        if not "win32" in MyEnv.platform()
+                        if not MyEnv.platform_is_windows
                         else "source /sandbox/env.sh && python3 %s" % dest
                     )
                 else:
                     script = Tools._script_process_python(script, env=env)
                     cmd = (
                         "source {DIR_BASE}/env.sh && python3 %s" % dest
-                        if not "win32" in MyEnv.platform()
+                        if not MyEnv.platform_is_windows
                         else "source /sandbox/env.sh && python3 %s" % dest
                     )
             else:
@@ -2723,7 +2723,7 @@ class Tools:
     ):
 
         # windows only
-        if "win32" in MyEnv.platform():
+        if MyEnv.platform_is_windows:
             if replace:
                 command = Tools.text_replace(command, args=args).rstrip("\n").replace("\n", "&&")
             if windows_interactive:
@@ -3393,7 +3393,7 @@ class Tools:
                     mkdir -p {ACCOUNT_DIR}
                     """
                     Tools.log("get code [git] (first time): %s" % repo)
-                    if "win32" in MyEnv.platform():
+                    if MyEnv.platform_is_windows:
                         Tools.execute("mkdir -p {ACCOUNT_DIR}", args=args, showout=True, die_if_args_left=True)
                     else:
                         Tools.execute(C, args=args, showout=True, die_if_args_left=True)
@@ -3417,7 +3417,7 @@ class Tools:
                     mkdir -p {ACCOUNT_DIR}
                     """
                     Tools.log("get code [https] (second time): %s" % repo)
-                    if "win32" in MyEnv.platform():
+                    if MyEnv.platform_is_windows:
                         if not Tools.exists(ACCOUNT_DIR):
                             Tools.execute("mkdir {ACCOUNT_DIR}", args=args, showout=True, die_if_args_left=True)
                     else:
@@ -3428,7 +3428,7 @@ class Tools:
                     cd {NAME}
                     """
                     # FOR WINDOWS ONLY
-                    if "win32" in MyEnv.platform():
+                    if MyEnv.platform_is_windows:
                         C = """
                         git -C {ACCOUNT_DIR} clone {FALLBACK_URL} -b {BRANCH}
                         """
@@ -3914,7 +3914,7 @@ class MyEnv_:
             raise Tools.exceptions.Base("Your platform is not supported")
 
     def _homedir_get(self):
-        if "win32" in self.platform():
+        if self.platform_is_windows:
             return os.environ["USERPROFILE"]
         if "HOMEDIR" in os.environ:
             dir_home = os.environ["HOMEDIR"]
@@ -3937,7 +3937,7 @@ class MyEnv_:
             if Tools.exists("/sandbox") or isroot == 1:
                 Tools.dir_ensure("/sandbox")
                 return "/sandbox"
-        if "win32" in self.platform():
+        if self.platform_is_windows:
             p = "%s\sandbox" % self._homedir_get()
         else:
             p = "%s/sandbox" % self._homedir_get()
@@ -3948,13 +3948,13 @@ class MyEnv_:
     def _cfgdir_get(self):
         if self.readonly:
             return "/tmp/jumpscale/cfg"
-        return "%s/cfg" % self._basedir_get() if not "win32" in MyEnv.platform() else "%s\cfg" % self._basedir_get()
+        return "%s/cfg" % self._basedir_get() if not MyEnv.platform_is_windows else "%s\cfg" % self._basedir_get()
 
     def _identitydir_get(self):
-        return f"{self._basedir_get()}/myhost" if not "win32" in MyEnv.platform() else "%s\myhost" % self._basedir_get()
+        return f"{self._basedir_get()}/myhost" if not MyEnv.platform_is_windows else "%s\myhost" % self._basedir_get()
 
     def _codedir_get(self):
-        return f"{self._basedir_get()}/code" if not "win32" in MyEnv.platform() else "%s\code" % self._basedir_get()
+        return f"{self._basedir_get()}/code" if not MyEnv.platform_is_windows else "%s\code" % self._basedir_get()
 
     def config_default_get(self, config={}):
         if "DIR_BASE" not in config:
@@ -5005,7 +5005,7 @@ class DockerFactory:
     @staticmethod
     def init(name=None):
         if not DockerFactory._init:
-            if not "win32" in MyEnv.platform():
+            if not MyEnv.platform_is_windows:
                 rc, out, _ = Tools.execute("cat /proc/1/cgroup", die=False, showout=False)
                 if rc == 0 and out.find("/docker/") != -1:
                     # nothing to do we are in docker already
@@ -5395,8 +5395,7 @@ class DockerContainer:
         if self.config.portrange is None:
             self.config._find_port_range()
             self.config.save()
-
-        if not "win32" in MyEnv.platform():
+        if not MyEnv.platform_is_windows:
             MyEnv.sshagent.key_default_name
 
         self._wireguard = None
@@ -5550,9 +5549,9 @@ class DockerContainer:
             return
 
         # Now create the container
-        DIR_CODE = MyEnv.config["DIR_CODE"] if not "win32" in MyEnv.platform() else "%s\code" % MyEnv._basedir_get()
-        DIR_BASE = MyEnv.config["DIR_BASE"] if not "win32" in MyEnv.platform() else MyEnv._basedir_get()
-        DIR_IDENTITY = f"{DIR_BASE}/myhost" if not "win32" in MyEnv.platform() else "%s\myhost" % MyEnv._basedir_get()
+        DIR_CODE = MyEnv.config["DIR_CODE"] if not MyEnv.platform_is_windows else "%s\code" % MyEnv._basedir_get()
+        DIR_BASE = MyEnv.config["DIR_BASE"] if not MyEnv.platform_is_windows else MyEnv._basedir_get()
+        DIR_IDENTITY = f"{DIR_BASE}/myhost" if not MyEnv.platform_is_windows else "%s\myhost" % MyEnv._basedir_get()
 
         MOUNTS = ""
         if mount:
@@ -5607,19 +5606,19 @@ class DockerContainer:
             self.dexec("rm -f /etc/service/sshd/down", showout=False)
 
             # get our own loaded ssh pub keys into the container
-            if "win32" in MyEnv.platform():
+            if MyEnv.platform_is_windows:
                 path = f"{MyEnv._homedir_get()}\.ssh\id_rsa.pub"
                 with open(path) as ssh_key_file:
                     SSHKEYS = ssh_key_file.read().strip("\n")
             else:
                 SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
             if SSHKEYS.strip() != "":
-                if "win32" in MyEnv.platform():
+                if MyEnv.platform_is_windows:
                     self.dexec("echo %s > /root/.ssh/authorized_keys" % SSHKEYS, showout=False)
                 else:
                     self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS, showout=False)
 
-            if not "win32" in MyEnv.platform():
+            if not MyEnv.platform_is_windows:
                 Tools.execute(
                     "mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"], showout=False)
                 )
@@ -5632,7 +5631,7 @@ class DockerContainer:
             # Tools.execute(cmd)
 
             # is to make sure we can login without interactivity
-            if "win32" in MyEnv.platform():
+            if MyEnv.platform_is_windows:
                 cmd = "ssh-keyscan -H -p %s localhost" % self.config.sshport
                 path = f"%s\.ssh\known_hosts" % MyEnv._homedir_get()
                 _, content, _ = Tools.execute(cmd, showout=False)
@@ -6022,7 +6021,7 @@ class DockerContainer:
         else:
             print(" - copy installer over from where I install from")
             for item in ["jsx", "InstallTools.py"]:
-                if "win32" in MyEnv.platform():
+                if MyEnv.platform_is_windows:
                     dirpath = dirpath.replace("/", "\\")
                     src1 = "%s\%s" % (dirpath, item)
                     if not Tools.exists(src1) and item == "jsx":
@@ -6050,7 +6049,7 @@ class DockerContainer:
         python3 jsx install {args_txt}
         """
         print(" - Installing jumpscaleX ")
-        if "win32" in MyEnv.platform():
+        if MyEnv.platform_is_windows:
             self.execute(cmd, windows_interactive=True)
         else:
             self.execute(cmd)
@@ -6569,7 +6568,7 @@ class ExecutorSSH:
         self._config = {}
         self.readonly = False
         self.CURDIR = ""
-        self._data_path = "/var/executor_data" if not "win32" in MyEnv.platform() else "/sandbox/var/executor_data"
+        self._data_path = "/var/executor_data" if not MyEnv.platform_is_windows else "/sandbox/var/executor_data"
         self._init3()
 
     def reset(self):
@@ -6818,7 +6817,7 @@ class ExecutorSSH:
             self._config = {}
 
         # WINDOWS ONLY
-        if "win32" in MyEnv.platform():
+        if MyEnv.platform_is_windows:
             get_cfg("DIR_HOME", MyEnv._homedir_get())
             get_cfg("DIR_BASE", MyEnv._basedir_get())
             get_cfg("DIR_CFG", "%s\cfg" % MyEnv._basedir_get())
@@ -6927,7 +6926,7 @@ class ExecutorSSH:
             cmd2 = 'ssh -oStrictHostKeyChecking=no -t root@%s -A -p %s "%s"' % (self.addr, self.port, cmd)
         else:
             cmd2 = 'ssh -oStrictHostKeyChecking=no root@%s -A -p %s "%s"' % (self.addr, self.port, cmd)
-        if not "win32" in MyEnv.platform():
+        if not MyEnv.platform_is_windows:
             r = Tools._execute(
                 cmd2,
                 interactive=interactive,
@@ -6990,7 +6989,7 @@ class ExecutorSSH:
                 destdir = os.path.dirname(source)
                 self.dir_ensure(destdir)
             cmd = "scp -P %s %s root@%s:%s" % (self.port, source, self.addr, dest)
-            if "win32" in MyEnv.platform():
+            if MyEnv.platform_is_windows:
                 Tools.execute(cmd, showout=True, interactive=False)
             else:
                 Tools._execute(cmd, showout=True, interactive=False)
@@ -7027,7 +7026,7 @@ class ExecutorSSH:
         Tools.dir_ensure(destdir)
 
         cmd = "scp -P %s root@%s:%s %s" % (self.port, self.addr, source, dest)
-        if not "win32" in MyEnv.platform():
+        if not MyEnv.platform_is_windows:
             Tools._execute(cmd, showout=True, interactive=False)
         else:
             Tools.execute(cmd, showout=True, interactive=False)

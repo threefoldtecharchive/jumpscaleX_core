@@ -62,7 +62,7 @@ class SDKContainers:
             return self.container
 
         # need to make sure 1 sshkey has been created, does not have to be in github
-        if "win32" not in self.IT.MyEnv.platform():
+        if not self.IT.MyEnv.platform_is_windows:
             self.IT.MyEnv.sshagent.key_default_name
 
         self.IT.DockerFactory.init()
@@ -75,13 +75,13 @@ class SDKContainers:
 
         # windows only
         windows_config_exists = False
-        if "win32" in self.IT.MyEnv.platform():
+        if self.IT.MyEnv.platform_is_windows:
             config_path = f"/sandbox/cfg/.configured"
             win_config_path = f"{self.IT.MyEnv._basedir_get()}/cfg/.configured"
             if self.IT.Tools.exists(win_config_path):
                 windows_config_exists = True
 
-        windows_ok = "win32" in self.IT.MyEnv.platform() and windows_config_exists
+        windows_ok = "win32" in self.IT.MyEnv.platform_is_windows and windows_config_exists
 
         if not windows_ok or not docker.executor.exists(config_path):
 
@@ -109,7 +109,7 @@ class SDKContainers:
             docker.install_jumpscale(
                 force=False, reset=False, secret=secret, identity=identity, email=email, words=words,
             )
-            if not "win32" in self.IT.MyEnv.platform():
+            if not self.IT.MyEnv.platform_is_windows:
                 docker.executor.file_write(f"{self.IT.MyEnv._basedir_get()}/cfg/.configured", "")
             else:
                 self.IT.Tools.file_write(f"{self.IT.MyEnv._basedir_get()}/cfg/.configured", "")
