@@ -84,6 +84,13 @@ def info():
     print_formatted_text(HTML(get_doc(_sdk)))
 
 
+def exit():
+    """
+    Exit shell
+    """
+    sys.exit(0)
+
+
 def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
     import inspect
 
@@ -98,7 +105,7 @@ def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
         print("\n*** file: %s" % f.filename)
         print("*** function: %s [linenr:%s]\n" % (f.function, f.lineno))
 
-    print("Welcome to sdk shell, for available modules, call info()")
+    print("Welcome to sdk shell, for help, type info, to exit type exit")
 
     history_filename = "%s/.jsx_sdk_history" % IT.MyEnv.config["DIR_HOME"]
     if not IT.Tools.exists(history_filename):
