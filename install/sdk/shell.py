@@ -5,6 +5,7 @@ import pudb
 import time
 import inspect
 import os
+import cgi
 import re
 from .core import core
 from . import __all__ as sdkall
@@ -30,6 +31,7 @@ from prompt_toolkit.formatted_text import (
 from ptpython.prompt_style import PromptStyle
 
 
+MAIN_METHODS = ["exit", "info"]
 IT = core.IT
 __name__ = "<sdk>"
 
@@ -162,7 +164,7 @@ def rewriteline(parts, globals, locals):
         return line
 
     line = ""
-    if parts[0] in sdkall + ["info"]:
+    if parts[0] in sdkall + MAIN_METHODS:
         root = globals[parts[0]]
         if len(parts) >= 2:
             func = getattr(root, parts[1])
@@ -173,7 +175,9 @@ def rewriteline(parts, globals, locals):
             line = f"{parts[0]}("
             line += get_args_string(parts[1:], root)
             line += ")"
-    return line
+        return line
+    else:
+        return " ".join(parts)
 
 
 def ptconfig(repl, expert=False):
@@ -381,7 +385,7 @@ def ptconfig(repl, expert=False):
                 try:
                     result = eval(code, self.get_globals(), self.get_locals())
                 except (NameError, IT.BaseJSException) as e:
-                    print_formatted_text(HTML(f"<ansired>{e}</ansired>"))
+                    print_formatted_text(HTML(cgi.html.escape(f"<ansired>{e}</ansired>")))
                     return
 
                 locals = self.get_locals()
@@ -426,7 +430,7 @@ def ptconfig(repl, expert=False):
                 try:
                     six.exec_(code, self.get_globals(), self.get_locals())
                 except (NameError, IT.BaseJSException, SyntaxError) as e:
-                    print_formatted_text(HTML(f"<ansired>{e}</ansired>"))
+                    print_formatted_text(HTML(cgi.html.entities(f"<ansired>{e}</ansired>")))
                     return
 
             output.flush()
@@ -452,11 +456,11 @@ def ptconfig(repl, expert=False):
 
         parts = line.split()
         if len(parts) == 0 or (len(parts) == 1 and not line.endswith(" ")):
-            for rootitem in sdkall + ["info"]:
+            for rootitem in sdkall + MAIN_METHODS:
                 if not rootitem.startswith(line):
                     continue
                 color = "brightblue"
-                if rootitem in ["info", "install"]:
+                if rootitem in MAIN_METHODS + ["install"]:
                     color = "green"
                 yield Completion(rootitem, -len(line), display=rootitem, style=f"bg:ansi{color}")
             return
