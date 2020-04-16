@@ -4988,7 +4988,7 @@ class DockerFactory:
                     if name_found != name and name_found.strip().lower() not in ["shared"]:
                         DockerContainer(name_found)
             else:
-                _, out, _ = Tools.execute("docker -v")
+                _, out, _ = Tools.execute("docker -v", die=False)
                 if "Docker" not in out:
                     raise Tools.exceptions.RuntimeError(
                         """
