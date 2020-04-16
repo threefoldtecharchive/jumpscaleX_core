@@ -18,13 +18,6 @@
 - macOS 10.7 or newer
 - Windows 10
 
-
-## Know your 3bot secret
-
-- From 3botconnect application go to settings, then show phrase to get your mnemonics
-- Take a note of the 3bot name and your email
-- When registering for the first time you can use these private words in your configurations
-
 #### Required Packages
 
 ```bash
@@ -63,6 +56,13 @@ ssh-add
 Make sure to check whether **this** ssh key is stored in your github account. If not the installation script will break when it's trying to download the latest version from GitHub.
 
 ### Installation
+
+
+## Know your 3bot secret
+
+- From 3botconnect application go to settings, then show phrase to get your mnemonics
+- Take a note of the 3bot name and your email
+- When registering for the first time you can use these private words in your configurations
 
 ## <a name='Using3sdk'></a>Using 3sdk
 
