@@ -1,16 +1,24 @@
+from typing import List, Set, Dict, Tuple, Optional
+from Docker import DockerFactory
+from MyEnv import MyEnv
+from JumpscaleInstaller import JumpscaleInstaller
+from Tools import Tools
+
+myenv = MyEnv()
+
+
 class SDKContainers:
     def __init__(self, core, args):
         self.container = None
         self.image = "threefoldtech/3bot2"
-        self.IT = core.IT
-        self.core = core
         self.args = args
+        self.core = core
 
     def _identity_ask(self, identity=None):
         if not identity and self.args.identity:
             return self.args.identity
         if not identity:
-            identity = self.core.IT.Tools.ask_string("what is your threebot name (identity)?")
+            identity = self.Tools.ask_string("what is your threebot name (identity)?")
         if "." not in identity:
             identity += ".3bot"
         identity = identity.lower()
@@ -30,12 +38,12 @@ class SDKContainers:
                 name = self.container.name
             else:
                 name = "3bot"
-                # self.IT.Tools.ask_string("name of the container (default 3bot):", default="3bot")
+
         return name
 
-    def delete(self, name=None):
+    def delete(self, name: Optional[str]):
         name = self._name(name)
-        docker = self.IT.DockerFactory.container_delete(name=name)
+        docker = DockerFactory.container_delete(name=name)
         self.container = None
 
     def get(
@@ -62,17 +70,17 @@ class SDKContainers:
             return self.container
 
         # need to make sure 1 sshkey has been created, does not have to be in github
-        self.IT.MyEnv.sshagent.key_default_name
+        myenv.sshagent.key_default_name
 
-        self.IT.DockerFactory.init()
+        DockerFactory.init()
 
-        docker = self.IT.DockerFactory.container_get(
+        docker = DockerFactory.container_get(
             name=name, image=self.image, start=True, delete=delete, mount=mount, pull=pull
         )
 
         if not docker.executor.exists("/sandbox/cfg/.configured"):
 
-            installer = self.IT.JumpscaleInstaller()
+            installer = JumpscaleInstaller()
             print(" - make sure jumpscale code is on local filesystem.")
 
             installer.repos_get(pull=pull, branch=self.core.branch, reset=code_update_force)
@@ -88,7 +96,7 @@ class SDKContainers:
                 words = self.args.words
 
             if not self.args.secret:
-                self.args.secret = self.IT.Tools.ask_password("specify secret passphrase please:")
+                self.args.secret = Tools.ask_password("specify secret passphrase please:")
 
             if not secret:
                 secret = self.args.secret

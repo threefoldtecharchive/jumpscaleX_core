@@ -6,9 +6,9 @@ import time
 import inspect
 import os
 import re
-from .core import core
 from . import __all__ as sdkall
 from . import _get_doc_line, _get_doc
+from Tools import BaseJSException
 
 from prompt_toolkit.application import get_app
 from prompt_toolkit.keys import Keys
@@ -30,7 +30,6 @@ from prompt_toolkit.formatted_text import (
 from ptpython.prompt_style import PromptStyle
 
 
-IT = core.IT
 __name__ = "<sdk>"
 
 
@@ -67,7 +66,7 @@ def get_rhs(line):
         stmt = mod.body[0]
         # only assignment statements
         if type(stmt) in (ast.Assign, ast.AugAssign, ast.AnnAssign):
-            return line[stmt.value.col_offset:].strip()
+            return line[stmt.value.col_offset :].strip()
     return line
 
 
@@ -380,7 +379,7 @@ def ptconfig(repl, expert=False):
                 code = compile_with_flags(line, "eval")
                 try:
                     result = eval(code, self.get_globals(), self.get_locals())
-                except (NameError, IT.BaseJSException) as e:
+                except (NameError, BaseJSException) as e:
                     print_formatted_text(HTML(f"<ansired>{e}</ansired>"))
                     return
 
@@ -425,7 +424,7 @@ def ptconfig(repl, expert=False):
                 code = compile_with_flags(line, "exec")
                 try:
                     six.exec_(code, self.get_globals(), self.get_locals())
-                except (NameError, IT.BaseJSException, SyntaxError) as e:
+                except (NameError, BaseJSException, SyntaxError) as e:
                     print_formatted_text(HTML(f"<ansired>{e}</ansired>"))
                     return
 
@@ -445,7 +444,7 @@ def ptconfig(repl, expert=False):
             rmembers = inspect.getmembers(module, inspect.isfunction)
             for rmember, func in rmembers:
                 if rmember.startswith(prefix) and not rmember.startswith(HIDDEN_PREFIXES):
-                    if getattr(func, '__property__', False):
+                    if getattr(func, "__property__", False):
                         yield Completion(rmember, -len(prefix), display=rmember, style="bg:ansicyan")
                     else:
                         yield Completion(rmember, -len(prefix), display=rmember, style="bg:ansigreen")

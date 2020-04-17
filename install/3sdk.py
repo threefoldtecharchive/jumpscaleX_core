@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 import sys
+import os
+
+dpath = os.path.dirname(__file__)
+if dpath not in sys.path:
+    sys.path.append(dpath)
+dpath = f"{dpath}/lib"
+if dpath not in sys.path:
+    sys.path.append(dpath)
+
+
 import jedi
 import sdk as _sdk
 import cgi
@@ -10,11 +20,13 @@ from functools import partial
 from sdk.shell import ptconfig, rewriteline
 from sdk import container, builder, simulator, install, args, core, installer, _get_doc_line  # pylint: disable=F401
 
+from Tools import Tools
+from MyEnv import MyEnv
+
+myenv = MyEnv()
 from prompt_toolkit.shortcuts import print_formatted_text
 from prompt_toolkit.formatted_text import HTML
 
-
-IT = core.core.IT
 # for auto-completion data
 # also, jedi and parso hooks need to be available
 # for autoc-completion to work with pyinstaller build
@@ -100,9 +112,9 @@ def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
 
     print("Welcome to sdk shell, for available modules, call info()")
 
-    history_filename = "%s/.jsx_sdk_history" % IT.MyEnv.config["DIR_HOME"]
-    if not IT.Tools.exists(history_filename):
-        IT.Tools.file_write(history_filename, "")
+    history_filename = "%s/.jsx_sdk_history" % myenv.config["DIR_HOME"]
+    if not Tools.exists(history_filename):
+        Tools.file_write(history_filename, "")
 
     myptconfig = partial(ptconfig, expert=expert)
     result = embed(globals_, locals_, configure=myptconfig, history_filename=history_filename)

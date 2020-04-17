@@ -1,15 +1,15 @@
 """manage simulator"""
-from .core import core
-from .args import args
+# from .args import args
 from .container import _containers, _threebot_browser
 from .container import install as _install_container
 from .container import delete as _delete_container
-from .container import stop as _stop_container
+
+# from .container import stop as _stop_container
 
 __all__ = ["browser", "stop", "start", "shell", "restart"]
 
 
-def start(delete=False, browser_open=True, code_update_force=False):
+def start(delete=False, browser_open=True, pull=True, code_update_force=False):
     """
     install & run a container with SDK & simulator
 
@@ -19,8 +19,8 @@ def start(delete=False, browser_open=True, code_update_force=False):
     if delete:
         _delete_container("simulator")
 
-    if not _containers.IT.DockerFactory.container_name_exists("simulator"):
-        _install_container("simulator", delete=delete, code_update_force=code_update_force, pull=True)
+    if not DockerFactory.container_name_exists("simulator"):
+        _install_container("simulator", delete=delete, code_update_force=code_update_force, pull=pull)
         c = _containers.get(name="simulator")
         c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
     else:
@@ -53,7 +53,7 @@ def restart(browser_open=False):
     restart the simulator, this can help to remove all running kernels
     the pyjupyter notebook can become super heavy
     """
-    if not _containers.IT.DockerFactory.container_name_exists("simulator"):
+    if not DockerFactory.container_name_exists("simulator"):
         start()
     else:
         c = _containers.get(name="simulator")
@@ -68,7 +68,7 @@ def shell():
     """
     get a shell into the simulator
     """
-    if not _containers.IT.DockerFactory.container_name_exists("simulator"):
+    if not DockerFactory.container_name_exists("simulator"):
         start()
     c = _containers.get(name="simulator")
     c.shell()

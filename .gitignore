@@ -55,6 +55,8 @@ local_settings.py
 instance/
 .webassets-cache
 
+.mypy_cache
+
 # Scrapy stuff:
 .scrapy
 

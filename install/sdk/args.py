@@ -1,13 +1,12 @@
 """configurable arguments"""
-import os
-from .core import core
 
-os.environ["LC_ALL"] = "en_US.UTF-8"
 
 __all__ = ["identity", "secret", "email", "words", "reset"]
 
+from BaseClassProperties import BaseClassProperties
 
-class Args(core.IT.Tools._BaseClassProperties):
+
+class Args(BaseClassProperties):
     def _init(self, **kwargs):
         self.identity = None
         self.secret = None
@@ -58,7 +57,7 @@ def words(val=""):
         else:
             from .container import _containers
 
-            if _containers.IT.DockerFactory.container_name_exists("3bot"):
+            if DockerFactory.container_name_exists("3bot"):
                 c = _containers.get(name="3bot")
                 c.execute("print(j.me.encryptor.words);print(\n\n)", jumpscale=True)
             else:

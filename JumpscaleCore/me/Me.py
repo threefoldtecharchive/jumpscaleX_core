@@ -475,6 +475,10 @@ class Me(JSConfigBase, j.baseclasses.testtools):
 
         return self
 
+    @property
+    def words(self):
+        return self.encryptor.words
+
     def _get_test_data(self):
         S = """
         @url = tools.threebot.test.schema

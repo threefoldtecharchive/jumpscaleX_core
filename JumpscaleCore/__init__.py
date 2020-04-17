@@ -3,6 +3,13 @@ import socket
 import inspect
 import sys
 
+dpath = os.path.dirname(__file__)
+if dpath not in sys.path:
+    sys.path.append(dpath)
+dpath = f"{dpath}/libcore"
+if dpath not in sys.path:
+    sys.path.append(dpath)
+
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
@@ -44,16 +51,23 @@ def profileStop(pr):
 
 # pr = profileStart()
 
-from .core.InstallTools import BaseInstaller
-from .core.InstallTools import JumpscaleInstaller
-from .core.InstallTools import Tools
-from .core.InstallTools import RedisTools
-from .core.InstallTools import DockerFactory
-from .core.InstallTools import MyEnv
+# from .libcore.BaseInstaller import BaseInstaller
+# from .libcore.JumpscaleInstaller import JumpscaleInstaller
+# from .libcore.Docker import DockerFactory
+
 import yaml
 
-MyEnv.init()
-# TODO: there is something not right we get different version of this class, this should be like a singleton !!!
+from .libcore.SSHAgent import SSHAgent
+from .libcore.Tools import Tools
+from .libcore.Redis import RedisTools
+from .libcore.LogHandler import LogHandler
+from .libcore.MyEnv import MyEnv
+
+myenv = MyEnv(Tools, RedisTools, LogHandler, SSHAgent)
+assert Tools.myenv == myenv
+Tools.myenv.init()
+
+Tools.shell()
 
 
 class Core:
@@ -61,7 +75,7 @@ class Core:
         self._dir_home = None
         self._dir_jumpscale = None
         self._sandbox_check = None
-        self.db = MyEnv.db
+        self.db = myenv.db
 
     def db_reset(self, j):
         if hasattr(j.data, "cache"):
@@ -167,7 +181,7 @@ class Jumpscale:
             print("*** function: %s [linenr:%s]\n" % (f.function, f.lineno))
 
         # Tools.clear()
-        history_filename = "%s/.jsx_history" % MyEnv.config["DIR_HOME"]
+        history_filename = "%s/.jsx_history" % myenv.config["DIR_HOME"]
         if not Tools.exists(history_filename):
             Tools.file_write(history_filename, "")
         # locals_= f.f_locals
@@ -236,7 +250,7 @@ rootdir = os.path.dirname(os.path.abspath(__file__))
 # print("- setup root directory: %s" % rootdir)
 
 
-j.core.myenv = MyEnv
+j.core.myenv = myenv
 j.core.redistools = RedisTools
 
 

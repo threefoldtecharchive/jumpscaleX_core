@@ -1,10 +1,13 @@
+import os
+
 from . import container, simulator
 from . import builder
 from . import core
 from . import args
 import textwrap
 
-# import jsx
+
+os.environ["LC_ALL"] = "en_US.UTF-8"
 
 __all__ = ["builder", "simulator", "container", "args", "core", "installer", "install"]
 

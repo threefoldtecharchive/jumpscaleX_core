@@ -1,9 +1,12 @@
 """manage containers"""
-from .lib.SDKContainers import SDKContainers
-from .core import core
+from SDKContainers import SDKContainers
+from Tools import Tools
 from .args import args
-import time
+import core
+from MyEnv import MyEnv
+from Docker import DockerFactory
 
+myenv = MyEnv()
 
 _containers = SDKContainers(core=core, args=args)
 
@@ -11,19 +14,19 @@ __all__ = ["install", "stop", "start", "shell", "kosmos", "list", "threebot", "d
 
 
 def _containers_do(prefix=None, delete=False, stop=False):
-    for item in _containers.IT.DockerFactory.list():
+    for item in DockerFactory.list():
         if prefix == "":
             prefix = None
         if prefix:
             if not item.startswith(prefix):
                 continue
         if stop:
-            d = _containers.IT.DockerFactory.container_get(item)
+            d = DockerFactory.container_get(item)
             print(f" - STOP: {item}")
             d.stop()
         if delete:
             print(f" - DELETE: {item}")
-            d = _containers.IT.DockerFactory.container_delete(item)
+            d = DockerFactory.container_delete(item)
 
 
 def install(
@@ -54,8 +57,8 @@ def install(
         words should be retrieved from 3bot connect app to be used for encryption
 
     """
-    delete = core.IT.Tools.bool(delete)
-    mount = core.IT.Tools.bool(mount)
+    delete = Tools.bool(delete)
+    mount = Tools.bool(mount)
 
     if code_update_force:
         pull = True
@@ -118,7 +121,7 @@ def start(name=None, server=False):
     """
     @param server=True will start 3bot server
     """
-    server = core.IT.Tools.bool(server)
+    server = Tools.bool(server)
     c = _containers.get(name=name)
     c.start()
     if server:
@@ -136,20 +139,20 @@ def _threebot_browser(c, url=None):
         https = 4000 + int(c.config.portrange) * 10
         url = f"https://localhost:{https}/"
 
-    if core.IT.MyEnv.platform_is_osx:
+    if myenv.platform_is_osx:
         cmd = (
             'open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
                 --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors %s'
             % url
         )
-        core.IT.Tools.execute(cmd)
+        Tools.execute(cmd)
 
     # try:
     #     import webbrowser
     #
-    #     core.IT.Tools.shell()
+    #     Tools.shell()
     #     # time.sleep(5)
-    #     # if core.IT.MyEnv.platform_is_osx:
+    #     # if myenv.platform_is_osx:
     #     #     webbrowser.get("safari").open_new_tab("https://localhost:4000")
     #     # else:
     #     webbrowser.open_new_tab("https://localhost:4000")
@@ -217,7 +220,7 @@ def threebot(delete=False, identity=None, email=None, words=None, restart=False,
     """
     if delete:
         _delete("3bot")
-    if not _containers.IT.DockerFactory.container_name_exists("3bot"):
+    if not DockerFactory.container_name_exists("3bot"):
         install("3bot", delete=delete, identity=identity, email=email, words=words, server=True, pull=pull)
 
     c = _containers.get(name="3bot")
@@ -257,7 +260,7 @@ def zerotier(name=None, connect=False):
 #         wg.disconnect()
 #     elif test:
 #         print(wg)
-#         IT.Tools.shell()
+#         Tools.shell()
 #     else:
 #         wg.reset()
 #         print(wg)
@@ -270,14 +273,14 @@ def zerotier(name=None, connect=False):
 #     infrastructure for helping us to communicate
 #     :return:
 #     """
-#     myid = IT.MyEnv.registry.myid
-#     addr = IT.MyEnv.registry.addr[0]
+#     myid = myenv.registry.myid
+#     addr = myenv.registry.addr[0]
 #     wg = IT.WireGuardServer(addr=addr, myid=myid)
 #     if disconnect:
 #         wg.disconnect()
 #     elif test:
 #         print(wg)
-#         IT.Tools.shell()
+#         Tools.shell()
 #     else:
 #         wg.reset()
 #         print(wg)

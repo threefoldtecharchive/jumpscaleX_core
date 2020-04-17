@@ -1,6 +1,3 @@
-from .core import core
-
-
 def brew(remove=False):
     """
     install brew on your local node  (can remove using the remove flag)

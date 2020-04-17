@@ -11,47 +11,6 @@ DEFAULT_BRANCH = "unstable"
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
-def load_install_tools(branch=None, reset=False):
-    # get current install.py directory
-
-    path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py"
-    if not os.path.exists(path):
-        path = os.path.expanduser("~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py")
-
-    if not branch:
-        branch = DEFAULT_BRANCH
-    # first check on code tools
-    if not os.path.exists(path):
-        rootdir = os.path.dirname(os.path.abspath(__file__))
-        path = os.path.join(rootdir, "InstallTools.py")
-        # now check on path next to jsx
-        if not os.path.exists(path) or reset:  # or path.find("/code/") == -1:
-            url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py" % branch
-
-            # fallback to default branch if installation is being done for another branch that doesn't exist in core
-            if branch != DEFAULT_BRANCH and requests.get(url).status_code == 404:
-                url = (
-                    "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py"
-                    % DEFAULT_BRANCH
-                )
-
-            with urlopen(url) as resp:
-                if resp.status != 200:
-                    raise RuntimeError("fail to download InstallTools.py")
-                with open(path, "w+") as f:
-                    f.write(resp.read().decode("utf-8"))
-                print("DOWNLOADED INSTALLTOOLS TO %s" % path)
-
-    spec = util.spec_from_file_location("IT", path)
-    IT = spec.loader.load_module()
-    IT.MyEnv.init()
-    return IT
-
-
-IT = load_install_tools()
-IT.MyEnv.interactive = True  # std is interactive
-
-
 def jumpscale_get(die=True):
     # jumpscale need to be available otherwise cannot do
     try:

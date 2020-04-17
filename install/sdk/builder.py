@@ -1,6 +1,4 @@
-from .core import core
-
-IT = core.IT
+from Tools import Tools
 
 
 def base():
@@ -25,14 +23,14 @@ def sdktool():
     """
     # TODO: call the local jumpscale installer
 
-    DIR_BASE = IT.MyEnv.config["DIR_BASE"]
-    DIR_HOME = IT.MyEnv.config["DIR_HOME"]
-    if IT.MyEnv.platform_is_osx:
+    DIR_BASE = myenv.config["DIR_BASE"]
+    DIR_HOME = myenv.config["DIR_HOME"]
+    if myenv.platform_is_osx:
         name = "osx"
-    elif IT.MyEnv.platform_is_linux:
+    elif myenv.platform_is_linux:
         name = "osx"
     else:
-        raise IT.Tools.exceptions.Input("platform not supported")
+        raise Tools.exceptions.Input("platform not supported")
 
     C = f"""
     cd {DIR_BASE}/installer
@@ -41,9 +39,9 @@ def sdktool():
     bash package.sh
     cp {DIR_BASE}/installer/dist/3sdk /tmp/3sdk_{name}
     """
-    IT.Tools.execute(C)
-    if IT.MyEnv.platform_is_osx:
-        IT.Tools.execute(f"cp {DIR_BASE}/installer/dist/3sdk {DIR_HOME}/Downloads/3sdk_{name}", die=False)
+    Tools.execute(C)
+    if myenv.platform_is_osx:
+        Tools.execute(f"cp {DIR_BASE}/installer/dist/3sdk {DIR_HOME}/Downloads/3sdk_{name}", die=False)
     C = f"""
     cd {DIR_BASE}/installer
     rm -rf dist
@@ -51,7 +49,7 @@ def sdktool():
     # rm -rf {DIR_BASE}/installer/sdk/InstallTools.py
     echo "find the build sdk on /tmp/3sdk_{name} or ~/Downloads/3sdk_{name}"
     """
-    IT.Tools.execute(C)
+    Tools.execute(C)
 
 
 def container_import(name=None, path=None, imagename="threefoldtech/3bot2", no_start=False):
@@ -126,9 +124,9 @@ def container_export(name=None, path=None, version=None):
 #
 #
 # def _build_phusion(push=False):
-#     path = IT.Tools.text_replace("{DIR_BASE}/code/github/threefoldtech/baseimage-docker")
+#     path = Tools.text_replace("{DIR_BASE}/code/github/threefoldtech/baseimage-docker")
 #     if not os.path.exists(path):
-#         IT.Tools.code_github_get(url="https://github.com/threefoldtech/baseimage-docker", branch="master")
+#         Tools.code_github_get(url="https://github.com/threefoldtech/baseimage-docker", branch="master")
 #     cmd = """
 #         set -ex
 #         cd {}/image
@@ -136,9 +134,9 @@ def container_export(name=None, path=None, version=None):
 #     """.format(
 #         path
 #     )
-#     IT.Tools.execute(cmd, interactive=True)
+#     Tools.execute(cmd, interactive=True)
 #     if push:
-#         IT.Tools.execute("docker pushe threefoldtech/phusion/latest")
+#         Tools.execute("docker pushe threefoldtech/phusion/latest")
 #
 #
 # def basebuilder_(dest=None, push=False, delete=True):
