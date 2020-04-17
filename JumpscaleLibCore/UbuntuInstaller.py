@@ -1,34 +1,36 @@
-class UbuntuInstaller:
-    @staticmethod
-    def do_all(prebuilt=False, pips_level=3):
-        MyEnv.init()
-        Tools.log("installing Ubuntu version")
+import os
 
-        UbuntuInstaller.ensure_version()
-        UbuntuInstaller.base()
+
+class UbuntuInstaller:
+    def __init__(self, myenv):
+        self._my = myenv
+        self._tools = myenv.tools
+
+    def do_all(self, prebuilt=False, pips_level=3):
+        self._tools.log("installing Ubuntu version")
+
+        self._my.installers.ubuntu.ensure_version()
+        self._my.installers.ubuntu.base()
         # UbuntuInstaller.ubuntu_base_install()
         if not prebuilt:
-            UbuntuInstaller.python_dev_install()
-        UbuntuInstaller.apts_install()
+            self._my.installers.ubuntu.python_dev_install()
+        self._my.installers.ubuntu.apts_install()
         if not prebuilt:
-            BaseInstaller.pips_install(pips_level=pips_level)
+            self._my.installers.base.pips_install(pips_level=pips_level)
 
-    @staticmethod
-    def ensure_version():
-        MyEnv.init()
+    def ensure_version(self):
         if not os.path.exists("/etc/lsb-release"):
-            raise Tools.exceptions.Base("Your operating system is not supported")
+            raise self._tools.exceptions.Base("Your operating system is not supported")
 
         return True
 
-    @staticmethod
-    def base():
-        MyEnv.init()
+    def base(self):
+        self._my.init()
 
-        if MyEnv.state_get("base"):
+        if self._my.state_get("base"):
             return
 
-        rc, out, err = Tools.execute("lsb_release -a")
+        rc, out, err = self._tools.execute("lsb_release -a")
         if out.find("Ubuntu 18.04") != -1:
             bionic = True
         else:
@@ -42,7 +44,7 @@ class UbuntuInstaller:
                 echo deb http://mirror.unix-solutions.be/ubuntu/ bionic main universe multiverse restricted >> /etc/apt/sources.list
             fi
             """
-            Tools.execute(script, interactive=True, die=False)
+            self._tools.execute(script, interactive=True, die=False)
 
         script = """
         apt-get update
@@ -58,16 +60,15 @@ class UbuntuInstaller:
         apt-get install locales -y
 
         """
-        Tools.execute(script, interactive=True)
+        self._tools.execute(script, interactive=True)
 
-        if bionic and not DockerFactory.indocker():
-            UbuntuInstaller.docker_install()
+        if bionic and not self._my._docker.indocker():
+            self._my.installers.ubuntu.docker_install()
 
-        MyEnv.state_set("base")
+        self._my.state_set("base")
 
-    @staticmethod
-    def docker_install():
-        if MyEnv.state_get("ubuntu_docker_install"):
+    def docker_install(self):
+        if self._my.state_get("ubuntu_docker_install"):
             return
         script = """
         apt-get update
@@ -79,15 +80,14 @@ class UbuntuInstaller:
         apt-get update
         sudo apt-get install docker-ce -y
         """
-        Tools.execute(script, interactive=True)
-        MyEnv.state_set("ubuntu_docker_install")
+        self._tools.execute(script, interactive=True)
+        self._my.state_set("ubuntu_docker_install")
 
-    @staticmethod
-    def python_dev_install():
-        if MyEnv.state_get("python_dev_install"):
+    def python_dev_install(self):
+        if self._my.state_get("python_dev_install"):
             return
 
-        Tools.log("installing jumpscale tools")
+        self._tools.log("installing jumpscale tools")
 
         script = """
         cd /tmp
@@ -96,14 +96,13 @@ class UbuntuInstaller:
 
 
         """
-        rc, out, err = Tools.execute(script, interactive=True, timeout=300)
+        rc, out, err = self._tools.execute(script, interactive=True, timeout=300)
         if rc > 0:
             # lets try other time
-            rc, out, err = Tools.execute(script, interactive=True, timeout=300)
-        MyEnv.state_set("python_dev_install")
+            rc, out, err = self._tools.execute(script, interactive=True, timeout=300)
+        self._my.state_set("python_dev_install")
 
-    @staticmethod
-    def apts_list():
+    def apts_list(self):
         return [
             "iproute2",
             "python-ufw",
@@ -119,10 +118,9 @@ class UbuntuInstaller:
             "fuse",
         ]
 
-    @staticmethod
-    def apts_install():
-        for apt in UbuntuInstaller.apts_list():
-            if not MyEnv.state_get("apt_%s" % apt):
+    def apts_install(self):
+        for apt in self._my.installers.ubuntu.apts_list():
+            if not self._my.state_get("apt_%s" % apt):
                 command = "apt-get install -y %s" % apt
-                Tools.execute(command, die=True)
-                MyEnv.state_set("apt_%s" % apt)
+                self._tools.execute(command, die=True)
+                self._my.state_set("apt_%s" % apt)

@@ -5,9 +5,12 @@ import os
 dpath = os.path.dirname(__file__)
 if dpath not in sys.path:
     sys.path.append(dpath)
-dpath = f"{dpath}/lib"
+
+dpath = f'{os.environ["HOME"]}/sandbox/code/github/threefoldtech/jumpscaleX_core'
 if dpath not in sys.path:
     sys.path.append(dpath)
+
+from JumpscaleLibCore import myenv
 
 
 import jedi
@@ -20,10 +23,11 @@ from functools import partial
 from sdk.shell import ptconfig, rewriteline
 from sdk import container, builder, simulator, install, args, core, installer, _get_doc_line  # pylint: disable=F401
 
-from Tools import Tools
 from MyEnv import MyEnv
 
 myenv = MyEnv()
+tools = myenv.tools
+
 from prompt_toolkit.shortcuts import print_formatted_text
 from prompt_toolkit.formatted_text import HTML
 
@@ -113,8 +117,8 @@ def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
     print("Welcome to sdk shell, for available modules, call info()")
 
     history_filename = "%s/.jsx_sdk_history" % myenv.config["DIR_HOME"]
-    if not Tools.exists(history_filename):
-        Tools.file_write(history_filename, "")
+    if not tools.exists(history_filename):
+        tools.file_write(history_filename, "")
 
     myptconfig = partial(ptconfig, expert=expert)
     result = embed(globals_, locals_, configure=myptconfig, history_filename=history_filename)

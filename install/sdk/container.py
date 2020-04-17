@@ -1,10 +1,11 @@
 """manage containers"""
 from SDKContainers import SDKContainers
-from Tools import Tools
+
 from .args import args
-import core
+
+from .core import core
+
 from MyEnv import MyEnv
-from Docker import DockerFactory
 
 myenv = MyEnv()
 
@@ -14,19 +15,19 @@ __all__ = ["install", "stop", "start", "shell", "kosmos", "list", "threebot", "d
 
 
 def _containers_do(prefix=None, delete=False, stop=False):
-    for item in DockerFactory.list():
+    for item in myenv.docker.list():
         if prefix == "":
             prefix = None
         if prefix:
             if not item.startswith(prefix):
                 continue
         if stop:
-            d = DockerFactory.container_get(item)
+            d = myenv.docker.container_get(item)
             print(f" - STOP: {item}")
             d.stop()
         if delete:
             print(f" - DELETE: {item}")
-            d = DockerFactory.container_delete(item)
+            d = myenv.docker.container_delete(item)
 
 
 def install(
@@ -57,8 +58,8 @@ def install(
         words should be retrieved from 3bot connect app to be used for encryption
 
     """
-    delete = Tools.bool(delete)
-    mount = Tools.bool(mount)
+    delete = myenv.tools.bool(delete)
+    mount = myenv.tools.bool(mount)
 
     if code_update_force:
         pull = True
@@ -121,7 +122,7 @@ def start(name=None, server=False):
     """
     @param server=True will start 3bot server
     """
-    server = Tools.bool(server)
+    server = myenv.tools.bool(server)
     c = _containers.get(name=name)
     c.start()
     if server:
@@ -145,12 +146,12 @@ def _threebot_browser(c, url=None):
                 --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors %s'
             % url
         )
-        Tools.execute(cmd)
+        myenv.tools.execute(cmd)
 
     # try:
     #     import webbrowser
     #
-    #     Tools.shell()
+    #     myenv.tools.shell()
     #     # time.sleep(5)
     #     # if myenv.platform_is_osx:
     #     #     webbrowser.get("safari").open_new_tab("https://localhost:4000")
@@ -220,7 +221,7 @@ def threebot(delete=False, identity=None, email=None, words=None, restart=False,
     """
     if delete:
         _delete("3bot")
-    if not DockerFactory.container_name_exists("3bot"):
+    if not myenv.docker.container_name_exists("3bot"):
         install("3bot", delete=delete, identity=identity, email=email, words=words, server=True, pull=pull)
 
     c = _containers.get(name="3bot")
@@ -260,7 +261,7 @@ def zerotier(name=None, connect=False):
 #         wg.disconnect()
 #     elif test:
 #         print(wg)
-#         Tools.shell()
+#         myenv.tools.shell()
 #     else:
 #         wg.reset()
 #         print(wg)
@@ -280,7 +281,7 @@ def zerotier(name=None, connect=False):
 #         wg.disconnect()
 #     elif test:
 #         print(wg)
-#         Tools.shell()
+#         myenv.tools.shell()
 #     else:
 #         wg.reset()
 #         print(wg)

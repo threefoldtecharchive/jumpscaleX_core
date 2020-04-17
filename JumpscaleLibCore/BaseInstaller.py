@@ -1,55 +1,59 @@
-class BaseInstaller:
-    @staticmethod
-    def install(force=False, sandboxed=False, branch=None, pips_level=3):
+import os
 
-        MyEnv.init()
+
+class BaseInstaller:
+    def __init__(self, myenv):
+        self._my = myenv
+        self._tools = self._my.tools
+
+    def install(self, force=False, sandboxed=False, branch=None, pips_level=3):
 
         if force:
-            MyEnv.state_delete("install")
+            self._my.state_delete("install")
 
-        if MyEnv.state_get("install"):
+        if self._my.state_get("install"):
             return  # nothing to do
 
-        BaseInstaller.base()
-        if MyEnv.platform() == "linux":
+        self._my.installers.base.base()
+        if self._my.platform() == "linux":
             if not sandboxed:
-                UbuntuInstaller.do_all()
+                self._my.installers.ubuntu.do_all()
             else:
-                raise Tools.exceptions.Base("not ok yet")
-                UbuntuInstaller.base(pips_level=pips_level)
-        elif "darwin" in MyEnv.platform():
+                raise self._tools.exceptions.Base("not ok yet")
+                self._my.installers.ubuntu.base(pips_level=pips_level)
+        elif "darwin" in self._my.platform():
             if not sandboxed:
-                OSXInstaller.do_all(pips_level=pips_level)
+                self._my.installers.osx.do_all(pips_level=pips_level)
             else:
-                raise Tools.exceptions.Base("not ok yet")
-                OSXInstaller.base()
+                raise self._tools.exceptions.Base("not ok yet")
+                self._my.installers.osx.base()
         else:
-            raise Tools.exceptions.Base("only OSX and Linux Ubuntu supported.")
+            raise self._tools.exceptions.Base("only OSX and Linux Ubuntu supported.")
 
         for profile_name in [".bash_profile", ".profile"]:
             # BASHPROFILE
             if sandboxed:
-                env_path = "%s/%s" % (MyEnv.config["DIR_HOME"], profile_name)
-                if Tools.exists(env_path):
-                    bashprofile = Tools.file_text_read(env_path)
-                    cmd = "source %s/env.sh" % MyEnv._basedir_get()
+                env_path = "%s/%s" % (self._my.config["DIR_HOME"], profile_name)
+                if self._tools.exists(env_path):
+                    bashprofile = self._tools.file_text_read(env_path)
+                    cmd = "source %s/env.sh" % self._my._basedir_get()
                     if bashprofile.find(cmd) != -1:
                         bashprofile = bashprofile.replace(cmd, "")
-                        Tools.file_write(env_path, bashprofile)
+                        self._tools.file_write(env_path, bashprofile)
             else:
                 # if not sandboxed need to remove old python's from bin dir
-                Tools.execute("rm -f {DIR_BASE}/bin/pyth*", die_if_args_left=True)
-                env_path = "%s/%s" % (MyEnv.config["DIR_HOME"], profile_name)
-                if not Tools.exists(env_path):
+                self._tools.execute("rm -f {DIR_BASE}/bin/pyth*", die_if_args_left=True)
+                env_path = "%s/%s" % (self._my.config["DIR_HOME"], profile_name)
+                if not self._tools.exists(env_path):
                     bashprofile = ""
                 else:
-                    bashprofile = Tools.file_text_read(env_path)
-                cmd = "source %s/env.sh" % MyEnv._basedir_get()
+                    bashprofile = self._tools.file_text_read(env_path)
+                cmd = "source %s/env.sh" % self._my._basedir_get()
                 if bashprofile.find(cmd) == -1:
                     bashprofile += "\n%s\n" % cmd
-                    Tools.file_write(env_path, bashprofile)
+                    self._tools.file_write(env_path, bashprofile)
 
-        ji = JumpscaleInstaller()
+        ji = self._my.installers.jumpscale()
         print("- get sandbox repos from git")
         ji.repos_get(pull=False, branch=branch)
         print("- copy files to sandbox (non binaries)")
@@ -67,29 +71,29 @@ class BaseInstaller:
             mkdir -p var
 
             """
-            Tools.execute(script, interactive=MyEnv.interactive, die_if_args_left=True, replace=True)
+            self._tools.execute(script, interactive=self._my.interactive, die_if_args_left=True, replace=True)
 
         else:
 
             # install the sandbox
 
-            raise Tools.exceptions.Base("not done yet")
+            raise self._tools.exceptions.Base("not done yet")
 
             script = """
             cd {DIR_BASE}
             rsync -ra {DIR_BASE}/code/github/threefoldtech/sandbox_base/base/ {DIR_BASE}/
             mkdir -p root
             """
-            Tools.execute(script, interactive=MyEnv.interactive, die_if_args_left=True)
+            self._tools.execute(script, interactive=self._my.interactive, die_if_args_left=True)
 
-            if MyEnv.platform() == "darwin":
+            if self._my.platform() == "darwin":
                 reponame = "sandbox_osx"
-            elif MyEnv.platform() == "linux":
+            elif self._my.platform() == "linux":
                 reponame = "sandbox_ubuntu"
             else:
-                raise Tools.exceptions.Base("cannot install, MyEnv.platform() now found")
+                raise self._tools.exceptions.Base("cannot install, self._my.platform() now found")
 
-            Tools.code_github_get(repo=reponame, branch=["master"])
+            self._tools.code_github_get(repo=reponame, branch=["master"])
 
             script = """
             set -e
@@ -101,7 +105,7 @@ class BaseInstaller:
             args = {}
             args["REPONAME"] = reponame
 
-            Tools.execute(script, interactive=MyEnv.interactive, args=args, die_if_args_left=True)
+            self._tools.execute(script, interactive=self._my.interactive, args=args, die_if_args_left=True)
 
             script = """
             set -e
@@ -109,20 +113,19 @@ class BaseInstaller:
             source env.sh
             python3 -c 'print("- PYTHON OK, SANDBOX USABLE")'
             """
-            Tools.execute(script, interactive=MyEnv.interactive, die_if_args_left=True)
+            self._tools.execute(script, interactive=self._my.interactive, die_if_args_left=True)
 
-            Tools.log("INSTALL FOR BASE OK")
+            self._tools.log("INSTALL FOR BASE OK")
 
-        MyEnv.state_set("install")
+        self._my.state_set("install")
 
-    @staticmethod
-    def base():
+    def base(self):
 
-        if MyEnv.state_get("generic_base"):
+        if self._my.state_get("generic_base"):
             return
 
-        if not os.path.exists(MyEnv.config["DIR_TEMP"]):
-            os.makedirs(MyEnv.config["DIR_TEMP"], exist_ok=True)
+        if not os.path.exists(self._my.config["DIR_TEMP"]):
+            os.makedirs(self._my.config["DIR_TEMP"], exist_ok=True)
 
         script = """
 
@@ -130,20 +133,19 @@ class BaseInstaller:
         mkdir -p {DIR_VAR}/log
 
         """
-        Tools.execute(script, interactive=True, die_if_args_left=True)
+        self._tools.execute(script, interactive=True, die_if_args_left=True)
 
-        if MyEnv.platform_is_osx:
-            OSXInstaller.base()
-        elif MyEnv.platform_is_linux:
-            UbuntuInstaller.base()
+        if self._my.platform_is_osx:
+            self._my.installers.osx.base()
+        elif self._my.platform_is_linux:
+            self._my.installers.ubuntu.base()
         else:
             print("Only ubuntu & osx supported")
             os.exit(1)
 
-        MyEnv.state_set("generic_base")
+        self._my.state_set("generic_base")
 
-    @staticmethod
-    def pips_list(level=3):
+    def pips_list(self, level=3):
         """
         level0 is only the most basic
         1 in the middle (recommended)
@@ -278,21 +280,19 @@ class BaseInstaller:
 
         return res
 
-    @staticmethod
-    def pips_install(items=None, pips_level=3):
+    def pips_install(self, items=None, pips_level=3):
         if not items:
-            items = BaseInstaller.pips_list(pips_level)
-            MyEnv.state_set("pip_zoos")
+            items = self._my.installers.base.pips_list(pips_level)
+            self._my.state_set("pip_zoos")
         for pip in items:
-            if not MyEnv.state_get("pip_%s" % pip):
+            if not self._my.state_get("pip_%s" % pip):
                 C = "pip3 install '%s'" % pip  # --user
-                Tools.execute(C, die=True, retry=3)
-                MyEnv.state_set("pip_%s" % pip)
+                self._tools.execute(C, die=True, retry=3)
+                self._my.state_set("pip_%s" % pip)
         # C = "pip3 install -e 'git+https://github.com/threefoldtech/0-hub#egg=zerohub&subdirectory=client'"
-        # Tools.execute(C, die=True)
+        # self._tools.execute(C, die=True)
 
-    @staticmethod
-    def code_copy_script_get():
+    def code_copy_script_get(self):
         CMD = """
         cd /
         rm -rf /sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/threebot
@@ -300,10 +300,9 @@ class BaseInstaller:
         [ -d "/sandbox/code/github" ] && rsync -rav --exclude '__pycache__' --exclude '.git' --exclude '.idea' --exclude '*.pyc' /sandbox/code/github/threefoldtech/ /sandbox/code_org/
 
         """
-        return Tools.text_strip(CMD, replace=False)
+        return self._tools.text_strip(CMD, replace=False)
 
-    @staticmethod
-    def cleanup_script_get():
+    def cleanup_script_get(self):
         CMD = """
         cd /
         rm -f /sandbox/cfg/.configured
@@ -348,10 +347,9 @@ class BaseInstaller:
             sed -i -r 's/^SECRET =.*/SECRET =/' /sandbox/cfg/jumpscale_config.toml
         fi
         """
-        return Tools.text_strip(CMD, replace=False)
+        return self._tools.text_strip(CMD, replace=False)
 
-    @staticmethod
-    def cleanup_script_developmentenv_get():
+    def cleanup_script_developmentenv_get(self):
         CMD = """
         apt remove gcc -y
         apt remove rustc -y
@@ -377,4 +375,4 @@ class BaseInstaller:
         rm -rf /usr/lib/gcc
 
         """
-        return Tools.text_strip(CMD, replace=False)
+        return self._tools.text_strip(CMD, replace=False)

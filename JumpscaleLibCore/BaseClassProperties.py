@@ -6,7 +6,8 @@ class BaseClassProperties:
     base class for dealing with properties in redis
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, db, **kwargs):
+        self._db = db
         self._key = None
 
         for key, val in kwargs.items():
@@ -16,16 +17,7 @@ class BaseClassProperties:
         self._init(**kwargs)
 
         self._protected = True
-        self._myenv_ = None
         self._load()
-
-    @property
-    def _myenv(self):
-        if not self._myenv_:
-            from MyEnv import MyEnv
-
-            self._myenv_ = MyEnv()
-        return self._myenv_
 
     def _init(self, **kwargs):
         """
@@ -44,7 +36,7 @@ class BaseClassProperties:
                 self.__dict__[name] = None
         else:
             if name not in self.__dict__:
-                raise Tools.exceptions.Input(f"try to write protected argument on {name}")
+                raise RuntimeError(f"try to write protected argument on {name}")
         if isinstance(value, str):
             value = value.strip()
             if len(value) > 0:
@@ -60,20 +52,20 @@ class BaseClassProperties:
             self._save()
 
     def _load(self):
-        if self._myenv.db:
-            data = self._myenv.db.get(self._key)
+        if self._db:
+            data = self._db.get(self._key)
             if data:
                 data2 = json.loads(data.decode())
                 self.__dict__.update(data2)
 
     def _save(self):
-        if self._myenv.db:
+        if self._db:
             data = {}
             for key in self.__dict__.keys():
                 if not key.startswith("_"):
                     data[key] = getattr(self, key)
             data2 = json.dumps(data)
-            self._myenv.db.set(self._key, data2)
+            self._db.set(self._key, data2)
 
     def __str__(self):
         out = ""

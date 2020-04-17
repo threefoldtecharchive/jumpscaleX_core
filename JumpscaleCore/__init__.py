@@ -2,13 +2,24 @@ import os
 import socket
 import inspect
 import sys
+from pathlib import Path
 
 dpath = os.path.dirname(__file__)
 if dpath not in sys.path:
     sys.path.append(dpath)
-dpath = f"{dpath}/libcore"
-if dpath not in sys.path:
-    sys.path.append(dpath)
+
+dpath = f'{os.environ["HOME"]}/sandbox/code/github/threefoldtech/jumpscaleX_core'
+if os.path.exists(dpath):
+    if dpath not in sys.path:
+        sys.path.append(dpath)
+else:
+    dpath = "/sandbox/code/github/threefoldtech/jumpscaleX_core"
+    assert os.path.exists(dpath)
+    if dpath not in sys.path:
+        sys.path.append(dpath)
+
+from JumpscaleLibCore import myenv
+
 
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
@@ -51,23 +62,11 @@ def profileStop(pr):
 
 # pr = profileStart()
 
-# from .libcore.BaseInstaller import BaseInstaller
-# from .libcore.JumpscaleInstaller import JumpscaleInstaller
-# from .libcore.Docker import DockerFactory
 
 import yaml
 
-from .libcore.SSHAgent import SSHAgent
-from .libcore.Tools import Tools
-from .libcore.Redis import RedisTools
-from .libcore.LogHandler import LogHandler
-from .libcore.MyEnv import MyEnv
 
-myenv = MyEnv(Tools, RedisTools, LogHandler, SSHAgent)
-assert Tools.myenv == myenv
-Tools.myenv.init()
-
-Tools.shell()
+from JumpscaleLibCore import myenv
 
 
 class Core:
@@ -140,7 +139,7 @@ class Jumpscale:
         self._shell = None
         self.exceptions = None
         self._me = None
-        # Tools.j=self
+        # myenv.tools.j=self
 
     @property
     def me(self):
@@ -180,10 +179,10 @@ class Jumpscale:
             print("\n*** file: %s" % f.filename)
             print("*** function: %s [linenr:%s]\n" % (f.function, f.lineno))
 
-        # Tools.clear()
+        # myenv.tools.clear()
         history_filename = "%s/.jsx_history" % myenv.config["DIR_HOME"]
-        if not Tools.exists(history_filename):
-            Tools.file_write(history_filename, "")
+        if not myenv.tools.exists(history_filename):
+            myenv.tools.file_write(history_filename, "")
         # locals_= f.f_locals
         # if curframe.f_back.f_back is not None:
         #     locals_=curframe.f_back.f_back.f_locals
@@ -251,13 +250,13 @@ rootdir = os.path.dirname(os.path.abspath(__file__))
 
 
 j.core.myenv = myenv
-j.core.redistools = RedisTools
+j.core.redistools = myenv.redis
 
 
-j.core.installer_base = BaseInstaller
-j.core.installer_jumpscale = JumpscaleInstaller()
-j.core.tools = Tools
-j.core.dockerfactory = DockerFactory
+j.core.installer_base = myenv.installers.base
+j.core.installer_jumpscale = myenv.installers.jumpscale
+j.core.tools = myenv.tools
+j.core.dockerfactory = myenv.docker
 
 j.core.tools._data_serializer_safe = j.core._data_serializer_safe
 

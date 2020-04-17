@@ -5,6 +5,16 @@ import grp
 import traceback
 import pudb
 
+from SSHAgent import SSHAgent
+from Tools import Tools
+from RedisTools import RedisTools
+from LogHandler import LogHandler
+from BaseInstaller import BaseInstaller
+from OSXInstaller import OSXInstaller
+from UbuntuInstaller import UbuntuInstaller
+from JumpscaleInstaller import JumpscaleInstaller
+from DockerFactory import DockerFactory
+
 DEFAULT_BRANCH = "unstable"
 DEFAULT_BRANCH_WEB = "development"
 GITREPOS = {}
@@ -85,19 +95,18 @@ GITREPOS["kosmos"] = [
 ]
 
 
+class Installers:
+    pass
+
+
 class MyEnv:
-    def __init__(self, Tools, RedisTools, LogHandler, SSHAgent):
+    def __init__(self):
         """
 
         :param configdir: default /sandbox/cfg, then ~/sandbox/cfg if not exists
         :return:
         """
-        print("MYENVINIT1")
-        self.Tools = Tools
-        self.RedisTools = RedisTools
-        self.SSHAgent = SSHAgent
-        self.LogHandler = LogHandler
-        # self.LogHandler = LogHandler
+        self.tools = Tools(self)
         self.DEFAULT_BRANCH = DEFAULT_BRANCH
         self.readonly = False  # if readonly will not manipulate local filesystem appart from /tmp
         self.sandbox_python_active = False  # means we have a sandboxed environment where python3 works in
@@ -114,7 +123,6 @@ class MyEnv:
         self.log_level = 15
         self._secret = None
 
-        self.sshagent = None
         self.interactive = False
 
         self.appname = "installer"
@@ -159,13 +167,15 @@ class MyEnv:
 
         self.GITREPOS = GITREPOS
         self._db = None
-        Tools.myenv = self
 
-    def init(self):
-        if self.__init:
-            return
+        self.installers = Installers()
+        self.installers.osx = OSXInstaller(self)
+        self.installers.ubuntu = UbuntuInstaller(self)
+        self.installers.base = BaseInstaller(self)
+        self.installers.jumpscale = JumpscaleInstaller(self)
 
-        print("MYENVINIT2")
+        self.docker = DockerFactory(self)
+        self.redis = RedisTools(self)
 
         if self.platform() == "linux":
             self.platform_is_linux = True
@@ -176,7 +186,7 @@ class MyEnv:
             self.platform_is_unix = True
             self.platform_is_osx = True
         else:
-            raise self.Tools.exceptions.Base("platform not supported, only linux or osx for now.")
+            raise self.tools.exceptions.Base("platform not supported, only linux or osx for now.")
 
         configdir = self._cfgdir_get()
         basedir = self._basedir_get()
@@ -195,14 +205,14 @@ class MyEnv:
             st = os.stat(self.config["DIR_HOME"])
             gid = st.st_gid
             args["GROUPNAME"] = grp.getgrgid(gid)[0]
-            self.Tools.execute(script, interactive=True, args=args, die_if_args_left=True)
+            self.tools.execute(script, interactive=True, args=args, die_if_args_left=True)
 
         # Set codedir
-        self.Tools.dir_ensure(f"{basedir}/code")
+        self.tools.dir_ensure(f"{basedir}/code")
         self.config_file_path = os.path.join(configdir, "jumpscale_config.toml")
         self.state_file_path = os.path.join(configdir, "jumpscale_done.toml")
 
-        if self.Tools.exists(self.config_file_path):
+        if self.tools.exists(self.config_file_path):
             self._config_load()
             if not "DIR_BASE" in self.config:
                 return
@@ -226,11 +236,11 @@ class MyEnv:
 
         self._state_load()
 
-        self.sshagent = self.SSHAgent()
+        self.sshagent = SSHAgent(myenv=self)
 
         sys.excepthook = self.excepthook
-        if self.Tools.exists("{}/bin".format(self.config["DIR_BASE"])):  # To check that Js is on host
-            self.loghandler_redis = self.LogHandler(db=self.db)
+        if self.tools.exists("{}/bin".format(self.config["DIR_BASE"])):  # To check that Js is on host
+            self.loghandler_redis = LogHandler(self, db=self.db)
         else:
             # print("- redis loghandler cannot be loaded")
             self.loghandler_redis = None
@@ -242,14 +252,14 @@ class MyEnv:
         if self._db == "NOTUSED":
             return None
         if not self._db:
-            if self.RedisTools.client_core_get(die=False):
-                self._db = self.RedisTools._core_get()
+            if self.redis.client_core_get(die=False):
+                self._db = self.redis._core_get()
             else:
                 self._db = "NOTUSED"
         return self._db
 
     def redis_start(self):
-        self.db = self.RedisTools._core_get()
+        self._db = self.redis._core_get()
 
     def secret_set(self, secret=None, secret_expiration_hours=48):
         """
@@ -257,7 +267,7 @@ class MyEnv:
 
         """
         if not secret:
-            secret = self.Tools.ask_password("please specify secret passphrase for your SDK/3bot (<32chars)")
+            secret = self.tools.ask_password("please specify secret passphrase for your SDK/3bot (<32chars)")
             assert len(secret) < 32
 
         secret = self._secret_format(secret)
@@ -341,9 +351,9 @@ class MyEnv:
         """
         platform = self.platform()
         if "linux" in platform:
-            UbuntuInstaller.ensure_version()
+            self.installers.ubuntu.ensure_version()
         elif "darwin" not in platform:
-            raise self.Tools.exceptions.Base("Your platform is not supported")
+            raise self.tools.exceptions.Base("Your platform is not supported")
 
     def _homedir_get(self):
         if "HOMEDIR" in os.environ:
@@ -359,16 +369,16 @@ class MyEnv:
             return "/tmp/jumpscale"
         if "darwin" not in self.platform():
             isroot = None
-            rc, out, err = self.Tools.execute("whoami", showout=False, die=False)
+            rc, out, err = self.tools.execute("whoami", showout=False, die=False)
             if rc == 0:
                 if out.strip() == "root":
                     isroot = 1
-            if self.Tools.exists("/sandbox") or isroot == 1:
-                self.Tools.dir_ensure("/sandbox")
+            if self.tools.exists("/sandbox") or isroot == 1:
+                self.tools.dir_ensure("/sandbox")
                 return "/sandbox"
         p = "%s/sandbox" % self._homedir_get()
-        if not self.Tools.exists(p):
-            self.Tools.dir_ensure(p)
+        if not self.tools.exists(p):
+            self.tools.dir_ensure(p)
         return p
 
     def _cfgdir_get(self):
@@ -418,7 +428,7 @@ class MyEnv:
             config["DIR_VAR"] = "%s/var" % config["DIR_BASE"]
         if not "DIR_CODE" in config:
             config["DIR_CODE"] = "%s/code" % config["DIR_BASE"]
-            # if self.Tools.exists("%s/code" % config["DIR_BASE"]):
+            # if self.tools.exists("%s/code" % config["DIR_BASE"]):
             #     config["DIR_CODE"] = "%s/code" % config["DIR_BASE"]
             # else:
             #     config["DIR_CODE"] = "%s/code" % config["DIR_HOME"]
@@ -493,7 +503,7 @@ class MyEnv:
 
     def test(self):
         if not self.loghandlers != []:
-            self.Tools.shell()
+            self.tools.shell()
 
     def excepthook(self, exception_type, exception_obj, tb, die=True, stdout=True, level=50):
         """
@@ -505,21 +515,22 @@ class MyEnv:
         :param level:
         :return: logdict see github/threefoldtech/jumpscaleX_core/docs/Internals/logging_errorhandling/logdict.md
         """
-        if isinstance(exception_obj, self.Tools.exceptions.RemoteException):
-            print(self.Tools.text_replace("{RED}*****Remote Exception*****{RESET}"))
+        if isinstance(exception_obj, self.tools.exceptions.RemoteException):
+            print(self.tools.text_replace("{RED}*****Remote Exception*****{RESET}"))
             logdict = exception_obj.data
-            self.Tools.log2stdout(logdict)
+            self.tools.log2stdout(logdict)
 
             exception_obj.data = None
             exception_obj.exception = None
+        # logdict = self.tools.log(tb=tb, level=level, exception=exception_obj, stdout=stdout)
         try:
-            logdict = self.Tools.log(tb=tb, level=level, exception=exception_obj, stdout=stdout)
+            logdict = self.tools.log(tb=tb, level=level, exception=exception_obj, stdout=stdout)
         except Exception as e:
-            self.Tools.pprint("{RED}ERROR IN LOG HANDLER")
+            self.tools.pprint("{RED}ERROR IN LOG HANDLER")
             print(e)
             ttype, msg, tb = sys.exc_info()
             traceback.print_exception(etype=ttype, tb=tb, value=msg)
-            self.Tools.pprint("{RESET}")
+            self.tools.pprint("{RESET}")
             raise e
             sys.exit(1)
 
@@ -563,35 +574,35 @@ class MyEnv:
         edits the configuration file which is in {DIR_BASE}/cfg/jumpscale_config.toml
         {DIR_BASE} normally is /sandbox
         """
-        self.Tools.file_edit(self.config_file_path)
+        self.tools.file_edit(self.config_file_path)
 
     def _config_load(self):
         """
         loads the configuration file which default is in {DIR_BASE}/cfg/jumpscale_config.toml
         {DIR_BASE} normally is /sandbox
         """
-        config = self.Tools.config_load(self.config_file_path)
+        config = self.tools.config_load(self.config_file_path)
         self.config = self.config_default_get(config)
 
     def config_save(self):
-        self.Tools.config_save(self.config_file_path, self.config)
+        self.tools.config_save(self.config_file_path, self.config)
 
     def _state_load(self):
         """
         only 1 level deep toml format only for int,string,bool
         no multiline
         """
-        if self.Tools.exists(self.state_file_path):
-            self.state = self.Tools.config_load(self.state_file_path, if_not_exist_create=False)
+        if self.tools.exists(self.state_file_path):
+            self.state = self.tools.config_load(self.state_file_path, if_not_exist_create=False)
         elif not self.readonly:
-            self.state = self.Tools.config_load(self.state_file_path, if_not_exist_create=True)
+            self.state = self.tools.config_load(self.state_file_path, if_not_exist_create=True)
         else:
             self.state = {}
 
     def state_save(self):
         if self.readonly:
             return
-        self.Tools.config_save(self.state_file_path, self.state)
+        self.tools.config_save(self.state_file_path, self.state)
 
     def _key_get(self, key):
         key = key.split("=", 1)[0]
@@ -637,5 +648,5 @@ class MyEnv:
         """
         remove all state
         """
-        self.Tools.delete(self.state_file_path)
+        self.tools.delete(self.state_file_path)
         self._state_load()

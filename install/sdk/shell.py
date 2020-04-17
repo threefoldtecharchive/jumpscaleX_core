@@ -8,6 +8,7 @@ import os
 import re
 from . import __all__ as sdkall
 from . import _get_doc_line, _get_doc
+
 from Tools import BaseJSException
 
 from prompt_toolkit.application import get_app

@@ -1,19 +1,16 @@
-from Tools import Tools
 import os
 import shutil
-from UbuntuInstaller import UbuntuInstaller
-from SSHAgent import ExecutorSSH
-from BaseInstaller import BaseInstaller
 import json
 import inspect
 import re
 import time
-from WireGuardServer import WireGuardServer
 from typing import Dict
+from ExecutorSSH import ExecutorSSH
+from WireGuardServer import WireGuardServer
 
 
 class DockerConfig:
-    def __init__(self, name, image=None, startupcmd=None, delete=False, ports=None):
+    def __init__(self, myenv, name, image=None, startupcmd=None, delete=False, ports=None):
         """
         port config is as follows:
 
@@ -26,21 +23,24 @@ class DockerConfig:
         :param image:
         :param startupcmd:
         """
+        self._my = myenv
+        self._tools = myenv.tools
+
         self.name = name
         self.ports = ports
 
-        self.path_vardir = Tools.text_replace("{DIR_BASE}/var/containers/{NAME}", args={"NAME": name})
-        Tools.dir_ensure(self.path_vardir)
-        Tools.dir_ensure(Tools.text_replace("{DIR_BASE}/myhost"))
-        Tools.dir_ensure(Tools.text_replace("{DIR_BASE}/code"))
+        self.path_vardir = self._tools.text_replace("{DIR_BASE}/var/containers/{NAME}", args={"NAME": name})
+        self._tools.dir_ensure(self.path_vardir)
+        self._tools.dir_ensure(self._tools.text_replace("{DIR_BASE}/myhost"))
+        self._tools.dir_ensure(self._tools.text_replace("{DIR_BASE}/code"))
         self.path_config = "%s/docker_config.toml" % (self.path_vardir)
         # self.wireguard_pubkey
 
         if delete:
-            Tools.delete(self.path_vardir)
-            Tools.delete(self.path_config)
+            self._tools.delete(self.path_vardir)
+            self._tools.delete(self.path_config)
 
-        if not Tools.exists(self.path_config):
+        if not self._tools.exists(self.path_config):
 
             self.portrange = None
 
@@ -61,7 +61,7 @@ class DockerConfig:
 
     def _find_port_range(self):
         existingports = []
-        for container in DockerFactory.containers():
+        for container in self._my.docker.containers():
             if container.name == self.name:
                 continue
             if not container.config.portrange in existingports:
@@ -71,12 +71,12 @@ class DockerConfig:
             if i in existingports:
                 continue
             port_to_check = 9000 + i * 10
-            if not Tools.tcp_port_connection_test(ipaddr="localhost", port=port_to_check):
+            if not self._tools.tcp_port_connection_test(ipaddr="localhost", port=port_to_check):
                 self.portrange = i
                 print(" - SSH PORT ON: %s" % port_to_check)
                 return
         if not self.portrange:
-            raise Tools.exceptions.Input("cannot find tcp port range for docker")
+            raise self._tools.exceptions.Input("cannot find tcp port range for docker")
         self.sshport = 9000 + int(self.portrange) * 10
 
     def reset(self):
@@ -84,7 +84,7 @@ class DockerConfig:
         erase the past config
         :return:
         """
-        Tools.delete(self.path_vardir)
+        self._tools.delete(self.path_vardir)
 
     def done_get(self, name):
         name2 = "done_%s" % name
@@ -122,10 +122,10 @@ class DockerConfig:
         self.save()
 
     def load(self):
-        if not Tools.exists(self.path_config):
-            raise Tools.exceptions.JSBUG("could not find config path for container:%s" % self.path_config)
+        if not self._tools.exists(self.path_config):
+            raise self._tools.exceptions.JSBUG("could not find config path for container:%s" % self.path_config)
 
-        r = Tools.config_load(self.path_config, keys_lower=True)
+        r = self._tools.config_load(self.path_config, keys_lower=True)
         ports = r.pop("ports", None)
         if ports:
             self.ports = json.loads(ports)
@@ -162,7 +162,7 @@ class DockerConfig:
     def save(self):
         data = self.__dict__.copy()
         data["ports"] = json.dumps(data["ports"])
-        Tools.config_save(self.path_config, data)
+        self._tools.config_save(self.path_config, data)
         assert isinstance(self.portrange, int)
         self.load()
 
@@ -173,25 +173,28 @@ class DockerConfig:
 
 
 class DockerContainer:
-    def __init__(self, name="default", image=None, startupcmd=None, ports=None, identity=None):
+    def __init__(self, myenv, name="default", image=None, startupcmd=None, ports=None, identity=None):
         """
         if you want to start from scratch use: "phusion/baseimage:master"
 
         if codedir not specified will use {DIR_BASE}/code
         """
-        if name == "shared":
-            raise Tools.exceptions.JSBUG("should never be the shared obj")
-        if not DockerFactory._init:
-            raise Tools.exceptions.JSBUG("make sure to call DockerFactory.init() bedore getting a container")
-        DockerFactory._dockers[name] = self
+        self._my = myenv
+        self._tools = myenv.tools
 
-        self.config = DockerConfig(name=name, image=image, startupcmd=startupcmd, ports=ports)
+        if name == "shared":
+            raise self._tools.exceptions.JSBUG("should never be the shared obj")
+        if not self._my.docker._init:
+            raise self._tools.exceptions.JSBUG("make sure to call self._my.docker.init() bedore getting a container")
+        self._my.docker._dockers[name] = self
+
+        self.config = DockerConfig(myenv, name=name, image=image, startupcmd=startupcmd, ports=ports)
 
         if self.config.portrange is None:
             self.config._find_port_range()
             self.config.save()
 
-        DockerFactory.myenv().sshagent.key_default_name
+        self._my.sshagent.key_default_name
 
         self._wireguard = None
         self._executor = None
@@ -223,7 +226,7 @@ class DockerContainer:
     def executor(self):
         if not self._executor:
             self._executor = ExecutorSSH(
-                addr=self.config.ipaddr, port=self.config.sshport, debug=False, name=self.config.name
+                self._my, addr=self.config.ipaddr, port=self.config.sshport, debug=False, name=self.config.name
             )
         return self._executor
 
@@ -233,7 +236,7 @@ class DockerContainer:
         returns True if the container is defined on the filesystem with the config file
         :return:
         """
-        if Tools.exists(self._path):
+        if self._tools.exists(self._path):
             return True
 
     @property
@@ -246,11 +249,11 @@ class DockerContainer:
 
     @property
     def container_exists_in_docker(self):
-        return self.name in DockerFactory.containers_names()
+        return self.name in self._my.docker.containers_names()
 
     @property
     def container_running(self):
-        return self.name in DockerFactory.containers_running()
+        return self.name in self._my.docker.containers_running()
 
     @property
     def _path(self):
@@ -303,11 +306,11 @@ class DockerContainer:
         if not image:
             image = self.image
         if not self.container_exists_config:
-            raise Tools.exceptions.Operations("ERROR: cannot find docker with name:%s, cannot start" % self.name)
+            raise self._tools.exceptions.Operations("ERROR: cannot find docker with name:%s, cannot start" % self.name)
 
         if pull:
             # lets make sure we have the latest image, ONLY DO WHEN FORCED, NOT STD
-            Tools.execute(f"docker image pull {image}", interactive=True)
+            self._tools.execute(f"docker image pull {image}", interactive=True)
             stop = True  # means we need to stop now, because otherwise we can't know we start from right image
 
         if delete:
@@ -328,7 +331,7 @@ class DockerContainer:
 
         if self.container_exists_in_docker:
             start_cmd = f"docker start {self.config.name}"
-            Tools.execute(start_cmd, interactive=False)
+            self._tools.execute(start_cmd, interactive=False)
             return
 
         if not image:
@@ -344,8 +347,8 @@ class DockerContainer:
             return
 
         # Now create the container
-        DIR_CODE = DockerFactory.myenv().config["DIR_CODE"]
-        DIR_BASE = DockerFactory.myenv().config["DIR_BASE"]
+        DIR_CODE = self._my.config["DIR_CODE"]
+        DIR_BASE = self._my.config["DIR_BASE"]
 
         MOUNTS = ""
         if mount:
@@ -353,7 +356,7 @@ class DockerContainer:
             -v {DIR_CODE}:/sandbox/code \
             -v {DIR_BASE}/myhost:/sandbox/myhost
             """
-            MOUNTS = Tools.text_strip(MOUNTS)
+            MOUNTS = self._tools.text_strip(MOUNTS)
         else:
             MOUNTS = f"-v {DIR_BASE}/myhost:/sandbox/myhost"
 
@@ -362,19 +365,19 @@ class DockerContainer:
         else:
             PORTRANGE = ""
 
-        if DockerFactory.image_name_exists(f"internal_{self.config.name}:") != False:
+        if self._my.docker.image_name_exists(f"internal_{self.config.name}:") != False:
             image = f"internal_{self.config.name}"
 
         run_cmd = f"docker run --name={self.config.name} --hostname={self.config.name} -d {PORTRANGE} \
         --device=/dev/net/tun --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --cap-add=DAC_OVERRIDE \
         --cap-add=DAC_READ_SEARCH {MOUNTS} {image} {self.config.startupcmd}"
 
-        run_cmd = Tools.text_strip(run_cmd)
-        run_cmd2 = Tools.text_replace(re.sub("\s+", " ", run_cmd))
+        run_cmd = self._tools.text_strip(run_cmd)
+        run_cmd2 = self._tools.text_replace(re.sub("\s+", " ", run_cmd))
 
         print(" - Docker machine gets created: ")
         # print(run_cmd2)
-        Tools.execute(run_cmd2, interactive=False)
+        self._tools.execute(run_cmd2, interactive=False)
 
         self._update(update=update, ssh=ssh)
 
@@ -401,25 +404,25 @@ class DockerContainer:
             self.dexec("rm -f /etc/service/sshd/down", showout=False)
 
             # get our own loaded ssh pub keys into the container
-            SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
+            SSHKEYS = self._tools.execute("ssh-add -L", die=False, showout=False)[1]
             if SSHKEYS.strip() != "":
                 self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS, showout=False)
-            DIR_HOME = DockerFactory.myenv().config["DIR_HOME"]
-            Tools.execute(f"mkdir -p {DIR_HOME}/.ssh && touch {DIR_HOME}/.ssh/known_hosts", showout=False)
+            DIR_HOME = self._my.config["DIR_HOME"]
+            self._tools.execute(f"mkdir -p {DIR_HOME}/.ssh && touch {DIR_HOME}/.ssh/known_hosts", showout=False)
 
             # DIDNT seem to work well, next is better
             # cmd = 'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"' % (
-            #     DockerFactory.myenv().config["DIR_HOME"],
+            #     self._my.config["DIR_HOME"],
             #     self.config.sshport,
             # )
-            # Tools.execute(cmd)
+            # self._tools.execute(cmd)
 
             # is to make sure we can login without interactivity
             cmd = "ssh-keyscan -H -p %s localhost >> %s/.ssh/known_hosts" % (
                 self.config.sshport,
-                DockerFactory.myenv().config["DIR_HOME"],
+                self._my.config["DIR_HOME"],
             )
-            Tools.execute(cmd, showout=False)
+            self._tools.execute(cmd, showout=False)
 
         # self.shell()
 
@@ -443,13 +446,13 @@ class DockerContainer:
             print(" - Upgrade ubuntu ended")
 
         # cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % self.name
-        # rc, out, err = Tools.execute(cmd, replace=False, showout=False, die=False)
+        # rc, out, err = self._tools.execute(cmd, replace=False, showout=False, die=False)
         # if rc == 0:
         #     self.config.ipaddr = out.strip()
         #     self.config.save()
 
-        # if DockerFactory.container_name_exists("3bot") and self.name != "3bot":
-        #     d = DockerFactory.container_get("3bot")
+        # if self._my.docker.container_name_exists("3bot") and self.name != "3bot":
+        #     d = self._my.docker.container_get("3bot")
         #     # print(" - Create route to main 3bot container")
         #     cmd = "ip route add 10.10.0.0/16 via %s" % d.config.ipaddr
         #     # TODO: why is this no longer done?
@@ -457,9 +460,9 @@ class DockerContainer:
     @property
     def info(self):
         cmd = "docker inspect %s" % self.name
-        rc, out, err = Tools.execute(cmd, replace=False, showout=False, die=False)
+        rc, out, err = self._tools.execute(cmd, replace=False, showout=False, die=False)
         if rc != 0:
-            raise Tools.exceptions.Base("could not docker inspect:%s" % self.name)
+            raise self._tools.exceptions.Base("could not docker inspect:%s" % self.name)
         data = json.loads(out)[0]
         return data
 
@@ -470,7 +473,7 @@ class DockerContainer:
             cmd2 = "docker exec -ti %s bash -c '%s'" % (self.name, cmd)
         else:
             cmd2 = "docker exec -t %s bash -c '%s'" % (self.name, cmd)
-        Tools.execute(cmd2, interactive=interactive, showout=showout, replace=False, die=die)
+        self._tools.execute(cmd2, interactive=interactive, showout=showout, replace=False, die=die)
 
     def shell(self, cmd=None):
         if not self.isrunning():
@@ -519,10 +522,10 @@ class DockerContainer:
 
     def stop(self):
         if self.container_running:
-            Tools.execute("docker stop %s" % self.name, showout=False)
+            self._tools.execute("docker stop %s" % self.name, showout=False)
 
     def isrunning(self):
-        if self.name in DockerFactory.containers_running():
+        if self.name in self._my.docker.containers_running():
             return True
         return False
 
@@ -537,14 +540,14 @@ class DockerContainer:
         """
         if self.container_exists_in_docker:
             self.stop()
-            Tools.execute("docker rm -f %s" % self.name, die=False, showout=False)
-        Tools.delete(self._path)
-        if DockerFactory.image_name_exists(f"internal_{self.config.name}"):
+            self._tools.execute("docker rm -f %s" % self.name, die=False, showout=False)
+        self._tools.delete(self._path)
+        if self._my.docker.image_name_exists(f"internal_{self.config.name}"):
             image = f"internal_{self.config.name}"
-            Tools.execute("docker rmi -f %s" % image, die=True, showout=False)
+            self._tools.execute("docker rmi -f %s" % image, die=True, showout=False)
         self.config.reset()
-        if self.name in DockerFactory._dockers:
-            DockerFactory._dockers.pop(self.name)
+        if self.name in self._my.docker._dockers:
+            self._my.docker._dockers.pop(self.name)
 
     @property
     def export_last_image_path(self):
@@ -564,7 +567,7 @@ class DockerContainer:
             try:
                 version = int(item.replace(".tar", ""))
             except:
-                Tools.delete("%s/%s" % (dpath, item))
+                self._tools.delete("%s/%s" % (dpath, item))
             if version > highest:
                 highest = version
         return highest
@@ -589,17 +592,17 @@ class DockerContainer:
                 path = "%s/exports/%s.tar" % (self._path, version)
             else:
                 path = "%s/exports/%s.tar" % (self._path, name)
-        if not Tools.exists(path):
-            raise Tools.exceptions.Operations("could not find import file:%s" % path)
+        if not self._tools.exists(path):
+            raise self._tools.exceptions.Operations("could not find import file:%s" % path)
 
         if not path.endswith(".tar"):
-            raise Tools.exceptions.Operations("export file needs to end with .tar")
+            raise self._tools.exceptions.Operations("export file needs to end with .tar")
 
         self.stop()
-        DockerFactory.image_remove(image)
+        self._my.docker.image_remove(image)
 
         print("import docker:%s to %s, will take a while" % (path, self.name))
-        Tools.execute(f"docker import {path} {image}")
+        self._tools.execute(f"docker import {path} {image}")
         self.config.image = image
 
     def export(self, path=None, name=None, version=None):
@@ -610,8 +613,8 @@ class DockerContainer:
         :return:
         """
         dpath = "%s/exports/" % self._path
-        if not Tools.exists(dpath):
-            Tools.dir_ensure(dpath)
+        if not self._tools.exists(dpath):
+            self._tools.dir_ensure(dpath)
 
         if not path:
             if not name:
@@ -620,27 +623,27 @@ class DockerContainer:
                 path = "%s/exports/%s.tar" % (self._path, version)
             else:
                 path = "%s/exports/%s.tar" % (self._path, name)
-        if Tools.exists(path):
-            Tools.delete(path)
+        if self._tools.exists(path):
+            self._tools.delete(path)
         print("export docker:%s to %s, will take a while" % (self.name, path))
-        Tools.execute("docker export %s -o %s" % (self.name, path))
+        self._tools.execute("docker export %s -o %s" % (self.name, path))
         return path
 
     def _internal_image_save(self, stop=False, image=None):
         if not image:
             image = f"internal_{self.name}"
         cmd = "docker rmi -f %s" % image
-        Tools.execute(cmd, die=False, showout=False)
+        self._tools.execute(cmd, die=False, showout=False)
         cmd = "docker rmi -f %s:latest" % image
-        Tools.execute(cmd, die=False, showout=False)
+        self._tools.execute(cmd, die=False, showout=False)
         cmd = "docker commit -p %s %s" % (self.name, image)
-        Tools.execute(cmd)
+        self._tools.execute(cmd)
         if stop:
             self.stop()
         return image
 
     def _log(self, msg):
-        Tools.log(msg)
+        self._tools.log(msg)
 
     def save(self, development=False, image=None, code_copy=False, clean=False):
         """
@@ -652,7 +655,7 @@ class DockerContainer:
         """
         image = self._image_clean(image)
 
-        DockerFactory.image_remove("internal_%s" % self.config.name)
+        self._my.docker.image_remove("internal_%s" % self.config.name)
 
         def export_import(image, start=True):
             image2 = image.replace("/", "_")
@@ -663,7 +666,7 @@ class DockerContainer:
 
         if code_copy:
             self._log("copy code")
-            self.execute(BaseInstaller.code_copy_script_get())
+            self.execute(self._my.installers.base.code_copy_script_get())
 
         if clean:
             if self.mount_code_exists:
@@ -674,7 +677,7 @@ class DockerContainer:
                 self.start(mount=False, update=False)
             # wait for docker to start and ssh become available
             time.sleep(10)
-            self.execute(BaseInstaller.cleanup_script_get(), die=False)
+            self.execute(self._my.installers.base.cleanup_script_get(), die=False)
             self.dexec("umount /sandbox/code", die=False)
             self.dexec("rm -rf /sandbox/code")
 
@@ -682,10 +685,10 @@ class DockerContainer:
                 export_import("%s_dev" % image)
                 self._internal_image_save(image="%s_dev" % image)
 
-            self.execute(BaseInstaller.cleanup_script_developmentenv_get(), die=False)
+            self.execute(self._my.installers.base.cleanup_script_developmentenv_get(), die=False)
 
-            DockerFactory.image_remove("internal_%s" % self.config.name)
-            DockerFactory.image_remove("internal_%s_dev" % self.config.name)
+            self._my.docker.image_remove("internal_%s" % self.config.name)
+            self._my.docker.image_remove("internal_%s_dev" % self.config.name)
 
             export_import(image=image)
 
@@ -693,7 +696,7 @@ class DockerContainer:
             self._update()
             self._internal_image_save()
 
-        DockerFactory.image_remove("internal_%s" % self.config.name)
+        self._my.docker.image_remove("internal_%s" % self.config.name)
 
         self.config.save()
 
@@ -708,7 +711,7 @@ class DockerContainer:
         if not image:
             image = self.image
         cmd = "docker push %s" % image
-        Tools.execute(cmd)
+        self._tools.execute(cmd)
 
     def _install_tcprouter(self):
         """
@@ -718,7 +721,7 @@ class DockerContainer:
 
     def _install_package_dependencies(self):
         # self.execute("j.tools.threebot_packages._children.threefold__wikis.install()", jumpscale=True)
-        Tools.shell()
+        self._tools.shell()
 
     # def config_jumpscale(self):
     #     ##no longer ok, intent was to copy values from host but no longer the case
@@ -733,9 +736,9 @@ class DockerContainer:
     #         # "LOGGER_REDIS",
     #         "SECRET",
     #     ]:
-    #         if i in DockerFactory.myenv().config:
-    #             CONFIG[i] = DockerFactory.myenv().config[i]
-    #     Tools.config_save(self._path + "/cfg/jumpscale_config.toml", CONFIG)
+    #         if i in self._my.config:
+    #             CONFIG[i] = self._my.config[i]
+    #     self._tools.config_save(self._path + "/cfg/jumpscale_config.toml", CONFIG)
     #
 
     def install_jumpscale(
@@ -763,7 +766,7 @@ class DockerContainer:
         #     secret = "build"
 
         if not secret:
-            secret = DockerFactory.myenv().secret_get()
+            secret = self._my.secret_get()
 
         args_txt = ""
         if redo:
@@ -779,28 +782,28 @@ class DockerContainer:
         if words:
             args_txt += f" --words='{words}'"
 
-        if not DockerFactory.myenv().interactive:
+        if not self._my.interactive:
             args_txt += " --no-interactive"
         if identity:
             args_txt += f" -i {identity}"
 
-        dirpath = os.path.dirname(inspect.getfile(Tools))
+        dirpath = os.path.dirname(inspect.getfile(self._tools.__class__))
         jsxfile = os.path.join(dirpath, "jsx")
         if not os.path.exists(jsxfile):
             self.execute(
                 """
-            rm -f /tmp/InstallTools.py
             rm -f /tmp/jsx
             ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx
             """
             )
         else:
+            raise self._tools.exceptions.Base("not implemented, need to get more files over full corelib")
             print(" - copy installer over from where I install from")
-            for item in ["jsx", "InstallTools.py"]:
+            for item in ["jsx", "Installself._tools.py"]:
                 src1 = "%s/%s" % (dirpath, item)
                 self.executor.upload(src1, "/tmp")
 
-        # python3 jsx configure --sshkey {DockerFactory.myenv().sshagent.key_default_name} -s
+        # python3 jsx configure --sshkey {self._my.sshagent.key_default_name} -s
         # WHY DO WE NEED THIS, in container ssh-key should always be there & loaded, don't think there is a reason to configure it
 
         cmd = f"""
@@ -841,7 +844,7 @@ class DockerContainer:
         while not addr:
             print("waiting for zerotier to become live")
             rc, out, err = self.executor.execute("zerotier-cli listnetworks -j")
-            Tools.clear()
+            self._tools.clear()
             print("WAITING FOR ZEROTIER")
             print(out)
             r = json.loads(out)
@@ -859,7 +862,7 @@ class DockerContainer:
         return addr
 
     def __repr__(self):
-        return "# CONTAINER: \n %s" % Tools._data_serializer_safe(self.config.__dict__)
+        return "# CONTAINER: \n %s" % self._tools._data_serializer_safe(self.config.__dict__)
 
     __str__ = __repr__
 
@@ -868,237 +871,3 @@ class DockerContainer:
         if not self._wireguard:
             self._wireguard = WireGuardServer(addr="127.0.0.1", port=self.config.sshport, myid=199)
         return self._wireguard
-
-
-class DockerFactory:
-
-    _init = False
-    _dockers: Dict[str, DockerContainer] = {}
-    _myenv = None
-
-    @classmethod
-    def myenv(cls):
-        if not cls._myenv:
-            from MyEnv import MyEnv
-
-            cls._myenv = MyEnv()
-        return cls._myenv
-
-    @staticmethod
-    def indocker():
-        """
-        will check if we are in a docker
-        :return:
-        """
-        rc, out, _ = Tools.execute("cat /proc/1/cgroup", die=False, showout=False)
-        if rc == 0 and out.find("/docker/") != -1:
-            return True
-        return False
-
-    @staticmethod
-    def init(name=None):
-        if not DockerFactory._init:
-            rc, out, _ = Tools.execute("cat /proc/1/cgroup", die=False, showout=False)
-            if rc == 0 and out.find("/docker/") != -1:
-                # nothing to do we are in docker already
-                return
-
-            if DockerFactory.myenv().platform() == "linux" and not Tools.cmd_installed("docker"):
-                UbuntuInstaller.docker_install()
-                DockerFactory.myenv()._cmd_installed["docker"] = shutil.which("docker")
-
-            if not Tools.cmd_installed("docker"):
-                raise Tools.exceptions.Operations("Could not find Docker installed")
-
-            DockerFactory._init = True
-            cdir = Tools.text_replace("{DIR_BASE}/var/containers")
-            Tools.dir_ensure(cdir)
-            for name_found in os.listdir(cdir):
-                if not os.path.isdir(os.path.join(cdir, name_found)):
-                    # https://github.com/threefoldtech/jumpscaleX_core/issues/297
-                    # in case .DS_Store is created when opened in finder
-                    continue
-                # to make sure there is no recursive behaviour if called from a docker container
-                if name_found != name and name_found.strip().lower() not in ["shared"]:
-                    DockerContainer(name_found)
-
-    @staticmethod
-    def container_delete(name):
-        DockerFactory.init()
-        assert name
-        assert len(name) > 3
-        if name in DockerFactory._dockers:
-            docker = DockerFactory._dockers[name]
-            docker.delete()
-            if name in DockerFactory._dockers:
-                DockerFactory._dockers.pop(name)
-
-    @staticmethod
-    def container_get(name, image="threefoldtech/3bot2", start=False, delete=False, ports=None, mount=True, pull=False):
-        DockerFactory.init()
-        assert name
-        assert len(name) > 3
-        if delete and name in DockerFactory._dockers:
-            docker = DockerFactory._dockers[name]
-            docker.delete()
-            # needed because docker object is being retained
-            docker.config.save()
-            if name in DockerFactory._dockers:
-                DockerFactory._dockers.pop(name)
-
-        docker = None
-        if name in DockerFactory._dockers:
-            docker = DockerFactory._dockers[name]
-            if docker.container_running:
-                if mount:
-                    if docker.info["Mounts"] == []:
-                        # means the current docker has not been mounted
-                        docker.stop()
-                        docker.start(mount=True)
-                else:
-                    if docker.info["Mounts"] != []:
-                        docker.stop()
-                        docker.start(mount=False)
-                return docker
-        if not docker:
-            docker = DockerContainer(name=name, image=image, ports=ports)
-        if start:
-            docker.start(mount=mount, pull=pull)
-        return docker
-
-    @staticmethod
-    def containers_running():
-        names = Tools.execute("docker ps --format='{{json .Names}}'", showout=False, replace=False)[1].split("\n")
-        names = [i.strip("\"'") for i in names if i.strip() != ""]
-        return names
-
-    @staticmethod
-    def containers_names():
-        names = Tools.execute("docker container ls -a --format='{{json .Names}}'", showout=False, replace=False)[
-            1
-        ].split("\n")
-        names = [i.strip("\"'") for i in names if i.strip() != ""]
-        return names
-
-    @staticmethod
-    def containers():
-        DockerFactory.init()
-        return DockerFactory._dockers.values()
-
-    @staticmethod
-    def list():
-        res = []
-        for d in DockerFactory.containers():
-            print(" - %-10s : %-15s : %-25s (sshport:%s)" % (d.name, d.config.ipaddr, d.config.image, d.config.sshport))
-            res.append(d.name)
-        return res
-
-    @staticmethod
-    def container_name_exists(name):
-        return name in DockerFactory.containers_names()
-
-    @staticmethod
-    def image_names():
-        names = Tools.execute("docker images --format='{{.Repository}}:{{.Tag}}'", showout=False, replace=False)[
-            1
-        ].split("\n")
-        res = []
-        for name in names:
-            name = name.strip()
-            name = name.strip("\"'")
-            name = name.strip("\"'")
-            if name == "":
-                continue
-            if ":" in name:
-                name = name.split(":", 1)[0]
-            res.append(name)
-
-        return res
-
-    @staticmethod
-    def image_name_exists(name):
-        if ":" in name:
-            name = name.split(":")[0]
-        return name in DockerFactory.image_names()
-
-    @staticmethod
-    def image_remove(name):
-        if name in DockerFactory.image_names():
-            Tools.log("remove container:%s" % name)
-            Tools.execute("docker rmi -f %s" % name)
-
-    @staticmethod
-    def reset(images=True):
-        """
-        jsx containers-reset
-
-        will stop/remove all containers
-        if images==True will also stop/remove all images
-        :return:
-        """
-        for name in DockerFactory.containers_names():
-            d = DockerFactory.container_get(name)
-            d.delete()
-
-        # will get all images based on id
-        names = Tools.execute("docker images --format='{{.ID}}'", showout=False, replace=False)[1].split("\n")
-        for image_id in names:
-            if image_id:
-                Tools.execute("docker rmi -f %s" % image_id)
-
-        Tools.delete(Tools.text_replace("{DIR_BASE}/var/containers"))
-
-    # @staticmethod
-    # def get_container_port_binding(container_name="3obt", port="9001/udp"):
-    #     ports_bindings = Tools.execute(
-    #         "docker inspect {container_name} --format={data}".format(
-    #             container_name=container_name, data="'{{json .HostConfig.PortBindings}}'"
-    #         ),
-    #         showout=False,
-    #         replace=False,
-    #     )
-    #     # Get and serialize the binding ports data
-    #     all_ports_data = json.loads(ports_bindings[1])
-    #     port_binding_data = all_ports_data.get(port, None)
-    #     if not port_binding_data:
-    #         raise Tools.exceptions.Input(
-    #             f"Error happened during parsing the binding ports data from container {conitainer_name} and port {port}"
-    #         )
-    #
-    #     host_port = port_binding_data[-1].get("HostPort")
-    #     return host_port
-
-    # @staticmethod
-    # def container_running_with_udp_ports_wireguard():
-    #     containers_ports = dict()
-    #     containers_names = DockerFactory.containers_names()
-    #     for name in containers_names:
-    #         port_binding = DockerFactory.get_container_port_binding(container_name=name, port="9001/udp")
-    #         containers_ports[name] = port_binding
-    #     return containers_ports
-
-    @staticmethod
-    def get_container_ip_address(container_name="3bot"):
-        container_ip = Tools.execute(
-            "docker inspect {container_name} --format={data}".format(
-                container_name=container_name, data="'{{json .NetworkSettings.Networks.bridge.IPAddress}}'"
-            ),
-            showout=False,
-            replace=False,
-        )[1].split("\n")
-        if not container_ip:
-            raise Tools.exceptions.Input(
-                f"Error happened during parsing the container {container_name} ip address data "
-            )
-        # Get the data in the required format
-        formatted_container_ip = container_ip[0].strip("\"'")
-        return formatted_container_ip
-
-    @staticmethod
-    def containers_running_ip_address():
-        containers_ip_addresses = dict()
-        containers_names = DockerFactory.containers_names()
-        for name in containers_names:
-            container_ip = DockerFactory.get_container_ip_address(container_name=name)
-            containers_ip_addresses[name] = container_ip
-        return containers_ip_addresses

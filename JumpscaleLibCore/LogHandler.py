@@ -1,5 +1,21 @@
+import json
+import msgpack
+from pathlib import Path
+import time
+import os
+
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]
+
+
 class LogHandler:
-    def __init__(self, db, appname=None):
+    def __init__(self, myenv, db, appname=None):
+        self._my = myenv
+        self._tools = myenv.tools
+
         self.db = db
         if appname:
             self.appname = appname
@@ -107,20 +123,20 @@ class LogHandler:
                 d = self._redis_get(i)
                 r.append(d)
             assert len(r) == 1000
-            log_dir = Tools.text_replace("{DIR_VAR}/logs")
+            log_dir = self._tools.text_replace("{DIR_VAR}/logs")
             app_logs_path = "%s/%s" % (log_dir, self.appname)
-            Tools.dir_ensure(app_logs_path)
+            self._tools.dir_ensure(app_logs_path)
             path = "%s/%s/%s.msgpack" % (log_dir, self.appname, stopid)
-            Tools.file_write(path, msgpack.dumps(r))
+            self._tools.file_write(path, msgpack.dumps(r))
 
             # rotate old msgpacks if we have logs > MAX_MSGPACKS_LOGS_COUNT (default: 50) file
             # means 50k logs, we delete the oldest 10 files, 10k logs
-            msgpacks_count = MyEnv.config.get("MAX_MSGPACKS_LOGS_COUNT", 50)
+            msgpacks_count = self._my.config.get("MAX_MSGPACKS_LOGS_COUNT", 50)
             if len(os.listdir(app_logs_path)) > msgpacks_count + 1:
                 all_files = sorted(Path(app_logs_path).iterdir(), key=os.path.getmtime)
                 files_to_delete = all_files[: len(all_files) - msgpacks_count + 10]
                 for file in files_to_delete:
-                    Tools.delete(file.as_posix())
+                    self._tools.delete(file.as_posix())
 
         # now remove from redis
         keystodelete = []
@@ -136,11 +152,11 @@ class LogHandler:
             return
         assert isinstance(container, list)
         assert len(container) == 1000
-        Tools.shell()
+        self._tools.shell()
         logdir = "%s/%s" % (self._log_dir, appname)
-        if not Tools.exists(logdir):
+        if not self._tools.exists(logdir):
             return []
         else:
             data = msgpack.dumps(container)
-            Tools.shell()
+            self._tools.shell()
             w

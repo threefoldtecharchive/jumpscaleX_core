@@ -10,6 +10,24 @@ from importlib import util
 DEFAULT_BRANCH = "unstable"
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
+import sys
+
+# dpath = os.path.dirname(__file__)
+# if dpath not in sys.path:
+#     sys.path.append(dpath)
+
+dpath = f'{os.environ["HOME"]}/sandbox/code/github/threefoldtech/jumpscaleX_core'
+if os.path.exists(dpath):
+    if dpath not in sys.path:
+        sys.path.append(dpath)
+else:
+    dpath = "/sandbox/code/github/threefoldtech/jumpscaleX_core"
+    assert os.path.exists(dpath)
+    if dpath not in sys.path:
+        sys.path.append(dpath)
+
+from JumpscaleLibCore import myenv
+
 
 def jumpscale_get(die=True):
     # jumpscale need to be available otherwise cannot do
@@ -58,15 +76,15 @@ def install(
 
     """
 
-    IT.MyEnv.interactive = not no_interactive
+    myenv.interactive = not no_interactive
     if reinstall:
         # remove the state
-        IT.MyEnv.state_reset()
+        myenv.state_reset()
         force = True
     else:
         force = False
 
-    installer = IT.JumpscaleInstaller()
+    installer = myenv.installers.jumpscale
     installer.install(
         sandboxed=False,
         force=force,
@@ -95,13 +113,13 @@ def getcode(branch=None, pull=False, reset=False):
     """
     checkout the code onto your local filesystem
     """
-    # IT.MyEnv.interactive = True
+    # myenv.interactive = True
 
     if not branch:
-        branch = IT.DEFAULT_BRANCH
-    installer = IT.JumpscaleInstaller()
-    installer.repos_get(pull=pull, reset=reset)
-    # IT.Tools.shell()
+        branch = myenv.DEFAULT_BRANCH
+        assert branch
+        assert len(branch) > 5
+    myenv.installers.jumpscale.repos_get(pull=pull, reset=reset)
 
 
 #
@@ -143,9 +161,9 @@ def getcode(branch=None, pull=False, reset=False):
 @click.argument("secret")
 def secret_set(secret=None):
     if not secret:
-        secret = IT.Tools.ask_password("please provide passphrase")
-    IT.RedisTools._core_get()
-    IT.MyEnv.secret_set(secret=secret, secret_expiration_hours=48)
+        secret = myenv.tools.ask_password("please provide passphrase")
+    myenv.redis_start()
+    myenv.secret_set(secret=secret, secret_expiration_hours=48)
 
 
 # @click.command(name="modules-install")

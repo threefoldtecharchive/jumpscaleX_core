@@ -1,4 +1,6 @@
-from Tools import Tools
+from MyEnv import MyEnv
+
+myenv = MyEnv()
 
 
 def base():
@@ -30,7 +32,7 @@ def sdktool():
     elif myenv.platform_is_linux:
         name = "osx"
     else:
-        raise Tools.exceptions.Input("platform not supported")
+        raise myenv.tools.exceptions.Input("platform not supported")
 
     C = f"""
     cd {DIR_BASE}/installer
@@ -39,9 +41,9 @@ def sdktool():
     bash package.sh
     cp {DIR_BASE}/installer/dist/3sdk /tmp/3sdk_{name}
     """
-    Tools.execute(C)
+    myenv.tools.execute(C)
     if myenv.platform_is_osx:
-        Tools.execute(f"cp {DIR_BASE}/installer/dist/3sdk {DIR_HOME}/Downloads/3sdk_{name}", die=False)
+        myenv.tools.execute(f"cp {DIR_BASE}/installer/dist/3sdk {DIR_HOME}/Downloads/3sdk_{name}", die=False)
     C = f"""
     cd {DIR_BASE}/installer
     rm -rf dist
@@ -49,7 +51,7 @@ def sdktool():
     # rm -rf {DIR_BASE}/installer/sdk/InstallTools.py
     echo "find the build sdk on /tmp/3sdk_{name} or ~/Downloads/3sdk_{name}"
     """
-    Tools.execute(C)
+    myenv.tools.execute(C)
 
 
 def container_import(name=None, path=None, imagename="threefoldtech/3bot2", no_start=False):
@@ -124,9 +126,9 @@ def container_export(name=None, path=None, version=None):
 #
 #
 # def _build_phusion(push=False):
-#     path = Tools.text_replace("{DIR_BASE}/code/github/threefoldtech/baseimage-docker")
+#     path = myenv.tools.text_replace("{DIR_BASE}/code/github/threefoldtech/baseimage-docker")
 #     if not os.path.exists(path):
-#         Tools.code_github_get(url="https://github.com/threefoldtech/baseimage-docker", branch="master")
+#         myenv.tools.code_github_get(url="https://github.com/threefoldtech/baseimage-docker", branch="master")
 #     cmd = """
 #         set -ex
 #         cd {}/image
@@ -134,9 +136,9 @@ def container_export(name=None, path=None, version=None):
 #     """.format(
 #         path
 #     )
-#     Tools.execute(cmd, interactive=True)
+#     myenv.tools.execute(cmd, interactive=True)
 #     if push:
-#         Tools.execute("docker pushe threefoldtech/phusion/latest")
+#         myenv.tools.execute("docker pushe threefoldtech/phusion/latest")
 #
 #
 # def basebuilder_(dest=None, push=False, delete=True):

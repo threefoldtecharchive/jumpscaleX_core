@@ -1,12 +1,13 @@
 """core configuration"""
 __all__ = ["branch", "redis"]
-from Redis import RedisTools
 
 from MyEnv import MyEnv
 
 myenv = MyEnv()
 if not hasattr(myenv, "code_branch"):
     myenv.code_branch = None
+
+core = myenv
 
 
 def branch(val=""):
@@ -24,7 +25,7 @@ def redis():
     """
     start redis so it will remember our secret and other arguments
     """
-    return RedisTools._core_get()
+    return myenv.redis._core_get()
 
 
 branch.__property__ = True

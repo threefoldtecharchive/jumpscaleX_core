@@ -1,8 +1,6 @@
 from typing import List, Set, Dict, Tuple, Optional
-from Docker import DockerFactory
+
 from MyEnv import MyEnv
-from JumpscaleInstaller import JumpscaleInstaller
-from Tools import Tools
 
 myenv = MyEnv()
 
@@ -43,7 +41,7 @@ class SDKContainers:
 
     def delete(self, name: Optional[str]):
         name = self._name(name)
-        docker = DockerFactory.container_delete(name=name)
+        docker = myenv.docker.container_delete(name=name)
         self.container = None
 
     def get(
@@ -72,18 +70,18 @@ class SDKContainers:
         # need to make sure 1 sshkey has been created, does not have to be in github
         myenv.sshagent.key_default_name
 
-        DockerFactory.init()
+        myenv.docker.init()
 
-        docker = DockerFactory.container_get(
+        docker = myenv.docker.container_get(
             name=name, image=self.image, start=True, delete=delete, mount=mount, pull=pull
         )
 
         if not docker.executor.exists("/sandbox/cfg/.configured"):
 
-            installer = JumpscaleInstaller()
+            installer = myenv.installers.jumpscale
             print(" - make sure jumpscale code is on local filesystem.")
 
-            installer.repos_get(pull=pull, branch=self.core.branch, reset=code_update_force)
+            installer.repos_get(pull=pull, branch=self.core.code_branch, reset=code_update_force)
 
             if not identity.endswith(".test"):
                 assert self.args.identity
@@ -96,7 +94,7 @@ class SDKContainers:
                 words = self.args.words
 
             if not self.args.secret:
-                self.args.secret = Tools.ask_password("specify secret passphrase please:")
+                self.args.secret = myenv.tools.ask_password("specify secret passphrase please:")
 
             if not secret:
                 secret = self.args.secret

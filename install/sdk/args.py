@@ -1,4 +1,7 @@
 """configurable arguments"""
+from MyEnv import MyEnv
+
+myenv = MyEnv()
 
 
 __all__ = ["identity", "secret", "email", "words", "reset"]
@@ -7,7 +10,7 @@ from BaseClassProperties import BaseClassProperties
 
 
 class Args(BaseClassProperties):
-    def _init(self, **kwargs):
+    def _init(self, db=None, **kwargs):
         self.identity = None
         self.secret = None
         self.email = None
@@ -16,7 +19,7 @@ class Args(BaseClassProperties):
         self._load
 
 
-args = Args()
+args = Args(db=myenv.db)
 
 
 def identity(val=""):
@@ -57,7 +60,7 @@ def words(val=""):
         else:
             from .container import _containers
 
-            if DockerFactory.container_name_exists("3bot"):
+            if myenv.docker.container_name_exists("3bot"):
                 c = _containers.get(name="3bot")
                 c.execute("print(j.me.encryptor.words);print(\n\n)", jumpscale=True)
             else:

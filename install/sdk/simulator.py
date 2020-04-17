@@ -19,7 +19,7 @@ def start(delete=False, browser_open=True, pull=True, code_update_force=False):
     if delete:
         _delete_container("simulator")
 
-    if not DockerFactory.container_name_exists("simulator"):
+    if not myenv.docker.container_name_exists("simulator"):
         _install_container("simulator", delete=delete, code_update_force=code_update_force, pull=pull)
         c = _containers.get(name="simulator")
         c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
@@ -53,7 +53,7 @@ def restart(browser_open=False):
     restart the simulator, this can help to remove all running kernels
     the pyjupyter notebook can become super heavy
     """
-    if not DockerFactory.container_name_exists("simulator"):
+    if not myenv.docker.container_name_exists("simulator"):
         start()
     else:
         c = _containers.get(name="simulator")
@@ -68,7 +68,7 @@ def shell():
     """
     get a shell into the simulator
     """
-    if not DockerFactory.container_name_exists("simulator"):
+    if not myenv.docker.container_name_exists("simulator"):
         start()
     c = _containers.get(name="simulator")
     c.shell()
