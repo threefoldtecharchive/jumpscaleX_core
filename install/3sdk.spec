@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['3sdk.py'],
+a = Analysis(['threesdk/cli.py'],
              pathex=['/tmp'],
              binaries=[],
              datas=[],
