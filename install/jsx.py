@@ -7,7 +7,7 @@ import requests
 from urllib.request import urlopen
 from importlib import util
 
-DEFAULT_BRANCH = "unstable"
+DEFAULT_BRANCH = "development"
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 

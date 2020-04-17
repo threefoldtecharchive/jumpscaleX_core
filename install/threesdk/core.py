@@ -9,7 +9,7 @@ import requests
 class Core:
     def __init__(self):
         self._default_branch = "master"
-        self.branch = "unstable"
+        self.branch = "development"
         self.load()
 
     def load(self):
