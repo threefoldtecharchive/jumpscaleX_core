@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import click
 import os
-import shutil
-import urllib
 import requests
 from urllib.request import urlopen
 from importlib import util
@@ -14,9 +12,9 @@ os.environ["LC_ALL"] = "en_US.UTF-8"
 def load_install_tools(branch=None, reset=False):
     # get current install.py directory
 
-    path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py"
+    path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/threesdk/InstallTools.py"
     if not os.path.exists(path):
-        path = os.path.expanduser("~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py")
+        path = os.path.expanduser("~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/threesdk/InstallTools.py")
 
     if not branch:
         branch = DEFAULT_BRANCH
@@ -26,12 +24,12 @@ def load_install_tools(branch=None, reset=False):
         path = os.path.join(rootdir, "InstallTools.py")
         # now check on path next to jsx
         if not os.path.exists(path) or reset:  # or path.find("/code/") == -1:
-            url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py" % branch
+            url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/threesdk/InstallTools.py" % branch
 
             # fallback to default branch if installation is being done for another branch that doesn't exist in core
             if branch != DEFAULT_BRANCH and requests.get(url).status_code == 404:
                 url = (
-                    "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/InstallTools.py"
+                    "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/threesdk/InstallTools.py"
                     % DEFAULT_BRANCH
                 )
 

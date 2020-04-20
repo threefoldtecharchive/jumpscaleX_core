@@ -128,10 +128,11 @@ class Me(JSConfigBase, j.baseclasses.testtools):
         if words:
             self.encryptor.words_set(words)
 
-        if not ask:
-            self.encryptor._signing_key_generate()
         else:
-            self.signing_key = self.encryptor.words_ask()
+            if not ask:
+                self.encryptor._signing_key_generate()
+            else:
+                self.signing_key = self.encryptor.words_ask()
 
         self.verify_key = self.encryptor.verify_key_hex
 

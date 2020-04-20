@@ -15,7 +15,7 @@ OR
 
     ```bash
     scp /sandbox/bin/jsx root@REMOTE_MACHINE_IP:/tmp/;
-    scp /sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py  root@REMOTE_MACHINE_IP:/tmp/
+    scp /sandbox/code/github/threefoldtech/jumpscaleX_core/install/threesdk/InstallTools.py  root@REMOTE_MACHINE_IP:/tmp/
     ```
 
 

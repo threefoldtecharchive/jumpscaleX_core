@@ -11,7 +11,6 @@ import hashlib
 import binascii
 from io import BytesIO
 from nacl.exceptions import BadSignatureError
-import sys
 
 JSBASE = j.baseclasses.object
 print = j.tools.console.echo
