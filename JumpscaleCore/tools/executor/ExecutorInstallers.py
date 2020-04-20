@@ -151,7 +151,7 @@ class ExecutorInstallers(j.baseclasses.object):
             rm -f /tmp/jsx
             rm -f /tmp/InstallTools.py
             ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx;
-            ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py /tmp/InstallTools.py
+            ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/threesdk/InstallTools.py /tmp/InstallTools.py
             ssh-keyscan github.com >> ~/.ssh/known_hosts
             chmod +x /tmp/jsx
             """

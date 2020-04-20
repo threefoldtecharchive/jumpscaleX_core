@@ -7,9 +7,9 @@ import inspect
 import os
 import cgi
 import re
-from .core import core
-from . import __all__ as sdkall
-from . import _get_doc_line, _get_doc
+from threesdk.core import core
+from threesdk import __all__ as sdkall
+from threesdk import _get_doc_line, _get_doc
 
 from prompt_toolkit.application import get_app
 from prompt_toolkit.keys import Keys

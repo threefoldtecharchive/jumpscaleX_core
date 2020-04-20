@@ -1,1 +1,1 @@
-../../install/InstallTools.py
+../../install/threesdk/InstallTools.py

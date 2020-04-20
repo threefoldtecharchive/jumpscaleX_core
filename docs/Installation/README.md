@@ -147,7 +147,7 @@ To build the SDK yourself, you need to have:
 * `upx` is used to compress binary executable, can be installed with:
     * ubuntu: `apt-get install upx`
     * macos (using brew): `brew install upx`
-* `patchelf`: `apt install patchelf`
+* `patchelf`: `apt install patchelf` (only needed for linux)
 * `pyinstaller` can be installed using `pip3 install pyinstaller --user`
 
 
@@ -161,7 +161,7 @@ cd install
 ./package.sh
 ```
 
-If nothing gone wrong, you should find the final binary executable at `dist` directory.
+If nothing goes wrong, you should find the final binary executable at `dist` directory.
 
 Try running it with:
 
@@ -174,8 +174,7 @@ This will require python3, git on the user system
 
 - `pip3 install jedi pudb ptpython==2.0.4`
 - `cd /tmp && git clone https://github.com/threefoldtech/jumpscaleX_core/ && cd jumpscaleX_core && git checkout unstable && git pull`
-- `sudo -s`
-- `ln /tmp/jumpscaleX_core/install/3sdk.py /usr/bin/3sdk`
+- `cd install && pip3 install --user -e .`
  
 
 ## <a name='Troubleshooting'></a>Troubleshooting
