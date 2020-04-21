@@ -175,7 +175,7 @@ class AlertHandler(j.baseclasses.object):
         alert.identifier = identifier
         alert.alert_type = alert_type
         alert.level = logdict["level"]
-        alert.message = logdict["message"]
+        alert.message = j.core.tools.text_replace(logdict["message"])
         alert.message_pub = logdict["public"]
         alert.cat = logdict["cat"]
         alert.count += 1
