@@ -5,6 +5,7 @@ class SDKContainers:
         self.IT = core.IT
         self.core = core
         self.args = args
+        self._wireguard = None
 
     def _identity_ask(self, identity=None):
         if not identity and self.args.identity:
@@ -102,3 +103,9 @@ class SDKContainers:
 
         self.container = docker
         return docker
+
+    @property
+    def wireguard(self):
+        if not self._wireguard:
+            self._wireguard = self.IT.WireGuardServer(addr="127.0.0.1", port=self.config.sshport, myid=199)
+        return self._wireguard
