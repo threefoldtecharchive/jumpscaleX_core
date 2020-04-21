@@ -311,7 +311,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
             for admin in admins.split(","):
                 if admin.strip() == "":
                     continue
-                if not admin in r:
+                if admin not in r:
                     r.append(admin)
             self.admins = admins
 

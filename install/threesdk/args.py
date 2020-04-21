@@ -4,7 +4,7 @@ from .core import core
 
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
-__all__ = ["identity", "secret", "email", "words", "reset"]
+__all__ = ["identity", "secret", "email", "words", "reset", "explorer"]
 
 
 class Args(core.IT.Tools._BaseClassProperties):
@@ -13,8 +13,15 @@ class Args(core.IT.Tools._BaseClassProperties):
         self.secret = None
         self.email = None
         self.words = None
+        self.explorer = None
         self._key = "3sdk:data"
         self._load
+
+    def reset(self):
+        self.identity = None
+        self.email = None
+        self.words = None
+        self.explorer = None
 
 
 args = Args()
@@ -67,13 +74,21 @@ def words(val=""):
         args.words = val
 
 
+def explorer(val=""):
+    """
+    explorer to use
+    """
+    if not val:
+        return args.explorer
+    else:
+        args.explorer = val
+
+
 def reset():
     """
     reset your arguments for your identity  (secret remains)s
     """
-    args.identity = None
-    args.email = None
-    args.words = None
+    args.reset()
 
 
 def __str__():
