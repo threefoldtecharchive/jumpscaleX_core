@@ -36,6 +36,7 @@ def install(
     server=False,
     zerotier=False,
     pull=False,
+    secret=None,
     code_update_force=False,
 ):
     """
@@ -61,6 +62,8 @@ def install(
         args.email = email
     if words:
         args.words = words
+    if secret:
+        args.secret = secret
 
     if testnr:
         testnr = int(testnr)
@@ -79,6 +82,7 @@ def install(
         pull=pull,
         code_update_force=code_update_force,
         words=words,
+        secret=secret,
     )
 
     if zerotier:

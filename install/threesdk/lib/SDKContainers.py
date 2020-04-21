@@ -87,11 +87,10 @@ class SDKContainers:
                 email = self.args.email
             if not words:
                 words = self.args.words
-
-            if not self.args.secret:
-                self.args.secret = self.IT.Tools.ask_password("specify secret passphrase please:")
-
             if not secret:
+                secret = self.args.secret
+            if not secret:
+                self.args.secret = self.IT.Tools.ask_password("specify secret passphrase please:")
                 secret = self.args.secret
 
             docker.install_jumpscale(
