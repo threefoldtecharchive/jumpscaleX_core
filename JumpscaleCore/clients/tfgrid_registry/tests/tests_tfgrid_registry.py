@@ -29,9 +29,8 @@ def info(message):
 
 def addRegistryPackage():
     # . Start threebot server, add registery package, then reload the client.
-    # j.servers.threebot.local_start_3bot(background=True)
-    j.servers.threebot.local_start_explorer(background=True)
-    gedis_cl = j.clients.gedis.get("pm", port=8901, package_name="zerobot.packagemanager")
+    j.servers.threebot.local_start_3bot(background=True)
+    gedis_cl = j.clients.gedis.get("pm", port=8901, package_name="zerobot.admin")
     gedis_cl.actors.package_manager.package_add(
         path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/registry"
     )
@@ -42,7 +41,7 @@ def addRegistryPackage():
 def getNewUser():
     tid = j.data.idgenerator.generateRandomInt(1000, 9000)
     randStr = j.data.idgenerator.generateXCharID(10)
-    return j.tools.threebot.me.get(randStr, tid=tid, email=randStr + "@test.com", tname=randStr + "_name")
+    return j.myidentities.get(randStr, tid=tid, email=randStr + "@test.com", tname=randStr + "_name")
 
 
 def getSchemaAndModel(x="hello"):

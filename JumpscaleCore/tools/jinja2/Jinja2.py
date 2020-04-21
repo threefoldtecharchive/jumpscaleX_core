@@ -1,6 +1,6 @@
 from Jumpscale import j
 import os
-from jinja2 import Template, StrictUndefined
+from jinja2 import Environment, FileSystemLoader, select_autoescape, StrictUndefined, Template
 
 skip = j.baseclasses.testtools._skip
 
@@ -28,6 +28,14 @@ class Jinja2(j.baseclasses.object):
         if destroyall:
             j.sal.fs.remove(self._codegendir)
         j.sal.fs.createDir(self._codegendir)
+
+    def env_get(self, templates_path):
+        """get an environment from templates root path
+
+        :param templates_path: root path of all templates
+        :type templates_path: str
+        """
+        return Environment(loader=FileSystemLoader(templates_path), autoescape=select_autoescape(["html", "xml"]))
 
     def template_get(self, path=None, text=None, reload=False):
         """

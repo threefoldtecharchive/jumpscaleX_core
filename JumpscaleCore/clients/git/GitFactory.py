@@ -108,12 +108,15 @@ class GitFactory(j.baseclasses.object, j.baseclasses.testtools):
 
         def ignorelocalchanges_do():
             self._log_info(("git pull, ignore changes %s -> %s" % (url, dest)))
-            cmd = "cd %s;git fetch" % dest
+            cmd = "cd %s;git fetch;" % dest
             if depth is not None:
                 cmd += " --depth %s" % depth
             if branch is not None:
                 self._log_info("reset branch to:%s" % branch)
                 cmd += " git reset --hard origin/%s" % branch
+            else:
+                cmd += " git checkout . ; git clean -xfd;"
+            cmd += " git pull"
             j.core.tools.execute(cmd, timeout=timeout, retry=3, errormsg="cannot fetch %s" % url)
 
         if branch == "":

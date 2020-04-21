@@ -2,7 +2,8 @@ from Jumpscale import j
 import binascii
 from .ThreebotMe import ThreebotMe
 from .ThreebotMeCollection import ThreebotMeCollection
-from .ThreebotExplorer import ThreebotExplorer
+
+# from .ThreebotExplorer import ThreebotExplorer
 from io import BytesIO
 from nacl.signing import VerifyKey
 from nacl.public import PrivateKey, PublicKey, SealedBox
@@ -16,7 +17,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
 
     def _init(self):
         self._nacl = j.data.nacl.default
-        self.explorer = ThreebotExplorer()
+        # self.explorer = ThreebotExplorer()
 
     def backup_local(self, stop=True):
         """
@@ -51,7 +52,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
         raise RuntimeError("need to implement")
 
     def init_my_threebot(
-        self, myidentity="default", name=None, email=None, description=None, ipaddr="", interactive=True
+        self, myidentity="default", name=None, email=None, description=None, host="", interactive=True
     ):
         """
 
@@ -71,7 +72,9 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
 
         if not name:
             if interactive:
-                name = j.tools.console.askString("your threebot name")
+                name = j.tools.console.askString("your threebot name ")
+                if not name.endswith(".3bot"):
+                    name = f"{name}.3bot"
             else:
                 raise j.exceptions.Input("please specify name")
 
@@ -93,14 +96,14 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
                     description = j.tools.console.askString("your threebot description (optional)")
                 else:
                     description = ""
-            if not ipaddr:
+            if not host:
                 if str(j.core.platformtype.myplatform).startswith("darwin"):
-                    ipaddr = "localhost"
+                    host = "localhost"
                 else:
                     try:
-                        (iface, ipaddr) = j.sal.nettools.getDefaultIPConfig()
+                        (iface, host) = j.sal.nettools.getDefaultIPConfig()
                     except:
-                        ipaddr = "localhost"
+                        host = "localhost"
 
             if interactive:
                 if not j.tools.console.askYesNo("ok to use your local private key as basis for your threebot?", True):
@@ -108,17 +111,19 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
 
             user = explorer.users.new()
             user.name = name
-            user.ipaddr = ipaddr
+            user.host = host
             user.email = email
             user.description = description
             user.pubkey = nacl.verify_key_hex
             tid = explorer.users.register(user)
             r = explorer.users.get(tid=tid)
 
-        payload = j.data.nacl.payload_build(r.id, r.name, r.email, r.ipaddr, r.description, nacl.verify_key_hex)
+        # why didn't we use the primitives as put on this factory (sign, decrypt, ...)
+        # this means we don't take multiple identities into consideration, defeates the full point of our identity manager here
+        payload = j.data.nacl.payload_build(r.id, r.name, r.email, r.host, r.description, nacl.verify_key_hex)
         payload = j.data.hash.bin2hex(payload).decode()
         signature = j.data.nacl.payload_sign(
-            r.id, r.name, r.email, r.ipaddr, r.description, nacl.verify_key_hex, nacl=nacl
+            r.id, r.name, r.email, r.host, r.description, nacl.verify_key_hex, nacl=nacl
         )
         valid = explorer.users.validate(r.id, payload, signature)
         if not valid:
@@ -134,9 +139,33 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
 
         o = self.me.get(name=myidentity, tid=r.id, tname=r.name, email=r.email, pubkey=r.pubkey)
 
+        self._save_identity(name, interactive=interactive)
+
         print(o)
 
         return o
+
+    def _add_admins(self, name, interactive=False):
+        admins = []
+        conf_path = j.sal.fs.joinPaths(j.dirs.BASEDIR, "myhost", "keys", name, "conf.toml")
+        conf = j.data.serializers.toml.load(conf_path)
+        admins = conf.get("ADMINS", [])
+        if not admins and interactive:
+            admins = j.tools.console.askMultiline("Please enter names of threebot admins").splitlines()
+            conf["ADMINS"] = admins
+            j.data.serializers.toml.dump(conf_path, conf)
+        self.me.default.admins.extend(admins)
+        self.me.default.save()
+
+    def _save_identity(self, name, interactive=False):
+        identity_path = j.sal.fs.joinPaths(j.dirs.BASEDIR, "myhost", "keys", name)
+        j.sal.fs.copyDirTree(
+            j.sal.fs.joinPaths(j.dirs.CFGDIR, "keys", "default"), identity_path,
+        )
+        conf_path = j.sal.fs.joinPaths(identity_path, "conf.toml")
+        if not j.sal.fs.exists(conf_path):
+            j.data.serializers.toml.dump(conf_path, {"SECRET": j.core.myenv.config["SECRET"]})
+        self._add_admins(name, interactive=interactive)
 
     def _serializer_get(self, serialization_format="json"):
         if not serialization_format in ["json", "msgpack"]:
@@ -298,7 +327,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
             data3 = threebot_client.encrypt_for_threebot(data2)
             tid = threebot_client.tid
         else:
-            tid = j.tools.threebot.me.default.tid
+            tid = j.myidentities.default.tid
             if pubkey_hex:
                 assert len(pubkey_hex) == 64
                 pubkey = PublicKey(binascii.unhexlify(pubkey_hex))
@@ -355,6 +384,24 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
         data_list = [True, 1, [1, 2, "a"], jsxobject, "astring", ddict]
         return data_list
 
+    @property
+    def with_threebotconnect(self):
+        return j.core.myenv.config.get("THREEBOT_CONNECT", False)
+
+    def threebotconnect_enable(self):
+        """
+        enables threebotconnect auth
+        """
+        j.core.myenv.config["THREEBOT_CONNECT"] = True
+        j.core.myenv.config_save()
+
+    def threebotconnect_disable(self):
+        """
+        disables threebotconnect auth
+        """
+        j.core.myenv.config["THREEBOT_CONNECT"] = False
+        j.core.myenv.config_save()
+
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/549")
     def test_register_nacl_clients_get(self):
         """
@@ -378,14 +425,6 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
         )
 
         return nacl1, nacl2, threebot1, threebot2
-
-    def _add_phonebook(self):
-        pm = j.clients.gedis.get(
-            name="threebot", port=8901, package_name="zerobot.packagemanager"
-        ).actors.package_manager
-        pm.package_add(
-            git_url="https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/tfgrid/phonebook"
-        )
 
     @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/549")
     def test_register_nacl_threebots(self):
@@ -418,7 +457,7 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
     def test(self, name=""):
         """
 
-        this test needs the j.tools.threebot.me to exist (registration done)
+        this test needs the j.myidentities to exist (registration done)
 
         following will run all tests
 
@@ -428,17 +467,6 @@ class ThreebotToolsFactory(j.baseclasses.factory_testtools, j.baseclasses.testto
 
 
         """
-
-        cl = j.servers.threebot.local_start_explorer(background=True)
-
-        self._add_phonebook()
-
-        e = j.clients.threebot.explorer
-
-        # get actors to phonebook
-        self.actor_phonebook = e.actors_get("tfgrid.phonebook").phonebook
-
-        self.me
 
         self._tests_run(name=name, die=True)
 

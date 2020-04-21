@@ -1,8 +1,10 @@
 # Shell
 Kosmos shell is based on [ptpython](https://github.com/prompt-toolkit/ptpython), which is a python REPL with many good features, it uses [prompt-toolkit](https://github.com/prompt-toolkit/ptpython) for the interface.
 
-To enter the shell, just execute `kosmos`, you will find `j` object available directly too, with auto-completion, logging, error handling and more.
+Kosmos is built specially to support jumpscale world and its objects and their roles as we use tree hierarchy of objects and that requires a custom implementation of a shell
 
+
+To enter the shell, just execute `kosmos`, you will find `j` object available directly too, with auto-completion, logging, error handling and more.
 
 ### Content
 
@@ -113,3 +115,14 @@ Then run it:
 ## Internals
 
 You'll find [here](shell_internals.md) a list of internal details about the shell.
+
+## Kosmos vs IPython
+
+IPython is a very popular shell, but doesn't help much in the world of jumpscale in autocompletion, logging facilities, error reporting
+
+Kosmos shell working with zdb client
+![kosmos shell](images/kosmoszdb.png)
+
+
+IPython shell working with zdb client
+![ipython shell](images/ipythonzdb.png)

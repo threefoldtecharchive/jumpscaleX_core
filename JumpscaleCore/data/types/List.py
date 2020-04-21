@@ -47,6 +47,11 @@ class ListObject(TypeBaseObjClass, MutableSequence):
             if isinstance(item, j.data.schema._JSXObjectClass):
                 item.serialize()
 
+    def _reset(self):
+        for item in self._inner_list:
+            if isinstance(item, j.data.schema._JSXObjectClass):
+                item._reset()
+
     @_changed.setter
     def _changed(self, value):
         if value == False:
@@ -306,6 +311,8 @@ class List(TypeBaseObjFactory):
                 item = ttype.toml_string_get(item)
             else:
                 item = ttype.clean(item)
+                # item = ttype.clean(item, parent=parent)
+                # TODO: it was like this, not sure above is ok (despiegk)
 
             if unique:
                 if item not in res:

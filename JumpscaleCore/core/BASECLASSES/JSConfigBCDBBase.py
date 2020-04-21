@@ -14,8 +14,6 @@ class JSConfigBCDBBase(JSBase, Attr):
         self._bcdb_ = None
         self._schema_ = None
 
-        # self._model._kosmosinstance = self
-
     def _bcdb_selector(self):
         """
         always uses the system BCDB, unless if this one implements something else

@@ -1,0 +1,8 @@
+version: '3'
+services:
+  jsx:
+    build: .
+    ports:
+      - "4000:443"
+      - "7000:80"
+      - "9000:22"

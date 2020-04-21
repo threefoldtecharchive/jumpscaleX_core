@@ -90,9 +90,9 @@ class ExecutorInstallers(j.baseclasses.object):
         script = """
         apt-get update
         apt-get install -y mc wget python3 git tmux
-        set +ex
+        set +e
         apt-get install python3-distutils -y
-        set -ex
+        set -e
         apt-get install python3-psutil -y
         apt-get install -y curl rsync unzip
         locale-gen --purge en_US.UTF-8
@@ -151,7 +151,8 @@ class ExecutorInstallers(j.baseclasses.object):
             rm -f /tmp/jsx
             rm -f /tmp/InstallTools.py
             ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx;
-            ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/InstallTools.py /tmp/InstallTools.py
+            ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/threesdk/InstallTools.py /tmp/InstallTools.py
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
             chmod +x /tmp/jsx
             """
             self.executor.execute(C)
@@ -174,12 +175,16 @@ class ExecutorInstallers(j.baseclasses.object):
             self.executor.sshclient.syncer.sync(monitor=monitor)
 
     @executor_method()
-    def jumpscale(self, reset=False, syncfromlocal=True):
+    def jumpscale(self, reset=False, syncfromlocal=True, threebot=True):
         self.jumpscale_getcode(reset=reset, syncfromlocal=syncfromlocal)
-        self.executor.execute("/tmp/jsx install -s", interactive=True)
+        if threebot:
+            self.executor.execute("/tmp/jsx install -s --threebot", interactive=True)
+        else:
+            self.executor.execute("/tmp/jsx install -s", interactive=True)
 
     @executor_method()
     def threebot(self):
+        self.jumpscale()
         self.executor.execute_jumpscale("j.servers.threebot.test()")
 
     @executor_method()

@@ -42,13 +42,15 @@ class SSHKey(j.baseclasses.object_config):
                 self._init(**kwargs)
         else:
             if self.privkey:
-                c = j.sal.fs.readFile(self.path)
-                if not c.strip() == self.privkey.strip():
-                    raise j.exceptions.Input("mismatch between key in BCDB and in your filesystem (PRIVKEY)")
+                if j.sal.fs.exists(self.path):
+                    c = j.sal.fs.readFile(self.path)
+                    if not c.strip() == self.privkey.strip():
+                        raise j.exceptions.Input("mismatch between key in BCDB and in your filesystem (PRIVKEY)")
             if self.pubkey:
-                c = j.sal.fs.readFile("%s.pub" % (self.path))
-                if not c.strip() == self.pubkey.strip():
-                    raise j.exceptions.Input("mismatch between key in BCDB and in your filesystem (PUBKEY)")
+                if j.sal.fs.exists("%s.pub" % (self.path)):
+                    c = j.sal.fs.readFile("%s.pub" % (self.path))
+                    if not c.strip() == self.pubkey.strip():
+                        raise j.exceptions.Input("mismatch between key in BCDB and in your filesystem (PUBKEY)")
 
         assert j.sal.fs.exists(self.path)
 
@@ -57,9 +59,10 @@ class SSHKey(j.baseclasses.object_config):
             self._save()
 
         if not self.pubkey and self.privkey:
+            # TODO: duplicate with installtools SSHAgent
             path = "%s.pub" % (self.path)
             if not j.sal.fs.exists(path):
-                cmd = 'ssh-keygen -f {} -N "{}"'.format(self.path, self.passphrase_)
+                cmd = f"ssh-keygen -y -f {self.path} > {self.path}.pub"
                 j.sal.process.execute(cmd)
             self.pubkey = j.sal.fs.readFile(path)
             self._save()
@@ -87,27 +90,8 @@ class SSHKey(j.baseclasses.object_config):
         :param reset: if True, then delete old ssh key from dir, defaults to False
         :type reset: bool, optional
         """
-        self._log_debug("generate ssh key")
-
-        if reset:
-            self.delete_from_sshdir()
-            self.pubkey = ""
-            self.privkey = ""
-
-        else:
-            if not j.sal.fs.exists(self.path):
-                if self.privkey != "" and self.pubkey != "":
-                    self.write_to_sshdir()
-
-        if self.pubkey:
-            raise j.exceptions.Base("cannot generate key because pubkey already known")
-        if self.privkey:
-            raise j.exceptions.Base("cannot generate key because privkey already known")
-
-        if not j.sal.fs.exists(self.path) or reset:
-            cmd = 'ssh-keygen -t rsa -f {} -N "{}"'.format(self.path, self.passphrase_)
-            j.sal.process.execute(cmd, timeout=10)
-            self._init()
+        # TODO: use SSHAgent in installtools
+        j.shell()
 
     def delete(self):
         """
@@ -115,7 +99,6 @@ class SSHKey(j.baseclasses.object_config):
         """
         self._log_debug("delete:%s" % self.name)
         j.baseclasses.object_config.delete(self)
-        # self.delete_from_sshdir()
 
     def delete_from_sshdir(self):
         j.sal.fs.remove("%s.pub" % self.path)
@@ -127,10 +110,6 @@ class SSHKey(j.baseclasses.object_config):
         """
         j.sal.fs.writeFile(self.path, self.privkey)
         j.sal.fs.writeFile(self.path + ".pub", self.pubkey)
-
-    # def sign_ssh_data(self, data):
-    #     return self.agent.sign_ssh_data(data)
-    #     # TODO: does not work, property needs to be implemented
 
     def load(self):
         """

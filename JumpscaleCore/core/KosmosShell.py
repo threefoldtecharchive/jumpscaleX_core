@@ -12,6 +12,7 @@ from prompt_toolkit.application import get_app
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
 from prompt_toolkit.completion import Completion
+from prompt_toolkit.validation import ValidationError
 from prompt_toolkit.filters import Condition, is_done
 from prompt_toolkit.formatted_text import (
     ANSI,
@@ -56,7 +57,10 @@ def eval_code(stmts, locals_=None, globals_=None):
     except SyntaxError:
         return
 
-    return eval(code, globals_, locals_)
+    try:
+        return eval(code, globals_, locals_)
+    except:
+        return
 
 
 def sort_children_key(name):
@@ -147,9 +151,14 @@ def get_completions(self, document, complete_event):
     try:
         parent, member, prefix = get_current_line(document)
     except ValueError:
+        j.tools.logger._log_error("current line error", data=traceback.format_exc())
         return
 
-    obj = eval_code(parent, self.get_locals(), self.get_globals())
+    try:
+        obj = eval_code(parent, self.get_locals(), self.get_globals())
+    except (AttributeError, NameError):
+        # j.tools.logger._log_error("eval code error", data=traceback.format_exc())
+        return
     if obj:
         if isinstance(obj, j.baseclasses.object):
             # inspect object before getting its members
@@ -176,7 +185,7 @@ def get_completions(self, document, complete_event):
 
 
 def get_doc_string(tbc, locals_, globals_):
-    # j = KosmosShellConfig.j
+    j = KosmosShellConfig.j
 
     obj = eval_code(tbc, locals_=locals_, globals_=globals_)
     if not obj:
@@ -252,8 +261,12 @@ class HasLogs(PythonInputFilter):
 
 class IsInsideString(PythonInputFilter):
     def __call__(self):
-        text = self.python_input.default_buffer.document.text_before_cursor
-        grammer = self.python_input._completer._path_completer_grammar
+        # TODO: something going wrong here, maybe incompatible ptpython?
+        try:
+            text = self.python_input.default_buffer.document.text_before_cursor
+            grammer = self.python_input._completer._path_completer_grammar
+        except:
+            return False
         return bool(grammer.match(text))
 
 
@@ -476,7 +489,8 @@ def ptconfig(repl):
 
     # Enable input validation. (Don't try to execute when the input contains
     # syntax errors.)
-    # repl.enable_input_validation = True
+    repl.enable_input_validation = True
+    repl.default_buffer.validate_while_typing = lambda: True
 
     # Use this colorscheme for the code.
     repl.use_code_colorscheme("perldoc")
@@ -541,7 +555,11 @@ def ptconfig(repl):
                 else:
                     d = get_doc_string(member, repl.get_locals(), repl.get_globals())
         except Exception as exc:
-            j.tools.logger._log_error(str(exc))
+            if hasattr(exc, "message"):
+                msg = exc.message
+            else:
+                msg = str(exc)
+            j.tools.logger._log_error(msg)
             repl.docstring_buffer.reset()
             return
 
@@ -580,6 +598,7 @@ def ptconfig(repl):
         try:
             _, _, prefix = get_current_line(document)
         except ValueError:
+            j.tools.logger._log_error("No current line\n" + traceback.format_exc())
             return
 
         completions = []
@@ -596,7 +615,22 @@ def ptconfig(repl):
         j.application._in_autocomplete = False
         yield from filter_completions_on_prefix(completions, prefix)
 
+    old_validator = repl._validator.__class__.validate
+
+    def custom_validator(self, document):
+        try:
+            parent, member, prefix = get_current_line(document)
+        except ValueError:
+            return
+        try:
+            eval_code(parent, repl.get_locals(), repl.get_globals())
+        except (AttributeError, NameError) as e:
+            raise ValidationError(message=str(e))
+        except:
+            old_validator(self, document)
+
     repl._completer.__class__.get_completions = custom_get_completions
+    repl._validator.__class__.validate = custom_validator
     j.core.tools.custom_log_printer = add_logs_to_pane
 
     parent_container = get_ptpython_parent_container(repl)

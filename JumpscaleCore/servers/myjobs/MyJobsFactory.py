@@ -32,18 +32,18 @@ class MyJobsFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         self._init_models()
 
-        self.scheduled_ids = []
-        self._init_pre_schedule_ = False
-        self._i_am_worker = False
-
     def _init_models(self):
         self._bcdb = self._bcdb_selector()
         if not j.threebot.active:
             j.servers.threebot.threebotserver_require()
-        j.data.bcdb._master_set(True)
+        j.data.bcdb._master_set(True)  # weird that we do this? should normally be client of the BCDB server
         self.model_action = j.clients.bcdbmodel.get(name="myjobs", schema=schemas.action)
         j.clients.bcdbmodel.get(name="myjobs", schema=schemas.worker)
         j.clients.bcdbmodel.get(name="myjobs", schema=schemas.job)
+
+        self.scheduled_ids = []
+        self._init_pre_schedule_ = False
+        self._i_am_worker = False
 
     def _init_pre_schedule(self, in3bot=False):
         if not self._init_pre_schedule_:

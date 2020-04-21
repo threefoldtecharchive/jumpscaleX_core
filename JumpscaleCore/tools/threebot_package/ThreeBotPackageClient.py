@@ -9,7 +9,7 @@ class ThreeBotPackageClient(ThreeBotPackageBase):
         if self._init_ is False:
             self._log_info("install in 3bot package:%s" % self)
             j.servers.threebot.threebotserver_require()
-            pm = j.clients.gedis.get(name="packagemanager", port=8901, package_name="zerobot.packagemanager")
+            pm = j.clients.gedis.get(name="packagemanager", port=8901, package_name="zerobot.admin")
             self.package_manager_3bot = pm.actors.package_manager
             self.package_manager_3bot.package_add(path=self.path)
             self._gedisclient = None

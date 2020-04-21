@@ -1,8 +1,8 @@
 # creating a chatflow
 
 ## chatbot actor
-is located at `sandbox/code/github/threefoldtech/digitalmeX/packages/system/chat/actors/chatbot.py`
 
+is located at `sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webinterface/bottle/gedis.py`
 
 ### defining a new chatflow
 
@@ -25,14 +25,14 @@ def chat(bot):
 
     R = """
     # You entered
-    
+
     - name is {{name}}
     - age is {{age}}
     - favorite langs {{favorite_langs}}
     - worst person {{worst_person}}
 
     ### Click next 
-    
+
     for the final step which will redirect you to threefold.me
 
 
@@ -54,13 +54,7 @@ server = j.servers.gedis.configure(host='0.0.0.0', port=8888)
 
 ### loading chatbot actor
 ```python
-server.actor_add("/sandbox/code/github/threefoldtech/digitalmeX/packages/system/chat/actors/chatbot.py") 
-```
-
-### loading the chatflow directory
-```python
-server.chatbot.chatflows_load("/sandbox/code/github/threefoldtech/digitalmeX/packages/system/base/chatflows") 
-server.start()  
+server.actor_add("/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/zerobot/webinterface/bottle/gedis.py")
 ```
 
 ## Interacting with the chatbot
@@ -100,4 +94,5 @@ The rules are
 ```
 
 ## executing from the browser
-TODO
+
+Check [chatflows doc](https://github.com/threefoldtech/jumpscaleX_threebot/blob/unstable/ThreeBotPackages/zerobot/webinterface/wiki/chatbot/README.md)

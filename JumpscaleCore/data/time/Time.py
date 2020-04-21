@@ -1,18 +1,19 @@
 import datetime
 import time
+from collections import OrderedDict
 from .TimeInterval import TimeInterval
 from Jumpscale import j
 import struct
 
-TIMES = {
-    "s": 1,
-    "m": 60,
-    "h": 3600,
-    "d": 3600 * 24,
-    "w": 3600 * 24 * 7,
-    "M": int(3600 * 24 * 365 / 12),
+TIMES = OrderedDict({
     "Y": 3600 * 24 * 365,
-}
+    "M": int(3600 * 24 * 365 / 12),
+    "w": 3600 * 24 * 7,
+    "d": 3600 * 24,
+    "h": 3600,
+    "m": 60,
+    "s": 1,
+})
 
 
 class Time_(object):
@@ -178,13 +179,25 @@ class Time_(object):
         if 0 or '' then is now
         """
         txt = txt.strip()
-        unit = txt[-1]
-        if txt[-1] not in list(TIMES.keys()):
-            raise j.exceptions.Runtime(
-                "Cannot find time, needs to be in format have time indicator %s " % list(TIMES.keys())
-            )
-        value = float(txt[:-1])
-        return int(value * TIMES[unit])
+        seconds = 0
+        for txt in txt.split():
+            unit = txt[-1]
+            if txt[-1] not in list(TIMES.keys()):
+                raise j.exceptions.Runtime(
+                    "Cannot find time, needs to be in format have time indicator %s " % list(TIMES.keys())
+                )
+            value = float(txt[:-1])
+            seconds += int(value * TIMES[unit])
+        return seconds
+
+    def secondsToHRDelta(self, seconds):
+        result = ""
+        for key, value in TIMES.items():
+            decimal = int(seconds / value)
+            if decimal > 0:
+                result += f"{decimal}{key} "
+            seconds -= decimal * value
+        return result.strip()
 
     def getEpochDeltaTime(self, txt):
         """

@@ -14,6 +14,7 @@ class JSXObjectBase(j.baseclasses.object):
         self._load_from_data(capnpdata=capnpdata)  # ONLY LOADS THE self._capnp_obj_
         # self._changed_props = []
         self.id = None
+        self._ignore_model_autosave = False
 
         if datadict:
             self._data_update(datadict)
@@ -22,9 +23,11 @@ class JSXObjectBase(j.baseclasses.object):
 
     def _defaults_set(self):
         # j.debug()
+        self._ignore_model_autosave = True
         for prop in self._schema.properties:
             # name = prop.name
             setattr(self, prop.name, prop.default)
+        self._ignore_model_autosave = False
 
     @property
     def _readonly(self):
@@ -146,6 +149,15 @@ class JSXObjectBase(j.baseclasses.object):
     @property
     def _msgpack(self):
         return j.data.serializers.msgpack.dumps(self._ddict)
+
+    # def __setattr__(self, name, value):
+    #     if name in self.__class__.__slots__:
+    #         self.__dict__[name] = value
+    #         return
+    #     if name in self.__class__.__props__:
+    #         self.__dict__[name] = value
+    #         return
+    #     raise j.exceptions.Base("protected property on jsxobj:%s" % name)
 
     def __eq__(self, val):
         if isinstance(val, str) or isinstance(val, int) or isinstance(val, float) or isinstance(val, set):

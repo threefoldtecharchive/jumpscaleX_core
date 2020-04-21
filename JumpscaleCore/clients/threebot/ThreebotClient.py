@@ -4,8 +4,8 @@ from Jumpscale import j
 import binascii
 
 JSConfigBase = j.baseclasses.object_config
-from nacl.signing import VerifyKey
-from nacl.public import PrivateKey, PublicKey, SealedBox
+# from nacl.signing import VerifyKey
+# from nacl.public import PrivateKey, PublicKey, SealedBox
 from Jumpscale.clients.gedis.GedisClient import GedisClientActors
 
 
@@ -50,7 +50,7 @@ class ThreebotClient(JSConfigBase):
             actors = GedisClientActors()
 
             package_manager_actor = j.clients.gedis.get(
-                name="packagemanager", host=self.host, port=self.port, package_name="zerobot.packagemanager"
+                name="packagemanager", host=self.host, port=self.port, package_name="zerobot.admin"
             ).actors.package_manager
             for package in package_manager_actor.packages_list(status=status).packages:
                 name = package.name
@@ -127,9 +127,9 @@ class ThreebotClient(JSConfigBase):
         return self._verifykey_obj
 
     def test_auth(self, bot_id):
-        nacl_cl = j.data.nacl.get()
-        nacl_cl._load_singing_key()
+        encryptor = j.me.encryptor
+        encryptor._load_singing_key()
         epoch = str(j.data.time.epoch)
-        signed_message = nacl_cl.sign(epoch.encode()).hex()
+        signed_message = encryptor.sign(epoch.encode()).hex()
         cmd = "auth {} {} {}".format(bot_id, epoch, signed_message)
         return self._gedis._redis.execute_command(cmd)

@@ -55,6 +55,7 @@ class ZDBServers(JSConfigs, TESTTOOLS):
         zdb.start()
 
         cla = zdb.client_admin_get()
+        cl = zdb.client_get(secret=None)
 
         for ns in namespaces:
             if cla.namespace_exists(ns):

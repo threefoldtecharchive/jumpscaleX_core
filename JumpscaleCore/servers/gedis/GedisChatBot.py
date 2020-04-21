@@ -12,6 +12,12 @@ from Jumpscale import j
 JSBASE = j.baseclasses.object
 
 
+class StopChatFlow(Exception):
+    def __init__(self, msg=None):
+        super().__init__(self, msg)
+        self.msg = msg
+
+
 class GedisChatBotFactory(JSBASE):
     def __init__(self):
         JSBASE.__init__(self)
@@ -126,7 +132,7 @@ class Form:
 
     def _append(self, msg, loader=str):
         self.messages.append(msg)
-        result = Result()
+        result = Result(loader)
         self.results.append(result)
         return result
 
@@ -150,6 +156,9 @@ class Form:
 
     def single_choice(self, msg, options, **kwargs):
         return self._append(self._session.single_msg(msg, options, **kwargs))
+
+    def drop_down_choice(self, msg, options, **kwargs):
+        return self._append(self._session.drop_down_msg(msg, options, **kwargs))
 
 
 class GedisChatBotSession(JSBASE):
@@ -178,9 +187,15 @@ class GedisChatBotSession(JSBASE):
         def wrapper():
             try:
                 self.topic_method(bot=self)
+            except StopChatFlow as e:
+                if e.msg:
+                    self.md_show(e.msg)
             except Exception as e:
+                errmsg = "something went wrong please contact support"
                 j.errorhandler.exception_handle(e, die=False)
-                return self.md_show("Something went wrong please contact support")
+                if "message" in dir(e):
+                    errmsg += f" with error: {e.message}"
+                return self.md_show(errmsg)
 
         self.greenlet = gevent.spawn(wrapper)
 
@@ -189,6 +204,9 @@ class GedisChatBotSession(JSBASE):
     # ###################################
     def new_form(self):
         return Form(self)
+
+    def stop(self, msg=None):
+        raise StopChatFlow(msg)
 
     def string_ask(self, msg, **kwargs):
         """
@@ -290,6 +308,15 @@ class GedisChatBotSession(JSBASE):
 
     def location_msg(self, msg, **kwargs):
         return {"cat": "location_ask", "msg": msg, "kwargs": kwargs}
+
+    def md_show_confirm(self, data, **kwargs):
+        res = "<h1>Please make sure of the entered values before starting deployment</h1>"
+
+        for key, value in data.items():
+            if value:
+                res += f"**{key}**: {value}<br>"
+
+        self.md_show(res)
 
     def md_show(self, msg, **kwargs):
         """
@@ -426,6 +453,45 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
         """
         self.q_out.put({"cat": "user_info", "kwargs": kwargs})
         return j.data.serializers.json.loads(self.q_in.get())
+
+    def qrcode_show(self, data, title=None, msg=None, scale=10):
+        qr_64 = j.tools.qrcode.base64_get(data, scale=scale)
+        if not title:
+            title = "scan with your application:"
+        content = f"""# {title}
+
+<p align="center">
+<img src="data:image/png;base64, {qr_64}" alt="qrCode"/>
+</p>
+"""
+        if msg:
+            content += f"## {msg}"
+        return self.md_show(content)
+
+    def qrcode_show_dict(self, d, title=None, msg=None, scale=10):
+        data = j.data.serializers.json.dumps(d)
+        return self.qrcode_show(data, title, msg, scale=scale)
+
+    def time_delta_ask(self, msg, **kwargs):
+        """
+        helper method to generate a question that expects a time delta string(1h, 2m, 3d,...).
+        html generated in the client side will use `<input type="text"/>`
+        :param msg: the question message
+        :param kwargs: dict of possible extra options like (validate, reset, ...etc)
+        :return: the user answer for the question
+        """
+        message = """{}
+        Format:
+        hour=h, day=d, week=w, month=M
+        I.e. 2 days = 2d
+        """.format(
+            msg
+        )
+        time_delta = self.ask(self.string_msg(message, **kwargs))
+        try:
+            return j.data.time.getDeltaTime(time_delta)
+        except Exception:
+            raise j.exceptions.Value("Wrong time delta format specified please enter a correct one")
 
 
 def test(factory):

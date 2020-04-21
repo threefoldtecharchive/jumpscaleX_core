@@ -149,7 +149,7 @@ class BCDBModel(BCDBModelBase):
         """
         see docs/baseclasses/data_mgmt_on_obj.md
 
-        triggers are called with obj,action,propertyname as kwargs
+        triggers are called with model,obj,action,propertyname as kwargs
 
         return obj or None
 
@@ -171,7 +171,8 @@ class BCDBModel(BCDBModelBase):
         kosmosinstance = self._kosmosinstance
         stop = False
         for method in self._triggers:
-            obj2 = method(model=model, obj=obj, kosmosinstance=kosmosinstance, action=action, propertyname=propertyname)
+            # kosmosinstance=kosmosinstance,
+            obj2 = method(model=model, obj=obj, action=action, propertyname=propertyname)
             if isinstance(obj2, list) or isinstance(obj2, tuple):
                 obj2, stop = obj2
                 if stop:
@@ -352,7 +353,7 @@ class BCDBModel(BCDBModelBase):
                 else:
                     raise e
 
-            bdata_encrypted = j.data.nacl.default.encryptSymmetric(bdata)
+            bdata_encrypted = j.myidentities.encrypt(bdata)
             assert obj.nid > 0
             l = [obj.nid, obj.acl_id, bdata_encrypted]
             data = j.data.serializers.msgpack.dumps(l)
@@ -422,12 +423,18 @@ class BCDBModel(BCDBModelBase):
 
     def new(self, data=None, nid=1, **kwargs):
 
-        if kwargs != {}:
-            data = kwargs
         if data and isinstance(data, dict):
             data = self._dict_process_in(data)
         elif isinstance(data, str) and j.data.types.json.check(data):
             data = j.data.serializers.json.loads(data)
+
+        if not data and kwargs != {}:
+            # because we have to update the e.g. name in kwargs
+            data = {}
+            data.update(kwargs)
+
+        if data and kwargs:
+            data.update(kwargs)
 
         if data:
             if isinstance(data, dict):

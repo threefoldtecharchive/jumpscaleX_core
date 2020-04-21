@@ -3,6 +3,7 @@ import re
 from functools import partial
 
 from Jumpscale import j
+from Jumpscale.tools.threegit.ThreeGitFactory import INCLUDES_PREFIX
 from Jumpscale.tools.threegit.Link import MarkdownLinkParser, Linker, Link, SKIPPED_LINKS
 from Jumpscale.clients.http.HttpClient import HTTPError
 
@@ -109,7 +110,7 @@ def copy_links(main_doc, included_docs_root, included_doc_path, links):
 
         # the destination is just the output path with the relative directory and the source
         destination = exapnd_doc_path(main_docs_outpath, main_doc.path_dir_rel, source)
-        if not j.sal.fs.exists(destination):
+        if j.sal.fs.exists(real_path) and not j.sal.fs.exists(destination):
             j.sal.fs.copyFile(real_path, destination, createDirIfNeeded=True)
 
 
@@ -187,12 +188,18 @@ def get_content(custom_link, doc, docsite_name=None, host=None, raw=False):
             new_link = Linker.to_custom_link(repo, host)
             # to match any path, start with root `/`
             url = Linker(host, new_link.account, new_link.repo).tree("/")
-            if new_link.repo in TMP_DOCSITE_CACHE:
-                docsite = TMP_DOCSITE_CACHE[new_link.repo]
+
+            # create a new docsite to include content from it, it will not be processed
+            # it will be just used for searching documents and files, start from /
+            # or get it from cache
+            include_docsite_name = f"{new_link.repo}_{INCLUDES_PREFIX}"
+            if include_docsite_name in TMP_DOCSITE_CACHE:
+                docsite = TMP_DOCSITE_CACHE[include_docsite_name]
             else:
-                docsite = j.tools.threegit.get_from_url(new_link.repo, url, base_path="").docsite
+                threegit = j.tools.threegit.get_from_url(include_docsite_name, url, base_path="")
+                docsite = threegit.docsite
                 docsite.load(reset=True)
-                TMP_DOCSITE_CACHE[new_link.repo] = docsite
+                TMP_DOCSITE_CACHE[include_docsite_name] = docsite
             custom_link.path = new_link.path
 
     try:

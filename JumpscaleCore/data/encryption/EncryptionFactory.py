@@ -1,8 +1,5 @@
 from Jumpscale import j
 
-# IMPORTANT
-# use functionality in j.clients.ssh to deal with SSH-Agent & getting key info, improve if required
-# use j.data.nacl for underlying encryption/decryption/signing when possible
 JSBASE = j.baseclasses.object
 from .EncryptionInstance import EncryptionInstance
 from .mnemonic import Mnemonic
@@ -49,40 +46,41 @@ class EncryptionFactory(j.baseclasses.object_config_collection_testtools):
         """
         return self.mnemonic.generate(strength=strength)
 
-    def sign_short(self, data, keyname, keypath=None):
-        """
-        Sign data using NACL
-            :param data: data to be signed
-            :param keyname: filename that contains the private key to encrypt and sign the data
-            :param keypath: path of dir of the key file, if None it'll fall back to ~/.ssh
-            @return: tuple of signed data and signature used in verification
-        """
-
-        encrypted = j.data.nacl.encrypt(data=data, keyname=keyname, keypath=keypath)
-        signed, signature = j.data.nacl.sign(encrypted)
-        return signed, signature
-
-    def verify_short(self, data, signature, keyname, keypath):
-        """
-        Verify data using signature
-            :param data: signed data to be verified using signature
-            :param signature: signature that was used to signed the data
-            :param keyname: filename that contains the private key to decrypt and sign the data
-            :param keypath: path of dir of the key file, if None it'll fall back to ~/.ssh
-            @return original data
-        """
-
-        verified_data = j.data.nacl.verify(data, signature)
-        return j.data.nacl.decrypt(data=verified_data, keyname=keyname, keypath=keypath)
+    #
+    # def sign_short(self, data, keyname, keypath=None):
+    #     """
+    #     Sign data using NACL
+    #         :param data: data to be signed
+    #         :param keyname: filename that contains the private key to encrypt and sign the data
+    #         :param keypath: path of dir of the key file, if None it'll fall back to ~/.ssh
+    #         @return: tuple of signed data and signature used in verification
+    #     """
+    #
+    #     encrypted = j.data.nacl.encrypt(data=data, keyname=keyname, keypath=keypath)
+    #     signed, signature = j.data.nacl.sign(encrypted)
+    #     return signed, signature
+    #
+    # def verify_short(self, data, signature, keyname, keypath):
+    #     """
+    #     Verify data using signature
+    #         :param data: signed data to be verified using signature
+    #         :param signature: signature that was used to signed the data
+    #         :param keyname: filename that contains the private key to decrypt and sign the data
+    #         :param keypath: path of dir of the key file, if None it'll fall back to ~/.ssh
+    #         @return original data
+    #     """
+    #
+    #     verified_data = j.data.nacl.verify(data, signature)
+    #     return j.data.nacl.decrypt(data=verified_data, keyname=keyname, keypath=keypath)
 
     def test(self):
         """
         kosmos 'j.data.encryption.test()'
         """
 
-        e = j.data.encryption.get("test", secret_="12345")
-        encrypted = e.encrypt("test")
-        assert "test" == e.decrypt(encrypted)
+        # e = j.data.encryption.get("test", secret_="12345")
+        # encrypted = e.encrypt("test")
+        # assert "test" == e.decrypt(encrypted)
 
         words = "sound key uncover anger liberty coffee now huge catalog bread link grit"
         secret = j.data.encryption.mnemonic_to_seed(words, "1234")

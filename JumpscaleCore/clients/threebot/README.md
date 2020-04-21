@@ -11,8 +11,6 @@ cl = j.servers.threebot.start(web=True)
 - Create the `default` instance from threebot.me
 
 ```python
-cl.actors.package_manager.package_add(path="/sandbox/code/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/tfgrid/phonebook")
-cl.reload()
 j.tools.threebot.init_my_threebot(myidentity='default', name='hamdy farag', email='ham1dy@d.com', description=None, ipaddr='127.0.0.1', interactive=False)```
 ```
 
@@ -26,7 +24,7 @@ cl.reload()
 - Get the client and use it (registering my threebot.me id), It will authenticate automatically
 
 ```python
-c = j.clients.threebot.client_get(j.tools.threebot.me.default.tid)
+c = j.clients.threebot.client_get(j.myidentities.default.tid)
 ```
 
 - use the client

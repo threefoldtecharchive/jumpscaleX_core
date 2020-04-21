@@ -11,6 +11,8 @@ from .Link import Linker, MarkdownLinkParser
 
 JSBASE = j.baseclasses.object
 
+DIRS_TO_SKIP = ["node_modules"]
+
 
 class DocSite(j.baseclasses.object):
     """
@@ -216,6 +218,8 @@ class DocSite(j.baseclasses.object):
                 return False
             if base.startswith("_"):
                 return False
+            if base in DIRS_TO_SKIP:
+                return False
             return True
 
         def callbackFunctionDir(path, arg):
@@ -283,9 +287,10 @@ class DocSite(j.baseclasses.object):
             for item in modified_files:
                 item = f"{self.threegit.git_client.path}/{item}"
                 if j.sal.fs.exists(item):
-                    if j.sal.fs.isFile(item):
-                        if callbackForMatchFile(item, ""):
-                            callbackFunctionFile(item, "")
+                    if callbackForMatchDir(j.sal.fs.getParent(item), ""):
+                        if j.sal.fs.isFile(item):
+                            if callbackForMatchFile(item, ""):
+                                callbackFunctionFile(item, "")
 
         if old_files:
             for ditem in old_files:
@@ -347,15 +352,15 @@ class DocSite(j.baseclasses.object):
         returns path to the file
         """
         name = self._clean(name)
-
         if name in self.files:
             return self.files[name]
 
-        name = name.replace(j.sal.fs.getFileExtension(name), "")
-        for path in self.files.values():
-            partial_path = path.lower().replace(j.sal.fs.getFileExtension(path), "")
-            if partial_path.endswith(name):
-                return path
+        if name:
+            name = name.replace(j.sal.fs.getFileExtension(name), "")
+            for path in self.files.values():
+                partial_path = path.lower().replace(j.sal.fs.getFileExtension(path), "")
+                if partial_path.endswith(name):
+                    return path
 
         if die:
             raise j.exceptions.Input(message="Did not find file:%s in %s" % (name, self))

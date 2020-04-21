@@ -2,6 +2,12 @@ from Jumpscale import j
 
 
 JSConfigs = j.baseclasses.object_config_collection
+TEMPLATES_PATH = j.sal.fs.joinPaths(j.sal.fs.getDirName(__file__), "templates")
+env = j.tools.jinja2.env_get(TEMPLATES_PATH)
+
+
+def render_config_template(name, **kwargs):
+    return env.get_template(f"{name}.conf").render(**kwargs)
 
 
 class LocationsConfiguration(j.baseclasses.object_config):
@@ -34,6 +40,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
         use_jumpscale_weblibs = false (B)
         is_auth = false (B)
         force_https = false (B)
+        is_admin = false (B)
 
         @url = jumpscale.openresty.location_proxy
         name = "" (S)
@@ -45,6 +52,7 @@ class LocationsConfiguration(j.baseclasses.object_config):
         scheme = "http,https,ws,wss" (E)
         is_auth = false (B)
         force_https = false (B)
+        is_admin = false (B)
 
         @url = jumpscale.openresty.location_lapis
         name = ""
@@ -52,14 +60,17 @@ class LocationsConfiguration(j.baseclasses.object_config):
         path_location = ""
         is_auth = false (B)
         force_https = false (B)
+        is_admin = false (B)
 
         @url = jumpscale.openresty.location_custom
         name = ""
         config = ""
         is_auth = false (B)
         force_https = false (B)
+        is_admin = false (B)
 
         """
+    WITH_THREEBOTCONNECT = j.core.myenv.config.get("THREEBOT_CONNECT", False)
 
     def get_location_proxy(self, new_location_name):
         return self.check_location_exists(self.locations_proxy, new_location_name)
@@ -91,6 +102,14 @@ class LocationsConfiguration(j.baseclasses.object_config):
     def path_web_default(self):
         return self._parent._parent.path_web_default
 
+    def write_config(self, location, content=None):
+        if not content:
+            template_name = location._schema.url.split(".")[-1]
+            content = render_config_template(template_name, obj=location)
+        if not self.WITH_THREEBOTCONNECT:
+            location.is_auth = False
+        j.sal.fs.writeFile(self.path_cfg_get(location.name), content)
+
     def configure(self):
         """
         in the location obj: config is a server config file of nginx (in text format)
@@ -99,60 +118,26 @@ class LocationsConfiguration(j.baseclasses.object_config):
         :return:
         """
         j.sal.fs.createDir(self.path_cfg_dir)
-        # FIXME: https://github.com/threefoldtech/jumpscaleX_core/issues/433
-        for location in self.locations_static:
-            if not location.path_location.endswith("/"):
-                location.path_location += "/"
-            content = j.tools.jinja2.file_render(
-                path=f"{self._dirpath}/templates/location_static.conf", write=False, obj=location
-            )
-            j.sal.fs.writeFile(self.path_cfg_get(location.name), content)
-            if location.use_jumpscale_weblibs:
-                self._add_weblibs(location.path_location)
 
-        for location in self.locations_spa:
+        for location in list(self.locations_static) + list(self.locations_spa):
             if not location.path_location.endswith("/"):
                 location.path_location += "/"
-            content = j.tools.jinja2.file_render(
-                path=f"{self._dirpath}/templates/location_spa.conf", write=False, obj=location
-            )
-            j.sal.fs.writeFile(self.path_cfg_get(location.name), content)
-            if location.use_jumpscale_weblibs:
-                self._add_weblibs(location.path_location)
+
+            self.write_config(location)
 
         for location in self.locations_proxy:
-            content = j.tools.jinja2.file_render(
-                path=f"{self._dirpath}/templates/location_proxy.conf", write=False, obj=location
-            )
-            j.sal.fs.writeFile(self.path_cfg_get(location.name), content)
+
+            self.write_config(location)
 
         for location in self.locations_lapis:
             if location.path_location == "":
                 location.path_location = self.path_location
-            content = j.tools.jinja2.file_render(
-                path=f"{self._dirpath}/templates/location_lapis.conf", write=False, obj=location
-            )
-            j.sal.fs.writeFile(self.path_cfg_get(location.name), content)
+
+            self.write_config(location)
             j.sal.process.execute("cd %s;moonc ." % location.path_location)
 
         for location in self.locations_custom:
-            j.sal.fs.writeFile(self.path_cfg_get(location.name), location.config)
-
-    def _add_weblibs(self, path):
-        """
-        link jumpscale_weblibs repo to the {path}/static
-        :param path: path to link to (will copy to {path}/static
-        """
-        url = "https://github.com/threefoldtech/jumpscaleX_weblibs"
-        weblibs_path = j.clients.git.getContentPathFromURLorPath(url, pull=False)
-
-        # copy static dir from repo to the right location
-        if "static" in path:
-            path = path.rpartition("/")[0]
-
-        static_dir = j.sal.fs.joinPaths(path, "weblibs")
-
-        j.sal.fs.symlink(j.sal.fs.joinPaths(weblibs_path, "static/"), static_dir, True)
+            self.write_config(location, content=location.config)
 
     # Helper function
     @staticmethod

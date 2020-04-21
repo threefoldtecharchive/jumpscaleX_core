@@ -83,8 +83,8 @@ class JSConfigsBCDB(JSConfigBCDBBase):
         kwargs_to_obj_new, kwargs_to_class = process_kwargs(kwargs)
 
         if not jsxobject:
-            jsxobject = self._model.new(data=kwargs_to_obj_new)
-            jsxobject.name = name
+            jsxobject = self._model.new(name=name, data=kwargs_to_obj_new)
+            assert jsxobject.name == name
 
         # means we need to remember the parent id
         mother_id = self._mother_id_get()
@@ -98,7 +98,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
 
         return self._children[name]
 
-    def get(self, name="main", id=None, needexist=False, reload=False, autosave=True, **kwargs):
+    def get(self, name="default", id=None, needexist=False, reload=False, autosave=True, **kwargs):
         """
         get jsconfig instance and create if it doesn't exist
 
@@ -186,6 +186,7 @@ class JSConfigsBCDB(JSConfigBCDBBase):
             )
 
         elif len(res) > 1:
+            j.shell()
             raise j.exceptions.Base(
                 "Found more than 1 service for :%s, name searched for:%s" % (self.__class__._location, name)
             )

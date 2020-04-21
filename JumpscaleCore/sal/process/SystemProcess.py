@@ -111,7 +111,7 @@ class SystemProcess(JSBASE, j.baseclasses.testtools):
             timeout=timeout,
             die=die,
             async_=async_,
-            env=env,
+            args=env,
             interactive=interactive,
             replace=replace,
             retry=retry,

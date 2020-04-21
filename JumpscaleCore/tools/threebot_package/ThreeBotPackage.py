@@ -1,8 +1,17 @@
 import sys
-from Jumpscale.tools.threegit.ThreeGit import load_wiki
 from Jumpscale import j
 
 from .ThreeBotPackageBase import ThreeBotPackageBase
+
+
+def generate_path_md5(path):
+    if j.sal.fs.isDir(path):
+        md5 = j.sal.fs.getFolderMD5sum(path, ignore_empty_files=True)
+    elif j.sal.fs.isFile(path):
+        md5 = j.sal.fs.md5sum(path)
+    else:
+        raise j.exceptions.Input("could not check change only file or dir supported:%s" % path)
+    return md5
 
 
 class ThreeBotPackage(ThreeBotPackageBase):
@@ -29,10 +38,9 @@ class ThreeBotPackage(ThreeBotPackageBase):
         :return:
         """
         if not self._init_:
-            path = self._changed("package.py")
-            if path:
-                klass, changed = j.tools.codeloader.load(obj_key="Package", path=path, reload=False)
-                self._package_author = klass(package=self)
+            path = j.sal.fs.joinPaths(self.path, "package.py")
+            klass, _ = j.tools.codeloader.load(obj_key="Package", path=path, reload=False)
+            self._package_author = klass(package=self)
         self._init_ = True
 
     def _changed(self, path, die=True, reset=False):
@@ -43,12 +51,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
                 raise j.exceptions.Input("could not find:%s" % path)
             else:
                 return None
-        if j.sal.fs.isDir(path):
-            md5 = j.sal.fs.getFolderMD5sum(path, ignore_empty_files=True)
-        elif j.sal.fs.isFile(path):
-            md5 = j.sal.fs.md5sum(path)
-        else:
-            raise j.exceptions.Input("could not check change only file or dir supported:%s" % path)
+        md5 = generate_path_md5(path)
         if md5 not in self._changes or reset:
             self._changes.append(md5)
             return path
@@ -89,7 +92,13 @@ class ThreeBotPackage(ThreeBotPackageBase):
         wiki_path = j.sal.fs.joinPaths(self.path, "wiki")
         if not j.sal.fs.exists(wiki_path):
             return
-        j.servers.myjobs.schedule(load_wiki, wiki_name=self.name, wiki_path=wiki_path, reset=reset)
+
+        try:
+            j.tools.mdbook.load(self.name, wiki_path)
+        except j.exceptions.Base as e:
+            self._log_error(f"error loading wiki of {self.name}", exception=e)
+            return
+
         self._wikis[self.name] = wiki_path
 
     def actors_load(self):
@@ -118,6 +127,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
                         errormsg = "****ERROR HAPPENED IN LOADING ACTOR: %s\n%s" % (fpath, e)
                         self._log_error(errormsg)
                         print(errormsg)
+                        self._actors = None
                         raise e
                         # print(f"adding actor {name} {fpath} {self.name}")
                     self.gedis_server.actor_add(name=name, path=fpath, package=self)
@@ -203,15 +213,21 @@ class ThreeBotPackage(ThreeBotPackageBase):
             self._models = j.baseclasses.dict()
             path = self._changed("models", die=False)
             if path:
-                model_urls = self.bcdb.models_add(path)
-                for model_url in model_urls:
-                    m = self.bcdb.model_get(url=model_url)
-                    if model_url.startswith(self.name):
-                        model_url2 = model_url[len(self.name) + 1 :]
-                    else:
-                        model_url2 = model_url
-                    model_url3 = model_url2.replace(".", "__")
-                    self._models[model_url3] = m
+                try:
+                    model_urls = self.bcdb.models_add(path)
+                    for model_url in model_urls:
+                        m = self.bcdb.model_get(url=model_url)
+                        if model_url.startswith(self.name):
+                            model_url2 = model_url[len(self.name) + 1 :]
+                        else:
+                            model_url2 = model_url
+                        model_url3 = model_url2.replace(".", "__")
+                        self._models[model_url3] = m
+                except Exception as e:
+                    self._models = None
+                    md5 = generate_path_md5(path)
+                    self._changes.remove(md5)
+                    raise e
         return self._models
 
     @property
@@ -229,7 +245,12 @@ class ThreeBotPackage(ThreeBotPackageBase):
         self.load()
         path = self._changed("chatflows", die=False)
         if path:
-            self._chatflows = self.gedis_server.chatbot.chatflows_load(path)
+            try:
+                self._chatflows = self.gedis_server.chatbot.chatflows_load(path)
+            except Exception as e:
+                md5 = generate_path_md5(path)
+                self._changes.remove(md5)
+                raise e
 
     @property
     def wikis(self):
@@ -324,6 +345,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
         self.load()
         self._package_author.stop()
         self.running = False
+        self.status = "tostart"
         self.save()
 
     def uninstall(self):

@@ -1,6 +1,6 @@
 from Jumpscale import j
 from redis.exceptions import ConnectionError
-import nacl
+
 from .protocol import RedisCommandParser, RedisResponseWriter
 from nacl.signing import VerifyKey
 import binascii
@@ -248,6 +248,7 @@ class Handler(JSBASE):
             self._log_error("unexpected error: %s" % str(e), context="%s:%s" % address, exception=e)
         finally:
             gedis_socket.on_disconnect()
+            # self._log_error("connection closed: %s" % str(e), context="%s:%s" % address, exception=e)
 
     def _handle_gedis_session(self, gedis_socket, address, user_session=None):
         """
@@ -323,7 +324,7 @@ class Handler(JSBASE):
             tid, seed, signature = request.arguments
             tid = int(tid)
 
-            current_threebot_id = int(j.tools.threebot.me.default.tid)
+            current_threebot_id = int(j.myidentities.me.tid)
             # If working on same machine no need to get a client to authenticate
             # otherwise, we'll have infinite loop
             if current_threebot_id != tid:
@@ -345,14 +346,14 @@ class Handler(JSBASE):
                 # can't reuse verification methods in 3 bot client, otherwise we gonna go into infinite loop
                 # so we verify directly using nacl
                 try:
-                    VerifyKey(binascii.unhexlify(j.tools.threebot.me.default.nacl.verify_key_hex)).verify(
+                    VerifyKey(binascii.unhexlify(j.myidentities.me.encryptor.verify_key_hex)).verify(
                         seed, binascii.unhexlify(signature)
                     )
                 except Exception as e:
                     logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
                     return (logdict, None)
                 user_session.threebot_id = tid
-                user_session.threebot_name = j.tools.threebot.me.default.name
+                user_session.threebot_name = j.myidentities.me.name
             return None, "OK"
 
         self._log_debug(
