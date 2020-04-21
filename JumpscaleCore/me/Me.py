@@ -255,6 +255,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
                 self.tname = self._name_get(j.sal.fs.readFile(idpath_default))
 
         intro = True
+        testaccount = self.tname.endswith(".test")
 
         def dointro(intro):
             if intro:
@@ -316,7 +317,7 @@ class Me(JSConfigBase, j.baseclasses.testtools):
 
         self._admin_add_default()
 
-        if phonebook_register:
+        if phonebook_register and not testaccount:
             self.tfgrid_phonebook_register(force=True, interactive=False)
 
         self.save()
