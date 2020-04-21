@@ -173,7 +173,7 @@ Try running it with:
 This will require python3, git on the user system 
 
 - `pip3 install jedi pudb ptpython==2.0.4`
-- `cd /tmp && git clone https://github.com/threefoldtech/jumpscaleX_core/ && cd jumpscaleX_core && git checkout unstable && git pull`
+- `cd /tmp && git clone https://github.com/threefoldtech/jumpscaleX_core/ && cd jumpscaleX_core && git checkout development && git pull`
 - `cd install && pip3 install --user -e .`
  
 
