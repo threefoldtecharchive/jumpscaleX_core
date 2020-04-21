@@ -5627,7 +5627,7 @@ class DockerContainer:
             self.dexec("apt-get update")
             self.dexec("DEBIAN_FRONTEND=noninteractive apt-get -y upgrade --force-yes")
             self.dexec("apt-get install mc git -y")
-            self.dexec("apt-get install python3 -y")
+            self.dexec("apt-get install python3 python3-pip -y")
             self.dexec("pip3 install redis")
             self.dexec("apt-get install wget tmux -y")
             self.dexec("apt-get install curl rsync unzip redis-server htop -y")

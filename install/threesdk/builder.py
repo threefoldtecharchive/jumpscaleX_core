@@ -1,22 +1,58 @@
+from .lib.SDKContainers import SDKContainers
 from .core import core
+from .args import args
+import os
 
 IT = core.IT
 
+_containers = SDKContainers(core=core, args=args)
 
-def base():
+__all__ = ["base", "sdk", "sdktool", "container_import", "container_export"]
+
+def base(push=False):
     """
     build the ubuntu base container
     """
-    # TODO: ubuntu base
-    raise RuntimeError("implement")
+    path = IT.Tools.text_replace("{DIR_BASE}/code/github/threefoldtech/baseimage-docker")
+    if not os.path.exists(path):
+        IT.Tools.code_github_get(url="https://github.com/threefoldtech/baseimage-docker", branch="master")
+    cmd = """
+            set -ex
+            cd {}/image
+            docker build . -t threefoldtech/phusion:latest
+        """.format(
+        path
+    )
+    IT.Tools.execute(cmd, interactive=True)
+    if push:
+        IT.Tools.execute("docker pushe threefoldtech/phusion/latest")
 
 
-def sdk():
+
+def sdk(dest=None, push=False, delete=True):
     """
     build the sdk (threebot) container
     """
-    # TODO: threebot container build, see code below
-    raise RuntimeError("implement")
+    print("build phusion")
+    base(push=push)
+    print("build phusion done")
+    if not dest:
+        dest = "threefoldtech/base2"
+
+    # image = "threefoldtech/phusion:19.10"
+    image = "threefoldtech/phusion:latest"
+    print("get container with phusion image")
+    docker = IT.DockerFactory.container_get(name="base2", delete=delete, image=image)
+    print("install container")
+    docker.install(update=True, stop=delete)
+    cmd = "apt install python3-brotli python3-blosc cython3 cmake -y"
+    docker.dexec(cmd)
+    docker.save(image=dest, clean=True)
+    if push:
+        docker.push()
+        if delete:
+            docker.stop()
+    print("- *OK* base has been built, as image & exported")
 
 
 def sdktool():
@@ -59,9 +95,7 @@ def container_import(name=None, path=None, imagename="threefoldtech/3bot2", no_s
     :param args:
     :return:
     """
-    # TODO: implement container_import
-    raise RuntimeError("implement")
-    docker = container_get(delete=True, name=name)
+    docker = _containers.get(delete=True, name=name)
     docker.import_(path=path, image=imagename)
     if not no_start:
         docker.start()
@@ -74,10 +108,7 @@ def container_export(name=None, path=None, version=None):
     :param path:
     :return:
     """
-    # TODO: implement container_export
-    raise RuntimeError("implement")
-
-    docker = container_get(name=name)
+    docker = _containers.get(delete=True, name=name)
     docker.export(path=path, version=version)
 
 
@@ -138,8 +169,8 @@ def container_export(name=None, path=None, version=None):
 #     IT.Tools.execute(cmd, interactive=True)
 #     if push:
 #         IT.Tools.execute("docker pushe threefoldtech/phusion/latest")
-#
-#
+
+
 # def basebuilder_(dest=None, push=False, delete=True):
 #     _build_phusion(push=push)
 #     if not dest:
@@ -147,7 +178,7 @@ def container_export(name=None, path=None, version=None):
 #
 #     # image = "threefoldtech/phusion:19.10"
 #     image = "threefoldtech/phusion:latest"
-#     docker = e.DF.container_get(name="base2", delete=delete, image=image)
+#     docker = IT.e.DF.container_get(name="base2", delete=delete, image=image)
 #     docker.install(update=True, stop=delete)
 #     cmd = "apt install python3-brotli python3-blosc cython3 cmake -y"
 #     docker.dexec(cmd)
