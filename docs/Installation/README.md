@@ -15,25 +15,27 @@ The generic structure of this manual is:
 - macOS 10.7 or newer
 - Windows 10
 
-The installation method for Linux and macOS are similar with some minor details how to install the prerequisites.  For windows we have a different installation method.  This manual will start with the software components that are needed to start the install and when needed specific instructions will be linked for different operating systems.  
+The installation method for Linux and macOS are similar with some minor details how to install the prerequisites.  For windows we have a different installation method which you can find [here](./windows_installation/jsx_windows.md).  
+
+This manual will start with the software components that are needed to start the install and when needed specific instructions will be linked for different operating systems.  
 
 ### Prerequisites
 
 #### Containerisation platform: Docker
-At this point in time the local installation of the SDK is installed in a docker container. Therefore we need to have a local installation of the docker desktop, docker-io.  Installation instructions can be found here [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)
+At this point in time the local installation of the SDK is installed in a docker container. So we need to have a local installation of the docker desktop or docker-io (depending on your OS).  Installation instructions can be found here [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)
 
 #### Web browser: Chrome browser
-For all SDK installations we need to have the chroms browser installed.  The instructions how get get and install the software can be found here: [https://www.google.com/chrome/](https://www.google.com/chrome/) 
+For all SDK installations we need to have the chrome browser installed.  Instructions how get get and install it can be found here: [https://www.google.com/chrome/](https://www.google.com/chrome/) 
 
 
-#### Other required software
-For the installation and operation to succeed we need to following software:
-- Python is a programming language that lets you work quickly and integrate systems more effectively. (https://www.python.org/)
-- UPX is a free, portable, extendable, high-performance executable packer for several executable formats. (https://upx.github.io/)
-- PatchELF is a simple utility for modifying existing ELF executables and libraries. (https://github.com/NixOS/patchelf)
+#### Required software
+For the installation and operation to succeed we need to following software installed:
+- Python: Python is a programming language that lets you work quickly and integrate systems more effectively. (https://www.python.org/)
+- UPX: UPX is a free, portable, extendable, high-performance executable packer for several executable formats. (https://upx.github.io/)
+- PatchElf: PatchELF is a simple utility for modifying existing ELF executables and libraries. (https://github.com/NixOS/patchelf)
 
-##### Other software installation on ubuntu 18.04
-For Ubuntu all the other software is available in unbuntu packages.  The ubuntu packages manager is able to install and manage / update the packages. If you want to install these from source code please refer to the respective sites listed with the software packages.
+##### Required software installation on ubuntu 18.04
+For Ubuntu all required software is available in ubuntu packages.  The ubuntu package manager is able to install and manage/update packages. If you want to instal from source code please refer to the respective sites listed with the software packages.
 
 Using the package manager:
 ```bash
@@ -42,41 +44,40 @@ apt install -y curl python3 python3-pip upx patchelf
 ```
 This install all the required packages to support the SDK installation
 
-##### Other software installation on macOS
-For, macOS we recommend using the package manager called Homebrew.  This is a missing component in macOS that allows you to manage most none App store software installs.  You can read more about it here: [www.brew.sh](https://brew.sh/)
+##### Required software installation on macOS
+For macOS we recommend using a package manager called Homebrew.  This is a missing component in macOS manages most none-App store software installs.  You can read more about it here: [www.brew.sh](https://brew.sh/)
 ```bash
-#to install brew:
+# to install brew, skip if already done
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-# install requirements
+# install required software
 brew update
 brew install curl python3 upx patchelf
 ```
-This install all the required packages to support the SDK installation
+This installx all the required packages to support the SDK installation
 
-In both cases we have the python3 and Python package manager installed and we need to add one package to create the installer for the SDK
+In both cases (Linux and macOS) we have Python3 and Python package manager installed. We need to add one Python package to create the installer for the SDK
 ```bash
 pip3 install pyinstaller --user
 ```
 
 ##### Secure access to GitHub: ssh-agent
 
-The SDK is installed from GitHub where the software is maintained by ThreeFold Tech engineers and the community.  You need to have a GitHub account and  uploaded you public ssh-key to have access to the repository.  You can find struction to gert a GitHub account [here](https://help.github.com/en/github/getting-started-with-github/signing-up-for-a-new-github-account) and how to upload your public ssh-key [here](https://help.github.com/en/github/authenticating-to-github/adding-a-new-ssh-key-to-your-github-account)
+The SDK is installed from GitHub where the software is maintained by ThreeFold Tech engineers and the community.  You need to have a GitHub account and  uploaded you public ssh-key to have access to the repository.  You can find instructions to get a GitHub account [here](https://help.github.com/en/github/getting-started-with-github/signing-up-for-a-new-github-account) and how to upload your public ssh-key [here](https://help.github.com/en/github/authenticating-to-github/adding-a-new-ssh-key-to-your-github-account)
 
 Please make sure you have an ssh-key pair before doing this.  You can check if you have the key pair created by doing:
 ```bash
 ssh-keygen
 ```
-In the case the key pair exists you will see something like this:
+If the key pair exists you will see something like this:
 ```bash
 Generating public/private rsa key pair.
 Enter file in which to save the key (/Users//.ssh/id_rsa): 
 /Users//.ssh/id_rsa already exists.
 Overwrite (y/n)? n
 ```
-Please anwer no as you are all set.  Otherwise the command will generate a key pair for you in the default directory `$HOME/.ssh`.
+Please answer no as you are all set.  Otherwise the command will generate a key pair for you in the default directory `$HOME/.ssh`.
 
-When this is done you have to make sure that you have a local "agent" running to allow this ssh-key verification to happen.  The
-ssh-agent loads you private ssh-key enabling it to verify the validity of your public key stored in GitHub
+When this is done you have to make sure that you have a local "agent" running to allow this ssh-key verification to happen.  The ssh-agent loads you private ssh-key enabling it to verify the validity of your public key stored in GitHub.
 
 ```bash
 eval `ssh-agent`
@@ -112,10 +113,9 @@ With the above done have completed all the prerequisites on the local system. Th
 <!--
 TODO Look for a better description of the 3botconnect app
 -->
-The installation requires you to choose a 3botconnect name (any name up to 50 characters) and it has to come with a valid email address (unique, every 3bot has to have a unique valid email address).  The 3bot connect app stores a unique 24 word seed key for a digital wallet and that same unique key is also used to identify you.
+The installation requires you to choose a 3botconnect name (any name up to 50 characters) and it has to have a valid email address (unique, every 3bot has to have a unique valid email address).  The 3bot connect app stores a unique 24 word seed key for a digital wallet and that same unique key is also used to identify you for SDK access.
 
 ### Get the jumpscale SDK installer
-
 To get the jumpscale SDK installed you have two options:
 - get the source code and compile the installer on you local system
 - get the binary that works for your operating system
@@ -123,7 +123,7 @@ To get the jumpscale SDK installed you have two options:
 The simplest way to get started is to download the binaries from the [release](https://github.com/threefoldtech/jumpscaleX_core/releases) page for macOS and Linux.  Go to this page, select the latest release or release candidate.
 
 #### Building the jumpscale SDK installer from source code
-From the jumpscale SDK release page please download the source code.  Save the soruce code where you can unpack and compile the installer.
+From the jumpscale SDK release page please download the source code.  Save the source code somewhere where you can unpack and compile the installer.
 ```bash
 tar xzf ./jumpscaleX_core-10.4.tar.gz 
 cd jumpscaleX_core-10.4
@@ -153,7 +153,7 @@ Now that we have the `3sdk` jumpscale  installer we can launch it
 Welcome to sdk shell, for help, type info, to exit type exit
 3sdk>
 ```
-To get more information on the available commands, please typ `info()`
+To get more information on the available commands, please type `info()`
 ```bash
 3sdk> info()
 
@@ -193,20 +193,18 @@ There are 5 main categories of commands
 - core.  Set some core parameters
 - install. Install the jumpscale code on the local machine.
 
-Here we will focus on the container installation getting us a local installation of the jumpscale SDK
-
-In order to install a local jumpscale SDK you need:
-- your 3bot connect name chosen in you 3botconnect app installation
+Here we will focus on the container installation getting us a local installation of the jumpscale SDK. To install a local jumpscale SDK you need:
+- your 3botconnect name chosen in you 3botconnect app installation
 - your 3bot registered email address
 - your 3bot (24 word) seed key
 
-The install command will look like this:
+The install command looks like this:
 ```bash
 3sdk> container threebot identity='<<your 3bot name>>' email='<<your email address>>' words='<<your 24 word seed key>>'
 ```
-The installer will then download a container from the [docker hub](https://hub.docker.com/r/threefoldtech/3bot2) which has a lot of the needed software installed. Then it will pull the latest (stable) releases of the required jumpscale libraries from the GitHub repository (for which you need to have a GitHun account and entered you ssh keys in the security section in your Github account, see [here](#Secure-access-to-GitHub:-ssh-agent))
+The installer will then download a container from the [docker hub](https://hub.docker.com/r/threefoldtech/3bot2) which has most of the needed software installed. It will then pull the latest (stable) releases of the required jumpscale libraries from the GitHub repository (for which you need to have a GitHub account and entered you ssh keys in the security section in your Github account, see [here](#Secure-access-to-GitHub:-ssh-agent))
 
-Once that is done is will stop and ask for a secret passphrase
+Once that is done the installer will stop and ask for a secret passphrase
 ```bash
 .......
 Receiving objects: 100% (3585/3585), 13.15 MiB | 3.26 MiB/s, done.
@@ -215,7 +213,9 @@ Resolving deltas: 100% (510/510), done.
 specify secret passphrase please::
 ```
 
-This passphrase is a one time pass phase which you do not have to remember.  It is used to encrypt the see key in the container.  Enter any random phrase or word (twice).  Next you will see a lot of output scrolling by which is the process of actually implementing the jumpscale libraries in the local container python install.  This will at some point in time be hidden for you as it performs no real function.
+This passphrase is a one-time pass phase which you **do not** have to remember.  It is used to encrypt the seed key in the container.  Enter any random phrase or word (twice).  
+
+After doing this you will see a lot of output scrolling by which is the process of actually implementing the jumpscale libraries in the local container python install.  This will at some point in time be hidden for you as it performs no real function.
 
 After a while you will see this:
 ```bash
@@ -248,4 +248,4 @@ no server running need to start
  - Server started ok
  ```
 
- This should open up a browser window (crome) with the 3bot connect login screen
+ This should open up a browser window (crome) with the 3bot connect login screen.
