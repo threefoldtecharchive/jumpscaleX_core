@@ -18,6 +18,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     # Mac OSX
     brew install upx
+    pip3 install -r requirements.txt
 fi
 
 pyinstaller 3sdk.spec
