@@ -241,11 +241,9 @@ def zerotier(name=None, connect=False):
 
     """
     c = _containers.get(name=name)
-    addr = c.zerotier_connect()
-    print(f" - CONNECT TO YOUR 3BOT ON: https://{addr}:4000/")
     if connect:
-        # TODO: zerotier (see what is done in simulator, use that network)
-        raise RuntimeError("implement")
+        addr = c.zerotier_connect()
+        print(f" - CONNECT TO YOUR 3BOT ON: https://{addr}:4000/")
 
 
 # def wireguard(name=None, test=False, disconnect=False):
