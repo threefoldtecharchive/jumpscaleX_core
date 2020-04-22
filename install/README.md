@@ -109,12 +109,18 @@ use `core branch` command
 ## <a name='Packagedinstallersdk'></a>Packaged installer (sdk)
 
 To build the SDK yourself, you need to have:
-* `python3`: `apt-get install python3`
-* `pip`: `apt-get install python3-pip`
+* `python3`: 
+    * ubuntu: `apt-get install python3`
+    * macos: `brew install python3`
+* `pip`: 
+    * ubuntu: `apt-get install python3-pip`
+    * macos (if not already part of the python3 installation, depends on the version): `brew install python3-pip`
 * `upx` is used to compress binary executable, can be installed with:
     * ubuntu: `apt-get install upx`
     * macos (using brew): `brew install upx`
-* `patchelf`: `apt install patchelf`
+* `patchelf`: 
+    * ubuntu: `apt install patchelf`
+    * macos: `brew install patchelf`
 * `pyinstaller` can be installed using `pip3 install pyinstaller --user`
 
 
