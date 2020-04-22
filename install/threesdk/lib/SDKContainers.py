@@ -24,10 +24,17 @@ class SDKContainers:
                 return users[0]
             return None
 
+    def _check_email(self, email):
+        resp = requests.get("https://{}/explorer/users".format(self.args.explorer), params={"email": email})
+        users = resp.json()
+        if users:
+            return True
+        return False
+
     def _identity_ask(self, identity=None, explorer=None):
         def _fill_identity_args(identity, explorer):
             def fill_words():
-                words = self.core.IT.Tools.ask_string("what are the words associated with your identity?")
+                words = self.core.IT.Tools.ask_string("Copy the phrase from your 3bot Connect app here.")
                 self.args.words = words
 
             if identity:
@@ -49,25 +56,37 @@ class SDKContainers:
                 if "." not in identity:
                     identity += ".3bot"
                 self.args.identity = identity
+
             user = self._get_user()
             if not user and not self.args.email:
-                email = self.core.IT.Tools.ask_string("what is your email associated with your identity?")
-                self.args.email = email
-            else:
+                while not self.args.email:
+                    email = self.core.IT.Tools.ask_string("What is the email address associated with your identity?")
+                    if not self._check_email(email):
+                        self.args.email = email
+                    else:
+                        response = self.core.IT.Tools.ask_choices(
+                            "This email is currently associated with another identity. What would you like to do?",
+                            ["restart", "reenter"],
+                        )
+                        if response == "restart":
+                            return False
+            elif user:
                 print("Configured email for this identity is {}".format(user["email"]))
                 self.args.email = user["email"]
+
             if not self.args.words:
-                if user:
-                    fill_words()
-                else:
-                    self.args.words = None
-            if user and self.args.words:
+                fill_words()
+
+            if self.args.words:
                 # time to do validation of words
                 while True:
                     try:
                         seed = self.core.IT.Tools.to_entropy(self.args.words, english.words)
                     except Exception:
-                        choice = self.core.IT.Tools.ask_choices("Invalid words where given what would you like to do?", ["restart", "reenter"])
+                        choice = self.core.IT.Tools.ask_choices(
+                            "Seems one or more more words entered is invalid." " What would you like to do?",
+                            ["restart", "reenter"],
+                        )
                         if choice == "restart":
                             return False
                         fill_words()
@@ -75,8 +94,12 @@ class SDKContainers:
                     # new we have a valid seed let's check if it matches the user
                     key = SigningKey(seed)
                     hexkey = binascii.hexlify(key.verify_key.encode()).decode()
-                    if hexkey != user["pubkey"]:
-                        choice = self.core.IT.Tools.ask_choices("Your words do not match your idenitiy, what would you like to do?", ["restart", "reenter"])
+                    if user and hexkey != user["pubkey"]:
+                        choice = self.core.IT.Tools.ask_choices(
+                            "There seems to be an identity registered with the same name and/or email address but a different public key."
+                            " what would you like to do?",
+                            ["restart", "reenter"],
+                        )
                         if choice == "restart":
                             return False
                         fill_words()
@@ -148,7 +171,13 @@ class SDKContainers:
             installer.repos_get(pull=pull, branch=self.core.branch, reset=code_update_force)
             print(f" - install jumpscale for identity:{self.args.identity}")
             docker.install_jumpscale(
-                force=False, reset=False, secret=self.args.secret, identity=self.args.identity, email=self.args.email, words=self.args.words, explorer=self.args.explorer
+                force=False,
+                reset=False,
+                secret=self.args.secret,
+                identity=self.args.identity,
+                email=self.args.email,
+                words=self.args.words,
+                explorer=self.args.explorer,
             )
 
             docker.executor.file_write("/sandbox/cfg/.configured", "")
