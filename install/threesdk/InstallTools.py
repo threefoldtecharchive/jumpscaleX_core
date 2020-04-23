@@ -5012,7 +5012,9 @@ class DockerFactory:
             return False
 
         if MyEnv.platform_is_osx and not Tools.cmd_installed("docker"):
-            Tools.exceptions.RuntimeError("Docker is not installed or running please check: https://docs.docker.com/")
+            raise Tools.exceptions.RuntimeError(
+                "Docker is not installed or running please check: https://docs.docker.com/"
+            )
 
         return True
 

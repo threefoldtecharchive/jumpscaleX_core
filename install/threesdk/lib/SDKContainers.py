@@ -150,7 +150,7 @@ class SDKContainers:
         # if linux die will be false and docker will be installed during installation process
         self.IT.DockerFactory.docker_assert()
 
-        if not self.IT.DockerFactory.container_name_exists(name):
+        if not self.IT.DockerFactory.docker_assert() or not self.IT.DockerFactory.container_name_exists(name):
             if not secret:
                 secret = self.args.secret
             if not secret:
