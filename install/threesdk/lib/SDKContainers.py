@@ -135,7 +135,7 @@ class SDKContainers:
         email=None,
         words=None,
         secret=None,
-        pull=False,
+        pull=True,
         code_update_force=False,
         explorer=None,
     ):
