@@ -4993,23 +4993,27 @@ class DockerFactory:
         return False
 
     @staticmethod
-    def docker_exists(die=False):
-        if MyEnv.platform() == "win32":
+    def docker_assert():
+        """
+        will check if docker is installed and running
+        :return:
+        True if docker installed
+        False if linux and docker not installed and it will be installed during installation process
+        RuntimeError: windows or mac and docker is not installed and you must install it via gui
+        """
+        if MyEnv.platform_is_windows:
             _, out, _ = Tools.execute("docker -v", die=False)
             if "Docker" not in out:
-                if die:
-                    raise Tools.exceptions.RuntimeError(
-                        "Docker is not installed or running please check: https://docs.docker.com/docker-for-windows/install/"
-                    )
-                return False
-        else:
-            if MyEnv.platform() == "linux":
-                die = False
-            if not Tools.cmd_installed("docker") and die:
-                Tools.exceptions.RuntimeError(
-                    "Docker is not installed or running please check: https://docs.docker.com/"
+                raise Tools.exceptions.RuntimeError(
+                    "Docker is not installed or running please check: https://docs.docker.com/docker-for-windows/install/"
                 )
-                return False
+
+        if MyEnv.platform_is_linux and not Tools.cmd_installed("docker"):
+            return False
+
+        if MyEnv.platform_is_osx and not Tools.cmd_installed("docker"):
+            Tools.exceptions.RuntimeError("Docker is not installed or running please check: https://docs.docker.com/")
+
         return True
 
     @staticmethod
@@ -5023,12 +5027,12 @@ class DockerFactory:
 
                 MyEnv.init()
 
-                if not DockerFactory.docker_exists(die=False):
+                if not DockerFactory.docker_assert():
                     UbuntuInstaller.docker_install()
                     MyEnv._cmd_installed["docker"] = shutil.which("docker")
 
                 # check if docker failed or on mac, can be installed with gui then
-                if not DockerFactory.docker_exists(die=True):
+                if not DockerFactory.docker_assert():
                     raise Tools.exceptions.Operations("Could not find Docker installed")
 
                 DockerFactory._init = True
@@ -5044,7 +5048,7 @@ class DockerFactory:
                         DockerContainer(name_found)
             else:
                 # Check for windows docker installed, only installed by gui
-                DockerFactory.docker_exists(die=True)
+                DockerFactory.docker_assert()
                 MyEnv.init()
                 DockerFactory._init = True
 
