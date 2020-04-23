@@ -14,7 +14,6 @@ def install(reinstall=False, pull=False, no_interactive=False, threebot=False, i
     """
     Install jumpscale on host (not all platforms supported)
     """
-    from pudb import set_trace; set_trace()
     IT.MyEnv.interactive = not no_interactive
     if reinstall:
         # remove the state
