@@ -144,15 +144,17 @@ class SDKContainers:
         code_update_force: be careful, if set will remove your local code repo changes
         """
         name = self._name(name)
-        self._identity_ask(identity, explorer)
-        if not secret:
-            secret = self.args.secret
-        if not secret:
-            self.args.secret = self.IT.Tools.ask_password("specify secret passphrase please:")
-            secret = self.args.secret
-
         if self.container and not delete:
             return self.container
+
+        # if linux die will be false and docker will be installed during installation process
+        if not self.IT.DockerFactory.docker_assert() or not self.IT.DockerFactory.container_name_exists(name):
+            if not secret:
+                secret = self.args.secret
+            if not secret:
+                self.args.secret = self.IT.Tools.ask_password("specify secret passphrase please:")
+                secret = self.args.secret
+            self._identity_ask(identity, explorer)
 
         # need to make sure 1 sshkey has been created, does not have to be in github
         if not self.IT.MyEnv.platform_is_windows:
