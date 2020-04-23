@@ -181,7 +181,7 @@ def rewriteline(parts, globals, locals):
             line += ")"
         return line
     else:
-        return " ".join(parts)
+        return None
 
 
 def ptconfig(repl, expert=False):
@@ -374,7 +374,10 @@ def ptconfig(repl, expert=False):
             " Compile code with the right compiler flags. "
             return compile(code, "<stdin>", mode, flags=self.get_compiler_flags(), dont_inherit=True)
 
-        line = rewriteline(partition_line(line), self.get_globals(), self.get_locals())
+        newline = rewriteline(partition_line(line), self.get_globals(), self.get_locals())
+        if newline:
+            line = newline
+
         if line.lstrip().startswith("\x1a"):
             # When the input starts with Ctrl-Z, quit the REPL.
             self.app.exit()

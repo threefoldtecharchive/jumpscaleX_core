@@ -8,7 +8,7 @@ setuptools.setup(
     author="Threefold Tech",
     author_email="info@threefold.tech",
     url="http://github.com/threefoldtech/jumpscaleX_core",
-    install_requires=["requests", "ptpython==2.0.4", "pudb", "jedi"],
-    packages=setuptools.find_packages(),
+    install_requires=["requests", "ptpython==2.0.4", "pudb", "jedi", "pynacl"],
+    packages=["threesdk", "threesdk.lib"],
     entry_points={"console_scripts": ["3sdk=threesdk.cli:main"]},
 )
