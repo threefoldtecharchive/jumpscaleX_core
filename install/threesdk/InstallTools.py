@@ -4993,8 +4993,24 @@ class DockerFactory:
         return False
 
     @staticmethod
-    def docker_exists():
-        return MyEnv.platform() == "linux" and Tools.cmd_installed("docker")
+    def docker_exists(die=False):
+        if MyEnv.platform() == "win32":
+            _, out, _ = Tools.execute("docker -v", die=False)
+            if "Docker" not in out:
+                if die:
+                    raise Tools.exceptions.RuntimeError(
+                        "Docker is not installed or running please check: https://docs.docker.com/docker-for-windows/install/"
+                    )
+                return False
+        else:
+            if MyEnv.platform() == "linux":
+                die = False
+            if not Tools.cmd_installed("docker") and die:
+                Tools.exceptions.RuntimeError(
+                    "Docker is not installed or running please check: https://docs.docker.com/"
+                )
+                return False
+        return True
 
     @staticmethod
     def init(name=None):
@@ -5007,11 +5023,12 @@ class DockerFactory:
 
                 MyEnv.init()
 
-                if not DockerFactory.docker_exists():
+                if not DockerFactory.docker_exists(die=False):
                     UbuntuInstaller.docker_install()
                     MyEnv._cmd_installed["docker"] = shutil.which("docker")
 
-                if not Tools.cmd_installed("docker"):
+                # check if docker failed or on mac, can be installed with gui then
+                if not DockerFactory.docker_exists(die=True):
                     raise Tools.exceptions.Operations("Could not find Docker installed")
 
                 DockerFactory._init = True
@@ -5026,13 +5043,8 @@ class DockerFactory:
                     if name_found != name and name_found.strip().lower() not in ["shared"]:
                         DockerContainer(name_found)
             else:
-                _, out, _ = Tools.execute("docker -v", die=False)
-                if "Docker" not in out:
-                    raise Tools.exceptions.RuntimeError(
-                        """
-                        Docker is not installed or running please check: https://docs.docker.com/docker-for-windows/install/
-                    """
-                    )
+                # Check for windows docker installed, only installed by gui
+                DockerFactory.docker_exists(die=True)
                 MyEnv.init()
                 DockerFactory._init = True
 

@@ -147,7 +147,10 @@ class SDKContainers:
         if self.container and not delete:
             return self.container
 
-        if not self.IT.DockerFactory.docker_exists() or not self.IT.DockerFactory.container_name_exists(name):
+        # if linux die will be false and docker will be installed during installation process
+        self.IT.DockerFactory.docker_exists(die=True)
+
+        if not self.IT.DockerFactory.container_name_exists(name):
             if not secret:
                 secret = self.args.secret
             if not secret:
