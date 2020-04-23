@@ -77,34 +77,33 @@ class SDKContainers:
             if not self.args.words:
                 fill_words()
 
-            if self.args.words:
-                # time to do validation of words
-                while True:
-                    try:
-                        seed = self.core.IT.Tools.to_entropy(self.args.words, english.words)
-                    except Exception:
-                        choice = self.core.IT.Tools.ask_choices(
-                            "Seems one or more more words entered is invalid." " What would you like to do?",
-                            ["restart", "reenter"],
-                        )
-                        if choice == "restart":
-                            return False
-                        fill_words()
-                        continue
-                    # new we have a valid seed let's check if it matches the user
-                    key = SigningKey(seed)
-                    hexkey = binascii.hexlify(key.verify_key.encode()).decode()
-                    if user and hexkey != user["pubkey"]:
-                        choice = self.core.IT.Tools.ask_choices(
-                            "There seems to be an identity registered with the same name and/or email address but a different public key."
-                            " what would you like to do?",
-                            ["restart", "reenter"],
-                        )
-                        if choice == "restart":
-                            return False
-                        fill_words()
-                        continue
-                    return True
+            # time to do validation of words
+            while True:
+                try:
+                    seed = self.core.IT.Tools.to_entropy(self.args.words, english.words)
+                except Exception:
+                    choice = self.core.IT.Tools.ask_choices(
+                        "Seems one or more more words entered is invalid." " What would you like to do?",
+                        ["restart", "reenter"],
+                    )
+                    if choice == "restart":
+                        return False
+                    fill_words()
+                    continue
+                # new we have a valid seed let's check if it matches the user
+                key = SigningKey(seed)
+                hexkey = binascii.hexlify(key.verify_key.encode()).decode()
+                if user and hexkey != user["pubkey"]:
+                    choice = self.core.IT.Tools.ask_choices(
+                        "There seems to be an identity registered with the same name and/or email address but a different public key."
+                        " what would you like to do?",
+                        ["restart", "reenter"],
+                    )
+                    if choice == "restart":
+                        return False
+                    fill_words()
+                    continue
+                return True
 
         while True:
             if _fill_identity_args(identity, explorer):
