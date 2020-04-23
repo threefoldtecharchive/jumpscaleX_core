@@ -142,8 +142,6 @@ class JSConfigBCDB(JSConfigBCDBBase):
                     del self._parent._children[self._data.name]
         assert self._data.name
         self._children_delete()
-        model = self._model.get(self.id)
-        model.delete()
 
     def save(self):
         self.save_()
