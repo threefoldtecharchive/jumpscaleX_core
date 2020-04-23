@@ -1,42 +1,4 @@
 
-* [Requirements](#Requirements)
-* [Using 3sdk](#Using3sdk)
-	* [Getting help](#Gettinghelp)
-	* [Basic Features](#BasicFeatures)
-		* [Start Threebot Container (one command)](#StartThreebotContaineronecommand)
-		* [Install New Container](#InstallNewContainer)
-		* [Running New Container](#RunningNewContainer)
-		* [Listing Containers](#ListingContainers)
-		* [Accessing Container Shell](#AccessingContainerShell)
-		* [Getting Container Kosmos](#GettingContainerKosmos)
-	* [Advanced features](#Advancedfeatures)
-* [Packaged installer (sdk)](#Packagedinstallersdk)
-* [Using 3sdk.py from source](#Using3sdk.pyfromsource)
-* [Troubleshooting](#Troubleshooting)
-	* [Signature Verification Error/Already registerd users with wrong secret on phonebook](#SignatureVerification)
-	* [REMOTE HOST IDENTIFICATION HAS CHANGED](#REMOTEHOSTIDENTIFICATIONHASCHANGED)
-
-
-
-
-## <a name='Requirements'></a>Requirements
-- Docker
-- Chrome browser for OSX users
-
-
-## Know your 3bot secret
-
-- From 3botconnect application go to settings, then show phrase to get your mnemonics
-- Take a note of the 3bot name and your email
-- When registering for the first time you can use these private words in your configurations
-
-
-## <a name='Using3sdk'></a>Using 3sdk
-
-Binaries should be in the [release](https://github.com/threefoldtech/jumpscaleX_core/releases) page for osx and linux 
-
-launch `3sdk`
-
 ![](images/3sdk2.png)
 
 ### <a name='Gettinghelp'></a>Getting help
@@ -109,18 +71,12 @@ use `core branch` command
 ## <a name='Packagedinstallersdk'></a>Packaged installer (sdk)
 
 To build the SDK yourself, you need to have:
-* `python3`: 
-    * ubuntu: `apt-get install python3`
-    * macos: `brew install python3`
-* `pip`: 
-    * ubuntu: `apt-get install python3-pip`
-    * macos (if not already part of the python3 installation, depends on the version): `brew install python3-pip`
+* `python3`: `apt-get install python3`
+* `pip`: `apt-get install python3-pip`
 * `upx` is used to compress binary executable, can be installed with:
     * ubuntu: `apt-get install upx`
     * macos (using brew): `brew install upx`
-* `patchelf`: 
-    * ubuntu: `apt install patchelf`
-    * macos: `brew install patchelf`
+* `patchelf`: `apt install patchelf` (only needed for linux)
 * `pyinstaller` can be installed using `pip3 install pyinstaller --user`
 
 
@@ -134,7 +90,7 @@ cd install
 ./package.sh
 ```
 
-If nothing gone wrong, you should find the final binary executable at `dist` directory.
+If nothing goes wrong, you should find the final binary executable at `dist` directory.
 
 Try running it with:
 
@@ -146,9 +102,8 @@ Try running it with:
 This will require python3, git on the user system 
 
 - `pip3 install jedi pudb ptpython==2.0.4`
-- `cd /tmp && git clone https://github.com/threefoldtech/jumpscaleX_core/ && cd jumpscaleX_core && git checkout unstable && git pull`
-- `sudo -s`
-- `ln /tmp/jumpscaleX_core/install/3sdk.py /usr/bin/3sdk`
+- `cd /tmp && git clone https://github.com/threefoldtech/jumpscaleX_core/ && cd jumpscaleX_core && git checkout development && git pull`
+- `cd install && pip3 install --user -e .`
  
 
 ## <a name='Troubleshooting'></a>Troubleshooting

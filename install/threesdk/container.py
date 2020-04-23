@@ -36,6 +36,8 @@ def install(
     server=False,
     zerotier=False,
     pull=False,
+    secret=None,
+    explorer=None,
     code_update_force=False,
 ):
     """
@@ -57,10 +59,17 @@ def install(
     if code_update_force:
         pull = True
 
+    if identity:
+        if identity != args.identity:
+            args.reset()
+        args.identity = identity
+
     if email:
         args.email = email
     if words:
         args.words = words
+    if secret:
+        args.secret = secret
 
     if testnr:
         testnr = int(testnr)
@@ -79,6 +88,8 @@ def install(
         pull=pull,
         code_update_force=code_update_force,
         words=words,
+        secret=secret,
+        explorer=explorer,
     )
 
     if zerotier:
@@ -109,6 +120,7 @@ def list():
     """
     list the containers
     """
+    import nacl
     _containers_do()
 
 

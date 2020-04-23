@@ -3,16 +3,60 @@ from __future__ import unicode_literals
 import copy
 import getpass
 import pickle
+import bisect
+import hashlib
+import itertools
 
 try:
     import msgpack
-except:
+except ImportError:
     msgpack = None
 
 try:
     import redis
-except:
+except ImportError:
     redis = None
+
+import socket
+import os
+import random
+import shutil
+import stat
+import subprocess
+import sys
+import textwrap
+import time
+import re
+
+from pathlib import Path
+from subprocess import Popen
+import inspect
+import json
+
+try:
+    import traceback
+except ImportError:
+    traceback = None
+
+try:
+    import pudb
+except ImportError:
+    pudb = None
+
+try:
+    import pygments
+except ImportError:
+    pygments = None
+
+if pygments:
+    from pygments import formatters
+    from pygments import lexers
+
+    pygments_formatter = formatters.get_formatter_by_name("terminal")
+    pygments_pylexer = lexers.get_lexer_by_name("python")
+else:
+    pygments_formatter = False
+    pygments_pylexer = False
 
 DEFAULT_BRANCH = "development"
 DEFAULT_BRANCH_WEB = "development"
@@ -94,59 +138,7 @@ GITREPOS["kosmos"] = [
 
 PREBUILT_REPO = ["https://github.com/threefoldtech/sandbox_threebot_linux64", "master", "", "not used"]
 
-import socket
-import os
-import random
-import shutil
-import stat
-import subprocess
-import sys
-import textwrap
-import time
-import re
 
-from pathlib import Path
-from subprocess import Popen
-import inspect
-import json
-
-try:
-    import ujson as ujson
-except BaseException:
-    import json as ujson
-
-try:
-    import traceback
-except:
-    traceback = None
-
-try:
-    import pudb
-except:
-    pudb = None
-
-try:
-    import pygments
-except Exception as e:
-    pygments = None
-
-if pygments:
-    from pygments import formatters
-    from pygments import lexers
-
-    pygments_formatter = formatters.get_formatter_by_name("terminal")
-    pygments_pylexer = lexers.get_lexer_by_name("python")
-else:
-    pygments_formatter = False
-    pygments_pylexer = False
-
-
-# try:
-#     import colored_traceback
-#     colored_traceback.add_hook(always=True)
-# except ImportError:
-#     pass
-#
 
 
 class BaseInstallerror(Exception):
@@ -167,32 +159,29 @@ try:
             data = data._ddict
         try:
             data = yaml.dump(data, default_flow_style=False, default_style="", indent=4, line_break="\n")
-        except Exception as e:
+        except Exception:
             # print("WARNING: COULD NOT YAML SERIALIZE")
             # return str(data)
             data = "CANNOT SERIALIZE YAML"
         return data
+except ImportError:
+    def serializer(data):
+        if hasattr(data, "_data"):
+            return str(data._data)
+        if hasattr(data, "_ddict"):
+            data = data._ddict
+        try:
+            return json.dumps(data, ensure_ascii=False, sort_keys=True, indent=True)
+        except Exception:
+            # data = str(data)
+            data = "CANNOT SERIALIZE"
+            return data
 
 
-except:
-    try:
-
-        def serializer(data):
-            if hasattr(data, "_data"):
-                return str(data._data)
-            if hasattr(data, "_ddict"):
-                data = data._ddict
-            try:
-                return json.dumps(data, ensure_ascii=False, sort_keys=True, indent=True)
-            except Exception as e:
-                # data = str(data)
-                data = "CANNOT SERIALIZE"
-                return data
-
-    except:
-
-        def serializer(data):
-            return "CANNOT SERIALIZE"
+def binary_search(a, x, lo=0, hi=None):  # can't use a to specify default for hi
+    hi = hi if hi is not None else len(a)  # hi defaults to len(a)
+    pos = bisect.bisect_left(a, x, lo, hi)  # find insertion position
+    return pos if pos != hi and a[pos] == x else -1  # don't walk off the end
 
 
 class RedisTools:
@@ -3607,6 +3596,48 @@ class Tools:
         else:
             Tools.file_write(path, out)
 
+    @staticmethod
+    def to_entropy(words, english):
+        if not isinstance(words, list):
+            words = words.split(" ")
+        if len(words) not in [12, 15, 18, 21, 24]:
+            raise Tools.exceptions.Value(
+                "Number of words must be one of the following: [12, 15, 18, 21, 24], but it is not (%d)." % len(words)
+            )
+        # Look up all the words in the list and construct the
+        # concatenation of the original entropy and the checksum.
+        concatLenBits = len(words) * 11
+        concatBits = [False] * concatLenBits
+        wordindex = 0
+        use_binary_search = True
+        for word in words:
+            # Find the words index in the wordlist
+            ndx = binary_search(english, word) if use_binary_search else english.index(word)
+            if ndx < 0:
+                raise Tools.exceptions.NotFound('Unable to find "%s" in word list.' % word)
+            # Set the next 11 bits to the value of the index.
+            for ii in range(11):
+                concatBits[(wordindex * 11) + ii] = (ndx & (1 << (10 - ii))) != 0
+            wordindex += 1
+        checksumLengthBits = concatLenBits // 33
+        entropyLengthBits = concatLenBits - checksumLengthBits
+        # Extract original entropy as bytes.
+        entropy = bytearray(entropyLengthBits // 8)
+        for ii in range(len(entropy)):
+            for jj in range(8):
+                if concatBits[(ii * 8) + jj]:
+                    entropy[ii] |= 1 << (7 - jj)
+        # Take the digest of the entropy.
+        hashBytes = hashlib.sha256(entropy).digest()
+        hashBits = list(
+            itertools.chain.from_iterable(([c & (1 << (7 - i)) != 0 for i in range(8)] for c in hashBytes))
+        )
+        # Check all the checksum bits.
+        for i in range(checksumLengthBits):
+            if concatBits[entropyLengthBits + i] != hashBits[i]:
+                raise Tools.exceptions.Value("Failed checksum.")
+        return bytes(entropy)
+
 
 class MyEnv_:
     def __init__(self):
@@ -4750,11 +4781,11 @@ class JumpscaleInstaller:
         jsinit=True,
         email=None,
         words=None,
+        explorer=None,
         code_update_force=False,
     ):
 
         MyEnv.check_platform()
-
         # will check if there's already a key loaded (forwarded) will continue installation with it
 
         pips_level = 3
@@ -4796,10 +4827,12 @@ class JumpscaleInstaller:
                 email = ""
             if not words:
                 words = ""
-            C = f"""
-            j.me.configure(tname='{identity}',ask=False, email='{email}',words='{words}')
-            """
-            Tools.execute(C, die=True, interactive=True, jumpscale=True)
+            if explorer:
+                C = f"""
+                j.clients.explorer.default_addr_set('{explorer}')
+                j.me.configure(tname='{identity}',ask=False, email='{email}',words='{words}')
+                """
+                Tools.execute(C, die=True, interactive=True, jumpscale=True)
 
         if threebot:
             self.threebot_init(stop=True)
@@ -4812,7 +4845,7 @@ class JumpscaleInstaller:
         Tools.execute_jumpscale("j.servers.threebot.start(background=True)")
         timestop = time.time() + 240.0
         ok = False
-        while ok == False and time.time() < timestop:
+        while not ok and time.time() < timestop:
             try:
                 Tools.execute_jumpscale("assert j.core.db.get('threebot.started') == b'1'")
                 ok = True
@@ -5957,6 +5990,7 @@ class DockerContainer:
         identity=None,
         email=None,
         words=None,
+        explorer=None,
     ):
 
         if not force:
@@ -5986,6 +6020,8 @@ class DockerContainer:
             args_txt += f" --email={email}"
         if words:
             args_txt += f" --words='{words}'"
+        if explorer:
+            args_txt += f" --explorer='{explorer}'"
 
         if not MyEnv.interactive:
             args_txt += " --no-interactive"
