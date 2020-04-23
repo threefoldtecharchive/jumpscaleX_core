@@ -143,22 +143,30 @@ class SDKContainers:
 
         code_update_force: be careful, if set will remove your local code repo changes
         """
-        name = self._name(name)
-        self._identity_ask(identity, explorer)
-        if not secret:
-            secret = self.args.secret
-        if not secret:
-            self.args.secret = self.IT.Tools.ask_password("specify secret passphrase please:")
-            secret = self.args.secret
 
+        def ask_for_identity(secret):
+            if not secret:
+                secret = self.args.secret
+            if not secret:
+                self.args.secret = self.IT.Tools.ask_password("specify secret passphrase please:")
+                secret = self.args.secret
+            self._identity_ask(identity, explorer)
+
+        name = self._name(name)
         if self.container and not delete:
             return self.container
+
+        if not self.IT.DockerFactory.docker_exists():
+            ask_for_identity(secret)
 
         # need to make sure 1 sshkey has been created, does not have to be in github
         if not self.IT.MyEnv.platform_is_windows:
             self.IT.MyEnv.sshagent.key_default_name
 
         self.IT.DockerFactory.init()
+
+        if not self.IT.DockerFactory.container_name_exists(name):
+            ask_for_identity(secret)
 
         docker = self.IT.DockerFactory.container_get(
             name=name, image=self.image, start=True, delete=delete, mount=mount, pull=pull

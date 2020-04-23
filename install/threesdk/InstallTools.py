@@ -4993,6 +4993,10 @@ class DockerFactory:
         return False
 
     @staticmethod
+    def docker_exists():
+        return MyEnv.platform() == "linux" and Tools.cmd_installed("docker")
+
+    @staticmethod
     def init(name=None):
         if not DockerFactory._init:
             if not MyEnv.platform_is_windows:
@@ -5003,7 +5007,7 @@ class DockerFactory:
 
                 MyEnv.init()
 
-                if MyEnv.platform() == "linux" and not Tools.cmd_installed("docker"):
+                if not DockerFactory.docker_exists():
                     UbuntuInstaller.docker_install()
                     MyEnv._cmd_installed["docker"] = shutil.which("docker")
 
