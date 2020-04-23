@@ -139,8 +139,6 @@ GITREPOS["kosmos"] = [
 PREBUILT_REPO = ["https://github.com/threefoldtech/sandbox_threebot_linux64", "master", "", "not used"]
 
 
-
-
 class BaseInstallerror(Exception):
     pass
 
@@ -164,7 +162,10 @@ try:
             # return str(data)
             data = "CANNOT SERIALIZE YAML"
         return data
+
+
 except ImportError:
+
     def serializer(data):
         if hasattr(data, "_data"):
             return str(data._data)
@@ -3629,9 +3630,7 @@ class Tools:
                     entropy[ii] |= 1 << (7 - jj)
         # Take the digest of the entropy.
         hashBytes = hashlib.sha256(entropy).digest()
-        hashBits = list(
-            itertools.chain.from_iterable(([c & (1 << (7 - i)) != 0 for i in range(8)] for c in hashBytes))
-        )
+        hashBits = list(itertools.chain.from_iterable(([c & (1 << (7 - i)) != 0 for i in range(8)] for c in hashBytes)))
         # Check all the checksum bits.
         for i in range(checksumLengthBits):
             if concatBits[entropyLengthBits + i] != hashBits[i]:
@@ -5757,7 +5756,12 @@ class DockerContainer:
         )
 
     def kosmos(self):
-        self.execute("j.shell()", interactive=True, windows_interactive=True, jumpscale=True)
+        self.execute(
+            f"j.application.interactive={MyEnv.interactive}; j.shell()",
+            interactive=True,
+            windows_interactive=True,
+            jumpscale=True,
+        )
 
     def stop(self):
         if self.container_running:
