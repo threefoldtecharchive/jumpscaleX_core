@@ -156,7 +156,7 @@ class SDKContainers:
         if self.container and not delete:
             return self.container
 
-        if not self.IT.DockerFactory.docker_exists():
+        if not self.IT.DockerFactory.docker_exists() or not self.IT.DockerFactory.container_name_exists(name):
             ask_for_identity(secret)
 
         # need to make sure 1 sshkey has been created, does not have to be in github
@@ -164,9 +164,6 @@ class SDKContainers:
             self.IT.MyEnv.sshagent.key_default_name
 
         self.IT.DockerFactory.init()
-
-        if not self.IT.DockerFactory.container_name_exists(name):
-            ask_for_identity(secret)
 
         docker = self.IT.DockerFactory.container_get(
             name=name, image=self.image, start=True, delete=delete, mount=mount, pull=pull
