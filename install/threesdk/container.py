@@ -121,6 +121,7 @@ def list():
     list the containers
     """
     import nacl
+
     _containers_do()
 
 

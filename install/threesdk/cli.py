@@ -8,7 +8,16 @@ from ptpython.repl import embed
 
 from functools import partial
 from threesdk.shell import ptconfig, rewriteline
-from threesdk import container, builder, simulator, install, args, core, installer, _get_doc_line  # pylint: disable=F401
+from threesdk import (
+    container,
+    builder,
+    simulator,
+    install,
+    args,
+    core,
+    installer,
+    _get_doc_line,
+)  # pylint: disable=F401
 
 from prompt_toolkit.shortcuts import print_formatted_text
 from prompt_toolkit.formatted_text import HTML
