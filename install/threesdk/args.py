@@ -56,6 +56,7 @@ class Args(core.IT.Tools._BaseClassProperties):
                 self.secret = self.ask_secret()
 
         self.words = core.IT.Tools.to_mnemonic(seed, english.words)
+        self._identity = value
 
 
 args = Args()

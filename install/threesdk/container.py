@@ -60,7 +60,7 @@ def install(
         pull = True
 
     if identity:
-        if identity != args.identity:
+        if identity != args.identity and args.identity:
             args.reset()
         args.identity = identity
 

@@ -39,7 +39,7 @@ class SDKContainers:
                 self.args.words = words
 
             if identity:
-                if self.args.identity != identity:
+                if self.args.identity != identity and self.args.identity:
                     self.args.reset()
                 self.args.identity = identity
 
@@ -154,10 +154,10 @@ class SDKContainers:
 
         # if linux die will be false and docker will be installed during installation process
         if not self.IT.DockerFactory.docker_assert() or not self.IT.DockerFactory.container_name_exists(name):
-            if not secret:
-                secret = self.args.secret
             if explorer != "none":
                 self._identity_ask(identity, explorer)
+            if not secret:
+                secret = self.args.secret
             if not secret:
                 self.args.secret = self.args.ask_secret()
                 secret = self.args.secret
