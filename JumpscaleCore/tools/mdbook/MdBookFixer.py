@@ -2,18 +2,14 @@ instructions_word_replace = """
 something_not_existing : doesntapply
 """
 
-from Tools import Tools
-from MyEnv import MyEnv
-
-myenv = MyEnv()
 
 from pudb import set_trace as debug
 import typing
 from typing import Union, Optional
 
-shell = Tools.shell
-myenv = MyEnv
-exceptions = Tools.exceptions
+shell = j.tools
+myenv = j.tools.myenv
+exceptions = j.cools.exceptions
 
 from pathlib import Path
 import os
