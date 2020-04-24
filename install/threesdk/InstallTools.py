@@ -3281,7 +3281,6 @@ class Tools:
         :param reset:
         :return:
         """
-
         def getbranch(args):
             cmd = "cd {REPO_DIR}; git branch | grep \* | cut -d ' ' -f2"
             rc, stdout, err = Tools.execute(cmd, die=False, args=args, showout=False, interactive=False, die_if_args_left=True)
@@ -3346,6 +3345,8 @@ class Tools:
         args["URL"] = repo_url
         args["FALLBACK_URL"] = fallback_url
         args["NAME"] = repo
+        if "SSH_AUTH_SOCK" in os.environ:
+            args["SSH_AUTH_SOCK"] = os.environ["SSH_AUTH_SOCK"]
 
         args["BRANCH"] = branch  # TODO:no support for multiple branches yet
 
@@ -3458,7 +3459,7 @@ class Tools:
                         showout=False,
                         errormsg="Could not pull %s" % repo_url,
                         die_if_args_left=True,
-                        interactive=True,
+                        interactive=False,
                     )
                     # switch branch
                     if not checkoutbranch(args, branch):
@@ -3471,11 +3472,8 @@ class Tools:
                         showout=False,
                         errormsg="Could not pull %s" % repo_url,
                         die_if_args_left=True,
-                        interactive=True,
+                        interactive=False,
                     )
-
-                    if not checkoutbranch(args, branch):
-                        raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
 
         else:
             Tools.log("get code [zip]: %s" % repo)
