@@ -158,7 +158,10 @@ mkdir -p ~/sandbox/code/github/threefoldtech/
 cd ~/sandbox/code/github/threefoldtech/
 git clone -b development https://github.com/threefoldtech/jumpscaleX_core/
 cd jumpscaleX_core/install
+# on Linux
 pip3 install --user -e .
+# On Mac
+pip3 install -e .
 ```
  
 Check [Troubleshooting](./troubleshooting.md) for help.
