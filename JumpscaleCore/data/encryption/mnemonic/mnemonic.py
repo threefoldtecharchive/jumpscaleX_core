@@ -91,24 +91,7 @@ class Mnemonic(object):
         return j.core.tools.to_entropy(words, self.wordlist)
 
     def to_mnemonic(self, data):
-        if len(data) not in [16, 20, 24, 28, 32]:
-            raise j.exceptions.Value(
-                "Data length should be one of the following: [16, 20, 24, 28, 32], but it is not (%d)." % len(data)
-            )
-        h = hashlib.sha256(data).hexdigest()
-        b = (
-            bin(int(binascii.hexlify(data), 16))[2:].zfill(len(data) * 8)
-            + bin(int(h, 16))[2:].zfill(256)[: len(data) * 8 // 32]
-        )
-        result = []
-        for i in range(len(b) // 11):
-            idx = int(b[i * 11 : (i + 1) * 11], 2)
-            result.append(self.wordlist[idx])
-        if self.detect_language(" ".join(result)) == "japanese":  # Japanese must be joined by ideographic space.
-            result_phrase = "\u3000".join(result)
-        else:
-            result_phrase = " ".join(result)
-        return result_phrase
+        return j.core.tools.to_mnemonic(data, self.wordlist)
 
     def check(self, mnemonic):
         mnemonic = self.normalize_string(mnemonic).split(" ")

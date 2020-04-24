@@ -3,7 +3,8 @@
 
 
 ```bash
-python3 /tmp/jsx.py install
+3sdk
+3sdk> install
 ```
 
 ## OSX
@@ -21,17 +22,11 @@ sudo mkdir -p /sandbox; sudo chown -R "${USER}:staff" /sandbox
 
 ```
 
-do the install
-
-```bash
-python3 /tmp/jsx.py install
-```
-
 ## to use
 
 
 ```bash
-source ~/sandbox/env.sh; kosmos
+source /sandbox/env.sh; kosmos
 ```
 
 ## Usage
