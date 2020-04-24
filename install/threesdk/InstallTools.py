@@ -3449,13 +3449,22 @@ class Tools:
                             """
                             Tools.log("get code & commit [git]: %s" % repo)
                             Tools.execute(C, args=args, die_if_args_left=True, interactive=True)
-                    C = """
-                    cd {REPO_DIR}
-                    git pull
-                    """
-                    Tools.log("pull code: %s" % repo)
+
+                    # update repo
                     Tools.execute(
-                        C,
+                        "git -C '{REPO_DIR}' fetch",
+                        args=args,
+                        retry=4,
+                        errormsg="Could not pull %s" % repo_url,
+                        die_if_args_left=True,
+                        interactive=True,
+                    )
+                    # switch branch
+                    if not checkoutbranch(args, branch):
+                        raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
+                    Tools.log("update code: %s" % repo)
+                    Tools.execute(
+                        "git -C {REPO_DIR} pull",
                         args=args,
                         retry=4,
                         errormsg="Could not pull %s" % repo_url,
@@ -4927,16 +4936,16 @@ class JumpscaleInstaller:
                 continue
 
             if branch:
-                # dont understand this code, looks bad TODO:
+                # check if provided branch exists otherwise don't use it
                 C = f"""git ls-remote --heads {GITURL} {branch}"""
                 _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True, interactive=False)
                 if out:
                     BRANCH = branch
 
             try:
-                dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
-            except Exception as e:
-                r = Tools.code_git_rewrite_url(url=GITURL, ssh=False)
+                Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
+            except Exception:
+                Tools.code_git_rewrite_url(url=GITURL, ssh=False)
                 Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
 
             done.append(GITURL)
