@@ -4498,7 +4498,9 @@ class BaseInstaller:
         if not items:
             items = BaseInstaller.pips_list(pips_level)
             MyEnv.state_set("pip_zoos")
+        assert isinstance(items,list)
         for pip in items:
+            assert "," not in pip
             if not MyEnv.state_get("pip_%s" % pip):
                 C = "pip3 install '%s'" % pip  # --user
                 Tools.execute(C, die=True, retry=3)
@@ -4613,7 +4615,7 @@ class OSXInstaller:
             """
             # graphviz #TODO: need to be put elsewhere but not in baseinstaller
             Tools.execute(script, replace=True)
-        BaseInstaller.pips_install(["click, redis"])  # TODO: *1
+        BaseInstaller.pips_install(["click", "redis"])
 
     @staticmethod
     def brew_install():
