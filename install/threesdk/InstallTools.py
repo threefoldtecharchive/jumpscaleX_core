@@ -3472,7 +3472,7 @@ class Tools:
                         raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
                     Tools.log("update code: %s" % repo)
                     Tools.execute(
-                        "git -C {REPO_DIR} pull",
+                        "git -C {REPO_DIR} rebase origin/{BRANCH}",
                         args=args,
                         retry=4,
                         showout=False,
