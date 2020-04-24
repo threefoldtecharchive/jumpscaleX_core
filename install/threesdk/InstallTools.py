@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import copy
 import getpass
 import pickle
+import binascii
 import bisect
 import hashlib
 import itertools
@@ -935,11 +936,8 @@ class BaseClassProperties:
         for key, val in kwargs.items():
             setattr(self, key, val)
         self._protected = False
-
         self._init(**kwargs)
-
         self._protected = True
-
         self._load()
 
     def _init(self, **kwargs):
@@ -952,6 +950,12 @@ class BaseClassProperties:
 
         if name.startswith("_"):
             self.__dict__[name] = value
+            return
+        propobj = getattr(self.__class__, name, None)
+        if isinstance(propobj, property):
+            if propobj.fset is None:
+                raise Tools.exceptions.Input(f"try to write protected argument on {name}")
+            propobj.fset(self, value)
             return
 
         if not self._protected:
@@ -971,7 +975,6 @@ class BaseClassProperties:
 
         if self.__dict__[name] != value:
             self.__dict__[name] = value
-            # print("-sabe")
             self._save()
 
     def _load(self):
@@ -3281,9 +3284,12 @@ class Tools:
         :param reset:
         :return:
         """
+
         def getbranch(args):
             cmd = "cd {REPO_DIR}; git branch | grep \* | cut -d ' ' -f2"
-            rc, stdout, err = Tools.execute(cmd, die=False, args=args, showout=False, interactive=False, die_if_args_left=True)
+            rc, stdout, err = Tools.execute(
+                cmd, die=False, args=args, showout=False, interactive=False, die_if_args_left=True
+            )
             if rc > 0:
                 Tools.shell()
             current_branch = stdout.strip()
@@ -3607,6 +3613,24 @@ class Tools:
             Tools.file_write(path, out)
 
     @staticmethod
+    def to_mnemonic(data, english):
+        if len(data) not in [16, 20, 24, 28, 32]:
+            raise Tools.exceptions.Value(
+                "Data length should be one of the following: [16, 20, 24, 28, 32], but it is not (%d)." % len(data)
+            )
+        h = hashlib.sha256(data).hexdigest()
+        b = (
+            bin(int(binascii.hexlify(data), 16))[2:].zfill(len(data) * 8)
+            + bin(int(h, 16))[2:].zfill(256)[: len(data) * 8 // 32]
+        )
+        result = []
+        for i in range(len(b) // 11):
+            idx = int(b[i * 11 : (i + 1) * 11], 2)
+            result.append(english[idx])
+        result_phrase = " ".join(result)
+        return result_phrase
+
+    @staticmethod
     def to_entropy(words, english):
         if not isinstance(words, list):
             words = words.split(" ")
@@ -3755,10 +3779,7 @@ class MyEnv_:
 
         if len(secret) != 32:
             import hashlib
-
-            m = hashlib.md5()
-            m.update(secret)
-
+            m = hashlib.md5(secret)
             secret = m.hexdigest()
 
         return secret
@@ -4507,7 +4528,7 @@ class BaseInstaller:
         if not items:
             items = BaseInstaller.pips_list(pips_level)
             MyEnv.state_set("pip_zoos")
-        assert isinstance(items,list)
+        assert isinstance(items, list)
         for pip in items:
             assert "," not in pip
             if not MyEnv.state_get("pip_%s" % pip):
