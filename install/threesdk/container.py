@@ -104,7 +104,8 @@ def shell(name=None):
     """
     shell into your container
     """
-    c = _containers.get(name=name)
+    _containers.assert_container(name)
+    c = _containers.get(name=name, explorer="none")
     c.shell()
 
 
@@ -112,7 +113,8 @@ def kosmos(name=None):
     """
     start kosmos shell
     """
-    c = _containers.get(name=name)
+    _containers.assert_container(name)
+    c = _containers.get(name=name, explorer="none")
     c.kosmos()
 
 
@@ -120,8 +122,6 @@ def list():
     """
     list the containers
     """
-    import nacl
-
     _containers_do()
 
 

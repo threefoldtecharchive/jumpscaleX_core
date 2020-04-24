@@ -126,6 +126,10 @@ class SDKContainers:
         self.IT.DockerFactory.container_delete(name=name)
         self.container = None
 
+    def assert_container(self, name):
+        if not self.IT.DockerFactory.docker_assert() or not self.IT.DockerFactory.container_name_exists(name):
+            raise self.IT.Tools.exceptions.NotFound(f"Please install container {name} first")
+
     def get(
         self,
         identity=None,
@@ -154,7 +158,7 @@ class SDKContainers:
             if explorer != "none":
                 self._identity_ask(identity, explorer)
             if not secret:
-                self.args.secret = self.IT.Tools.ask_password("specify secret to encrypt your data:")
+                self.args.secret = self.args.ask_secret()
                 secret = self.args.secret
 
         # need to make sure 1 sshkey has been created, does not have to be in github
