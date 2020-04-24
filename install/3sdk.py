@@ -1,5 +1,19 @@
 #!/usr/bin/env python3
 import sys
+import os
+
+##MAYBE FOR FUTURE
+# dpath = os.path.dirname(__file__)
+# if dpath not in sys.path:
+#     sys.path.append(dpath)
+#
+# dpath = f'{os.environ["HOME"]}/sandbox/code/github/threefoldtech/jumpscaleX_core'
+# if dpath not in sys.path:
+#     sys.path.append(dpath)
+#
+# from JumpscaleLibCore import myenv
+
+
 import jedi
 import threesdk as _sdk
 import cgi
