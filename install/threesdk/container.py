@@ -173,7 +173,6 @@ def stop(name=None):
     stop specified containers, can use * in name
     if name not specified then its current container
     """
-    # TODO: need to make sure is saved, when starting afterwards do not have to reinstall jumpscale
     if name and "*" in name:
         prefix = name.replace("*", "")
         _containers_do(prefix=prefix, delete=False, stop=True)
@@ -208,9 +207,15 @@ def wireguard(name=None, connect=True):
     enable wireguard server inside your container
     if connect will use local wireguard tools (userspace prob) if installed locally to make connection to the container
     """
-    # TODO: wireguard (also test on OSX)
-    # TODO: wireguard the connect & install is in 1 method
-    raise RuntimeError("implement")
+    docker = _containers.get(name=name)
+    wg = docker.wireguard
+    if not connect:
+        wg.disconnect()
+    else:
+        wg.reset()
+        wg.server_start()
+        wg.connect()
+        print(wg)
 
 
 def threebot(delete=False, identity=None, email=None, words=None, restart=False, browser=True, pull=False):
@@ -249,48 +254,6 @@ def zerotier(name=None, connect=False):
 
     """
     c = _containers.get(name=name)
-    addr = c.zerotier_connect()
-    print(f" - CONNECT TO YOUR 3BOT ON: https://{addr}:4000/")
     if connect:
-        # TODO: zerotier (see what is done in simulator, use that network)
-        raise RuntimeError("implement")
-
-
-# def wireguard(name=None, test=False, disconnect=False):
-#     """
-#     jsx wireguard
-#     enable wireguard, can be on host or server
-#     :return:
-#     """
-#     docker = container_get(name=name)
-#     wg = docker.wireguard
-#     if disconnect:
-#         wg.disconnect()
-#     elif test:
-#         print(wg)
-#         IT.Tools.shell()
-#     else:
-#         wg.reset()
-#         print(wg)
-#         wg.server_start()
-#         wg.connect()
-
-# def connect(test=False, disconnect=False):
-#     """
-#     only for core developers and engineers of threefold, will connect to some core
-#     infrastructure for helping us to communicate
-#     :return:
-#     """
-#     myid = IT.MyEnv.registry.myid
-#     addr = IT.MyEnv.registry.addr[0]
-#     wg = IT.WireGuardServer(addr=addr, myid=myid)
-#     if disconnect:
-#         wg.disconnect()
-#     elif test:
-#         print(wg)
-#         IT.Tools.shell()
-#     else:
-#         wg.reset()
-#         print(wg)
-#         wg.server_start()
-#         wg.connect()
+        addr = c.zerotier_connect()
+        print(f" - CONNECT TO YOUR 3BOT ON: https://{addr}:4000/")

@@ -13,6 +13,7 @@ class SDKContainers:
         self.IT = core.IT
         self.core = core
         self.args = args
+        self._wireguard = None
 
     def _get_user(self):
         resp = requests.get("https://{}/explorer/users".format(self.args.explorer), params={"name": self.args.identity})
@@ -190,3 +191,9 @@ class SDKContainers:
 
         self.container = docker
         return docker
+
+    @property
+    def wireguard(self):
+        if not self._wireguard:
+            self._wireguard = self.IT.WireGuardServer(addr="127.0.0.1", port=self.config.sshport, myid=199)
+        return self._wireguard
