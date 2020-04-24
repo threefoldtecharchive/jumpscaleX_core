@@ -151,10 +151,11 @@ class SDKContainers:
         if not self.IT.DockerFactory.docker_assert() or not self.IT.DockerFactory.container_name_exists(name):
             if not secret:
                 secret = self.args.secret
+            if explorer != "none":
+                self._identity_ask(identity, explorer)
             if not secret:
-                self.args.secret = self.IT.Tools.ask_password("specify secret passphrase please:")
+                self.args.secret = self.IT.Tools.ask_password("specify secret to encrypt your data:")
                 secret = self.args.secret
-            self._identity_ask(identity, explorer)
 
         # need to make sure 1 sshkey has been created, does not have to be in github
         if not self.IT.MyEnv.platform_is_windows:

@@ -13,7 +13,7 @@
 * [Packaged installer (sdk)](#Packagedinstallersdk)
 * [Using 3sdk from source](#Using3sdkfromsource)
 * [Troubleshooting](#Troubleshooting)
-	* [Signature Verification Error/Already registerd users with wrong secret on phonebook](#SignatureVerification)
+	* [Signature Verification Error/Already registerd users with wrong words on phonebook](#SignatureVerification)
 	* [REMOTE HOST IDENTIFICATION HAS CHANGED](#REMOTEHOSTIDENTIFICATIONHASCHANGED)
 
 
@@ -22,7 +22,7 @@
 - Chrome browser for OSX users
 
 
-## Know your 3bot secret
+## Know your 3bot words
 
 - From 3botconnect application go to settings, then show phrase to get your mnemonics
 - Take a note of the 3bot name and your email
@@ -60,8 +60,6 @@ You can type `info` and you will see a list of available commands that you can u
 3sdk
 Welcome to sdk shell, for help, type info, to exit type exit
 3sdk> container threebot                                                                                                                
-specify secret passphrase please:: 
-specify secret passphrase please: (confirm): 
 Which network would you like to register to? 
 make your choice (mainnet,testnet,devnet,none): testnet
 what is your threebot name (identity)?
@@ -69,6 +67,8 @@ example.3bot
 Configured email for this identity is me@example.com
 Copy the phrase from your 3bot Connect app here.
 your words from your 3bot application need to be entered here
+specify secret to encrypt your data:
+specify secret to encrypt your data (confirm):
 ```
 
 
