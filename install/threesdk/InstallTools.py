@@ -3284,7 +3284,7 @@ class Tools:
 
         def getbranch(args):
             cmd = "cd {REPO_DIR}; git branch | grep \* | cut -d ' ' -f2"
-            rc, stdout, err = Tools.execute(cmd, die=False, args=args, interactive=False, die_if_args_left=True)
+            rc, stdout, err = Tools.execute(cmd, die=False, args=args, showout=False, interactive=False, die_if_args_left=True)
             if rc > 0:
                 Tools.shell()
             current_branch = stdout.strip()
@@ -3301,7 +3301,7 @@ class Tools:
                 git checkout {BRANCH} -f
                 """
                 rc, out, err = Tools.execute(
-                    script, die=False, args=args, showout=True, interactive=False, die_if_args_left=True
+                    script, die=False, args=args, showout=False, interactive=False, die_if_args_left=True
                 )
                 if rc > 0:
                     return False
@@ -3455,6 +3455,7 @@ class Tools:
                         "git -C '{REPO_DIR}' fetch",
                         args=args,
                         retry=4,
+                        showout=False,
                         errormsg="Could not pull %s" % repo_url,
                         die_if_args_left=True,
                         interactive=True,
@@ -3467,6 +3468,7 @@ class Tools:
                         "git -C {REPO_DIR} pull",
                         args=args,
                         retry=4,
+                        showout=False,
                         errormsg="Could not pull %s" % repo_url,
                         die_if_args_left=True,
                         interactive=True,
