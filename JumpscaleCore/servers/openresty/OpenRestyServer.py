@@ -92,9 +92,8 @@ class OpenRestyServer(j.baseclasses.factory_data):
         :return:
         """
         if reset or self.status not in ["ok", "installed"]:
-
             # copy the templates to the right location
-            j.sal.fs.copyDirTree("%s/web_resources/" % self._dirpath, self.path_cfg_dir)
+            j.sal.fs.copyDirTree("%s/web_resources/" % self._dirpath, self.path_cfg_dir, showout=False)
 
             self.status = "installed"
 
