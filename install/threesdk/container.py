@@ -104,6 +104,7 @@ def shell(name=None):
     """
     shell into your container
     """
+    name = _containers._name(name)
     _containers.assert_container(name)
     c = _containers.get(name=name, explorer="none")
     c.shell()
@@ -113,6 +114,7 @@ def kosmos(name=None):
     """
     start kosmos shell
     """
+    name = _containers._name(name)
     _containers.assert_container(name)
     c = _containers.get(name=name, explorer="none")
     c.kosmos()
