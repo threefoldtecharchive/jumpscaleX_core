@@ -120,6 +120,7 @@ def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
     if not expert:
         _sdk.__all__.remove("builder")
         _sdk.__all__.remove("installer")
+        _sdk.__all__.remove("install")
 
     curframe = inspect.currentframe()
     calframe = inspect.getouterframes(curframe, 2)
