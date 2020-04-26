@@ -24,14 +24,17 @@ Binaries should be in the [release](https://github.com/threefoldtech/jumpscaleX_
 
 After downloading the 3sdk make them executable `chmod +x 3sdk`.
 
-launch `3sdk`
+In terminal do
 
-On OSX you probably will have to go to security settings & allow the os to start the 3sdk application.
+```
+3sdk
+```
 
-Now go to [3sdk_use](3sdk_use.md) to use the 3sdk to get yourself a 3sdk container on your system using docker.
+- On OSX you probably will have to go to security settings & allow the os to start the 3sdk application.
+- Now go to [3sdk_use](3sdk_use.md) to use the 3sdk to get yourself a 3sdk container on your system using docker.
 
 
-## <a name='Using3sdkfromsource'></a>Using 3sdk from source
+## <a name='Using3sdkfromsource'></a>Using 3sdk from source (experts only)
 
 This will require python3, pip3 and git on the user system 
 
