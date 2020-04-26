@@ -94,3 +94,4 @@ ENV/
 .vscode
 *.log
 .idea
+install/windows

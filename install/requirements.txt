@@ -1,4 +1,5 @@
 ptpython==2.0.4
+requests
 PyInstaller==3.6
 packaging==20.3
 setuptools==46.1.3
