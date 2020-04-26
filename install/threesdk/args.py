@@ -38,6 +38,7 @@ class Args(core.IT.Tools._BaseClassProperties):
     def identity(self, value):
         identitydata = _load_identity(value)
         if not identitydata:
+            self._identity = value
             return
         self.email = identitydata["email"]
         # try to decode words
