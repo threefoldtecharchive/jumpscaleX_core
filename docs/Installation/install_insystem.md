@@ -7,7 +7,7 @@
 3sdk> install
 ```
 
-## OSX
+## prerequisites OSX
 
 ```bash
 #to install brew:
