@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import copy
 import getpass
 import pickle
+import binascii
 import bisect
 import hashlib
 import itertools
@@ -935,11 +936,8 @@ class BaseClassProperties:
         for key, val in kwargs.items():
             setattr(self, key, val)
         self._protected = False
-
         self._init(**kwargs)
-
         self._protected = True
-
         self._load()
 
     def _init(self, **kwargs):
@@ -952,6 +950,12 @@ class BaseClassProperties:
 
         if name.startswith("_"):
             self.__dict__[name] = value
+            return
+        propobj = getattr(self.__class__, name, None)
+        if isinstance(propobj, property):
+            if propobj.fset is None:
+                raise Tools.exceptions.Input(f"try to write protected argument on {name}")
+            propobj.fset(self, value)
             return
 
         if not self._protected:
@@ -971,7 +975,6 @@ class BaseClassProperties:
 
         if self.__dict__[name] != value:
             self.__dict__[name] = value
-            # print("-sabe")
             self._save()
 
     def _load(self):
@@ -3284,7 +3287,9 @@ class Tools:
 
         def getbranch(args):
             cmd = "cd {REPO_DIR}; git branch | grep \* | cut -d ' ' -f2"
-            rc, stdout, err = Tools.execute(cmd, die=False, args=args, interactive=False, die_if_args_left=True)
+            rc, stdout, err = Tools.execute(
+                cmd, die=False, args=args, showout=False, interactive=False, die_if_args_left=True
+            )
             if rc > 0:
                 Tools.shell()
             current_branch = stdout.strip()
@@ -3301,7 +3306,7 @@ class Tools:
                 git checkout {BRANCH} -f
                 """
                 rc, out, err = Tools.execute(
-                    script, die=False, args=args, showout=True, interactive=False, die_if_args_left=True
+                    script, die=False, args=args, showout=False, interactive=False, die_if_args_left=True
                 )
                 if rc > 0:
                     return False
@@ -3346,6 +3351,8 @@ class Tools:
         args["URL"] = repo_url
         args["FALLBACK_URL"] = fallback_url
         args["NAME"] = repo
+        if "SSH_AUTH_SOCK" in os.environ:
+            args["SSH_AUTH_SOCK"] = os.environ["SSH_AUTH_SOCK"]
 
         args["BRANCH"] = branch  # TODO:no support for multiple branches yet
 
@@ -3455,25 +3462,24 @@ class Tools:
                         "git -C '{REPO_DIR}' fetch",
                         args=args,
                         retry=4,
+                        showout=False,
                         errormsg="Could not pull %s" % repo_url,
                         die_if_args_left=True,
-                        interactive=True,
+                        interactive=False,
                     )
                     # switch branch
                     if not checkoutbranch(args, branch):
                         raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
                     Tools.log("update code: %s" % repo)
                     Tools.execute(
-                        "git -C {REPO_DIR} pull",
+                        "git -C {REPO_DIR} rebase origin/{BRANCH}",
                         args=args,
                         retry=4,
+                        showout=False,
                         errormsg="Could not pull %s" % repo_url,
                         die_if_args_left=True,
-                        interactive=True,
+                        interactive=False,
                     )
-
-                    if not checkoutbranch(args, branch):
-                        raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
 
         else:
             Tools.log("get code [zip]: %s" % repo)
@@ -3605,6 +3611,24 @@ class Tools:
             executor.file_write(path, out)
         else:
             Tools.file_write(path, out)
+
+    @staticmethod
+    def to_mnemonic(data, english):
+        if len(data) not in [16, 20, 24, 28, 32]:
+            raise Tools.exceptions.Value(
+                "Data length should be one of the following: [16, 20, 24, 28, 32], but it is not (%d)." % len(data)
+            )
+        h = hashlib.sha256(data).hexdigest()
+        b = (
+            bin(int(binascii.hexlify(data), 16))[2:].zfill(len(data) * 8)
+            + bin(int(h, 16))[2:].zfill(256)[: len(data) * 8 // 32]
+        )
+        result = []
+        for i in range(len(b) // 11):
+            idx = int(b[i * 11 : (i + 1) * 11], 2)
+            result.append(english[idx])
+        result_phrase = " ".join(result)
+        return result_phrase
 
     @staticmethod
     def to_entropy(words, english):
@@ -3755,10 +3779,7 @@ class MyEnv_:
 
         if len(secret) != 32:
             import hashlib
-
-            m = hashlib.md5()
-            m.update(secret)
-
+            m = hashlib.md5(secret)
             secret = m.hexdigest()
 
         return secret
@@ -4507,7 +4528,7 @@ class BaseInstaller:
         if not items:
             items = BaseInstaller.pips_list(pips_level)
             MyEnv.state_set("pip_zoos")
-        assert isinstance(items,list)
+        assert isinstance(items, list)
         for pip in items:
             assert "," not in pip
             if not MyEnv.state_get("pip_%s" % pip):
@@ -5692,7 +5713,7 @@ class DockerContainer:
             self.dexec("apt-get update")
             self.dexec("DEBIAN_FRONTEND=noninteractive apt-get -y upgrade --force-yes")
             self.dexec("apt-get install mc git -y")
-            self.dexec("apt-get install python3 -y")
+            self.dexec("apt-get install python3 python3-pip -y")
             self.dexec("pip3 install redis")
             self.dexec("apt-get install wget tmux -y")
             self.dexec("apt-get install curl rsync unzip redis-server htop -y")

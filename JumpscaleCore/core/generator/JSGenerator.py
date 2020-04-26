@@ -1,5 +1,6 @@
 import os
 import fnmatch
+import logging
 from pathlib import Path
 from jinja2 import Template
 
@@ -12,6 +13,7 @@ class JSGenerator:
         """
         """
         self._j = j
+        self.logger = logging.getLogger("JSGenerator")
         self._generated = False
 
     def _check_process_file(self, path):
@@ -80,7 +82,7 @@ class JSGenerator:
                         # skip the core files, they don't need to be read
                     for item in fnmatch.filter(fileList, "*.py"):
                         path = os.path.join(dirName, item)
-                        self._log("process", path)
+                        self.logger.debug(path)
                         if self._check_process_file(path):
                             # self._log("process_ok:")
                             self.md.jsmodule_get(
@@ -98,10 +100,6 @@ class JSGenerator:
         self.report()
 
         return action_args
-
-    def _log(self, cat, msg=""):
-        print("- %-15s %s" % (cat, msg))
-        pass
 
     def _render(self):
 
