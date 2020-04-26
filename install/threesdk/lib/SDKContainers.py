@@ -140,7 +140,7 @@ class SDKContainers:
         email=None,
         words=None,
         secret=None,
-        pull=True,
+        pull=False,
         code_update_force=False,
         explorer=None,
     ):
