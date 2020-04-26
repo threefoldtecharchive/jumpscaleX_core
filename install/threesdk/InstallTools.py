@@ -5571,7 +5571,7 @@ class DockerContainer:
 
         if pull:
             # lets make sure we have the latest image, ONLY DO WHEN FORCED, NOT STD
-            Tools.execute(f"docker image pull {image}", interactive=True)
+            Tools.execute(f"docker image pull {image}", interactive=True, windows_interactive=True)
             stop = True  # means we need to stop now, because otherwise we can't know we start from right image
 
         if delete:
