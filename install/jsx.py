@@ -14,7 +14,9 @@ def load_install_tools(branch=None, reset=False):
 
     path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/threesdk/InstallTools.py"
     if not os.path.exists(path):
-        path = os.path.expanduser("~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/threesdk/InstallTools.py")
+        path = os.path.expanduser(
+            "~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/threesdk/InstallTools.py"
+        )
 
     if not branch:
         branch = DEFAULT_BRANCH
@@ -24,7 +26,10 @@ def load_install_tools(branch=None, reset=False):
         path = os.path.join(rootdir, "InstallTools.py")
         # now check on path next to jsx
         if not os.path.exists(path) or reset:  # or path.find("/code/") == -1:
-            url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/threesdk/InstallTools.py" % branch
+            url = (
+                "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/threesdk/InstallTools.py"
+                % branch
+            )
 
             # fallback to default branch if installation is being done for another branch that doesn't exist in core
             if branch != DEFAULT_BRANCH and requests.get(url).status_code == 404:
@@ -87,7 +92,15 @@ def cli():
 @click.option("--words", help="words of private key retrieved from 3bot connect app")
 @click.option("--explorer", help="explorer to use")
 def install(
-    reinstall=False, pull=False, no_interactive=False, threebot=False, identity=None, reset=None, email=None, words=None, explorer=None
+    reinstall=False,
+    pull=False,
+    no_interactive=False,
+    threebot=False,
+    identity=None,
+    reset=None,
+    email=None,
+    words=None,
+    explorer=None,
 ):
     """
     install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.

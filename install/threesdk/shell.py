@@ -377,6 +377,9 @@ def ptconfig(repl, expert=False):
         newline = rewriteline(partition_line(line), self.get_globals(), self.get_locals())
         if newline:
             line = newline
+        elif not expert:
+            print_error(f"Invalid command {line}, for help, type info")
+            return
 
         if line.lstrip().startswith("\x1a"):
             # When the input starts with Ctrl-Z, quit the REPL.

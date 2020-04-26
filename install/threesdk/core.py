@@ -15,6 +15,7 @@ class Core:
     def _load_install_tools(self, reset=False):
         # get current install.py directory
         from . import InstallTools as IT
+
         IT.MyEnv.init()
         return IT
 

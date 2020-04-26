@@ -1,15 +1,12 @@
 """manage simulator"""
-from .core import core
-from .args import args
 from .container import _containers, _threebot_browser
 from .container import install as _install_container
 from .container import delete as _delete_container
-from .container import stop as _stop_container
 
 __all__ = ["browser", "stop", "start", "shell", "restart"]
 
 
-def start(delete=False, browser_open=True, code_update_force=True):
+def start(delete=False, browser_open=True, code_update_force=True, zerotier=False):
     """
     install & run a container with SDK & simulator
     a connection to zerotier network will be made
@@ -22,11 +19,11 @@ def start(delete=False, browser_open=True, code_update_force=True):
         code_update_force = True
 
     if not _containers.IT.DockerFactory.container_name_exists("simulator"):
-        _install_container("simulator", delete=delete, code_update_force=code_update_force, pull=True)
-        c = _containers.get(name="simulator")
+        _install_container("simulator", delete=delete, code_update_force=code_update_force, pull=True, zerotier=zerotier, explorer="none")
+        c = _containers.get(name="simulator", explorer="none")
         c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
     else:
-        c = _containers.get(name="simulator")
+        c = _containers.get(name="simulator", explorer="none")
 
     if browser_open:
         browser()

@@ -13,6 +13,7 @@ class SDKContainers:
         self.IT = core.IT
         self.core = core
         self.args = args
+        self._wireguard = None
 
     def _get_user(self):
         resp = requests.get("https://{}/explorer/users".format(self.args.explorer), params={"name": self.args.identity})
@@ -38,7 +39,7 @@ class SDKContainers:
                 self.args.words = words
 
             if identity:
-                if self.args.identity != identity:
+                if self.args.identity != identity and self.args.identity:
                     self.args.reset()
                 self.args.identity = identity
 
@@ -126,6 +127,10 @@ class SDKContainers:
         self.IT.DockerFactory.container_delete(name=name)
         self.container = None
 
+    def assert_container(self, name):
+        if not self.IT.DockerFactory.docker_assert() or not self.IT.DockerFactory.container_name_exists(name):
+            raise self.IT.Tools.exceptions.NotFound(f"Please install container {name} first")
+
     def get(
         self,
         identity=None,
@@ -135,7 +140,7 @@ class SDKContainers:
         email=None,
         words=None,
         secret=None,
-        pull=False,
+        pull=True,
         code_update_force=False,
         explorer=None,
     ):
@@ -144,15 +149,18 @@ class SDKContainers:
         code_update_force: be careful, if set will remove your local code repo changes
         """
         name = self._name(name)
-        self._identity_ask(identity, explorer)
-        if not secret:
-            secret = self.args.secret
-        if not secret:
-            self.args.secret = self.IT.Tools.ask_password("specify secret passphrase please:")
-            secret = self.args.secret
-
         if self.container and not delete:
             return self.container
+
+        # if linux die will be false and docker will be installed during installation process
+        if not self.IT.DockerFactory.docker_assert() or not self.IT.DockerFactory.container_name_exists(name):
+            if explorer != "none":
+                self._identity_ask(identity, explorer)
+            if not secret:
+                secret = self.args.secret
+            if not secret:
+                self.args.secret = self.args.ask_secret()
+                secret = self.args.secret
 
         # need to make sure 1 sshkey has been created, does not have to be in github
         if not self.IT.MyEnv.platform_is_windows:
@@ -183,3 +191,9 @@ class SDKContainers:
 
         self.container = docker
         return docker
+
+    @property
+    def wireguard(self):
+        if not self._wireguard:
+            self._wireguard = self.IT.WireGuardServer(addr="127.0.0.1", port=self.config.sshport, myid=199)
+        return self._wireguard

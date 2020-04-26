@@ -22,7 +22,7 @@ def _containers_do(prefix=None, delete=False, stop=False):
             d.stop()
         if delete:
             print(f" - DELETE: {item}")
-            d = _containers.IT.DockerFactory.container_delete(item)
+            _containers.delete(name=item)
 
 
 def install(
@@ -35,7 +35,7 @@ def install(
     words=None,
     server=False,
     zerotier=False,
-    pull=False,
+    pull=True,
     secret=None,
     explorer=None,
     code_update_force=False,
@@ -60,7 +60,7 @@ def install(
         pull = True
 
     if identity:
-        if identity != args.identity:
+        if identity != args.identity and args.identity:
             args.reset()
         args.identity = identity
 
@@ -104,7 +104,9 @@ def shell(name=None):
     """
     shell into your container
     """
-    c = _containers.get(name=name)
+    name = _containers._name(name)
+    _containers.assert_container(name)
+    c = _containers.get(name=name, explorer="none")
     c.shell()
 
 
@@ -112,7 +114,9 @@ def kosmos(name=None):
     """
     start kosmos shell
     """
-    c = _containers.get(name=name)
+    name = _containers._name(name)
+    _containers.assert_container(name)
+    c = _containers.get(name=name, explorer="none")
     c.kosmos()
 
 
@@ -120,7 +124,6 @@ def list():
     """
     list the containers
     """
-    import nacl
     _containers_do()
 
 
@@ -172,7 +175,6 @@ def stop(name=None):
     stop specified containers, can use * in name
     if name not specified then its current container
     """
-    # TODO: need to make sure is saved, when starting afterwards do not have to reinstall jumpscale
     if name and "*" in name:
         prefix = name.replace("*", "")
         _containers_do(prefix=prefix, delete=False, stop=True)
@@ -207,9 +209,15 @@ def wireguard(name=None, connect=True):
     enable wireguard server inside your container
     if connect will use local wireguard tools (userspace prob) if installed locally to make connection to the container
     """
-    # TODO: wireguard (also test on OSX)
-    # TODO: wireguard the connect & install is in 1 method
-    raise RuntimeError("implement")
+    docker = _containers.get(name=name)
+    wg = docker.wireguard
+    if not connect:
+        wg.disconnect()
+    else:
+        wg.reset()
+        wg.server_start()
+        wg.connect()
+        print(wg)
 
 
 def threebot(delete=False, identity=None, email=None, words=None, restart=False, browser=True, pull=False):
@@ -248,48 +256,6 @@ def zerotier(name=None, connect=False):
 
     """
     c = _containers.get(name=name)
-    addr = c.zerotier_connect()
-    print(f" - CONNECT TO YOUR 3BOT ON: https://{addr}:4000/")
     if connect:
-        # TODO: zerotier (see what is done in simulator, use that network)
-        raise RuntimeError("implement")
-
-
-# def wireguard(name=None, test=False, disconnect=False):
-#     """
-#     jsx wireguard
-#     enable wireguard, can be on host or server
-#     :return:
-#     """
-#     docker = container_get(name=name)
-#     wg = docker.wireguard
-#     if disconnect:
-#         wg.disconnect()
-#     elif test:
-#         print(wg)
-#         IT.Tools.shell()
-#     else:
-#         wg.reset()
-#         print(wg)
-#         wg.server_start()
-#         wg.connect()
-
-# def connect(test=False, disconnect=False):
-#     """
-#     only for core developers and engineers of threefold, will connect to some core
-#     infrastructure for helping us to communicate
-#     :return:
-#     """
-#     myid = IT.MyEnv.registry.myid
-#     addr = IT.MyEnv.registry.addr[0]
-#     wg = IT.WireGuardServer(addr=addr, myid=myid)
-#     if disconnect:
-#         wg.disconnect()
-#     elif test:
-#         print(wg)
-#         IT.Tools.shell()
-#     else:
-#         wg.reset()
-#         print(wg)
-#         wg.server_start()
-#         wg.connect()
+        addr = c.zerotier_connect()
+        print(f" - CONNECT TO YOUR 3BOT ON: https://{addr}:4000/")
