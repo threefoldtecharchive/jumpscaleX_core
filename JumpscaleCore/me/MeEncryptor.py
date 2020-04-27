@@ -303,10 +303,12 @@ class MeEncryptor(j.baseclasses.object):
                     raise j.exceptions.Input(
                         "public key needs to be hex 64 char's representation or nacl verify_key obj"
                     )
-        else:
+        elif verify_key:
             assert verify_key
             verify_key = self._verify_key_get(verify_key)
             return verify_key.to_curve25519_public_key()
+        else:
+            return self.public_key
 
         return public_key
 
