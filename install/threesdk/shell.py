@@ -44,7 +44,7 @@ def print_error(error):
 
 
 def noexpert_error(error):
-    reports_location = f"{os.environ['HOME']}/sandbox/reports"
+    reports_location = f"{os.environ.get('HOME', os.environ.get('USERPROFILE', ''))}/sandbox/reports"
     error_file_location = f"{reports_location}/jsxreport_{time.strftime('%d%H%M%S')}.log"
     if not os.path.exists(reports_location):
         os.makedirs(reports_location)
@@ -408,11 +408,13 @@ def ptconfig(repl, expert=False):
                 try:
                     result = eval(code, self.get_globals(), self.get_locals())
                 except (NameError, IT.BaseJSException) as e:
+                    print_error(e)
+                    return
+                except Exception as e:
                     if expert:
-                        print_error(e)
+                        raise
                     else:
                         print_error(noexpert_error(e))
-
                     return
 
                 locals = self.get_locals()
@@ -456,9 +458,12 @@ def ptconfig(repl, expert=False):
                 code = compile_with_flags(line, "exec")
                 try:
                     six.exec_(code, self.get_globals(), self.get_locals())
-                except (NameError, IT.BaseJSException, SyntaxError) as e:
+                except (NameError, IT.BaseJSException) as e:
+                    print_error(e)
+                    return
+                except Exception as e:
                     if expert:
-                        print_error(e)
+                        raise
                     else:
                         print_error(noexpert_error(e))
                     return
