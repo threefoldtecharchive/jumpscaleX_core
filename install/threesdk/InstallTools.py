@@ -3,16 +3,61 @@ from __future__ import unicode_literals
 import copy
 import getpass
 import pickle
+import binascii
+import bisect
+import hashlib
+import itertools
 
 try:
     import msgpack
-except:
+except ImportError:
     msgpack = None
 
 try:
     import redis
-except:
+except ImportError:
     redis = None
+
+import socket
+import os
+import random
+import shutil
+import stat
+import subprocess
+import sys
+import textwrap
+import time
+import re
+
+from pathlib import Path
+from subprocess import Popen
+import inspect
+import json
+
+try:
+    import traceback
+except ImportError:
+    traceback = None
+
+try:
+    import pudb
+except ImportError:
+    pudb = None
+
+try:
+    import pygments
+except ImportError:
+    pygments = None
+
+if pygments:
+    from pygments import formatters
+    from pygments import lexers
+
+    pygments_formatter = formatters.get_formatter_by_name("terminal")
+    pygments_pylexer = lexers.get_lexer_by_name("python")
+else:
+    pygments_formatter = False
+    pygments_pylexer = False
 
 DEFAULT_BRANCH = "master"
 DEFAULT_BRANCH_WEB = "development"
@@ -94,60 +139,6 @@ GITREPOS["kosmos"] = [
 
 PREBUILT_REPO = ["https://github.com/threefoldtech/sandbox_threebot_linux64", "master", "", "not used"]
 
-import socket
-import os
-import random
-import shutil
-import stat
-import subprocess
-import sys
-import textwrap
-import time
-import re
-
-from pathlib import Path
-from subprocess import Popen
-import inspect
-import json
-
-try:
-    import ujson as ujson
-except BaseException:
-    import json as ujson
-
-try:
-    import traceback
-except:
-    traceback = None
-
-try:
-    import pudb
-except:
-    pudb = None
-
-try:
-    import pygments
-except Exception as e:
-    pygments = None
-
-if pygments:
-    from pygments import formatters
-    from pygments import lexers
-
-    pygments_formatter = formatters.get_formatter_by_name("terminal")
-    pygments_pylexer = lexers.get_lexer_by_name("python")
-else:
-    pygments_formatter = False
-    pygments_pylexer = False
-
-
-# try:
-#     import colored_traceback
-#     colored_traceback.add_hook(always=True)
-# except ImportError:
-#     pass
-#
-
 
 class BaseInstallerror(Exception):
     pass
@@ -167,32 +158,32 @@ try:
             data = data._ddict
         try:
             data = yaml.dump(data, default_flow_style=False, default_style="", indent=4, line_break="\n")
-        except Exception as e:
+        except Exception:
             # print("WARNING: COULD NOT YAML SERIALIZE")
             # return str(data)
             data = "CANNOT SERIALIZE YAML"
         return data
 
 
-except:
-    try:
+except ImportError:
 
-        def serializer(data):
-            if hasattr(data, "_data"):
-                return str(data._data)
-            if hasattr(data, "_ddict"):
-                data = data._ddict
-            try:
-                return json.dumps(data, ensure_ascii=False, sort_keys=True, indent=True)
-            except Exception as e:
-                # data = str(data)
-                data = "CANNOT SERIALIZE"
-                return data
+    def serializer(data):
+        if hasattr(data, "_data"):
+            return str(data._data)
+        if hasattr(data, "_ddict"):
+            data = data._ddict
+        try:
+            return json.dumps(data, ensure_ascii=False, sort_keys=True, indent=True)
+        except Exception:
+            # data = str(data)
+            data = "CANNOT SERIALIZE"
+            return data
 
-    except:
 
-        def serializer(data):
-            return "CANNOT SERIALIZE"
+def binary_search(a, x, lo=0, hi=None):  # can't use a to specify default for hi
+    hi = hi if hi is not None else len(a)  # hi defaults to len(a)
+    pos = bisect.bisect_left(a, x, lo, hi)  # find insertion position
+    return pos if pos != hi and a[pos] == x else -1  # don't walk off the end
 
 
 class RedisTools:
@@ -945,11 +936,8 @@ class BaseClassProperties:
         for key, val in kwargs.items():
             setattr(self, key, val)
         self._protected = False
-
         self._init(**kwargs)
-
         self._protected = True
-
         self._load()
 
     def _init(self, **kwargs):
@@ -962,6 +950,12 @@ class BaseClassProperties:
 
         if name.startswith("_"):
             self.__dict__[name] = value
+            return
+        propobj = getattr(self.__class__, name, None)
+        if isinstance(propobj, property):
+            if propobj.fset is None:
+                raise Tools.exceptions.Input(f"try to write protected argument on {name}")
+            propobj.fset(self, value)
             return
 
         if not self._protected:
@@ -981,7 +975,6 @@ class BaseClassProperties:
 
         if self.__dict__[name] != value:
             self.__dict__[name] = value
-            # print("-sabe")
             self._save()
 
     def _load(self):
@@ -3001,16 +2994,8 @@ class Tools:
         :param path:
         :return:
         """
-        S = """
-        cd {REPO_DIR}
-        git diff --exit-code || exit 1
-        git diff --cached --exit-code || exit 1
-        if git status --porcelain | grep .; then
-            exit 1
-        else
-            exit 0
-        fi
-        """
+
+        S = "git -C {REPO_DIR} diff --exit-code && git -C {REPO_DIR} diff --cached --exit-code"
         args = {}
         args["REPO_DIR"] = path
         rc, out, err = Tools.execute(S, showout=False, die=False, args=args)
@@ -3293,8 +3278,10 @@ class Tools:
         """
 
         def getbranch(args):
-            cmd = "cd {REPO_DIR}; git branch | grep \* | cut -d ' ' -f2"
-            rc, stdout, err = Tools.execute(cmd, die=False, args=args, interactive=False, die_if_args_left=True)
+            cmd = "cd {REPO_DIR} && git branch | grep \* | cut -d ' ' -f2"
+            rc, stdout, err = Tools.execute(
+                cmd, die=False, args=args, showout=False, interactive=False, die_if_args_left=True
+            )
             if rc > 0:
                 Tools.shell()
             current_branch = stdout.strip()
@@ -3305,13 +3292,9 @@ class Tools:
             args["BRANCH"] = branch
             current_branch = getbranch(args=args)
             if current_branch != branch:
-                script = """
-                set -e
-                cd {REPO_DIR}
-                git checkout {BRANCH} -f
-                """
+                script = "cd {REPO_DIR} && git checkout -q -f {BRANCH}"
                 rc, out, err = Tools.execute(
-                    script, die=False, args=args, showout=True, interactive=False, die_if_args_left=True
+                    script, die=False, args=args, showout=False, interactive=True, die_if_args_left=True
                 )
                 if rc > 0:
                     return False
@@ -3356,6 +3339,8 @@ class Tools:
         args["URL"] = repo_url
         args["FALLBACK_URL"] = fallback_url
         args["NAME"] = repo
+        if "SSH_AUTH_SOCK" in os.environ:
+            args["SSH_AUTH_SOCK"] = os.environ["SSH_AUTH_SOCK"]
 
         args["BRANCH"] = branch  # TODO:no support for multiple branches yet
 
@@ -3367,6 +3352,8 @@ class Tools:
         if exists and not foundgit and not pull:
             """means code is already there, maybe synced?"""
             return gitpath
+        if exists and not foundgit and pull:
+            raise Tools.exceptions.Input(f"Can not pull repo {REPO_DIR} because .git folder is missing, please clean the repo and try again")
 
         if git_on_system and MyEnv.config["USEGIT"]:
             # there is ssh-key loaded
@@ -3382,7 +3369,7 @@ class Tools:
                     if not Tools.exists(ACCOUNT_DIR):
                         os.makedirs(ACCOUNT_DIR)
                     C = """
-                    git -C {ACCOUNT_DIR} clone {URL} -b {BRANCH}
+                    git -C {ACCOUNT_DIR} clone {URL} -b {BRANCH} -q
                     """
                     Tools.execute(
                         C,
@@ -3399,7 +3386,7 @@ class Tools:
                     Tools.log("get code [https] (second time): %s" % repo)
                     if not Tools.exists(ACCOUNT_DIR):
                         os.makedirs(ACCOUNT_DIR)
-                    C = "git -C {ACCOUNT_DIR} clone {FALLBACK_URL} -b {BRANCH}"
+                    C = "git -C {ACCOUNT_DIR} clone {FALLBACK_URL} -b {BRANCH} -q"
 
                     try:
                         rc, out, err = Tools.execute(
@@ -3414,7 +3401,7 @@ class Tools:
                         )
                     except Exception:
                         # try with default branch if doesn't exist
-                        C = "git -C {ACCOUNT_DIR} clone {FALLBACK_URL}"
+                        C = "git -C {ACCOUNT_DIR} clone -q {FALLBACK_URL}"
                         rc, out, err = Tools.execute(
                             C,
                             args=args,
@@ -3431,7 +3418,7 @@ class Tools:
                     if reset:
                         C = """
                         cd {REPO_DIR}
-                        git checkout . --force
+                        git checkout -q . --force
                         """
                         Tools.log("get code & ignore changes: %s" % repo)
                         Tools.execute(
@@ -3459,22 +3446,30 @@ class Tools:
                             """
                             Tools.log("get code & commit [git]: %s" % repo)
                             Tools.execute(C, args=args, die_if_args_left=True, interactive=True)
-                    C = """
-                    cd {REPO_DIR}
-                    git pull
-                    """
-                    Tools.log("pull code: %s" % repo)
+
+                    # update repo
                     Tools.execute(
-                        C,
+                        "git -C {REPO_DIR} fetch -q",
                         args=args,
                         retry=4,
+                        showout=False,
                         errormsg="Could not pull %s" % repo_url,
                         die_if_args_left=True,
                         interactive=True,
                     )
-
+                    # switch branch
                     if not checkoutbranch(args, branch):
                         raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
+                    Tools.log("update code: %s" % repo)
+                    Tools.execute(
+                        "git -C {REPO_DIR} rebase -q origin/{BRANCH}",
+                        args=args,
+                        retry=4,
+                        showout=False,
+                        errormsg="Could not pull %s" % repo_url,
+                        die_if_args_left=True,
+                        interactive=True,
+                    )
 
         else:
             Tools.log("get code [zip]: %s" % repo)
@@ -3607,6 +3602,64 @@ class Tools:
         else:
             Tools.file_write(path, out)
 
+    @staticmethod
+    def to_mnemonic(data, english):
+        if len(data) not in [16, 20, 24, 28, 32]:
+            raise Tools.exceptions.Value(
+                "Data length should be one of the following: [16, 20, 24, 28, 32], but it is not (%d)." % len(data)
+            )
+        h = hashlib.sha256(data).hexdigest()
+        b = (
+            bin(int(binascii.hexlify(data), 16))[2:].zfill(len(data) * 8)
+            + bin(int(h, 16))[2:].zfill(256)[: len(data) * 8 // 32]
+        )
+        result = []
+        for i in range(len(b) // 11):
+            idx = int(b[i * 11 : (i + 1) * 11], 2)
+            result.append(english[idx])
+        result_phrase = " ".join(result)
+        return result_phrase
+
+    @staticmethod
+    def to_entropy(words, english):
+        if not isinstance(words, list):
+            words = words.split(" ")
+        if len(words) not in [12, 15, 18, 21, 24]:
+            raise Tools.exceptions.Value(
+                "Number of words must be one of the following: [12, 15, 18, 21, 24], but it is not (%d)." % len(words)
+            )
+        # Look up all the words in the list and construct the
+        # concatenation of the original entropy and the checksum.
+        concatLenBits = len(words) * 11
+        concatBits = [False] * concatLenBits
+        wordindex = 0
+        use_binary_search = True
+        for word in words:
+            # Find the words index in the wordlist
+            ndx = binary_search(english, word) if use_binary_search else english.index(word)
+            if ndx < 0:
+                raise Tools.exceptions.NotFound('Unable to find "%s" in word list.' % word)
+            # Set the next 11 bits to the value of the index.
+            for ii in range(11):
+                concatBits[(wordindex * 11) + ii] = (ndx & (1 << (10 - ii))) != 0
+            wordindex += 1
+        checksumLengthBits = concatLenBits // 33
+        entropyLengthBits = concatLenBits - checksumLengthBits
+        # Extract original entropy as bytes.
+        entropy = bytearray(entropyLengthBits // 8)
+        for ii in range(len(entropy)):
+            for jj in range(8):
+                if concatBits[(ii * 8) + jj]:
+                    entropy[ii] |= 1 << (7 - jj)
+        # Take the digest of the entropy.
+        hashBytes = hashlib.sha256(entropy).digest()
+        hashBits = list(itertools.chain.from_iterable(([c & (1 << (7 - i)) != 0 for i in range(8)] for c in hashBytes)))
+        # Check all the checksum bits.
+        for i in range(checksumLengthBits):
+            if concatBits[entropyLengthBits + i] != hashBits[i]:
+                raise Tools.exceptions.Value("Failed checksum.")
+        return bytes(entropy)
+
 
 class MyEnv_:
     def __init__(self):
@@ -3697,7 +3750,7 @@ class MyEnv_:
 
         """
         if not secret:
-            secret = Tools.ask_password("please specify secret passphrase for your SDK/3bot (<32chars)")
+            secret = Tools.ask_password("please provide passphrase (to locally encrypt your container)")
             assert len(secret) < 32
 
         secret = self._secret_format(secret)
@@ -3716,10 +3769,7 @@ class MyEnv_:
 
         if len(secret) != 32:
             import hashlib
-
-            m = hashlib.md5()
-            m.update(secret)
-
+            m = hashlib.md5(secret)
             secret = m.hexdigest()
 
         return secret
@@ -4468,7 +4518,9 @@ class BaseInstaller:
         if not items:
             items = BaseInstaller.pips_list(pips_level)
             MyEnv.state_set("pip_zoos")
+        assert isinstance(items, list)
         for pip in items:
+            assert "," not in pip
             if not MyEnv.state_get("pip_%s" % pip):
                 C = "pip3 install '%s'" % pip  # --user
                 Tools.execute(C, die=True, retry=3)
@@ -4583,7 +4635,7 @@ class OSXInstaller:
             """
             # graphviz #TODO: need to be put elsewhere but not in baseinstaller
             Tools.execute(script, replace=True)
-        BaseInstaller.pips_install(["click, redis"])  # TODO: *1
+        BaseInstaller.pips_install(["click", "redis"])
 
     @staticmethod
     def brew_install():
@@ -4750,11 +4802,11 @@ class JumpscaleInstaller:
         jsinit=True,
         email=None,
         words=None,
+        explorer=None,
         code_update_force=False,
     ):
 
         MyEnv.check_platform()
-
         # will check if there's already a key loaded (forwarded) will continue installation with it
 
         pips_level = 3
@@ -4796,10 +4848,12 @@ class JumpscaleInstaller:
                 email = ""
             if not words:
                 words = ""
-            C = f"""
-            j.me.configure(tname='{identity}',ask=False, email='{email}',words='{words}')
-            """
-            Tools.execute(C, die=True, interactive=True, jumpscale=True)
+            if explorer:
+                C = f"""
+                j.clients.explorer.default_addr_set('{explorer}')
+                j.me.configure(tname='{identity}',ask=False, email='{email}',words='{words}')
+                """
+                Tools.execute(C, die=True, interactive=True, jumpscale=True)
 
         if threebot:
             self.threebot_init(stop=True)
@@ -4812,7 +4866,7 @@ class JumpscaleInstaller:
         Tools.execute_jumpscale("j.servers.threebot.start(background=True)")
         timestop = time.time() + 240.0
         ok = False
-        while ok == False and time.time() < timestop:
+        while not ok and time.time() < timestop:
             try:
                 Tools.execute_jumpscale("assert j.core.db.get('threebot.started') == b'1'")
                 ok = True
@@ -4893,16 +4947,18 @@ class JumpscaleInstaller:
                 continue
 
             if branch:
-                # dont understand this code, looks bad TODO:
+                # check if provided branch exists otherwise don't use it
                 C = f"""git ls-remote --heads {GITURL} {branch}"""
                 _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True, interactive=False)
                 if out:
                     BRANCH = branch
 
             try:
-                dest = Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
-            except Exception as e:
-                r = Tools.code_git_rewrite_url(url=GITURL, ssh=False)
+                Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
+            except Tools.exceptions.Input:
+                raise
+            except Exception:
+                Tools.code_git_rewrite_url(url=GITURL, ssh=False)
                 Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
 
             done.append(GITURL)
@@ -4961,6 +5017,32 @@ class DockerFactory:
         return False
 
     @staticmethod
+    def docker_assert():
+        """
+        will check if docker is installed and running
+        :return:
+        True if docker installed
+        False if linux and docker not installed and it will be installed during installation process
+        RuntimeError: windows or mac and docker is not installed and you must install it via gui
+        """
+        if MyEnv.platform_is_windows:
+            _, out, _ = Tools.execute("docker -v", die=False)
+            if "Docker" not in out:
+                raise Tools.exceptions.RuntimeError(
+                    "Docker is not installed or running please check: https://docs.docker.com/docker-for-windows/install/"
+                )
+
+        if MyEnv.platform_is_linux and not Tools.cmd_installed("docker"):
+            return False
+
+        if MyEnv.platform_is_osx and not Tools.cmd_installed("docker"):
+            raise Tools.exceptions.RuntimeError(
+                "Docker is not installed or running please check: https://docs.docker.com/"
+            )
+
+        return True
+
+    @staticmethod
     def init(name=None):
         if not DockerFactory._init:
             if not MyEnv.platform_is_windows:
@@ -4971,11 +5053,12 @@ class DockerFactory:
 
                 MyEnv.init()
 
-                if MyEnv.platform() == "linux" and not Tools.cmd_installed("docker"):
+                if not DockerFactory.docker_assert():
                     UbuntuInstaller.docker_install()
                     MyEnv._cmd_installed["docker"] = shutil.which("docker")
 
-                if not Tools.cmd_installed("docker"):
+                # check if docker failed or on mac, can be installed with gui then
+                if not DockerFactory.docker_assert():
                     raise Tools.exceptions.Operations("Could not find Docker installed")
 
                 DockerFactory._init = True
@@ -4990,13 +5073,8 @@ class DockerFactory:
                     if name_found != name and name_found.strip().lower() not in ["shared"]:
                         DockerContainer(name_found)
             else:
-                _, out, _ = Tools.execute("docker -v", die=False)
-                if "Docker" not in out:
-                    raise Tools.exceptions.RuntimeError(
-                        """
-                        Docker is not installed or running please check: https://docs.docker.com/docker-for-windows/install/
-                    """
-                    )
+                # Check for windows docker installed, only installed by gui
+                DockerFactory.docker_assert()
                 MyEnv.init()
                 DockerFactory._init = True
 
@@ -5485,7 +5563,7 @@ class DockerContainer:
 
         if pull:
             # lets make sure we have the latest image, ONLY DO WHEN FORCED, NOT STD
-            Tools.execute(f"docker image pull {image}", interactive=True)
+            Tools.execute(f"docker image pull {image}", interactive=True, windows_interactive=True)
             stop = True  # means we need to stop now, because otherwise we can't know we start from right image
 
         if delete:
@@ -5627,7 +5705,7 @@ class DockerContainer:
             self.dexec("apt-get update")
             self.dexec("DEBIAN_FRONTEND=noninteractive apt-get -y upgrade --force-yes")
             self.dexec("apt-get install mc git -y")
-            self.dexec("apt-get install python3 -y")
+            self.dexec("apt-get install python3 python3-pip -y")
             self.dexec("pip3 install redis")
             self.dexec("apt-get install wget tmux -y")
             self.dexec("apt-get install curl rsync unzip redis-server htop -y")
@@ -5724,7 +5802,12 @@ class DockerContainer:
         )
 
     def kosmos(self):
-        self.execute("j.shell()", interactive=True, windows_interactive=True, jumpscale=True)
+        self.execute(
+            f"j.application.interactive={MyEnv.interactive}; j.shell()",
+            interactive=True,
+            windows_interactive=True,
+            jumpscale=True,
+        )
 
     def stop(self):
         if self.container_running:
@@ -5957,6 +6040,7 @@ class DockerContainer:
         identity=None,
         email=None,
         words=None,
+        explorer=None,
     ):
 
         if not force:
@@ -5986,6 +6070,8 @@ class DockerContainer:
             args_txt += f" --email={email}"
         if words:
             args_txt += f" --words='{words}'"
+        if explorer:
+            args_txt += f" --explorer='{explorer}'"
 
         if not MyEnv.interactive:
             args_txt += " --no-interactive"

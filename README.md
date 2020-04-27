@@ -11,7 +11,7 @@ Our newest release is version 10, called JSX.
 
 - [Jumpscale](#jumpscale)
   - [About Jumpscale](#about-jumpscale)
-  - [Installing Jumpscale](docs/Installation/README.md)
+  - [Using 3sdk and/or Jumpscale](docs/3sdk/readme.md)
   - [Usage](#usage)
   - [Tutorials](#tutorials)
   - [Collaboration Conventions](#collaboration-conventions)
@@ -33,13 +33,12 @@ Some tools available in JumpScale
   * Local Executor (for local execution)
   * Docker Executor (for executing on dockers)
 
-* [Builders](docs/Internals/builders/Builders.md)
-  Builder tools is a set of tools to perform the common tasks in your builder (e.g read a file , write to a file, execute bash commands and many other handy methods that you will probably need in your builder) \
-  To create a builder see [documentation](docs/howto/Create\ a\ new\ Builder.md)
+## Install and use 3SDK and Jumpscale
 
-## Install and use Jumpscale
-
-[See installation doc](/docs/Installation/README.md)
+- [3sdk_install](../3sdk/3sdk_install.md)
+- [3sdk_use](../3sdk/3sdk_use.md)
+- [3sdk_build](../3sdk/3sdk_build.md)
+- [3sdk_troubleshooting](../3sdk/3sdk_troubleshooting.md)
 
 ## Running Tests
 To run unittests you can execute the following command

@@ -8,13 +8,33 @@ import textwrap
 
 __all__ = ["builder", "simulator", "container", "args", "core", "installer", "install"]
 
+IT = core.core.IT
 
-def install():
+
+def install(reinstall=False, pull=False, no_interactive=False, threebot=False, identity=None, reset=None, email=None, words=None):
     """
     Install jumpscale on host (not all platforms supported)
     """
-    # TODO: needs to be implemented
-    jsx.install.callback()
+    IT.MyEnv.interactive = not no_interactive
+    if reinstall:
+        # remove the state
+        IT.MyEnv.state_reset()
+        force = True
+    else:
+        force = False
+
+    installer = IT.JumpscaleInstaller()
+    installer.install(
+        sandboxed=False,
+        force=force,
+        gitpull=pull,
+        threebot=threebot,
+        identity=identity,
+        reset=reset,
+        email=email,
+        words=words,
+    )
+    print("Jumpscale X installed successfully")
 
 
 def _get_doc_line(doc):
