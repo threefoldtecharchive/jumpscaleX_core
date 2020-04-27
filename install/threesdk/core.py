@@ -5,7 +5,7 @@ __all__ = ["branch", "redis"]
 class Core:
     def __init__(self):
         self._default_branch = "master"
-        self.branch = "development"
+        self.branch = "master"
         self.load()
 
     def load(self):
@@ -25,7 +25,7 @@ core = Core()
 
 def branch(val=""):
     """
-    branch for the code we use normally development or unstable
+    branch for the code we use normally development or master
     """
     if not val:
         return core.branch
