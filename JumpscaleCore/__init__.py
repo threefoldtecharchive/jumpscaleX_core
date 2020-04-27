@@ -314,7 +314,6 @@ if "JSRELOAD" in os.environ and os.path.exists(j.core.application._lib_generatio
 generated = False
 # print (sys.path)
 if not os.path.exists(j.core.application._lib_generation_path):
-    print("WARNING: GENERATION OF METADATA FOR JUMPSCALE")
     from .core.generator.JSGenerator import JSGenerator
 
     j.core.jsgenerator = JSGenerator(j)
