@@ -408,11 +408,13 @@ def ptconfig(repl, expert=False):
                 try:
                     result = eval(code, self.get_globals(), self.get_locals())
                 except (NameError, IT.BaseJSException) as e:
+                    print_error(e)
+                    return
+                except Exception as e:
                     if expert:
-                        print_error(e)
+                        raise
                     else:
                         print_error(noexpert_error(e))
-
                     return
 
                 locals = self.get_locals()
@@ -456,9 +458,12 @@ def ptconfig(repl, expert=False):
                 code = compile_with_flags(line, "exec")
                 try:
                     six.exec_(code, self.get_globals(), self.get_locals())
-                except (NameError, IT.BaseJSException, SyntaxError) as e:
+                except (NameError, IT.BaseJSException) as e:
+                    print_error(e)
+                    return
+                except Exception as e:
                     if expert:
-                        print_error(e)
+                        raise
                     else:
                         print_error(noexpert_error(e))
                     return

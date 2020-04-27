@@ -3303,10 +3303,10 @@ class Tools:
                 script = """
                 set -e
                 cd {REPO_DIR}
-                git checkout {BRANCH} -f
+                git checkout -q -f {BRANCH}
                 """
                 rc, out, err = Tools.execute(
-                    script, die=False, args=args, showout=False, interactive=False, die_if_args_left=True
+                    script, die=False, args=args, showout=False, interactive=True, die_if_args_left=True
                 )
                 if rc > 0:
                     return False
@@ -3364,6 +3364,8 @@ class Tools:
         if exists and not foundgit and not pull:
             """means code is already there, maybe synced?"""
             return gitpath
+        if exists and not foundgit and pull:
+            raise Tools.exceptions.Input(f"Can not pull repo {REPO_DIR} because .git folder is missing, please clean the repo and try again")
 
         if git_on_system and MyEnv.config["USEGIT"]:
             # there is ssh-key loaded
@@ -3379,7 +3381,7 @@ class Tools:
                     if not Tools.exists(ACCOUNT_DIR):
                         os.makedirs(ACCOUNT_DIR)
                     C = """
-                    git -C {ACCOUNT_DIR} clone {URL} -b {BRANCH}
+                    git -C {ACCOUNT_DIR} clone {URL} -b {BRANCH} -q
                     """
                     Tools.execute(
                         C,
@@ -3396,7 +3398,7 @@ class Tools:
                     Tools.log("get code [https] (second time): %s" % repo)
                     if not Tools.exists(ACCOUNT_DIR):
                         os.makedirs(ACCOUNT_DIR)
-                    C = "git -C {ACCOUNT_DIR} clone {FALLBACK_URL} -b {BRANCH}"
+                    C = "git -C {ACCOUNT_DIR} clone {FALLBACK_URL} -b {BRANCH} -q"
 
                     try:
                         rc, out, err = Tools.execute(
@@ -3411,7 +3413,7 @@ class Tools:
                         )
                     except Exception:
                         # try with default branch if doesn't exist
-                        C = "git -C {ACCOUNT_DIR} clone {FALLBACK_URL}"
+                        C = "git -C {ACCOUNT_DIR} clone -q {FALLBACK_URL}"
                         rc, out, err = Tools.execute(
                             C,
                             args=args,
@@ -3428,7 +3430,7 @@ class Tools:
                     if reset:
                         C = """
                         cd {REPO_DIR}
-                        git checkout . --force
+                        git checkout -q . --force
                         """
                         Tools.log("get code & ignore changes: %s" % repo)
                         Tools.execute(
@@ -3459,26 +3461,26 @@ class Tools:
 
                     # update repo
                     Tools.execute(
-                        "git -C '{REPO_DIR}' fetch",
+                        "git -C '{REPO_DIR}' fetch -q",
                         args=args,
                         retry=4,
                         showout=False,
                         errormsg="Could not pull %s" % repo_url,
                         die_if_args_left=True,
-                        interactive=False,
+                        interactive=True,
                     )
                     # switch branch
                     if not checkoutbranch(args, branch):
                         raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
                     Tools.log("update code: %s" % repo)
                     Tools.execute(
-                        "git -C {REPO_DIR} rebase origin/{BRANCH}",
+                        "git -C {REPO_DIR} rebase -q origin/{BRANCH}",
                         args=args,
                         retry=4,
                         showout=False,
                         errormsg="Could not pull %s" % repo_url,
                         die_if_args_left=True,
-                        interactive=False,
+                        interactive=True,
                     )
 
         else:
@@ -4965,6 +4967,8 @@ class JumpscaleInstaller:
 
             try:
                 Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
+            except Tools.exceptions.Input:
+                raise
             except Exception:
                 Tools.code_git_rewrite_url(url=GITURL, ssh=False)
                 Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
