@@ -59,12 +59,14 @@ class SDKContainers:
                 self.args.identity = identity
 
             user = self._get_user()
-            if not user and not self.args.email:
-                while not self.args.email:
-                    email = self.core.IT.Tools.ask_string("What is the email address associated with your identity?")
-                    if not self._check_email(email):
-                        self.args.email = email
+            if not user:
+                while True:
+                    if not self.args.email:
+                        self.args.email = self.core.IT.Tools.ask_string("What is the email address associated with your identity?")
+                    if not self._check_email(self.args.email):
+                        break
                     else:
+                        self.args.email = None
                         response = self.core.IT.Tools.ask_choices(
                             "This email is currently associated with another identity. What would you like to do?",
                             ["restart", "reenter"],
