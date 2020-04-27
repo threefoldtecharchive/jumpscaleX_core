@@ -93,6 +93,22 @@ class LoggerClient(j.baseclasses.object_config):
         """
         return self.db.hdel(self.rediskey_logs, identifier)
 
+    def delete_by_ids(self,ids):
+        """delete logs by ids
+
+        :param ids: array of ids
+        :return: 1 or 0 (if it was not already there)
+        :rtype: boolean
+        """
+        apps,ret = self.get_app_names(),True
+        for id in ids:
+            for app in apps:
+                name = "logs:%s:data" % (app)
+                if self.db.hexists(name,id):
+                    break
+            ret = ret and self.db.hdel(name, id)
+        return ret
+
     def delete_all(self, appname=None):
         """
         delete all alerts

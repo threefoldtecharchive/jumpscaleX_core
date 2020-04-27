@@ -1,29 +1,81 @@
 """configurable arguments"""
 import os
+import pytoml
+import binascii
+import nacl.secret
+import hashlib
 from .core import core
+from . import english
 
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
-__all__ = ["identity", "secret", "email", "words", "reset"]
+__all__ = ["identity", "secret", "email", "words", "reset", "explorer"]
 
 
 class Args(core.IT.Tools._BaseClassProperties):
     def _init(self, **kwargs):
-        self.identity = None
+        self._identity = None
         self.secret = None
         self.email = None
         self.words = None
+        self.explorer = None
         self._key = "3sdk:data"
-        self._load
+
+    def reset(self):
+        self.identity = None
+        self.email = None
+        self.words = None
+        self.explorer = None
+
+    def ask_secret(self):
+        return core.IT.Tools.ask_password("specify secret to encrypt your data:")
+
+    @property
+    def identity(self):
+        return self._identity
+
+    @identity.setter
+    def identity(self, value):
+        identitydata = _load_identity(value)
+        if not identitydata:
+            self._identity = value
+            return
+        self.email = identitydata["email"]
+        # try to decode words
+        if not self.secret:
+            self.secret = self.ask_secret()
+
+        binarykey = binascii.unhexlify(identitydata["signing_key"])
+        while True:
+            try:
+                secrethash = hashlib.md5(self.secret.encode()).hexdigest()
+                box = nacl.secret.SecretBox(secrethash.encode())
+                seed = box.decrypt(binarykey)
+                break
+            except nacl.exceptions.CryptoError:
+                print("Failed to decrypt your key with this secret, please enter the correct key or ctrl+c to interrupt")
+                self.secret = self.ask_secret()
+
+        self.words = core.IT.Tools.to_mnemonic(seed, english.words)
+        self._identity = value
 
 
 args = Args()
+
+
+def _load_identity(identity):
+    identitydir = core.IT.MyEnv.config["DIR_IDENTITY"]
+    identityfile = os.path.join(identitydir, "identities", f"{identity}.toml")
+    if os.path.exists(identityfile):
+        with open(identityfile) as fd:
+            return pytoml.load(fd)
 
 
 def identity(val=""):
     """
     you can have multiple identities,
     you need to specify an identity for many operations we do e.g. creating a container
+    if the identity exists all other variables will be loaded from it
     """
     if not val:
         return args.identity
@@ -67,13 +119,21 @@ def words(val=""):
         args.words = val
 
 
+def explorer(val=""):
+    """
+    explorer to use
+    """
+    if not val:
+        return args.explorer
+    else:
+        args.explorer = val
+
+
 def reset():
     """
     reset your arguments for your identity  (secret remains)s
     """
-    args.identity = None
-    args.email = None
-    args.words = None
+    args.reset()
 
 
 def __str__():
@@ -84,3 +144,4 @@ identity.__property__ = True
 secret.__property__ = True
 email.__property__ = True
 words.__property__ = True
+explorer.__property__ = True

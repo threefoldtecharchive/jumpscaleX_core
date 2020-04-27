@@ -11,7 +11,7 @@ Our newest release is version 10, called JSX.
 
 - [Jumpscale](#jumpscale)
   - [About Jumpscale](#about-jumpscale)
-  - [Installing Jumpscale](docs/Installation/README.md)
+  - [Using 3sdk and/or Jumpscale](docs/3sdk/readme.md)
   - [Usage](#usage)
   - [Tutorials](#tutorials)
   - [Collaboration Conventions](#collaboration-conventions)
@@ -32,10 +32,6 @@ Some tools available in JumpScale
   * SSH Executor (for remote execution)
   * Local Executor (for local execution)
   * Docker Executor (for executing on dockers)
-
-* [Builders](docs/Internals/builders/Builders.md)
-  Builder tools is a set of tools to perform the common tasks in your builder (e.g read a file , write to a file, execute bash commands and many other handy methods that you will probably need in your builder) \
-  To create a builder see [documentation](docs/howto/Create\ a\ new\ Builder.md)
 
 ## Install and use Jumpscale
 

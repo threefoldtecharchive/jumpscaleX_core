@@ -454,7 +454,7 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
         self.q_out.put({"cat": "user_info", "kwargs": kwargs})
         return j.data.serializers.json.loads(self.q_in.get())
 
-    def qrcode_show(self, data, title=None, msg=None, scale=10):
+    def qrcode_show(self, data, title=None, msg=None, scale=10, update=False):
         qr_64 = j.tools.qrcode.base64_get(data, scale=scale)
         if not title:
             title = "scan with your application:"
@@ -466,7 +466,10 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
 """
         if msg:
             content += f"## {msg}"
-        return self.md_show(content)
+        if update:
+            return self.md_show_update(content)
+        else:
+            return self.md_show(content)
 
     def qrcode_show_dict(self, d, title=None, msg=None, scale=10):
         data = j.data.serializers.json.dumps(d)

@@ -20,8 +20,6 @@ Prior to installing Jumpscale you need the following elements:
   * verify installation with `$python3 --version`
 * pip3  
   * `$sudo apt install python3-pip`
-* click python package  
-  * `$pip3 install click`
 
 <a name="osx"></a>
 ## OSX specifics

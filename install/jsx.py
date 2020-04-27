@@ -14,7 +14,9 @@ def load_install_tools(branch=None, reset=False):
 
     path = "/sandbox/code/github/threefoldtech/jumpscaleX_core/install/threesdk/InstallTools.py"
     if not os.path.exists(path):
-        path = os.path.expanduser("~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/threesdk/InstallTools.py")
+        path = os.path.expanduser(
+            "~/sandbox/code/github/threefoldtech/jumpscaleX_core/install/threesdk/InstallTools.py"
+        )
 
     if not branch:
         branch = DEFAULT_BRANCH
@@ -24,7 +26,10 @@ def load_install_tools(branch=None, reset=False):
         path = os.path.join(rootdir, "InstallTools.py")
         # now check on path next to jsx
         if not os.path.exists(path) or reset:  # or path.find("/code/") == -1:
-            url = "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/threesdk/InstallTools.py" % branch
+            url = (
+                "https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/%s/install/threesdk/InstallTools.py"
+                % branch
+            )
 
             # fallback to default branch if installation is being done for another branch that doesn't exist in core
             if branch != DEFAULT_BRANCH and requests.get(url).status_code == 404:
@@ -85,8 +90,17 @@ def cli():
 @click.option("--reset", is_flag=True, help="Delete BCDB, dangerous !")
 @click.option("--email", help="email address to be used")
 @click.option("--words", help="words of private key retrieved from 3bot connect app")
+@click.option("--explorer", help="explorer to use")
 def install(
-    reinstall=False, pull=False, no_interactive=False, threebot=False, identity=None, reset=None, email=None, words=None
+    reinstall=False,
+    pull=False,
+    no_interactive=False,
+    threebot=False,
+    identity=None,
+    reset=None,
+    email=None,
+    words=None,
+    explorer=None,
 ):
     """
     install jumpscale in the local system (only supported for Ubuntu 18.04+ and mac OSX, use container install method otherwise.
@@ -115,6 +129,7 @@ def install(
         reset=reset,
         email=email,
         words=words,
+        explorer=explorer,
     )
     print("Jumpscale X installed successfully")
 
@@ -182,7 +197,7 @@ def getcode(branch=None, pull=False, reset=False):
 @click.argument("secret")
 def secret_set(secret=None):
     if not secret:
-        secret = IT.Tools.ask_password("please provide passphrase")
+        secret = IT.Tools.ask_password("please provide passphrase (to locally encrypt your container)")
     IT.RedisTools._core_get()
     IT.MyEnv.secret_set(secret=secret, secret_expiration_hours=48)
 
@@ -277,23 +292,7 @@ def check():
 # from Jumpscale import j
 # import gevent
 #
-#
-# def chat(bot):
-#
-#     # form = bot.new_form()
-#     # food = form.string_ask("What do you need to eat?")
-#     # amount = form.int_ask("Enter the amount you need to eat from %s in grams:" % food)
-#     # sides = form.multi_choice("Choose your side dishes: ", ["rice", "fries", "saute", "mashed potato"])
-#     # drink = form.single_choice("Choose your Drink: ", ["tea", "coffee", "lemon"])
-#     # form.ask()
-#
-#     # bot.md_show(res)
-#     # bot.redirect("https://threefold.me")
-#     pass
-#
-#     """
-#     with open(chat_py_path, "w") as f:
-#         f.write(chat_py_content)
+
 
 
 if __name__ == "__main__":
