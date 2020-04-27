@@ -3019,7 +3019,7 @@ class Tools:
             args = {}
             args["REPO_DIR"] = path
             rc, out, err = Tools.execute(S, showout=False, die=False, args=args)
-        return rc > 0
+            return rc > 0
 
     @staticmethod
     def code_git_rewrite_url(url="", login=None, passwd=None, ssh="auto"):
