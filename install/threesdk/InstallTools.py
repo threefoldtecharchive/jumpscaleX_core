@@ -2711,7 +2711,7 @@ class Tools:
         # windows only
         if MyEnv.platform_is_windows:
             if replace:
-                command = Tools.text_replace(command, args=args).rstrip("\n").replace("\n", "&&")
+                command = Tools.text_replace(command, args=args).rstrip("\n").replace("\n", "&")
             if windows_interactive:
                 subprocess.call(command, shell=True)
                 return
@@ -2994,19 +2994,31 @@ class Tools:
         :param path:
         :return:
         """
-        S = """
-        cd {REPO_DIR}
-        git diff --exit-code || exit 1
-        git diff --cached --exit-code || exit 1
-        if git status --porcelain | grep .; then
-            exit 1
-        else
-            exit 0
-        fi
-        """
-        args = {}
-        args["REPO_DIR"] = path
-        rc, out, err = Tools.execute(S, showout=False, die=False, args=args)
+        if MyEnv.platform_is_windows:
+            S = """
+            git -C {REPO_DIR} status --porcelain
+            """
+            args = {}
+            args["REPO_DIR"] = path
+            rc, out, err = Tools.execute(S, showout=False, die=False, args=args)
+            if out:
+                return True
+            else:
+                return False
+        else:
+            S = """
+            cd {REPO_DIR}
+            git diff --exit-code || exit 1
+            git diff --cached --exit-code || exit 1
+            if git status --porcelain | grep .; then
+                exit 1
+            else
+                exit 0
+            fi
+            """
+            args = {}
+            args["REPO_DIR"] = path
+            rc, out, err = Tools.execute(S, showout=False, die=False, args=args)
         return rc > 0
 
     @staticmethod
@@ -3461,7 +3473,7 @@ class Tools:
 
                     # update repo
                     Tools.execute(
-                        "git -C '{REPO_DIR}' fetch -q",
+                        "git -C {REPO_DIR} fetch -q",
                         args=args,
                         retry=4,
                         showout=False,
