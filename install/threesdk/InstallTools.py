@@ -3760,7 +3760,7 @@ class MyEnv_:
 
         """
         if not secret:
-            secret = Tools.ask_password("please specify secret passphrase for your SDK/3bot (<32chars)")
+            secret = Tools.ask_password("please provide passphrase (to locally encrypt your container)")
             assert len(secret) < 32
 
         secret = self._secret_format(secret)
