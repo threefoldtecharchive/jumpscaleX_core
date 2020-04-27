@@ -2711,7 +2711,7 @@ class Tools:
         # windows only
         if MyEnv.platform_is_windows:
             if replace:
-                command = Tools.text_replace(command, args=args).rstrip("\n").replace("\n", "&")
+                command = Tools.text_replace(command, args=args).rstrip("\n").replace("\n", "&&")
             if windows_interactive:
                 subprocess.call(command, shell=True)
                 return
@@ -2994,32 +2994,12 @@ class Tools:
         :param path:
         :return:
         """
-        if MyEnv.platform_is_windows:
-            S = """
-            git -C {REPO_DIR} status --porcelain
-            """
-            args = {}
-            args["REPO_DIR"] = path
-            rc, out, err = Tools.execute(S, showout=False, die=False, args=args)
-            if out:
-                return True
-            else:
-                return False
-        else:
-            S = """
-            cd {REPO_DIR}
-            git diff --exit-code || exit 1
-            git diff --cached --exit-code || exit 1
-            if git status --porcelain | grep .; then
-                exit 1
-            else
-                exit 0
-            fi
-            """
-            args = {}
-            args["REPO_DIR"] = path
-            rc, out, err = Tools.execute(S, showout=False, die=False, args=args)
-            return rc > 0
+
+        S = "git -C {REPO_DIR} diff --exit-code && git -C {REPO_DIR} diff --cached --exit-code"
+        args = {}
+        args["REPO_DIR"] = path
+        rc, out, err = Tools.execute(S, showout=False, die=False, args=args)
+        return rc > 0
 
     @staticmethod
     def code_git_rewrite_url(url="", login=None, passwd=None, ssh="auto"):
@@ -3298,7 +3278,7 @@ class Tools:
         """
 
         def getbranch(args):
-            cmd = "cd {REPO_DIR}; git branch | grep \* | cut -d ' ' -f2"
+            cmd = "cd {REPO_DIR} && git branch | grep \* | cut -d ' ' -f2"
             rc, stdout, err = Tools.execute(
                 cmd, die=False, args=args, showout=False, interactive=False, die_if_args_left=True
             )
@@ -3312,11 +3292,7 @@ class Tools:
             args["BRANCH"] = branch
             current_branch = getbranch(args=args)
             if current_branch != branch:
-                script = """
-                set -e
-                cd {REPO_DIR}
-                git checkout -q -f {BRANCH}
-                """
+                script = "cd {REPO_DIR} && git checkout -q -f {BRANCH}"
                 rc, out, err = Tools.execute(
                     script, die=False, args=args, showout=False, interactive=True, die_if_args_left=True
                 )

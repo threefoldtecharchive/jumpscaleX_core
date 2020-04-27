@@ -44,7 +44,7 @@ def print_error(error):
 
 
 def noexpert_error(error):
-    reports_location = f"{os.environ.get('HOME', os.environ.get('USERPROFILE'))}/sandbox/reports"
+    reports_location = f"{os.environ.get('HOME', os.environ.get('USERPROFILE', ''))}/sandbox/reports"
     error_file_location = f"{reports_location}/jsxreport_{time.strftime('%d%H%M%S')}.log"
     if not os.path.exists(reports_location):
         os.makedirs(reports_location)
