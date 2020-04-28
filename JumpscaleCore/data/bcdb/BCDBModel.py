@@ -223,6 +223,8 @@ class BCDBModel(BCDBModelBase):
                     self.index.delete_by_id(obj_id=obj.id, nid=obj.nid)
         else:
             raise j.exceptions.Input("obj need to be JSXObject or int")
+        if obj in self.instances:
+            self.instances.remove(obj)
 
     def check(self, obj):
         if not isinstance(obj, j.data.schema._JSXObjectClass):
