@@ -5656,17 +5656,10 @@ class DockerContainer:
             self.dexec("/etc/init.d/ssh start", showout=False)
             self.dexec("rm -f /etc/service/sshd/down", showout=False)
 
-            # get our own loaded ssh pub keys into the container
-            if MyEnv.platform_is_windows:
-                path = f"{MyEnv._homedir_get()}\.ssh\id_rsa.pub"
-                if not Tools.exists(path):
-                    raise Tools.exceptions.Input(f"Please make sure your ssh-key is existed in {path}")
-                with open(path) as ssh_key_file:
-                    SSHKEYS = ssh_key_file.read().strip("\n")
-            else:
-                SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
+            SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
             if SSHKEYS.strip() != "":
                 if MyEnv.platform_is_windows:
+                    SSHKEYS = SSHKEYS.strip("\r\n")
                     self.dexec("echo %s > /root/.ssh/authorized_keys" % SSHKEYS, showout=False)
                 else:
                     self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS, showout=False)
@@ -6215,6 +6208,10 @@ class SSHAgent:
         :type reset: bool, optional
         """
         Tools.log("generate ssh key")
+        if MyEnv.platform_is_windows:
+            raise Tools.exceptions.RuntimeError("""Generating ssh-keys is not supported on windows due to ssh-agent problems.
+        Please generate manually using `ssh-keygen -t ecdsa -b 521` then `ssh-add` and re-start the install""")
+
         name = self._key_name_get(name)
 
         if not passphrase:
