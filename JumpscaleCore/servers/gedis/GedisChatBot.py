@@ -241,7 +241,9 @@ class GedisChatBotSession(JSBASE):
         return self.ask({"cat": "download_file", "msg": msg, "filename": filename, "kwargs": kwargs})
 
     def multi_list_choice(self, msg, options, **kwargs):
-        return self.ask({"cat": "multi_list_choice", "msg": msg, "options": options, "kwargs": kwargs})
+        return j.data.serializers.json.loads(
+            self.ask({"cat": "multi_list_choice", "msg": msg, "options": options, "kwargs": kwargs})
+        )
 
     def upload_file(self, msg, **kwargs):
         return self.ask({"cat": "upload_file", "msg": msg, "kwargs": kwargs})
