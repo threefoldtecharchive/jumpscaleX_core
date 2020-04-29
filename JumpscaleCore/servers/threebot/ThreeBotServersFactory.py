@@ -122,7 +122,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
             if j.sal.nettools.tcpPortConnectionTest("localhost", 8901) is False:
                 self.install(force=False)
 
-                client = self.default.start(background=True, packages=packages)
+                client = self.default.start(background=True, packages=packages, with_shell=with_shell)
                 assert "." in client.package_name
             else:
                 client = j.clients.gedis.get(name="threebot", port=8901)

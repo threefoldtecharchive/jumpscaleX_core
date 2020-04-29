@@ -5,6 +5,7 @@ if ! which wine > /dev/null; then
     exit 1
 fi
 export WINEPREFIX="$(pwd)/windows"
+export WINEDLLOVERRIDES="mscoree,mshtml="
 mkdir -p "${WINEPREFIX}"
 PYTHONURL="https://www.python.org/ftp/python/3.7.7/python-3.7.7-amd64.exe"
 PYTHONSETUP="${WINEPREFIX}/python-setup.exe"

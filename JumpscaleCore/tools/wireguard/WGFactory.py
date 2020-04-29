@@ -42,11 +42,7 @@ class WGFactory(j.baseclasses.object_config_collection_testtools):
         :return: tuple containing 3 fields (private key, private key encrypted, public key)
         :rtype: typle
         """
-        wg_private = public.PrivateKey.generate()
-        wg_public = wg_private.public_key
-
-        wg_private_base64 = wg_private.encode(Base64Encoder)
-        wg_public_base64 = wg_public.encode(Base64Encoder)
+        wg_private_base64, wg_public_base64 = self.generate_key_pair()
 
         node_public_bin = j.data.hash.hex2bin(node_public_key)
         node_public = VerifyKey(node_public_bin)
@@ -56,6 +52,14 @@ class WGFactory(j.baseclasses.object_config_collection_testtools):
         wg_private_encrypted_hex = j.data.hash.bin2hex(wg_private_encrypted)
 
         return (wg_private_base64.decode(), wg_private_encrypted_hex.decode(), wg_public_base64.decode())
+
+    def generate_key_pair(self):
+        wg_private = public.PrivateKey.generate()
+        wg_public = wg_private.public_key
+
+        wg_private_base64 = wg_private.encode(Base64Encoder)
+        wg_public_base64 = wg_public.encode(Base64Encoder)
+        return wg_private_base64, wg_public_base64
 
     @skip(
         "For now need to be executed manually.. check execution steps here:"
