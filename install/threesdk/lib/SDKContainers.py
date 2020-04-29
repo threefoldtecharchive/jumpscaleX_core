@@ -2,6 +2,7 @@ from nacl.signing import SigningKey
 from threesdk import english
 import binascii
 import requests
+import base64
 
 NETWORKS = {"mainnet": "explorer.grid.tf", "testnet": "explorer.testnet.grid.tf", "devnet": "explorer.devnet.grid.tf"}
 
@@ -16,6 +17,9 @@ class SDKContainers:
         self._wireguard = None
 
     def _get_user(self):
+        response = requests.get(f"https://login.threefold.me/api/users/{self.args.identity}")
+        if response.status_code == 404:
+            return "not_in_3botApp"
         resp = requests.get("https://{}/explorer/users".format(self.args.explorer), params={"name": self.args.identity})
         if resp.status_code == 404:
             return None
@@ -59,10 +63,15 @@ class SDKContainers:
                 self.args.identity = identity
 
             user = self._get_user()
+            if user == "not_in_3botApp":
+                print("\nThis identity does not exist in 3bot mobile app connect, Please create an idenity first\n")
+                raise Exception
             if not user:
                 while True:
                     if not self.args.email:
-                        self.args.email = self.core.IT.Tools.ask_string("What is the email address associated with your identity?")
+                        self.args.email = self.core.IT.Tools.ask_string(
+                            "What is the email address associated with your identity?"
+                        )
                     if not self._check_email(self.args.email):
                         break
                     else:
@@ -84,9 +93,17 @@ class SDKContainers:
             while True:
                 try:
                     seed = self.core.IT.Tools.to_entropy(self.args.words, english.words)
+                    key = SigningKey(seed)
+                    hexkey = base64.encodebytes(key.verify_key.encode()).decode()
+                    hexkey = hexkey.strip("\n")
+                    public_key_3botApp = requests.get(
+                        f"https://login.threefold.me/api/users/{self.args.identity}"
+                    ).json()["publicKey"]
+                    if hexkey != public_key_3botApp:
+                        raise Exception
                 except Exception:
                     choice = self.core.IT.Tools.ask_choices(
-                        "Seems one or more more words entered is invalid." " What would you like to do?",
+                        "\nSeems one or more more words entered is invalid.\n" " What would you like to do?\n",
                         ["restart", "reenter"],
                     )
                     if choice == "restart":
@@ -97,16 +114,11 @@ class SDKContainers:
                 key = SigningKey(seed)
                 hexkey = binascii.hexlify(key.verify_key.encode()).decode()
                 if user and hexkey != user["pubkey"]:
-                    choice = self.core.IT.Tools.ask_choices(
-                        "There seems to be an identity registered with the same name and/or email address but a different public key."
-                        " what would you like to do?",
-                        ["restart", "reenter"],
+                    print(
+                        f"\nYour 3bot on {self.args.explorer} seems to have been previously registered with a different public key.\n"
+                        "Please contact support.grid.tf to reset it\n"
                     )
-                    if choice == "restart":
-                        return False
-                    fill_words()
-                    continue
-                return True
+                    raise Exception
 
         while True:
             if _fill_identity_args(identity, explorer):
