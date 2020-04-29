@@ -16,10 +16,9 @@ class SDKContainers:
         self.args = args
         self._wireguard = None
 
-    def _check_keys(self, hexkey):
-        response = requests.get(f"https://login.threefold.me/api/users/{self.args.identity}")
-        pub_key_app = base64.b64decode(response.json()["publicKey"])
-        if binascii.unhexlify(hexkey) != pub_key_app:
+    def _check_keys(self, user_explorer_key, user_app):
+        pub_key_app = base64.b64decode(user_app["publicKey"])
+        if binascii.unhexlify(user_explorer_key) != pub_key_app:
             return False
         return True
 
@@ -35,10 +34,8 @@ class SDKContainers:
             return None
         else:
             users = resp.json()
-            pub_key_app = base64.b64decode(response.json()["publicKey"])
-            pub_key_explorer = binascii.unhexlify(users[0]["pubkey"])
 
-            if pub_key_app != pub_key_explorer:
+            if not self._check_keys(users[0]["pubkey"], response.json()):
                 raise self.core.IT.Tools.exceptions.Value(
                     f"\nYour 3bot on {self.args.explorer} seems to have been previously registered with a different public key.\n"
                     "Please contact support.grid.tf to reset it.\n"
@@ -46,7 +43,7 @@ class SDKContainers:
                 )
 
             if users:
-                return users[0]
+                return (users[0], response.json())
             return None
 
     def _check_email(self, email):
@@ -82,7 +79,8 @@ class SDKContainers:
                     identity += ".3bot"
                 self.args.identity = identity
 
-            user = self._get_user()
+            user_app_explorer = self._get_user()
+            user = user_app_explorer[0]
             if not user:
                 while True:
                     if not self.args.email:
@@ -112,8 +110,7 @@ class SDKContainers:
                     seed = self.core.IT.Tools.to_entropy(self.args.words, english.words)
                     key = SigningKey(seed)
                     hexkey = binascii.hexlify(key.verify_key.encode()).decode()
-
-                    if (user and hexkey != user["pubkey"]) or not self._check_keys(hexkey):
+                    if (user and hexkey != user["pubkey"]) or not self._check_keys(hexkey, user_app_explorer[1]):
                         raise Exception
                     else:
                         return True
