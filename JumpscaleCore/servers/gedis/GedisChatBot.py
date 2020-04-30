@@ -509,8 +509,7 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
         """.format(
             msg
         )
-        valid = False
-        while not valid:
+        while True:
             time_delta = self.ask(self.string_msg(message, **kwargs))
             msg = validate(time_delta)
             if msg:
