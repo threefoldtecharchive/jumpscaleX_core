@@ -484,7 +484,7 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
         data = j.data.serializers.json.dumps(d)
         return self.qrcode_show(data, title, msg, scale=scale)
 
-    def time_delta_ask(self, msg, **kwargs):
+    def time_delta_ask(self, msg, allowed_units=None, min="1h", **kwargs):
         """
         helper method to generate a question that expects a time delta string(1h, 2m, 3d,...).
         html generated in the client side will use `<input type="text"/>`
@@ -492,6 +492,17 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
+        if not allowed_units:
+            allowed_units = ["h", "d", "w", "M"]
+
+        def validate(time_delata_string):
+            if len(time_delata_string) < 2:
+                raise j.exceptions.Value(f"Wrong time delta format specified {time_delata_string}. \
+                please enter a correct one")
+            if time_delata_string[-1] not in allowed_units:
+                raise j.exceptions.Value(f"{time_delata_string[-1]} is not an allowed unit. please use one of \
+                {allowed_units}")
+
         message = """{}
         Format:
         hour=h, day=d, week=w, month=M
@@ -500,10 +511,14 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
             msg
         )
         time_delta = self.ask(self.string_msg(message, **kwargs))
+        validate(time_delta)
         try:
-            return j.data.time.getDeltaTime(time_delta)
+            delta = j.data.time.getDeltaTime(time_delta)
         except Exception:
             raise j.exceptions.Value("Wrong time delta format specified please enter a correct one")
+        if delta < j.data.time.getDeltaTime(min):
+            raise j.exceptions.Value(f"Wrong time delta. minimum time is {min}")
+        return delta
 
 
 def test(factory):
