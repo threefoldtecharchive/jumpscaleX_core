@@ -497,11 +497,10 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
 
         def validate(time_delata_string):
             if len(time_delata_string) < 2:
-                raise j.exceptions.Value(f"Wrong time delta format specified {time_delata_string}. \
-                please enter a correct one")
+                return f"Wrong time delta format specified {time_delata_string}. click next to try again"
             if time_delata_string[-1] not in allowed_units:
-                raise j.exceptions.Value(f"{time_delata_string[-1]} is not an allowed unit. please use one of \
-                {allowed_units}")
+                return f"{time_delata_string[-1]} is not an allowed unit of {allowed_units}. click next to try again"
+            return None
 
         message = """{}
         Format:
@@ -510,15 +509,24 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
         """.format(
             msg
         )
-        time_delta = self.ask(self.string_msg(message, **kwargs))
-        validate(time_delta)
-        try:
-            delta = j.data.time.getDeltaTime(time_delta)
-        except Exception:
-            raise j.exceptions.Value("Wrong time delta format specified please enter a correct one")
-        if delta < j.data.time.getDeltaTime(min):
-            raise j.exceptions.Value(f"Wrong time delta. minimum time is {min}")
-        return delta
+        while True:
+            time_delta = self.ask(self.string_msg(message, **kwargs))
+            msg = validate(time_delta)
+            if msg:
+                self.md_show(msg)
+                continue
+
+            try:
+                delta = j.data.time.getDeltaTime(time_delta)
+            except Exception:
+                msg = "Wrong time delta format specified please enter a correct one. click next to try again"
+                self.md_show(msg)
+                continue
+            if delta < j.data.time.getDeltaTime(min):
+                msg = f"Wrong time delta. minimum time is {min}. click next to try again"
+                self.md_show(msg)
+                continue
+            return delta
 
 
 def test(factory):
