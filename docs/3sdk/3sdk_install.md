@@ -31,6 +31,9 @@ On OSX you probably will have to go to security settings & allow the os to start
 
 On windows you should generate sshkey using `ssh-keygen -t ecdsa -b 521` then `ssh-add` in the command prompt then run the binary from command prompt or double click it.
 
+You may have `ssh-agent` not working on windows you can start it from the windows task manager, head to `services` right click then `start`
+
+
 Now go to [3sdk_use](3sdk_use.md) to use the 3sdk to get yourself a 3sdk container on your system using docker.
 
 
