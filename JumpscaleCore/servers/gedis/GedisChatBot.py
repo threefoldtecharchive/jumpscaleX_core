@@ -493,18 +493,20 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
         :return: the user answer for the question
         """
         if not allowed_units:
-            allowed_units = ["h", "d", "w", "M"]
+            allowed_units = ["h", "d", "w", "M", "Y", "y"]
 
         def validate(time_delata_string):
             if len(time_delata_string) < 2:
                 return f"Wrong time delta format specified {time_delata_string}. click next to try again"
-            if time_delata_string[-1] not in allowed_units:
-                return f"{time_delata_string[-1]} is not an allowed unit of {allowed_units}. click next to try again"
+            for ch in time_delata_string:
+                if not ch.isdigit():
+                    if ch not in allowed_units:
+                        return f"Unit {ch} is not allowed. click next to try again"
             return None
 
         message = """{}
         Format:
-        hour=h, day=d, week=w, month=M
+        hour=h, day=d, week=w, month=M, year=Y
         I.e. 2 days = 2d
         """.format(
             msg
