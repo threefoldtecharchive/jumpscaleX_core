@@ -148,6 +148,9 @@ class Form:
     def download_file(self, msg, filename, **kwargs):
         return self._append(self._session.download_file(msg, filename, **kwargs))
 
+    def multi_list_choice(self, msg, options, **kwargs):
+        return self._append(self._session.multi_list_choice(msg, options, **kwargs))
+
     def upload_file(self, msg, **kwargs):
         return self._append(self._session.upload_file(msg, **kwargs))
 
@@ -236,6 +239,12 @@ class GedisChatBotSession(JSBASE):
 
     def download_file(self, msg, filename, **kwargs):
         return self.ask({"cat": "download_file", "msg": msg, "filename": filename, "kwargs": kwargs})
+
+    def multi_list_choice(self, msg, options, **kwargs):
+        res = j.data.serializers.json.loads(
+            self.ask({"cat": "multi_list_choice", "msg": msg, "options": options, "kwargs": kwargs})
+        )
+        return list(filter(None, res))
 
     def upload_file(self, msg, **kwargs):
         return self.ask({"cat": "upload_file", "msg": msg, "kwargs": kwargs})
@@ -475,7 +484,7 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
         data = j.data.serializers.json.dumps(d)
         return self.qrcode_show(data, title, msg, scale=scale)
 
-    def time_delta_ask(self, msg, **kwargs):
+    def time_delta_ask(self, msg, allowed_units=None, min="1h", **kwargs):
         """
         helper method to generate a question that expects a time delta string(1h, 2m, 3d,...).
         html generated in the client side will use `<input type="text"/>`
@@ -483,18 +492,43 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
+        if not allowed_units:
+            allowed_units = ["h", "d", "w", "M", "Y", "y"]
+
+        def validate(time_delata_string):
+            if len(time_delata_string) < 2:
+                return f"Wrong time delta format specified {time_delata_string}. click next to try again"
+            for ch in time_delata_string:
+                if not ch.isdigit() and ch != ".":
+                    if ch not in allowed_units:
+                        return f"Unit {ch} is not allowed. click next to try again"
+            return None
+
         message = """{}
         Format:
-        hour=h, day=d, week=w, month=M
+        hour=h, day=d, week=w, month=M, year=Y
         I.e. 2 days = 2d
         """.format(
             msg
         )
-        time_delta = self.ask(self.string_msg(message, **kwargs))
-        try:
-            return j.data.time.getDeltaTime(time_delta)
-        except Exception:
-            raise j.exceptions.Value("Wrong time delta format specified please enter a correct one")
+        while True:
+            time_delta = self.ask(self.string_msg(message, **kwargs))
+            msg = validate(time_delta)
+            if msg:
+                self.md_show(msg)
+                continue
+
+            try:
+                delta = j.data.time.getDeltaTime(time_delta)
+            except Exception:
+                msg = "Wrong time delta format specified please enter a correct one. click next to try again"
+                self.md_show(msg)
+                continue
+            if delta < j.data.time.getDeltaTime(min):
+                msg = f"Wrong time delta. minimum time is {min}. click next to try again"
+                self.md_show(msg)
+                continue
+            return delta
 
 
 def test(factory):

@@ -296,6 +296,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
 
             if conf_location:
                 j.sal.fs.remove(conf_location)
+            locations.delete()
 
     def config_load(self):
         self._log_info("load package.toml config", data=self)

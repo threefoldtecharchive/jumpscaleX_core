@@ -7,6 +7,7 @@ import inspect
 import os
 import cgi
 import re
+import traceback
 from threesdk.core import core
 from threesdk import __all__ as sdkall
 from threesdk import _get_doc_line, _get_doc
@@ -410,11 +411,11 @@ def ptconfig(repl, expert=False):
                 except (NameError, IT.BaseJSException) as e:
                     print_error(e)
                     return
-                except Exception as e:
+                except Exception:
                     if expert:
                         raise
                     else:
-                        print_error(noexpert_error(e))
+                        print_error(noexpert_error(traceback.format_exc()))
                     return
 
                 locals = self.get_locals()
@@ -461,11 +462,11 @@ def ptconfig(repl, expert=False):
                 except (NameError, IT.BaseJSException) as e:
                     print_error(e)
                     return
-                except Exception as e:
+                except Exception:
                     if expert:
                         raise
                     else:
-                        print_error(noexpert_error(e))
+                        print_error(noexpert_error(traceback.format_exc()))
                     return
 
             output.flush()
