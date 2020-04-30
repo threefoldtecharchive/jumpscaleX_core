@@ -10,7 +10,7 @@
 
 - Docker
 - Chrome browser for OSX users
-- Git* (for windows)
+- Git (* If you are using windows please check configurations [here](#Git-for-windows))
 
 ### <a name='3botwords'></a>Get your 3bot words
 
@@ -21,7 +21,7 @@
 
 ## <a name='Packagedinstallersdk'></a>Get 3sdk binaries
 
-Binaries should be in the [release](https://github.com/threefoldtech/jumpscaleX_core/releases) page for osx and linux 
+Binaries should be in the [release](https://github.com/threefoldtech/jumpscaleX_core/releases) page for osx and linux
 
 After downloading the 3sdk make them executable `chmod +x 3sdk`.
 
@@ -36,7 +36,7 @@ Now go to [3sdk_use](3sdk_use.md) to use the 3sdk to get yourself a 3sdk contain
 
 ## <a name='Using3sdkfromsource'></a>Using 3sdk from source
 
-This will require python3, pip3 and git on the user system 
+This will require python3, pip3 and git on the user system
 
 ```
 mkdir -p ~/sandbox/code/github/threefoldtech/
@@ -49,7 +49,9 @@ pip3 install --user -e .
 pip3 install -e .
 ```
 
-## Git for windows should be configured to be using `LF` line endings instead of windows `CLRF`
+## Git for windows
+
+Git for windows should be configured to be using `LF` line endings instead of windows `CLRF`
 
 Using the following.
 
