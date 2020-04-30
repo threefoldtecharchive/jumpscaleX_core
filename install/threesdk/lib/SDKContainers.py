@@ -30,8 +30,8 @@ class SDKContainers:
             )
 
         resp = requests.get("https://{}/explorer/users".format(self.args.explorer), params={"name": self.args.identity})
-        if resp.status_code == 404:
-            return None
+        if resp.status_code == 404 or resp.json() == []:
+            return None, response.json()
         else:
             users = resp.json()
 
