@@ -49,7 +49,7 @@ pip3 install --user -e .
 pip3 install -e .
 ```
 
-* Git for windows should be configured to be using `LF` line endings instead of windows `CLRF`
+## Git for windows should be configured to be using `LF` line endings instead of windows `CLRF`
 
 Using the following.
 
