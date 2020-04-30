@@ -10,6 +10,7 @@
 
 - Docker
 - Chrome browser for OSX users
+- Git* (for windows)
 
 ### <a name='3botwords'></a>Get your 3bot words
 
@@ -47,5 +48,15 @@ pip3 install --user -e .
 # On Mac
 pip3 install -e .
 ```
- 
+
+* Git for windows should be configured to be using `LF` line endings instead of windows `CLRF`
+
+Using the following.
+
+```bash
+git config --global core.autocrlf false
+git config --global core.eol lf
+```
+[source for changing in windows](https://stackoverflow.com/questions/2517190/how-do-i-force-git-to-use-lf-instead-of-crlf-under-windows)
+
 Check [Troubleshooting](./3sdk_troubleshooting.md) for help.
