@@ -12,6 +12,11 @@
 - Chrome browser for OSX users
 - Git (* If you are using windows please check configurations [here](#Git-for-windows))
 
+### Requirments for windows
+
+- Windows 10 64-bit: Pro, Enterprise, or Education (Build 15063 or later).
+- Hyper-V and Containers Windows features must be enabled.
+
 ### <a name='3botwords'></a>Get your 3bot words
 
 - From 3botconnect application go to settings, then show phrase to get your mnemonics
