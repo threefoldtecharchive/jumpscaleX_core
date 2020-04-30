@@ -499,7 +499,7 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
             if len(time_delata_string) < 2:
                 return f"Wrong time delta format specified {time_delata_string}. click next to try again"
             for ch in time_delata_string:
-                if not ch.isdigit():
+                if not ch.isdigit() and ch != ".":
                     if ch not in allowed_units:
                         return f"Unit {ch} is not allowed. click next to try again"
             return None
