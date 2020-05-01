@@ -10,6 +10,16 @@
 
 - Docker
 - Chrome browser for OSX users
+- Git (* If you are using windows please check configurations [here](#Git-for-windows))
+
+### Requirments for windows
+
+- Windows 10 64-bit: Pro, Enterprise, or Education (Build 15063 or later).
+- Hyper-V and Containers Windows features must be enabled.
+- The following hardware prerequisites are required to -   successfully run Client Hyper-V on Windows 10:
+  - 64 bit processor with Second Level Address Translation (SLAT)
+  - 4GB system RAM
+  - BIOS-level hardware virtualization support must be enabled - in the BIOS settings
 
 ### <a name='3botwords'></a>Get your 3bot words
 
@@ -20,7 +30,7 @@
 
 ## <a name='Packagedinstallersdk'></a>Get 3sdk binaries
 
-Binaries should be in the [release](https://github.com/threefoldtech/jumpscaleX_core/releases) page for osx and linux 
+Binaries should be in the [release](https://github.com/threefoldtech/jumpscaleX_core/releases) page for osx and linux
 
 After downloading the 3sdk make them executable `chmod +x 3sdk`.
 
@@ -30,13 +40,22 @@ In terminal do
 3sdk
 ```
 
+<<<<<<< HEAD
 - On OSX you probably will have to go to security settings & allow the os to start the 3sdk application.
 - Now go to [3sdk_use](3sdk_use.md) to use the 3sdk to get yourself a 3sdk container on your system using docker.
+=======
+On windows you should generate sshkey using `ssh-keygen -t ecdsa -b 521` then `ssh-add` in the command prompt then run the binary from command prompt or double click it.
+
+You may have `ssh-agent` not working on windows you can start it from the windows task manager, head to `services` right click then `start`
+
+
+Now go to [3sdk_use](3sdk_use.md) to use the 3sdk to get yourself a 3sdk container on your system using docker.
+>>>>>>> 5e02f40942312b6d703be4cd0c892be387b6cc79
 
 
 ## <a name='Using3sdkfromsource'></a>Using 3sdk from source (experts only)
 
-This will require python3, pip3 and git on the user system 
+This will require python3, pip3 and git on the user system
 
 ```
 mkdir -p ~/sandbox/code/github/threefoldtech/
@@ -48,5 +67,17 @@ pip3 install --user -e .
 # On Mac
 pip3 install -e .
 ```
- 
+
+## Git for windows
+
+Git for windows should be configured to be using `LF` line endings instead of windows `CLRF`
+
+Using the following.
+
+```bash
+git config --global core.autocrlf false
+git config --global core.eol lf
+```
+[source for changing in windows](https://stackoverflow.com/questions/2517190/how-do-i-force-git-to-use-lf-instead-of-crlf-under-windows)
+
 Check [Troubleshooting](./3sdk_troubleshooting.md) for help.

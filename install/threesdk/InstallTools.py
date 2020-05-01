@@ -2994,16 +2994,8 @@ class Tools:
         :param path:
         :return:
         """
-        S = """
-        cd {REPO_DIR}
-        git diff --exit-code || exit 1
-        git diff --cached --exit-code || exit 1
-        if git status --porcelain | grep .; then
-            exit 1
-        else
-            exit 0
-        fi
-        """
+
+        S = "git -C {REPO_DIR} diff --exit-code && git -C {REPO_DIR} diff --cached --exit-code"
         args = {}
         args["REPO_DIR"] = path
         rc, out, err = Tools.execute(S, showout=False, die=False, args=args)
@@ -3286,7 +3278,7 @@ class Tools:
         """
 
         def getbranch(args):
-            cmd = "cd {REPO_DIR}; git branch | grep \* | cut -d ' ' -f2"
+            cmd = "cd {REPO_DIR} && git branch | grep \* | cut -d ' ' -f2"
             rc, stdout, err = Tools.execute(
                 cmd, die=False, args=args, showout=False, interactive=False, die_if_args_left=True
             )
@@ -3300,18 +3292,50 @@ class Tools:
             args["BRANCH"] = branch
             current_branch = getbranch(args=args)
             if current_branch != branch:
-                script = """
-                set -e
-                cd {REPO_DIR}
-                git checkout {BRANCH} -f
-                """
-                rc, out, err = Tools.execute(
-                    script, die=False, args=args, showout=False, interactive=False, die_if_args_left=True
-                )
+                script = "cd {REPO_DIR} && git checkout -q -f {BRANCH}"
+                if Tools.ask_yes_no(
+                    f"\n**: A different branch ({current_branch}) found in repo ({repo}), do you want to change it to ({branch})?"
+                ):
+                    rc, out, err = Tools.execute(
+                        script, die=False, args=args, showout=False, interactive=True, die_if_args_left=True
+                    )
+                else:
+                    raise Tools.exceptions.Input(f"Cannot continue please change repo ({repo}) to branch to ({branch})")
+
                 if rc > 0:
                     return False
 
             return True
+
+        def reset_changes(args, repo, repo_url):
+            C = """
+            cd {REPO_DIR}
+            git checkout -q . --force
+            """
+            Tools.log("get code & ignore changes: %s" % repo)
+            Tools.execute(
+                C,
+                args=args,
+                retry=1,
+                errormsg="Could not checkout %s" % repo_url,
+                die_if_args_left=True,
+                interactive=True,
+            )
+
+        def assert_merge(args, repo_url):
+            C = """
+            cd {REPO_DIR}
+            git pull -q
+            """
+            rc, out, err = Tools.execute(
+                C,
+                args=args,
+                retry=1,
+                errormsg="Couldn't merge repo %s" % repo_url,
+                die_if_args_left=True,
+                interactive=True,
+            )
+            return rc == 0
 
         (host, type, account, repo, url2, branch2, gitpath, path, port) = Tools.code_giturl_parse(url=url)
         if rpath:
@@ -3364,6 +3388,10 @@ class Tools:
         if exists and not foundgit and not pull:
             """means code is already there, maybe synced?"""
             return gitpath
+        if exists and not foundgit and pull:
+            raise Tools.exceptions.Input(
+                f"Can not pull repo {REPO_DIR} because .git folder is missing, please clean the repo and try again"
+            )
 
         if git_on_system and MyEnv.config["USEGIT"]:
             # there is ssh-key loaded
@@ -3379,7 +3407,7 @@ class Tools:
                     if not Tools.exists(ACCOUNT_DIR):
                         os.makedirs(ACCOUNT_DIR)
                     C = """
-                    git -C {ACCOUNT_DIR} clone {URL} -b {BRANCH}
+                    git -C {ACCOUNT_DIR} clone {URL} -b {BRANCH} -q
                     """
                     Tools.execute(
                         C,
@@ -3396,10 +3424,10 @@ class Tools:
                     Tools.log("get code [https] (second time): %s" % repo)
                     if not Tools.exists(ACCOUNT_DIR):
                         os.makedirs(ACCOUNT_DIR)
-                    C = "git -C {ACCOUNT_DIR} clone {FALLBACK_URL} -b {BRANCH}"
+                    C = "git -C {ACCOUNT_DIR} clone {FALLBACK_URL} -b {BRANCH} -q"
 
                     try:
-                        rc, out, err = Tools.execute(
+                        Tools.execute(
                             C,
                             args=args,
                             die=True,
@@ -3411,8 +3439,8 @@ class Tools:
                         )
                     except Exception:
                         # try with default branch if doesn't exist
-                        C = "git -C {ACCOUNT_DIR} clone {FALLBACK_URL}"
-                        rc, out, err = Tools.execute(
+                        C = "git -C {ACCOUNT_DIR} clone -q {FALLBACK_URL}"
+                        Tools.execute(
                             C,
                             args=args,
                             die=True,
@@ -3422,63 +3450,62 @@ class Tools:
                             errormsg="Could not clone %s" % repo_url,
                             die_if_args_left=True,
                         )
-
             else:
                 if pull:
                     if reset:
-                        C = """
-                        cd {REPO_DIR}
-                        git checkout . --force
-                        """
-                        Tools.log("get code & ignore changes: %s" % repo)
-                        Tools.execute(
-                            C,
-                            args=args,
-                            retry=1,
-                            errormsg="Could not checkout %s" % repo_url,
-                            die_if_args_left=True,
-                            interactive=True,
-                        )
+                        reset_changes(args, repo, repo_url)
                     else:
                         if Tools.code_changed(REPO_DIR):
-                            if Tools.ask_yes_no("\n**: found changes in repo '%s', do you want to commit?" % repo):
-                                if "GITMESSAGE" in os.environ:
-                                    args["MESSAGE"] = os.environ["GITMESSAGE"]
-                                else:
-                                    args["MESSAGE"] = input("\nprovide commit message: ")
-                                    assert args["MESSAGE"].strip() != ""
+                            if Tools.ask_yes_no(
+                                "\n**:found changes in repo '%s', do you want to reset?\n WARNING: This will delete all local changes"
+                                % repo
+                            ):
+                                reset_changes(args, repo, repo_url)
                             else:
-                                raise Tools.exceptions.Input("found changes, do not want to commit")
-                            C = """
-                            cd {REPO_DIR}
-                            git add . -A
-                            git commit -m "{MESSAGE}"
-                            """
-                            Tools.log("get code & commit [git]: %s" % repo)
-                            Tools.execute(C, args=args, die_if_args_left=True, interactive=True)
-
+                                if Tools.ask_yes_no(
+                                    "\n**: you chose not to reset in repo '%s', do you want to commit?" % repo
+                                ):
+                                    if "GITMESSAGE" in os.environ:
+                                        args["MESSAGE"] = os.environ["GITMESSAGE"]
+                                    else:
+                                        args["MESSAGE"] = input("\nprovide commit message: ")
+                                        assert args["MESSAGE"].strip() != ""
+                                    if assert_merge(args, repo_url):
+                                        C = """
+                                           cd {REPO_DIR}
+                                           git add . -A
+                                           git commit -m "{MESSAGE}"
+                                           """
+                                        Tools.log("get code & commit [git]: %s" % repo)
+                                        Tools.execute(C, args=args, die_if_args_left=True, interactive=True)
+                                    else:
+                                        raise Tools.exceptions.Input(
+                                            "you have uncommitted changes, automatic pull failed, please resolve and update before continuing"
+                                        )
+                                else:
+                                    raise Tools.exceptions.Input("found changes, do not want to commit or reset")
                     # update repo
                     Tools.execute(
-                        "git -C '{REPO_DIR}' fetch",
+                        "git -C {REPO_DIR} fetch -q",
                         args=args,
                         retry=4,
                         showout=False,
                         errormsg="Could not pull %s" % repo_url,
                         die_if_args_left=True,
-                        interactive=False,
+                        interactive=True,
                     )
                     # switch branch
                     if not checkoutbranch(args, branch):
                         raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
                     Tools.log("update code: %s" % repo)
                     Tools.execute(
-                        "git -C {REPO_DIR} rebase origin/{BRANCH}",
+                        "git -C {REPO_DIR} rebase -q origin/{BRANCH}",
                         args=args,
                         retry=4,
                         showout=False,
                         errormsg="Could not pull %s" % repo_url,
                         die_if_args_left=True,
-                        interactive=False,
+                        interactive=True,
                     )
 
         else:
@@ -3760,7 +3787,7 @@ class MyEnv_:
 
         """
         if not secret:
-            secret = Tools.ask_password("please specify secret passphrase for your SDK/3bot (<32chars)")
+            secret = Tools.ask_password("please provide passphrase (to locally encrypt your container)")
             assert len(secret) < 32
 
         secret = self._secret_format(secret)
@@ -3779,6 +3806,7 @@ class MyEnv_:
 
         if len(secret) != 32:
             import hashlib
+
             m = hashlib.md5(secret)
             secret = m.hexdigest()
 
@@ -4965,6 +4993,8 @@ class JumpscaleInstaller:
 
             try:
                 Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
+            except Tools.exceptions.Input:
+                raise
             except Exception:
                 Tools.code_git_rewrite_url(url=GITURL, ssh=False)
                 Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
@@ -5664,17 +5694,10 @@ class DockerContainer:
             self.dexec("/etc/init.d/ssh start", showout=False)
             self.dexec("rm -f /etc/service/sshd/down", showout=False)
 
-            # get our own loaded ssh pub keys into the container
-            if MyEnv.platform_is_windows:
-                path = f"{MyEnv._homedir_get()}\.ssh\id_rsa.pub"
-                if not Tools.exists(path):
-                    raise Tools.exceptions.Input(f"Please make sure your ssh-key is existed in {path}")
-                with open(path) as ssh_key_file:
-                    SSHKEYS = ssh_key_file.read().strip("\n")
-            else:
-                SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
+            SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
             if SSHKEYS.strip() != "":
                 if MyEnv.platform_is_windows:
+                    SSHKEYS = SSHKEYS.strip("\r\n")
                     self.dexec("echo %s > /root/.ssh/authorized_keys" % SSHKEYS, showout=False)
                 else:
                     self.dexec('echo "%s" > /root/.ssh/authorized_keys' % SSHKEYS, showout=False)
@@ -6223,6 +6246,12 @@ class SSHAgent:
         :type reset: bool, optional
         """
         Tools.log("generate ssh key")
+        if MyEnv.platform_is_windows:
+            raise Tools.exceptions.RuntimeError(
+                """Generating ssh-keys is not supported on windows due to ssh-agent problems.
+        Please generate manually using `ssh-keygen -t ecdsa -b 521` then `ssh-add` and re-start the install"""
+            )
+
         name = self._key_name_get(name)
 
         if not passphrase:

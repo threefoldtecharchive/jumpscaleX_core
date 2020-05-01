@@ -7,6 +7,7 @@ import inspect
 import os
 import cgi
 import re
+import traceback
 from threesdk.core import core
 from threesdk import __all__ as sdkall
 from threesdk import _get_doc_line, _get_doc
@@ -41,6 +42,19 @@ HIDDEN_PREFIXES = ("_", "__")
 
 def print_error(error):
     print_formatted_text(HTML("<ansired>{}</ansired>".format(cgi.html.escape(str(error)))))
+
+
+def noexpert_error(error):
+    reports_location = f"{os.environ.get('HOME', os.environ.get('USERPROFILE', ''))}/sandbox/reports"
+    error_file_location = f"{reports_location}/jsxreport_{time.strftime('%d%H%M%S')}.log"
+    if not os.path.exists(reports_location):
+        os.makedirs(reports_location)
+    with open(error_file_location, "w") as f:
+        f.write(str(error))
+    err_msg = f"""Something went wrong. Please contact support at https://support.grid.tf/
+Error report file has been created on your machine in this location: {error_file_location}
+        """
+    return err_msg
 
 
 def filter_completions_on_prefix(completions, prefix=None, expert=False):
@@ -397,6 +411,12 @@ def ptconfig(repl, expert=False):
                 except (NameError, IT.BaseJSException) as e:
                     print_error(e)
                     return
+                except Exception:
+                    if expert:
+                        raise
+                    else:
+                        print_error(noexpert_error(traceback.format_exc()))
+                    return
 
                 locals = self.get_locals()
                 locals["_"] = locals["_%i" % self.current_statement_index] = result
@@ -439,8 +459,14 @@ def ptconfig(repl, expert=False):
                 code = compile_with_flags(line, "exec")
                 try:
                     six.exec_(code, self.get_globals(), self.get_locals())
-                except (NameError, IT.BaseJSException, SyntaxError) as e:
+                except (NameError, IT.BaseJSException) as e:
                     print_error(e)
+                    return
+                except Exception:
+                    if expert:
+                        raise
+                    else:
+                        print_error(noexpert_error(traceback.format_exc()))
                     return
 
             output.flush()

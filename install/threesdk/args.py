@@ -28,7 +28,7 @@ class Args(core.IT.Tools._BaseClassProperties):
         self.explorer = None
 
     def ask_secret(self):
-        return core.IT.Tools.ask_password("specify secret to encrypt your data:")
+        return core.IT.Tools.ask_password("please provide secret (to locally encrypt your container)")
 
     @property
     def identity(self):

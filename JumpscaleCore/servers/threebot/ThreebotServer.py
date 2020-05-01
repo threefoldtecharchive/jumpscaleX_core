@@ -307,7 +307,9 @@ class ThreeBotServer(j.baseclasses.object_config):
             p = j.threebot.packages
             LogPane.Show = False
             identity = j.myidentities.me.tname
-            assert identity
+            if not identity:
+                self._log_warning("you don't have an identity defined. you're runing in development mode")
+                j.me.encryptor.tools.threebotconnect_disable()
 
             if with_shell:
                 j.shell()  # for now removed otherwise debug does not work
@@ -323,7 +325,8 @@ class ThreeBotServer(j.baseclasses.object_config):
             j.data.bcdb._master_set(False)
             sys.exit()
         else:
-            cmd = self.get_startup_cmd(packages=packages)
+
+            cmd = self.get_startup_cmd(packages=packages, with_shell=with_shell)
             if not cmd.is_running():
                 cmd.start()
                 time.sleep(1)
@@ -450,7 +453,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.client = None
         j.data.bcdb._master_set(False)
 
-    def get_startup_cmd(self, packages=None):
+    def get_startup_cmd(self, packages=None, with_shell=True):
         if self.web:
             web = "True"
         else:
@@ -461,9 +464,9 @@ class ThreeBotServer(j.baseclasses.object_config):
         from Jumpscale import j
         j.core.db.delete("threebot.starting")
         server = j.servers.threebot.get("{name}", executor='{executor}')
-        server.start(background=False, packages={packages})
+        server.start(background=False, packages={packages}, with_shell={with_shell})
         """.format(
-            name=self.name, executor=self.executor, web=web, packages=packages
+            name=self.name, executor=self.executor, web=web, packages=packages, with_shell=with_shell
         )
         cmd_start = j.core.tools.text_strip(cmd_start)
         startup = j.servers.startupcmd.get(name="threebot_{}".format(self.name), cmd_start=cmd_start)

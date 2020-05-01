@@ -4,7 +4,7 @@ Jumpscale is an extensible and easy to use cloud and IT automation solution, pro
 
 ## Install and use Jumpscale
 
-- [See installation doc](/docs/Installation/README.md)
+- [See 3sdk](/docs/3sdk/README.md)
 
 ## Threebot:
 

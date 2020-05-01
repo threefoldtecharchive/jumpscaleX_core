@@ -44,13 +44,12 @@ def install(
     create the 3bot container and install jumpscale inside
 
     identity is the name of your threebot
-    if interactive is True then will ask questions, otherwise will go for the defaults or configured arguments
-    if you want to configure other arguments use 'jsx configure ... '
+    arguments left empty will be asked interactively
 
-    @param testnr: if not Null the identity will become: $your3botname$testnr.test,
-        secret for that container will be test
-        email will be also predefined, and you will become admin automatically in the 3bot
-        words should be retrieved from 3bot connect app to be used for encryption
+    testnr: if not Null the identity will become: $your3botname$testnr.test,
+      secret for that container will be test
+      email will be also predefined, and you will become admin automatically in the 3bot
+      words should be retrieved from 3bot connect app to be used for encryption
 
     """
     delete = core.IT.Tools.bool(delete)
