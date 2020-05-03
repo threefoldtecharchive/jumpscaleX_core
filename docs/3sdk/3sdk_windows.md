@@ -9,8 +9,8 @@
     - 4GB system RAM
     - BIOS-level hardware virtualization support must be enabled - in the BIOS settings
 
-- Docker
-- Git 
+- Docker Install guide [here](https://docs.docker.com/docker-for-windows/)
+- Git Install guide [here](https://git-scm.com/download/win), 64-bit version
 
 ## Configuring GIT
 
