@@ -130,13 +130,7 @@ class ThreeBotPackage(ThreeBotPackageBase):
                         self._actors = None
                         raise e
                         # print(f"adding actor {name} {fpath} {self.name}")
-                    try:
-                        self.gedis_server.actor_add(name=name, path=fpath, package=self)
-                    except Exception as e:
-                        errormsg = "****ERROR HAPPENED IN LOADING ACTOR: %s\n%s" % (fpath, e)
-                        self._log_error(errormsg)
-                        print(errormsg)
-                        raise e
+                    self.gedis_server.actor_add(name=name, path=fpath, package=self)
 
     def actors_remove(self):
         self.load()
