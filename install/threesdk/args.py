@@ -53,7 +53,9 @@ class Args(core.IT.Tools._BaseClassProperties):
                 seed = box.decrypt(binarykey)
                 break
             except nacl.exceptions.CryptoError:
-                print("Failed to decrypt your key with this secret, please enter the correct key or ctrl+c to interrupt")
+                print(
+                    "Failed to decrypt your key with this secret, please enter the correct key or ctrl+c to interrupt"
+                )
                 self.secret = self.ask_secret()
 
         self.words = core.IT.Tools.to_mnemonic(seed, english.words)

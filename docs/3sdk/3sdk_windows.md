@@ -9,8 +9,8 @@
     - 4GB system RAM
     - BIOS-level hardware virtualization support must be enabled - in the BIOS settings
 
-- Docker Install guide [here](https://docs.docker.com/docker-for-windows/)
-- Git Install guide [here](https://git-scm.com/download/win), 64-bit version
+- Docker, Install guide [here](https://docs.docker.com/docker-for-windows/)
+- Git, Install guide [here](https://git-scm.com/download/win), 64-bit version
 
 ## Configuring GIT
 
@@ -31,17 +31,17 @@ git config --global core.eol lf
 as showed in the following
     ![sshagent](./img/sshagent.png)
 
-- Then generating a ssh-key as showed below. 
+- Then generating a ssh-key as showed below.
 
 ```
 ssh-keygen -t ecdsa -b 521
 ```
 
-and don't add a passcode, just enter, then 
+and don't add a passcode, just enter, then
 
 ```
 ssh-add
-``` 
+```
 
 To make sure the key is loaded you can see it via
 
@@ -55,7 +55,7 @@ ssh-add -L
 
 - Make sure docker daemon is running, you can find its icon next to the clock in taskbar
 
-- Download the latest binary release from this page [jumpscaleX releases](https://github.com/threefoldtech/jumpscaleX_core/releases) 
+- Download the latest binary release from this page [jumpscaleX releases](https://github.com/threefoldtech/jumpscaleX_core/releases)
 
 - Check [3sdk_install](3sdk_install.md) to know how to get your 3bot connect words in installation section
 

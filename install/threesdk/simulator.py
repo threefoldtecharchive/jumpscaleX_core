@@ -19,7 +19,14 @@ def start(delete=False, browser_open=True, code_update_force=True, zerotier=Fals
         code_update_force = True
 
     if not _containers.IT.DockerFactory.container_name_exists("simulator"):
-        _install_container("simulator", delete=delete, code_update_force=code_update_force, pull=True, zerotier=zerotier, explorer="none")
+        _install_container(
+            "simulator",
+            delete=delete,
+            code_update_force=code_update_force,
+            pull=True,
+            zerotier=zerotier,
+            explorer="none",
+        )
         c = _containers.get(name="simulator", explorer="none")
         c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
     else:
