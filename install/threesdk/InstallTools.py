@@ -5834,7 +5834,7 @@ class DockerContainer:
 
     def kosmos(self):
         self.execute(
-            f"j.application.interactive={MyEnv.interactive}; j.shell()",
+            f"j.application.interactive={MyEnv.interactive}; j.shell(False)",
             interactive=True,
             windows_interactive=True,
             jumpscale=True,
