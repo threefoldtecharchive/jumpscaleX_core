@@ -2,7 +2,7 @@
 
 ## Requirments
 
-- Windows 10 64-bit: Pro, Enterprise, or Education (Build 15063 or later).
+- Windows 10 64bit Pro, Enterprise or Education (Build 15063 or later).
   - Hyper-V and Containers Windows features must be enabled.
   - The following hardware prerequisites are required to -   successfully run Client Hyper-V on Windows 10:
     - 64 bit processor with Second Level Address Translation (SLAT)
@@ -11,6 +11,16 @@
 
 - Docker, Install guide [here](https://docs.docker.com/docker-for-windows/)
 - Git, Install guide [here](https://git-scm.com/download/win), 64-bit version
+
+## Configuring Docker
+
+- We need to configure docker to use linux containers during installation and we need to enable file sharing “C” in Docker desktop, It can ask you about in the first time automatically you can allow it directly
+
+![windows_docker_ask](./img/docker_windows1.png)
+
+- Volume mounting requires shared drives for Linux containers (not for Windows containers). Click whale menu and then Settings > Shared Drives and share the drive "c", showed as below
+
+![windows_docker](./img/docker_windows.png)
 
 ## Configuring GIT
 
