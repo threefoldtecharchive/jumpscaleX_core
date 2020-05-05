@@ -6365,7 +6365,7 @@ class SSHAgent:
             self.key_load(name=sshkey)
 
         if not sshkey in self.key_names:
-            raise j.exceptions.Input(f"SSH key '{sshkey}' was not loaded, should have been by now.")
+            raise Tools.exceptions.Input(f"SSH key '{sshkey}' was not loaded, should have been by now.")
 
         myhost_sshkey_path = f"{myhost_sshkey_dir}/{sshkey}"
         if not Tools.exists(myhost_sshkey_path):
