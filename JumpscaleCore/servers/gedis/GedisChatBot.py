@@ -158,6 +158,9 @@ class Form:
     def multi_list_choice(self, msg, options, **kwargs):
         return self._append(self._session.multi_list_choice(msg, options, **kwargs))
 
+    def datetime_picker(self, msg, **kwargs):
+        return self._append(self._session.datetime_picker(msg, **kwargs))
+
     def upload_file(self, msg, **kwargs):
         return self._append(self._session.upload_file(msg, **kwargs))
 
@@ -252,6 +255,18 @@ class GedisChatBotSession(JSBASE):
             self.ask({"cat": "multi_list_choice", "msg": msg, "options": options, "kwargs": kwargs})
         )
         return list(filter(None, res))
+
+    def datetime_picker(self, msg, **kwargs):
+        res = self.ask({"cat": "datetime_picker", "msg": msg, "kwargs": kwargs})
+        while not res or int(res) < j.data.time.epoch:
+            res = self.ask(
+                {
+                    "cat": "datetime_picker",
+                    "msg": f"{msg}<br/><p style='color:red'>* Please pick the correct time. Selection was empty or wrong.</p>",
+                    "kwargs": kwargs,
+                }
+            )
+        return int(res)
 
     def upload_file(self, msg, **kwargs):
         return self.ask({"cat": "upload_file", "msg": msg, "kwargs": kwargs})
