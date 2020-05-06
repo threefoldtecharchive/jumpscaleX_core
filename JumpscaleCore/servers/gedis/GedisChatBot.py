@@ -302,7 +302,7 @@ class GedisChatBotSession(JSBASE):
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        return int(self.ask(self.int_msg(msg, **kwargs)), allow_empty=allow_empty)
+        return int(self.ask(self.int_msg(msg, **kwargs), allow_empty=allow_empty))
 
     def int_msg(self, msg, **kwargs):
         return {"cat": "int_ask", "msg": msg, "kwargs": kwargs}
