@@ -265,7 +265,7 @@ class GedisChatBotSession(JSBASE):
                     "cat": "datetime_picker",
                     "msg": f"""{msg}<br/>
                             <p style='color:red'>
-                            * Please pick the correct time. Selection was empty or you have chosen an old date. <br/>
+                            * Please pick the correct time. Selection was empty or your choice is in the past. <br/>
                             * Please note the minimum duration is 1 hour
                             </p>""",
                     "kwargs": kwargs,
