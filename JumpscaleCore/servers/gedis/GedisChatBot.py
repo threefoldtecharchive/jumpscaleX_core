@@ -258,11 +258,16 @@ class GedisChatBotSession(JSBASE):
 
     def datetime_picker(self, msg, **kwargs):
         res = self.ask({"cat": "datetime_picker", "msg": msg, "kwargs": kwargs})
-        while not res or int(res) < j.data.time.epoch:
+        # reservation min time is 1 hour
+        while not res or int(res) < j.data.time.epoch + 3600:
             res = self.ask(
                 {
                     "cat": "datetime_picker",
-                    "msg": f"{msg}<br/><p style='color:red'>* Please pick the correct time. Selection was empty or wrong.</p>",
+                    "msg": f"""{msg}<br/>
+                            <p style='color:red'>
+                            * Please pick the correct time. Selection was empty or you have chosen an old date. <br/>
+                            * Please note the minimum duration is 1 hour
+                            </p>""",
                     "kwargs": kwargs,
                 }
             )
