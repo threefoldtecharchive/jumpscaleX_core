@@ -8,7 +8,7 @@ install: |
   eval `ssh-agent -s`; ssh-add
   mkdir -p /sandbox/code/github/threefoldtech/
   cd /sandbox/code/github/threefoldtech/ 
-  cp -r /opt/code/vcs_repos/jumpscaleX_core /sandbox/code/github/threefoldtech/
+  cp -r /opt/code/vcs_repos/threefoldtech/jumpscaleX_core /sandbox/code/github/threefoldtech/
   declare strs=('libs' 'libs_extra' 'builders' 'threebot') 
   for s in ${strs[@]};
   do
@@ -22,7 +22,7 @@ install: |
 script:
   - name: Black Formatting
     cmd: |
-      cd /opt/code/vcs_repos
+      cd /opt/code/vcs_repos/threefoldtech
       black jumpscaleX_core -l 120 -t py37 --diff --exclude 'templates' 1>/dev/null
   - name: Sal Tests
     cmd: | 
