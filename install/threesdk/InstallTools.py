@@ -3278,7 +3278,7 @@ class Tools:
         """
 
         def getbranch(args):
-            cmd = "cd {REPO_DIR} && git branch | grep \* | cut -d ' ' -f2"
+            cmd = "cd {REPO_DIR} && git rev-parse --abbrev-ref HEAD"
             rc, stdout, err = Tools.execute(
                 cmd, die=False, args=args, showout=False, interactive=False, die_if_args_left=True
             )
@@ -4856,7 +4856,8 @@ class JumpscaleInstaller:
         self.repos_get(pull=gitpull, branch=branch, reset=code_update_force)
         self.repos_link()
         self.cmds_link()
-
+        # Install 3sdk to import installtools from it. as windows doesn't support symlinks
+        Tools.execute("cd {DIR_CODE}/github/threefoldtech/jumpscaleX_core/install/; pip3 install -e . -q")
         if jsinit or not Tools.exists(os.path.join(MyEnv.config["DIR_BASE"], "lib/jumpscale/jumpscale_generated.py")):
             Tools.execute("cd {DIR_BASE};source env.sh;js_init generate", interactive=False, die_if_args_left=True)
 

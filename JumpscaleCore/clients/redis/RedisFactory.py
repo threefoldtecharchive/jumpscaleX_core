@@ -5,8 +5,12 @@ from redis._compat import nativestr
 
 from Jumpscale import j
 
-from Jumpscale.core.InstallTools import Redis
-from Jumpscale.core.InstallTools import RedisTools
+try:
+    from threesdk.InstallTools import Redis
+    from threesdk.InstallTools import RedisTools
+except ImportError:
+    from Jumpscale.core.InstallTools import Redis
+    from Jumpscale.core.InstallTools import RedisTools
 
 
 class RedisFactory(j.baseclasses.factory_testtools):
