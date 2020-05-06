@@ -32,7 +32,15 @@ class GedisChatBotFactory(JSBASE):
                        (i.e. can be used for passing any query parameters)
         :return: created session id
         """
-        chatflow = self.chat_flows[topic]()
+        query_params = html.unescape(query_params)
+        query_params = query_params.replace("'", '"')
+        try:
+            query_params = j.data.serializers.json.loads(query_params)
+        except Exception as e:
+            self._log_debug(f"parsing query params faild could be empty, {e}")
+        kwargs.update(query_params)
+
+        chatflow = self.chat_flows[topic](**kwargs)
         self.sessions[chatflow.session_id] = chatflow
         return {"sessionid": chatflow.session_id}
 
@@ -201,6 +209,7 @@ class GedisChatBot:
                        (i.e. can be used for passing any query parameters)
         """
         self.session_id = str(uuid.uuid4())
+        self.kwargs = kwargs
         self._state = {}
         self._current_step = 0
         self._steps_options = {}
