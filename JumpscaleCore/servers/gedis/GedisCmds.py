@@ -139,7 +139,7 @@ class GedisCmds(JSBASE):
                 if state == "COMMENT":
                     state = "CODE"
                     continue
-                raise j.exceptions.Base()
+                raise j.exceptions.Base(f"error loading actor {self.path}\n in {line}")
             if lstrip.startswith("```") or lstrip.startswith("'''"):
                 if state.startswith("SCHEMA"):  # are already in schema go back to comment
                     state = "COMMENT"
@@ -152,7 +152,7 @@ class GedisCmds(JSBASE):
                     elif lstrip.endswith("in"):
                         state = "SCHEMAI"
                     continue
-                raise j.exceptions.Base()
+                raise j.exceptions.Base(f"error loading actor {self.path}\n in {line}")
             if state == "SCHEMAI":
                 schema_in += "%s\n" % line
                 continue
@@ -168,7 +168,7 @@ class GedisCmds(JSBASE):
             if state == "CODE" or state == "DEF":
                 code += "%s\n" % line
                 continue
-            raise j.exceptions.Base()
+            raise j.exceptions.Base(f"error loading actor {self.path}\n in {line}")
 
         # cmd.code = j.core.text.strip(code)
         cmd.comment = j.core.text.strip(comment)

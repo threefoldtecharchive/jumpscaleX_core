@@ -124,11 +124,18 @@ class Form:
         self.messages = []
         self.results = []
 
-    def ask(self):
-        self._session.q_out.put({"cat": "form", "msg": self.messages})
-        results = j.data.serializers.json.loads(self._session.q_in.get())
-        for result, resobject in zip(results, self.results):
-            resobject.value = result
+    def ask(self, allow_empty=True):
+        valid = False
+        while not valid:
+            self._session.q_out.put({"cat": "form", "msg": self.messages})
+            results = j.data.serializers.json.loads(self._session.q_in.get())
+            valid = True
+            for result, resobject in zip(results, self.results):
+                if not allow_empty and not result:
+                    self._session.md_show("You can't input empty values. click next to try again")
+                    valid = False
+                    break
+                resobject.value = result
 
     def _append(self, msg, loader=str):
         self.messages.append(msg)
@@ -150,6 +157,9 @@ class Form:
 
     def multi_list_choice(self, msg, options, **kwargs):
         return self._append(self._session.multi_list_choice(msg, options, **kwargs))
+
+    def datetime_picker(self, msg, **kwargs):
+        return self._append(self._session.datetime_picker(msg, **kwargs))
 
     def upload_file(self, msg, **kwargs):
         return self._append(self._session.upload_file(msg, **kwargs))
@@ -211,7 +221,7 @@ class GedisChatBotSession(JSBASE):
     def stop(self, msg=None):
         raise StopChatFlow(msg)
 
-    def string_ask(self, msg, **kwargs):
+    def string_ask(self, msg, allow_empty=True, **kwargs):
         """
         helper method to generate a question that expects a string answer.
         html generated in the client side will use `<input type="text"/>`
@@ -219,12 +229,12 @@ class GedisChatBotSession(JSBASE):
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        return self.ask(self.string_msg(msg, **kwargs))
+        return self.ask(self.string_msg(msg, **kwargs), allow_empty=allow_empty)
 
     def string_msg(self, msg, **kwargs):
         return {"cat": "string_ask", "msg": msg, "kwargs": kwargs}
 
-    def secret_ask(self, msg, **kwargs):
+    def secret_ask(self, msg, allow_empty=True, **kwargs):
         """
         helper method to generate a question that expects a password answer.
         html generated in the client side will use `<input type="password"/>`
@@ -232,7 +242,7 @@ class GedisChatBotSession(JSBASE):
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        return self.ask(self.secret_msg(msg, **kwargs))
+        return self.ask(self.secret_msg(msg, **kwargs), allow_empty=allow_empty)
 
     def secret_msg(self, msg, **kwargs):
         return {"cat": "secret_ask", "msg": msg, "kwargs": kwargs}
@@ -246,10 +256,27 @@ class GedisChatBotSession(JSBASE):
         )
         return list(filter(None, res))
 
+    def datetime_picker(self, msg, **kwargs):
+        res = self.ask({"cat": "datetime_picker", "msg": msg, "kwargs": kwargs})
+        # reservation min time is 1 hour
+        while not res or int(res) < j.data.time.epoch + 3600:
+            res = self.ask(
+                {
+                    "cat": "datetime_picker",
+                    "msg": f"""{msg}<br/>
+                            <p style='color:red'>
+                            * Please pick the correct time. Selection was empty or your choice is in the past. <br/>
+                            * Please note the minimum duration is 1 hour
+                            </p>""",
+                    "kwargs": kwargs,
+                }
+            )
+        return int(res)
+
     def upload_file(self, msg, **kwargs):
         return self.ask({"cat": "upload_file", "msg": msg, "kwargs": kwargs})
 
-    def text_ask(self, msg, **kwargs):
+    def text_ask(self, msg, allow_empty=True, **kwargs):
         """
         helper method to generate a question that expects a text answer.
         html generated in the client side will use `<textarea></textarea>`
@@ -257,16 +284,22 @@ class GedisChatBotSession(JSBASE):
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        return self.ask(self.text_msg(msg, **kwargs))
+        return self.ask(self.text_msg(msg, **kwargs), allow_empty=allow_empty)
 
-    def ask(self, data):
+    def ask(self, data, allow_empty=True):
         self.q_out.put(data)
-        return self.q_in.get()
+        res = self.q_in.get()
+        if not allow_empty and not res:
+            while not res:
+                self.md_show("You can't input empty value. click next to try again")
+                self.q_out.put(data)
+                res = self.q_in.get()
+        return res
 
     def text_msg(self, msg, **kwargs):
         return {"cat": "text_ask", "msg": msg, "kwargs": kwargs}
 
-    def int_ask(self, msg, **kwargs):
+    def int_ask(self, msg, allow_empty=True, **kwargs):
         """
         helper method to generate a question that expects an integer answer.
         html generated in the client side will use `<input type="number"/>`
@@ -274,7 +307,7 @@ class GedisChatBotSession(JSBASE):
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        return int(self.ask(self.int_msg(msg, **kwargs)))
+        return int(self.ask(self.int_msg(msg, **kwargs), allow_empty=allow_empty))
 
     def int_msg(self, msg, **kwargs):
         return {"cat": "int_ask", "msg": msg, "kwargs": kwargs}
@@ -305,7 +338,7 @@ class GedisChatBotSession(JSBASE):
             },
         )
 
-    def location_ask(self, msg, **kwargs):
+    def location_ask(self, msg, allow_empty=True, **kwargs):
         """
         helper method to generate a question that expects a `longitude, latitude` string
         html generated in the client side will use openstreetmap div, readonly input field for value.
@@ -313,7 +346,7 @@ class GedisChatBotSession(JSBASE):
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        return self.ask(self.location_msg(msg, **kwargs))
+        return self.ask(self.location_msg(msg, **kwargs), allow_empty=allow_empty)
 
     def location_msg(self, msg, **kwargs):
         return {"cat": "location_ask", "msg": msg, "kwargs": kwargs}
@@ -420,7 +453,7 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
     def multi_msg(self, msg, options, **kwargs):
         return {"cat": "multi_choice", "msg": msg, "options": options, "kwargs": kwargs}
 
-    def single_choice(self, msg, options, **kwargs):
+    def single_choice(self, msg, options, allow_empty=True, **kwargs):
         """
         helper method to generate a question that can have single answer from set of choices.
         html generated in the client side will use `<input type="checkbox" name="value" value="${value}">`
@@ -430,12 +463,12 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
         :return: the user answer for the question
         """
 
-        return self.ask(self.single_msg(msg, options, **kwargs))
+        return self.ask(self.single_msg(msg, options, **kwargs), allow_empty=allow_empty)
 
     def single_msg(self, msg, options, **kwargs):
         return {"cat": "single_choice", "msg": msg, "options": options, "kwargs": kwargs}
 
-    def drop_down_choice(self, msg, options, **kwargs):
+    def drop_down_choice(self, msg, options, allow_empty=True, **kwargs):
         """
         helper method to generate a question that can have single answer from set of choices.
         the only difference between this method and `single_choice` is that the html generated in the client side
@@ -445,7 +478,7 @@ aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        return self.ask(self.drop_down_msg(msg, options, **kwargs))
+        return self.ask(self.drop_down_msg(msg, options, **kwargs), allow_empty=allow_empty)
 
     def drop_down_msg(self, msg, options, **kwargs):
         return {"cat": "drop_down_choice", "msg": msg, "options": options, "kwargs": kwargs}

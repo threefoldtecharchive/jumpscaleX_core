@@ -11,7 +11,9 @@ __all__ = ["builder", "simulator", "container", "args", "core", "installer", "in
 IT = core.core.IT
 
 
-def install(reinstall=False, pull=False, no_interactive=False, threebot=False, identity=None, reset=None, email=None, words=None):
+def install(
+    reinstall=False, pull=False, no_interactive=False, threebot=False, identity=None, reset=None, email=None, words=None
+):
     """
     Install jumpscale on host (not all platforms supported)
     """

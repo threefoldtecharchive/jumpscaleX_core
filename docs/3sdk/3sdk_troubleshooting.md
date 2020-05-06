@@ -1,14 +1,18 @@
 # 3sdk troubleshooting
 
-## <a name='Troubleshooting'></a>Troubleshooting
+is mainly for experts who already used jumpscale before
 
 
+## <a name='SignatureVerification'></a>signature verification failed
 
-## <a name='SignatureVerification'></a>signature verification failed, ensure your pubkey to be the same as local configured nacl
+- ensure your pubkey to be the same as local configured nacl
 
-```
-Tue 14 19:18:01 e/Jumpscale/me/Me.py - 461 - tfgrid_phonebook_register          : EXCEPTION: 
+```bash
+
+Tue 14 19:18:01 e/Jumpscale/me/Me.py - 461 - tfgrid_phonebook_register          
+: EXCEPTION: 
     signature verification failed, ensure your pubkey to be the same as local configured nacl
+
 --TRACEBACK------------------
 
 ```
@@ -16,16 +20,18 @@ Tue 14 19:18:01 e/Jumpscale/me/Me.py - 461 - tfgrid_phonebook_register          
 is most likely caused that you registered on phonebook with different words other than the ones in the 3bot connect app
 
 ## case you have an old container with your old key and secret
-you can get your private key `cat /sandbox/cfg/keys/default/key.priv`
-and the secret `cat /sandbox/cfg/jumpscale_config.toml | grep SECRET`
+
+- you can get your private key `cat /sandbox/cfg/keys/default/key.priv`
+- and the secret `cat /sandbox/cfg/jumpscale_config.toml | grep SECRET`
 
 
 #### Recovering old words (saved)
+
 if you have your key.priv and secret from jumpscale_config and want to restore them
 
 
+##### Restore the key
 
-##### Restore estore the key
 either copy the file back into `/sandbox/cfg/keys/default/key.priv` or
 
 ```
@@ -41,6 +47,7 @@ make sure the length is 144
 edit `/sandbox/cfg/jumpscale_config.toml` and set `SECRET` to the old secret.
 
 when done do `jsx check`
+
 ##### Retrieve the words 
 
 execute that in kosmos `j.data.nacl.default.words`
