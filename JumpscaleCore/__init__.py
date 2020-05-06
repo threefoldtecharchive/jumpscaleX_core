@@ -43,13 +43,21 @@ def profileStop(pr):
 
 
 # pr = profileStart()
+try:
+    from threesdk.InstallTools import BaseInstaller
+    from threesdk.InstallTools import JumpscaleInstaller
+    from threesdk.InstallTools import Tools
+    from threesdk.InstallTools import RedisTools
+    from threesdk.InstallTools import DockerFactory
+    from threesdk.InstallTools import MyEnv
+except ImportError:
+    from .core.InstallTools import BaseInstaller
+    from .core.InstallTools import JumpscaleInstaller
+    from .core.InstallTools import Tools
+    from .core.InstallTools import RedisTools
+    from .core.InstallTools import DockerFactory
+    from .core.InstallTools import MyEnv
 
-from .core.InstallTools import BaseInstaller
-from .core.InstallTools import JumpscaleInstaller
-from .core.InstallTools import Tools
-from .core.InstallTools import RedisTools
-from .core.InstallTools import DockerFactory
-from .core.InstallTools import MyEnv
 import yaml
 
 MyEnv.init()

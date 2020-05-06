@@ -1,5 +1,9 @@
 from Jumpscale import j
-from Jumpscale.core.InstallTools import Tools
+
+try:
+    from threesdk.InstallTools import Tools
+except ImportError:
+    from Jumpscale.core.InstallTools import Tools
 
 import os
 import sys
