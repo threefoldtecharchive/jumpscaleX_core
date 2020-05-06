@@ -3,7 +3,7 @@ import sys
 import uuid
 from captcha.image import ImageCaptcha
 from importlib import import_module
-
+import inspect
 import json
 import gevent
 import html
@@ -38,11 +38,16 @@ class GedisChatBotFactory(JSBASE):
             query_params = j.data.serializers.json.loads(query_params)
         except Exception as e:
             self._log_debug(f"parsing query params faild could be empty, {e}")
-        kwargs.update(query_params)
 
-        chatflow = self.chat_flows[topic](**kwargs)
-        self.sessions[chatflow.session_id] = chatflow
-        return {"sessionid": chatflow.session_id}
+        kwargs.update(query_params)
+        chatflow = self.chat_flows[topic]
+        if inspect.isclass(chatflow):
+            obj = chatflow(**kwargs)
+        else:
+            obj = LegacyChatFLow(chatflow, **kwargs)
+        
+        self.sessions[obj.session_id] = obj
+        return {"sessionid": obj.session_id}
 
     def session_work_get(self, session_id):
         """
@@ -168,8 +173,8 @@ class Form:
     def secret_ask(self, msg, field=None, **kwargs):
         return self._append(self._session.secret_msg(msg, **kwargs), field=field)
 
-    def datetime_picker(self, msg, **kwargs):
-        return self._append(self._session.datetime_picker_msg(msg, **kwargs))
+    def datetime_picker(self, msg, field=None, **kwargs):
+        return self._append(self._session.datetime_picker_msg(msg, **kwargs), field=field)
 
     def multi_list_choice(self, msg, options, field=None, **kwargs):
         return self._append(self._session.multi_list_choice_msg(msg, options, **kwargs), field=field)
@@ -212,7 +217,7 @@ class GedisChatBot:
         self.kwargs = kwargs
         self._state = {}
         self._current_step = 0
-        self._steps_options = {}
+        self._steps_info = {}
         self._greenlet = None
         self._queue_out = gevent.queue.Queue()
         self._queue_in = gevent.queue.Queue()
@@ -223,8 +228,8 @@ class GedisChatBot:
         return self._state.setdefault(self._current_step, {})
 
     @property
-    def current_step_options(self):
-        return self._steps_options.setdefault(self._current_step, {})
+    def current_step_info(self):
+        return self._steps_info.setdefault(self._current_step, {"question": 0})
 
     @property
     def _prev_step_state(self):
@@ -246,9 +251,6 @@ class GedisChatBot:
             "steps": len(self.steps),
             "step": self._current_step + 1,
         }
-    
-    def _set_step_options(self, **kwargs):
-        self._steps_options[self._current_step] = kwargs
 
     def _execute_step(self, step_id):
         def wrapper(step_name):
@@ -283,7 +285,7 @@ class GedisChatBot:
         return self._execute_step(self._current_step)
 
     def go_back(self):
-        if self.current_step_options["question"] == 1:
+        if self.current_step_info["question"] == 1:
             self._current_step -= 1
 
         self._greenlet.kill()
@@ -297,19 +299,25 @@ class GedisChatBot:
 
     def send(self, data):
         if not data["category"] == "user_info":
-            self.current_step_options["question"] += 1
+            self.current_step_info["question"] += 1
 
         data.update(self.payload)
-        data.update(self.current_step_options)
+        data.update(self.current_step_info)
         self._queue_out.put(data)
 
-    def ask(self, data):
+    def ask(self, data, allow_empty=True):
         field = data["kwargs"].pop("field", None)
         data["default"] = self._current_step_state.get(field) or ""
     
         self.send(data)
 
         result = self._queue_in.get()
+        if not allow_empty and not result:
+            while not result:
+                self.md_show("You can't input empty value. click next to try again")
+                self.send(data)
+                result = self._queue_in.get()
+
         if field:
             self._current_step_state[field] = result
 
@@ -328,7 +336,7 @@ class GedisChatBot:
     def string_msg(self, msg, **kwargs):
         return {"category": "string_ask", "msg": msg, "kwargs": kwargs}
 
-    def string_ask(self, msg, **kwargs):
+    def string_ask(self, msg, allow_empty=True, **kwargs):
         """
         helper method to generate a question that expects a string answer.
         html generated in the client side will use `<input type="text"/>`
@@ -336,12 +344,12 @@ class GedisChatBot:
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        return self.ask(self.string_msg(msg, **kwargs))
+        return self.ask(self.string_msg(msg, **kwargs), allow_empty=allow_empty)
 
     def secret_msg(self, msg, **kwargs):
         return {"category": "secret_ask", "msg": msg, "kwargs": kwargs}
     
-    def secret_ask(self, msg, **kwargs):
+    def secret_ask(self, msg, allow_empty=True, **kwargs):
         """
         helper method to generate a question that expects a password answer.
         html generated in the client side will use `<input type="password"/>`
@@ -349,12 +357,12 @@ class GedisChatBot:
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        return self.ask(self.secret_msg(msg, **kwargs))
+        return self.ask(self.secret_msg(msg, **kwargs), allow_empty=allow_empty)
 
     def text_msg(self, msg, **kwargs):
         return {"category": "text_ask", "msg": msg, "kwargs": kwargs}
 
-    def text_ask(self, msg, **kwargs):
+    def text_ask(self, msg, allow_empty=True, **kwargs):
         """
         helper method to generate a question that expects a text answer.
         html generated in the client side will use `<textarea></textarea>`
@@ -362,12 +370,12 @@ class GedisChatBot:
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        return self.ask(self.text_msg(msg, **kwargs))
+        return self.ask(self.text_msg(msg, **kwargs), allow_empty=allow_empty)
 
     def int_msg(self, msg, **kwargs):
         return {"category": "int_ask", "msg": msg, "kwargs": kwargs}
 
-    def int_ask(self, msg, **kwargs):
+    def int_ask(self, msg, allow_empty=True, **kwargs):
         """
         helper method to generate a question that expects an integer answer.
         html generated in the client side will use `<input type="number"/>`
@@ -375,12 +383,12 @@ class GedisChatBot:
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        return self.ask(self.int_msg(msg, **kwargs))
+        return int(self.ask(self.int_msg(msg, **kwargs), allow_empty=allow_empty))
 
     def single_choice_msg(self, msg, options, **kwargs):
         return {"category": "single_choice", "msg": msg, "options": options, "kwargs": kwargs}
     
-    def single_choice(self, msg, options, **kwargs):
+    def single_choice(self, msg, options, allow_empty=True, **kwargs):
         """
         helper method to generate a question that can have single answer from set of choices.
         html generated in the client side will use `<input type="checkbox" name="value" value="${value}">`
@@ -389,12 +397,12 @@ class GedisChatBot:
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        return self.ask(self.single_choice_msg(msg, options, **kwargs))
+        return self.ask(self.single_choice_msg(msg, options, **kwargs), allow_empty=allow_empty)
 
     def multi_choice_msg(self, msg, options, **kwargs):
         return {"category": "multi_choice", "msg": msg, "options": options, "kwargs": kwargs}
 
-    def multi_choice(self, msg, options, **kwargs):
+    def multi_choice(self, msg, options, allow_empty=True, **kwargs):
         """
         helper method to generate a question that can have multi answers from set of choices.
         html generated in the client side will use `<input type="checkbox" name="value[]" value="${value}">`
@@ -403,13 +411,13 @@ class GedisChatBot:
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answers for the question
         """
-        result = self.ask(self.multi_choice_msg(msg, options, **kwargs))
+        result = self.ask(self.multi_choice_msg(msg, options, **kwargs), allow_empty=allow_empty)
         return j.data.serializers.json.loads(result)
 
     def drop_down_choice_msg(self, msg, options, auto_complete=False, **kwargs):
         return {"category": "drop_down_choice", "msg": msg, "options": options, "auto_complete": auto_complete, "kwargs": kwargs}
 
-    def drop_down_choice(self, msg, options, auto_complete=False, **kwargs):
+    def drop_down_choice(self, msg, options, allow_empty=True, auto_complete=False, **kwargs):
         """
         helper method to generate a question that can have single answer from set of choices.
         the only difference between this method and `single_choice` is that the html generated in the client side
@@ -419,29 +427,29 @@ class GedisChatBot:
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        return self.ask(self.drop_down_choice_msg(msg, options, auto_complete, **kwargs))
+        return self.ask(self.drop_down_choice_msg(msg, options, auto_complete, **kwargs), allow_empty=allow_empty)
 
-    def drop_down_country(self, msg):
-        return self.drop_down_choice(msg, j.data.countries.names)
+    def drop_down_country(self, msg, allow_empty=True):
+        return self.drop_down_choice(msg, j.data.countries.names, allow_empty=allow_empty)
 
-    def autocomplete_drop_down(self, msg, options):
-        return self.drop_down_choice(msg, options, auto_complete=True)
+    def autocomplete_drop_down(self, msg, options, allow_empty=True):
+        return self.drop_down_choice(msg, options, auto_complete=True, allow_empty=allow_empty)
 
     def multi_list_choice_msg(self, msg, options, **kwargs):
         return {"category": "multi_list_choice", "msg": msg, "options": options, "kwargs": kwargs}
 
-    def multi_list_choice(self, msg, options, **kwargs):
-        result = self.ask(self.multi_list_choice_msg(msg, options, **kwargs))
+    def multi_list_choice(self, msg, options, allow_empty=True, **kwargs):
+        result = self.ask(self.multi_list_choice_msg(msg, options, **kwargs), allow_empty=allow_empty)
         return j.data.serializers.json.loads(result)
     
-    def captcha_ask(self, error=False, **kwargs):
+    def captcha_ask(self, error=False, allow_empty=True, **kwargs):
         """
         helper method to generate a captcha and verify that the user entered the right answer.
         :param error: if True indicates that the previous captcha attempt failed
         :return: a bool indicating if the user entered the right answer or not
         """
         captcha, message = self.captcha_msg(error, **kwargs)
-        return self.ask(message) == captcha
+        return self.ask(message, allow_empty=allow_empty) == captcha
 
     def captcha_msg(self, error=False, **kwargs):
         image = ImageCaptcha()
@@ -464,13 +472,13 @@ class GedisChatBot:
     def upload_file_msg(self, msg, **kwargs):
         return {"category": "upload_file", "msg": msg, "kwargs": kwargs}
 
-    def upload_file(self, msg, **kwargs):
-        self.ask(self.upload_file_msg(msg, ** kwargs))
+    def upload_file(self, msg, allow_empty=True, **kwargs):
+        self.ask(self.upload_file_msg(msg, ** kwargs), allow_empty=allow_empty)
 
     def location_msg(self, msg, **kwargs):
         return {"category": "location_ask", "msg": msg, "kwargs": kwargs}
     
-    def location_ask(self, msg, **kwargs):
+    def location_ask(self, msg, allow_empty=True, **kwargs):
         """
         helper method to generate a question that expects a `longitude, latitude` string
         html generated in the client side will use openstreetmap div, readonly input field for value.
@@ -478,7 +486,7 @@ class GedisChatBot:
         :param kwargs: dict of possible extra options like (validate, reset, ...etc)
         :return: the user answer for the question
         """
-        return self.ask(self.location_msg(msg, **kwargs))
+        return self.ask(self.location_msg(msg, **kwargs), allow_empty=allow_empty)
 
     def redirect(self, url, **kwargs):
         """
@@ -631,3 +639,13 @@ class GedisChatBot:
     def stop(self, msg=None):
         raise StopChatFlow(msg=msg)
 
+
+class LegacyChatFLow(GedisChatBot):
+    steps = ['chat']
+
+    def __init__(self, method, **kwargs):
+        super().__init__(**kwargs)
+        self.method = method
+
+    def chat(self):
+        self.method(self)

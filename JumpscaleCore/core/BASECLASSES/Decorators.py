@@ -79,7 +79,7 @@ def chatflow_step(title=None, disable_previous=False):
     def decorator(func):
         def wrapper(*args, **kwargs):
             self_ = args[0]
-            self_._set_step_options(title=title, question=0, previous=(not disable_previous))
+            self_.current_step_info.update(title=title, previous=(not disable_previous))
             return func(*args, **kwargs)
         return wrapper
     return decorator
