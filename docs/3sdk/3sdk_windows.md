@@ -40,6 +40,14 @@ git config --global core.eol lf
 - You may have `ssh-agent` not working on windows you can start it from the windows task manager, head to `services` right click then `start`
 as showed in the following
     ![sshagent](./img/sshagent.png)
+    
+Hint: 
+If ssh-agent can be not started
+- right click ssh Agent 
+- Go to "Services"
+- find "OpenSSH Authentication Agent"
+- Right click 
+- change deactived to manual or automatic
 
 - Then generating a ssh-key as showed below.
 
