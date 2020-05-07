@@ -38,7 +38,11 @@ class ThreeBotPackageBase(j.baseclasses.object_config):
         tomlfile = f"{self.path}/package.toml"
         # print(f"tomfile: {tomlfile}")
         if not j.sal.fs.exists(tomlfile):
-            raise j.exceptions.Input(f"cannot find config file in path {tomlfile} for package {self.name}")
+            self.delete()
+            raise j.exceptions.Input(
+                f"Failed to load package. package is corrupted.\
+                cannot find config file in path {tomlfile} for package {self.name}"
+            )
         config = j.data.serializers.toml.loads(j.sal.fs.readFile(tomlfile))
         self._data._data_update(config)
 
