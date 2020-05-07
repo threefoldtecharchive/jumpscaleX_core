@@ -351,13 +351,14 @@ class GedisChatBotSession(JSBASE):
     def location_msg(self, msg, **kwargs):
         return {"cat": "location_ask", "msg": msg, "kwargs": kwargs}
 
-    def md_show_confirm(self, data, **kwargs):
+    def md_show_confirm(self, data, message=None, **kwargs):
         res = "<h1>Please make sure of the entered values before starting deployment</h1>"
 
         for key, value in data.items():
             if value:
                 res += f"**{key}**: {value}<br>"
-
+        if message:
+            res += f"{message}"
         self.md_show(res)
 
     def md_show(self, msg, **kwargs):
