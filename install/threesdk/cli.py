@@ -114,6 +114,13 @@ def exit():
     sys.exit(0)
 
 
+def version():
+    """
+    Print version number
+    """
+    print(f"3sdk {_sdk.__version__}")
+
+
 def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
     import inspect
 
@@ -147,7 +154,12 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert", default=False, action="store_true")
+
+    parser.add_argument("-v", "--version", default=False, action="store_true")
     options, extra = parser.parse_known_args()
+    if options.version:
+        version()
+        sys.exit(0)
     if extra:
         line = rewriteline(extra, globals(), locals())
         exec(line, globals(), locals())

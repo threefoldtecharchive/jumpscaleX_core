@@ -32,7 +32,7 @@ from prompt_toolkit.formatted_text import (
 from ptpython.prompt_style import PromptStyle
 
 
-MAIN_METHODS = ["exit", "info"]
+MAIN_METHODS = ["exit", "info", "version"]
 IT = core.IT
 __name__ = "<sdk>"
 

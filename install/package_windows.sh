@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+version=$(git describe --tags)
 if ! which wine > /dev/null; then
     echo "Please install wine and try again"
     exit 1
@@ -16,4 +17,7 @@ if ! wine pip3.exe -v > /dev/null; then
     wine "$PYTHONSETUP" /quiet InstallAllUsers=1 PrependPath=1
 fi
 wine pip3.exe install -r requirements.txt
+sed -i "s/_unreleased_/${version}/" threesdk/__init__.py
 wine pyinstaller.exe 3sdk.spec
+git checkout threesdk/__init__.py
+cp dist/3sdk.exe "dist/3sdk_${version}_windows.exe"
