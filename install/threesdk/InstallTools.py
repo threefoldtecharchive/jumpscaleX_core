@@ -2785,9 +2785,10 @@ class Tools:
             Tools.execute(line, replace=False)
 
     @staticmethod
-    def process_pids_get_by_filter(filterstr, excludes=[]):
-        cmd = "ps ax | grep '%s'" % filterstr
-        rcode, out, err = Tools.execute(cmd)
+    def process_pids_get_by_filter(filterstr, excludes=[], current_user=False):
+        allflag = "" if current_user else "a"
+        cmd = f"ps {allflag}x | grep '{filterstr}'"
+        rcode, out, err = Tools.execute(cmd, showout=False)
         # print out
         found = []
 
@@ -2814,8 +2815,8 @@ class Tools:
         Tools.execute("kill -9 %s" % pid)
 
     @staticmethod
-    def process_kill_by_by_filter(filterstr):
-        for pid in Tools.process_pids_get_by_filter(filterstr):
+    def process_kill_by_by_filter(filterstr, current_user=False):
+        for pid in Tools.process_pids_get_by_filter(filterstr, current_user=current_user):
             Tools.process_kill_by_pid(pid)
 
     @staticmethod
@@ -6623,7 +6624,7 @@ class SSHAgent:
 
         socketpath = self.ssh_socket_path
 
-        Tools.process_kill_by_by_filter("ssh-agent")
+        Tools.process_kill_by_by_filter("ssh-agent", True)
 
         Tools.delete(socketpath)
 
@@ -6659,7 +6660,7 @@ class SSHAgent:
         Kill all agents if more than one is found
 
         """
-        Tools.process_kill_by_by_filter("ssh-agent")
+        Tools.process_kill_by_by_filter("ssh-agent", True)
         Tools.delete(self.ssh_socket_path)
         # Tools.delete("/tmp", "ssh-agent-pid"))
         self.reset()
