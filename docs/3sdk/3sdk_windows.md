@@ -47,7 +47,7 @@ as showed in the following
 ssh-keygen -t ecdsa -b 521
 ```
 
-and don't add a passcode, just enter, then
+and don't add a Filename or passcode, just enter, then
 
 ```
 ssh-add
