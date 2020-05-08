@@ -8,7 +8,7 @@
 
 ## <a name='Requirements'></a>Requirements
 
-- Docker
+- [Docker](https://www.docker.com)
 - Chrome browser for OSX users
 - Git
 
