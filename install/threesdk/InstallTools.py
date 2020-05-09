@@ -31,6 +31,7 @@ import re
 
 from pathlib import Path
 from subprocess import Popen
+from collections import namedtuple
 import inspect
 import json
 
@@ -58,6 +59,10 @@ if pygments:
 else:
     pygments_formatter = False
     pygments_pylexer = False
+
+RepoInfo = namedtuple("RepoInfo", ["protocol", "host", "account", "name", "url", "port"])
+
+GITHUB_RSA = "AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ=="
 
 DEFAULT_BRANCH = "development"
 DEFAULT_BRANCH_WEB = "development"
@@ -1063,7 +1068,6 @@ class Tools:
                         line = tb2.code_context[0].strip()
                     else:
                         Tools.shell()
-                        w
                 else:
                     line = ""
                 if not ignore(frame.f_code.co_filename):
@@ -3003,6 +3007,38 @@ class Tools:
         return rc > 0
 
     @staticmethod
+    def code_github_use_ssh():
+        """
+        Will check if we can use ssh to clone/pull our repos
+        """
+        Tools.known_hosts_update("github.com", key=f"github.com ssh-rsa {GITHUB_RSA}")
+        repoinfo = Tools.code_git_rewrite_url(GITREPOS["core"][0], ssh=True)
+        rc, _, _, = Tools.execute(f"git ls-remote --tags {repoinfo.url}", die=False, interactive=False, showout=False)
+        return rc == 0
+
+    @staticmethod
+    def known_hosts_update(host, port=22, key=None):
+        if key is None:
+            cmd = f"ssh-keyscan -t rsa -p {port} {host}"
+            _, key, _ = Tools.execute(cmd, showout=False)
+        if MyEnv.platform_is_windows:
+            known_host_path = r"%s\.ssh\known_hosts" % MyEnv._homedir_get()
+        else:
+            known_host_path = "%s/.ssh/known_hosts" % MyEnv.config["DIR_HOME"]
+        # ensure parent directory
+        Tools.dir_ensure(os.path.dirname(known_host_path))
+        haskey = False
+        if os.path.exists(known_host_path):
+            with open(known_host_path) as fd:
+                for line in fd:
+                    if key in line:
+                        haskey = True
+                        break
+        if not haskey:
+            with open(known_host_path, "a+") as fd:
+                fd.write(key.strip() + "\n")
+
+    @staticmethod
     def code_git_rewrite_url(url="", login=None, passwd=None, ssh="auto"):
         """
         Rewrite the url of a git repo with login and passwd if specified
@@ -3109,7 +3145,7 @@ class Tools:
         if repository_name.endswith(".git"):
             repository_name = repository_name[:-4]
 
-        return protocol, repository_host, repository_account, repository_name, repository_url, port
+        return RepoInfo(protocol, repository_host, repository_account, repository_name, repository_url, port)
 
     @staticmethod
     def code_gitrepo_args(url="", dest=None, login=None, passwd=None, reset=False, ssh="auto"):
@@ -3308,31 +3344,26 @@ class Tools:
 
             return True
 
-        def reset_changes(args, repo, repo_url):
+        def reset_changes(args):
             C = """
             cd {REPO_DIR}
             git checkout -q . --force
             """
-            Tools.log("get code & ignore changes: %s" % repo)
+            Tools.log(f"get code & ignore changes: {args['name']}")
             Tools.execute(
-                C,
-                args=args,
-                retry=1,
-                errormsg="Could not checkout %s" % repo_url,
-                die_if_args_left=True,
-                interactive=True,
+                C, args=args, retry=1, errormsg=f"Could not checkout {url}", die_if_args_left=True, interactive=True,
             )
 
-        def assert_merge(args, repo_url):
+        def assert_merge(args):
             C = """
             cd {REPO_DIR}
-            git pull -q
+            git pull -q {URL}
             """
             rc, out, err = Tools.execute(
                 C,
                 args=args,
                 retry=1,
-                errormsg="Couldn't merge repo %s" % repo_url,
+                errormsg=f"Couldn't merge repo {args['URL']}",
                 die_if_args_left=True,
                 interactive=True,
             )
@@ -3356,13 +3387,7 @@ class Tools:
             raise Tools.exceptions.JSBUG("branch should be a string or list, now %s" % branch)
 
         Tools.log("get code:%s:%s (%s)" % (url, path, branch))
-        if MyEnv.config["SSH_AGENT"]:
-            url = "git@github.com:%s/%s.git"
-        else:
-            url = "https://github.com/%s/%s.git"
 
-        repo_url = url % (account, repo)
-        fallback_url = "https://github.com/%s/%s.git" % (account, repo)
         exists, foundgit, dontpull, ACCOUNT_DIR, REPO_DIR = Tools._code_location_get(account=account, repo=repo)
 
         # if exists and reset and not pull:
@@ -3373,8 +3398,7 @@ class Tools:
         args = {}
         args["ACCOUNT_DIR"] = ACCOUNT_DIR
         args["REPO_DIR"] = REPO_DIR
-        args["URL"] = repo_url
-        args["FALLBACK_URL"] = fallback_url
+        args["URL"] = url
         args["NAME"] = repo
         if "SSH_AUTH_SOCK" in os.environ:
             args["SSH_AUTH_SOCK"] = os.environ["SSH_AUTH_SOCK"]
@@ -3417,51 +3441,34 @@ class Tools:
                         showout=True,
                         interactive=True,
                         retry=4,
-                        errormsg="Could not clone %s" % repo_url,
+                        errormsg=f"Could not clone {url}",
                         die_if_args_left=True,
                     )
 
                 except Exception:
-                    Tools.log("get code [https] (second time): %s" % repo)
-                    if not Tools.exists(ACCOUNT_DIR):
-                        os.makedirs(ACCOUNT_DIR)
-                    C = "git -C {ACCOUNT_DIR} clone {FALLBACK_URL} -b {BRANCH} -q"
-
-                    try:
-                        Tools.execute(
-                            C,
-                            args=args,
-                            die=True,
-                            showout=True,
-                            interactive=True,
-                            retry=4,
-                            errormsg="Could not clone %s" % repo_url,
-                            die_if_args_left=True,
-                        )
-                    except Exception:
-                        # try with default branch if doesn't exist
-                        C = "git -C {ACCOUNT_DIR} clone -q {FALLBACK_URL}"
-                        Tools.execute(
-                            C,
-                            args=args,
-                            die=True,
-                            showout=True,
-                            interactive=True,
-                            retry=4,
-                            errormsg="Could not clone %s" % repo_url,
-                            die_if_args_left=True,
-                        )
+                    Tools.log("get code [https] (default branch): %s" % repo)
+                    C = "git -C {ACCOUNT_DIR} clone -q {URL}"
+                    Tools.execute(
+                        C,
+                        args=args,
+                        die=True,
+                        showout=True,
+                        interactive=True,
+                        retry=4,
+                        errormsg=f"Could not clone {url}",
+                        die_if_args_left=True,
+                    )
             else:
                 if pull:
                     if reset:
-                        reset_changes(args, repo, repo_url)
+                        reset_changes(args)
                     else:
                         if Tools.code_changed(REPO_DIR):
                             if Tools.ask_yes_no(
                                 "\n**:found changes in repo '%s', do you want to reset?\n WARNING: This will delete all local changes"
                                 % repo
                             ):
-                                reset_changes(args, repo, repo_url)
+                                reset_changes(args)
                             else:
                                 if Tools.ask_yes_no(
                                     "\n**: you chose not to reset in repo '%s', do you want to commit?" % repo
@@ -3471,7 +3478,7 @@ class Tools:
                                     else:
                                         args["MESSAGE"] = input("\nprovide commit message: ")
                                         assert args["MESSAGE"].strip() != ""
-                                    if assert_merge(args, repo_url):
+                                    if assert_merge(args):
                                         C = """
                                            cd {REPO_DIR}
                                            git add . -A
@@ -3487,11 +3494,11 @@ class Tools:
                                     raise Tools.exceptions.Input("found changes, do not want to commit or reset")
                     # update repo
                     Tools.execute(
-                        "git -C {REPO_DIR} fetch -q",
+                        "git -C {REPO_DIR} fetch -q {URL}",
                         args=args,
                         retry=4,
                         showout=False,
-                        errormsg="Could not pull %s" % repo_url,
+                        errormsg=f"Could not pull {url}",
                         die_if_args_left=True,
                         interactive=True,
                     )
@@ -3504,7 +3511,7 @@ class Tools:
                         args=args,
                         retry=4,
                         showout=False,
-                        errormsg="Could not pull %s" % repo_url,
+                        errormsg=f"Could not pull {url}",
                         die_if_args_left=True,
                         interactive=True,
                     )
@@ -3543,7 +3550,7 @@ class Tools:
                 """
                 try:
                     Tools.execute(script, args=args, die=True, die_if_args_left=True, interactive=True)
-                except Exception as e:
+                except Exception:
                     Tools.shell()
 
         return gitpath
@@ -4974,21 +4981,26 @@ class JumpscaleInstaller:
     #     Tools.execute("cp {DIR_CODE}/github/threefoldtech/sandbox_threebot_linux64/.startup.toml /")
     #     Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
     #
+
     def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False):
         assert not prebuilt  # not supported yet
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
 
         done = []
+        usessh = Tools.code_github_use_ssh()
 
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
             if GITURL in done:
                 continue
 
+            if usessh:
+                GITURL = Tools.code_git_rewrite_url(GITURL, ssh=True).url
+
             if branch:
                 # check if provided branch exists otherwise don't use it
-                C = f"""git ls-remote --heads {GITURL} {branch}"""
+                C = f"""git ls-remote --heads {GITURL} {branch} {GITURL}"""
                 _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True, interactive=False)
                 if out:
                     BRANCH = branch
@@ -4997,9 +5009,6 @@ class JumpscaleInstaller:
                 Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
             except Tools.exceptions.Input:
                 raise
-            except Exception:
-                Tools.code_git_rewrite_url(url=GITURL, ssh=False)
-                Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
 
             done.append(GITURL)
 
@@ -5706,28 +5715,11 @@ class DockerContainer:
 
             if not MyEnv.platform_is_windows:
                 Tools.execute(
-                    "mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"], showout=False)
+                    "mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"]), showout=False
                 )
-
-            # DIDNT seem to work well, next is better
-            # cmd = 'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"' % (
-            #     MyEnv.config["DIR_HOME"],
-            #     self.config.sshport,
-            # )
-            # Tools.execute(cmd)
 
             # is to make sure we can login without interactivity
-            if MyEnv.platform_is_windows:
-                cmd = "ssh-keyscan -H -p %s localhost" % self.config.sshport
-                path = f"%s\.ssh\known_hosts" % MyEnv._homedir_get()
-                _, content, _ = Tools.execute(cmd, showout=False)
-                Tools.file_write(path, content)
-            else:
-                cmd = "ssh-keyscan -H -p %s localhost >> %s/.ssh/known_hosts" % (
-                    self.config.sshport,
-                    MyEnv.config["DIR_HOME"],
-                )
-                Tools.execute(cmd, showout=False)
+            Tools.known_hosts_update("localhost", self.config.sshport)
 
         # self.shell()
 
@@ -6268,10 +6260,7 @@ class SSHAgent:
             Tools.delete("%s.pub" % path)
 
         if not Tools.exists(path) or reset:
-            if passphrase:
-                cmd = f'ssh-keygen -t rsa -f {path} -N "{passphrase}" -C {name}'
-            else:
-                cmd = f"ssh-keygen -t rsa -f {path} -C {name}"
+            cmd = f'ssh-keygen -t rsa -f {path} -N "{passphrase}" -C {name}'
             Tools.execute(cmd, timeout=10)
 
             Tools.log("load generated sshkey: %s" % path)
@@ -6361,12 +6350,12 @@ class SSHAgent:
                 print("CANNOT CONTINUE, PLEASE GENERATE AN SSHKEY AND RESTART")
                 sys.exit(1)
 
-        if not sshkey in self.key_names:
+        if sshkey not in self.key_names:
             if DockerFactory.indocker():
                 raise Tools.exceptions.Base("sshkey should be passed forward by means of SSHAgent")
             self.key_load(name=sshkey)
 
-        if not sshkey in self.key_names:
+        if sshkey not in self.key_names:
             raise Tools.exceptions.Input(f"SSH key '{sshkey}' was not loaded, should have been by now.")
 
         myhost_sshkey_path = f"{myhost_sshkey_dir}/{sshkey}"
