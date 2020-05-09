@@ -1,17 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os
-
-##MAYBE FOR FUTURE
-# dpath = os.path.dirname(__file__)
-# if dpath not in sys.path:
-#     sys.path.append(dpath)
-#
-# dpath = f'{os.environ["HOME"]}/sandbox/code/github/threefoldtech/jumpscaleX_core'
-# if dpath not in sys.path:
-#     sys.path.append(dpath)
-#
-# from JumpscaleLibCore import myenv
+import shutil
 
 
 import jedi
@@ -142,7 +132,23 @@ def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
     return result
 
 
+def base_check():
+    requiretools = ["docker", "git", "ssh"]
+    missingtools = []
+    for tool in requiretools:
+        if not shutil.which(tool):
+            missingtools.append(tool)
+    if os.name == "nt":
+        link = "https://sdk.threefold.io/#/3sdk_windows?id=requirements"
+    else:
+        link = "https://sdk.threefold.io/#/3sdk_install?id=requirements"
+    if missingtools:
+        print(f"Some required tools '{', '.join(missingtools)}' are missing on your system  see {link} for more info.")
+        sys.exit(1)
+
+
 def main():
+    base_check()
     import argparse
 
     parser = argparse.ArgumentParser()
