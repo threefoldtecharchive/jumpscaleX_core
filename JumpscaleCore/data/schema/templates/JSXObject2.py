@@ -1,5 +1,6 @@
 from Jumpscale import j
 
+from Jumpscale.data.types.AdvTypes import NumericObject
 from capnp import KjException
 
 {% if root %}
@@ -176,7 +177,9 @@ class JSXObject2(j.data.schema._JSXObjectClassSub):
         {% if prop.is_jsxobject %}
         d["{{prop.name}}"] = self.{{prop.name}}._ddict
         {% else %}
-        if isinstance(self.{{prop.name}},j.data.types._TypeBaseObjClass):
+        if isinstance(self.{{prop.name}},NumericObject):
+            d["{{prop.name}}"] = float(self.{{prop.name}})
+        elif isinstance(self.{{prop.name}},j.data.types._TypeBaseObjClass):
             d["{{prop.name}}"] = self.{{prop.name}}._datadict
         else:
             d["{{prop.name}}"] = self.{{prop.name}}

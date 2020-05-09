@@ -37,7 +37,7 @@ class Jinja2(j.baseclasses.object):
         """
         return Environment(loader=FileSystemLoader(templates_path), autoescape=select_autoescape(["html", "xml"]))
 
-    def template_get(self, path=None, text=None, reload=False):
+    def template_get(self, path=None, text=None, reload=False,trim_blocks=False):
         """
         returns jinja2 template and will be cached
 
@@ -62,12 +62,12 @@ class Jinja2(j.baseclasses.object):
             md5 = j.data.hash.md5_string(text)
 
         if md5 not in self._hash_to_template:
-            self._hash_to_template[md5] = Template(text, undefined=StrictUndefined)
+            self._hash_to_template[md5] = Template(text, undefined=StrictUndefined,trim_blocks=trim_blocks)
             self._hash_to_template[md5].md5 = md5
 
         return self._hash_to_template[md5]
 
-    def template_render(self, path=None, text=None, dest=None, reload=False, **args):
+    def template_render(self, path=None, text=None, dest=None, reload=False,trim_blocks=False, **args):
         """
 
         load the template, do not write back to the path
@@ -82,7 +82,7 @@ class Jinja2(j.baseclasses.object):
         """
 
         # self._log_debug("template render:%s"%path)
-        t = self.template_get(path=path, text=text, reload=reload)
+        t = self.template_get(path=path, text=text, reload=reload,trim_blocks=trim_blocks)
 
         try:
             txt = t.render(**args)

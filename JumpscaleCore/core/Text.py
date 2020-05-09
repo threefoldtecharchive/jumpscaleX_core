@@ -104,7 +104,7 @@ class Text(object):
             item = ""
             return item
         if float(item) == 0:
-            item = ""
+            item = "0"
             return item
         elif isinstance(item, str):
             return item
