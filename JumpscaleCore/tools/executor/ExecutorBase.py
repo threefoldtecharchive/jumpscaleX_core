@@ -148,7 +148,10 @@ class ExecutorBase(j.baseclasses.object_config):
     @property
     def wireguard_server(self):
         if not self._wireguard:
-            from Jumpscale.core.InstallTools import WireGuardServer
+            try:
+                from threesdk.InstallTools import WireGuardServer
+            except ImportError:
+                from Jumpscale.core.InstallTools import WireGuardServer
 
             self._wireguard = WireGuardServer(self.addr, port=self.port)
         return self._wireguard
