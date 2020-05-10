@@ -41,7 +41,7 @@ class SDKContainers:
 
     def delete(self, name: Optional[str]):
         name = self._name(name)
-        docker = myenv.docker.container_delete(name=name)
+        myenv.docker.container_delete(name=name)
         self.container = None
 
     def get(
@@ -66,9 +66,6 @@ class SDKContainers:
 
         if self.container and not delete:
             return self.container
-
-        # need to make sure 1 sshkey has been created, does not have to be in github
-        myenv.sshagent.key_default_name
 
         myenv.docker.init()
 
@@ -103,7 +100,7 @@ class SDKContainers:
                 force=False, reset=False, secret=secret, identity=identity, email=email, words=words,
             )
 
-            docker.executor.file_write("/sandbox/cfg/.configured", "")
+            docker.dexec("touch /sandbox/cfg/.configured")
 
         self.container = docker
         return docker
