@@ -9,10 +9,10 @@ IT = core.IT
 
 _containers = SDKContainers(core=core, args=args)
 
-__all__ = ["base", "sdk", "sdktool", "container_import", "container_export"]
+__all__ = ["base_build", "phusion_build", "sdk", "sdktool", "container_import", "container_export"]
 
 
-def base(push=False):
+def phusion_build(push=False):
     """
     build the ubuntu base container
     """
@@ -31,12 +31,12 @@ def base(push=False):
         IT.Tools.execute("docker pushe threefoldtech/phusion/latest")
 
 
-def sdk(dest=None, push=False, delete=True):
+def base_build(dest=None, push=False, delete=True):
     """
-    build the sdk (threebot) container
+    build the base container
     """
     print("build phusion")
-    base(push=push)
+    phusion_build(push=push)
     print("build phusion done")
     if not dest:
         dest = "threefoldtech/base2"
@@ -112,3 +112,43 @@ def container_export(name=None, path=None, version=None):
     """
     docker = _containers.get(delete=True, name=name)
     docker.export(path=path, version=version)
+
+
+def sdk(push=False, base=False, delete=False, noclean=False, development=False):
+    """
+    build the sdk (threebot) container
+    """
+    if base:
+        base_build(push=push)
+    dest = "threefoldtech/3bot2"
+
+    docker = IT.DockerFactory.container_get(name="3botdev", delete=delete, image="threefoldtech/base2")
+
+    docker.install(update=delete, stop=delete)
+
+    # we know its a ubuntu 19.10 so we can install
+
+    installer = IT.JumpscaleInstaller()
+    installer.repos_get(pull=False)
+
+    docker.install_jumpscale(force=delete, pull=False, threebot=True, identity="build", reset=True)
+    # because identity==build the secret will be build
+    # the hex/hashed repr of the secret: 'b0da275520918e23dd615e2a747528f1'
+
+    docker._install_tcprouter()
+    docker.install_jupyter()
+    docker.execute("apt-get install restic -y")
+
+    docker.image = dest
+
+    if noclean:
+        docker.save(image=dest)
+        docker.delete()
+    else:
+        docker.save(development=development, image=dest, code_copy=True, clean=True)
+
+    print(" - *OK* threebot container has been built, as image")
+
+    if push:
+        docker.push()
+        print(" - *OK* threebot image has been exported")
