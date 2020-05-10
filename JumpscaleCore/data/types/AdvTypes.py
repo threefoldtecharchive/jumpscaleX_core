@@ -585,6 +585,8 @@ class Numeric(TypeBaseObjFactory):
         if isinstance(data, float) or isinstance(data, int):
             if data > 4294967294:
                 return data
+            elif data < -4294967294:
+                return data
             data = str(data)
         if isinstance(data, str):
             data = self.str2bytes(data)
