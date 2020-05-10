@@ -133,7 +133,7 @@ def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
 
 
 def base_check():
-    requiretools = ["docker", "git", "ssh"]
+    requiretools = ["docker", "git"]
     missingtools = []
     for tool in requiretools:
         if not shutil.which(tool):

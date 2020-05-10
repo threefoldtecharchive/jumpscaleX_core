@@ -5494,8 +5494,6 @@ class DockerContainer:
         if self.config.portrange is None:
             self.config._find_port_range()
             self.config.save()
-        if not MyEnv.platform_is_windows:
-            MyEnv.sshagent.key_default_name
 
         self._wireguard = None
         self._executor = None
@@ -5505,7 +5503,7 @@ class DockerContainer:
         path = "/root/state/%s" % name
         try:
             self.dexec("cat %s" % path)
-        except:
+        except Exception:
             return False
         return True
 
@@ -5526,9 +5524,7 @@ class DockerContainer:
     @property
     def executor(self):
         if not self._executor:
-            self._executor = ExecutorSSH(
-                addr=self.config.ipaddr, port=self.config.sshport, debug=False, name=self.config.name
-            )
+            self._executor = ExecutorDocker(self)
         return self._executor
 
     @property
@@ -5572,7 +5568,7 @@ class DockerContainer:
             self.config.save()
 
     def _image_clean(self, image=None):
-        if image == None:
+        if image is None:
             return self.config.image
         if ":" in image:
             image = image.split(":")[0]
@@ -5621,13 +5617,13 @@ class DockerContainer:
                 self.stop()
 
         if self.isrunning():
-            if mount == True:
+            if mount is True:
                 if not self.mount_code_exists:
-                    assert image == None  # because we are creating a new image, so cannot overrule
+                    assert image is None  # because we are creating a new image, so cannot overrule
                     image = self._internal_image_save(stop=True)
-            elif mount == False:
+            elif mount is False:
                 if self.mount_code_exists:
-                    assert image == None
+                    assert image is None
                     image = self._internal_image_save(stop=True)
 
         if self.container_exists_in_docker:
@@ -5648,9 +5644,9 @@ class DockerContainer:
             return
 
         # Now create the container
-        DIR_CODE = MyEnv.config["DIR_CODE"] if not MyEnv.platform_is_windows else "%s\code" % MyEnv._basedir_get()
+        DIR_CODE = MyEnv.config["DIR_CODE"] if not MyEnv.platform_is_windows else r"%s\code" % MyEnv._basedir_get()
         DIR_BASE = MyEnv.config["DIR_BASE"] if not MyEnv.platform_is_windows else MyEnv._basedir_get()
-        DIR_IDENTITY = f"{DIR_BASE}/myhost" if not MyEnv.platform_is_windows else "%s\myhost" % MyEnv._basedir_get()
+        DIR_IDENTITY = f"{DIR_BASE}/myhost" if not MyEnv.platform_is_windows else r"%s\myhost" % MyEnv._basedir_get()
 
         MOUNTS = ""
         if mount:
@@ -5667,7 +5663,7 @@ class DockerContainer:
         else:
             PORTRANGE = ""
 
-        if DockerFactory.image_name_exists(f"internal_{self.config.name}:") != False:
+        if DockerFactory.image_name_exists(f"internal_{self.config.name}:") is not False:
             image = f"internal_{self.config.name}"
 
         run_cmd = f"docker run --name={self.config.name} --hostname={self.config.name} -d {PORTRANGE} \
@@ -5675,7 +5671,7 @@ class DockerContainer:
         --cap-add=DAC_READ_SEARCH {MOUNTS} {image} {self.config.startupcmd}"
 
         run_cmd = Tools.text_strip(run_cmd)
-        run_cmd2 = Tools.text_replace(re.sub("\s+", " ", run_cmd))
+        run_cmd2 = Tools.text_replace(re.sub(r"\s+", " ", run_cmd))
         print(" - Docker machine gets created: ")
         # print(run_cmd2)
         Tools.execute(run_cmd2, interactive=False)
@@ -5684,7 +5680,7 @@ class DockerContainer:
 
         if not mount:
             # mount the code in the container to the right location to let jumpscale work
-            assert self.mount_code_exists == False
+            assert self.mount_code_exists is False
             self.dexec("rm -rf /sandbox/code")
             self.dexec("mkdir -p /sandbox/code/github")
             self.dexec("ln -s /sandbox/code_org /sandbox/code/github/threefoldtech")
@@ -5778,24 +5774,22 @@ class DockerContainer:
                 cmd2 = 'docker exec -t %s bash -c "%s"' % (self.name, cmd)
             else:
                 cmd2 = "docker exec -t %s bash -c '%s'" % (self.name, cmd)
-        Tools.execute(cmd2, interactive=interactive, showout=showout, replace=False, die=die)
+        return Tools.execute(cmd2, interactive=interactive, showout=showout, replace=False, die=die)
 
     def shell(self, cmd=None):
         if not self.isrunning():
             self.start()
         if cmd:
-            self.execute(
-                "source /sandbox/env.sh;cd /sandbox;clear;%s" % cmd, interactive=True, windows_interactive=True
-            )
+            self.dexec("source /sandbox/env.sh;cd /sandbox;clear;%s" % cmd, interactive=True)
         else:
-            self.execute("source /sandbox/env.sh;cd /sandbox;clear;bash", interactive=True, windows_interactive=True)
+            self.dexec("source /sandbox/env.sh;cd /sandbox;clear;bash", interactive=True)
 
     def diskusage(self):
         """
         uses ncdu to visualize disk usage
         :return:
         """
-        self.dexec("apt update;apt install ncdu -y;ncdu /", interactive=True)
+        self.dexec("apt-get update;apt-get install ncdu -y;ncdu /", interactive=True)
 
     def execute(
         self,
@@ -5878,7 +5872,7 @@ class DockerContainer:
         for item in os.listdir(dpath):
             try:
                 version = int(item.replace(".tar", ""))
-            except:
+            except Exception:
                 Tools.delete("%s/%s" % (dpath, item))
             if version > highest:
                 highest = version
@@ -6105,7 +6099,7 @@ class DockerContainer:
         dirpath = os.path.dirname(inspect.getfile(Tools))
         jsxfile = os.path.join(dirpath, "jsx")
         if not os.path.exists(jsxfile):
-            self.execute(
+            self.dexec(
                 """
             rm -f /tmp/InstallTools.py
             rm -f /tmp/jsx
@@ -6117,10 +6111,10 @@ class DockerContainer:
             for item in ["jsx", "InstallTools.py"]:
                 if MyEnv.platform_is_windows:
                     dirpath = dirpath.replace("/", "\\")
-                    src1 = "%s\%s" % (dirpath, item)
+                    src1 = r"%s\%s" % (dirpath, item)
                     if not Tools.exists(src1) and item == "jsx":
                         new_item = "jsx.py"
-                        src1 = "%s\%s" % (dirpath, new_item)
+                        src1 = r"%s\%s" % (dirpath, new_item)
                     self.executor.upload(src1, f"/tmp/{item}")
                 else:
                     src1 = "%s/%s" % (dirpath, item)
@@ -6294,7 +6288,6 @@ class SSHAgent:
         return choices
 
     def init(self):
-
         DIR_HOME = MyEnv.config["DIR_HOME"]
         DIR_BASE = MyEnv.config["DIR_BASE"]
 
@@ -6311,9 +6304,9 @@ class SSHAgent:
 
         if "SSH_KEY_DEFAULT" in MyEnv.config and MyEnv.config["SSH_KEY_DEFAULT"]:
             sshkey = MyEnv.config["SSH_KEY_DEFAULT"]
-            if not sshkey in self.key_names:
+            if sshkey not in self.key_names:
                 res = self.key_load(name=sshkey, die=False)
-                if res == None:
+                if res is None:
                     return None
                 sshkey = None
                 MyEnv.config["SSH_KEY_DEFAULT"] = ""
@@ -6654,7 +6647,7 @@ class SSHAgent:
         self.reset()
 
 
-class ExecutorSSH:
+class Executor:
     def __init__(self, addr=None, port=22, debug=False, name="executor"):
         self.name = name
         self.addr = addr
@@ -6666,14 +6659,14 @@ class ExecutorSSH:
         self.readonly = False
         self.CURDIR = ""
         self._data_path = "/var/executor_data"
-        self._init3()
+        self._init()
 
     def reset(self):
         self.state_reset()
-        self._init3()
+        self._init()
         self.save()
 
-    def _init3(self):
+    def _init(self):
         self._config = None
         # self._env_on_system = None
 
@@ -6797,12 +6790,6 @@ class ExecutorSSH:
 
         return None
 
-    @property
-    def uid(self):
-        if self._id is None:
-            raise Tools.exceptions.Base("self._id cannot be None")
-        return self._id
-
     def find(self, path):
         rc, out, err = self.execute("find %s" % path, die=False, interactive=False)
         if rc > 0:
@@ -6825,7 +6812,7 @@ class ExecutorSSH:
         means we don't work with ssh-agent ...
         """
 
-        if not "IN_DOCKER" in self.config:
+        if "IN_DOCKER" not in self.config:
             rc, out, _ = self.execute("cat /proc/1/cgroup", die=False, showout=False, interactive=False)
             if rc == 0 and out.find("/docker/") != -1:
                 self.config["IN_DOCKER"] = True
@@ -6962,7 +6949,7 @@ class ExecutorSSH:
             if name not in self._config:
                 self._config[name] = default
 
-        if self._config == None:
+        if self._config is None:
             self._config = {}
 
         get_cfg("DIR_HOME", res["ENV"]["HOME"])
@@ -7018,27 +7005,16 @@ class ExecutorSSH:
             else:
                 cmd2 = "ssh -oStrictHostKeyChecking=no root@%s -A -p %s '%s'" % (self.addr, self.port, cmd)
 
-        if not MyEnv.platform_is_windows:
-            r = Tools._execute(
-                cmd2,
-                interactive=interactive,
-                showout=showout,
-                timeout=timeout,
-                retry=retry,
-                die=die,
-                original_command=original_command,
-            )
-        else:
-            r = Tools.execute(
-                cmd2,
-                interactive=interactive,
-                showout=showout,
-                timeout=timeout,
-                retry=retry,
-                die=die,
-                original_command=original_command,
-                windows_interactive=windows_interactive,
-            )
+        r = Tools.execute(
+            cmd2,
+            interactive=interactive,
+            showout=showout,
+            timeout=timeout,
+            retry=retry,
+            die=die,
+            original_command=original_command,
+            windows_interactive=windows_interactive,
+        )
 
         if tempfile:
             Tools.delete(tempfile)
@@ -7128,7 +7104,7 @@ class ExecutorSSH:
 
     @property
     def uid(self):
-        if not "uid" in self.config:
+        if "uid" not in self.config:
             self.config["uid"] = str(random.getrandbits(32))
             self.save()
         return self.config["uid"]
@@ -7136,6 +7112,136 @@ class ExecutorSSH:
     def state_reset(self):
         self.config["state"] = {}
         self.save()
+
+
+class ExecutorSSH(Executor):
+    def __init__(self, addr=None, port=22, debug=False, name="executor"):
+        self.name = name
+        self.addr = addr
+        self.port = port
+        self.debug = debug
+        self._id = None
+        self._env = {}
+        self._config = {}
+        self.readonly = False
+        self.CURDIR = ""
+        self._data_path = "/var/executor_data"
+        self._init()
+
+
+class ExecutorDocker(Executor):
+    def __init__(self, container):
+        self.name = "dockerexecutor"
+        self._container = container
+        self._id = None
+        self._env = {}
+        self._config = {}
+        self.readonly = False
+        self.CURDIR = ""
+        self._data_path = "/var/executor_data"
+        self._init()
+
+    def execute(
+        self,
+        cmd,
+        die=True,
+        showout=False,
+        timeout=1000,
+        sudo=False,
+        replace=True,
+        interactive=False,
+        retry=None,
+        args=None,
+        python=False,
+        jumpscale=False,
+        debug=False,
+        windows_interactive=False,
+    ):
+        if not args:
+            args = {}
+
+        tempfile, cmd = Tools._cmd_process(
+            cmd=cmd,
+            python=python,
+            jumpscale=jumpscale,
+            die=die,
+            env=args,
+            sudo=sudo,
+            debug=debug,
+            replace=replace,
+            executor=self,
+        )
+
+        Tools._cmd_check(cmd)
+        r = self._container.dexec(cmd, interactive=interactive, die=die)
+        if tempfile:
+            Tools.delete(tempfile)
+        return r
+
+    def download(self, source, dest=None, ignoredir=None, ignorefiles=None, recursive=True):
+        """
+        :param source:
+        :param dest:
+        :param recursive:
+        :param ignoredir: the following are always in, no need to specify ['.egg-info', '.dist-info', '__pycache__']
+        :param ignorefiles: the following are always in, no need to specify: ["*.egg-info","*.pyc","*.bak"]
+        :return:
+        """
+        if not dest:
+            dest = source
+        else:
+            dest = self._replace(dest)
+        source = self._replace(source)
+
+        sourcedir = os.path.dirname(source)
+        Tools.dir_ensure(sourcedir)
+
+        destdir = os.path.dirname(dest)
+        Tools.dir_ensure(destdir)
+
+        cmd = f"docker cp {self._container.name}:{source} {dest}"
+        Tools.execute(cmd, showout=False, interactive=False)
+
+    def upload(
+        self,
+        source,
+        dest=None,
+        recursive=True,
+        createdir=False,
+        rsyncdelete=True,
+        ignoredir=None,
+        ignorefiles=None,
+        keepsymlinks=True,
+        retry=4,
+    ):
+        """
+        :param source:
+        :param dest:
+        :param recursive:
+        :param createdir:
+        :param rsyncdelete:
+        :param ignoredir: the following are always in, no need to specify ['.egg-info', '.dist-info', '__pycache__']
+        :param ignorefiles: the following are always in, no need to specify: ["*.egg-info","*.pyc","*.bak"]
+        :param keepsymlinks:
+        :param showout:
+        :return:
+        """
+        source = self._replace(source)
+        if not dest:
+            dest = source
+        else:
+            dest = self._replace(dest)
+        if not os.path.exists(source):
+            raise Tools.exceptions.Input("path '%s' not found" % source)
+
+        if os.path.isfile(source):
+            if createdir:
+                destdir = os.path.dirname(source)
+                self.dir_ensure(destdir)
+            cmd = f"docker cp {source} {self._container.name}:{dest}"
+            Tools.execute(cmd, showout=False, interactive=False)
+            return
+        raise Tools.exceptions.RuntimeError("not implemented")
 
 
 class Registry:

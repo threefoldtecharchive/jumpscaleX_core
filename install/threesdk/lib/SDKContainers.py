@@ -180,9 +180,6 @@ class SDKContainers:
                 self.args.secret = self.args.ask_secret()
                 secret = self.args.secret
 
-        # need to make sure 1 sshkey has been created, does not have to be in github
-        self.IT.MyEnv.sshagent.key_default_name
-
         self.IT.DockerFactory.init()
 
         docker = self.IT.DockerFactory.container_get(
