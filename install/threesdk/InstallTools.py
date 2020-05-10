@@ -2728,7 +2728,6 @@ class Tools:
 
         if callable(command):
             method_name, command = Tools.method_code_get(command, **args)
-            kwargs = None
             command += "%s()" % method_name
             jumpscale = True
 
@@ -5818,9 +5817,7 @@ class DockerContainer:
 
     def kosmos(self):
         self.execute(
-            f"j.application.interactive={MyEnv.interactive}; j.shell(False)",
-            interactive=True,
-            jumpscale=True,
+            f"j.application.interactive={MyEnv.interactive}; j.shell(False)", interactive=True, jumpscale=True,
         )
 
     def stop(self):
@@ -6093,7 +6090,7 @@ class DockerContainer:
             args_txt += f" -i {identity}"
 
         self.executor.execute(
-        """
+            """
         rm -f /tmp/InstallTools.py
         rm -f /tmp/jsx
         ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx
