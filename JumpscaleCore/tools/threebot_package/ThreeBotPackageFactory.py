@@ -95,8 +95,6 @@ class ThreeBotPackageFactory(j.baseclasses.object_config_collection_testtools):
         if not path:
             # self.add("{DIR_CODE}/github/threefoldtech/jumpscaleX_core/ThreeBotPackages/")
             return self.add("{DIR_CODE}/github/threefoldtech/jumpscaleX_threebot/ThreeBotPackages/")
-        if not j.sal.fs.exists(f"{path}/package.toml"):
-            raise j.exceptions.Input(f"Failed to add package. {path}/package.toml doesn't exist")
 
         def process(path, arg):
             basename = j.sal.fs.getBaseName(path)
