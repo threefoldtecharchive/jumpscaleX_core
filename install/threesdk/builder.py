@@ -137,7 +137,7 @@ def sdk(push=False, base=False, delete=False, noclean=False, development=False):
 
     docker._install_tcprouter()
     docker.install_jupyter()
-    docker.execute("apt install restic -y")
+    docker.execute("apt-get install restic -y")
 
     docker.image = dest
 
