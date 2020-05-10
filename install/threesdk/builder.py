@@ -9,7 +9,7 @@ IT = core.IT
 
 _containers = SDKContainers(core=core, args=args)
 
-__all__ = ["base", "sdk", "sdktool", "container_import", "container_export"]
+__all__ = ["base_build", "phusion_build", "sdk", "sdktool", "container_import", "container_export"]
 
 
 def phusion_build(push=False):
