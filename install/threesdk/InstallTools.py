@@ -2709,14 +2709,13 @@ class Tools:
         executor=None,
         debug=False,
         useShell=True,
-        windows_interactive=False,
     ):
 
         # windows only
         if MyEnv.platform_is_windows:
             if replace:
                 command = Tools.text_replace(command, args=args).rstrip("\n").replace("\n", "&&")
-            if windows_interactive:
+            if interactive:
                 subprocess.call(command, shell=True)
                 return
             else:
@@ -5607,7 +5606,7 @@ class DockerContainer:
 
         if pull:
             # lets make sure we have the latest image, ONLY DO WHEN FORCED, NOT STD
-            Tools.execute(f"docker image pull {image}", interactive=True, windows_interactive=True)
+            Tools.execute(f"docker image pull {image}", interactive=True)
             stop = True  # means we need to stop now, because otherwise we can't know we start from right image
 
         if delete:
@@ -5803,7 +5802,6 @@ class DockerContainer:
         replace=True,
         args=None,
         interactive=True,
-        windows_interactive=False,
     ):
         self.executor.execute(
             cmd,
@@ -5816,14 +5814,12 @@ class DockerContainer:
             replace=replace,
             args=args,
             interactive=interactive,
-            windows_interactive=windows_interactive,
         )
 
     def kosmos(self):
         self.execute(
             f"j.application.interactive={MyEnv.interactive}; j.shell(False)",
             interactive=True,
-            windows_interactive=True,
             jumpscale=True,
         )
 
@@ -6096,29 +6092,13 @@ class DockerContainer:
         if identity:
             args_txt += f" -i {identity}"
 
-        dirpath = os.path.dirname(inspect.getfile(Tools))
-        jsxfile = os.path.join(dirpath, "jsx")
-        if not os.path.exists(jsxfile):
-            self.dexec(
-                """
-            rm -f /tmp/InstallTools.py
-            rm -f /tmp/jsx
-            ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx
-            """
-            )
-        else:
-            print(" - copy installer over from where I install from")
-            for item in ["jsx", "InstallTools.py"]:
-                if MyEnv.platform_is_windows:
-                    dirpath = dirpath.replace("/", "\\")
-                    src1 = r"%s\%s" % (dirpath, item)
-                    if not Tools.exists(src1) and item == "jsx":
-                        new_item = "jsx.py"
-                        src1 = r"%s\%s" % (dirpath, new_item)
-                    self.executor.upload(src1, f"/tmp/{item}")
-                else:
-                    src1 = "%s/%s" % (dirpath, item)
-                    self.executor.upload(src1, "/tmp")
+        self.executor.execute(
+        """
+        rm -f /tmp/InstallTools.py
+        rm -f /tmp/jsx
+        ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx
+        """
+        )
 
         # python3 jsx configure --sshkey {MyEnv.sshagent.key_default_name} -s
         # WHY DO WE NEED THIS, in container ssh-key should always be there & loaded, don't think there is a reason to configure it
@@ -6137,10 +6117,7 @@ class DockerContainer:
         python3 jsx install {args_txt}
         """
         print(" - Installing jumpscaleX ")
-        if MyEnv.platform_is_windows:
-            self.execute(cmd, windows_interactive=True)
-        else:
-            self.execute(cmd)
+        self.execute(cmd)
         print(" - Install succesfull")
 
         self.executor.state_set("STATE_JUMPSCALE")
@@ -6974,7 +6951,6 @@ class Executor:
         python=False,
         jumpscale=False,
         debug=False,
-        windows_interactive=False,
     ):
         original_command = cmd + ""
         if not args:
@@ -7013,7 +6989,6 @@ class Executor:
             retry=retry,
             die=die,
             original_command=original_command,
-            windows_interactive=windows_interactive,
         )
 
         if tempfile:
@@ -7155,7 +7130,6 @@ class ExecutorDocker(Executor):
         python=False,
         jumpscale=False,
         debug=False,
-        windows_interactive=False,
     ):
         if not args:
             args = {}
