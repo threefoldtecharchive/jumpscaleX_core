@@ -30,7 +30,6 @@ def install(
     testnr=None,
     identity=None,
     delete=False,
-    mount=True,
     email=None,
     words=None,
     server=False,
@@ -53,7 +52,6 @@ def install(
 
     """
     delete = core.IT.Tools.bool(delete)
-    mount = core.IT.Tools.bool(mount)
 
     if code_update_force:
         pull = True
@@ -82,7 +80,6 @@ def install(
         identity=identity,
         name=name,
         delete=delete,
-        mount=mount,
         email=email,
         pull=pull,
         code_update_force=code_update_force,

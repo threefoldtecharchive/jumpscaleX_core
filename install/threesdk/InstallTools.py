@@ -2959,7 +2959,7 @@ class Tools:
             return check()
 
     @staticmethod
-    def _code_location_get(account, repo):
+    def _code_location_get(account, repo, executor=None):
         """
         accountdir will be created if it does not exist yet
         :param repo:
@@ -2973,20 +2973,25 @@ class Tools:
         """
 
         prefix = "code"
-        if "DIR_CODE" in MyEnv.config:
+        if executor and not isinstance(executor, ExecutorLocal):
+            accountdir = f"/sandbox/code/github/{account}"
+        elif "DIR_CODE" in MyEnv.config:
             accountdir = os.path.join(MyEnv.config["DIR_CODE"], "github", account)
         else:
             accountdir = os.path.join(MyEnv.config["DIR_BASE"], prefix, "github", account)
+
+        executor = executor or ExecutorLocal()
+
         repodir = os.path.join(accountdir, repo)
         gitdir = os.path.join(repodir, ".git")
         dontpullloc = os.path.join(repodir, ".dontpull")
-        if os.path.exists(accountdir):
-            if os.listdir(accountdir) == []:
-                shutil.rmtree(accountdir)  # lets remove the dir & return it does not exist
+        if executor.exists(accountdir):
+            if executor.find(accountdir) == []:
+                executor.delete(accountdir)  # lets remove the dir & return it does not exist
 
-        exists = os.path.exists(repodir)
-        foundgit = os.path.exists(gitdir)
-        dontpull = os.path.exists(dontpullloc)
+        exists = executor.exists(repodir)
+        foundgit = executor.exists(gitdir)
+        dontpull = executor.exists(dontpullloc)
         return exists, foundgit, dontpull, accountdir, repodir
 
     @staticmethod
@@ -3299,7 +3304,7 @@ class Tools:
         )
 
     @staticmethod
-    def code_github_get(url, rpath=None, branch=None, pull=False, reset=False):
+    def code_github_get(url, rpath=None, branch=None, pull=False, reset=False, executor=None):
         """
 
         :param repo:
@@ -3310,12 +3315,11 @@ class Tools:
         :param reset:
         :return:
         """
+        executor = executor or ExecutorLocal()
 
         def getbranch(args):
             cmd = "cd {REPO_DIR} && git rev-parse --abbrev-ref HEAD"
-            rc, stdout, err = Tools.execute(
-                cmd, die=False, args=args, showout=False, interactive=False, die_if_args_left=True
-            )
+            rc, stdout, err = executor.execute(cmd, die=False, args=args, showout=False, interactive=False)
             if rc > 0:
                 Tools.shell()
             current_branch = stdout.strip()
@@ -3330,9 +3334,7 @@ class Tools:
                 if Tools.ask_yes_no(
                     f"\n**: A different branch ({current_branch}) found in repo ({repo}), do you want to change it to ({branch})?"
                 ):
-                    rc, out, err = Tools.execute(
-                        script, die=False, args=args, showout=False, interactive=True, die_if_args_left=True
-                    )
+                    rc, out, err = executor.execute(script, die=False, args=args, showout=False, interactive=True)
                 else:
                     raise Tools.exceptions.Input(f"Cannot continue please change repo ({repo}) to branch to ({branch})")
 
@@ -3347,8 +3349,8 @@ class Tools:
             git checkout -q . --force
             """
             Tools.log(f"get code & ignore changes: {args['name']}")
-            Tools.execute(
-                C, args=args, retry=1, errormsg=f"Could not checkout {url}", die_if_args_left=True, interactive=True,
+            executor.execute(
+                C, args=args, retry=1, errormsg=f"Could not checkout {url}", interactive=True,
             )
 
         def assert_merge(args):
@@ -3356,13 +3358,8 @@ class Tools:
             cd {REPO_DIR}
             git pull -q {URL}
             """
-            rc, out, err = Tools.execute(
-                C,
-                args=args,
-                retry=1,
-                errormsg=f"Couldn't merge repo {args['URL']}",
-                die_if_args_left=True,
-                interactive=True,
+            rc, out, err = executor.execute(
+                C, args=args, retry=1, errormsg=f"Couldn't merge repo {args['URL']}", interactive=True,
             )
             return rc == 0
 
@@ -3385,7 +3382,9 @@ class Tools:
 
         Tools.log("get code:%s:%s (%s)" % (url, path, branch))
 
-        exists, foundgit, dontpull, ACCOUNT_DIR, REPO_DIR = Tools._code_location_get(account=account, repo=repo)
+        exists, foundgit, dontpull, ACCOUNT_DIR, REPO_DIR = Tools._code_location_get(
+            account=account, repo=repo, executor=executor
+        )
 
         # if exists and reset and not pull:
         #     # need to remove because could be left over from previous sync operations
@@ -3405,7 +3404,7 @@ class Tools:
         if "GITPULL" in os.environ:
             pull = str(os.environ["GITPULL"]) == "1"
 
-        git_on_system = Tools.cmd_installed("git")
+        git_on_system = executor.cmd_installed("git")
 
         if exists and not foundgit and not pull:
             """means code is already there, maybe synced?"""
@@ -3426,12 +3425,12 @@ class Tools:
             if exists is False:
                 try:
                     Tools.log("get code [git] (first time): %s" % repo)
-                    if not Tools.exists(ACCOUNT_DIR):
-                        os.makedirs(ACCOUNT_DIR)
+                    if not executor.exists(ACCOUNT_DIR):
+                        executor.dir_ensure(ACCOUNT_DIR)
                     C = """
                     git -C {ACCOUNT_DIR} clone {URL} -b {BRANCH} -q
                     """
-                    Tools.execute(
+                    executor.execute(
                         C,
                         args=args,
                         die=True,
@@ -3439,13 +3438,12 @@ class Tools:
                         interactive=True,
                         retry=4,
                         errormsg=f"Could not clone {url}",
-                        die_if_args_left=True,
                     )
 
                 except Exception:
                     Tools.log("get code [https] (default branch): %s" % repo)
                     C = "git -C {ACCOUNT_DIR} clone -q {URL}"
-                    Tools.execute(
+                    executor.execute(
                         C,
                         args=args,
                         die=True,
@@ -3453,7 +3451,6 @@ class Tools:
                         interactive=True,
                         retry=4,
                         errormsg=f"Could not clone {url}",
-                        die_if_args_left=True,
                     )
             else:
                 if pull:
@@ -3482,7 +3479,7 @@ class Tools:
                                            git commit -m "{MESSAGE}"
                                            """
                                         Tools.log("get code & commit [git]: %s" % repo)
-                                        Tools.execute(C, args=args, die_if_args_left=True, interactive=True)
+                                        executor.execute(C, args=args, interactive=True)
                                     else:
                                         raise Tools.exceptions.Input(
                                             "you have uncommitted changes, automatic pull failed, please resolve and update before continuing"
@@ -3490,26 +3487,24 @@ class Tools:
                                 else:
                                     raise Tools.exceptions.Input("found changes, do not want to commit or reset")
                     # update repo
-                    Tools.execute(
+                    executor.execute(
                         "git -C {REPO_DIR} fetch -q {URL}",
                         args=args,
                         retry=4,
                         showout=False,
                         errormsg=f"Could not pull {url}",
-                        die_if_args_left=True,
                         interactive=True,
                     )
                     # switch branch
                     if not checkoutbranch(args, branch):
                         raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
                     Tools.log("update code: %s" % repo)
-                    Tools.execute(
+                    executor.execute(
                         "git -C {REPO_DIR} rebase -q origin/{BRANCH}",
                         args=args,
                         retry=4,
                         showout=False,
                         errormsg=f"Could not pull {url}",
-                        die_if_args_left=True,
                         interactive=True,
                     )
 
@@ -3528,9 +3523,7 @@ class Tools:
             rm -f download.zip
             curl -L {URL} > download.zip
             """
-            Tools.execute(
-                script, args=args, retry=3, errormsg="Cannot download:%s" % args["URL"], die_if_args_left=True
-            )
+            executor.execute(script, args=args, retry=3, errormsg="Cannot download:%s" % args["URL"])
             statinfo = os.stat("/tmp/jumpscale/download.zip")
             if statinfo.st_size < 100000:
                 raise Tools.exceptions.Operations("cannot download:%s resulting file was too small" % args["URL"])
@@ -3546,7 +3539,7 @@ class Tools:
                 rm -f download.zip
                 """
                 try:
-                    Tools.execute(script, args=args, die=True, die_if_args_left=True, interactive=True)
+                    executor.execute(script, args=args, die=True, interactive=True)
                 except Exception:
                     Tools.shell()
 
@@ -4949,7 +4942,7 @@ class JumpscaleInstaller:
                                     out += "%s\n" % line
                             try:
                                 Tools.file_write(toremove, out)
-                            except:
+                            except Exception:
                                 pass
                             # Tools.shell()
         tofind = ["js_", "js9"]
@@ -4979,13 +4972,14 @@ class JumpscaleInstaller:
     #     Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
     #
 
-    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False):
+    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False, executor=None):
         assert not prebuilt  # not supported yet
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
 
         done = []
-        usessh = Tools.code_github_use_ssh()
+        usessh = False if executor else Tools.code_github_use_ssh()
+        execute = executor.execute if executor else Tools.execute
 
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
@@ -4998,12 +4992,12 @@ class JumpscaleInstaller:
             if branch:
                 # check if provided branch exists otherwise don't use it
                 C = f"""git ls-remote --heads {GITURL} {branch} {GITURL}"""
-                _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True, interactive=False)
+                _, out, _ = execute(C, showout=False, interactive=False)
                 if out:
                     BRANCH = branch
 
             try:
-                Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
+                Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset, executor=executor)
             except Tools.exceptions.Input:
                 raise
 
@@ -5158,9 +5152,11 @@ class DockerFactory:
                         docker.stop()
                         docker.start(mount=True)
                 else:
-                    if docker.info["Mounts"] != []:
-                        docker.stop()
-                        docker.start(mount=False)
+                    for mount in docker.info["Mounts"]:
+                        if mount["Destination"] not in ["/sandbox/myhost", "/sandbox/code"]:
+                            docker.stop()
+                            docker.start(mount=False)
+                            break
                 return docker
         if not docker:
             docker = DockerContainer(name=name, image=image, ports=ports)
@@ -5756,7 +5752,7 @@ class DockerContainer:
         data = json.loads(out)[0]
         return data
 
-    def dexec(self, cmd, interactive=False, die=True, showout=True):
+    def dexec(self, cmd, interactive=False, die=True, showout=True, retry=None, errormsg=None):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
 
@@ -5772,7 +5768,9 @@ class DockerContainer:
                 cmd2 = 'docker exec -t %s bash -c "%s"' % (self.name, cmd)
             else:
                 cmd2 = "docker exec -t %s bash -c '%s'" % (self.name, cmd)
-        return Tools.execute(cmd2, interactive=interactive, showout=showout, replace=False, die=die)
+        return Tools.execute(
+            cmd2, interactive=interactive, showout=showout, replace=False, die=die, retry=retry, errormsg=errormsg
+        )
 
     def shell(self, cmd=None):
         if not self.isrunning():
@@ -7101,6 +7099,48 @@ class ExecutorSSH(Executor):
         self._init()
 
 
+class ExecutorLocal(Executor):
+    def execute(
+        self,
+        cmd,
+        die=True,
+        showout=False,
+        timeout=1000,
+        replace=True,
+        interactive=False,
+        retry=None,
+        args=None,
+        python=False,
+        jumpscale=False,
+        debug=False,
+        errormsg=None,
+    ):
+        return Tools.execute(
+            cmd,
+            showout=showout,
+            die=die,
+            timeout=timeout,
+            replace=replace,
+            interactive=interactive,
+            retry=retry,
+            args=args,
+            python=python,
+            jumpscale=jumpscale,
+            debug=debug,
+            errormsg=errormsg,
+        )
+
+    def exists(self, path):
+        return os.path.exists(path)
+
+    def delete(self, path):
+        path = self._replace(path)
+        shutil.rmtree(path)
+
+    def cmd_installed(self, cmd):
+        return Tools.cmd_installed(cmd)
+
+
 class ExecutorDocker(Executor):
     def __init__(self, container):
         self.name = "dockerexecutor"
@@ -7119,7 +7159,6 @@ class ExecutorDocker(Executor):
         die=True,
         showout=False,
         timeout=1000,
-        sudo=False,
         replace=True,
         interactive=False,
         retry=None,
@@ -7127,6 +7166,7 @@ class ExecutorDocker(Executor):
         python=False,
         jumpscale=False,
         debug=False,
+        errormsg=None,
     ):
         if not args:
             args = {}
@@ -7137,14 +7177,13 @@ class ExecutorDocker(Executor):
             jumpscale=jumpscale,
             die=die,
             env=args,
-            sudo=sudo,
             debug=debug,
             replace=replace,
             executor=self,
         )
 
         Tools._cmd_check(cmd)
-        r = self._container.dexec(cmd, interactive=interactive, die=die)
+        r = self._container.dexec(cmd, interactive=interactive, die=die, retry=retry, errormsg=errormsg, showout=showout)
         if tempfile:
             Tools.delete(tempfile)
         return r

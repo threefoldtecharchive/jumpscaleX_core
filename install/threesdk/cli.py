@@ -139,8 +139,10 @@ def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
     return result
 
 
-def base_check():
-    requiretools = ["docker", "git"]
+def base_check(expert):
+    requiretools = ["docker"]
+    if expert:
+        requiretools.append("git")
     missingtools = []
     for tool in requiretools:
         if not shutil.which(tool):
@@ -155,7 +157,6 @@ def base_check():
 
 
 def main():
-    base_check()
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -163,9 +164,12 @@ def main():
 
     parser.add_argument("-v", "--version", default=False, action="store_true")
     options, extra = parser.parse_known_args()
+    base_check(options.expert)
     if options.version:
         version()
         sys.exit(0)
+
+    args.args.expert = options.expert
     if extra:
         line = rewriteline(extra, globals(), locals())
         exec(line, globals(), locals())
