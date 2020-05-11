@@ -35,10 +35,10 @@ Some tools available in JumpScale
 
 ## Install and use 3SDK and Jumpscale
 
-- [3sdk_install](../3sdk/3sdk_install.md)
-- [3sdk_use](../3sdk/3sdk_use.md)
-- [3sdk_build](../3sdk/3sdk_build.md)
-- [3sdk_troubleshooting](../3sdk/3sdk_troubleshooting.md)
+- [3sdk_install](docs/3sdk/3sdk_install.md)
+- [3sdk_use](docs/3sdk/3sdk_use.md)
+- [3sdk_build](docs/3sdk/3sdk_build.md)
+- [3sdk_troubleshooting](docs/3sdk/3sdk_troubleshooting.md)
 
 ## Running Tests
 To run unittests you can execute the following command
