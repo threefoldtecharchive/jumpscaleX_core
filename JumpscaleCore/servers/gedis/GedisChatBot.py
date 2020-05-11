@@ -229,11 +229,16 @@ class GedisChatBot:
 
     @property
     def info(self):
+        previous = True
+        if self.is_first_slide:
+            if self.is_first_step or not self.step_info.get("previous"):
+                previous = False
+
         return {
             "step": self._current_step + 1,
             "steps": len(self.steps),
             "title": self.step_info.get("title"),
-            "previous": not (self.is_first_slide and self.is_first_step) and self.step_info.get("previous"),
+            "previous": previous,
             "last_step": self.is_last_step,
             "first_step": self.is_first_step,
             "first_slide": self.is_first_slide,
@@ -242,6 +247,7 @@ class GedisChatBot:
 
     def _execute_current_step(self, spawn=True):
         def wrapper(step_name):
+            internal_error = False
             try:
                 getattr(self, step_name)()
             except StopChatFlow as e:
@@ -249,9 +255,11 @@ class GedisChatBot:
                     self.send_error(e.msg)
 
             except Exception as e:
+                internal_error = True
                 j.errorhandler.exception_handle(e, die=False)
                 self.send_error("Something wrong happened, please contact support")
-            else:
+            
+            if not internal_error:
                 if self.is_last_step:
                     self.send_data({"category": "end"})
                 else:
