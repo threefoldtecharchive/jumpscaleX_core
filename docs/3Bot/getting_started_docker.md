@@ -7,7 +7,7 @@
 - Get jsx file from github repository on (Ubuntu) machine
 
     ```bash
-    curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py > /tmp/jsx;
+    curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py > /tmp/jsx;
     chmod +x /tmp/jsx;
     ```
 OR

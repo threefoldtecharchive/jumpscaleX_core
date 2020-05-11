@@ -5,7 +5,7 @@
 ### Install jumpscaleX in a container with threebot using the following steps
 
 ```bash
-curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py > /tmp/jsx;
+curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py > /tmp/jsx;
 chmod +x /tmp/jsx;
 /tmp/jsx container-install -s --threebot;
 ```
@@ -46,4 +46,4 @@ Access in the web browser via the ip that wireguard provided
 Access in web browser via the ip of the docker container
 
 #### to check slides and macros
-Check [docs on wikis](https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/zerobot/webinterface/wiki/wikis)
+Check [docs on wikis](https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/zerobot/webinterface/wiki/wikis)

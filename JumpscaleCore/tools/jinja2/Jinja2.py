@@ -238,7 +238,7 @@ class Jinja2(j.baseclasses.object):
 
         example:
 
-        src = j.clients.git.getContentPathFromURLorPath("https://github.com/threefoldtech/jumpscale_lib/tree/development/apps/example")
+        src = j.clients.git.getContentPathFromURLorPath("https://github.com/threefoldtech/jumpscale_lib/tree/master/apps/example")
         dest = j.sal.fs.getTmpDirPath("jumpscale/jinja2test")
         self._log_info("copy templates to:%s"%dest)
         j.tools.jinja2.copy_dir_render(src,dest,j=j,name="aname")
@@ -280,7 +280,7 @@ class Jinja2(j.baseclasses.object):
         )
 
         src = j.clients.git.getContentPathFromURLorPath(
-            "https://github.com/threefoldtech/jumpscale_lib/tree/development/apps/example"
+            "https://github.com/threefoldtech/jumpscale_lib/tree/master/apps/example"
         )
         dest = j.sal.fs.getTmpDirPath("jumpscale/jinja2test")
         self._log_info("copy templates to:%s" % dest)

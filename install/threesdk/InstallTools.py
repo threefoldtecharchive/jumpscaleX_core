@@ -31,6 +31,7 @@ import re
 
 from pathlib import Path
 from subprocess import Popen
+from collections import namedtuple
 import inspect
 import json
 
@@ -59,7 +60,11 @@ else:
     pygments_formatter = False
     pygments_pylexer = False
 
-DEFAULT_BRANCH = "development"
+DEFAULT_BRANCH = "master"
+RepoInfo = namedtuple("RepoInfo", ["protocol", "host", "account", "name", "url", "port"])
+
+GITHUB_RSA = "AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ=="
+
 DEFAULT_BRANCH_WEB = "development"
 GITREPOS = {}
 
@@ -1063,7 +1068,6 @@ class Tools:
                         line = tb2.code_context[0].strip()
                     else:
                         Tools.shell()
-                        w
                 else:
                     line = ""
                 if not ignore(frame.f_code.co_filename):
@@ -2705,14 +2709,13 @@ class Tools:
         executor=None,
         debug=False,
         useShell=True,
-        windows_interactive=False,
     ):
 
         # windows only
         if MyEnv.platform_is_windows:
             if replace:
                 command = Tools.text_replace(command, args=args).rstrip("\n").replace("\n", "&&")
-            if windows_interactive:
+            if interactive:
                 subprocess.call(command, shell=True)
                 return
             else:
@@ -2725,7 +2728,6 @@ class Tools:
 
         if callable(command):
             method_name, command = Tools.method_code_get(command, **args)
-            kwargs = None
             command += "%s()" % method_name
             jumpscale = True
 
@@ -2958,7 +2960,7 @@ class Tools:
             return check()
 
     @staticmethod
-    def _code_location_get(account, repo):
+    def _code_location_get(account, repo, executor=None):
         """
         accountdir will be created if it does not exist yet
         :param repo:
@@ -2972,20 +2974,25 @@ class Tools:
         """
 
         prefix = "code"
-        if "DIR_CODE" in MyEnv.config:
+        if executor and not isinstance(executor, ExecutorLocal):
+            accountdir = f"/sandbox/code/github/{account}"
+        elif "DIR_CODE" in MyEnv.config:
             accountdir = os.path.join(MyEnv.config["DIR_CODE"], "github", account)
         else:
             accountdir = os.path.join(MyEnv.config["DIR_BASE"], prefix, "github", account)
+
+        executor = executor or ExecutorLocal()
+
         repodir = os.path.join(accountdir, repo)
         gitdir = os.path.join(repodir, ".git")
         dontpullloc = os.path.join(repodir, ".dontpull")
-        if os.path.exists(accountdir):
-            if os.listdir(accountdir) == []:
-                shutil.rmtree(accountdir)  # lets remove the dir & return it does not exist
+        if executor.exists(accountdir):
+            if executor.find(accountdir) == []:
+                executor.delete(accountdir)  # lets remove the dir & return it does not exist
 
-        exists = os.path.exists(repodir)
-        foundgit = os.path.exists(gitdir)
-        dontpull = os.path.exists(dontpullloc)
+        exists = executor.exists(repodir)
+        foundgit = executor.exists(gitdir)
+        dontpull = executor.exists(dontpullloc)
         return exists, foundgit, dontpull, accountdir, repodir
 
     @staticmethod
@@ -3001,6 +3008,38 @@ class Tools:
         args["REPO_DIR"] = path
         rc, out, err = Tools.execute(S, showout=False, die=False, args=args)
         return rc > 0
+
+    @staticmethod
+    def code_github_use_ssh():
+        """
+        Will check if we can use ssh to clone/pull our repos
+        """
+        Tools.known_hosts_update("github.com", key=f"github.com ssh-rsa {GITHUB_RSA}")
+        repoinfo = Tools.code_git_rewrite_url(GITREPOS["core"][0], ssh=True)
+        rc, _, _, = Tools.execute(f"git ls-remote --tags {repoinfo.url}", die=False, interactive=False, showout=False)
+        return rc == 0
+
+    @staticmethod
+    def known_hosts_update(host, port=22, key=None):
+        if key is None:
+            cmd = f"ssh-keyscan -t rsa -p {port} {host}"
+            _, key, _ = Tools.execute(cmd, showout=False)
+        if MyEnv.platform_is_windows:
+            known_host_path = r"%s\.ssh\known_hosts" % MyEnv._homedir_get()
+        else:
+            known_host_path = "%s/.ssh/known_hosts" % MyEnv.config["DIR_HOME"]
+        # ensure parent directory
+        Tools.dir_ensure(os.path.dirname(known_host_path))
+        haskey = False
+        if os.path.exists(known_host_path):
+            with open(known_host_path) as fd:
+                for line in fd:
+                    if key in line:
+                        haskey = True
+                        break
+        if not haskey:
+            with open(known_host_path, "a+") as fd:
+                fd.write(key.strip() + "\n")
 
     @staticmethod
     def code_git_rewrite_url(url="", login=None, passwd=None, ssh="auto"):
@@ -3109,7 +3148,7 @@ class Tools:
         if repository_name.endswith(".git"):
             repository_name = repository_name[:-4]
 
-        return protocol, repository_host, repository_account, repository_name, repository_url, port
+        return RepoInfo(protocol, repository_host, repository_account, repository_name, repository_url, port)
 
     @staticmethod
     def code_gitrepo_args(url="", dest=None, login=None, passwd=None, reset=False, ssh="auto"):
@@ -3266,7 +3305,7 @@ class Tools:
         )
 
     @staticmethod
-    def code_github_get(url, rpath=None, branch=None, pull=False, reset=False):
+    def code_github_get(url, rpath=None, branch=None, pull=False, reset=False, executor=None):
         """
 
         :param repo:
@@ -3277,12 +3316,11 @@ class Tools:
         :param reset:
         :return:
         """
+        executor = executor or ExecutorLocal()
 
         def getbranch(args):
             cmd = "cd {REPO_DIR} && git rev-parse --abbrev-ref HEAD"
-            rc, stdout, err = Tools.execute(
-                cmd, die=False, args=args, showout=False, interactive=False, die_if_args_left=True
-            )
+            rc, stdout, err = executor.execute(cmd, die=False, args=args, showout=False, interactive=False)
             if rc > 0:
                 Tools.shell()
             current_branch = stdout.strip()
@@ -3297,9 +3335,7 @@ class Tools:
                 if Tools.ask_yes_no(
                     f"\n**: A different branch ({current_branch}) found in repo ({repo}), do you want to change it to ({branch})?"
                 ):
-                    rc, out, err = Tools.execute(
-                        script, die=False, args=args, showout=False, interactive=True, die_if_args_left=True
-                    )
+                    rc, out, err = executor.execute(script, die=False, args=args, showout=False, interactive=True)
                 else:
                     raise Tools.exceptions.Input(f"Cannot continue please change repo ({repo}) to branch to ({branch})")
 
@@ -3308,33 +3344,23 @@ class Tools:
 
             return True
 
-        def reset_changes(args, repo, repo_url):
+        def reset_changes(args):
             C = """
             cd {REPO_DIR}
             git checkout -q . --force
             """
-            Tools.log("get code & ignore changes: %s" % repo)
-            Tools.execute(
-                C,
-                args=args,
-                retry=1,
-                errormsg="Could not checkout %s" % repo_url,
-                die_if_args_left=True,
-                interactive=True,
+            Tools.log(f"get code & ignore changes: {args['name']}")
+            executor.execute(
+                C, args=args, retry=1, errormsg=f"Could not checkout {url}", interactive=True,
             )
 
-        def assert_merge(args, repo_url):
+        def assert_merge(args):
             C = """
             cd {REPO_DIR}
-            git pull -q
+            git pull -q {URL}
             """
-            rc, out, err = Tools.execute(
-                C,
-                args=args,
-                retry=1,
-                errormsg="Couldn't merge repo %s" % repo_url,
-                die_if_args_left=True,
-                interactive=True,
+            rc, out, err = executor.execute(
+                C, args=args, retry=1, errormsg=f"Couldn't merge repo {args['URL']}", interactive=True,
             )
             return rc == 0
 
@@ -3356,14 +3382,10 @@ class Tools:
             raise Tools.exceptions.JSBUG("branch should be a string or list, now %s" % branch)
 
         Tools.log("get code:%s:%s (%s)" % (url, path, branch))
-        if MyEnv.config["SSH_AGENT"]:
-            url = "git@github.com:%s/%s.git"
-        else:
-            url = "https://github.com/%s/%s.git"
 
-        repo_url = url % (account, repo)
-        fallback_url = "https://github.com/%s/%s.git" % (account, repo)
-        exists, foundgit, dontpull, ACCOUNT_DIR, REPO_DIR = Tools._code_location_get(account=account, repo=repo)
+        exists, foundgit, dontpull, ACCOUNT_DIR, REPO_DIR = Tools._code_location_get(
+            account=account, repo=repo, executor=executor
+        )
 
         # if exists and reset and not pull:
         #     # need to remove because could be left over from previous sync operations
@@ -3373,8 +3395,7 @@ class Tools:
         args = {}
         args["ACCOUNT_DIR"] = ACCOUNT_DIR
         args["REPO_DIR"] = REPO_DIR
-        args["URL"] = repo_url
-        args["FALLBACK_URL"] = fallback_url
+        args["URL"] = url
         args["NAME"] = repo
         if "SSH_AUTH_SOCK" in os.environ:
             args["SSH_AUTH_SOCK"] = os.environ["SSH_AUTH_SOCK"]
@@ -3384,7 +3405,7 @@ class Tools:
         if "GITPULL" in os.environ:
             pull = str(os.environ["GITPULL"]) == "1"
 
-        git_on_system = Tools.cmd_installed("git")
+        git_on_system = executor.cmd_installed("git")
 
         if exists and not foundgit and not pull:
             """means code is already there, maybe synced?"""
@@ -3405,63 +3426,44 @@ class Tools:
             if exists is False:
                 try:
                     Tools.log("get code [git] (first time): %s" % repo)
-                    if not Tools.exists(ACCOUNT_DIR):
-                        os.makedirs(ACCOUNT_DIR)
+                    if not executor.exists(ACCOUNT_DIR):
+                        executor.dir_ensure(ACCOUNT_DIR)
                     C = """
                     git -C {ACCOUNT_DIR} clone {URL} -b {BRANCH} -q
                     """
-                    Tools.execute(
+                    executor.execute(
                         C,
                         args=args,
                         die=True,
                         showout=True,
                         interactive=True,
                         retry=4,
-                        errormsg="Could not clone %s" % repo_url,
-                        die_if_args_left=True,
+                        errormsg=f"Could not clone {url}",
                     )
 
                 except Exception:
-                    Tools.log("get code [https] (second time): %s" % repo)
-                    if not Tools.exists(ACCOUNT_DIR):
-                        os.makedirs(ACCOUNT_DIR)
-                    C = "git -C {ACCOUNT_DIR} clone {FALLBACK_URL} -b {BRANCH} -q"
-
-                    try:
-                        Tools.execute(
-                            C,
-                            args=args,
-                            die=True,
-                            showout=True,
-                            interactive=True,
-                            retry=4,
-                            errormsg="Could not clone %s" % repo_url,
-                            die_if_args_left=True,
-                        )
-                    except Exception:
-                        # try with default branch if doesn't exist
-                        C = "git -C {ACCOUNT_DIR} clone -q {FALLBACK_URL}"
-                        Tools.execute(
-                            C,
-                            args=args,
-                            die=True,
-                            showout=True,
-                            interactive=True,
-                            retry=4,
-                            errormsg="Could not clone %s" % repo_url,
-                            die_if_args_left=True,
-                        )
+                    Tools.log("get code [https] (default branch): %s" % repo)
+                    C = "git -C {ACCOUNT_DIR} clone -q {URL}"
+                    executor.execute(
+                        C,
+                        args=args,
+                        die=True,
+                        showout=True,
+                        interactive=True,
+                        retry=4,
+                        errormsg=f"Could not clone {url}",
+                    )
             else:
                 if pull:
                     if reset:
-                        reset_changes(args, repo, repo_url)
+                        reset_changes(args)
                     else:
                         if Tools.code_changed(REPO_DIR):
                             if Tools.ask_yes_no(
                                 "\n**:found changes in repo '%s', do you want to reset?\n WARNING: This will delete all local changes"
                                 % repo
                             ):
-                                reset_changes(args, repo, repo_url)
+                                reset_changes(args)
                             else:
                                 if Tools.ask_yes_no(
                                     "\n**: you chose not to reset in repo '%s', do you want to commit?" % repo
@@ -3471,14 +3473,14 @@ class Tools:
                                     else:
                                         args["MESSAGE"] = input("\nprovide commit message: ")
                                         assert args["MESSAGE"].strip() != ""
-                                    if assert_merge(args, repo_url):
+                                    if assert_merge(args):
                                         C = """
                                            cd {REPO_DIR}
                                            git add . -A
                                            git commit -m "{MESSAGE}"
                                            """
                                         Tools.log("get code & commit [git]: %s" % repo)
-                                        Tools.execute(C, args=args, die_if_args_left=True, interactive=True)
+                                        executor.execute(C, args=args, interactive=True)
                                     else:
                                         raise Tools.exceptions.Input(
                                             "you have uncommitted changes, automatic pull failed, please resolve and update before continuing"
@@ -3486,26 +3488,24 @@ class Tools:
                                 else:
                                     raise Tools.exceptions.Input("found changes, do not want to commit or reset")
                     # update repo
-                    Tools.execute(
-                        "git -C {REPO_DIR} fetch -q",
+                    executor.execute(
+                        "git -C {REPO_DIR} fetch -q {URL}",
                         args=args,
                         retry=4,
                         showout=False,
-                        errormsg="Could not pull %s" % repo_url,
-                        die_if_args_left=True,
+                        errormsg=f"Could not pull {url}",
                         interactive=True,
                     )
                     # switch branch
                     if not checkoutbranch(args, branch):
                         raise Tools.exceptions.Input("Could not checkout branch:%s on %s" % (branch, args["REPO_DIR"]))
                     Tools.log("update code: %s" % repo)
-                    Tools.execute(
+                    executor.execute(
                         "git -C {REPO_DIR} rebase -q origin/{BRANCH}",
                         args=args,
                         retry=4,
                         showout=False,
-                        errormsg="Could not pull %s" % repo_url,
-                        die_if_args_left=True,
+                        errormsg=f"Could not pull {url}",
                         interactive=True,
                     )
 
@@ -3524,9 +3524,7 @@ class Tools:
             rm -f download.zip
             curl -L {URL} > download.zip
             """
-            Tools.execute(
-                script, args=args, retry=3, errormsg="Cannot download:%s" % args["URL"], die_if_args_left=True
-            )
+            executor.execute(script, args=args, retry=3, errormsg="Cannot download:%s" % args["URL"])
             statinfo = os.stat("/tmp/jumpscale/download.zip")
             if statinfo.st_size < 100000:
                 raise Tools.exceptions.Operations("cannot download:%s resulting file was too small" % args["URL"])
@@ -3542,8 +3540,8 @@ class Tools:
                 rm -f download.zip
                 """
                 try:
-                    Tools.execute(script, args=args, die=True, die_if_args_left=True, interactive=True)
-                except Exception as e:
+                    executor.execute(script, args=args, die=True, interactive=True)
+                except Exception:
                     Tools.shell()
 
         return gitpath
@@ -4945,7 +4943,7 @@ class JumpscaleInstaller:
                                     out += "%s\n" % line
                             try:
                                 Tools.file_write(toremove, out)
-                            except:
+                            except Exception:
                                 pass
                             # Tools.shell()
         tofind = ["js_", "js9"]
@@ -4974,32 +4972,35 @@ class JumpscaleInstaller:
     #     Tools.execute("cp {DIR_CODE}/github/threefoldtech/sandbox_threebot_linux64/.startup.toml /")
     #     Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
     #
-    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False):
+
+    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False, executor=None):
         assert not prebuilt  # not supported yet
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
 
         done = []
+        usessh = False if executor else Tools.code_github_use_ssh()
+        execute = executor.execute if executor else Tools.execute
 
         for NAME, d in GITREPOS.items():
             GITURL, BRANCH, RPATH, DEST = d
             if GITURL in done:
                 continue
 
+            if usessh:
+                GITURL = Tools.code_git_rewrite_url(GITURL, ssh=True).url
+
             if branch:
                 # check if provided branch exists otherwise don't use it
-                C = f"""git ls-remote --heads {GITURL} {branch}"""
-                _, out, _ = Tools.execute(C, showout=False, die_if_args_left=True, interactive=False)
+                C = f"""git ls-remote --heads {GITURL} {branch} {GITURL}"""
+                _, out, _ = execute(C, showout=False, interactive=False)
                 if out:
                     BRANCH = branch
 
             try:
-                Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
+                Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset, executor=executor)
             except Tools.exceptions.Input:
                 raise
-            except Exception:
-                Tools.code_git_rewrite_url(url=GITURL, ssh=False)
-                Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset)
 
             done.append(GITURL)
 
@@ -5152,9 +5153,11 @@ class DockerFactory:
                         docker.stop()
                         docker.start(mount=True)
                 else:
-                    if docker.info["Mounts"] != []:
-                        docker.stop()
-                        docker.start(mount=False)
+                    for mount in docker.info["Mounts"]:
+                        if mount["Destination"] not in ["/sandbox/myhost", "/sandbox/code"]:
+                            docker.stop()
+                            docker.start(mount=False)
+                            break
                 return docker
         if not docker:
             docker = DockerContainer(name=name, image=image, ports=ports)
@@ -5486,8 +5489,6 @@ class DockerContainer:
         if self.config.portrange is None:
             self.config._find_port_range()
             self.config.save()
-        if not MyEnv.platform_is_windows:
-            MyEnv.sshagent.key_default_name
 
         self._wireguard = None
         self._executor = None
@@ -5497,7 +5498,7 @@ class DockerContainer:
         path = "/root/state/%s" % name
         try:
             self.dexec("cat %s" % path)
-        except:
+        except Exception:
             return False
         return True
 
@@ -5518,9 +5519,7 @@ class DockerContainer:
     @property
     def executor(self):
         if not self._executor:
-            self._executor = ExecutorSSH(
-                addr=self.config.ipaddr, port=self.config.sshport, debug=False, name=self.config.name
-            )
+            self._executor = ExecutorDocker(self)
         return self._executor
 
     @property
@@ -5564,7 +5563,7 @@ class DockerContainer:
             self.config.save()
 
     def _image_clean(self, image=None):
-        if image == None:
+        if image is None:
             return self.config.image
         if ":" in image:
             image = image.split(":")[0]
@@ -5603,7 +5602,7 @@ class DockerContainer:
 
         if pull:
             # lets make sure we have the latest image, ONLY DO WHEN FORCED, NOT STD
-            Tools.execute(f"docker image pull {image}", interactive=True, windows_interactive=True)
+            Tools.execute(f"docker image pull {image}", interactive=True)
             stop = True  # means we need to stop now, because otherwise we can't know we start from right image
 
         if delete:
@@ -5613,13 +5612,13 @@ class DockerContainer:
                 self.stop()
 
         if self.isrunning():
-            if mount == True:
+            if mount is True:
                 if not self.mount_code_exists:
-                    assert image == None  # because we are creating a new image, so cannot overrule
+                    assert image is None  # because we are creating a new image, so cannot overrule
                     image = self._internal_image_save(stop=True)
-            elif mount == False:
+            elif mount is False:
                 if self.mount_code_exists:
-                    assert image == None
+                    assert image is None
                     image = self._internal_image_save(stop=True)
 
         if self.container_exists_in_docker:
@@ -5640,9 +5639,9 @@ class DockerContainer:
             return
 
         # Now create the container
-        DIR_CODE = MyEnv.config["DIR_CODE"] if not MyEnv.platform_is_windows else "%s\code" % MyEnv._basedir_get()
+        DIR_CODE = MyEnv.config["DIR_CODE"] if not MyEnv.platform_is_windows else r"%s\code" % MyEnv._basedir_get()
         DIR_BASE = MyEnv.config["DIR_BASE"] if not MyEnv.platform_is_windows else MyEnv._basedir_get()
-        DIR_IDENTITY = f"{DIR_BASE}/myhost" if not MyEnv.platform_is_windows else "%s\myhost" % MyEnv._basedir_get()
+        DIR_IDENTITY = f"{DIR_BASE}/myhost" if not MyEnv.platform_is_windows else r"%s\myhost" % MyEnv._basedir_get()
 
         MOUNTS = ""
         if mount:
@@ -5659,7 +5658,7 @@ class DockerContainer:
         else:
             PORTRANGE = ""
 
-        if DockerFactory.image_name_exists(f"internal_{self.config.name}:") != False:
+        if DockerFactory.image_name_exists(f"internal_{self.config.name}:") is not False:
             image = f"internal_{self.config.name}"
 
         run_cmd = f"docker run --name={self.config.name} --hostname={self.config.name} -d {PORTRANGE} \
@@ -5667,7 +5666,7 @@ class DockerContainer:
         --cap-add=DAC_READ_SEARCH {MOUNTS} {image} {self.config.startupcmd}"
 
         run_cmd = Tools.text_strip(run_cmd)
-        run_cmd2 = Tools.text_replace(re.sub("\s+", " ", run_cmd))
+        run_cmd2 = Tools.text_replace(re.sub(r"\s+", " ", run_cmd))
         print(" - Docker machine gets created: ")
         # print(run_cmd2)
         Tools.execute(run_cmd2, interactive=False)
@@ -5676,7 +5675,7 @@ class DockerContainer:
 
         if not mount:
             # mount the code in the container to the right location to let jumpscale work
-            assert self.mount_code_exists == False
+            assert self.mount_code_exists is False
             self.dexec("rm -rf /sandbox/code")
             self.dexec("mkdir -p /sandbox/code/github")
             self.dexec("ln -s /sandbox/code_org /sandbox/code/github/threefoldtech")
@@ -5706,28 +5705,11 @@ class DockerContainer:
 
             if not MyEnv.platform_is_windows:
                 Tools.execute(
-                    "mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"], showout=False)
+                    "mkdir -p {0}/.ssh && touch {0}/.ssh/known_hosts".format(MyEnv.config["DIR_HOME"]), showout=False
                 )
-
-            # DIDNT seem to work well, next is better
-            # cmd = 'ssh-keygen -f "%s/.ssh/known_hosts" -R "[localhost]:%s"' % (
-            #     MyEnv.config["DIR_HOME"],
-            #     self.config.sshport,
-            # )
-            # Tools.execute(cmd)
 
             # is to make sure we can login without interactivity
-            if MyEnv.platform_is_windows:
-                cmd = "ssh-keyscan -H -p %s localhost" % self.config.sshport
-                path = f"%s\.ssh\known_hosts" % MyEnv._homedir_get()
-                _, content, _ = Tools.execute(cmd, showout=False)
-                Tools.file_write(path, content)
-            else:
-                cmd = "ssh-keyscan -H -p %s localhost >> %s/.ssh/known_hosts" % (
-                    self.config.sshport,
-                    MyEnv.config["DIR_HOME"],
-                )
-                Tools.execute(cmd, showout=False)
+            Tools.known_hosts_update("localhost", self.config.sshport)
 
         # self.shell()
 
@@ -5771,7 +5753,7 @@ class DockerContainer:
         data = json.loads(out)[0]
         return data
 
-    def dexec(self, cmd, interactive=False, die=True, showout=True):
+    def dexec(self, cmd, interactive=False, die=True, showout=True, retry=None, errormsg=None):
         if "'" in cmd:
             cmd = cmd.replace("'", '"')
 
@@ -5787,24 +5769,24 @@ class DockerContainer:
                 cmd2 = 'docker exec -t %s bash -c "%s"' % (self.name, cmd)
             else:
                 cmd2 = "docker exec -t %s bash -c '%s'" % (self.name, cmd)
-        Tools.execute(cmd2, interactive=interactive, showout=showout, replace=False, die=die)
+        return Tools.execute(
+            cmd2, interactive=interactive, showout=showout, replace=False, die=die, retry=retry, errormsg=errormsg
+        )
 
     def shell(self, cmd=None):
         if not self.isrunning():
             self.start()
         if cmd:
-            self.execute(
-                "source /sandbox/env.sh;cd /sandbox;clear;%s" % cmd, interactive=True, windows_interactive=True
-            )
+            self.dexec("source /sandbox/env.sh;cd /sandbox;clear;%s" % cmd, interactive=True)
         else:
-            self.execute("source /sandbox/env.sh;cd /sandbox;clear;bash", interactive=True, windows_interactive=True)
+            self.dexec("source /sandbox/env.sh;cd /sandbox;clear;bash", interactive=True)
 
     def diskusage(self):
         """
         uses ncdu to visualize disk usage
         :return:
         """
-        self.dexec("apt update;apt install ncdu -y;ncdu /", interactive=True)
+        self.dexec("apt-get update;apt-get install ncdu -y;ncdu /", interactive=True)
 
     def execute(
         self,
@@ -5818,7 +5800,6 @@ class DockerContainer:
         replace=True,
         args=None,
         interactive=True,
-        windows_interactive=False,
     ):
         self.executor.execute(
             cmd,
@@ -5831,15 +5812,11 @@ class DockerContainer:
             replace=replace,
             args=args,
             interactive=interactive,
-            windows_interactive=windows_interactive,
         )
 
     def kosmos(self):
         self.execute(
-            f"j.application.interactive={MyEnv.interactive}; j.shell(False)",
-            interactive=True,
-            windows_interactive=True,
-            jumpscale=True,
+            f"j.application.interactive={MyEnv.interactive}; j.shell(False)", interactive=True, jumpscale=True,
         )
 
     def stop(self):
@@ -5887,7 +5864,7 @@ class DockerContainer:
         for item in os.listdir(dpath):
             try:
                 version = int(item.replace(".tar", ""))
-            except:
+            except Exception:
                 Tools.delete("%s/%s" % (dpath, item))
             if version > highest:
                 highest = version
@@ -6111,29 +6088,13 @@ class DockerContainer:
         if identity:
             args_txt += f" -i {identity}"
 
-        dirpath = os.path.dirname(inspect.getfile(Tools))
-        jsxfile = os.path.join(dirpath, "jsx")
-        if not os.path.exists(jsxfile):
-            self.execute(
-                """
-            rm -f /tmp/InstallTools.py
-            rm -f /tmp/jsx
-            ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx
+        self.executor.execute(
             """
-            )
-        else:
-            print(" - copy installer over from where I install from")
-            for item in ["jsx", "InstallTools.py"]:
-                if MyEnv.platform_is_windows:
-                    dirpath = dirpath.replace("/", "\\")
-                    src1 = "%s\%s" % (dirpath, item)
-                    if not Tools.exists(src1) and item == "jsx":
-                        new_item = "jsx.py"
-                        src1 = "%s\%s" % (dirpath, new_item)
-                    self.executor.upload(src1, f"/tmp/{item}")
-                else:
-                    src1 = "%s/%s" % (dirpath, item)
-                    self.executor.upload(src1, "/tmp")
+        rm -f /tmp/InstallTools.py
+        rm -f /tmp/jsx
+        ln -s /sandbox/code/github/threefoldtech/jumpscaleX_core/install/jsx.py /tmp/jsx
+        """
+        )
 
         # python3 jsx configure --sshkey {MyEnv.sshagent.key_default_name} -s
         # WHY DO WE NEED THIS, in container ssh-key should always be there & loaded, don't think there is a reason to configure it
@@ -6152,10 +6113,7 @@ class DockerContainer:
         python3 jsx install {args_txt}
         """
         print(" - Installing jumpscaleX ")
-        if MyEnv.platform_is_windows:
-            self.execute(cmd, windows_interactive=True)
-        else:
-            self.execute(cmd)
+        self.execute(cmd)
         print(" - Install succesfull")
 
         self.executor.state_set("STATE_JUMPSCALE")
@@ -6268,10 +6226,7 @@ class SSHAgent:
             Tools.delete("%s.pub" % path)
 
         if not Tools.exists(path) or reset:
-            if passphrase:
-                cmd = f'ssh-keygen -t rsa -f {path} -N "{passphrase}" -C {name}'
-            else:
-                cmd = f"ssh-keygen -t rsa -f {path} -C {name}"
+            cmd = f'ssh-keygen -t rsa -f {path} -N "{passphrase}" -C {name}'
             Tools.execute(cmd, timeout=10)
 
             Tools.log("load generated sshkey: %s" % path)
@@ -6306,7 +6261,6 @@ class SSHAgent:
         return choices
 
     def init(self):
-
         DIR_HOME = MyEnv.config["DIR_HOME"]
         DIR_BASE = MyEnv.config["DIR_BASE"]
 
@@ -6323,9 +6277,9 @@ class SSHAgent:
 
         if "SSH_KEY_DEFAULT" in MyEnv.config and MyEnv.config["SSH_KEY_DEFAULT"]:
             sshkey = MyEnv.config["SSH_KEY_DEFAULT"]
-            if not sshkey in self.key_names:
+            if sshkey not in self.key_names:
                 res = self.key_load(name=sshkey, die=False)
-                if res == None:
+                if res is None:
                     return None
                 sshkey = None
                 MyEnv.config["SSH_KEY_DEFAULT"] = ""
@@ -6361,12 +6315,12 @@ class SSHAgent:
                 print("CANNOT CONTINUE, PLEASE GENERATE AN SSHKEY AND RESTART")
                 sys.exit(1)
 
-        if not sshkey in self.key_names:
+        if sshkey not in self.key_names:
             if DockerFactory.indocker():
                 raise Tools.exceptions.Base("sshkey should be passed forward by means of SSHAgent")
             self.key_load(name=sshkey)
 
-        if not sshkey in self.key_names:
+        if sshkey not in self.key_names:
             raise Tools.exceptions.Input(f"SSH key '{sshkey}' was not loaded, should have been by now.")
 
         myhost_sshkey_path = f"{myhost_sshkey_dir}/{sshkey}"
@@ -6666,7 +6620,7 @@ class SSHAgent:
         self.reset()
 
 
-class ExecutorSSH:
+class Executor:
     def __init__(self, addr=None, port=22, debug=False, name="executor"):
         self.name = name
         self.addr = addr
@@ -6678,14 +6632,14 @@ class ExecutorSSH:
         self.readonly = False
         self.CURDIR = ""
         self._data_path = "/var/executor_data"
-        self._init3()
+        self._init()
 
     def reset(self):
         self.state_reset()
-        self._init3()
+        self._init()
         self.save()
 
-    def _init3(self):
+    def _init(self):
         self._config = None
         # self._env_on_system = None
 
@@ -6809,12 +6763,6 @@ class ExecutorSSH:
 
         return None
 
-    @property
-    def uid(self):
-        if self._id is None:
-            raise Tools.exceptions.Base("self._id cannot be None")
-        return self._id
-
     def find(self, path):
         rc, out, err = self.execute("find %s" % path, die=False, interactive=False)
         if rc > 0:
@@ -6837,7 +6785,7 @@ class ExecutorSSH:
         means we don't work with ssh-agent ...
         """
 
-        if not "IN_DOCKER" in self.config:
+        if "IN_DOCKER" not in self.config:
             rc, out, _ = self.execute("cat /proc/1/cgroup", die=False, showout=False, interactive=False)
             if rc == 0 and out.find("/docker/") != -1:
                 self.config["IN_DOCKER"] = True
@@ -6974,7 +6922,7 @@ class ExecutorSSH:
             if name not in self._config:
                 self._config[name] = default
 
-        if self._config == None:
+        if self._config is None:
             self._config = {}
 
         get_cfg("DIR_HOME", res["ENV"]["HOME"])
@@ -6999,7 +6947,6 @@ class ExecutorSSH:
         python=False,
         jumpscale=False,
         debug=False,
-        windows_interactive=False,
     ):
         original_command = cmd + ""
         if not args:
@@ -7030,27 +6977,15 @@ class ExecutorSSH:
             else:
                 cmd2 = "ssh -oStrictHostKeyChecking=no root@%s -A -p %s '%s'" % (self.addr, self.port, cmd)
 
-        if not MyEnv.platform_is_windows:
-            r = Tools._execute(
-                cmd2,
-                interactive=interactive,
-                showout=showout,
-                timeout=timeout,
-                retry=retry,
-                die=die,
-                original_command=original_command,
-            )
-        else:
-            r = Tools.execute(
-                cmd2,
-                interactive=interactive,
-                showout=showout,
-                timeout=timeout,
-                retry=retry,
-                die=die,
-                original_command=original_command,
-                windows_interactive=windows_interactive,
-            )
+        r = Tools.execute(
+            cmd2,
+            interactive=interactive,
+            showout=showout,
+            timeout=timeout,
+            retry=retry,
+            die=die,
+            original_command=original_command,
+        )
 
         if tempfile:
             Tools.delete(tempfile)
@@ -7140,7 +7075,7 @@ class ExecutorSSH:
 
     @property
     def uid(self):
-        if not "uid" in self.config:
+        if "uid" not in self.config:
             self.config["uid"] = str(random.getrandbits(32))
             self.save()
         return self.config["uid"]
@@ -7148,6 +7083,176 @@ class ExecutorSSH:
     def state_reset(self):
         self.config["state"] = {}
         self.save()
+
+
+class ExecutorSSH(Executor):
+    def __init__(self, addr=None, port=22, debug=False, name="executor"):
+        self.name = name
+        self.addr = addr
+        self.port = port
+        self.debug = debug
+        self._id = None
+        self._env = {}
+        self._config = {}
+        self.readonly = False
+        self.CURDIR = ""
+        self._data_path = "/var/executor_data"
+        self._init()
+
+
+class ExecutorLocal(Executor):
+    def execute(
+        self,
+        cmd,
+        die=True,
+        showout=False,
+        timeout=1000,
+        replace=True,
+        interactive=False,
+        retry=None,
+        args=None,
+        python=False,
+        jumpscale=False,
+        debug=False,
+        errormsg=None,
+    ):
+        return Tools.execute(
+            cmd,
+            showout=showout,
+            die=die,
+            timeout=timeout,
+            replace=replace,
+            interactive=interactive,
+            retry=retry,
+            args=args,
+            python=python,
+            jumpscale=jumpscale,
+            debug=debug,
+            errormsg=errormsg,
+        )
+
+    def exists(self, path):
+        return os.path.exists(path)
+
+    def delete(self, path):
+        path = self._replace(path)
+        shutil.rmtree(path)
+
+    def cmd_installed(self, cmd):
+        return Tools.cmd_installed(cmd)
+
+
+class ExecutorDocker(Executor):
+    def __init__(self, container):
+        self.name = "dockerexecutor"
+        self._container = container
+        self._id = None
+        self._env = {}
+        self._config = {}
+        self.readonly = False
+        self.CURDIR = ""
+        self._data_path = "/var/executor_data"
+        self._init()
+
+    def execute(
+        self,
+        cmd,
+        die=True,
+        showout=False,
+        timeout=1000,
+        replace=True,
+        interactive=False,
+        retry=None,
+        args=None,
+        python=False,
+        jumpscale=False,
+        debug=False,
+        errormsg=None,
+    ):
+        if not args:
+            args = {}
+
+        tempfile, cmd = Tools._cmd_process(
+            cmd=cmd,
+            python=python,
+            jumpscale=jumpscale,
+            die=die,
+            env=args,
+            debug=debug,
+            replace=replace,
+            executor=self,
+        )
+
+        Tools._cmd_check(cmd)
+        r = self._container.dexec(cmd, interactive=interactive, die=die, retry=retry, errormsg=errormsg, showout=showout)
+        if tempfile:
+            Tools.delete(tempfile)
+        return r
+
+    def download(self, source, dest=None, ignoredir=None, ignorefiles=None, recursive=True):
+        """
+        :param source:
+        :param dest:
+        :param recursive:
+        :param ignoredir: the following are always in, no need to specify ['.egg-info', '.dist-info', '__pycache__']
+        :param ignorefiles: the following are always in, no need to specify: ["*.egg-info","*.pyc","*.bak"]
+        :return:
+        """
+        if not dest:
+            dest = source
+        else:
+            dest = self._replace(dest)
+        source = self._replace(source)
+
+        sourcedir = os.path.dirname(source)
+        Tools.dir_ensure(sourcedir)
+
+        destdir = os.path.dirname(dest)
+        Tools.dir_ensure(destdir)
+
+        cmd = f"docker cp {self._container.name}:{source} {dest}"
+        Tools.execute(cmd, showout=False, interactive=False)
+
+    def upload(
+        self,
+        source,
+        dest=None,
+        recursive=True,
+        createdir=False,
+        rsyncdelete=True,
+        ignoredir=None,
+        ignorefiles=None,
+        keepsymlinks=True,
+        retry=4,
+    ):
+        """
+        :param source:
+        :param dest:
+        :param recursive:
+        :param createdir:
+        :param rsyncdelete:
+        :param ignoredir: the following are always in, no need to specify ['.egg-info', '.dist-info', '__pycache__']
+        :param ignorefiles: the following are always in, no need to specify: ["*.egg-info","*.pyc","*.bak"]
+        :param keepsymlinks:
+        :param showout:
+        :return:
+        """
+        source = self._replace(source)
+        if not dest:
+            dest = source
+        else:
+            dest = self._replace(dest)
+        if not os.path.exists(source):
+            raise Tools.exceptions.Input("path '%s' not found" % source)
+
+        if os.path.isfile(source):
+            if createdir:
+                destdir = os.path.dirname(source)
+                self.dir_ensure(destdir)
+            cmd = f"docker cp {source} {self._container.name}:{dest}"
+            Tools.execute(cmd, showout=False, interactive=False)
+            return
+        raise Tools.exceptions.RuntimeError("not implemented")
 
 
 class Registry:

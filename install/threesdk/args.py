@@ -19,6 +19,7 @@ class Args(core.IT.Tools._BaseClassProperties):
         self.email = None
         self.words = None
         self.explorer = None
+        self.expert = None
         self._key = "3sdk:data"
 
     def reset(self):

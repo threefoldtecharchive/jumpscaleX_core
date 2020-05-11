@@ -267,4 +267,4 @@ class Tmux(j.baseclasses.object, j.baseclasses.testtools):
         p = self.pane_get("test2", "test2", reset=True)
 
         self._log_info("tests ok for tmux")
-        self._tests_run(name=name, die=True)
+        self._tests_run(name=name)

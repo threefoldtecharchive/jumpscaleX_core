@@ -58,7 +58,7 @@ def test_001_package_add(method):
     if method == "path":
         package = {"path": path}
     else:
-        giturl = "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development_testrunner/ThreeBotPackages/examples/test_package"
+        giturl = "https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/examples/test_package"
         package = {"git_url": giturl}
 
     package_manager.package_add(**package)
@@ -137,3 +137,47 @@ def test_003_package_enable_disable():
     package = get_package(PACKAGE_NAME)
     assert package is not None
     assert package.status == "INSTALLED"
+
+
+@skip("https://github.com/threefoldtech/jumpscaleX_core/issues/510")
+def test_004_package_start_stop():
+    """
+    Test case for starting and stopping packages.
+
+    **Test scenario**
+    #. Add test package.
+    #. Stop this package.
+    #. Check that this package has been stopped.
+    #. Start this package.
+    #. Check that this package has been started.
+    """
+    info("Add test package.")
+    package_manager.package_add(path=path)
+    gedis_client.reload()
+
+    package = get_package(PACKAGE_NAME)
+    assert package is not None
+    assert package.status == "INSTALLED"
+
+    info("Stop this package.")
+    package_manager.package_stop(package.name)
+
+    info("Check that this package has been stopped.")
+    package = get_package(PACKAGE_NAME)
+    assert package is not None
+    assert package.status == "HALTED"
+
+    content = j.sal.fs.readFile(result_path)
+    assert "stopping package" in content
+    j.sal.fs.remove(result_path)
+
+    info("Start this package.")
+    package_manager.package_start(package.name)
+
+    info("Check that this package has been started.")
+    package = get_package(PACKAGE_NAME)
+    assert package is not None
+    assert package.status == "INSTALLED"
+
+    content = j.sal.fs.readFile(result_path)
+    assert "starting package" in content

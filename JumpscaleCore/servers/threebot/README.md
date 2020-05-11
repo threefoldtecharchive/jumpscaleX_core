@@ -7,7 +7,7 @@ Threebot server is designed to be your own digital self, you can host content, s
 kosmos 'j.servers.threebot.get("3bot_name").start(ssl=False)'
 ```
 this will start the basic threebot server which will have:
-- [gedis server](https://github.com/threefoldtech/jumpscaleX_core/blob/development/docs/Gedis/README.md) with base actors loaded
+- [gedis server](https://github.com/threefoldtech/jumpscaleX_core/blob/master/docs/Gedis/README.md) with base actors loaded
 - [zdb server](https://github.com/threefoldtech/0-db/blob/development/README.md)
 - [sonic server](https://github.com/valeriansaliou/sonic/blob/master/README.md) (used for full text indexing)
 
@@ -16,8 +16,8 @@ this will start the basic threebot server which will have:
 kosmos 'j.servers.threebot.get("3bot_name").start(ssl=False)'
 ```
 this will start the basic servers in addition to servers that will be needed to host a web application
-- [openresty server](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/servers/openresty/README.md)
-- [threebot bottle server]() a bottle server to serve the content of [bcdbfs](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/sal/bcdbfs/README.md) as static files
+- [openresty server](https://github.com/threefoldtech/jumpscaleX_core/blob/master/JumpscaleCore/servers/openresty/README.md)
+- [threebot bottle server]() a bottle server to serve the content of [bcdbfs](https://github.com/threefoldtech/jumpscaleX_core/blob/master/JumpscaleCore/sal/bcdbfs/README.md) as static files
 - websocket proxy server for gedis server
 
 
@@ -71,10 +71,10 @@ j.tools.threebot_packages.get("package_name",
 ```
 
 ## Example packages
-- [pastebin](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/ThreeBotPackages/pastebin/README.md
+- [pastebin](https://github.com/threefoldtech/jumpscaleX_threebot/blob/master/ThreeBotPackages/pastebin/README.md
 )
-- [alerta](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/ThreeBotPackages/alerta/README.md)
-- [myjobs](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/ThreeBotPackages/myjobs/README.md)
+- [alerta](https://github.com/threefoldtech/jumpscaleX_threebot/blob/master/ThreeBotPackages/alerta/README.md)
+- [myjobs](https://github.com/threefoldtech/jumpscaleX_threebot/blob/master/ThreeBotPackages/myjobs/README.md)
 
 ## Troubleshooting
 

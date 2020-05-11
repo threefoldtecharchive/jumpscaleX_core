@@ -154,7 +154,7 @@ class SDKContainers:
         identity=None,
         name=None,
         delete=False,
-        mount=True,
+        mount=None,
         email=None,
         words=None,
         secret=None,
@@ -166,6 +166,7 @@ class SDKContainers:
 
         code_update_force: be careful, if set will remove your local code repo changes
         """
+        mount = mount or self.args.expert
         name = self._name(name)
         if self.container and not delete:
             return self.container
@@ -180,9 +181,6 @@ class SDKContainers:
                 self.args.secret = self.args.ask_secret()
                 secret = self.args.secret
 
-        # need to make sure 1 sshkey has been created, does not have to be in github
-        self.IT.MyEnv.sshagent.key_default_name
-
         self.IT.DockerFactory.init()
 
         docker = self.IT.DockerFactory.container_get(
@@ -192,7 +190,10 @@ class SDKContainers:
         if not docker.executor.exists("/sandbox/cfg/.configured"):
             installer = self.IT.JumpscaleInstaller()
             print(" - make sure jumpscale code is on local filesystem.")
-            installer.repos_get(pull=pull, branch=self.core.branch, reset=code_update_force)
+            if mount:
+                installer.repos_get(pull=pull, branch=self.core.branch, reset=code_update_force)
+            else:
+                installer.repos_get(pull=pull, branch=self.core.branch, reset=code_update_force, executor=docker.executor)
             print(f" - install jumpscale for identity:{self.args.identity}")
             docker.install_jumpscale(
                 force=False,

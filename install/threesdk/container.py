@@ -30,7 +30,6 @@ def install(
     testnr=None,
     identity=None,
     delete=False,
-    mount=True,
     email=None,
     words=None,
     server=False,
@@ -53,7 +52,6 @@ def install(
 
     """
     delete = core.IT.Tools.bool(delete)
-    mount = core.IT.Tools.bool(mount)
 
     if code_update_force:
         pull = True
@@ -82,7 +80,6 @@ def install(
         identity=identity,
         name=name,
         delete=delete,
-        mount=mount,
         email=email,
         pull=pull,
         code_update_force=code_update_force,
@@ -135,6 +132,7 @@ def start(name=None, server=False):
     c.start()
     if server:
         _server(c)
+    return c
 
 
 def _server(c):
@@ -156,17 +154,13 @@ def _threebot_browser(c, url=None):
         )
         core.IT.Tools.execute(cmd)
 
-    # try:
-    #     import webbrowser
-    #
-    #     core.IT.Tools.shell()
-    #     # time.sleep(5)
-    #     # if core.IT.MyEnv.platform_is_osx:
-    #     #     webbrowser.get("safari").open_new_tab("https://localhost:4000")
-    #     # else:
-    #     webbrowser.open_new_tab("https://localhost:4000")
-    # except:
-    #     pass
+    try:
+        import webbrowser
+        webbrowser.open_new_tab(url)
+    except:
+        pass
+
+    return url
 
 
 def stop(name=None):
@@ -217,33 +211,6 @@ def wireguard(name=None, connect=True):
         wg.server_start()
         wg.connect()
         print(wg)
-
-
-def threebot(delete=False, identity=None, email=None, words=None, restart=False, browser=True, pull=False):
-    """
-    will make sure you have your 3bot alive
-
-    - identity is your 3bot unique name (only needed to specify once)
-    - email is your email (only needed to specify once)
-    - if you already have your secret key, specify the words of your key retrieved from 3bot connect app
-
-    when 3bot becomes unresponsive you can always ask a restart on server, the container will not be restarted
-
-    pull will update the docker image as well as the code on github
-
-    """
-    if delete:
-        _delete("3bot")
-    if not _containers.IT.DockerFactory.container_name_exists("3bot"):
-        install("3bot", delete=delete, identity=identity, email=email, words=words, server=True, pull=pull)
-
-    c = _containers.get(name="3bot")
-    c.execute("mkdir -p /tmp/jumpscale")
-    if restart:
-        c.execute("source /sandbox/env.sh;3bot stop")
-        c.execute("source /sandbox/env.sh;3bot start")
-    if browser:
-        _threebot_browser(c)
 
 
 def zerotier(name=None, connect=False):

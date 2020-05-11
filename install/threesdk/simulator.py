@@ -6,7 +6,7 @@ from .container import delete as _delete_container
 __all__ = ["browser", "stop", "start", "shell", "restart"]
 
 
-def start(delete=False, browser_open=True, code_update_force=True, zerotier=False):
+def start(delete=False, browser_open=True, code_update_force=False, zerotier=False):
     """
     install & run a container with SDK & simulator
     a connection to zerotier network will be made

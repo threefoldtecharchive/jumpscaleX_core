@@ -1,6 +1,6 @@
 ## Running Installation tests 
 ### Clone this repo
-git clone https://github.com/threefoldtech/jumpscaleX -b development_jumpscale
+git clone https://github.com/threefoldtech/jumpscaleX -b master
 
 ### Install requirements
 cd jumpscaleX/install/tests

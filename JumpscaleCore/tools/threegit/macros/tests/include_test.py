@@ -6,7 +6,7 @@ import pytest
 
 markdowndocs_client = j.tools.threegit
 doc = markdowndocs_client.load(
-    "https://github.com/threefoldtech/jumpscaleX_threebot/tree/development/ThreeBotPackages/zerobot/wiki_examples/wiki",
+    "https://github.com/threefoldtech/jumpscaleX_threebot/tree/master/ThreeBotPackages/zerobot/wiki_examples/wiki",
     name="test",
     pull=False,
 )

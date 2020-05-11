@@ -1,17 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os
-
-##MAYBE FOR FUTURE
-# dpath = os.path.dirname(__file__)
-# if dpath not in sys.path:
-#     sys.path.append(dpath)
-#
-# dpath = f'{os.environ["HOME"]}/sandbox/code/github/threefoldtech/jumpscaleX_core'
-# if dpath not in sys.path:
-#     sys.path.append(dpath)
-#
-# from JumpscaleLibCore import myenv
+import shutil
 
 
 import jedi
@@ -24,6 +14,7 @@ from functools import partial
 from threesdk.shell import ptconfig, rewriteline
 from threesdk import (
     container,
+    threebot,
     builder,
     simulator,
     install,
@@ -128,6 +119,7 @@ def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
         _sdk.__all__.remove("builder")
         _sdk.__all__.remove("installer")
         _sdk.__all__.remove("install")
+        _sdk.__all__.remove("container")
 
     curframe = inspect.currentframe()
     calframe = inspect.getouterframes(curframe, 2)
@@ -149,6 +141,23 @@ def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
     return result
 
 
+def base_check(expert):
+    requiretools = ["docker"]
+    if expert:
+        requiretools.append("git")
+    missingtools = []
+    for tool in requiretools:
+        if not shutil.which(tool):
+            missingtools.append(tool)
+    if os.name == "nt":
+        link = "https://sdk.threefold.io/#/3sdk_windows?id=requirements"
+    else:
+        link = "https://sdk.threefold.io/#/3sdk_install?id=requirements"
+    if missingtools:
+        print(f"Some required tools '{', '.join(missingtools)}' are missing on your system  see {link} for more info.")
+        sys.exit(1)
+
+
 def main():
     import argparse
 
@@ -157,9 +166,12 @@ def main():
 
     parser.add_argument("-v", "--version", default=False, action="store_true")
     options, extra = parser.parse_known_args()
+    base_check(options.expert)
     if options.version:
         version()
         sys.exit(0)
+
+    args.args.expert = options.expert
     if extra:
         line = rewriteline(extra, globals(), locals())
         exec(line, globals(), locals())

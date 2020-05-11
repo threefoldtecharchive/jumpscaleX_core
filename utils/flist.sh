@@ -37,7 +37,7 @@ mkdir -p /root/.ssh
 ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa -q -P ""; ssh-add /root/.ssh/id_rsa
 
 # Install jumpscale
-curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/development/install/jsx.py?$RANDOM > /tmp/jsx;
+curl https://raw.githubusercontent.com/threefoldtech/jumpscaleX_core/master/install/jsx.py?$RANDOM > /tmp/jsx;
 # change permission
 chmod +x /tmp/jsx;
 /tmp/jsx configure -s --secret mysecret;

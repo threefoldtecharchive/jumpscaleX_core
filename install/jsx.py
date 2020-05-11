@@ -5,7 +5,7 @@ import requests
 from urllib.request import urlopen
 from importlib import util
 
-DEFAULT_BRANCH = "development"
+DEFAULT_BRANCH = "master"
 os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
@@ -201,6 +201,7 @@ def secret_set(secret=None):
     IT.RedisTools._core_get()
     IT.MyEnv.secret_set(secret=secret, secret_expiration_hours=48)
 
+    import redis
 
 # @click.command(name="modules-install")
 # # @click.option("--configdir", default=None, help="default {DIR_BASE}/cfg if it exists otherwise ~{DIR_BASE}/cfg")

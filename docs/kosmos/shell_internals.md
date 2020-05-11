@@ -17,7 +17,7 @@ embed(globals_, locals_, configure=config)
 ```
 
 
-We've defined `ptconfig()` in [KosmosShell.py](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/core/KosmosShell.py), where we apply some monkey patching and updates to this repl.
+We've defined `ptconfig()` in [KosmosShell.py](https://github.com/threefoldtech/jumpscaleX_core/blob/master/JumpscaleCore/core/KosmosShell.py), where we apply some monkey patching and updates to this repl.
 
 
 ### Content
@@ -85,7 +85,7 @@ class IsInsideString(PythonInputFilter):
         return bool(grammer.match(text))
 ```
 
-You can check [KosmosShell.py](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/core/KosmosShell.py) to see where they're used.
+You can check [KosmosShell.py](https://github.com/threefoldtech/jumpscaleX_core/blob/master/JumpscaleCore/core/KosmosShell.py) to see where they're used.
 
 
 ## Updating layout
@@ -134,7 +134,7 @@ For auto-completion, we get the current typed line, remove trailing unecassarry 
 
 We monkey patch `get_completions()` of [PythonCompleter](https://github.com/prompt-toolkit/ptpython/blob/master/ptpython/completer.py#L19) with our custom one, which tries to get a list of members and classify them with colors, if failed, will just call original `get_completions()`.
 
-Our implementation of `get_completions()` that works with jumpscale objects is [here](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/core/KosmosShell.py#L90).
+Our implementation of `get_completions()` that works with jumpscale objects is [here](https://github.com/threefoldtech/jumpscaleX_core/blob/master/JumpscaleCore/core/KosmosShell.py#L90).
 
 
 ```python
@@ -175,7 +175,7 @@ The method yields [Completion](https://python-prompt-toolkit.readthedocs.io/en/s
 
 ## Docstrings
 
-We do the same as evaluation, except we only added a key binding of `?` for this operation, see [get_doc_string()](https://github.com/threefoldtech/jumpscaleX_core/blob/development/JumpscaleCore/core/KosmosShell.py#L138).
+We do the same as evaluation, except we only added a key binding of `?` for this operation, see [get_doc_string()](https://github.com/threefoldtech/jumpscaleX_core/blob/master/JumpscaleCore/core/KosmosShell.py#L138).
 ```python
     @repl.add_key_binding("?", filter=~IsInsideString(repl))
     def _docevent(event):

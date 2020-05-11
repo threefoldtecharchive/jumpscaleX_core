@@ -39,8 +39,8 @@ Date: Thu, 12 Sep 2019 16:01:13 GMT
 
 ## Usage
 
-For the all endpoint mapping check webinterface package docs [here](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/ThreeBotPackages/zerobot/webinterface/wiki/README.md)
+For the all endpoint mapping check webinterface package docs [here](https://github.com/threefoldtech/jumpscaleX_threebot/blob/master/ThreeBotPackages/zerobot/webinterface/wiki/README.md)
 
 ### Package examples:
 
-Check: [quick start](https://github.com/threefoldtech/jumpscaleX_threebot/blob/development/docs/quickstart.md)
+Check: [quick start](https://github.com/threefoldtech/jumpscaleX_threebot/blob/master/docs/quickstart.md)
