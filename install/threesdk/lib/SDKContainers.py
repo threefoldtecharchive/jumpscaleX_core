@@ -17,25 +17,31 @@ class SDKContainers:
         self._wireguard = None
 
     def _check_keys(self, user_explorer_key, user_app):
+        if not user_app:
+            return True
         pub_key_app = base64.b64decode(user_app["publicKey"])
         if binascii.unhexlify(user_explorer_key) != pub_key_app:
             return False
         return True
 
     def _get_user(self):
-        response = requests.get(f"https://login.threefold.me/api/users/{self.args.identity}")
-        if response.status_code == 404:
-            raise self.core.IT.Tools.exceptions.Value(
-                "\nThis identity does not exist in 3bot mobile app connect, Please create an idenity first using 3Bot Connect mobile Application\n"
-            )
+        if not self.args.expert:
+            response = requests.get(f"https://login.threefold.me/api/users/{self.args.identity}")
+            if response.status_code == 404:
+                raise self.core.IT.Tools.exceptions.Value(
+                    "\nThis identity does not exist in 3bot mobile app connect, Please create an idenity first using 3Bot Connect mobile Application\n"
+                )
+            userdata = response.json()
+        else:
+            userdata = None
 
         resp = requests.get("https://{}/explorer/users".format(self.args.explorer), params={"name": self.args.identity})
         if resp.status_code == 404 or resp.json() == []:
-            return None, response.json()
+            return None, userdata
         else:
             users = resp.json()
 
-            if not self._check_keys(users[0]["pubkey"], response.json()):
+            if not self._check_keys(users[0]["pubkey"], userdata):
                 raise self.core.IT.Tools.exceptions.Value(
                     f"\nYour 3bot on {self.args.explorer} seems to have been previously registered with a different public key.\n"
                     "Please contact support.grid.tf to reset it.\n"
@@ -43,8 +49,8 @@ class SDKContainers:
                 )
 
             if users:
-                return (users[0], response.json())
-            return None
+                return (users[0], userdata)
+            return None, userdata
 
     def _check_email(self, email):
         resp = requests.get("https://{}/explorer/users".format(self.args.explorer), params={"email": email})
@@ -79,8 +85,7 @@ class SDKContainers:
                     identity += ".3bot"
                 self.args.identity = identity
 
-            user_app_explorer = self._get_user()
-            user = user_app_explorer[0]
+            user, user_app = self._get_user()
             if not user:
                 while True:
                     if not self.args.email:
@@ -110,7 +115,7 @@ class SDKContainers:
                     seed = self.core.IT.Tools.to_entropy(self.args.words, english.words)
                     key = SigningKey(seed)
                     hexkey = binascii.hexlify(key.verify_key.encode()).decode()
-                    if (user and hexkey != user["pubkey"]) or not self._check_keys(hexkey, user_app_explorer[1]):
+                    if (user and hexkey != user["pubkey"]) or not self._check_keys(hexkey, user_app):
                         raise Exception
                     else:
                         return True

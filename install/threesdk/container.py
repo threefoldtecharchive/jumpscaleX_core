@@ -123,7 +123,7 @@ def list():
     _containers_do()
 
 
-def start(name=None, server=False):
+def start(name=None, server=False, browser_open=True):
     """
     @param server=True will start 3bot server
     """
@@ -131,13 +131,14 @@ def start(name=None, server=False):
     c = _containers.get(name=name)
     c.start()
     if server:
-        _server(c)
+        _server(c, browser_open)
     return c
 
 
-def _server(c):
+def _server(c, browser_open=True):
     c.execute("source /sandbox/env.sh;3bot start")
-    _threebot_browser(c)
+    if browser_open:
+        _threebot_browser(c)
 
 
 def _threebot_browser(c, url=None):
