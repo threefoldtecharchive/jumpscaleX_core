@@ -131,7 +131,7 @@ def sdk(push=False, base=False, delete=False, noclean=False, development=False):
     installer = IT.JumpscaleInstaller()
     installer.repos_get(pull=False)
 
-    docker.install_jumpscale(force=delete, pull=False, threebot=True, identity="build", reset=True)
+    docker.install_jumpscale(force=delete, pull=False, threebot=True)
     # because identity==build the secret will be build
     # the hex/hashed repr of the secret: 'b0da275520918e23dd615e2a747528f1'
 
