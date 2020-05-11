@@ -7,7 +7,7 @@ from collections import OrderedDict
 from .ModelBaseCollection import ModelBaseCollection
 from .ModelBaseData import ModelBaseData
 from .ModelBase import ModelBase
-
+import time
 
 TESTTOOLS = j.baseclasses.testtools
 skip = j.baseclasses.testtools._skip
@@ -141,8 +141,12 @@ class Capnp(j.baseclasses.object, TESTTOOLS):
             try:
                 schema = parser.load(path)
             except Exception as e:
-                msg = str(e)
-                raise j.exceptions.Base("%s\n\nERROR:Could not parse capnp schema:\n%s" % (schemaInText, msg))
+                time.sleep(0.1)
+                try:
+                    schema = parser.load(path)
+                except Exception as e:
+                    msg = str(e)
+                    raise j.exceptions.Base("%s\n\nERROR:Could not parse capnp schema:\n%s" % (schemaInText, msg))
             self._schema_cache[schemaId] = schema
         return self._schema_cache[schemaId]
 

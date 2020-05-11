@@ -16,7 +16,6 @@ def start(delete=False, browser_open=True, code_update_force=True, zerotier=Fals
     """
     if delete:
         _delete_container("simulator")
-        code_update_force = True
 
     if not _containers.IT.DockerFactory.container_name_exists("simulator"):
         _install_container(
