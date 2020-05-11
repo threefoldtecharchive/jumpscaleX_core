@@ -302,13 +302,15 @@ class GedisChatBot:
         if is_slide:
             self.step_info["slide"] += 1
 
+        data.setdefault("kwargs", {})
         output = {"info": self.info, "payload": data} 
         self._queue_out.put(output)
 
-    def send_error(self, message):
+    def send_error(self, message, **kwargs):
         self.send_data({
             "category": "error",
-            "msg": message
+            "msg": message,
+            "kwargs": kwargs
         })
         self._queue_in.get()
 
