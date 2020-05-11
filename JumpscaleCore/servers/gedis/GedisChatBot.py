@@ -13,9 +13,10 @@ JSBASE = j.baseclasses.object
 
 
 class StopChatFlow(Exception):
-    def __init__(self, msg=None):
+    def __init__(self, msg=None, **kwargs):
         super().__init__(self, msg)
         self.msg = msg
+        self.kwargs = kwargs
 
 
 class GedisChatBotFactory(JSBASE):
@@ -252,7 +253,7 @@ class GedisChatBot:
                 getattr(self, step_name)()
             except StopChatFlow as e:
                 if e.msg:
-                    self.send_error(e.msg)
+                    self.send_error(e.msg, **e.kwargs)
 
             except Exception as e:
                 internal_error = True
@@ -684,8 +685,8 @@ class GedisChatBot:
         """
         return Form(self)
 
-    def stop(self, msg=None):
-        raise StopChatFlow(msg=msg)
+    def stop(self, msg=None, **kwargs):
+        raise StopChatFlow(msg=msg, **kwargs)
 
 
 class LegacyChatFLow(GedisChatBot):
