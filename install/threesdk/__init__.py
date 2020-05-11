@@ -1,4 +1,4 @@
-from . import container, simulator
+from . import container, simulator, threebot
 from . import builder
 from . import core
 from . import args
@@ -6,7 +6,7 @@ import textwrap
 
 # import jsx
 
-__all__ = ["builder", "simulator", "container", "args", "core", "installer", "install"]
+__all__ = ["builder", "simulator", "container", "args", "core", "installer", "install", "threebot"]
 __version__ = "_unreleased_"
 
 IT = core.core.IT

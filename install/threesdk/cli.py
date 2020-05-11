@@ -14,6 +14,7 @@ from functools import partial
 from threesdk.shell import ptconfig, rewriteline
 from threesdk import (
     container,
+    threebot,
     builder,
     simulator,
     install,
@@ -118,6 +119,7 @@ def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
         _sdk.__all__.remove("builder")
         _sdk.__all__.remove("installer")
         _sdk.__all__.remove("install")
+        _sdk.__all__.remove("container")
 
     curframe = inspect.currentframe()
     calframe = inspect.getouterframes(curframe, 2)

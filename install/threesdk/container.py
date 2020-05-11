@@ -132,6 +132,7 @@ def start(name=None, server=False):
     c.start()
     if server:
         _server(c)
+    return c
 
 
 def _server(c):
@@ -153,17 +154,13 @@ def _threebot_browser(c, url=None):
         )
         core.IT.Tools.execute(cmd)
 
-    # try:
-    #     import webbrowser
-    #
-    #     core.IT.Tools.shell()
-    #     # time.sleep(5)
-    #     # if core.IT.MyEnv.platform_is_osx:
-    #     #     webbrowser.get("safari").open_new_tab("https://localhost:4000")
-    #     # else:
-    #     webbrowser.open_new_tab("https://localhost:4000")
-    # except:
-    #     pass
+    try:
+        import webbrowser
+        webbrowser.open_new_tab(url)
+    except:
+        pass
+
+    return url
 
 
 def stop(name=None):
