@@ -334,6 +334,8 @@ class GedisChatBot:
         
         Keyword Arguments:
             required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
             min_length (int): min length
             max_length (int): max length
 
@@ -353,6 +355,8 @@ class GedisChatBot:
         
         Keyword Arguments:
             required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
             min_length (int): min length 
             max_length (int): max length
 
@@ -372,6 +376,8 @@ class GedisChatBot:
         
         Keyword Arguments:
             required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
             min (int): min value
             max (int): max value
 
@@ -393,6 +399,8 @@ class GedisChatBot:
         
         Keyword Arguments:
             required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
  
         Returns:
             str: user input
@@ -410,6 +418,8 @@ class GedisChatBot:
         
         Keyword Arguments:
             required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
  
         Returns:
             str: user input
@@ -427,6 +437,8 @@ class GedisChatBot:
         
         Keyword Arguments:
             required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
             min_options (int): min number of selected options
             max_options (int): max number selected options
 
@@ -447,6 +459,8 @@ class GedisChatBot:
         
         Keyword Arguments:
             required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
             min_options (int): min number of selected options
             max_options (int): max number selected options
 
@@ -467,6 +481,8 @@ class GedisChatBot:
         
         Keyword Arguments:
             required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
 
         Returns:
             str: user input
@@ -481,6 +497,8 @@ class GedisChatBot:
         
         Keyword Arguments:
             required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
 
         Returns:
             str: user input
@@ -498,6 +516,8 @@ class GedisChatBot:
         
         Keyword Arguments:
             required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
 
         Returns:
             int: timestamp
@@ -517,6 +537,8 @@ class GedisChatBot:
         
         Keyword Arguments:
             required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
 
         Returns:
             datetime.datetime: user input
@@ -534,7 +556,9 @@ class GedisChatBot:
             msg (str): message text
         
         Keyword Arguments:
-            required (bool): 
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
 
         Returns:
             list: list([lat, lng])
@@ -549,6 +573,11 @@ class GedisChatBot:
             msg (str): message text
             data (str): the data to be in the file
             filename (str): file name
+        
+        Keyword Arguments:
+            md (bool): render message as markdown
+            html (bool): render message as html
+            
         """
         self.ask({"category": "download_file", "msg": msg, "data": data, "filename": filename, "kwargs": kwargs})
 
@@ -563,6 +592,8 @@ class GedisChatBot:
         
         Keyword Arguments:
             required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
             max_size (int): file max size
             allowed_types: list of allowed types example : ['text/plain']
 
@@ -578,6 +609,10 @@ class GedisChatBot:
             msg (str): message
             data (str): data to be encoded
             scale (int, optional): qrcode scale. Defaults to 10.
+
+        Keyword Arguments:
+            md (bool): render message as markdown
+            html (bool): render message as html
         """
         qrcode = j.tools.qrcode.base64_get(data, scale=scale)
         self.send_data({"category": "qrcode_show", "msg": msg, "qrcode": qrcode, "kwargs": kwargs}, is_slide=True)
@@ -629,7 +664,11 @@ class GedisChatBot:
 
         Args:
             msg (str): message
-            wait (int): the duration of the progress bar
+            wait (int): the duration (in seconds) of the progress bar
+
+        Keyword Arguments:
+            md (bool): render message as markdown
+            html (bool): render message as html
         """
         data = {"category": "loading", "msg": msg, "kwargs": kwargs}
         for i in range(wait):
