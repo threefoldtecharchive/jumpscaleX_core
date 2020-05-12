@@ -30,6 +30,7 @@ def start(delete=False, browser_open=True, code_update_force=False, zerotier=Fal
         c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
     else:
         c = _containers.get(name="simulator", explorer="none")
+        c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
 
     if browser_open:
         browser()
