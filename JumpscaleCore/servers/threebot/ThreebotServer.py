@@ -306,7 +306,7 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             p = j.threebot.packages
             LogPane.Show = False
-            identity = j.myidentities.me.tname
+            identity = j.me.tname
             if not identity:
                 self._log_warning("you don't have an identity defined. you're runing in development mode")
                 j.me.encryptor.tools.threebotconnect_disable()
