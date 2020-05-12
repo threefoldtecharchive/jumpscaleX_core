@@ -6,7 +6,7 @@ from .args import args
 
 _containers = SDKContainers(core=core, args=args)
 
-__all__ = ["install", "stop", "start", "shell", "kosmos", "list", "threebot", "delete"]
+__all__ = ["install", "stop", "start", "shell", "kosmos", "list", "delete"]
 
 
 def _containers_do(prefix=None, delete=False, stop=False):
