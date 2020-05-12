@@ -8,7 +8,7 @@ from .ThreeBotFactoryBase import ThreeBotFactoryBase
 from .TestTools import TestTools
 from .JSFactory import JSFactory
 from .JSDict import JSDict
-from .Decorators import actor_method
+from .Decorators import actor_method, chatflow_step
 from .Attr import Attr
 from .JSConfigBCDBRedis import JSConfigBCDBRedis
 
@@ -30,6 +30,20 @@ class BaseClasses(JSBase, TestTools):
 
         """
         return actor_method
+
+    @property
+    def chatflow_step(self):
+        """
+        decorator for actor method
+
+        use as
+
+        @j.baseclasses.actor_method
+        def myactormethod(self,name=None,...):
+            ...
+
+        """
+        return chatflow_step
 
     @property
     def dict(self):
