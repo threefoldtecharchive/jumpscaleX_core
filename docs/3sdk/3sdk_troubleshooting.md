@@ -134,7 +134,11 @@ Could not checkout git@github.com:threefoldtech/jumpscaleX_libs_extra.git
 3sdk>
 ```
 
-Change ownership of `/sandbox` to you current user:
+Change ownership of `/sandbox` to you current user depending on your code location:
 ```bash
 sudo chown -R $USER:$USER /sandbox
+```
+or
+```bash
+sudo chown -R $USER:$USER ~/sandbox
 ```
