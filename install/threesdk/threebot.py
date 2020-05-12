@@ -17,9 +17,7 @@ def start(delete=False, browser_open=True):
     if delete:
         _container.delete(_NAME)
 
-    container = _container.start(_NAME, True)
-    if browser_open:
-        _container._threebot_browser(container)
+    _container.start(_NAME, True, browser_open=browser_open)
 
 
 def stop():
