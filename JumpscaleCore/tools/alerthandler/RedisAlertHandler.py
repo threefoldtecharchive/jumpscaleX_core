@@ -209,7 +209,7 @@ class AlertHandler(j.baseclasses.object):
     @property
     def _threebot_name(self):
         try:
-            tname = j.myidentities.me.tname
+            tname = j.me.tname
         except:
             tname = "unknown"
         return tname
