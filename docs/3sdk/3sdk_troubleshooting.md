@@ -9,8 +9,8 @@ is mainly for experts who already used jumpscale before
 
 ```bash
 
-Tue 14 19:18:01 e/Jumpscale/me/Me.py - 461 - tfgrid_phonebook_register          
-: EXCEPTION: 
+Tue 14 19:18:01 e/Jumpscale/me/Me.py - 461 - tfgrid_phonebook_register
+: EXCEPTION:
     signature verification failed, ensure your pubkey to be the same as local configured nacl
 
 --TRACEBACK------------------
@@ -48,11 +48,11 @@ edit `/sandbox/cfg/jumpscale_config.toml` and set `SECRET` to the old secret.
 
 when done do `jsx check`
 
-##### Retrieve the words 
+##### Retrieve the words
 
 execute that in kosmos `j.data.nacl.default.words`
 
-NOTE: these words aren't compatible with the keys you have in 3bot connect 
+NOTE: these words aren't compatible with the keys you have in 3bot connect
 
 NOTE: You may have to delete `/sandbox/cfg/bcdb_config` and `pkill redis` if you got secret conflicts
 
@@ -87,4 +87,58 @@ Just execute `ssh-keygen -f "/root/.ssh/known_hosts" -R "[localhost]:9010"`
 You can start chrome manually using
 ```
 open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome  --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security --ignore-certificate-errors'
+```
+
+### Permission denied during updating the on local storage jumpscale code
+```
+3sdk> simulator start
+
+install & run a container with SDK & simulator
+a connection to zerotier network will be made
+
+param: code_update_force be careful, will remove your code changes
+
+
+please provide secret (to locally encrypt your container):
+please provide secret (to locally encrypt your container) (confirm):
+ - SSH PORT ON: 9010
+Using default tag: latest
+latest: Pulling from threefoldtech/3bot2
+Digest: sha256:f091e1d2acad6b41f47df00acd969a518ea6b67e43fa119a2ee15e5e6fdcb6b5
+Status: Image is up to date for threefoldtech/3bot2:latest
+docker.io/threefoldtech/3bot2:latest
+ - Docker machine gets created:
+82c9e54f9c5e181fad703a28a699854611046ea216f5763f9eb1eaf8049a4cab
+ - Configure / Start SSH server
+ - make sure jumpscale code is on local filesystem.
+error: unable to unlink old 'JumpscaleLibsExtra/tools/threefold_simulation/notebooks/code/BillOfMaterial.py': Permission denied
+error: unable to unlink old 'JumpscaleLibsExtra/tools/threefold_simulation/notebooks/code/NodesBatch.py': Permission denied
+error: unable to unlink old 'JumpscaleLibsExtra/tools/threefold_simulation/notebooks/code/SimulatorBase.py': Permission denied
+error: unable to unlink old 'JumpscaleLibsExtra/tools/threefold_simulation/notebooks/code/SimulatorConfig.py': Permission denied
+error: unable to unlink old 'JumpscaleLibsExtra/tools/threefold_simulation/notebooks/code/TFGridSimulator.py': Permission denied
+error: unable to unlink old 'JumpscaleLibsExtra/tools/threefold_simulation/notebooks/code/TFGridSimulatorFactory.py': Permission denied
+error: unable to unlink old 'JumpscaleLibsExtra/tools/threefold_simulation/notebooks/code/__init__.py': Permission denied
+error: unable to unlink old 'JumpscaleLibsExtra/tools/threefold_simulation/notebooks/code/BillOfMaterial.py': Permission denied
+error: unable to unlink old 'JumpscaleLibsExtra/tools/threefold_simulation/notebooks/code/NodesBatch.py': Permission denied
+error: unable to unlink old 'JumpscaleLibsExtra/tools/threefold_simulation/notebooks/code/SimulatorBase.py': Permission denied
+error: unable to unlink old 'JumpscaleLibsExtra/tools/threefold_simulation/notebooks/code/SimulatorConfig.py': Permission denied
+error: unable to unlink old 'JumpscaleLibsExtra/tools/threefold_simulation/notebooks/code/TFGridSimulator.py': Permission denied
+error: unable to unlink old 'JumpscaleLibsExtra/tools/threefold_simulation/notebooks/code/TFGridSimulatorFactory.py': Permission denied
+error: unable to unlink old 'JumpscaleLibsExtra/tools/threefold_simulation/notebooks/code/__init__.py': Permission denied
+Could not checkout git@github.com:threefoldtech/jumpscaleX_libs_extra.git
+
+    cd {REPO_DIR}
+    git checkout -q . --force
+
+
+3sdk>
+```
+
+Change ownership of `/sandbox` to you current user depending on your code location:
+```bash
+sudo chown -R $USER:$USER /sandbox
+```
+or
+```bash
+sudo chown -R $USER:$USER ~/sandbox
 ```
