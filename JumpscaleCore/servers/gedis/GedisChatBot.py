@@ -300,10 +300,12 @@ class GedisChatBot:
         return self._queue_in.put(data)
 
     def send_data(self, data, is_slide=False):
-        if is_slide:
+        data.setdefault("kwargs", {})
+        retry = data["kwargs"].pop("retry", False)
+        
+        if is_slide and not retry:
             self.step_info["slide"] += 1
 
-        data.setdefault("kwargs", {})
         output = {"info": self.info, "payload": data} 
         self._queue_out.put(output)
 
