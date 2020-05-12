@@ -324,7 +324,7 @@ class Handler(JSBASE):
             tid, seed, signature = request.arguments
             tid = int(tid)
 
-            current_threebot_id = int(j.myidentities.me.tid)
+            current_threebot_id = int(j.me.tid)
             # If working on same machine no need to get a client to authenticate
             # otherwise, we'll have infinite loop
             if current_threebot_id != tid:
@@ -346,14 +346,14 @@ class Handler(JSBASE):
                 # can't reuse verification methods in 3 bot client, otherwise we gonna go into infinite loop
                 # so we verify directly using nacl
                 try:
-                    VerifyKey(binascii.unhexlify(j.myidentities.me.encryptor.verify_key_hex)).verify(
+                    VerifyKey(binascii.unhexlify(j.me.encryptor.verify_key_hex)).verify(
                         seed, binascii.unhexlify(signature)
                     )
                 except Exception as e:
                     logdict = j.core.myenv.exception_handle(e, die=False, stdout=True)
                     return (logdict, None)
                 user_session.threebot_id = tid
-                user_session.threebot_name = j.myidentities.me.name
+                user_session.threebot_name = j.me.name
             return None, "OK"
 
         self._log_debug(
