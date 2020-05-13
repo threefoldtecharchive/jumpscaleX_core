@@ -3348,7 +3348,7 @@ class Tools:
             cd {REPO_DIR}
             git checkout -q . --force
             """
-            Tools.log(f"get code & ignore changes: {args['name']}")
+            Tools.log(f"get code & ignore changes: {args['NAME']}")
             executor.execute(
                 C, args=args, retry=1, errormsg=f"Could not checkout {url}", interactive=True,
             )
