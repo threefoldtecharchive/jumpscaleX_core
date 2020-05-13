@@ -662,6 +662,9 @@ class GedisChatBot:
         self.send_data({"category": "confirm", "data": data, "kwargs": kwargs}, is_slide=True)
         self._queue_in.get()
 
+    def md_show_update(self, msg, **kwargs):
+        self.send_data({"category": "infinite_loading", "msg": msg, "kwargs": kwargs}, is_slide=False)
+
     def loading_show(self, msg, wait, **kwargs):
         """Show a progress bar
 
