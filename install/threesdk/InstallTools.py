@@ -7137,6 +7137,14 @@ class ExecutorLocal(Executor):
     def cmd_installed(self, cmd):
         return Tools.cmd_installed(cmd)
 
+    def find(self, path):
+        if MyEnv.platform_is_windows:
+            res = []
+            if os.path.exists(path):
+                res = [os.path.join(path, item) for item in os.listdir(path)]
+            return res
+        return super(ExecutorLocal, self).find(path)
+
 
 class ExecutorDocker(Executor):
     def __init__(self, container):
