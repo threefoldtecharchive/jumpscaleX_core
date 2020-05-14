@@ -28,6 +28,7 @@ import sys
 import textwrap
 import time
 import re
+import requests
 
 from pathlib import Path
 from subprocess import Popen
@@ -1881,6 +1882,21 @@ class Tools:
             else:
                 sudoremove = False
             Tools.execute(script, interactive=True, sudo_remove=sudoremove)
+
+    @staticmethod
+    def get_newest_version():
+        from threesdk import __version__
+
+        # call releases api
+        resp = requests.get("https://api.github.com/repos/threefoldtech/jumpscaleX_core/releases/latest")
+        resp = resp.json()
+        # get versions
+        last_release = resp["tag_name"]
+        last_release_url = resp["html_url"]
+        up_to_date = True
+        if last_release is not __version__:
+            up_to_date = False
+        return {"up_to_date": up_to_date, "last_release": last_release, "last_release_url": last_release_url}
 
     @staticmethod
     def clear():
@@ -7173,18 +7189,13 @@ class ExecutorDocker(Executor):
             args = {}
 
         tempfile, cmd = Tools._cmd_process(
-            cmd=cmd,
-            python=python,
-            jumpscale=jumpscale,
-            die=die,
-            env=args,
-            debug=debug,
-            replace=replace,
-            executor=self,
+            cmd=cmd, python=python, jumpscale=jumpscale, die=die, env=args, debug=debug, replace=replace, executor=self,
         )
 
         Tools._cmd_check(cmd)
-        r = self._container.dexec(cmd, interactive=interactive, die=die, retry=retry, errormsg=errormsg, showout=showout)
+        r = self._container.dexec(
+            cmd, interactive=interactive, die=die, retry=retry, errormsg=errormsg, showout=showout
+        )
         if tempfile:
             Tools.delete(tempfile)
         return r
