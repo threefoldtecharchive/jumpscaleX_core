@@ -1888,11 +1888,11 @@ class Tools:
         from threesdk import __version__
 
         # call releases api
-        resp = requests.get("https://api.github.com/repos/threefoldtech/jumpscaleX_core/releases")
+        resp = requests.get("https://api.github.com/repos/threefoldtech/jumpscaleX_core/releases/latest")
         resp = resp.json()
         # get versions
-        last_release = resp[0]["tag_name"]
-        last_release_url = resp[0]["html_url"]
+        last_release = resp["tag_name"]
+        last_release_url = resp["html_url"]
         up_to_date = True
         if last_release is not __version__:
             up_to_date = False
