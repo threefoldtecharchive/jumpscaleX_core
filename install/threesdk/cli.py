@@ -110,6 +110,13 @@ def version():
     Print version number
     """
     print(f"3sdk {_sdk.__version__}")
+    # from InstallTools import get_newest_version
+    dic = _sdk.InstallTools.Tools.get_newest_version()
+    # campare with __version__
+    if not dic["up_to_date"]:
+        print(
+            f"Your SDK version is not up-to-date. Newest release is {dic['last_release']}\nPlease visit: {dic['last_release_url']}"
+        )
 
 
 def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
