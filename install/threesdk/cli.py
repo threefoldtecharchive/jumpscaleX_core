@@ -119,6 +119,23 @@ def version():
         )
 
 
+def update():
+    """
+    """
+    from threesdk import container
+
+    containers_names = container._containers.IT.DockerFactory.containers()
+    for item in containers_names:
+        name = item.name
+        print("Updating repositories in container: ", name)
+        container._containers.assert_container(name)
+        c = container._containers.get(name=name, explorer="none")
+        container_executor = c.executor
+        from threesdk.InstallTools import JumpscaleInstaller
+
+        JumpscaleInstaller.repos_get(JumpscaleInstaller, pull=True, executor=container_executor)
+
+
 def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
     import inspect
 
@@ -168,10 +185,15 @@ def base_check(expert):
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--expert", default=False, action="store_true")
-
     parser.add_argument("-v", "--version", default=False, action="store_true")
+
+    sub_parser = argparse.ArgumentParser(add_help=False)
+    subparsers = sub_parser.add_subparsers()
+    # subcommand update
+    parser_update = subparsers.add_parser("update", parents=[parser])
+
     options, extra = parser.parse_known_args()
     base_check(options.expert)
     if options.version:
@@ -179,6 +201,10 @@ def main():
         sys.exit(0)
 
     args.args.expert = options.expert
+
+    if "update" in extra:
+        update()
+        extra.remove("update")
     if extra:
         line = rewriteline(extra, globals(), locals())
         exec(line, globals(), locals())
