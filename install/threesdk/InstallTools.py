@@ -5432,16 +5432,13 @@ class DockerConfig:
 
         assert isinstance(self.portrange, int)
 
-        a = 9005 + int(self.portrange) * 10
-        b = 9009 + int(self.portrange) * 10
         udp = 9001 + int(self.portrange) * 10
         ssh = 9000 + int(self.portrange) * 10
         http = 7000 + int(self.portrange) * 10
         https = 4000 + int(self.portrange) * 10
         httpnb = 5000 + int(self.portrange) * 10  # notebook
         self.sshport = ssh
-        self.portrange_txt = "-p %s-%s:8005-8009" % (a, b)
-        self.portrange_txt += " -p %s:80" % http
+        self.portrange_txt += "-p %s:80" % http
         self.portrange_txt += " -p %s:8888" % httpnb
         self.portrange_txt += " -p %s:443" % https
         self.portrange_txt += " -p %s:9001/udp" % udp
@@ -7172,18 +7169,13 @@ class ExecutorDocker(Executor):
             args = {}
 
         tempfile, cmd = Tools._cmd_process(
-            cmd=cmd,
-            python=python,
-            jumpscale=jumpscale,
-            die=die,
-            env=args,
-            debug=debug,
-            replace=replace,
-            executor=self,
+            cmd=cmd, python=python, jumpscale=jumpscale, die=die, env=args, debug=debug, replace=replace, executor=self,
         )
 
         Tools._cmd_check(cmd)
-        r = self._container.dexec(cmd, interactive=interactive, die=die, retry=retry, errormsg=errormsg, showout=showout)
+        r = self._container.dexec(
+            cmd, interactive=interactive, die=die, retry=retry, errormsg=errormsg, showout=showout
+        )
         if tempfile:
             Tools.delete(tempfile)
         return r
