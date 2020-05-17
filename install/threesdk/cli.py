@@ -110,30 +110,63 @@ def version():
     Print version number
     """
     print(f"3sdk {_sdk.__version__}")
-    # from InstallTools import get_newest_version
-    dic = _sdk.InstallTools.Tools.get_newest_version()
     # campare with __version__
-    if not dic["up_to_date"]:
+    if not _sdk.InstallTools.Tools.is_latest_release():
+        dic = _sdk.InstallTools.Tools.get_latest_release()
         print(
-            f"Your SDK version is not up-to-date. Newest release is {dic['last_release']}\nPlease visit: {dic['last_release_url']}"
+            f"Your SDK version is not up-to-date. Newest release is {dic['latest_release']}\nPlease visit: {dic['latest_release_url']}\nOr run '3sdk update'"
         )
 
 
 def update():
     """
     """
-    from threesdk import container
+    try:
+        from threesdk import container
+        from threesdk.InstallTools import JumpscaleInstaller, MyEnv, Tools
+    except ImportError:
+        from .core import container
+        from .core.InstallTools import JumpscaleInstaller, MyEnv, Tools
 
-    containers_names = container._containers.IT.DockerFactory.containers()
-    for item in containers_names:
-        name = item.name
-        print("Updating repositories in container: ", name)
-        container._containers.assert_container(name)
-        c = container._containers.get(name=name, explorer="none")
-        container_executor = c.executor
-        from threesdk.InstallTools import JumpscaleInstaller
+    if not Tools.is_latest_release():
+        containers_names = container._containers.IT.DockerFactory.containers()
+        # pull all repos in containers
+        for item in containers_names:
+            name = item.name
+            print("Updating repositories in container ", name, "...")
+            latest_release = Tools.get_latest_release()
+            container._containers.assert_container(name)
+            c = container._containers.get(name=name, explorer="none")
+            container_executor = c.executor
+            JumpscaleInstaller.repos_get(JumpscaleInstaller, pull=True, executor=container_executor)
+        # Update binary for host
+        import requests
 
-        JumpscaleInstaller.repos_get(JumpscaleInstaller, pull=True, executor=container_executor)
+        print("Downloading 3sdk binary...")
+        r = requests.get(latest_release["download_link"], allow_redirects=True)
+        open("/tmp/3sdk", "wb").write(r.content)
+        print("Done")
+        Tools.execute(f"chmod +x /tmp/3sdk")
+        if MyEnv.platform_is_linux or MyEnv.platform_is_osx:
+            _, bin_path, _ = Tools.execute(f"which 3sdk")
+            # to remove trailing \n
+            bin_path = bin_path[:-1]
+            # save backup
+            Tools.execute(f"cp -f {bin_path} /tmp/3sdk.bk")
+            # replace
+            Tools.execute(f"mv -f /tmp/3sdk {bin_path}", interactive=True)
+        elif MyEnv.platform_is_windows:
+            _, bin_path, _ = Tools.execute(f"where.exe 3sdk")
+            # to remove trailing \n
+            bin_path = bin_path[:-1]
+            # save backup
+            Tools.execute(f"copy -f /tmp/3sdk /tmp/3sdk.bk")
+            # replace
+            Tools.execute(f"move -f /tmp/3sdk {bin_path}", interactive=True)
+        else:
+            raise Tools.exceptions.Base("platform not supported, only linux, osx and windows.")
+    else:
+        print(f"3sdk version is up-to-date")
 
 
 def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
@@ -205,7 +238,7 @@ def main():
     if "update" in extra:
         update()
         extra.remove("update")
-    if extra:
+    elif extra:
         line = rewriteline(extra, globals(), locals())
         exec(line, globals(), locals())
     else:
