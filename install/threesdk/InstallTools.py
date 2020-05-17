@@ -1873,19 +1873,41 @@ class Tools:
             Tools.execute(script, interactive=True, sudo_remove=sudoremove)
 
     @staticmethod
-    def get_newest_version():
-        from threesdk import __version__
+    def is_latest_release():
+        try:
+            from threesdk import __version__
+        except:
+            from .core import __version__
+        # call releases api
+        resp = requests.get("https://api.github.com/repos/threefoldtech/jumpscaleX_core/releases/latest")
+        resp = resp.json()
+        latest_release = resp["tag_name"]
+        if latest_release is not __version__:
+            return False
+        return True
 
+    @staticmethod
+    def get_latest_release():
+        try:
+            from threesdk import __version__
+        except:
+            from .core import __version__
         # call releases api
         resp = requests.get("https://api.github.com/repos/threefoldtech/jumpscaleX_core/releases/latest")
         resp = resp.json()
         # get versions
-        last_release = resp["tag_name"]
-        last_release_url = resp["html_url"]
-        up_to_date = True
-        if last_release is not __version__:
-            up_to_date = False
-        return {"up_to_date": up_to_date, "last_release": last_release, "last_release_url": last_release_url}
+        latest_release = resp["tag_name"]
+        latest_release_url = resp["html_url"]
+        download_link = ""
+
+        for platform in resp["assets"]:
+            if MyEnv.platform() in platform["name"]:
+                download_link = platform["browser_download_url"]
+        return {
+            "latest_release": latest_release,
+            "latest_release_url": latest_release_url,
+            "download_link": download_link,
+        }
 
     @staticmethod
     def clear():
