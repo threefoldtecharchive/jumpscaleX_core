@@ -194,7 +194,7 @@ class SDKContainers:
 
         if not docker.executor.exists("/sandbox/cfg/.configured"):
             installer = self.IT.JumpscaleInstaller()
-            print(" - make sure jumpscale code is on local filesystem.")
+            print(" - updating code this might take a while depending on your internet connection.")
             if mount:
                 installer.repos_get(pull=pull, branch=self.core.branch, reset=code_update_force)
             else:
