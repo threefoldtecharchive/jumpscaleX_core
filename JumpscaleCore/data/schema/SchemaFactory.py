@@ -73,10 +73,8 @@ class SchemaFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             self.schemas_loaded.pop(url)
             if s._md5 in self.schemas_md5:
                 self.schemas_md5.pop(s._md5)
-            if self.meta._data["url"].get(url):
-                self.meta._data["url"].pop(url)
-            if self.meta._data["md5"].get(s._md5):
-                self.meta._data["md5"].pop(s._md5)
+            self.meta._data["url"].pop(url, None)
+            self.meta._data["md5"].pop(s._md5, None)
 
     def get(self, md5=None, url=None, text=""):
         """
