@@ -53,17 +53,23 @@ def browser():
     print(f" - CONNECT TO YOUR SIMULATOR ON: {url}")
 
 
-def restart(browser_open=False):
+def restart(browser_open=False, container=False):
     """
     restart the simulator, this can help to remove all running kernels
     the pyjupyter notebook can become super heavy
+
+    When passing container=True the entire container will be restarted
     """
     if not _containers.IT.DockerFactory.container_name_exists("simulator"):
         start()
     else:
-        c = _containers.get(name="simulator")
-        c.execute("j.tools.tfgrid_simulator.stop()", jumpscale=True)
-        c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
+        if container:
+            _containers.stop(name="simulator")
+            start()
+        else:
+            c = _containers.get(name="simulator")
+            c.execute("j.tools.tfgrid_simulator.stop()", jumpscale=True)
+            c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
 
     if browser_open:
         browser()

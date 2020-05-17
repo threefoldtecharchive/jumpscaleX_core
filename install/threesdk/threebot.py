@@ -36,16 +36,23 @@ def browser():
     print(f" - CONNECT TO YOUR 3bot ON: {url}")
 
 
-def restart(browser_open=False):
+def restart(browser_open=False, container=False):
     """
     restart the 3bot
+
+    When passing container=True the entire container will be restart
+    Could be usefull incase of trouble or high memory useage
     """
     if not _containers.IT.DockerFactory.container_name_exists(_NAME):
         start()
     else:
-        c = _containers.get(_NAME)
-        c.execute("source /sandbox/env.sh;3bot stop")
-        c.execute("source /sandbox/env.sh;3bot start")
+        if container:
+            stop()
+            start()
+        else:
+            c = _containers.get(_NAME)
+            c.execute("source /sandbox/env.sh;3bot stop")
+            c.execute("source /sandbox/env.sh;3bot start")
 
     if browser_open:
         browser()
