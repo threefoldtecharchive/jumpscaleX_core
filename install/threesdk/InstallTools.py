@@ -1912,7 +1912,7 @@ class Tools:
         download_link = ""
 
         for platform in resp["assets"]:
-            if MyEnv.platform() in platform["name"]:
+            if MyEnv.platform() in platform["name"] or (MyEnv.platform_is_windows and "windows" in platform["name"]):
                 download_link = platform["browser_download_url"]
         return {
             "latest_release": latest_release,

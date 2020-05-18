@@ -145,7 +145,7 @@ def update():
         latest_release = Tools.get_latest_release()
         r = requests.get(latest_release["download_link"], allow_redirects=True)
         if MyEnv.platform_is_linux or MyEnv.platform_is_osx:
-            open("/tmp/3sdk", "wb").write(r.content)
+            Tools.file_write("/tmp/3sdk", r.content, True)
             print("Done")
             Tools.execute(f"chmod +x /tmp/3sdk")
             _, bin_path, _ = Tools.execute(f"which 3sdk")
@@ -160,19 +160,18 @@ def update():
                 Tools.execute(f"cp -f /tmp/3sdk.bk {bin_path}", interactive=True)
                 print(f"Failed to update binary, Can not replace binary in {bin_path}")
         elif MyEnv.platform_is_windows:
-            temp_path = os.environ["temp"]
-            open(f"{temp_path}/3sdk.exe", "wb").write(r.content)
+            bin_path = f"C:\\Program Files (x86)\\3sdk\\3sdk.exe"
+            temp_path = MyEnv.config["DIR_TEMP"]
+            # create new file
+            Tools.file_write(f"{temp_path}\\3sdk.exe", r.content, True)
             print("Done")
-            _, bin_path, _ = Tools.execute(f"where.exe 3sdk")
-            # to remove trailing \n
-            bin_path = bin_path[:-1]
             # save backup
-            Tools.execute(f"copy -f {bin_path} {temp_path}/3sdkBackup.exe")
+            Tools.execute(f"copy -f {bin_path} {temp_path}\\3sdkBackup.exe")
             # replace
             try:
-                Tools.execute(f"move -f {temp_path}/3sdk.exe {bin_path}", interactive=True)
+                Tools.execute(f"move -f {temp_path}\\3sdk.exe {bin_path}", interactive=True)
             except:
-                Tools.execute(f"move -f {temp_path}/3sdkBackup.exe {bin_path}", interactive=True)
+                Tools.execute(f"move -f {temp_path}\\3sdkBackup.exe {bin_path}", interactive=True)
                 print(f"Failed to update binary, Can not replace binary in {bin_path}")
         else:
             raise Tools.exceptions.Base("platform not supported, only linux, osx and windows.")
