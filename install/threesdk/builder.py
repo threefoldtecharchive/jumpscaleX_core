@@ -12,7 +12,7 @@ _containers = SDKContainers(core=core, args=args)
 __all__ = ["base_build", "phusion_build", "sdk", "sdktool", "container_import", "container_export"]
 
 
-def phusion_build(push=False):
+def phusion_build(push: bool = False):
     """
     build the ubuntu base container
     """
@@ -31,7 +31,7 @@ def phusion_build(push=False):
         IT.Tools.execute("docker pushe threefoldtech/phusion/latest")
 
 
-def base_build(dest=None, push=False, delete=True):
+def base_build(dest=None, push: bool = False, delete: bool = True):
     """
     build the base container
     """
@@ -68,7 +68,7 @@ def sdktool():
     if IT.MyEnv.platform_is_osx:
         name = "osx"
     elif IT.MyEnv.platform_is_linux:
-        name = "osx"
+        name = "linux"
     else:
         raise IT.Tools.exceptions.Input("platform not supported")
 
@@ -91,7 +91,7 @@ def sdktool():
     IT.Tools.execute(C)
 
 
-def container_import(name=None, path=None, imagename="threefoldtech/3bot2", no_start=False):
+def container_import(name=None, path=None, imagename="threefoldtech/3bot2", no_start: bool = False):
     """
     import container from image file, if not specified will be /tmp/3bot2.tar
     :param args:
@@ -114,7 +114,7 @@ def container_export(name=None, path=None, version=None):
     docker.export(path=path, version=version)
 
 
-def sdk(push=False, base=False, delete=False, noclean=False, development=False):
+def sdk(push: bool = False, base: bool = False, delete: bool = False, noclean: bool = False, development: bool = False):
     """
     build the sdk (threebot) container
     """

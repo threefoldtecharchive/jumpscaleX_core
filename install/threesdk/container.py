@@ -2,6 +2,7 @@
 from .lib.SDKContainers import SDKContainers
 from .core import core
 from .args import args
+import typing
 
 
 _containers = SDKContainers(core=core, args=args)
@@ -32,12 +33,12 @@ def install(
     delete=False,
     email=None,
     words=None,
-    server=False,
-    zerotier=False,
-    pull=None,
+    server: bool = False,
+    zerotier: bool = False,
+    pull: bool = None,
     secret=None,
     explorer=None,
-    code_update_force=False,
+    code_update_force: bool = False,
 ):
     """
     create the 3bot container and install jumpscale inside
@@ -123,7 +124,7 @@ def list():
     _containers_do()
 
 
-def start(name=None, server=False, browser_open=True):
+def start(name=None, server: bool = False, browser_open: bool = True):
     """
     @param server=True will start 3bot server
     """
@@ -198,7 +199,7 @@ def _delete(name=None):
         _containers.delete(name=name)
 
 
-def wireguard(name=None, connect=True):
+def wireguard(name=None, connect: bool = True):
     """
     enable wireguard server inside your container
     if connect will use local wireguard tools (userspace prob) if installed locally to make connection to the container
@@ -214,7 +215,7 @@ def wireguard(name=None, connect=True):
         print(wg)
 
 
-def zerotier(name=None, connect=False):
+def zerotier(name=None, connect: bool = False):
     """
     enable zerotier server inside your container
     if connect will use local zerotier tools to make the connection to same network
