@@ -161,7 +161,7 @@ def update():
                 print(f"Failed to update binary, Can not replace binary in {bin_path}")
         elif MyEnv.platform_is_windows:
             bin_path = f"C:\\Program Files (x86)\\3sdk\\3sdk.exe"
-            temp_path = MyEnv.config["DIR_TEMP"]
+            temp_path = os.environ["temp"]
             # create new file
             Tools.file_write(f"{temp_path}\\3sdk.exe", r.content, True)
             print("Done")
