@@ -179,9 +179,6 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         if j.sal.nettools.tcpPortConnectionTest("localhost", 9900):
             zdb = j.servers.zdb.get(name="threebot")
             zdb.stop()
-        if j.sal.nettools.tcpPortConnectionTest("localhost", 1491):
-            s = j.servers.sonic.get(name="threebot")
-            s.stop()
 
         assert j.sal.process.checkProcessRunning("zdb") is False
         assert j.sal.process.checkProcessRunning("sonic") is False
@@ -200,19 +197,11 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         if reset:
             zdb = j.servers.zdb.get(name="threebot")
             zdb.destroy()
-            s = j.servers.sonic.get(name="threebot")
-            s.destroy()
 
         if j.sal.nettools.tcpPortConnectionTest("localhost", 9900) is False:
             z = j.servers.zdb.get(name="threebot", adminsecret_=adminsecret_)
             z.start()
 
-        if j.sal.nettools.tcpPortConnectionTest("localhost", 1491) is False:
-            s = j.servers.sonic.get(name="threebot", port=1491, adminsecret_=adminsecret_)
-            s.start()
-
-        s = j.servers.sonic.get(name="threebot")
-        assert s.adminsecret_ == adminsecret_
         z = j.servers.zdb.get(name="threebot")
         assert z.adminsecret_ == adminsecret_
 
@@ -220,7 +209,7 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
         self._core_zdb = z
 
-        return (s, z)
+        return z
 
     def start_servers_test_zdb_sonic(self, reset=False):
 
@@ -233,26 +222,12 @@ class BCDBFactory(j.baseclasses.factory_testtools, TESTTOOLS):
         )
         # the test_instance will test the zdb instance (ping & data dir exists)
         # name of the zdb server is test_instance
-
-        if j.core.myenv.platform_is_linux:
-            if reset:
-                sonic_server = j.servers.sonic.default
-                sonic_server.stop()
-            if j.sal.nettools.tcpPortConnectionTest("localhost", 1492) is False:
-                s = j.servers.sonic.get(name="testserver", port=1492, adminsecret_=admin_secret)
-                s.start()
-            s = j.servers.sonic.get(name="testserver")
-            s.start()
-            assert s.adminsecret_ == admin_secret
-        else:
-            s = None
-
         z = j.servers.zdb.get(name="testserver")
         assert z.adminsecret_ == admin_secret
 
         self._core_zdb = z
 
-        return (s, z)
+        return z
 
     @property
     def _BCDBModelClass(self):
