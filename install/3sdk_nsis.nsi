@@ -55,7 +55,7 @@ var ICONS_GROUP
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 OutFile "${PRODUCT_BIN}"
-InstallDir "$PROGRAMFILES\${PRODUCT_NAME}"
+InstallDir "$PROFILE\${PRODUCT_NAME}"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
 ShowUnInstDetails show
