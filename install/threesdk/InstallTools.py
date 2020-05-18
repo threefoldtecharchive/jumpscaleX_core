@@ -62,6 +62,7 @@ else:
     pygments_pylexer = False
 
 DEFAULT_BRANCH = "master"
+DEVELOPMENT_BRANCH = "development"
 RepoInfo = namedtuple("RepoInfo", ["protocol", "host", "account", "name", "url", "port"])
 
 GITHUB_RSA = "AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ=="
@@ -3309,7 +3310,7 @@ class Tools:
         )
 
     @staticmethod
-    def code_github_get(url, rpath=None, branch=None, pull=False, reset=False, executor=None, shallow=False):
+    def code_github_get(url, rpath=None, branch=None, pull=False, reset=False, executor=None, shallow=False, clone_branch=None):
         """
 
         :param repo:
@@ -3400,6 +3401,7 @@ class Tools:
             args["SSH_AUTH_SOCK"] = os.environ["SSH_AUTH_SOCK"]
 
         args["BRANCH"] = branch  # TODO:no support for multiple branches yet
+        args["CLONE_BRANCH"] = clone_branch or branch
 
         if exists and shallow:
             if getbranch(args) != branch:
@@ -3433,7 +3435,7 @@ class Tools:
                     Tools.log("get code [git] (first time): %s" % repo)
                     if not executor.exists(ACCOUNT_DIR):
                         executor.dir_ensure(ACCOUNT_DIR)
-                    C = "git -C {ACCOUNT_DIR} clone {URL} -b {BRANCH} -q"
+                    C = "git -C {ACCOUNT_DIR} clone {URL} -b {CLONE_BRANCH} -q"
                     if shallow:
                         C += " --depth=1"
                     executor.execute(
@@ -4983,7 +4985,7 @@ class JumpscaleInstaller:
     #     Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
     #
 
-    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False, executor=None, shallow=False):
+    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False, executor=None, shallow=False, clone_branch=None):
         assert not prebuilt  # not supported yet
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
@@ -5013,7 +5015,7 @@ class JumpscaleInstaller:
                     repo["branch"] = branch
 
             try:
-                Tools.code_github_get(url=repo["url"], branch=repo["branch"], pull=pull, reset=reset, executor=executor, shallow=shallow)
+                Tools.code_github_get(url=repo["url"], branch=repo["branch"], pull=pull, reset=reset, executor=executor, shallow=shallow, clone_branch=clone_branch)
             except Tools.exceptions.Input:
                 raise
 
