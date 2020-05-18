@@ -7,7 +7,7 @@ __all__ = ["browser", "stop", "start", "shell", "restart"]
 _NAME = "3bot"
 
 
-def start(delete=False, browser_open=True):
+def start(delete: bool = False, browser_open: bool = True):
     """
     install & run a container with threebot
 
@@ -45,7 +45,7 @@ def delete():
     _container.delete(_NAME)
 
 
-def restart(browser_open=False, container=False):
+def restart(browser_open: bool = False, container: bool = False):
     """
     restart the 3bot
 

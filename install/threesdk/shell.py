@@ -144,13 +144,7 @@ def rewriteline(parts, globals, locals):
 
     def get_args_string(argslist, func):
         line = ""
-        funcspec = inspect.getargspec(func)
-
-        def get_default(idx):
-            if funcspec.defaults:
-                if len(funcspec.defaults) > idx:
-                    return funcspec.defaults[idx]
-            return None
+        funcspec = inspect.getfullargspec(func)
 
         for idx, arg in enumerate(argslist):
             if arg in globals or arg in locals:
@@ -160,8 +154,7 @@ def rewriteline(parts, globals, locals):
             elif "=" in arg:
                 kwarg = arg.split("=")
                 line += f"{kwarg[0]}="
-                argidx = funcspec.args.index(kwarg[0])
-                isbool = isinstance(get_default(argidx), bool)
+                isbool = funcspec.annotations.get(kwarg[0]) is bool
                 if isbool:
                     value = True
                     if kwarg[1]:
@@ -173,7 +166,7 @@ def rewriteline(parts, globals, locals):
                     line += f"'{kwarg[1]}', "
             else:
                 # let's assume its a string
-                isbool = isinstance(get_default(idx), bool)
+                isbool = funcspec.annotations.get(kwarg) is bool
                 if isbool:
                     value = arg.lower() in ["y", "yes", "1", "true"]
                     line += f"{value}, "
