@@ -30,7 +30,6 @@ def start(delete=False, browser_open=True, code_update_force=False, zerotier=Fal
     else:
         c = _containers.get(name="simulator", explorer="none")
     c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
-
     if browser_open:
         browser()
 
@@ -46,11 +45,14 @@ def browser():
     """
     connect browser to your jupyter, make sure its not open yet
     """
-    c = _containers.get(name="simulator")
-    httpnb = 5000 + int(c.config.portrange) * 10
-    url = f"http://localhost:{httpnb}"
-    _threebot_browser(c, url=url)
-    print(f" - CONNECT TO YOUR SIMULATOR ON: {url}")
+    if not _containers.IT.DockerFactory.container_name_exists("simulator"):
+        start(browser_open=True)
+    else:
+        c = _containers.get(name="simulator")
+        httpnb = 5000 + int(c.config.portrange) * 10
+        url = f"http://localhost:{httpnb}"
+        _threebot_browser(c, url=url)
+        print(f" - CONNECT TO YOUR SIMULATOR ON: {url}")
 
 
 def restart(browser_open=False, container=False):
@@ -65,14 +67,13 @@ def restart(browser_open=False, container=False):
     else:
         if container:
             _containers.stop(name="simulator")
-            start()
+            start(browser_open=browser_open)
         else:
             c = _containers.get(name="simulator")
             c.execute("j.tools.tfgrid_simulator.stop()", jumpscale=True)
             c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
-
-    if browser_open:
-        browser()
+            if browser_open:
+                browser()
 
 
 def shell():
