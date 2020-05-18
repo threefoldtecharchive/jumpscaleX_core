@@ -198,7 +198,8 @@ class SDKContainers:
             print(" - updating code this might take a while depending on your internet connection.")
             if mount:
                 # in expert mode we do not change branches
-                installer.repos_get(pull=pull, branch=None, reset=code_update_force)
+                # when the repo does not exists we default to development
+                installer.repos_get(pull=pull, branch=None, reset=code_update_force, clone_branch=self.core.development_branch)
             else:
                 # in none expert mode we do shallow clone reset changes if needed and clone on the container
                 installer.repos_get(pull=pull, branch=self.core.branch, reset=True, executor=docker.executor, shallow=True)

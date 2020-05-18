@@ -36,6 +36,15 @@ def browser():
     print(f" - CONNECT TO YOUR 3bot ON: {url}")
 
 
+def delete():
+    """
+    Delete threebot and it's data
+
+    Can be used when switching branches
+    """
+    _container.delete(_NAME)
+
+
 def restart(browser_open=False, container=False):
     """
     restart the 3bot
