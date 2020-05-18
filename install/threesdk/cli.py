@@ -160,15 +160,13 @@ def update():
                 Tools.execute(f"cp -f /tmp/3sdk.bk {bin_path}", interactive=True)
                 print(f"Failed to update binary, Can not replace binary in {bin_path}")
         elif MyEnv.platform_is_windows:
-            bin_path = r"C:\Program Files (x86)\3sdk\3sdk.exe"
-            profile_path = f"os.environ['USERPROFILE']\\3sdk.exe"
-            # create new file
-            Tools.file_write(profile_path, r.content, True)
-            print("Done")
-            # replace
-            import shutil
-
-            shutil.copyfile(profile_path, bin_path)
+            download_path = f"{os.environ['USERPROFILE']}\\3sdk\\3sdk_download.exe"
+            profile_path = f"{os.environ['USERPROFILE']}\\3sdk\\3sdk.exe"
+            print("Download done, installing now ..")
+            Tools.file_write(download_path, r.content, True)
+            Tools.delete(profile_path)
+            os.rename(download_path, profile_path)
+            print("Update completed")
         else:
             raise Tools.exceptions.Base("platform not supported, only linux, osx and windows.")
     else:
