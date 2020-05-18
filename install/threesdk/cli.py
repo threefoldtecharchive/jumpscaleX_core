@@ -134,7 +134,6 @@ def update():
         for item in containers_names:
             name = item.name
             print("Updating repositories in container ", name, "...")
-            latest_release = Tools.get_latest_release()
             container._containers.assert_container(name)
             c = container._containers.get(name=name, explorer="none")
             container_executor = c.executor
@@ -143,6 +142,7 @@ def update():
         import requests
 
         print("Downloading 3sdk binary...")
+        latest_release = Tools.get_latest_release()
         r = requests.get(latest_release["download_link"], allow_redirects=True)
         open("/tmp/3sdk", "wb").write(r.content)
         print("Done")
