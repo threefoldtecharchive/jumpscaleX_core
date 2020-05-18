@@ -3309,7 +3309,7 @@ class Tools:
         )
 
     @staticmethod
-    def code_github_get(url, rpath=None, branch=None, pull=False, reset=False, executor=None):
+    def code_github_get(url, rpath=None, branch=None, pull=False, reset=False, executor=None, shallow=False):
         """
 
         :param repo:
@@ -3323,7 +3323,7 @@ class Tools:
         executor = executor or ExecutorLocal()
 
         def getbranch(args):
-            cmd = "cd {REPO_DIR} && git rev-parse --abbrev-ref HEAD"
+            cmd = "git -C {REPO_DIR} rev-parse --abbrev-ref HEAD"
             rc, stdout, err = executor.execute(cmd, die=False, args=args, showout=False, interactive=False)
             if rc > 0:
                 Tools.shell()
@@ -3335,7 +3335,7 @@ class Tools:
             args["BRANCH"] = branch
             current_branch = getbranch(args=args)
             if current_branch != branch:
-                script = "cd {REPO_DIR} && git checkout -q -f {BRANCH}"
+                script = "git -C {REPODIR} checkout -q -f {BRANCH}"
                 if Tools.ask_yes_no(
                     f"\n**: A different branch ({current_branch}) found in repo ({repo}), do you want to change it to ({branch})?"
                 ):
@@ -3391,11 +3391,6 @@ class Tools:
             account=account, repo=repo, executor=executor
         )
 
-        # if exists and reset and not pull:
-        #     # need to remove because could be left over from previous sync operations
-        #     # only reset if no pull
-        #     Tools.delete(REPO_DIR)
-
         args = {}
         args["ACCOUNT_DIR"] = ACCOUNT_DIR
         args["REPO_DIR"] = REPO_DIR
@@ -3405,6 +3400,12 @@ class Tools:
             args["SSH_AUTH_SOCK"] = os.environ["SSH_AUTH_SOCK"]
 
         args["BRANCH"] = branch  # TODO:no support for multiple branches yet
+
+        if exists and shallow:
+            if getbranch(args) != branch:
+                Tools.delete(REPO_DIR)
+                exists = False
+                foundgit = False
 
         if "GITPULL" in os.environ:
             pull = str(os.environ["GITPULL"]) == "1"
@@ -3432,9 +3433,9 @@ class Tools:
                     Tools.log("get code [git] (first time): %s" % repo)
                     if not executor.exists(ACCOUNT_DIR):
                         executor.dir_ensure(ACCOUNT_DIR)
-                    C = """
-                    git -C {ACCOUNT_DIR} clone {URL} -b {BRANCH} -q
-                    """
+                    C = "git -C {ACCOUNT_DIR} clone {URL} -b {BRANCH} -q"
+                    if shallow:
+                        C += " --depth=1"
                     executor.execute(
                         C,
                         args=args,
@@ -3448,6 +3449,8 @@ class Tools:
                 except Exception:
                     Tools.log("get code [https] (default branch): %s" % repo)
                     C = "git -C {ACCOUNT_DIR} clone -q {URL}"
+                    if shallow:
+                        C += " --depth=1"
                     executor.execute(
                         C,
                         args=args,
@@ -3492,12 +3495,15 @@ class Tools:
                                 else:
                                     raise Tools.exceptions.Input("found changes, do not want to commit or reset")
                     # update repo
+                    cmd = "git -C {REPO_DIR} fetch -q {URL}"
+                    if shallow:
+                        cmd += " --depth=1"
                     executor.execute(
-                        "git -C {REPO_DIR} fetch -q {URL}",
+                        cmd,
                         args=args,
                         retry=4,
                         showout=False,
-                        errormsg=f"Could not pull {url}",
+                        errormsg=f"Could not fetch {url}",
                         interactive=True,
                     )
                     # switch branch
@@ -4977,7 +4983,7 @@ class JumpscaleInstaller:
     #     Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
     #
 
-    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False, executor=None):
+    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False, executor=None, shallow=False):
         assert not prebuilt  # not supported yet
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
@@ -5007,7 +5013,7 @@ class JumpscaleInstaller:
                     repo["branch"] = branch
 
             try:
-                Tools.code_github_get(url=repo["url"], branch=repo["branch"], pull=pull, reset=reset, executor=executor)
+                Tools.code_github_get(url=repo["url"], branch=repo["branch"], pull=pull, reset=reset, executor=executor, shallow=shallow)
             except Tools.exceptions.Input:
                 raise
 

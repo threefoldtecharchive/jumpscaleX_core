@@ -34,7 +34,7 @@ def install(
     words=None,
     server=False,
     zerotier=False,
-    pull=True,
+    pull=None,
     secret=None,
     explorer=None,
     code_update_force=False,
