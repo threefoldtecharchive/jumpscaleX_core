@@ -24,6 +24,7 @@ class GedisChatBotFactory(JSBASE):
         JSBASE.__init__(self)
         self.sessions = {}  # all chat sessions
         self.chat_flows = {}  # are the flows to run, code being executed to interact with user
+        self._fetch_greenlet = None
 
     def session_new(self, topic, query_params=None, **kwargs):
         """
@@ -50,7 +51,7 @@ class GedisChatBotFactory(JSBASE):
         self.sessions[obj.session_id] = obj
         return {"sessionid": obj.session_id}
 
-    def session_work_get(self, session_id):
+    def session_work_get(self, session_id, restore=False):
         """
         Blocking method responsible for waiting for new questions added to the queue
         by the chatflow using helper methods (ask_string, ask_integer, ....)
@@ -59,13 +60,22 @@ class GedisChatBotFactory(JSBASE):
         """
         chatflow = self.sessions.get(session_id)
         if not chatflow:
-            return {"category": "md_show", "msg": "Chat had ended", "kwargs": {}}
+            return {"payload":{"category": "end"}}
+        
+        if self._fetch_greenlet:
+            if not self._fetch_greenlet.ready():
+                self._fetch_greenlet.kill()
 
-        work = chatflow.get_work()
-        if work.get("category") == "end":
+        self._fetch_greenlet = gevent.spawn(chatflow.get_work, restore)
+        
+        result = self._fetch_greenlet.get()
+        if isinstance(result, gevent.GreenletExit):
+            return
+
+        if result.get("category") == "end":
             self.sessions.pop(session_id)
 
-        return work
+        return result
 
     def session_work_set(self, session_id, result):
         """
@@ -208,6 +218,7 @@ class GedisChatBot:
         self._current_step = 0
         self._steps_info = {}
         self._greenlet = None
+        self._last_output = None
         self._queue_out = gevent.queue.Queue()
         self._queue_in = gevent.queue.Queue()
         self._start()
@@ -292,7 +303,9 @@ class GedisChatBot:
         self._greenlet.kill()
         return self._execute_current_step()
 
-    def get_work(self):
+    def get_work(self, restore=False):
+        if restore and self._last_output:
+            return self._last_output
         return self._queue_out.get()
 
     def set_work(self, data):
@@ -306,6 +319,7 @@ class GedisChatBot:
             self.step_info["slide"] += 1
 
         output = {"info": self.info, "payload": data}
+        self._last_output = output
         self._queue_out.put(output)
 
     def send_error(self, message, **kwargs):
