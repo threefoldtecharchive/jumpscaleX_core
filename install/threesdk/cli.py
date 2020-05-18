@@ -114,67 +114,90 @@ def version():
     if not _sdk.InstallTools.Tools.is_latest_release():
         dic = _sdk.InstallTools.Tools.get_latest_release()
         print(
-            f"Your SDK version is not up-to-date. Newest release is {dic['latest_release']}\nPlease visit: {dic['latest_release_url']}\nOr run '3sdk --update'"
+            f"Your SDK version is not up-to-date. Newest release is {dic['latest_release']}\nPlease visit: {dic['latest_release_url']}\nOr run '3sdk update'"
         )
 
 
-def update():
+def update(branch="master"):
     """
     """
-    try:
-        from threesdk import container
-        from threesdk.InstallTools import JumpscaleInstaller, MyEnv, Tools
-    except ImportError:
-        from .core import container
-        from .core.InstallTools import JumpscaleInstaller, MyEnv, Tools
+    from threesdk.InstallTools import JumpscaleInstaller, MyEnv, Tools, DockerFactory
+
+    import requests
 
     if not Tools.is_latest_release():
-        containers_names = container._containers.IT.DockerFactory.containers()
+        installer = JumpscaleInstaller()
+        containers_names = DockerFactory.containers()
+        host_mount = False
         # pull all repos in containers
         for item in containers_names:
             name = item.name
-            print("Updating repositories in container ", name, "...")
             container._containers.assert_container(name)
-            c = container._containers.get(name=name, explorer="none")
-            container_executor = c.executor
-            JumpscaleInstaller.repos_get(JumpscaleInstaller, pull=True, executor=container_executor)
-        import requests
+            c = DockerFactory.container_get(name=name)
+            if c.mount_code_exists:
+                host_mount = True
+            else:
+                print("Updating repos in container ", name, "...")
+                container_executor = c.executor
+                installer.repos_get(pull=True, executor=container_executor, branch=branch)
+
+        if host_mount:
+            print("Updating repos on host...")
+            installer.repos_get(pull=True, branch=branch)
+
+        # restart containers
+        for item in containers_names:
+            name = item.name
+            c = DockerFactory.container_get(name=name)
+            if name == "simulator":
+                simulator.restart(container=True)
+            elif name == "3bot":
+                threebot.restart(container=True)
+            else:
+                rc, out, err = c.execute(
+                    "ps -ef | grep /sandbox/var/cmds/threebot_default.py | grep -v grep",
+                    interactive=False, die=False, showout=True
+                )
+
+                container.stop(name=name)
+                if rc > 0:
+                    container.start(name=name, server=False)
+                else:
+                    print(f"container {name} is running 3bot server")
+                    container.start(name=name, server=True, browser_open=False)
+                    
 
         # Update binary for host
         print("Downloading 3sdk binary...")
         latest_release = Tools.get_latest_release()
-        r = requests.get(latest_release["download_link"], allow_redirects=True)
-        if MyEnv.platform_is_linux or MyEnv.platform_is_osx:
-            Tools.file_write("/tmp/3sdk", r.content, True)
-            print("Done")
-            Tools.execute(f"chmod +x /tmp/3sdk")
-            _, bin_path, _ = Tools.execute(f"which 3sdk")
-            # to remove trailing \n
-            bin_path = bin_path[:-1]
-            # save backup
-            Tools.execute(f"cp -f {bin_path} /tmp/3sdk.bk")
-            # replace
-            try:
-                Tools.execute(f"mv -f /tmp/3sdk {bin_path}", interactive=True)
-            except:
-                Tools.execute(f"cp -f /tmp/3sdk.bk {bin_path}", interactive=True)
-                print(f"Failed to update binary, Can not replace binary in {bin_path}")
-        elif MyEnv.platform_is_windows:
-            bin_path = f"C:\\Program Files (x86)\\3sdk\\3sdk.exe"
-            temp_path = MyEnv.config["DIR_TEMP"]
-            # create new file
-            Tools.file_write(f"{temp_path}\\3sdk.exe", r.content, True)
-            print("Done")
-            # save backup
-            Tools.execute(f"copy -f {bin_path} {temp_path}\\3sdkBackup.exe")
-            # replace
-            try:
-                Tools.execute(f"move -f {temp_path}\\3sdk.exe {bin_path}", interactive=True)
-            except:
-                Tools.execute(f"move -f {temp_path}\\3sdkBackup.exe {bin_path}", interactive=True)
-                print(f"Failed to update binary, Can not replace binary in {bin_path}")
-        else:
-            raise Tools.exceptions.Base("platform not supported, only linux, osx and windows.")
+        with requests.get(latest_release["download_link"], allow_redirects=True, stream=True) as r:
+            if MyEnv.platform_is_linux or MyEnv.platform_is_osx:
+                local_filename = "/tmp/3sdk"
+                with open(local_filename, "wb") as f:
+                    shutil.copyfileobj(r.raw, f)
+                r.close()
+                print("Download done, installing now ..")
+                os.chmod(local_filename, 0o775)
+                bin_path = sys.argv[0]
+                # save backup
+                shutil.copy(bin_path, "/tmp/3sdk.bk")
+                # replace
+                try:
+                    shutil.move("/tmp/3sdk", bin_path)
+                    print(bin_path)
+                    print("Congratulations, Now your 3sdk is up-to-date!")
+                except:
+                    shutil.copy("/tmp/3sdk.bk", bin_path)
+                    print(f"Failed to update binary, Can not replace binary in {bin_path}")
+            elif MyEnv.platform_is_windows:
+                update_path = f"{os.environ['USERPROFILE']}\\3sdk\\3sdk_update.exe"
+                print("Download done, installing now ..")
+                with open(update_path, "wb") as f:
+                    shutil.copyfileobj(r.raw, f)
+                f.close()
+                Tools.execute(f'explorer "{update_path}"', interactive=True)
+            else:
+                raise Tools.exceptions.Base("platform not supported, only linux, osx and windows.")
     else:
         print(f"3sdk version is up-to-date")
 
@@ -230,14 +253,19 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert", default=False, action="store_true")
-    parser.add_argument("--update", default=False, action="store_true")
     parser.add_argument("-v", "--version", default=False, action="store_true")
 
+    subparsers = parser.add_subparsers()
+    update_parser = subparsers.add_parser("update", help="update 3sdk")
+
     options, extra = parser.parse_known_args()
-    base_check(options.expert)
-    if options.update:
+    update_options, update_extra = update_parser.parse_known_args()
+
+    if "update" in update_extra:
         update()
         sys.exit(0)
+
+    base_check(options.expert)
     if options.version:
         version()
         sys.exit(0)
