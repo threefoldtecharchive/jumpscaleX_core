@@ -199,7 +199,7 @@ class ThreeBotServer(j.baseclasses.object_config):
             self.zdb  # will start zdb
 
             # now we are ready to start the jobs
-            self.myjobs_start()
+            # self.myjobs_start()
 
             # think no longer needed
             # # make sure client for myjobs properly configured
@@ -283,10 +283,10 @@ class ThreeBotServer(j.baseclasses.object_config):
                 if res:
                     break
 
-            self._log_info("start workers")
+            # self._log_info("start workers")
 
             # j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
-            self._maintenance()
+            # self._maintenance()
 
             print("*****************************")
             print("*** 3BOTSERVER IS RUNNING ***")
