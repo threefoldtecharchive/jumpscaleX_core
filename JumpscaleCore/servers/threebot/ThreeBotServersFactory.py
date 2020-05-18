@@ -108,6 +108,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
 
         :return:
         """
+
         self._starting_ = True
         if not background:
             self._threebot_starting()

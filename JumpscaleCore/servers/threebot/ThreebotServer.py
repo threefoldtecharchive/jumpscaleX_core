@@ -321,9 +321,6 @@ class ThreeBotServer(j.baseclasses.object_config):
                 cmd.start()
                 time.sleep(1)
 
-        import ipdb
-
-        ipdb.set_trace()
         # wait on lapis to start so we make sure everything is loaded by then.
         if not j.sal.nettools.waitConnectionTest("127.0.0.1", 80, timeout=600):
             raise j.exceptions.Timeout("Could not start threebot server")
@@ -465,7 +462,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         startup.executor = self.executor
         startup.interpreter = "python"
         startup.timeout = 600
-        startup.ports = [9900, 1491, 8901]
+        startup.ports = [9900, 8901]
         if self.web:
             startup.ports += [80, 443, 4444, 4445]
         return startup
