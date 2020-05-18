@@ -138,31 +138,42 @@ def update():
             c = container._containers.get(name=name, explorer="none")
             container_executor = c.executor
             JumpscaleInstaller.repos_get(JumpscaleInstaller, pull=True, executor=container_executor)
-        # Update binary for host
         import requests
 
+        # Update binary for host
         print("Downloading 3sdk binary...")
         latest_release = Tools.get_latest_release()
         r = requests.get(latest_release["download_link"], allow_redirects=True)
-        open("/tmp/3sdk", "wb").write(r.content)
-        print("Done")
-        Tools.execute(f"chmod +x /tmp/3sdk")
         if MyEnv.platform_is_linux or MyEnv.platform_is_osx:
+            open("/tmp/3sdk", "wb").write(r.content)
+            print("Done")
+            Tools.execute(f"chmod +x /tmp/3sdk")
             _, bin_path, _ = Tools.execute(f"which 3sdk")
             # to remove trailing \n
             bin_path = bin_path[:-1]
             # save backup
             Tools.execute(f"cp -f {bin_path} /tmp/3sdk.bk")
             # replace
-            Tools.execute(f"mv -f /tmp/3sdk {bin_path}", interactive=True)
+            try:
+                Tools.execute(f"mv -f /tmp/3sdk {bin_path}", interactive=True)
+            except:
+                Tools.execute(f"cp -f /tmp/3sdk.bk {bin_path}", interactive=True)
+                print(f"Failed to update binary, Can not replace binary in {bin_path}")
         elif MyEnv.platform_is_windows:
+            temp_path = os.environ["temp"]
+            open(f"{temp_path}/3sdk.exe", "wb").write(r.content)
+            print("Done")
             _, bin_path, _ = Tools.execute(f"where.exe 3sdk")
             # to remove trailing \n
             bin_path = bin_path[:-1]
             # save backup
-            Tools.execute(f"copy -f /tmp/3sdk /tmp/3sdk.bk")
+            Tools.execute(f"copy -f {bin_path} {temp_path}/3sdkBackup.exe")
             # replace
-            Tools.execute(f"move -f /tmp/3sdk {bin_path}", interactive=True)
+            try:
+                Tools.execute(f"move -f {temp_path}/3sdk.exe {bin_path}", interactive=True)
+            except:
+                Tools.execute(f"move -f {temp_path}/3sdkBackup.exe {bin_path}", interactive=True)
+                print(f"Failed to update binary, Can not replace binary in {bin_path}")
         else:
             raise Tools.exceptions.Base("platform not supported, only linux, osx and windows.")
     else:
