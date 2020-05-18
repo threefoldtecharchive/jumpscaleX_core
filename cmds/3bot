@@ -19,6 +19,7 @@ threebot tool
 
 @click.command()
 def start():
+    j.application.interactive = True
     j.servers.threebot.start(background=True)
     print(" - Server started ok")
 

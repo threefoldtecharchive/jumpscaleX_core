@@ -73,6 +73,8 @@ class SchemaFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             self.schemas_loaded.pop(url)
             if s._md5 in self.schemas_md5:
                 self.schemas_md5.pop(s._md5)
+            self.meta._data["url"].pop(url, None)
+            self.meta._data["md5"].pop(s._md5, None)
 
     def get(self, md5=None, url=None, text=""):
         """
@@ -249,9 +251,8 @@ class SchemaFactory(j.baseclasses.factory_testtools, TESTTOOLS):
             s = self.schemas_md5[md5]
             if url:
                 assert s.url == url
-            return s
-
-        s = Schema(text=schema_text, url=url, md5=md5)
+        else:
+            s = Schema(text=schema_text, url=url, md5=md5)
 
         if save:
             j.data.schema.meta.schema_set(s, newest=newest)

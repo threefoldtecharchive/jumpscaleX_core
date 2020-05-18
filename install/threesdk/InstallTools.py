@@ -32,7 +32,7 @@ import requests
 
 from pathlib import Path
 from subprocess import Popen
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 import inspect
 import json
 
@@ -62,80 +62,69 @@ else:
     pygments_pylexer = False
 
 DEFAULT_BRANCH = "master"
+DEVELOPMENT_BRANCH = "development"
 RepoInfo = namedtuple("RepoInfo", ["protocol", "host", "account", "name", "url", "port"])
 
 GITHUB_RSA = "AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ=="
 
 DEFAULT_BRANCH_WEB = "development"
-GITREPOS = {}
+GITREPOS = OrderedDict()
 
-GITREPOS["builders_extra"] = [
-    "https://github.com/threefoldtech/jumpscaleX_builders",
-    "%s" % DEFAULT_BRANCH,
-    "JumpscaleBuildersExtra",
-    "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersExtra",
-]
-GITREPOS["installer"] = [
-    "https://github.com/threefoldtech/jumpscaleX_core",
-    "%s" % DEFAULT_BRANCH,
-    "install",  # directory in the git repo
-    "{DIR_BASE}/installer",
-]
 GITREPOS["core"] = [
     "https://github.com/threefoldtech/jumpscaleX_core",
-    "%s" % DEFAULT_BRANCH,
+    DEFAULT_BRANCH,
     "JumpscaleCore",
     "{DIR_BASE}/lib/jumpscale/Jumpscale",
 ]
-GITREPOS["home"] = ["https://github.com/threefoldtech/home", "master", "", "{DIR_BASE}/lib/jumpscale/home"]
-
+GITREPOS["installer"] = [
+    "https://github.com/threefoldtech/jumpscaleX_core",
+    DEFAULT_BRANCH,
+    "install",  # directory in the git repo
+    "{DIR_BASE}/installer",
+]
 GITREPOS["builders"] = [
     "https://github.com/threefoldtech/jumpscaleX_builders",
-    "%s" % DEFAULT_BRANCH,
+    DEFAULT_BRANCH,
     "JumpscaleBuilders",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuilders",
 ]
-
-GITREPOS["builders_community"] = [
+GITREPOS["builders_extra"] = [
     "https://github.com/threefoldtech/jumpscaleX_builders",
-    "%s" % DEFAULT_BRANCH,
+    DEFAULT_BRANCH,
+    "JumpscaleBuildersExtra",
+    "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersExtra",
+]
+GITREPOS["builders_builders_community"] = [
+    "https://github.com/threefoldtech/jumpscaleX_builders",
+    DEFAULT_BRANCH,
     "JumpscaleBuildersCommunity",
     "{DIR_BASE}/lib/jumpscale/JumpscaleBuildersCommunity",
 ]
-
-GITREPOS["libs_extra"] = [
-    "https://github.com/threefoldtech/jumpscaleX_libs_extra",
-    "%s" % DEFAULT_BRANCH,
-    "JumpscaleLibsExtra",
-    "{DIR_BASE}/lib/jumpscale/JumpscaleLibsExtra",
-]
+GITREPOS["home"] = ["https://github.com/threefoldtech/home", "master", "", "{DIR_BASE}/lib/jumpscale/home"]
 GITREPOS["libs"] = [
     "https://github.com/threefoldtech/jumpscaleX_libs",
-    "%s" % DEFAULT_BRANCH,
+    DEFAULT_BRANCH,
     "JumpscaleLibs",
     "{DIR_BASE}/lib/jumpscale/JumpscaleLibs",
 ]
+GITREPOS["libs_extra"] = [
+    "https://github.com/threefoldtech/jumpscaleX_libs_extra",
+    DEFAULT_BRANCH,
+    "JumpscaleLibsExtra",
+    "{DIR_BASE}/lib/jumpscale/JumpscaleLibsExtra",
+]
 GITREPOS["threebot"] = [
     "https://github.com/threefoldtech/jumpscaleX_threebot",
-    "%s" % DEFAULT_BRANCH,
+    DEFAULT_BRANCH,
     "ThreeBotPackages",
     "{DIR_BASE}/lib/jumpscale/threebot_packages",
 ]
-
-GITREPOS["tutorials"] = [
-    "https://github.com/threefoldtech/jumpscaleX_libs",
-    "%s" % DEFAULT_BRANCH,
-    "tutorials",
-    "{DIR_BASE}/lib/jumpscale/tutorials",
-]
-
-GITREPOS["tutorials"] = [
+GITREPOS["weblibs"] = [
     "https://github.com/threefoldtech/jumpscaleX_weblibs",
     "%s" % DEFAULT_BRANCH_WEB,
     "static",
     "{DIR_BASE}/lib/weblibs/static",
 ]
-
 GITREPOS["kosmos"] = [
     "https://github.com/threefoldtech/jumpscaleX_threebot",
     "%s" % DEFAULT_BRANCH,
@@ -3343,7 +3332,7 @@ class Tools:
         )
 
     @staticmethod
-    def code_github_get(url, rpath=None, branch=None, pull=False, reset=False, executor=None):
+    def code_github_get(url, rpath=None, branch=None, pull=False, reset=False, executor=None, shallow=False, clone_branch=None):
         """
 
         :param repo:
@@ -3357,7 +3346,7 @@ class Tools:
         executor = executor or ExecutorLocal()
 
         def getbranch(args):
-            cmd = "cd {REPO_DIR} && git rev-parse --abbrev-ref HEAD"
+            cmd = "git -C {REPO_DIR} rev-parse --abbrev-ref HEAD"
             rc, stdout, err = executor.execute(cmd, die=False, args=args, showout=False, interactive=False)
             if rc > 0:
                 Tools.shell()
@@ -3369,7 +3358,7 @@ class Tools:
             args["BRANCH"] = branch
             current_branch = getbranch(args=args)
             if current_branch != branch:
-                script = "cd {REPO_DIR} && git checkout -q -f {BRANCH}"
+                script = "git -C {REPODIR} checkout -q -f {BRANCH}"
                 if Tools.ask_yes_no(
                     f"\n**: A different branch ({current_branch}) found in repo ({repo}), do you want to change it to ({branch})?"
                 ):
@@ -3425,11 +3414,6 @@ class Tools:
             account=account, repo=repo, executor=executor
         )
 
-        # if exists and reset and not pull:
-        #     # need to remove because could be left over from previous sync operations
-        #     # only reset if no pull
-        #     Tools.delete(REPO_DIR)
-
         args = {}
         args["ACCOUNT_DIR"] = ACCOUNT_DIR
         args["REPO_DIR"] = REPO_DIR
@@ -3439,6 +3423,13 @@ class Tools:
             args["SSH_AUTH_SOCK"] = os.environ["SSH_AUTH_SOCK"]
 
         args["BRANCH"] = branch  # TODO:no support for multiple branches yet
+        args["CLONE_BRANCH"] = clone_branch or branch
+
+        if exists and shallow:
+            if getbranch(args) != branch:
+                Tools.delete(REPO_DIR)
+                exists = False
+                foundgit = False
 
         if "GITPULL" in os.environ:
             pull = str(os.environ["GITPULL"]) == "1"
@@ -3466,9 +3457,9 @@ class Tools:
                     Tools.log("get code [git] (first time): %s" % repo)
                     if not executor.exists(ACCOUNT_DIR):
                         executor.dir_ensure(ACCOUNT_DIR)
-                    C = """
-                    git -C {ACCOUNT_DIR} clone {URL} -b {BRANCH} -q
-                    """
+                    C = "git -C {ACCOUNT_DIR} clone {URL} -b {CLONE_BRANCH} -q"
+                    if shallow:
+                        C += " --depth=1"
                     executor.execute(
                         C,
                         args=args,
@@ -3482,6 +3473,8 @@ class Tools:
                 except Exception:
                     Tools.log("get code [https] (default branch): %s" % repo)
                     C = "git -C {ACCOUNT_DIR} clone -q {URL}"
+                    if shallow:
+                        C += " --depth=1"
                     executor.execute(
                         C,
                         args=args,
@@ -3526,12 +3519,15 @@ class Tools:
                                 else:
                                     raise Tools.exceptions.Input("found changes, do not want to commit or reset")
                     # update repo
+                    cmd = "git -C {REPO_DIR} fetch -q {URL}"
+                    if shallow:
+                        cmd += " --depth=1"
                     executor.execute(
-                        "git -C {REPO_DIR} fetch -q {URL}",
+                        cmd,
                         args=args,
                         retry=4,
                         showout=False,
-                        errormsg=f"Could not pull {url}",
+                        errormsg=f"Could not fetch {url}",
                         interactive=True,
                     )
                     # switch branch
@@ -5011,37 +5007,41 @@ class JumpscaleInstaller:
     #     Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
     #
 
-    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False, executor=None):
+    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False, executor=None, shallow=False, clone_branch=None):
         assert not prebuilt  # not supported yet
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
 
-        done = []
         usessh = False if executor else Tools.code_github_use_ssh()
         execute = executor.execute if executor else Tools.execute
 
-        for NAME, d in GITREPOS.items():
-            GITURL, BRANCH, RPATH, DEST = d
-            if GITURL in done:
-                continue
+        repos = []
+        foundurls = set()
+        for NAME, repoinfo in GITREPOS.items():
+            GITURL, BRANCH, RPATH, DEST = repoinfo
+            if GITURL not in foundurls:
+                repos.append({"name": NAME, "url": GITURL, "branch": BRANCH})
+                foundurls.add(GITURL)
 
+        count = len(repos)
+        for idx, repo in enumerate(repos):
+            print(f"Updating repo {repo['name']:<20} {idx+1}/{count}", end="\r")
             if usessh:
-                GITURL = Tools.code_git_rewrite_url(GITURL, ssh=True).url
+                repo["url"] = Tools.code_git_rewrite_url(repo["url"], ssh=True).url
 
             if branch:
                 # check if provided branch exists otherwise don't use it
-                C = f"""git ls-remote --heads {GITURL} {branch} {GITURL}"""
+                C = f"""git ls-remote --heads {repo['url']} {branch} {repo['url']}"""
                 _, out, _ = execute(C, showout=False, interactive=False)
                 if out:
-                    BRANCH = branch
+                    repo["branch"] = branch
 
             try:
-                Tools.code_github_get(url=GITURL, rpath=RPATH, branch=BRANCH, pull=pull, reset=reset, executor=executor)
+                Tools.code_github_get(url=repo["url"], branch=repo["branch"], pull=pull, reset=reset, executor=executor, shallow=shallow, clone_branch=clone_branch)
             except Tools.exceptions.Input:
                 raise
 
-            done.append(GITURL)
-
+        print("")
         if prebuilt:
             self.prebuilt_copy()
 
