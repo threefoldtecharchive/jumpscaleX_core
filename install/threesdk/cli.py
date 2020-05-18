@@ -160,19 +160,15 @@ def update():
                 Tools.execute(f"cp -f /tmp/3sdk.bk {bin_path}", interactive=True)
                 print(f"Failed to update binary, Can not replace binary in {bin_path}")
         elif MyEnv.platform_is_windows:
-            bin_path = f"C:\\Program Files (x86)\\3sdk\\3sdk.exe"
-            temp_path = os.environ["temp"]
+            bin_path = r"C:\Program Files (x86)\3sdk\3sdk.exe"
+            profile_path = f"os.environ['USERPROFILE']\\3sdk.exe"
             # create new file
-            Tools.file_write(f"{temp_path}\\3sdk.exe", r.content, True)
+            Tools.file_write(profile_path, r.content, True)
             print("Done")
-            # save backup
-            Tools.execute(f"copy -f {bin_path} {temp_path}\\3sdkBackup.exe")
             # replace
-            try:
-                Tools.execute(f"move -f {temp_path}\\3sdk.exe {bin_path}", interactive=True)
-            except:
-                Tools.execute(f"move -f {temp_path}\\3sdkBackup.exe {bin_path}", interactive=True)
-                print(f"Failed to update binary, Can not replace binary in {bin_path}")
+            import shutil
+
+            shutil.copyfile(profile_path, bin_path)
         else:
             raise Tools.exceptions.Base("platform not supported, only linux, osx and windows.")
     else:
