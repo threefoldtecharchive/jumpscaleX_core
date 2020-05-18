@@ -73,7 +73,7 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
         """
 
         def need_install():
-            for cmd in ["resty", "lua", "sonic", "zdb", "mdbook"]:
+            for cmd in ["resty", "lua", "zdb", "mdbook"]:
                 if not j.core.tools.cmd_installed(cmd):
                     return True
             return False
@@ -82,7 +82,6 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
         if force or need_install() or not j.sal.fs.exists(fallback_ssl_key_path):
             j.servers.openresty.install(reset=force)
             j.builders.db.zdb.install(reset=force)
-            j.builders.apps.sonic.install(reset=force)
             j.builders.apps.mdbook.install(reset=force)
 
             self._log_info("install done for threebot server.")
@@ -135,8 +134,6 @@ class ThreeBotServersFactory(j.baseclasses.object_config_collection_testtools, T
             # need to test sonic, zdb
             # ZDB
             assert j.sal.nettools.tcpPortConnectionTest("localhost", port=9900)
-            # SONIC
-            assert j.sal.nettools.tcpPortConnectionTest("localhost", port=1491)
             # HTTP
             assert j.sal.nettools.tcpPortConnectionTest("localhost", port=80)
             # HTTPS

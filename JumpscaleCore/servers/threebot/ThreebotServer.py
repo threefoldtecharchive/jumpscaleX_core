@@ -65,7 +65,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         self._openresty_server = None
         self._startup_cmd = None
         self._zdb = None
-        self._sonic = None
         self.threebot_server = None
         self.web = False
         self.ssl = False
@@ -121,15 +120,8 @@ class ThreeBotServer(j.baseclasses.object_config):
     def zdb(self):
         if not self._zdb:
             self._log_info("start zdb")
-            self._sonic, self._zdb = j.data.bcdb.start_servers_threebot_zdb_sonic()
+            self._zdb = j.data.bcdb.start_servers_threebot_zdb_sonic()
         return self._zdb
-
-    @property
-    def sonic(self):
-        if not self._sonic:
-            self._log_info("start sonic")
-            self._sonic, self._zdb = j.data.bcdb.start_servers_threebot_zdb_sonic()
-        return self._sonic
 
     def _proxy_create(self, name, port_source, port_dest, scheme_source="https", scheme_dest="http", ptype="http"):
         """
@@ -204,8 +196,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.save()
         if not background:
             j.servers.threebot._threebot_starting()
-            self.zdb  # will start sonic & zdb
-            self.sonic
+            self.zdb  # will start zdb
 
             # now we are ready to start the jobs
             self.myjobs_start()
@@ -217,7 +208,6 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             j.threebot.servers = Servers()
             j.threebot.servers.zdb = self.zdb
-            j.threebot.servers.sonic = self.sonic
             j.threebot.servers.gedis = self.gedis_server
             j.threebot.servers.web = self.openresty_server
             j.threebot.servers.core = self
@@ -331,6 +321,9 @@ class ThreeBotServer(j.baseclasses.object_config):
                 cmd.start()
                 time.sleep(1)
 
+        import ipdb
+
+        ipdb.set_trace()
         # wait on lapis to start so we make sure everything is loaded by then.
         if not j.sal.nettools.waitConnectionTest("127.0.0.1", 80, timeout=600):
             raise j.exceptions.Timeout("Could not start threebot server")
@@ -447,7 +440,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.openresty_server.stop()
         self.startup_cmd.stop(waitstop=False, force=True)
         self._zdb = None
-        self._sonic = None
         self._gedis_server = None
         self._rack_server = None
         self.client = None
