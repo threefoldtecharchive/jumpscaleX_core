@@ -5011,11 +5011,13 @@ class JumpscaleInstaller:
                 # check if provided branch exists otherwise don't use it
                 C = f"""git ls-remote --heads {repo['url']} {branch} {repo['url']}"""
                 _, out, _ = execute(C, showout=False, interactive=False)
-                if out:
-                    repo["branch"] = branch
+                if not out:
+                    branch = None
+            if clone_branch is None:
+                clone_branch = repo["branch"]
 
             try:
-                Tools.code_github_get(url=repo["url"], branch=repo["branch"], pull=pull, reset=reset, executor=executor, shallow=shallow, clone_branch=clone_branch)
+                Tools.code_github_get(url=repo["url"], branch=branch, pull=pull, reset=reset, executor=executor, shallow=shallow, clone_branch=clone_branch)
             except Tools.exceptions.Input:
                 raise
 
