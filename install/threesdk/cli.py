@@ -164,7 +164,7 @@ def update():
             profile_path = f"{os.environ['USERPROFILE']}\\3sdk\\3sdk.exe"
             print("Download done, installing now ..")
             Tools.file_write(download_path, r.content, True)
-            Tools.delete(profile_path)
+            os.remove(profile_path)
             os.rename(download_path, profile_path)
             print("Update completed")
         else:
