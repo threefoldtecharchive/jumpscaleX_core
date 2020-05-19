@@ -62,7 +62,7 @@ class WGFactory(j.baseclasses.object_config_collection_testtools):
         return wg_private_base64, wg_public_base64
 
     @skip(
-        "For now need to be executed manually.. check execution steps here:"
+        "Test needs to be executed manually.. check execution steps in the docstring of the test and here:"
         + "https://github.com/threefoldtech/jumpscaleX_core/issues/496"
     )
     def test(self):
@@ -75,7 +75,8 @@ class WGFactory(j.baseclasses.object_config_collection_testtools):
             #. Install wireguard on the local host
             #. Configure wireguard on the local host and add peers
         **Prerequisite**
-            #. Create a machine on digital Ocean and add the public key of the container that you are using.
+            #. Generate ssh keys on your container
+            #. Create a machine on digital Ocean and add the public key of the container that you are using to the authorized_keys.
             #. Create SSH client with name (do) and the ip address of the previously created machine on digital ocean
         **Note**
             #. This test must be run manually to create the digital ocean client first
