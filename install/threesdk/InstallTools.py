@@ -5165,17 +5165,6 @@ class DockerFactory:
         if name in DockerFactory._dockers:
             docker = DockerFactory._dockers[name]
             if docker.container_running:
-                if mount:
-                    if docker.info["Mounts"] == []:
-                        # means the current docker has not been mounted
-                        docker.stop()
-                        docker.start(mount=True)
-                else:
-                    for mount in docker.info["Mounts"]:
-                        if mount["Destination"] not in ["/sandbox/myhost", "/sandbox/code"]:
-                            docker.stop()
-                            docker.start(mount=False)
-                            break
                 return docker
         if not docker:
             docker = DockerContainer(name=name, image=image, ports=ports)
