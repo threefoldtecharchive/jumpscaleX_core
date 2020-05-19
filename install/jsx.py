@@ -203,6 +203,7 @@ def secret_set(secret=None):
 
     import redis
 
+
 # @click.command(name="modules-install")
 # # @click.option("--configdir", default=None, help="default {DIR_BASE}/cfg if it exists otherwise ~{DIR_BASE}/cfg")
 # @click.option("--url", default="3bot", help="git url e.g. https://github.com/myfreeflow/kosmos")
