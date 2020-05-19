@@ -6,7 +6,7 @@ from .container import delete as _delete_container
 __all__ = ["browser", "stop", "start", "shell", "restart"]
 
 
-def start(delete=False, browser_open=True, code_update_force=False, zerotier=False):
+def start(delete: bool = False, browser_open: bool = True, code_update_force: bool = False, zerotier: bool = False):
     """
     install & run a container with SDK & simulator
     a connection to zerotier network will be made
@@ -55,7 +55,7 @@ def browser():
         print(f" - CONNECT TO YOUR SIMULATOR ON: {url}")
 
 
-def restart(browser_open=False, container=False):
+def restart(browser_open: bool = False, container: bool = False):
     """
     restart the simulator, this can help to remove all running kernels
     the pyjupyter notebook can become super heavy
