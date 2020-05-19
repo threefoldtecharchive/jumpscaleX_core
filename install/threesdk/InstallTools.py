@@ -1878,20 +1878,14 @@ class Tools:
             from threesdk import __version__
         except:
             from .core import __version__
-        # call releases api
-        resp = requests.get("https://api.github.com/repos/threefoldtech/jumpscaleX_core/releases/latest")
-        resp = resp.json()
-        latest_release = resp["tag_name"]
+        resp = Tools.get_latest_release()
+        latest_release = resp["latest_release"]
         if latest_release is not __version__:
             return False
         return True
 
     @staticmethod
     def get_latest_release():
-        try:
-            from threesdk import __version__
-        except:
-            from .core import __version__
         # call releases api
         resp = requests.get("https://api.github.com/repos/threefoldtech/jumpscaleX_core/releases/latest")
         resp = resp.json()

@@ -121,51 +121,61 @@ def version():
 def update():
     """
     """
-    try:
-        from threesdk import container
-        from threesdk.InstallTools import JumpscaleInstaller, MyEnv, Tools
-    except ImportError:
-        from .core import container
-        from .core.InstallTools import JumpscaleInstaller, MyEnv, Tools
+    from threesdk import container
+    from threesdk.InstallTools import JumpscaleInstaller, MyEnv, Tools, DockerFactory
 
     if not Tools.is_latest_release():
-        containers_names = container._containers.IT.DockerFactory.containers()
+        installer = JumpscaleInstaller()
+        containers_names = DockerFactory.containers()
+        host_mount = False
         # pull all repos in containers
         for item in containers_names:
             name = item.name
             print("Updating repositories in container ", name, "...")
             container._containers.assert_container(name)
-            c = container._containers.get(name=name, explorer="none")
-            container_executor = c.executor
-            JumpscaleInstaller.repos_get(JumpscaleInstaller, pull=True, executor=container_executor)
+            c = DockerFactory.container_get(name=name)
+            if not c.mount_code_exists:
+                container_executor = c.executor
+                installer.repos_get(pull=True, executor=container_executor)
+            else:
+                host_mount = True
+        if host_mount:
+            installer.repos_get(pull=True)
+
         import requests
 
         # Update binary for host
         print("Downloading 3sdk binary...")
         latest_release = Tools.get_latest_release()
-        r = requests.get(latest_release["download_link"], allow_redirects=True)
-        if MyEnv.platform_is_linux or MyEnv.platform_is_osx:
-            Tools.file_write("/tmp/3sdk", r.content, True)
-            print("Done")
-            Tools.execute(f"chmod +x /tmp/3sdk")
-            _, bin_path, _ = Tools.execute(f"which 3sdk")
-            # to remove trailing \n
-            bin_path = bin_path[:-1]
-            # save backup
-            Tools.execute(f"cp -f {bin_path} /tmp/3sdk.bk")
-            # replace
-            try:
-                Tools.execute(f"mv -f /tmp/3sdk {bin_path}", interactive=True)
-            except:
-                Tools.execute(f"cp -f /tmp/3sdk.bk {bin_path}", interactive=True)
-                print(f"Failed to update binary, Can not replace binary in {bin_path}")
-        elif MyEnv.platform_is_windows:
-            update_path = f"{os.environ['USERPROFILE']}\\3sdk\\3sdk_update.exe"
-            print("Download done, installing now ..")
-            Tools.file_write(update_path, r.content, True)
-            Tools.execute(f'explorer "{update_path}"', interactive=True)
-        else:
-            raise Tools.exceptions.Base("platform not supported, only linux, osx and windows.")
+        with requests.get(latest_release["download_link"], allow_redirects=True, stream=True) as r:
+            if MyEnv.platform_is_linux or MyEnv.platform_is_osx:
+                local_filename = "/tmp/3sdk"
+                with open(local_filename, "wb") as f:
+                    shutil.copyfileobj(r.raw, f)
+                f.close()
+                print("Download done, installing now ..")
+                os.chmod(local_filename, 0o775)
+                # _, bin_path, _ = Tools.execute(f"which 3sdk")
+                bin_path = shutil.which("3sdk")
+                # save backup
+                shutil.copy(bin_path, "/tmp/3sdk.bk")
+                # replace
+                try:
+                    shutil.move("/tmp/3sdk", bin_path)
+                    print(bin_path)
+                    print("Congratulations, Now your 3sdk is up-to-date!")
+                except:
+                    shutil.copy("/tmp/3sdk.bk", bin_path)
+                    print(f"Failed to update binary, Can not replace binary in {bin_path}")
+            elif MyEnv.platform_is_windows:
+                update_path = f"{os.environ['USERPROFILE']}\\3sdk\\3sdk_update.exe"
+                print("Download done, installing now ..")
+                with open(update_path, "wb") as f:
+                    shutil.copyfileobj(r.raw, f)
+                f.close()
+                Tools.execute(f'explorer "{update_path}"', interactive=True)
+            else:
+                raise Tools.exceptions.Base("platform not supported, only linux, osx and windows.")
     else:
         print(f"3sdk version is up-to-date")
 
