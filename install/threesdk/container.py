@@ -157,6 +157,7 @@ def _threebot_browser(c, url=None):
 
     try:
         import webbrowser
+
         webbrowser.open_new_tab(url)
     except:
         pass

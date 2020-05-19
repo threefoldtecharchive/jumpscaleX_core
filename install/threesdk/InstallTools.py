@@ -3332,7 +3332,9 @@ class Tools:
         )
 
     @staticmethod
-    def code_github_get(url, rpath=None, branch=None, pull=False, reset=False, executor=None, shallow=False, clone_branch=None):
+    def code_github_get(
+        url, rpath=None, branch=None, pull=False, reset=False, executor=None, shallow=False, clone_branch=None
+    ):
         """
 
         :param repo:
@@ -3523,12 +3525,7 @@ class Tools:
                     if shallow:
                         cmd += " --depth=1"
                     executor.execute(
-                        cmd,
-                        args=args,
-                        retry=4,
-                        showout=False,
-                        errormsg=f"Could not fetch {url}",
-                        interactive=True,
+                        cmd, args=args, retry=4, showout=False, errormsg=f"Could not fetch {url}", interactive=True,
                     )
                     # switch branch
                     if not checkoutbranch(args, branch):
@@ -5007,7 +5004,9 @@ class JumpscaleInstaller:
     #     Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
     #
 
-    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False, executor=None, shallow=False, clone_branch=None):
+    def repos_get(
+        self, pull=False, prebuilt=False, branch=None, reset=False, executor=None, shallow=False, clone_branch=None
+    ):
         assert not prebuilt  # not supported yet
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
@@ -5037,7 +5036,15 @@ class JumpscaleInstaller:
                     repo["branch"] = branch
 
             try:
-                Tools.code_github_get(url=repo["url"], branch=repo["branch"], pull=pull, reset=reset, executor=executor, shallow=shallow, clone_branch=clone_branch)
+                Tools.code_github_get(
+                    url=repo["url"],
+                    branch=repo["branch"],
+                    pull=pull,
+                    reset=reset,
+                    executor=executor,
+                    shallow=shallow,
+                    clone_branch=clone_branch,
+                )
             except Tools.exceptions.Input:
                 raise
 
