@@ -3310,7 +3310,9 @@ class Tools:
         )
 
     @staticmethod
-    def code_github_get(url, rpath=None, branch=None, pull=False, reset=False, executor=None, shallow=False, clone_branch=None):
+    def code_github_get(
+        url, rpath=None, branch=None, pull=False, reset=False, executor=None, shallow=False, clone_branch=None
+    ):
         """
 
         :param repo:
@@ -3355,9 +3357,7 @@ class Tools:
             git checkout -q . --force
             """
             Tools.log(f"get code & ignore changes: {args['NAME']}")
-            executor.execute(
-                C, args=args, retry=1, errormsg=f"Could not checkout {url}", interactive=True,
-            )
+            executor.execute(C, args=args, retry=1, errormsg=f"Could not checkout {url}", interactive=True)
 
         def assert_merge(args):
             C = """
@@ -3365,7 +3365,7 @@ class Tools:
             git pull -q {URL}
             """
             rc, out, err = executor.execute(
-                C, args=args, retry=1, errormsg=f"Couldn't merge repo {args['URL']}", interactive=True,
+                C, args=args, retry=1, errormsg=f"Couldn't merge repo {args['URL']}", interactive=True
             )
             return rc == 0
 
@@ -3501,12 +3501,7 @@ class Tools:
                     if shallow:
                         cmd += " --depth=1"
                     executor.execute(
-                        cmd,
-                        args=args,
-                        retry=4,
-                        showout=False,
-                        errormsg=f"Could not fetch {url}",
-                        interactive=True,
+                        cmd, args=args, retry=4, showout=False, errormsg=f"Could not fetch {url}", interactive=True
                     )
                     # switch branch
                     if not checkoutbranch(args, branch):
@@ -4985,7 +4980,9 @@ class JumpscaleInstaller:
     #     Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
     #
 
-    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False, executor=None, shallow=False, clone_branch=None):
+    def repos_get(
+        self, pull=False, prebuilt=False, branch=None, reset=False, executor=None, shallow=False, clone_branch=None
+    ):
         assert not prebuilt  # not supported yet
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
@@ -5017,7 +5014,15 @@ class JumpscaleInstaller:
                 clone_branch = repo["branch"]
 
             try:
-                Tools.code_github_get(url=repo["url"], branch=branch, pull=pull, reset=reset, executor=executor, shallow=shallow, clone_branch=clone_branch)
+                Tools.code_github_get(
+                    url=repo["url"],
+                    branch=branch,
+                    pull=pull,
+                    reset=reset,
+                    executor=executor,
+                    shallow=shallow,
+                    clone_branch=clone_branch,
+                )
             except Tools.exceptions.Input:
                 raise
 
@@ -5713,8 +5718,20 @@ class DockerContainer:
             self.dexec("/etc/init.d/ssh start", showout=False)
             self.dexec("rm -f /etc/service/sshd/down", showout=False)
 
-            SSHKEYS = Tools.execute("ssh-add -L", die=False, showout=False)[1]
-            if SSHKEYS.strip() != "":
+            rc, out, err = Tools.execute("ssh-add -L", die=False, showout=False)
+            ssh_identity_found = True
+            if rc != 0:
+                if err.find("Could not open a connection to your authentication agent") != -1:
+                    # eval ssh-agent and retry loading keys
+                    rc, out, err = Tools.execute(
+                        "eval `ssh-agent` &>/dev/null;ssh-add;ssh-add -L", die=False, showout=False
+                    )
+                if out.find("The agent has no identities") != -1:
+                    print("The ssh agent has no identities")
+                    ssh_identity_found = False
+
+            SSHKEYS = out
+            if SSHKEYS.strip() != "" and ssh_identity_found:
                 if MyEnv.platform_is_windows:
                     SSHKEYS = SSHKEYS.strip("\r\n")
                     self.dexec("echo %s > /root/.ssh/authorized_keys" % SSHKEYS, showout=False)
@@ -5833,9 +5850,7 @@ class DockerContainer:
         )
 
     def kosmos(self):
-        self.execute(
-            f"j.application.interactive={MyEnv.interactive}; j.shell(False)", interactive=True, jumpscale=True,
-        )
+        self.execute(f"j.application.interactive={MyEnv.interactive}; j.shell(False)", interactive=True, jumpscale=True)
 
     def stop(self):
         if self.container_running:
@@ -7191,7 +7206,7 @@ class ExecutorDocker(Executor):
             args = {}
 
         tempfile, cmd = Tools._cmd_process(
-            cmd=cmd, python=python, jumpscale=jumpscale, die=die, env=args, debug=debug, replace=replace, executor=self,
+            cmd=cmd, python=python, jumpscale=jumpscale, die=die, env=args, debug=debug, replace=replace, executor=self
         )
 
         Tools._cmd_check(cmd)
