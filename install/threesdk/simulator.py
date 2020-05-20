@@ -29,6 +29,8 @@ def start(delete: bool = False, browser_open: bool = True, code_update_force: bo
         c = _containers.get(name="simulator", explorer="none")
     else:
         c = _containers.get(name="simulator", explorer="none")
+        if not c.isrunning():
+            c.start()
     c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
     if browser_open:
         browser()
@@ -66,7 +68,9 @@ def restart(browser_open: bool = False, container: bool = False):
         start()
     else:
         if container:
-            _containers.stop(name="simulator")
+            c = _containers.get(name="simulator")
+            if c.isrunning():
+                c.stop()
             start(browser_open=browser_open)
         else:
             c = _containers.get(name="simulator")
