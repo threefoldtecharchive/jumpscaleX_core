@@ -335,6 +335,9 @@ class SchemaFactory(j.baseclasses.factory_testtools, TESTTOOLS):
                 res.append(schema)
         return res
 
+    def delete(self, url):
+        self.schema_cache_remove(url)
+
     def test(self, name=""):
         """
         it's run all tests
