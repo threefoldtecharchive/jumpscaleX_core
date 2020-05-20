@@ -152,12 +152,12 @@ def update(branch="master"):
             elif name == "3bot":
                 threebot.restart(container=True)
             else:
-                r = c.execute(
+                res = c.execute(
                     "ps -ef | grep /sandbox/var/cmds/threebot_default.py | grep -v grep", die=False, showout=True
                 )
-                print(r)
+                print(f"container {name} res: {res}")
                 container.stop(name=name)
-                if r:
+                if res[1]:
                     print(f"container {name} is running 3bot server")
                     container.start(name=name, server=True, browser_open=False)
                 else:
