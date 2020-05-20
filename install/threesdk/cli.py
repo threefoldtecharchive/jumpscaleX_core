@@ -134,11 +134,11 @@ def update():
             print("Updating repositories in container ", name, "...")
             container._containers.assert_container(name)
             c = DockerFactory.container_get(name=name)
-            if not c.mount_code_exists:
+            if c.mount_code_exists:
+                host_mount = True
+            else:
                 container_executor = c.executor
                 installer.repos_get(pull=True, executor=container_executor)
-            else:
-                host_mount = True
         if host_mount:
             installer.repos_get(pull=True)
 
@@ -152,11 +152,9 @@ def update():
                 local_filename = "/tmp/3sdk"
                 with open(local_filename, "wb") as f:
                     shutil.copyfileobj(r.raw, f)
-                f.close()
                 print("Download done, installing now ..")
                 os.chmod(local_filename, 0o775)
-                # _, bin_path, _ = Tools.execute(f"which 3sdk")
-                bin_path = shutil.which("3sdk")
+                bin_path = sys.argv[0]
                 # save backup
                 shutil.copy(bin_path, "/tmp/3sdk.bk")
                 # replace
