@@ -152,6 +152,7 @@ def update():
                 local_filename = "/tmp/3sdk"
                 with open(local_filename, "wb") as f:
                     shutil.copyfileobj(r.raw, f)
+                r.close()
                 print("Download done, installing now ..")
                 os.chmod(local_filename, 0o775)
                 bin_path = sys.argv[0]
