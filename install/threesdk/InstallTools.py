@@ -5807,7 +5807,7 @@ class DockerContainer:
         args=None,
         interactive=True,
     ):
-        self.executor.execute(
+        return self.executor.execute(
             cmd,
             retry=retry,
             showout=showout,

@@ -118,7 +118,7 @@ def version():
         )
 
 
-def update():
+def update(branch="master"):
     """
     """
     from threesdk.InstallTools import JumpscaleInstaller, MyEnv, Tools, DockerFactory
@@ -139,10 +139,10 @@ def update():
                 host_mount = True
             else:
                 container_executor = c.executor
-                installer.repos_get(pull=True, executor=container_executor)
+                installer.repos_get(pull=True, executor=container_executor, branch=branch)
 
         if host_mount:
-            installer.repos_get(pull=True)
+            installer.repos_get(pull=True, branch=branch)
 
         # restart containers
         for item in containers_names:
@@ -152,10 +152,13 @@ def update():
             elif name == "3bot":
                 threebot.restart(container=True)
             else:
-                r = c.execute("ps -ef | grep /sandbox/var/cmds/threebot_default.py | grep -v grep", die=False)
+                r = c.execute(
+                    "ps -ef | grep /sandbox/var/cmds/threebot_default.py | grep -v grep", die=False, showout=True
+                )
                 print(r)
                 container.stop(name=name)
                 if r:
+                    print(f"container {name} is running 3bot server")
                     container.start(name=name, server=True, browser_open=False)
                 else:
                     container.start(name=name, server=False)
