@@ -62,9 +62,6 @@ class UbuntuInstaller:
         """
         self._tools.execute(script, interactive=True)
 
-        if bionic and not self._my._docker.indocker():
-            self._my.installers.ubuntu.docker_install()
-
         self._my.state_set("base")
 
     def docker_install(self):

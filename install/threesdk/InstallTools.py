@@ -3310,7 +3310,9 @@ class Tools:
         )
 
     @staticmethod
-    def code_github_get(url, rpath=None, branch=None, pull=False, reset=False, executor=None, shallow=False, clone_branch=None):
+    def code_github_get(
+        url, rpath=None, branch=None, pull=False, reset=False, executor=None, shallow=False, clone_branch=None
+    ):
         """
 
         :param repo:
@@ -3501,12 +3503,7 @@ class Tools:
                     if shallow:
                         cmd += " --depth=1"
                     executor.execute(
-                        cmd,
-                        args=args,
-                        retry=4,
-                        showout=False,
-                        errormsg=f"Could not fetch {url}",
-                        interactive=True,
+                        cmd, args=args, retry=4, showout=False, errormsg=f"Could not fetch {url}", interactive=True,
                     )
                     # switch branch
                     if not checkoutbranch(args, branch):
@@ -4770,27 +4767,7 @@ class UbuntuInstaller:
         """
         Tools.execute(script, interactive=True)
 
-        if bionic and not DockerFactory.indocker():
-            UbuntuInstaller.docker_install()
-
         MyEnv.state_set("base")
-
-    @staticmethod
-    def docker_install():
-        if MyEnv.state_get("ubuntu_docker_install"):
-            return
-        script = """
-        apt-get update
-        apt-get upgrade -y --force-yes
-        apt-get install sudo python3-pip  -y
-        pip3 install pudb
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-        add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
-        apt-get update
-        sudo apt-get install docker-ce -y
-        """
-        Tools.execute(script, interactive=True)
-        MyEnv.state_set("ubuntu_docker_install")
 
     @staticmethod
     def python_dev_install():
@@ -4985,7 +4962,9 @@ class JumpscaleInstaller:
     #     Tools.execute("source {DIR_BASE}/env.sh; kosmos 'j.data.nacl.configure(generate=True,interactive=False)'")
     #
 
-    def repos_get(self, pull=False, prebuilt=False, branch=None, reset=False, executor=None, shallow=False, clone_branch=None):
+    def repos_get(
+        self, pull=False, prebuilt=False, branch=None, reset=False, executor=None, shallow=False, clone_branch=None
+    ):
         assert not prebuilt  # not supported yet
         if prebuilt:
             GITREPOS["prebuilt"] = PREBUILT_REPO
@@ -5017,7 +4996,15 @@ class JumpscaleInstaller:
                 clone_branch = repo["branch"]
 
             try:
-                Tools.code_github_get(url=repo["url"], branch=branch, pull=pull, reset=reset, executor=executor, shallow=shallow, clone_branch=clone_branch)
+                Tools.code_github_get(
+                    url=repo["url"],
+                    branch=branch,
+                    pull=pull,
+                    reset=reset,
+                    executor=executor,
+                    shallow=shallow,
+                    clone_branch=clone_branch,
+                )
             except Tools.exceptions.Input:
                 raise
 
@@ -5111,10 +5098,6 @@ class DockerFactory:
                     return
 
                 MyEnv.init()
-
-                if not DockerFactory.docker_assert():
-                    UbuntuInstaller.docker_install()
-                    MyEnv._cmd_installed["docker"] = shutil.which("docker")
 
                 # check if docker failed or on mac, can be installed with gui then
                 if not DockerFactory.docker_assert():
