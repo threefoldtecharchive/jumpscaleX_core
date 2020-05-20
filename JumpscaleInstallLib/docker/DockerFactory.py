@@ -55,10 +55,6 @@ class DockerFactory:
                     # nothing to do we are in docker already
                     return
 
-                if self._my.platform() == "linux" and not self._tools.cmd_installed("docker"):
-                    self._my.installers.ubuntu.docker_install()
-                    self._tools._cmd_installed["docker"] = shutil.which("docker")
-
                 if not self._tools.cmd_installed("docker"):
                     raise self._tools.exceptions.Operations("Could not find Docker installed")
 
