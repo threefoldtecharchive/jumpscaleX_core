@@ -159,7 +159,6 @@ class SDKContainers:
         identity=None,
         name=None,
         delete=False,
-        mount=None,
         email=None,
         words=None,
         secret=None,
@@ -171,7 +170,7 @@ class SDKContainers:
 
         code_update_force: be careful, if set will remove your local code repo changes
         """
-        mount = mount or self.args.expert
+        mount = self.args.expert
         pull = pull or not self.args.expert
         name = self._name(name)
         if self.container and not delete:
@@ -196,7 +195,7 @@ class SDKContainers:
         if not docker.executor.exists("/sandbox/cfg/.configured"):
             installer = self.IT.JumpscaleInstaller()
             print(" - updating code this might take a while depending on your internet connection.")
-            if mount:
+            if docker.mount_code_exists:
                 # in expert mode we do not change branches
                 # when the repo does not exists we default to development
                 installer.repos_get(

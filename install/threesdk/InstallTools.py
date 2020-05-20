@@ -4783,27 +4783,7 @@ class UbuntuInstaller:
         """
         Tools.execute(script, interactive=True)
 
-        if bionic and not DockerFactory.indocker():
-            UbuntuInstaller.docker_install()
-
         MyEnv.state_set("base")
-
-    @staticmethod
-    def docker_install():
-        if MyEnv.state_get("ubuntu_docker_install"):
-            return
-        script = """
-        apt-get update
-        apt-get upgrade -y --force-yes
-        apt-get install sudo python3-pip  -y
-        pip3 install pudb
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-        add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
-        apt-get update
-        sudo apt-get install docker-ce -y
-        """
-        Tools.execute(script, interactive=True)
-        MyEnv.state_set("ubuntu_docker_install")
 
     @staticmethod
     def python_dev_install():
@@ -5034,7 +5014,7 @@ class JumpscaleInstaller:
             try:
                 Tools.code_github_get(
                     url=repo["url"],
-                    branch=repo["branch"],
+                    branch=branch,
                     pull=pull,
                     reset=reset,
                     executor=executor,
@@ -5135,10 +5115,6 @@ class DockerFactory:
 
                 MyEnv.init()
 
-                if not DockerFactory.docker_assert():
-                    UbuntuInstaller.docker_install()
-                    MyEnv._cmd_installed["docker"] = shutil.which("docker")
-
                 # check if docker failed or on mac, can be installed with gui then
                 if not DockerFactory.docker_assert():
                     raise Tools.exceptions.Operations("Could not find Docker installed")
@@ -5188,17 +5164,6 @@ class DockerFactory:
         if name in DockerFactory._dockers:
             docker = DockerFactory._dockers[name]
             if docker.container_running:
-                if mount:
-                    if docker.info["Mounts"] == []:
-                        # means the current docker has not been mounted
-                        docker.stop()
-                        docker.start(mount=True)
-                else:
-                    for mount in docker.info["Mounts"]:
-                        if mount["Destination"] not in ["/sandbox/myhost", "/sandbox/code"]:
-                            docker.stop()
-                            docker.start(mount=False)
-                            break
                 return docker
         if not docker:
             docker = DockerContainer(name=name, image=image, ports=ports)
