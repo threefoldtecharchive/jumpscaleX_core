@@ -114,7 +114,7 @@ def version():
     if not _sdk.InstallTools.Tools.is_latest_release():
         dic = _sdk.InstallTools.Tools.get_latest_release()
         print(
-            f"Your SDK version is not up-to-date. Newest release is {dic['latest_release']}\nPlease visit: {dic['latest_release_url']}\nOr run '3sdk --update'"
+            f"Your SDK version is not up-to-date. Newest release is {dic['latest_release']}\nPlease visit: {dic['latest_release_url']}\nOr run '3sdk update'"
         )
 
 
@@ -229,14 +229,19 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert", default=False, action="store_true")
-    parser.add_argument("--update", default=False, action="store_true")
     parser.add_argument("-v", "--version", default=False, action="store_true")
 
+    subparsers = parser.add_subparsers()
+    update_parser = subparsers.add_parser("update", help="update 3sdk")
+
     options, extra = parser.parse_known_args()
-    base_check(options.expert)
-    if options.update:
+    update_options, update_extra = update_parser.parse_known_args()
+
+    if "update" in update_extra:
         update()
         sys.exit(0)
+
+    base_check(options.expert)
     if options.version:
         version()
         sys.exit(0)
