@@ -121,8 +121,9 @@ def version():
 def update():
     """
     """
-    from threesdk import container
     from threesdk.InstallTools import JumpscaleInstaller, MyEnv, Tools, DockerFactory
+
+    import requests
 
     if not Tools.is_latest_release():
         installer = JumpscaleInstaller()
@@ -139,10 +140,25 @@ def update():
             else:
                 container_executor = c.executor
                 installer.repos_get(pull=True, executor=container_executor)
+
         if host_mount:
             installer.repos_get(pull=True)
 
-        import requests
+        # restart containers
+        for item in containers_names:
+            name = item.name
+            if name == "simulator":
+                simulator.restart(container=True)
+            elif name == "3bot":
+                threebot.restart(container=True)
+            else:
+                r = c.execute("ps -ef | grep /sandbox/var/cmds/threebot_default.py | grep -v grep", die=False)
+                print(r)
+                container.stop(name=name)
+                if r:
+                    container.start(name=name, server=True, browser_open=False)
+                else:
+                    container.start(name=name, server=False)
 
         # Update binary for host
         print("Downloading 3sdk binary...")
