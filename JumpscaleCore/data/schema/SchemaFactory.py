@@ -337,6 +337,7 @@ class SchemaFactory(j.baseclasses.factory_testtools, TESTTOOLS):
 
     def delete(self, url):
         self.schema_cache_remove(url)
+        self.meta.save()
 
     def test(self, name=""):
         """
