@@ -3338,7 +3338,7 @@ class Tools:
             args["BRANCH"] = branch
             current_branch = getbranch(args=args)
             if current_branch != branch:
-                script = "git -C {REPODIR} checkout -q -f {BRANCH}"
+                script = "git -C {REPO_DIR} checkout -q -f {BRANCH}"
                 if Tools.ask_yes_no(
                     f"\n**: A different branch ({current_branch}) found in repo ({repo}), do you want to change it to ({branch})?"
                 ):
