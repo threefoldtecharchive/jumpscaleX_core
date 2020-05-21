@@ -150,9 +150,9 @@ def update(branch="master"):
             name = item.name
             c = DockerFactory.container_get(name=name)
             if name == "simulator":
-                simulator.restart(container=True)
+                simulator.restart(container=True, browser_open=False)
             elif name == "3bot":
-                threebot.restart(container=True)
+                threebot.restart(container=True, browser_open=False)
             else:
                 rc, out, err = c.execute(
                     "grep -f /sandbox/var/cmds/threebot_default.py", interactive=False, die=False, showout=True,
