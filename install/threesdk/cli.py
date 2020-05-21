@@ -132,36 +132,41 @@ def update(branch="master"):
         # pull all repos in containers
         for item in containers_names:
             name = item.name
-            print("Updating repositories in container ", name, "...")
             container._containers.assert_container(name)
             c = DockerFactory.container_get(name=name)
             if c.mount_code_exists:
                 host_mount = True
             else:
+                print("Updating repos in container ", name, "...")
                 container_executor = c.executor
                 installer.repos_get(pull=True, executor=container_executor, branch=branch)
 
         if host_mount:
+            print("Updating repos on host...")
             installer.repos_get(pull=True, branch=branch)
 
         # restart containers
         for item in containers_names:
             name = item.name
+            c = DockerFactory.container_get(name=name)
             if name == "simulator":
                 simulator.restart(container=True)
             elif name == "3bot":
                 threebot.restart(container=True)
             else:
-                res = c.execute(
-                    "ps -ef | grep /sandbox/var/cmds/threebot_default.py | grep -v grep", die=False, showout=True
+                rc, out, err = c.execute(
+                    "ps -ef | grep /sandbox/var/cmds/threebot_default.py | grep -v grep",
+                    interactive=False,
+                    die=False,
+                    showout=True,
                 )
-                print(f"container {name} res: {res}")
+
                 container.stop(name=name)
-                if res[1]:
+                if rc > 0:
+                    container.start(name=name, server=False)
+                else:
                     print(f"container {name} is running 3bot server")
                     container.start(name=name, server=True, browser_open=False)
-                else:
-                    container.start(name=name, server=False)
 
         # Update binary for host
         print("Downloading 3sdk binary...")

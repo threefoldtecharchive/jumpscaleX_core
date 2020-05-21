@@ -166,7 +166,8 @@ def rewriteline(parts, globals, locals):
                     line += f"'{kwarg[1]}', "
             else:
                 # let's assume its a string
-                isbool = funcspec.annotations.get(kwarg) is bool
+                argname = funcspec.args[idx]
+                isbool = funcspec.annotations.get(argname) is bool
                 if isbool:
                     value = arg.lower() in ["y", "yes", "1", "true"]
                     line += f"{value}, "

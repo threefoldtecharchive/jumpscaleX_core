@@ -700,6 +700,21 @@ class GedisChatBot:
         """
         return Form(self)
 
+    def node_selector(self, msg, **kwargs):
+        """Show the node selector
+
+        Args:
+            msg (str): message string
+
+        Keyword Arguments:
+            multiple (bool): asks for multiple nodes
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+    
+        """
+        self.ask({"category": "node_selector", "msg": msg, "kwargs": kwargs})
+
     def stop(self, msg=None, **kwargs):
         raise StopChatFlow(msg=msg, **kwargs)
 

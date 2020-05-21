@@ -174,6 +174,8 @@ class SDKContainers:
         pull = pull or not self.args.expert
         name = self._name(name)
         if self.container and not delete:
+            if not self.container.container_running:
+                self.container.start()
             return self.container
 
         # if linux die will be false and docker will be installed during installation process
@@ -204,7 +206,12 @@ class SDKContainers:
             else:
                 # in none expert mode we do shallow clone reset changes if needed and clone on the container
                 installer.repos_get(
-                    pull=pull, branch=self.core.branch, reset=True, executor=docker.executor, shallow=True
+                    pull=pull,
+                    branch=self.core.branch,
+                    reset=True,
+                    executor=docker.executor,
+                    shallow=True,
+                    clone_branch=self.core.branch,
                 )
             print(f" - install jumpscale for identity:{self.args.identity}")
             docker.install_jumpscale(

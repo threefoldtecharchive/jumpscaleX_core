@@ -3354,7 +3354,7 @@ class Tools:
             args["BRANCH"] = branch
             current_branch = getbranch(args=args)
             if current_branch != branch:
-                script = "git -C {REPODIR} checkout -q -f {BRANCH}"
+                script = "git -C {REPO_DIR} checkout -q -f {BRANCH}"
                 if Tools.ask_yes_no(
                     f"\n**: A different branch ({current_branch}) found in repo ({repo}), do you want to change it to ({branch})?"
                 ):
@@ -5002,24 +5002,26 @@ class JumpscaleInstaller:
             if usessh:
                 repo["url"] = Tools.code_git_rewrite_url(repo["url"], ssh=True).url
 
-            if branch:
+            repo["clone_branch"] = repo["branch"]
+
+            if branch or clone_branch:
                 # check if provided branch exists otherwise don't use it
-                C = f"""git ls-remote --heads {repo['url']} {branch} {repo['url']}"""
+                C = f"""git ls-remote --heads {repo['url']}"""
                 _, out, _ = execute(C, showout=False, interactive=False)
-                if not out:
-                    branch = None
-            if clone_branch is None:
-                clone_branch = repo["branch"]
+                if branch and f"heads/{branch}" in out:
+                    repo["branch"] = branch
+                if clone_branch and f"heads/{clone_branch}" in out:
+                    repo["clone_branch"] = clone_branch
 
             try:
                 Tools.code_github_get(
                     url=repo["url"],
-                    branch=branch,
+                    branch=repo["branch"],
                     pull=pull,
                     reset=reset,
                     executor=executor,
                     shallow=shallow,
-                    clone_branch=clone_branch,
+                    clone_branch=repo["clone_branch"],
                 )
             except Tools.exceptions.Input:
                 raise
