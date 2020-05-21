@@ -155,7 +155,7 @@ def update(branch="master"):
                 threebot.restart(container=True, browser_open=False)
             else:
                 rc, out, err = c.execute(
-                    "grep -f /sandbox/var/cmds/threebot_default.py", interactive=False, die=False, showout=True,
+                    "pgrep -f /sandbox/var/cmds/threebot_default.py", interactive=False, die=False, showout=True,
                 )
 
                 container.stop(name=name)
