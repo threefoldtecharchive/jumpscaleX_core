@@ -7,7 +7,7 @@ import textwrap
 # import jsx
 
 __all__ = ["builder", "simulator", "container", "args", "core", "installer", "install", "threebot"]
-__version__ = "_unreleased_"
+__version__ = "v10.6rc1"
 
 IT = core.core.IT
 
