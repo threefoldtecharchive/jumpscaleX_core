@@ -7214,7 +7214,7 @@ class ExecutorDocker(Executor):
         destdir = os.path.dirname(dest)
         Tools.dir_ensure(destdir)
 
-        cmd = f"docker cp {self._container.name}:{source} {dest}"
+        cmd = f'docker cp {self._container.name}:{source} "{dest}"'
         Tools.execute(cmd, showout=False, interactive=False)
 
     def upload(
@@ -7253,7 +7253,7 @@ class ExecutorDocker(Executor):
             if createdir:
                 destdir = os.path.dirname(source)
                 self.dir_ensure(destdir)
-            cmd = f"docker cp {source} {self._container.name}:{dest}"
+            cmd = f'docker cp "{source}" {self._container.name}:{dest}'
             Tools.execute(cmd, showout=False, interactive=False)
             return
         raise Tools.exceptions.RuntimeError("not implemented")
