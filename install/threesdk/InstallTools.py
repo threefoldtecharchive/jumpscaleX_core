@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import copy
 import getpass
+import shlex
 import pickle
 import binascii
 import bisect
@@ -6105,11 +6106,12 @@ class DockerContainer:
 
         # python3 jsx configure --sshkey {MyEnv.sshagent.key_default_name} -s
         # WHY DO WE NEED THIS, in container ssh-key should always be there & loaded, don't think there is a reason to configure it
+        escaped_secret = shlex.quote(secret)
 
         cmd = f"""
         cd /tmp
         #next will start redis and make sure secret is in there
-        python3 jsx secret {secret}
+        python3 jsx secret {escaped_secret}
         """
         print(" - Configure secret ")
         # best to set the secret first because otherwise we cannot be sure bcdb will work
