@@ -255,7 +255,7 @@ def main():
     parser.add_argument("update", default=False, action="store_true", help="Update 3sdk and 3bot/simulator")
 
     options, extra = parser.parse_known_args()
-    if options.update:
+    if "update" in extra and extra.index("update") == 0:
         update()
         sys.exit(0)
 
