@@ -5647,10 +5647,9 @@ class DockerContainer:
             return
 
         # Now create the container
-        DIR_CODE = MyEnv.config["DIR_CODE"] if not MyEnv.platform_is_windows else r"%s\code" % MyEnv._basedir_get()
+        DIR_CODE = MyEnv.config["DIR_CODE"] if not MyEnv.platform_is_windows else r'"%s"\code' % MyEnv._basedir_get()
         DIR_BASE = MyEnv.config["DIR_BASE"] if not MyEnv.platform_is_windows else MyEnv._basedir_get()
-        DIR_IDENTITY = f"{DIR_BASE}/myhost" if not MyEnv.platform_is_windows else r"%s\myhost" % MyEnv._basedir_get()
-
+        DIR_IDENTITY = f"{DIR_BASE}/myhost" if not MyEnv.platform_is_windows else r'"%s"\myhost' % MyEnv._basedir_get()
         MOUNTS = ""
         if mount:
             MOUNTS = f"""
