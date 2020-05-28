@@ -252,14 +252,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert", default=False, action="store_true")
     parser.add_argument("-v", "--version", default=False, action="store_true")
-
-    subparsers = parser.add_subparsers()
-    update_parser = subparsers.add_parser("update", help="update 3sdk")
+    parser.add_argument("update", default=False, action="store_true", help="Update 3sdk and 3bot/simulator")
 
     options, extra = parser.parse_known_args()
-    update_options, update_extra = update_parser.parse_known_args()
-
-    if "update" in update_extra:
+    if "update" in extra and extra.index("update") == 0:
         update()
         sys.exit(0)
 
