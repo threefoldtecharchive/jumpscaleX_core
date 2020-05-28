@@ -18,13 +18,14 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
         pip3 install --user -r requirements.txt
         pip3 install --user staticx
     fi
+    sed -i "s/_unreleased_/${version}/" threesdk/__init__.py
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     # Mac OSX
-    brew install upx
+    brew install upx gnu-sed
     pip3 install -r requirements.txt
+    gsed -i "s/_unreleased_/${version}/" threesdk/__init__.py
 fi
 
-sed -i "s/_unreleased_/${version}/" threesdk/__init__.py
 pyinstaller 3sdk.spec
 git checkout threesdk/__init__.py
 #--onefile --additional-hooks-dir=./hooks

@@ -110,6 +110,94 @@ def version():
     Print version number
     """
     print(f"3sdk {_sdk.__version__}")
+    # campare with __version__
+    if not _sdk.InstallTools.Tools.is_latest_release():
+        dic = _sdk.InstallTools.Tools.get_latest_release()
+        print(
+            f"Your SDK version is not up-to-date. Newest release is {dic['latest_release']}\nPlease visit: {dic['latest_release_url']}\nOr run '3sdk update'"
+        )
+
+
+def update(branch="master"):
+    """
+    """
+    from threesdk.InstallTools import JumpscaleInstaller, MyEnv, Tools, DockerFactory
+
+    import requests
+
+    if not Tools.is_latest_release():
+        installer = JumpscaleInstaller()
+        containers_names = DockerFactory.containers()
+        host_mount = False
+        # pull all repos in containers
+        for item in containers_names:
+            name = item.name
+            container._containers.assert_container(name)
+            c = DockerFactory.container_get(name=name)
+            if c.mount_code_exists:
+                host_mount = True
+            else:
+                print("Updating repos in container ", name, "...")
+                container_executor = c.executor
+                installer.repos_get(pull=True, executor=container_executor, branch=branch)
+
+        if host_mount:
+            print("Updating repos on host...")
+            installer.repos_get(pull=True, branch=branch)
+
+        # restart containers
+        for item in containers_names:
+            name = item.name
+            c = DockerFactory.container_get(name=name)
+            if name == "simulator":
+                simulator.restart(container=True, browser_open=False)
+            elif name == "3bot":
+                threebot.restart(container=True, browser_open=False)
+            else:
+                rc, out, err = c.execute(
+                    "pgrep -f /sandbox/var/cmds/threebot_default.py", interactive=False, die=False, showout=True,
+                )
+
+                container.stop(name=name)
+                if rc > 0:
+                    container.start(name=name, server=False)
+                else:
+                    print(f"container {name} is running 3bot server")
+                    container.start(name=name, server=True, browser_open=False)
+
+        # Update binary for host
+        print("Downloading 3sdk binary...")
+        latest_release = Tools.get_latest_release()
+        with requests.get(latest_release["download_link"], allow_redirects=True, stream=True) as r:
+            if MyEnv.platform_is_linux or MyEnv.platform_is_osx:
+                local_filename = "/tmp/3sdk"
+                with open(local_filename, "wb") as f:
+                    shutil.copyfileobj(r.raw, f)
+                r.close()
+                print("Download done, installing now ..")
+                os.chmod(local_filename, 0o775)
+                bin_path = sys.argv[0]
+                # save backup
+                shutil.copy(bin_path, "/tmp/3sdk.bk")
+                # replace
+                try:
+                    shutil.move("/tmp/3sdk", bin_path)
+                    print(bin_path)
+                    print("Congratulations, Now your 3sdk is up-to-date!")
+                except:
+                    shutil.copy("/tmp/3sdk.bk", bin_path)
+                    print(f"Failed to update binary, Can not replace binary in {bin_path}")
+            elif MyEnv.platform_is_windows:
+                update_path = f"{os.environ['USERPROFILE']}\\3sdk\\3sdk_update.exe"
+                print("Download done, installing now ..")
+                with open(update_path, "wb") as f:
+                    shutil.copyfileobj(r.raw, f)
+                f.close()
+                Tools.execute(f'explorer "{update_path}"', interactive=True)
+            else:
+                raise Tools.exceptions.Base("platform not supported, only linux, osx and windows.")
+    else:
+        print(f"3sdk version is up-to-date")
 
 
 def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
@@ -163,9 +251,14 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert", default=False, action="store_true")
-
     parser.add_argument("-v", "--version", default=False, action="store_true")
+    parser.add_argument("update", default=False, action="store_true", help="Update 3sdk and 3bot/simulator")
+
     options, extra = parser.parse_known_args()
+    if "update" in extra and extra.index("update") == 0:
+        update()
+        sys.exit(0)
+
     base_check(options.expert)
     if options.version:
         version()

@@ -7,7 +7,7 @@ __all__ = ["browser", "stop", "start", "shell", "restart"]
 _NAME = "3bot"
 
 
-def start(delete=False, browser_open=True):
+def start(delete: bool = False, browser_open: bool = True):
     """
     install & run a container with threebot
 
@@ -36,16 +36,32 @@ def browser():
     print(f" - CONNECT TO YOUR 3bot ON: {url}")
 
 
-def restart(browser_open=False):
+def delete():
+    """
+    Delete threebot and it's data
+
+    Can be used when switching branches
+    """
+    _container.delete(_NAME)
+
+
+def restart(browser_open: bool = False, container: bool = False):
     """
     restart the 3bot
+
+    When passing container=True the entire container will be restart
+    Could be usefull incase of trouble or high memory useage
     """
     if not _containers.IT.DockerFactory.container_name_exists(_NAME):
         start()
     else:
-        c = _containers.get(_NAME)
-        c.execute("source /sandbox/env.sh;3bot stop")
-        c.execute("source /sandbox/env.sh;3bot start")
+        if container:
+            stop()
+            start()
+        else:
+            c = _containers.get(_NAME)
+            c.execute("source /sandbox/env.sh;3bot stop")
+            c.execute("source /sandbox/env.sh;3bot start")
 
     if browser_open:
         browser()

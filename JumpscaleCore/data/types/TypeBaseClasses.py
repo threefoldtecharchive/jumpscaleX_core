@@ -180,6 +180,9 @@ class TypeBaseObjClassNumeric(TypeBaseObjClass):
     def __float__(self):
         return float(self.value)
 
+    def __round__(self,nrid):
+        return round(self.value,nrid)
+
     def __int__(self):
         return int(self.value)
 

@@ -159,7 +159,6 @@ class SDKContainers:
         identity=None,
         name=None,
         delete=False,
-        mount=None,
         email=None,
         words=None,
         secret=None,
@@ -171,9 +170,12 @@ class SDKContainers:
 
         code_update_force: be careful, if set will remove your local code repo changes
         """
-        mount = mount or self.args.expert
+        mount = self.args.expert
+        pull = pull or not self.args.expert
         name = self._name(name)
         if self.container and not delete:
+            if not self.container.container_running:
+                self.container.start()
             return self.container
 
         # if linux die will be false and docker will be installed during installation process
@@ -194,11 +196,23 @@ class SDKContainers:
 
         if not docker.executor.exists("/sandbox/cfg/.configured"):
             installer = self.IT.JumpscaleInstaller()
-            print(" - make sure jumpscale code is on local filesystem.")
-            if mount:
-                installer.repos_get(pull=pull, branch=self.core.branch, reset=code_update_force)
+            print(" - updating code this might take a while depending on your internet connection.")
+            if docker.mount_code_exists:
+                # in expert mode we do not change branches
+                # when the repo does not exists we default to development
+                installer.repos_get(
+                    pull=pull, branch=None, reset=code_update_force, clone_branch=self.core.development_branch
+                )
             else:
-                installer.repos_get(pull=pull, branch=self.core.branch, reset=code_update_force, executor=docker.executor)
+                # in none expert mode we do shallow clone reset changes if needed and clone on the container
+                installer.repos_get(
+                    pull=pull,
+                    branch=self.core.branch,
+                    reset=True,
+                    executor=docker.executor,
+                    shallow=True,
+                    clone_branch=self.core.branch,
+                )
             print(f" - install jumpscale for identity:{self.args.identity}")
             docker.install_jumpscale(
                 force=False,

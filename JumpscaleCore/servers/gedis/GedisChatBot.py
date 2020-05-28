@@ -3,7 +3,7 @@ import sys
 import uuid
 from captcha.image import ImageCaptcha
 from importlib import import_module
-
+import inspect
 import json
 import gevent
 import html
@@ -13,9 +13,10 @@ JSBASE = j.baseclasses.object
 
 
 class StopChatFlow(Exception):
-    def __init__(self, msg=None):
+    def __init__(self, msg=None, **kwargs):
         super().__init__(self, msg)
         self.msg = msg
+        self.kwargs = kwargs
 
 
 class GedisChatBotFactory(JSBASE):
@@ -23,6 +24,7 @@ class GedisChatBotFactory(JSBASE):
         JSBASE.__init__(self)
         self.sessions = {}  # all chat sessions
         self.chat_flows = {}  # are the flows to run, code being executed to interact with user
+        self._fetch_greenlet = None
 
     def session_new(self, topic, query_params=None, **kwargs):
         """
@@ -32,38 +34,48 @@ class GedisChatBotFactory(JSBASE):
                        (i.e. can be used for passing any query parameters)
         :return: created session id
         """
-
         query_params = html.unescape(query_params)
         query_params = query_params.replace("'", '"')
         try:
             query_params = j.data.serializers.json.loads(query_params)
         except Exception as e:
             self._log_debug(f"parsing query params faild could be empty, {e}")
-        kwargs.update(query_params)
-        session_id = str(uuid.uuid4())
-        topic_method = self.chat_flows[topic]
-        session = GedisChatBotSession(session_id, topic_method, **kwargs)
-        self.sessions[session_id] = session
-        return {"sessionid": session_id}
 
-    def session_work_get(self, session_id):
+        kwargs.update(query_params)
+        chatflow = self.chat_flows[topic]
+        if inspect.isclass(chatflow):
+            obj = chatflow(**kwargs)
+        else:
+            obj = LegacyChatFLow(chatflow, **kwargs)
+
+        self.sessions[obj.session_id] = obj
+        return {"sessionid": obj.session_id}
+
+    def session_work_get(self, session_id, restore=False):
         """
         Blocking method responsible for waiting for new questions added to the queue
         by the chatflow using helper methods (ask_string, ask_integer, ....)
         :param session_id: user session id
         :return: new question dict
         """
-        bot = self.sessions.get(session_id)
-        if not bot:
-            return {"cat": "md_show", "msg": "Chat has ended", "kwargs": {}}
-        elif bot.greenlet.ready():
+        chatflow = self.sessions.get(session_id)
+        if not chatflow:
+            return {"payload":{"category": "end"}}
+        
+        if self._fetch_greenlet:
+            if not self._fetch_greenlet.ready():
+                self._fetch_greenlet.kill()
+
+        self._fetch_greenlet = gevent.spawn(chatflow.get_work, restore)
+        
+        result = self._fetch_greenlet.get()
+        if isinstance(result, gevent.GreenletExit):
+            return
+
+        if result.get("category") == "end":
             self.sessions.pop(session_id)
-            msg = "Chat had ended"
-            if bot.greenlet.exception:
-                j.errorhandler.exception_handle(bot.greenlet.exception, die=False)
-                msg = "Something went wrong. Please contact support at support@threefold.tech"
-            return {"cat": "md_show", "msg": msg, "kwargs": {}}
-        return bot.q_out.get(block=True)
+
+        return result
 
     def session_work_set(self, session_id, result):
         """
@@ -73,10 +85,28 @@ class GedisChatBotFactory(JSBASE):
         :param result: answer sent by the user
         :return:
         """
-        if session_id not in self.sessions:
-            return
-        bot = self.sessions[session_id]
-        bot.q_in.put(result)
+        chatflow = self.sessions.get(session_id)
+        chatflow.set_work(result)
+
+    def session_next_step(self, session_id):
+        """Go to next step
+
+        Args:
+            session_id (str): session id
+        """
+        chatflow = self.sessions.get(session_id)
+        chatflow.go_next()
+        return
+
+    def session_prev_step(self, session_id):
+        """Go to previous step
+
+        Args:
+            session_id (str): session id
+            newstep (bool): if false go to previous question
+        """
+        chatflow = self.sessions.get(session_id)
+        chatflow.go_back()
         return
 
     def chatflows_load(self, chatflows_dir):
@@ -84,18 +114,14 @@ class GedisChatBotFactory(JSBASE):
         looks for the chat flows exist in `chatflows_dir` to import and load them under self.chat_flows
         :param chatflows_dir: the dir path need to look for chatflows into it
         """
-        chatflow_names = []
-        for chatflow_path in j.sal.fs.listFilesInDir(chatflows_dir, recursive=True, filter="*.py", followSymlinks=True):
-            self._log_info("chat:%s" % chatflow_path)
-            module_name = j.sal.fs.getBaseName(chatflow_path)[:-3]
-            if module_name.startswith("_"):
-                continue
-            # Each chatflow file must have `chat` method which contains all logic/questions
-            mod, changed = j.tools.codeloader.load("chat", path=chatflow_path, reload=False)
-            if changed:
-                self.chat_flows[module_name] = mod
-            chatflow_names.append(module_name)
-        return chatflow_names
+        files = j.sal.fs.listFilesInDir(chatflows_dir, recursive=True, filter="*.py", followSymlinks=True)
+        for chatflow_path in files:
+            module, is_changed = j.tools.codeloader.load("chat", path=chatflow_path, reload=False)
+            if is_changed:
+                module_name = j.sal.fs.getBaseName(chatflow_path)[:-3]
+                self.chat_flows[module_name] = module
+
+        return self.chat_flows.keys()
 
     def chatflows_list(self):
         """
@@ -121,24 +147,17 @@ class Result:
 class Form:
     def __init__(self, session):
         self._session = session
-        self.messages = []
+        self.fields = []
         self.results = []
 
-    def ask(self, allow_empty=True):
-        valid = False
-        while not valid:
-            self._session.q_out.put({"cat": "form", "msg": self.messages})
-            results = j.data.serializers.json.loads(self._session.q_in.get())
-            valid = True
-            for result, resobject in zip(results, self.results):
-                if not allow_empty and not result:
-                    self._session.md_show("You can't input empty values. click next to try again")
-                    valid = False
-                    break
-                resobject.value = result
+    def ask(self, msg=None):
+        self._session.send_data({"category": "form", "msg": msg, "fields": self.fields}, is_slide=True)
+        results = j.data.serializers.json.loads(self._session._queue_in.get())
+        for result, resobject in zip(results, self.results):
+            resobject.value = result
 
     def _append(self, msg, loader=str):
-        self.messages.append(msg)
+        self.fields.append(msg)
         result = Result(loader)
         self.results.append(result)
         return result
@@ -152,424 +171,560 @@ class Form:
     def secret_ask(self, msg, **kwargs):
         return self._append(self._session.secret_msg(msg, **kwargs))
 
-    def download_file(self, msg, filename, **kwargs):
-        return self._append(self._session.download_file(msg, filename, **kwargs))
+    def datetime_picker(self, msg, **kwargs):
+        return self._append(self._session.datetime_picker_msg(msg, **kwargs))
 
     def multi_list_choice(self, msg, options, **kwargs):
-        return self._append(self._session.multi_list_choice(msg, options, **kwargs))
-
-    def datetime_picker(self, msg, **kwargs):
-        return self._append(self._session.datetime_picker(msg, **kwargs))
+        return self._append(self._session.multi_list_choice_msg(msg, options, **kwargs))
 
     def upload_file(self, msg, **kwargs):
-        return self._append(self._session.upload_file(msg, **kwargs))
+        return self._append(self._session.upload_file_msg(msg, **kwargs))
 
     def multi_choice(self, msg, options, **kwargs):
-        return self._append(self._session.multi_msg(msg, options, **kwargs), j.data.serializers.json.loads)
+        return self._append(self._session.multi_choice_msg(msg, options, **kwargs), j.data.serializers.json.loads)
 
     def single_choice(self, msg, options, **kwargs):
-        return self._append(self._session.single_msg(msg, options, **kwargs))
+        return self._append(self._session.single_choice_msg(msg, options, **kwargs))
 
     def drop_down_choice(self, msg, options, **kwargs):
-        return self._append(self._session.drop_down_msg(msg, options, **kwargs))
+        return self._append(self._session.drop_down_choice_msg(msg, options, **kwargs))
 
 
-class GedisChatBotSession(JSBASE):
+class ChatflowFactory(JSBASE):
+    __jslocation__ = "j.servers.chatflow"
+
+    def get_class(self):
+        return GedisChatBot
+
+
+class GedisChatBot:
     """
     Contains the basic helper methods for asking questions
     It also have the main queues q_in, q_out that are used to pass questions and answers between browser and server
     """
 
-    def __init__(self, session_id, topic_method, **kwargs):
+    steps = []
+
+    def __init__(self, **kwargs):
         """
         :param session_id: user session id created by ChatBotFactory session_new method
         :param topic_method: the bot topic (chatflow)
         :param kwargs: any extra kwargs that is passed while creating the session
                        (i.e. can be used for passing any query parameters)
         """
-        JSBASE.__init__(self)
-        self.session_id = session_id
-        self.q_out = gevent.queue.Queue()  # to browser
-        self.q_in = gevent.queue.Queue()  # from browser
+        self.session_id = str(uuid.uuid4())
         self.kwargs = kwargs
-        self.topic_method = topic_method
-        self.greenlet = None
-        self.launch()
+        self._state = {}
+        self._current_step = 0
+        self._steps_info = {}
+        self._greenlet = None
+        self._last_output = None
+        self._queue_out = gevent.queue.Queue()
+        self._queue_in = gevent.queue.Queue()
+        self._start()
 
-    def launch(self):
-        def wrapper():
+    @property
+    def step_info(self):
+        return self._steps_info.setdefault(self._current_step, {"slide": 0})
+
+    @property
+    def is_first_slide(self):
+        return self.step_info.get("slide", 1) == 1
+
+    @property
+    def is_first_step(self):
+        return self._current_step == 0
+
+    @property
+    def is_last_step(self):
+        return self._current_step >= len(self.steps) - 1
+
+    @property
+    def info(self):
+        previous = True
+        if self.is_first_slide:
+            if self.is_first_step or not self.step_info.get("previous"):
+                previous = False
+
+        return {
+            "step": self._current_step + 1,
+            "steps": len(self.steps),
+            "title": self.step_info.get("title"),
+            "previous": previous,
+            "last_step": self.is_last_step,
+            "first_step": self.is_first_step,
+            "first_slide": self.is_first_slide,
+            "slide": self.step_info.get("slide", 1),
+        }
+
+    def _execute_current_step(self, spawn=True):
+        def wrapper(step_name):
+            internal_error = False
             try:
-                self.topic_method(bot=self)
+                getattr(self, step_name)()
             except StopChatFlow as e:
                 if e.msg:
-                    self.md_show(e.msg)
+                    self.send_error(e.msg, **e.kwargs)
+
             except Exception as e:
-                errmsg = "something went wrong please contact support"
+                internal_error = True
                 j.errorhandler.exception_handle(e, die=False)
-                if "message" in dir(e):
-                    errmsg += f" with error: {e.message}"
-                return self.md_show(errmsg)
+                self.send_error("Something wrong happened, please contact support")
 
-        self.greenlet = gevent.spawn(wrapper)
+            if not internal_error:
+                if self.is_last_step:
+                    self.send_data({"category": "end"})
+                else:
+                    self._current_step += 1
+                    self._execute_current_step(spawn=False)
 
-    # ###################################
-    # Helper methods for asking questions
-    # ###################################
-    def new_form(self):
-        return Form(self)
+        step_name = self.steps[self._current_step]
+        self.step_info["slide"] = 0
 
-    def stop(self, msg=None):
-        raise StopChatFlow(msg)
+        if spawn:
+            self._greenlet = gevent.spawn(wrapper, step_name)
+        else:
+            wrapper(step_name)
 
-    def string_ask(self, msg, allow_empty=True, **kwargs):
-        """
-        helper method to generate a question that expects a string answer.
-        html generated in the client side will use `<input type="text"/>`
-        :param msg: the question message
-        :param kwargs: dict of possible extra options like (validate, reset, ...etc)
-        :return: the user answer for the question
-        """
-        return self.ask(self.string_msg(msg, **kwargs), allow_empty=allow_empty)
+    def _start(self):
+        self._execute_current_step()
+
+    def go_next(self):
+        self._current_step += 1
+        self._execute_current_step()
+
+    def go_back(self):
+        if self.is_first_slide:
+            if self.is_first_step:
+                return
+            else:
+                self._current_step -= 1
+
+        self._greenlet.kill()
+        return self._execute_current_step()
+
+    def get_work(self, restore=False):
+        if restore and self._last_output:
+            return self._last_output
+        return self._queue_out.get()
+
+    def set_work(self, data):
+        return self._queue_in.put(data)
+
+    def send_data(self, data, is_slide=False):
+        data.setdefault("kwargs", {})
+        retry = data["kwargs"].pop("retry", False)
+
+        if is_slide and not retry:
+            self.step_info["slide"] += 1
+
+        output = {"info": self.info, "payload": data}
+        self._last_output = output
+        self._queue_out.put(output)
+
+    def send_error(self, message, **kwargs):
+        self.send_data({"category": "error", "msg": message, "kwargs": kwargs})
+        self._queue_in.get()
+
+    def ask(self, data):
+        self.send_data(data, is_slide=True)
+        return self._queue_in.get()
+
+    def user_info(self, **kwargs):
+        self.send_data({"category": "user_info", "kwargs": kwargs})
+        result = j.data.serializers.json.loads(self._queue_in.get())
+        return result
 
     def string_msg(self, msg, **kwargs):
-        return {"cat": "string_ask", "msg": msg, "kwargs": kwargs}
+        return {"category": "string_ask", "msg": msg, "kwargs": kwargs}
 
-    def secret_ask(self, msg, allow_empty=True, **kwargs):
+    def string_ask(self, msg, **kwargs):
+        """Ask for a string value
+
+        Args:
+            msg (str): message text
+
+        Keyword Arguments:
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+            min_length (int): min length
+            max_length (int): max length
+
+        Returns:
+            str: user input
         """
-        helper method to generate a question that expects a password answer.
-        html generated in the client side will use `<input type="password"/>`
-        :param msg: the question message
-        :param kwargs: dict of possible extra options like (validate, reset, ...etc)
-        :return: the user answer for the question
-        """
-        return self.ask(self.secret_msg(msg, **kwargs), allow_empty=allow_empty)
+        return self.ask(self.string_msg(msg, **kwargs))
 
     def secret_msg(self, msg, **kwargs):
-        return {"cat": "secret_ask", "msg": msg, "kwargs": kwargs}
+        return {"category": "secret_ask", "msg": msg, "kwargs": kwargs}
 
-    def download_file(self, msg, filename, **kwargs):
-        return self.ask({"cat": "download_file", "msg": msg, "filename": filename, "kwargs": kwargs})
+    def secret_ask(self, msg, **kwargs):
+        """Ask for a secret value
 
-    def multi_list_choice(self, msg, options, **kwargs):
-        res = j.data.serializers.json.loads(
-            self.ask({"cat": "multi_list_choice", "msg": msg, "options": options, "kwargs": kwargs})
-        )
-        return list(filter(None, res))
+        Args:
+            msg (str): message text
 
-    def datetime_picker(self, msg, **kwargs):
-        res = self.ask({"cat": "datetime_picker", "msg": msg, "kwargs": kwargs})
-        # reservation min time is 1 hour
-        while not res or int(res) < j.data.time.epoch + 3600:
-            res = self.ask(
-                {
-                    "cat": "datetime_picker",
-                    "msg": f"""{msg}<br/>
-                            <p style='color:red'>
-                            * Please pick the correct time. Selection was empty or your choice is in the past. <br/>
-                            * Please note the minimum duration is 1 hour
-                            </p>""",
-                    "kwargs": kwargs,
-                }
-            )
-        return int(res)
+        Keyword Arguments:
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+            min_length (int): min length
+            max_length (int): max length
 
-    def upload_file(self, msg, **kwargs):
-        return self.ask({"cat": "upload_file", "msg": msg, "kwargs": kwargs})
-
-    def text_ask(self, msg, allow_empty=True, **kwargs):
+        Returns:
+            str: user input
         """
-        helper method to generate a question that expects a text answer.
-        html generated in the client side will use `<textarea></textarea>`
-        :param msg: the question message
-        :param kwargs: dict of possible extra options like (validate, reset, ...etc)
-        :return: the user answer for the question
-        """
-        return self.ask(self.text_msg(msg, **kwargs), allow_empty=allow_empty)
-
-    def ask(self, data, allow_empty=True):
-        self.q_out.put(data)
-        res = self.q_in.get()
-        if not allow_empty and not res:
-            while not res:
-                self.md_show("You can't input empty value. click next to try again")
-                self.q_out.put(data)
-                res = self.q_in.get()
-        return res
-
-    def text_msg(self, msg, **kwargs):
-        return {"cat": "text_ask", "msg": msg, "kwargs": kwargs}
-
-    def int_ask(self, msg, allow_empty=True, **kwargs):
-        """
-        helper method to generate a question that expects an integer answer.
-        html generated in the client side will use `<input type="number"/>`
-        :param msg: the question message
-        :param kwargs: dict of possible extra options like (validate, reset, ...etc)
-        :return: the user answer for the question
-        """
-        return int(self.ask(self.int_msg(msg, **kwargs), allow_empty=allow_empty))
+        return self.ask(self.secret_msg(msg, **kwargs))
 
     def int_msg(self, msg, **kwargs):
-        return {"cat": "int_ask", "msg": msg, "kwargs": kwargs}
+        return {"category": "int_ask", "msg": msg, "kwargs": kwargs}
 
-    def captcha_ask(self, error=False, **kwargs):
-        """
-        helper method to generate a captcha and verify that the user entered the right answer.
-        :param error: if True indicates that the previous captcha attempt failed
-        :return: a bool indicating if the user entered the right answer or not
-        """
-        captcha, message = self.captcha_msg(error, **kwargs)
-        return self.ask(message) == captcha
+    def int_ask(self, msg, **kwargs):
+        """Ask for a inegert value
 
-    def captcha_msg(self, error=False, **kwargs):
+        Args:
+            msg (str): message text
+
+        Keyword Arguments:
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+            min (int): min value
+            max (int): max value
+
+        Returns:
+            str: user input
+        """
+        result = self.ask(self.int_msg(msg, **kwargs))
+        if result:
+            return int(result)
+
+    def text_msg(self, msg, **kwargs):
+        return {"category": "text_ask", "msg": msg, "kwargs": kwargs}
+
+    def text_ask(self, msg, **kwargs):
+        """Ask for a multi line string value
+
+        Args:
+            msg (str): message text
+
+        Keyword Arguments:
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+
+        Returns:
+            str: user input
+        """
+        return self.ask(self.text_msg(msg, **kwargs))
+
+    def single_choice_msg(self, msg, options, **kwargs):
+        return {"category": "single_choice", "msg": msg, "options": options, "kwargs": kwargs}
+
+    def single_choice(self, msg, options, **kwargs):
+        """Ask for a single option
+
+        Args:
+            msg (str): message text
+
+        Keyword Arguments:
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+
+        Returns:
+            str: user input
+        """
+        return self.ask(self.single_choice_msg(msg, options, **kwargs))
+
+    def multi_choice_msg(self, msg, options, **kwargs):
+        return {"category": "multi_choice", "msg": msg, "options": options, "kwargs": kwargs}
+
+    def multi_choice(self, msg, options, **kwargs):
+        """Ask for a multiple options
+
+        Args:
+            msg (str): message text
+
+        Keyword Arguments:
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+            min_options (int): min number of selected options
+            max_options (int): max number selected options
+
+        Returns:
+            str: user input
+        """
+        result = self.ask(self.multi_choice_msg(msg, options, **kwargs))
+        return j.data.serializers.json.loads(result)
+
+    def multi_list_choice_msg(self, msg, options, **kwargs):
+        return {"category": "multi_list_choice", "msg": msg, "options": options, "kwargs": kwargs}
+
+    def multi_list_choice(self, msg, options, **kwargs):
+        """Ask for a multiple options
+
+        Args:
+            msg (str): message text
+
+        Keyword Arguments:
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+            min_options (int): min number of selected options
+            max_options (int): max number selected options
+
+        Returns:
+            str: user input
+        """
+        result = self.ask(self.multi_choice_msg(msg, options, **kwargs))
+        return j.data.serializers.json.loads(result)
+
+    def drop_down_choice_msg(self, msg, options, **kwargs):
+        return {"category": "drop_down_choice", "msg": msg, "options": options, "kwargs": kwargs}
+
+    def drop_down_choice(self, msg, options, **kwargs):
+        """Ask for a single options using dropdown
+
+        Args:
+            msg (str): message text
+
+        Keyword Arguments:
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+
+        Returns:
+            str: user input
+        """
+        return self.ask(self.drop_down_choice_msg(msg, options, **kwargs))
+
+    def autocomplete_drop_down(self, msg, options, **kwargs):
+        """Ask for a single options using dropdown with auto completion
+
+        Args:
+            msg (str): message text
+
+        Keyword Arguments:
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+
+        Returns:
+            str: user input
+        """
+        return self.drop_down_choice(msg, options, auto_complete=True, **kwargs)
+
+    def datetime_picker_msg(self, msg, **kwargs):
+        return {"category": "datetime_picker", "msg": msg, "kwargs": kwargs}
+
+    def datetime_picker(self, msg, **kwargs):
+        """Ask for a datetime
+
+        Args:
+            msg (str): message text
+
+        Keyword Arguments:
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+
+        Returns:
+            int: timestamp
+        """
+        result = self.ask(self.datetime_picker_msg(msg, **kwargs))
+        if result:
+            return int(result)
+
+    def time_delta_msg(self, msg, **kwargs):
+        return {"category": "time_delta", "msg": msg, "kwargs": kwargs}
+
+    def time_delta_ask(self, msg, **kwargs):
+        """Ask for a time delta example: 1Y 1M 1w 2d 1h
+
+        Args:
+            msg (str): message text
+
+        Keyword Arguments:
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+
+        Returns:
+            datetime.datetime: user input
+        """
+        result = self.ask(self.time_delta_msg(msg, timedelta=True, **kwargs))
+        return j.data.time.getDeltaTime(result)
+
+    def location_msg(self, msg, **kwargs):
+        return {"category": "location_ask", "msg": msg, "kwargs": kwargs}
+
+    def location_ask(self, msg, **kwargs):
+        """Ask for a location [lng, lat]
+
+        Args:
+            msg (str): message text
+
+        Keyword Arguments:
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+
+        Returns:
+            list: list([lat, lng])
+        """
+        result = self.ask(self.location_msg(msg, **kwargs))
+        return j.data.serializers.json.loads(result)
+
+    def download_file(self, msg, data, filename, **kwargs):
+        """Add a download button to download data as a file
+
+        Args:
+            msg (str): message text
+            data (str): the data to be in the file
+            filename (str): file name
+
+        Keyword Arguments:
+            md (bool): render message as markdown
+            html (bool): render message as html
+
+        """
+        self.ask({"category": "download_file", "msg": msg, "data": data, "filename": filename, "kwargs": kwargs})
+
+    def upload_file_msg(self, msg, **kwargs):
+        return {"category": "upload_file", "msg": msg, "kwargs": kwargs}
+
+    def upload_file(self, msg, **kwargs):
+        """Ask for a file to be uploaded
+
+        Args:
+            msg (str): message text
+
+        Keyword Arguments:
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+            max_size (int): file max size
+            allowed_types: list of allowed types example : ['text/plain']
+
+        Returns:
+            str: file content
+        """
+        return self.ask(self.upload_file_msg(msg, **kwargs))
+
+    def qrcode_show(self, msg, data, scale=10, **kwargs):
+        """Show QR code as an image
+
+        Args:
+            msg (str): message
+            data (str): data to be encoded
+            scale (int, optional): qrcode scale. Defaults to 10.
+
+        Keyword Arguments:
+            md (bool): render message as markdown
+            html (bool): render message as html
+        """
+        qrcode = j.tools.qrcode.base64_get(data, scale=scale)
+        self.send_data({"category": "qrcode_show", "msg": msg, "qrcode": qrcode, "kwargs": kwargs}, is_slide=True)
+        self._queue_in.get()
+
+    def captcha_msg(self, **kwargs):
         image = ImageCaptcha()
         captcha = j.data.idgenerator.generateXCharID(4)
-        # this log is for development purposes so we can use the redis client
-        self._log_info("generated captcha:%s" % captcha)
         data = image.generate(captcha)
+        kwargs["value"] = captcha
         return (
             captcha,
             {
-                "cat": "captcha_ask",
+                "category": "captcha_ask",
                 "captcha": base64.b64encode(data.read()).decode(),
+                "value": captcha,
                 "msg": "Are you human?",
-                "label": "Please enter a valid captcha" if error else "",
                 "kwargs": kwargs,
             },
         )
 
-    def location_ask(self, msg, allow_empty=True, **kwargs):
-        """
-        helper method to generate a question that expects a `longitude, latitude` string
-        html generated in the client side will use openstreetmap div, readonly input field for value.
-        :param msg: the question message
-        :param kwargs: dict of possible extra options like (validate, reset, ...etc)
-        :return: the user answer for the question
-        """
-        return self.ask(self.location_msg(msg, **kwargs), allow_empty=allow_empty)
-
-    def location_msg(self, msg, **kwargs):
-        return {"cat": "location_ask", "msg": msg, "kwargs": kwargs}
-
-    def md_show_confirm(self, data, **kwargs):
-        res = "<h1>Please make sure of the entered values before starting deployment</h1>"
-
-        for key, value in data.items():
-            if value:
-                res += f"**{key}**: {value}<br>"
-
-        self.md_show(res)
-
-    def md_show(self, msg, **kwargs):
-        """
-        a special helper method to send markdown content to the bot instead of questions.
-        usually used for sending info messages to the bot.
-        html generated in the client side will use javascript markdown library to convert it
-        :param msg: the question message
-        :param kwargs: dict of possible extra options like (reset)
-        :return:
-        """
-        return self.ask(self.md_msg(msg, **kwargs))
+    def captcha_ask(self, **kwargs):
+        captcha, message = self.captcha_msg(required=True, **kwargs)
+        return self.ask(message) == captcha
 
     def md_msg(self, msg, **kwargs):
-        return {"cat": "md_show", "msg": msg, "kwargs": kwargs}
+        return {"category": "md_show", "msg": msg, "kwargs": kwargs}
 
-    def template_render(self, msg, **kwargs):
-        res = j.tools.jinja2.template_render(text=j.core.text.strip(msg), **kwargs)
-        return self.md_show(res)
+    def md_show(self, msg, **kwargs):
+        """Show markdown
+
+        Args:
+            msg (str): markdown string
+        """
+        self.send_data(self.md_msg(msg, **kwargs), is_slide=True)
+        self._queue_in.get()
+
+    def md_show_confirm(self, data, message=None, **kwargs):
+        """Show a table contains the keys and values of the data dict
+
+        Args:
+            data (dict): the data to be shown in the table
+        """
+        message = message or ""
+        self.send_data({"category": "confirm", "data": data, "msg": message, "kwargs": kwargs}, is_slide=True)
+        self._queue_in.get()
 
     def md_show_update(self, msg, **kwargs):
-        """
-        a special helper method to send markdown content to the bot instead of questions.
-        usually used for sending info messages to the bot.
-        html generated in the client side will use javascript markdown library to convert it
-        :param msg: the question message
-        :param kwargs: dict of possible extra options like (reset)
-        :return:
-        """
-        message = self.md_msg(msg, **kwargs)
-        message["cat"] = "md_show_update"
-        self.q_out.put(message)
+        self.send_data({"category": "infinite_loading", "msg": msg, "kwargs": kwargs}, is_slide=False)
 
-    def loading_show(self, title, wait, **kwargs):
-        load_html = """\
-# Loading {1}...
-<div class="progress">
-<div class="progress-bar active" role="progressbar" aria-valuenow="{0}"
-aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
-{0}%
-</div>
-</div>
-"""
-        for x in range(wait):
-            message = self.md_msg(load_html.format((x / wait) * 100, title), **kwargs)
-            message["cat"] = "md_show_update"
-            self.q_out.put(message)
+    def loading_show(self, msg, wait, **kwargs):
+        """Show a progress bar
+
+        Args:
+            msg (str): message
+            wait (int): the duration (in seconds) of the progress bar
+
+        Keyword Arguments:
+            md (bool): render message as markdown
+            html (bool): render message as html
+        """
+        data = {"category": "loading", "msg": msg, "kwargs": kwargs}
+        for i in range(wait):
+            data["value"] = (i / wait) * 100
+            self.send_data(data)
             gevent.sleep(1)
 
-    def redirect(self, msg, **kwargs):
+    def new_form(self):
+        """Create a new form
+
+        Returns:
+            Form: form object
         """
-        a special helper method to redirect the user to a specific url.
-        there is no html generated, It just make use of javascript `window.location` api to redirect the user.
-        :param msg: the url
-        :param kwargs: not used yet
-        :return:
+        return Form(self)
+
+    def node_selector(self, msg, **kwargs):
+        """Show the node selector
+
+        Args:
+            msg (str): message string
+
+        Keyword Arguments:
+            multiple (bool): asks for multiple nodes
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+    
         """
-        self.q_out.put({"cat": "redirect", "msg": msg, "kwargs": kwargs})
-        # dangerous: better spend time figuring out why this is happening
-        gevent.sleep(1)
+        self.ask({"category": "node_selector", "msg": msg, "kwargs": kwargs})
 
-    def html_show(self, msg, **kwargs):
-        """
-        a special helper method to send markdown content to the bot instead of questions.
-        usually used for sending info messages to the bot.
-        html generated in the client side will use javascript markdown library to convert it
-        :param msg: the question message
-        :param kwargs: dict of possible extra options like (reset)
-        :return:
-        """
-        html = """\
-# Loading {1}...
- <div class="progress">
-  <div class="progress-bar active" role="progressbar" aria-valuenow="{0}"
-  aria-valuemin="0" aria-valuemax="100" style="width:{0}%">
-    {0}%
-  </div>
-</div>
-"""
-        return html
-
-    def multi_choice(self, msg, options, **kwargs):
-        """
-        helper method to generate a question that can have multi answers from set of choices.
-        html generated in the client side will use `<input type="checkbox" name="value[]" value="${value}">`
-        :param msg: the question message
-        :param options: list of strings contains the options
-        :param kwargs: dict of possible extra options like (validate, reset, ...etc)
-        :return: the user answers for the question
-        """
-        return j.data.serializers.json.loads(self.ask(self.multi_msg(msg, options, **kwargs)))
-
-    def multi_msg(self, msg, options, **kwargs):
-        return {"cat": "multi_choice", "msg": msg, "options": options, "kwargs": kwargs}
-
-    def single_choice(self, msg, options, allow_empty=True, **kwargs):
-        """
-        helper method to generate a question that can have single answer from set of choices.
-        html generated in the client side will use `<input type="checkbox" name="value" value="${value}">`
-        :param msg: the question message
-        :param options: list of strings contains the options
-        :param kwargs: dict of possible extra options like (validate, reset, ...etc)
-        :return: the user answer for the question
-        """
-
-        return self.ask(self.single_msg(msg, options, **kwargs), allow_empty=allow_empty)
-
-    def single_msg(self, msg, options, **kwargs):
-        return {"cat": "single_choice", "msg": msg, "options": options, "kwargs": kwargs}
-
-    def drop_down_choice(self, msg, options, allow_empty=True, **kwargs):
-        """
-        helper method to generate a question that can have single answer from set of choices.
-        the only difference between this method and `single_choice` is that the html generated in the client side
-        will use `<select> <option value="${value}">${value}</option> ... </select>`
-        :param msg: the question message
-        :param options: list of strings contains the options
-        :param kwargs: dict of possible extra options like (validate, reset, ...etc)
-        :return: the user answer for the question
-        """
-        return self.ask(self.drop_down_msg(msg, options, **kwargs), allow_empty=allow_empty)
-
-    def drop_down_msg(self, msg, options, **kwargs):
-        return {"cat": "drop_down_choice", "msg": msg, "options": options, "kwargs": kwargs}
-
-    def drop_down_country(self, msg):
-        return self.drop_down_choice(msg, j.data.countries.names)
-
-    def autocomplete_drop_down(self, msg, options):
-        return self.drop_down_choice(msg, options, auto_complete=True)
-
-    def user_info(self, **kwargs):
-        """
-        helper method to retrieve the info of a logged user
-        """
-        self.q_out.put({"cat": "user_info", "kwargs": kwargs})
-        return j.data.serializers.json.loads(self.q_in.get())
-
-    def qrcode_show(self, data, title=None, msg=None, scale=10, update=False):
-        qr_64 = j.tools.qrcode.base64_get(data, scale=scale)
-        if not title:
-            title = "scan with your application:"
-        content = f"""# {title}
-
-<p align="center">
-<img src="data:image/png;base64, {qr_64}" alt="qrCode"/>
-</p>
-"""
-        if msg:
-            content += f"## {msg}"
-        if update:
-            return self.md_show_update(content)
-        else:
-            return self.md_show(content)
-
-    def qrcode_show_dict(self, d, title=None, msg=None, scale=10):
-        data = j.data.serializers.json.dumps(d)
-        return self.qrcode_show(data, title, msg, scale=scale)
-
-    def time_delta_ask(self, msg, allowed_units=None, min="1h", **kwargs):
-        """
-        helper method to generate a question that expects a time delta string(1h, 2m, 3d,...).
-        html generated in the client side will use `<input type="text"/>`
-        :param msg: the question message
-        :param kwargs: dict of possible extra options like (validate, reset, ...etc)
-        :return: the user answer for the question
-        """
-        if not allowed_units:
-            allowed_units = ["h", "d", "w", "M", "Y", "y"]
-
-        def validate(time_delata_string):
-            if len(time_delata_string) < 2:
-                return f"Wrong time delta format specified {time_delata_string}. click next to try again"
-            for ch in time_delata_string:
-                if not ch.isdigit() and ch != ".":
-                    if ch not in allowed_units:
-                        return f"Unit {ch} is not allowed. click next to try again"
-            return None
-
-        message = """{}
-        Format:
-        hour=h, day=d, week=w, month=M, year=Y
-        I.e. 2 days = 2d
-        """.format(
-            msg
-        )
-        while True:
-            time_delta = self.ask(self.string_msg(message, **kwargs))
-            msg = validate(time_delta)
-            if msg:
-                self.md_show(msg)
-                continue
-
-            try:
-                delta = j.data.time.getDeltaTime(time_delta)
-            except Exception:
-                msg = "Wrong time delta format specified please enter a correct one. click next to try again"
-                self.md_show(msg)
-                continue
-            if delta < j.data.time.getDeltaTime(min):
-                msg = f"Wrong time delta. minimum time is {min}. click next to try again"
-                self.md_show(msg)
-                continue
-            return delta
+    def stop(self, msg=None, **kwargs):
+        raise StopChatFlow(msg=msg, **kwargs)
 
 
-def test(factory):
-    sid = "123"
-    factory.session_new("test_chat")
-    nr = 0
-    while True:
-        factory.session_work_get(sid)
-        gevent.sleep(1)  # browser is doing something
-        nr += 1
-        factory.session_work_set(sid, nr)
+class LegacyChatFLow(GedisChatBot):
+    steps = ["chat"]
+
+    def __init__(self, method, **kwargs):
+        super().__init__(**kwargs)
+        self.method = method
+
+    def chat(self):
+        self.method(self)

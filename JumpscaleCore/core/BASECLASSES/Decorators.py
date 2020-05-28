@@ -75,6 +75,16 @@ def actor_method(func):
     return wrapper_action
 
 
+def chatflow_step(title=None, disable_previous=False):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            self_ = args[0]
+            self_.step_info.update(title=title, slide=0, previous=(not disable_previous))
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
 #
 # def property_js(func):
 #     def wrapper_action(*args, **kwargs):

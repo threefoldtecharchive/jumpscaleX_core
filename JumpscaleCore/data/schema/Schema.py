@@ -180,8 +180,7 @@ class Schema(j.baseclasses.object):
 
         name = propname + ""  # make sure there is copy
         if name.endswith("***"):
-            name = name[:-3]
-            p.index_text = True
+            self._error_raise("do not use *** in your schema, should be ** for indexing")
         if name.endswith("**"):
             name = name[:-2]
             p.index = True

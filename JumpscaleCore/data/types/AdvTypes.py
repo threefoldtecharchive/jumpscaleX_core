@@ -293,6 +293,10 @@ class NumericObject(TypeBaseObjClassNumeric):
         return self.value
 
     @property
+    def hr(self):
+        return j.core.text.format_item(self.value)
+
+    @property
     def value(self):
         return self._typebase.bytes2cur(self._data)
 
@@ -579,6 +583,10 @@ class Numeric(TypeBaseObjFactory):
         if data is None or data == "None" or data == b"" or data == "":
             return self.default_get()
         if isinstance(data, float) or isinstance(data, int):
+            if data > 4294967294:
+                return data
+            elif data < -4294967294:
+                return data
             data = str(data)
         if isinstance(data, str):
             data = self.str2bytes(data)

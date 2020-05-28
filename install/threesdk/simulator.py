@@ -6,7 +6,7 @@ from .container import delete as _delete_container
 __all__ = ["browser", "stop", "start", "shell", "restart"]
 
 
-def start(delete=False, browser_open=True, code_update_force=False, zerotier=False):
+def start(delete: bool = False, browser_open: bool = True, code_update_force: bool = False, zerotier: bool = False):
     """
     install & run a container with SDK & simulator
     a connection to zerotier network will be made
@@ -27,10 +27,11 @@ def start(delete=False, browser_open=True, code_update_force=False, zerotier=Fal
             explorer="none",
         )
         c = _containers.get(name="simulator", explorer="none")
-        c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
     else:
         c = _containers.get(name="simulator", explorer="none")
-
+        if not c.isrunning():
+            c.start()
+    c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
     if browser_open:
         browser()
 
@@ -46,27 +47,37 @@ def browser():
     """
     connect browser to your jupyter, make sure its not open yet
     """
-    c = _containers.get(name="simulator")
-    httpnb = 5000 + int(c.config.portrange) * 10
-    url = f"http://localhost:{httpnb}"
-    _threebot_browser(c, url=url)
-    print(f" - CONNECT TO YOUR SIMULATOR ON: {url}")
+    if not _containers.IT.DockerFactory.container_name_exists("simulator"):
+        start(browser_open=True)
+    else:
+        c = _containers.get(name="simulator")
+        httpnb = 5000 + int(c.config.portrange) * 10
+        url = f"http://localhost:{httpnb}"
+        _threebot_browser(c, url=url)
+        print(f" - CONNECT TO YOUR SIMULATOR ON: {url}")
 
 
-def restart(browser_open=False):
+def restart(browser_open: bool = False, container: bool = False):
     """
     restart the simulator, this can help to remove all running kernels
     the pyjupyter notebook can become super heavy
+
+    When passing container=True the entire container will be restarted
     """
     if not _containers.IT.DockerFactory.container_name_exists("simulator"):
         start()
     else:
-        c = _containers.get(name="simulator")
-        c.execute("j.tools.tfgrid_simulator.stop()", jumpscale=True)
-        c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
-
-    if browser_open:
-        browser()
+        if container:
+            c = _containers.get(name="simulator")
+            if c.isrunning():
+                c.stop()
+            start(browser_open=browser_open)
+        else:
+            c = _containers.get(name="simulator")
+            c.execute("j.tools.tfgrid_simulator.stop()", jumpscale=True)
+            c.execute("j.tools.tfgrid_simulator.start()", jumpscale=True)
+            if browser_open:
+                browser()
 
 
 def shell():

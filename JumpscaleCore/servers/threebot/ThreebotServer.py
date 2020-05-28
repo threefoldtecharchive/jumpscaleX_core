@@ -65,7 +65,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         self._openresty_server = None
         self._startup_cmd = None
         self._zdb = None
-        self._sonic = None
         self.threebot_server = None
         self.web = False
         self.ssl = False
@@ -121,15 +120,8 @@ class ThreeBotServer(j.baseclasses.object_config):
     def zdb(self):
         if not self._zdb:
             self._log_info("start zdb")
-            self._sonic, self._zdb = j.data.bcdb.start_servers_threebot_zdb_sonic()
+            self._zdb = j.data.bcdb.start_servers_threebot_zdb_sonic()
         return self._zdb
-
-    @property
-    def sonic(self):
-        if not self._sonic:
-            self._log_info("start sonic")
-            self._sonic, self._zdb = j.data.bcdb.start_servers_threebot_zdb_sonic()
-        return self._sonic
 
     def _proxy_create(self, name, port_source, port_dest, scheme_source="https", scheme_dest="http", ptype="http"):
         """
@@ -204,11 +196,10 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.save()
         if not background:
             j.servers.threebot._threebot_starting()
-            self.zdb  # will start sonic & zdb
-            self.sonic
+            self.zdb  # will start zdb
 
             # now we are ready to start the jobs
-            self.myjobs_start()
+            # self.myjobs_start()
 
             # think no longer needed
             # # make sure client for myjobs properly configured
@@ -217,7 +208,6 @@ class ThreeBotServer(j.baseclasses.object_config):
 
             j.threebot.servers = Servers()
             j.threebot.servers.zdb = self.zdb
-            j.threebot.servers.sonic = self.sonic
             j.threebot.servers.gedis = self.gedis_server
             j.threebot.servers.web = self.openresty_server
             j.threebot.servers.core = self
@@ -293,10 +283,10 @@ class ThreeBotServer(j.baseclasses.object_config):
                 if res:
                     break
 
-            self._log_info("start workers")
+            # self._log_info("start workers")
 
             # j.threebot.servers.gevent_rack.greenlet_add("maintenance", self._maintenance)
-            self._maintenance()
+            # self._maintenance()
 
             print("*****************************")
             print("*** 3BOTSERVER IS RUNNING ***")
@@ -447,7 +437,6 @@ class ThreeBotServer(j.baseclasses.object_config):
         self.openresty_server.stop()
         self.startup_cmd.stop(waitstop=False, force=True)
         self._zdb = None
-        self._sonic = None
         self._gedis_server = None
         self._rack_server = None
         self.client = None
@@ -473,7 +462,7 @@ class ThreeBotServer(j.baseclasses.object_config):
         startup.executor = self.executor
         startup.interpreter = "python"
         startup.timeout = 600
-        startup.ports = [9900, 1491, 8901]
+        startup.ports = [9900, 8901]
         if self.web:
             startup.ports += [80, 443, 4444, 4445]
         return startup

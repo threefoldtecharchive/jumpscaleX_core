@@ -1,11 +1,13 @@
 """core configuration"""
 __all__ = ["branch", "redis"]
+from . import InstallTools as IT
 
 
 class Core:
     def __init__(self):
         self._default_branch = "master"
-        self.branch = "master"
+        self.branch = IT.DEFAULT_BRANCH
+        self.development_branch = IT.DEVELOPMENT_BRANCH
         self.load()
 
     def load(self):
@@ -14,8 +16,6 @@ class Core:
 
     def _load_install_tools(self, reset=False):
         # get current install.py directory
-        from . import InstallTools as IT
-
         IT.MyEnv.init()
         return IT
 
