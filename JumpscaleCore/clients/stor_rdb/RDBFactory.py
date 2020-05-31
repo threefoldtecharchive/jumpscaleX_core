@@ -16,7 +16,6 @@ class RDBFactory(j.baseclasses.object):
     def client_get(self, bcdbname=None, addr="localhost", port=6379, secret=None):
         """
         :param bcdbname: bcdbname name
-        :param redisconfig_name: name of the redis config client see j.clients.redis_config
         :return:
         """
         assert bcdbname

@@ -56,7 +56,6 @@ class CoreTests(TestCase):
             "j.clients.currencylayer.test()",
             "j.clients.sonic.test()",
             "j.clients.rdb.test()",
-            "j.clients.redis_config.test()",
             "j.clients.threebot.test()",
             "j.clients.tcp_router.test()",
             "j.clients.zdb.test()",
