@@ -700,6 +700,23 @@ class GedisChatBot:
         """
         return Form(self)
 
+    def multi_values_ask(self, msg, **kwargs):
+        """Ask for multiple values
+
+        Args:
+            msg (str): message text
+
+        Keyword Arguments:
+            required (bool): flag to make this field required
+            md (bool): render message as markdown
+            html (bool): render message as html
+
+        Returns:
+            dict: the result as a dict
+        """
+        result = self.ask({"category": "ask_multi_values", "msg": msg, "kwargs": kwargs})
+        return j.data.serializers.json.loads(result)
+
     def node_selector(self, msg, **kwargs):
         """Show the node selector
 
