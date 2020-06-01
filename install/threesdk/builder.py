@@ -93,8 +93,8 @@ def sdktool():
 
 def container_import(name=None, path=None, imagename="threefoldtech/3bot2", start: bool = True):
     """
-    import container from image file, if not specified will be /tmp/3bot2.tar
-    :param name: name of the new container
+    import container from image file.
+    :param name: name of the new container if no name specified will be 3bot2
     :param path: path of the image created by container_export
     :param imagename: name of the newly created image
     :param start:
@@ -116,6 +116,8 @@ def container_export(name=None, path=None, version=None):
     :param path: the path to export to
     :return:
     """
+    if not name:
+        name = "3bot"
     docker = _containers.get(name=name)
     docker.export(path=path, version=version)
 
