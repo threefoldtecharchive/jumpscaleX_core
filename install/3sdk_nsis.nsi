@@ -6,7 +6,7 @@
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "3sdk"
-!define PRODUCT_VERSION "_unreleased_"
+!define PRODUCT_VERSION "10.6"
 !define PRODUCT_PUBLISHER "Threefold Tech"
 !define PRODUCT_WEB_SITE "https://threefold.io/"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\3sdk.exe"
