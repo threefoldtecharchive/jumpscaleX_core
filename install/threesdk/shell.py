@@ -470,7 +470,7 @@ def ptconfig(repl, expert=False):
 
         def complete_function(func, prefix=""):
             repl.docstring_buffer.reset(Document(_get_doc_line(func.__doc__), cursor_position=0))
-            for arg in inspect.getargspec(func).args:
+            for arg in inspect.getfullargspec(func).args:
                 field = arg + "="
                 if field not in line and field.startswith(prefix):
                     yield Completion(field, -len(prefix), display=field, style="bg:ansired")
