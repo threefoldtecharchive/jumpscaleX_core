@@ -1881,7 +1881,7 @@ class Tools:
             from .core import __version__
         resp = Tools.get_latest_release()
         latest_release = resp["latest_release"]
-        if latest_release is not __version__:
+        if latest_release != __version__:
             return False
         return True
 
@@ -7152,6 +7152,7 @@ class ExecutorLocal(Executor):
         if os.path.exists(path):
             res = [str(item) for item in Path(path).rglob("*")]
         return res
+
 
 class ExecutorDocker(Executor):
     def __init__(self, container):
