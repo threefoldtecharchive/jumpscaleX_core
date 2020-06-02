@@ -91,26 +91,34 @@ def sdktool():
     IT.Tools.execute(C)
 
 
-def container_import(name=None, path=None, imagename="threefoldtech/3bot2", no_start: bool = False):
+def container_import(name=None, path=None, imagename="threefoldtech/3bot2", start: bool = True):
     """
-    import container from image file, if not specified will be /tmp/3bot2.tar
-    :param args:
+    import container from image file.
+    :param name: name of the new container if no name specified will be 3bot2
+    :param path: path of the image created by container_export
+    :param imagename: name of the newly created image
+    :param start:
     :return:
     """
-    docker = _containers.get(delete=True, name=name)
+    if not name:
+        name = "3bot2"
+    docker = _containers.get(name=name)
     docker.import_(path=path, image=imagename)
-    if not no_start:
-        docker.start()
+    docker.delete()
+    IT.DockerFactory.init()
+    IT.DockerFactory.container_get(name=name, image=imagename, start=start)
 
 
 def container_export(name=None, path=None, version=None):
     """
-    export the 3bot to image file, if not specified will be /tmp/3bot2.tar
-    :param name:
-    :param path:
+    export the 3bot to image file, if not specified will be /sandbox/var/containers/3bot/exports/$version.tar
+    :param name: name of the container you want to export
+    :param path: the path to export to
     :return:
     """
-    docker = _containers.get(delete=True, name=name)
+    if not name:
+        name = "3bot"
+    docker = _containers.get(name=name)
     docker.export(path=path, version=version)
 
 
