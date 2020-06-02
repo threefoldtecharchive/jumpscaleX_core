@@ -91,7 +91,7 @@ def sdktool():
     IT.Tools.execute(C)
 
 
-def container_import(name=None, path=None, imagename="threefoldtech/3bot2", start: bool = True):
+def container_import(path, name=None, imagename="threefoldtech/3bot2", start: bool = True):
     """
     import container from image file.
     :param name: name of the new container if no name specified will be 3bot2
