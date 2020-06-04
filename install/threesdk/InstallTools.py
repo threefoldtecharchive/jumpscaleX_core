@@ -6106,6 +6106,8 @@ class DockerContainer:
 
         # python3 jsx configure --sshkey {MyEnv.sshagent.key_default_name} -s
         # WHY DO WE NEED THIS, in container ssh-key should always be there & loaded, don't think there is a reason to configure it
+        if not isinstance(secret, str):
+            secret = str(secret)
         escaped_secret = shlex.quote(secret)
 
         cmd = f"""
