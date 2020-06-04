@@ -45,6 +45,8 @@ class Args(core.IT.Tools._BaseClassProperties):
         # try to decode words
         if not self.secret:
             self.secret = self.ask_secret()
+        if not isinstance(self.secret, str):
+            self.secret = str(self.secret)
 
         binarykey = binascii.unhexlify(identitydata["signing_key"])
         while True:
