@@ -1,4 +1,6 @@
 import subprocess
+import uuid
+
 from loguru import logger
 
 BRANCH = ""
@@ -24,9 +26,9 @@ def create_container(container_name, secret):
     os_command(command)
 
     info("Check that container has been created correctly")
-    command = "docker ps -a -f status=running  | grep {}".format(CONTAINER_NAME)
+    command = "docker ps -a -f status=running  | grep {}".format(container_name)
     output, error = os_command(command)
-    if CONTAINER_NAME in output.decode():
+    if container_name in output.decode():
         return True
     else:
         return False
@@ -86,7 +88,7 @@ def after_all():
 
 def test01_container_delete_with_and_without_name_argument():
     """
-    Test container delete
+    Test container delete.
 
     #. Create a container.
     #. Check that the container has been created correctly.
@@ -102,8 +104,7 @@ def test01_container_delete_with_and_without_name_argument():
     info("Check that container has been created correctly")
 
     container_1 = rand_str()
-    secret_1 = rand_str()
-    assert create_container(container_1, secret_1), "{} doesn't created correctly".format(container_1)
+    assert create_container(container_1, container_1), "{} doesn't created correctly".format(container_1)
 
     info("Use delete argument with name option to delete the created container")
     command = "/root/.local/bin/3sdk delete name={}".format(container_1)
@@ -112,7 +113,7 @@ def test01_container_delete_with_and_without_name_argument():
     info("Check that container has been deleted correctly")
     command = "docker ps -a -f status=running  | grep {}".format(container_1)
     output, error = os_command(command)
-    assert container_name_1 not in output.decode()
+    assert container_1 not in output.decode()
 
     info("Create 2 containers")
     container_2 = rand_str()
@@ -122,8 +123,84 @@ def test01_container_delete_with_and_without_name_argument():
 
     info("Check that container has been deleted correctly")
     for container in container_2, container_3:
-
-        command = "docker ps -a -f status=running  | grep {}".format(container)
+        command = "docker ps -a | grep {}".format(container)
         output, error = os_command(command)
         assert container not in output.decode()
 
+
+def test02_stop_container():
+    """
+    Test stop container.
+
+    #. Create three containers.
+    #. Check that created containers are up and running.
+    #. Use stop option with name argument to stop one of them.
+    #. Check that container has been stopped correctly.
+    #. Use stop without name argument and make sure that the other two containers have been stopped correctly.
+    """
+
+    info("Create three containers")
+    info("Check that created containers are up and running")
+
+    container_name = rand_str()
+    for i in range(3):
+        container = "{}_{}".format(container_name, i)
+        assert create_container(container, container), "{} doesn't created correctly".format(container)
+
+    info("Use stop option with name argument to stop one of them")
+    container_1 = "{}_0".format(container_name)
+    command = "/root/.local/bin/3sdk stop name={}".format(container_1)
+    os_command(command)
+
+    info("Check that container has been stopped correctly")
+    command = "docker inspect  -f '{{.State.Running}}' {}".format(container_1)
+    output, error = os_command(command)
+    assert 'false' in output.decode()
+
+    info("Use stop without name argument and make sure that the other two containers have been stopped correctly")
+    for i in range(1, 3):
+        container = "{}_{}".format(container_name, i)
+        assert create_container(container, container), "{} doesn't created correctly".format(container)
+
+    command = "/root/.local/bin/3sdk stop"
+    os_command(command)
+
+    for i in range(1, 3):
+        command = "docker inspect  -f '{{.State.Running}}' {}_{}".format(container_name, i)
+        output, error = os_command(command)
+        assert 'false' in output.decode()
+
+
+def test03_start_container():
+    """
+    Test start container
+
+    #. Create Two containers, one with 3bot name and the other with another name.
+    #. Use stop argument to stop both container.
+    #. Use start without -name to start the 3bot container.
+    #. Use start with -name to start the other container.
+    #. Check that both containers have been started correctly.
+
+    """
+    info("Create Two containers, one with 3bot name and the other with another name")
+    container_name = rand_str()
+    assert create_container(container_name, container_name), "{} doesn't created correctly".format(container_name)
+    assert create_container("3bot", "123"), "3bot container doesn't created correctly"
+
+    info("Use stop argument to stop both container")
+    command = "/root/.local/bin/3sdk stop"
+    os_command(command)
+
+    info("Use start without -name to start the 3bot container")
+    command = "/root/.local/bin/3sdk start"
+    os_command(command)
+
+    info("Use start with -name to start the 3bot container")
+    command = "/root/.local/bin/3sdk start name=\"3bot\""
+    os_command(command)
+
+    info("Check that both containers have been started correctly")
+    for container in (container_name, "3bot"):
+        command = "docker inspect  -f '{{.State.Running}}' {}".format(container)
+        output, error = os_command(command)
+        assert 'true' in output.decode()
