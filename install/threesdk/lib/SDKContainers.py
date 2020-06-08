@@ -180,6 +180,8 @@ class SDKContainers:
 
         # if linux die will be false and docker will be installed during installation process
         if not self.IT.DockerFactory.docker_assert() or not self.IT.DockerFactory.container_name_exists(name):
+            if not explorer:
+                explorer = self.args.explorer
             if explorer != "none":
                 self._identity_ask(identity, explorer)
             if not secret:
