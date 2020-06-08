@@ -1,4 +1,0 @@
-curl
-python3
-git
-rsync
