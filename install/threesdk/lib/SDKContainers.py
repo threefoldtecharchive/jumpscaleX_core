@@ -184,6 +184,8 @@ class SDKContainers:
                 explorer = self.args.explorer
             if explorer != "none":
                 self._identity_ask(identity, explorer)
+            else:
+                self.args.explorer = None
             if not secret:
                 secret = self.args.secret
             if not secret:
