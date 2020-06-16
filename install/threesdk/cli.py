@@ -20,7 +20,6 @@ from threesdk import (
     install,
     args,
     core,
-    installer,
     _get_doc_line,
 )  # pylint: disable=F401
 
@@ -120,51 +119,52 @@ def version():
 
 def update(branch="master"):
     """
+    Update 3sdk binary in place and update containers to latest version, you threebot server will be restarted during this process
     """
     from threesdk.InstallTools import JumpscaleInstaller, MyEnv, Tools, DockerFactory
 
     import requests
+    binuptodate = Tools.is_latest_release()
 
-    if not Tools.is_latest_release():
-        installer = JumpscaleInstaller()
-        containers_names = DockerFactory.containers()
-        host_mount = False
-        # pull all repos in containers
-        for item in containers_names:
-            name = item.name
-            container._containers.assert_container(name)
-            c = DockerFactory.container_get(name=name)
-            if c.mount_code_exists:
-                host_mount = True
+    installer = JumpscaleInstaller()
+    containers_names = DockerFactory.containers()
+    host_mount = False
+    # pull all repos in containers
+    for item in containers_names:
+        name = item.name
+        container._containers.assert_container(name)
+        c = DockerFactory.container_get(name=name)
+        if c.mount_code_exists:
+            host_mount = True
+        else:
+            print("Updating repos in container ", name, "...")
+            container_executor = c.executor
+            installer.repos_get(pull=True, executor=container_executor, branch=branch)
+
+    if host_mount:
+        print("Updating repos on host...")
+        installer.repos_get(pull=True, branch=branch)
+
+    # restart containers
+    for item in containers_names:
+        name = item.name
+        c = DockerFactory.container_get(name=name)
+        if name == "simulator":
+            simulator.restart(container=True, browser_open=False)
+        elif name == "3bot":
+            threebot.restart(container=True, browser_open=False)
+        else:
+            rc, out, err = c.execute(
+                "pgrep -f /sandbox/var/cmds/threebot_default.py", interactive=False, die=False, showout=True,
+            )
+
+            container.stop(name=name)
+            if rc > 0:
+                container.start(name=name, server=False)
             else:
-                print("Updating repos in container ", name, "...")
-                container_executor = c.executor
-                installer.repos_get(pull=True, executor=container_executor, branch=branch)
-
-        if host_mount:
-            print("Updating repos on host...")
-            installer.repos_get(pull=True, branch=branch)
-
-        # restart containers
-        for item in containers_names:
-            name = item.name
-            c = DockerFactory.container_get(name=name)
-            if name == "simulator":
-                simulator.restart(container=True, browser_open=False)
-            elif name == "3bot":
-                threebot.restart(container=True, browser_open=False)
-            else:
-                rc, out, err = c.execute(
-                    "pgrep -f /sandbox/var/cmds/threebot_default.py", interactive=False, die=False, showout=True,
-                )
-
-                container.stop(name=name)
-                if rc > 0:
-                    container.start(name=name, server=False)
-                else:
-                    print(f"container {name} is running 3bot server")
-                    container.start(name=name, server=True, browser_open=False)
-
+                print(f"container {name} is running 3bot server")
+                container.start(name=name, server=True, browser_open=False)
+    if not binuptodate:
         # Update binary for host
         print("Downloading 3sdk binary...")
         latest_release = Tools.get_latest_release()
@@ -184,7 +184,7 @@ def update(branch="master"):
                     shutil.move("/tmp/3sdk", bin_path)
                     print(bin_path)
                     print("Congratulations, Now your 3sdk is up-to-date!")
-                except:
+                except Exception:
                     shutil.copy("/tmp/3sdk.bk", bin_path)
                     print(f"Failed to update binary, Can not replace binary in {bin_path}")
             elif MyEnv.platform_is_windows:
@@ -196,8 +196,6 @@ def update(branch="master"):
                 Tools.execute(f'explorer "{update_path}"', interactive=True)
             else:
                 raise Tools.exceptions.Base("platform not supported, only linux, osx and windows.")
-    else:
-        print(f"3sdk version is up-to-date")
 
 
 def shell(loc=False, exit=False, locals_=None, globals_=None, expert=False):
