@@ -1,10 +1,14 @@
+import os.path
+from unittest import skip
 from testconfig import config
 from base_test import BaseTest
 
 
 class InstallationTesting(BaseTest):
-
     BRANCH = config["installation"]["branch"]
+    EMAIL = config["installation"]["email"]
+    IDENTITY = config["installation"]["identity"]
+    WORDS = config["installation"]["words"]
 
     @classmethod
     def setUpClass(cls):
@@ -57,9 +61,12 @@ class InstallationTesting(BaseTest):
 
     def create_container(self, container_name, secret):
         self.info("Create a container")
-        command = "/root/.local/bin/3sdk container install name={} explorer=none secret={}"\
+        command = "/root/.local/bin/3sdk container install name={} explorer=none secret={}" \
             .format(container_name, secret)
-        self.os_command(command)
+        output, error = self.os_command(command)
+
+        self.info("Check that the JSX has been installed correctly")
+        self.assertIn("Jumpscale X installed successfully", output.decode())
 
         self.info("Check that container has been created correctly")
         command = "docker ps -a -f status=running  | grep {}".format(container_name)
@@ -81,7 +88,7 @@ class InstallationTesting(BaseTest):
         self.info("Install 3sdk")
         self.os_command("cd {}/install && pip3 install --user -e .".format(CLONE_DIR))
 
-    def test01_container_delete_with_and_without_name_argument(self):
+    def test01_container_delete(self):
         """
         Test container delete.
 
@@ -123,7 +130,7 @@ class InstallationTesting(BaseTest):
         output, error = self.os_command(command)
         self.assertNotIn(container_2, output.decode())
 
-    def test02_stop_container(self):
+    def test02_container_stop(self):
         """
         Test stop container.
 
@@ -167,7 +174,7 @@ class InstallationTesting(BaseTest):
             output, error = self.os_command(command)
             self.assertNotIn("{}_{}".format(container_name, i), output.decode())
 
-    def test03_start_container(self):
+    def test03_container_start(self):
         """
         Test start container
 
@@ -201,7 +208,7 @@ class InstallationTesting(BaseTest):
             output, error = self.os_command(command)
             self.assertIn(container, output.decode())
 
-    def test04_list(self):
+    def test04_container_list(self):
         """
         Test list containers
 
@@ -228,3 +235,78 @@ class InstallationTesting(BaseTest):
         output, error = self.os_command(command)
         self.assertIn(container_name, output.decode())
         self.assertNotIn(container_name_2, output.decode())
+
+    @skip("https://github.com/threefoldtech/jumpscaleX_core/issues/895")
+    def test05_container_install(self):
+        """
+        Test container install
+
+        #. Create a container using 3sdk.
+        #. Check that the JSX has been installed correctly.
+        #. Check that container is created correctly.
+
+        """
+
+        self.info("Create a container using 3sdk")
+        container_name = self.rand_string()
+        container_secret = self.rand_string()
+        command = '/root/.local/bin/3sdk container install email="{}" identity="{}" words="{}" name="{}" ' \
+                  'explorer=explorer.testnet.grid.tf secret="{}"' \
+            .format(self.EMAIL, self.IDENTITY, self.WORDS, container_name, container_secret)
+        output, error = self.os_command(command)
+
+        self.info("Check that the JSX has been installed correctly")
+        self.assertIn("Jumpscale X installed successfully", output.decode())
+
+        self.info("Check that container has been created correctly")
+        command = "docker ps | grep {}".format(container_name)
+        output, error = self.os_command(command)
+        self.assertIn(container_name, output.decode())
+
+    def test06_builder_container_export(self):
+        """
+        Test export the 3bot to image file.
+
+        #. Export image to certain path.
+        #. Check that image has been exported correctly.
+
+        """
+
+        self.info("Export image to certain path")
+        version_number = self.rand_string()
+        command = "/root/.local/bin/3sdk builder container_export version=\"{}\"".format(version_number)
+        output, error = self.os_command(command)
+
+        self.assertFalse(error)
+        self.assertIn("export docker:3bot to /sandbox/var/containers/3bot/exports/{}.tar".format(version_number),
+                      output.decode())
+
+        self.info("Check that image has been exported correctly")
+        self.assertTrue(os.path.isfile("/sandbox/var/containers/3bot/exports/{}.tar".format(version_number)))
+
+    def test07_builder_container_import(self):
+        """
+        Test import container from image file.
+
+        #. Export image to certain path.
+        #. Import image from the path.
+        #. Check the image is imported correctly.
+        """
+        version_number = self.rand_string()
+        command = "/root/.local/bin/3sdk builder container_export version={}".format(version_number)
+        output, error = self.os_command(command)
+        self.assertFalse(error)
+
+        self.info("Import image from the path")
+        command = "/root/.local/bin/3sdk builder container_import path=\"/sandbox/var/containers/3bot/exports/{}.tar\""\
+            .format(version_number)
+        output, error = self.os_command(command)
+
+        self.info("Check the image is imported correctly")
+        lines = output.decode().splitlines()
+        for line in lines:
+            if line.startswith('sha256'):
+                docker_image = line
+
+        output, error = self.os_command("docker images --no-trunc | grep {}".format(docker_image))
+        self.assertIn(docker_image, output.decode())
