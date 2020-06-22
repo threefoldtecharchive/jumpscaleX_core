@@ -3806,13 +3806,13 @@ class MyEnv_:
     def redis_start(self):
         self._db = RedisTools._core_get()
 
-    def secret_set(self, secret=None, secret_expiration_hours=48):
+    def secret_set(self, secret=None, secret_expiration_hours=48, confirm=True):
         """
         can be the hash or the originating secret passphrase
 
         """
         if not secret:
-            secret = Tools.ask_password("please provide passphrase (to locally encrypt your container)")
+            secret = Tools.ask_password("please provide passphrase (to locally encrypt your container)", confirm=confirm)
             assert len(secret) < 32
 
         secret = self._secret_format(secret)
@@ -3821,6 +3821,7 @@ class MyEnv_:
 
         if MyEnv.db:
             self.db.set("threebot.secret.encrypted", secret, ex=expiration)
+        self._secret = secret
 
         return secret
 

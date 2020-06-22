@@ -13,11 +13,12 @@ class MyIdentities(j.baseclasses.object_config_collection):
         self._box = None
         self.secret_expiration_hours = 24 * 30 * 12
 
-    def secret_set(self, secret=None):
+    def secret_set(self, secret=None, confirm=True):
         """
         can be the hash or the originating secret passphrase
         """
-        j.core.myenv.secret_set(secret=secret)
+        j.core.myenv.secret_set(secret=secret, confirm=confirm)
+        self._box = None
 
     @property
     def secret(self):
