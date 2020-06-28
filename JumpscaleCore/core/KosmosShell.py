@@ -151,7 +151,6 @@ def get_completions(self, document, complete_event):
     try:
         parent, member, prefix = get_current_line(document)
     except ValueError:
-        j.tools.logger._log_error("current line error", data=traceback.format_exc())
         return
 
     try:
@@ -598,7 +597,6 @@ def ptconfig(repl):
         try:
             _, _, prefix = get_current_line(document)
         except ValueError:
-            j.tools.logger._log_error("No current line\n" + traceback.format_exc())
             return
 
         completions = []
