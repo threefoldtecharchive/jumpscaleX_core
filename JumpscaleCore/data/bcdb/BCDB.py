@@ -9,7 +9,7 @@ from Jumpscale.clients.stor_sqlite.DBSQLite import DBSQLite
 from .BCDBModel import BCDBModel
 
 from Jumpscale import j
-import sys
+import nacl.exceptions
 
 
 class BCDB(j.baseclasses.object):
@@ -895,7 +895,16 @@ class BCDB(j.baseclasses.object):
         else:
             raise j.exceptions.Base("not supported format")
 
-        bdata = j.myidentities.decrypt(bdata_encrypted)
+        while True:
+            try:
+                bdata = j.myidentities.decrypt(bdata_encrypted)
+                break
+            except nacl.exceptions.CryptoError:
+                # secret is configured wrong let's reset/ reask
+                if not j.application.interactive:
+                    raise j.exceptions.RuntimeError("Failed to decrypt bcdb data")
+                print("Failed to decrypt bcdb data, please use correct password")
+                j.myidentities.secret_set(confirm=False)
 
         if return_as_capnp:
             return bdata

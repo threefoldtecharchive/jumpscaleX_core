@@ -151,7 +151,6 @@ def get_completions(self, document, complete_event):
     try:
         parent, member, prefix = get_current_line(document)
     except ValueError:
-        j.tools.logger._log_error("current line error", data=traceback.format_exc())
         return
 
     try:
@@ -446,7 +445,7 @@ def ptconfig(repl):
     repl.wrap_lines = True
 
     # Mouse support.
-    repl.enable_mouse_support = True
+    repl.enable_mouse_support = False
 
     # Complete while typing. (Don't require tab before the
     # completion menu is shown.)
@@ -598,7 +597,6 @@ def ptconfig(repl):
         try:
             _, _, prefix = get_current_line(document)
         except ValueError:
-            j.tools.logger._log_error("No current line\n" + traceback.format_exc())
             return
 
         completions = []
